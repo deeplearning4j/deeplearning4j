@@ -243,6 +243,166 @@ DECLARE_CUSTOM_OP(apply_alibi, 1, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(sliding_window_attention, 3, 1, false, 0, 0);
 #endif
 
+/**
+ * fused_gelu - Fast GELU Approximation
+ *
+ * Implements the fast GELU approximation: x * sigmoid(1.702 * x)
+ * This is faster than standard GELU while maintaining good accuracy.
+ * Used in many modern transformers including BERT variants.
+ *
+ * Input:
+ *   0: input tensor
+ *
+ * Output:
+ *   0: output tensor with GELU applied
+ */
+#if NOT_EXCLUDED(OP_fused_gelu)
+DECLARE_CONFIGURABLE_OP(fused_gelu, 1, 1, true, 0, 0);
+DECLARE_CONFIGURABLE_OP(fused_gelu_bp, 2, 1, true, 0, 0);
+#endif
+
+/**
+ * fused_layer_norm - Fused Layer Normalization
+ *
+ * Computes layer normalization in a single fused kernel using Welford's
+ * algorithm for numerical stability:
+ * output = (input - mean) / sqrt(variance + epsilon) * gain + bias
+ *
+ * Input:
+ *   0: input tensor [batch, ..., features]
+ *   1: gain/gamma [features]
+ *   2: bias/beta [features] (optional)
+ *
+ * Output:
+ *   0: normalized tensor [batch, ..., features]
+ *
+ * Float arguments:
+ *   0: epsilon (default: 1e-5)
+ */
+#if NOT_EXCLUDED(OP_fused_layer_norm)
+DECLARE_CUSTOM_OP(fused_layer_norm, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(fused_layer_norm_bp, 3, 2, false, 0, 0);
+#endif
+
+/**
+ * fused_rope - Fused Rotary Position Embedding
+ *
+ * Applies rotary position embeddings with optimized sin/cos computation.
+ * Supports multiple RoPE variants used in modern LLMs.
+ *
+ * Input:
+ *   0: input tensor [batch, seq_len, num_heads, head_dim]
+ *
+ * Output:
+ *   0: tensor with rotary embeddings applied [batch, seq_len, num_heads, head_dim]
+ *
+ * Integer arguments:
+ *   0: rope_type (0=standard/LLaMA, 1=neox, 2=gpt-j, default: 0)
+ *   1: position_offset (for KV cache continuation, default: 0)
+ *
+ * Float arguments:
+ *   0: freq_base (default: 10000.0)
+ *   1: freq_scale (default: 1.0)
+ */
+#if NOT_EXCLUDED(OP_fused_rope)
+DECLARE_CUSTOM_OP(fused_rope, 1, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(fused_rope_bp, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * fused_bias_dropout_residual - Fused Bias + Dropout + Residual
+ *
+ * Computes: dropout(input + bias) + residual in a single kernel
+ * to minimize memory bandwidth usage.
+ *
+ * Input:
+ *   0: input tensor
+ *   1: bias tensor (broadcastable to input)
+ *   2: residual tensor
+ *
+ * Output:
+ *   0: output tensor
+ *
+ * Integer arguments:
+ *   0: seed for dropout RNG
+ *
+ * Float arguments:
+ *   0: dropout probability (default: 0.0 = no dropout)
+ *
+ * Boolean arguments:
+ *   0: training mode (default: false)
+ */
+#if NOT_EXCLUDED(OP_fused_bias_dropout_residual)
+DECLARE_CUSTOM_OP(fused_bias_dropout_residual, 3, 1, false, 0, 0);
+#endif
+
+/**
+ * fused_rms_norm_swiglu - Fused RMS Norm + SwiGLU
+ *
+ * Fuses the FFN computation in LLaMA-style models:
+ * output = silu(rms_norm(input) @ W_gate) * (rms_norm(input) @ W_up)
+ *
+ * This mega-kernel avoids multiple memory passes and is optimized
+ * for the feed-forward network pattern in modern LLMs.
+ *
+ * Input:
+ *   0: input tensor [batch, seq_len, hidden_dim]
+ *   1: gamma weights for RMS norm [hidden_dim]
+ *   2: W_gate projection [hidden_dim, intermediate_dim]
+ *   3: W_up projection [hidden_dim, intermediate_dim]
+ *
+ * Output:
+ *   0: output tensor [batch, seq_len, intermediate_dim]
+ *
+ * Float arguments:
+ *   0: epsilon for RMS norm (default: 1e-5)
+ */
+#if NOT_EXCLUDED(OP_fused_rms_norm_swiglu)
+DECLARE_CUSTOM_OP(fused_rms_norm_swiglu, 4, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(fused_rms_norm_swiglu_bp, 5, 4, false, 0, 0);
+#endif
+
+/**
+ * swish_mul - SwiGLU Component: swish(x) * y
+ *
+ * Computes the SwiGLU activation component: silu(x) * y
+ * where silu(x) = x * sigmoid(x).
+ *
+ * This is used in LLaMA, Mistral, and other modern LLMs for their
+ * feed-forward network's gated activation.
+ *
+ * Input:
+ *   0: x tensor - the input to apply swish activation
+ *   1: y tensor - the gate tensor to multiply with
+ *
+ * Output:
+ *   0: output tensor = silu(x) * y
+ */
+#if NOT_EXCLUDED(OP_swish_mul)
+DECLARE_CONFIGURABLE_OP(swish_mul, 2, 1, true, 0, 0);
+DECLARE_CONFIGURABLE_OP(swish_mul_bp, 3, 2, true, 0, 0);
+#endif
+
+/**
+ * mean_square - Mean of Squared Values
+ *
+ * Computes mean(x * x) along the last dimension.
+ * This is a building block for RMSNorm and other normalization ops.
+ *
+ * Input:
+ *   0: input tensor [batch, ..., features]
+ *
+ * Output:
+ *   0: output tensor [batch, ..., 1] - mean of squared values along last dim
+ *
+ * Integer arguments:
+ *   0: keepDims (0=no, 1=yes, default: 1)
+ */
+#if NOT_EXCLUDED(OP_mean_square)
+DECLARE_CUSTOM_OP(mean_square, 1, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(mean_square_bp, 2, 1, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

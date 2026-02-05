@@ -3082,6 +3082,7 @@ public native void ctxAllowHelpers(org.nd4j.nativeblas.OpaqueContext ptr, @Cast(
 public native void ctxShapeFunctionOverride(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool") boolean reallyOverride);
 public native void ctxSetExecutionMode(org.nd4j.nativeblas.OpaqueContext ptr, int execMode);
 public native void ctxPurge(org.nd4j.nativeblas.OpaqueContext ptr);
+public native void ctxPurgeNoSync(org.nd4j.nativeblas.OpaqueContext ptr);
 public native void markGraphContextInplace(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool") boolean reallyInplace);
 public native void setGraphContextCudaContext(org.nd4j.nativeblas.OpaqueContext ptr, Pointer stream, Pointer reductionPointer,
                                               Pointer allocationPointer);

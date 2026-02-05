@@ -25,21 +25,27 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
+import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
+import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -232,6 +238,32 @@ public class VisionLanguageModel implements AutoCloseable {
      */
     public String generate(INDArray image, String prompt, int maxNewTokens,
                           double temperature, boolean doSample) {
+        return generateWithMetrics(image, prompt, maxNewTokens, temperature, doSample).getText();
+    }
+
+    /**
+     * Generate text from an image and prompt, returning detailed metrics.
+     *
+     * @param image the preprocessed image
+     * @param prompt the text prompt
+     * @return the generation result with metrics
+     */
+    public GenerationResult generateWithMetrics(INDArray image, String prompt) {
+        return generateWithMetrics(image, prompt, 512, 1.0, true);
+    }
+
+    /**
+     * Generate text from an image and prompt with parameters, returning detailed metrics.
+     *
+     * @param image the preprocessed image
+     * @param prompt the text prompt
+     * @param maxNewTokens maximum tokens to generate
+     * @param temperature sampling temperature
+     * @param doSample whether to sample (false = greedy)
+     * @return the generation result with metrics
+     */
+    public GenerationResult generateWithMetrics(INDArray image, String prompt, int maxNewTokens,
+                                                double temperature, boolean doSample) {
         checkNotClosed();
 
         // Encode image
@@ -239,23 +271,90 @@ public class VisionLanguageModel implements AutoCloseable {
 
         // Encode prompt
         Encoding promptEncoding = tokenizer.encode(prompt, true);
-        INDArray textEmbeddings = embedText(promptEncoding.getIds());
+        int[] promptIds = promptEncoding.getIds();
+        int promptTokenCount = promptIds.length;
+        INDArray textEmbeddings = embedText(promptIds);
 
         // Combine embeddings (image before text for most VLMs)
         INDArray combinedEmbeddings = combineEmbeddings(imageEmbeddings, textEmbeddings);
 
-        // Autoregressive generation
+        // Discover decoder inputs/outputs for KV cache
+        List<String> decoderInputNames = decoder.inputs();
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        boolean useKvCache = !kvNames.keyNames.isEmpty() && !kvNames.valueNames.isEmpty();
+        long hiddenSize = config != null && config.getHiddenSize() != null ? config.getHiddenSize() : 0;
+
+        // Build list of all outputs to request
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(logitsOutputName != null ? logitsOutputName : "logits");
+        if (useKvCache) {
+            allOutputNames.addAll(kvNames.keyNames);
+            allOutputNames.addAll(kvNames.valueNames);
+        }
+
+        // Autoregressive generation with KV cache
         StringBuilder generated = new StringBuilder();
-        int[] currentIds = promptEncoding.getIds();
+        List<Integer> generatedTokenIds = new ArrayList<>();
+        long startNanos = System.nanoTime();
+        long firstTokenLatencyNanos = 0;
+        int generatedTokenCount = 0;
+        GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
+
+        Map<String, INDArray> kvCache = useKvCache ? new HashMap<>() : null;
+        INDArray currentEmbeddings = combinedEmbeddings;
+        long pastSeqLen = 0;
+        long batchSize = 1;
 
         for (int i = 0; i < maxNewTokens; i++) {
-            // Run decoder
-            Map<String, INDArray> decoderInputs = new HashMap<>();
-            decoderInputs.put("inputs_embeds", combinedEmbeddings);
+            // Build decoder inputs
+            Map<String, INDArray> decoderInputMap = new HashMap<>();
+            long currentSeqLen = currentEmbeddings.shape()[1];
+            long totalSeqLen = currentSeqLen + pastSeqLen;
 
-            // Get logits for next token
-            Map<String, INDArray> outputs = decoder.output(decoderInputs, "logits");
-            INDArray logits = outputs.get("logits");
+            for (String inputName : decoderInputNames) {
+                if (inputName.equals("inputs_embeds")) {
+                    decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (inputName.equals("attention_mask")) {
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen));
+                } else if (inputName.equals("position_ids")) {
+                    decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG));
+                } else if (useKvCache && inputName.startsWith("past_key_values.")) {
+                    String presentName = inputName.replace("past_key_values", "present");
+                    if (kvCache.containsKey(presentName)) {
+                        decoderInputMap.put(inputName, kvCache.get(presentName));
+                    } else {
+                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(
+                                decoder, inputName, batchSize, hiddenSize));
+                    }
+                }
+            }
+
+            // Run decoder, requesting logits + KV cache outputs
+            Map<String, INDArray> outputs = decoder.output(decoderInputMap,
+                    allOutputNames.toArray(new String[0]));
+            INDArray logits = outputs.get(allOutputNames.get(0));
+
+            // Update KV cache
+            if (useKvCache) {
+                for (String presentName : kvNames.keyNames) {
+                    INDArray pv = outputs.get(presentName);
+                    if (pv != null) {
+                        INDArray old = kvCache.put(presentName, pv);
+                        if (old != null) old.close();
+                    }
+                }
+                for (String presentName : kvNames.valueNames) {
+                    INDArray pv = outputs.get(presentName);
+                    if (pv != null) {
+                        INDArray old = kvCache.put(presentName, pv);
+                        if (old != null) old.close();
+                    }
+                }
+            }
 
             // Get next token (greedy or sampling)
             int nextTokenId;
@@ -263,16 +362,22 @@ public class VisionLanguageModel implements AutoCloseable {
                 nextTokenId = Nd4j.argMax(logits.get(NDArrayIndex.point(0),
                         NDArrayIndex.point(logits.shape()[1] - 1)), 0).getInt(0);
             } else {
-                // Apply temperature and sample
                 INDArray scaledLogits = logits.div(temperature);
                 INDArray probs = Nd4j.nn().softmax(scaledLogits, 2);
-                // Multinomial sampling would go here
                 nextTokenId = Nd4j.argMax(probs.get(NDArrayIndex.point(0),
                         NDArrayIndex.point(probs.shape()[1] - 1)), 0).getInt(0);
             }
 
+            // Record first token latency
+            if (generatedTokenCount == 0) {
+                firstTokenLatencyNanos = System.nanoTime() - startNanos;
+            }
+            generatedTokenCount++;
+            generatedTokenIds.add(nextTokenId);
+
             // Check for EOS
             if (nextTokenId == tokenizer.getEosTokenId()) {
+                finishReason = GenerationResult.FinishReason.EOS;
                 break;
             }
 
@@ -280,12 +385,45 @@ public class VisionLanguageModel implements AutoCloseable {
             String tokenText = tokenizer.decode(new int[]{nextTokenId}, true);
             generated.append(tokenText);
 
-            // Update embeddings for next iteration
-            INDArray newTokenEmbed = embedText(new int[]{nextTokenId});
-            combinedEmbeddings = Nd4j.concat(1, combinedEmbeddings, newTokenEmbed);
+            // For next iteration: only embed the new token (not the full sequence)
+            if (useKvCache) {
+                pastSeqLen += currentSeqLen;
+                INDArray prevEmbeddings = currentEmbeddings;
+                currentEmbeddings = embedText(new int[]{nextTokenId});
+                if (prevEmbeddings != combinedEmbeddings) {
+                    prevEmbeddings.close();
+                }
+                decoder.clearPlaceholders(false);
+            } else {
+                // Fallback: no KV cache, grow embeddings (O(n²) per token)
+                INDArray newTokenEmbed = embedText(new int[]{nextTokenId});
+                currentEmbeddings = Nd4j.concat(1, currentEmbeddings, newTokenEmbed);
+            }
         }
 
-        return generated.toString();
+        // Clean up KV cache
+        if (kvCache != null) {
+            for (INDArray v : kvCache.values()) {
+                if (v != null) v.close();
+            }
+        }
+
+        long totalNanos = System.nanoTime() - startNanos;
+        long totalMs = totalNanos / 1_000_000;
+        long firstTokenMs = firstTokenLatencyNanos / 1_000_000;
+        int[] tokenIdArray = generatedTokenIds.stream().mapToInt(Integer::intValue).toArray();
+
+        return GenerationResult.builder()
+                .text(generated.toString())
+                .tokenIds(tokenIdArray)
+                .generatedTokenCount(generatedTokenCount)
+                .promptTokenCount(promptTokenCount)
+                .totalTokenCount(promptTokenCount + generatedTokenCount)
+                .finishReason(finishReason)
+                .firstTokenLatencyMs(firstTokenMs)
+                .generationTimeMs(totalMs)
+                .tokensPerSecond(totalNanos > 0 ? (generatedTokenCount * 1_000_000_000.0) / totalNanos : 0)
+                .build();
     }
 
     /**
@@ -407,6 +545,34 @@ public class VisionLanguageModel implements AutoCloseable {
      */
     public String generateOnDevice(INDArray image, String prompt, int maxNewTokens,
                                    double temperature, boolean doSample, DeviceDescriptor device) {
+        return generateOnDeviceWithMetrics(image, prompt, maxNewTokens, temperature, doSample, device).getText();
+    }
+
+    /**
+     * Generate text from an image on a specific device, returning detailed metrics.
+     *
+     * @param image the preprocessed image
+     * @param prompt the text prompt
+     * @param device the target device for inference
+     * @return the generation result with metrics
+     */
+    public GenerationResult generateOnDeviceWithMetrics(INDArray image, String prompt, DeviceDescriptor device) {
+        return generateOnDeviceWithMetrics(image, prompt, 512, 1.0, true, device);
+    }
+
+    /**
+     * Generate text from an image on a specific device with full parameters, returning detailed metrics.
+     *
+     * @param image the preprocessed image
+     * @param prompt the text prompt
+     * @param maxNewTokens maximum tokens to generate
+     * @param temperature sampling temperature
+     * @param doSample whether to sample
+     * @param device the target device
+     * @return the generation result with metrics
+     */
+    public GenerationResult generateOnDeviceWithMetrics(INDArray image, String prompt, int maxNewTokens,
+                                                        double temperature, boolean doSample, DeviceDescriptor device) {
         checkNotClosed();
 
         // Encode image on device
@@ -414,14 +580,21 @@ public class VisionLanguageModel implements AutoCloseable {
 
         // Encode prompt on device
         Encoding promptEncoding = tokenizer.encode(prompt, true);
-        INDArray textEmbeddings = embedTextOnDevice(promptEncoding.getIds(), device);
+        int[] promptIds = promptEncoding.getIds();
+        int promptTokenCount = promptIds.length;
+        INDArray textEmbeddings = embedTextOnDevice(promptIds, device);
 
         // Combine embeddings
         INDArray combinedEmbeddings = combineEmbeddings(imageEmbeddings, textEmbeddings);
         ensureOnDevice(combinedEmbeddings, device);
 
-        // Autoregressive generation
+        // Autoregressive generation with timing
         StringBuilder generated = new StringBuilder();
+        List<Integer> generatedTokenIds = new ArrayList<>();
+        long startNanos = System.nanoTime();
+        long firstTokenLatencyNanos = 0;
+        int generatedTokenCount = 0;
+        GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
         for (int i = 0; i < maxNewTokens; i++) {
             Map<String, INDArray> decoderInputs = new HashMap<>();
@@ -441,7 +614,15 @@ public class VisionLanguageModel implements AutoCloseable {
                         NDArrayIndex.point(probs.shape()[1] - 1)), 0).getInt(0);
             }
 
+            // Record first token latency
+            if (generatedTokenCount == 0) {
+                firstTokenLatencyNanos = System.nanoTime() - startNanos;
+            }
+            generatedTokenCount++;
+            generatedTokenIds.add(nextTokenId);
+
             if (nextTokenId == tokenizer.getEosTokenId()) {
+                finishReason = GenerationResult.FinishReason.EOS;
                 break;
             }
 
@@ -452,7 +633,22 @@ public class VisionLanguageModel implements AutoCloseable {
             combinedEmbeddings = Nd4j.concat(1, combinedEmbeddings, newTokenEmbed);
         }
 
-        return generated.toString();
+        long totalNanos = System.nanoTime() - startNanos;
+        long totalMs = totalNanos / 1_000_000;
+        long firstTokenMs = firstTokenLatencyNanos / 1_000_000;
+        int[] tokenIdArray = generatedTokenIds.stream().mapToInt(Integer::intValue).toArray();
+
+        return GenerationResult.builder()
+                .text(generated.toString())
+                .tokenIds(tokenIdArray)
+                .generatedTokenCount(generatedTokenCount)
+                .promptTokenCount(promptTokenCount)
+                .totalTokenCount(promptTokenCount + generatedTokenCount)
+                .finishReason(finishReason)
+                .firstTokenLatencyMs(firstTokenMs)
+                .generationTimeMs(totalMs)
+                .tokensPerSecond(totalNanos > 0 ? (generatedTokenCount * 1_000_000_000.0) / totalNanos : 0)
+                .build();
     }
 
     /**
@@ -590,9 +786,3 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 }
 
-// Import for NDArrayIndex - would need proper import
-class NDArrayIndex {
-    public static org.nd4j.linalg.indexing.INDArrayIndex point(long i) {
-        return org.nd4j.linalg.indexing.NDArrayIndex.point(i);
-    }
-}

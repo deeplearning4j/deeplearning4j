@@ -494,6 +494,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public long cudaPinnedHostLimit() {
+        return e.cudaPinnedHostLimit();
+    }
+
+    @Override
+    public void setCudaPinnedHostLimit(long limitInMB) {
+        e.setCudaPinnedHostLimit(limitInMB);
+    }
+
+    @Override
     public boolean cudaUseUnifiedMemory() {
         return e.cudaUseUnifiedMemory();
     }

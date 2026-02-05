@@ -44,9 +44,6 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
     protected void closeScalarValue() {
         if (this.scalarValue != null) {
             try {
-                if (this.scalarValue.data() != null) {
-                    this.scalarValue.data().close();
-                }
                 this.scalarValue.close();
             } catch (Exception e) {
                 // Ignore close errors
@@ -127,13 +124,18 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
         LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType()) :
                 LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL);
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        return Collections.singletonList(Nd4j.createBuffer(desc.toShapeInfo()));
+        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(desc.toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

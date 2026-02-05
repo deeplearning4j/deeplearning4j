@@ -396,6 +396,22 @@ public class ND4JSystemProperties {
      */
     public final static String SECONDARY_BACKEND_PROPERTIES = "nd4j.backend.secondary.properties";
 
+    /**
+     * Applicability: SameDiff workspace mode<br>
+     * Description: When true, SameDiff automatically enables workspace-backed memory management
+     * for CUDA backends. This uses bump allocation for intermediate arrays, avoiding per-op
+     * cudaMalloc/cudaFree calls. Set to "false" to disable auto-enable.
+     * Default: true
+     */
+    public final static String SAMEDIFF_WORKSPACE_AUTO = "nd4j.samediff.workspace.auto";
+
+    /**
+     * Applicability: SameDiff workspace mode<br>
+     * Description: Initial workspace size in bytes for SameDiff workspace-backed memory management.
+     * Default: 268435456 (256 MB)
+     */
+    public final static String SAMEDIFF_WORKSPACE_SIZE = "nd4j.samediff.workspace.size";
+
     private ND4JSystemProperties() {
     }
 }

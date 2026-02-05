@@ -406,7 +406,10 @@ public class KerasConvolutionUtils {
     public static long[] getPaddingFromBorderModeConfigLong(Map<String, Object> layerConfig, int dimension,
                                                        KerasLayerConfiguration conf, int kerasMajorVersion)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return Arrays.stream(getPaddingFromBorderModeConfig(layerConfig, dimension, conf, kerasMajorVersion)).mapToLong(i -> i).toArray();
+        int[] padding = getPaddingFromBorderModeConfig(layerConfig, dimension, conf, kerasMajorVersion);
+        if (padding == null)
+            return null;
+        return Arrays.stream(padding).mapToLong(i -> i).toArray();
     }
     /**
      * Get (convolution) padding from Keras layer configuration.
@@ -425,9 +428,9 @@ public class KerasConvolutionUtils {
                     + conf.getLAYER_FIELD_BORDER_MODE() + " field found");
         String borderMode = (String) innerConfig.get(conf.getLAYER_FIELD_BORDER_MODE());
         if (borderMode.equals(conf.getLAYER_BORDER_MODE_SAME())) {
-            padding = getKernelSizeFromConfig(layerConfig, dimension, conf, kerasMajorVersion);
-            for (int i = 0; i < padding.length; i++)
-                padding[i]--;
+            // ConvolutionMode.Same handles padding automatically, so return null
+            // to avoid conflicting with the convolution mode setting.
+            padding = null;
         } else if (borderMode.equals(conf.getLAYER_BORDER_MODE_VALID())) {
             // valid mode means no padding
             padding = new int[dimension];

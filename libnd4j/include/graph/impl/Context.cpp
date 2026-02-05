@@ -995,7 +995,12 @@ void Context::clearFastPath() {
   _fastpath_out.clear();
 
 #ifdef SD_CUDA
-  cudaDeviceSynchronize();
+  if (_context != nullptr) {
+    auto stream = _context->getCudaStream();
+    if (stream != nullptr) {
+      cudaStreamSynchronize(*stream);
+    }
+  }
 #endif
 
   // IMPORTANT: Do NOT delete or clear _handles here.
@@ -1012,6 +1017,11 @@ void Context::clearFastPath() {
   // The destructor will handle _handles cleanup with proper validation.
   // Since Java's close() calls purge() then deleteGraphContext() immediately,
   // the destructor runs right after this and will clean up properly.
+}
+
+void Context::clearFastPathNoSync() {
+  _fastpath_in.clear();
+  _fastpath_out.clear();
 }
 
 void Context::setInputArrays(int numArrays,NDArray** array, bool removable) {

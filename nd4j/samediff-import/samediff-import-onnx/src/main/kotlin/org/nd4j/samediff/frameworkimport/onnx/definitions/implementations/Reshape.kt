@@ -30,7 +30,21 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
-  Implements reshape
+ * Implements ONNX Reshape operation.
+ *
+ * ONNX Reshape semantics (default, allowzero=0):
+ * - A value of 0 in the shape means "copy the corresponding dimension from input"
+ * - A value of -1 means "infer this dimension from the total element count"
+ *
+ * ONNX Reshape semantics (allowzero=1, opset >= 14):
+ * - A value of 0 in the shape means the dimension is literally 0 (empty tensor)
+ * - A value of -1 still means "infer this dimension"
+ *
+ * The C++ reshape op handles the default case (0 = copy from input) natively.
+ * When allowzero=1, this hook pre-resolves the shape to avoid the C++ copy-from-input behavior
+ * by replacing 0s with the input dimensions at the Kotlin level (for the default case) or
+ * leaving them as literal 0s (for the allowzero case, creating empty tensors).
+ *
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["Reshape"],frameworkName = "onnx")
@@ -45,20 +59,53 @@ class Reshape : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        // Parameter docs below are from the onnx operator docs:
-        // https://github.com/onnx/onnx/blob/master/docs/Operators.md#reshape
-        var inputVariable = sd.getVariable(op.inputsToOp[0])
-        //older attributes based shape
-        if(attributes.isNotEmpty()) {
-            val newShape = attributes["shape"] as List<Int>
+        val inputVariable = sd.getVariable(op.inputsToOp[0])
+
+        // ONNX opset 14+ allowzero attribute: when 1, 0 means literal zero dimension (empty tensor)
+        // Default is 0, meaning 0 = copy from input (standard ONNX Reshape behavior)
+        val allowZero = (attributes["allowzero"] as? Long ?: 0L) != 0L
+
+        // Older attributes based shape
+        val shapeAttr = attributes["shape"]
+        if (shapeAttr != null && shapeAttr is List<*> && shapeAttr.isNotEmpty()) {
+            @Suppress("UNCHECKED_CAST")
+            val newShape = shapeAttr as List<Int>
             val shapeArr = newShape.toIntArray().map { input -> input.toLong() }.toLongArray()
-            val finalOutput = sd.reshape(outputNames[0],inputVariable,*shapeArr)
+            // For the static shape case, C++ handles 0-copy-from-input natively.
+            // allowzero with static shapes containing 0 will produce empty tensors in C++.
+            val finalOutput = sd.reshape(outputNames[0], inputVariable, *shapeArr)
             return mapOf(outputNames[0] to listOf(finalOutput))
         } else {
-            val shapeVar = sd.getVariable(op.inputsToOp[1])
-            val finalOutput = sd.reshape(outputNames[0],inputVariable,shapeVar)
+            // Use shape from second input tensor
+            // C++ reshape handles ONNX semantics: 0 = copy from input, -1 = infer
+            val shapeVarName = op.inputsToOp[1]
+            val shapeVar = sd.getVariable(shapeVarName)
+
+            if (allowZero) {
+                // When allowzero=1, 0 means literal 0 (empty tensor), not "copy from input".
+                // The C++ reshape treats 0 as "copy from input" by default.
+                // To handle allowzero=1 correctly, we check if the shape is a constant
+                // and if it contains 0s; if so, we pass it as a static shape array
+                // which bypasses the C++ copy-from-input logic for the zero dimensions.
+                val shapeArr = shapeVar.arr
+                if (shapeArr != null) {
+                    val shapeLongs = shapeArr.toLongVector()
+                    if (shapeLongs.any { it == 0L }) {
+                        // Pass shape as static iArgs — C++ will still try copy-from-input for 0s,
+                        // but if the input also has 0 at that position, the copy gives 0 (correct).
+                        // If the input has non-zero at that position, this is the allowzero=1 case
+                        // and we need the literal 0. Replace 0s with a very small marker that
+                        // the C++ empty-shape handling will catch.
+                        // Since this is an empty tensor (0 element count), use sd.zeros with the shape.
+                        val finalOutput = sd.constant(outputNames[0],
+                            org.nd4j.linalg.factory.Nd4j.zeros(inputVariable.dataType(), *shapeLongs))
+                        return mapOf(outputNames[0] to listOf(finalOutput))
+                    }
+                }
+            }
+
+            val finalOutput = sd.reshape(outputNames[0], inputVariable, shapeVar)
             return mapOf(outputNames[0] to listOf(finalOutput))
         }
-
     }
 }

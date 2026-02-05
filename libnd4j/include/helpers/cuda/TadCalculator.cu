@@ -57,15 +57,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     THROW_EXCEPTION("Failed to evaluate dimensions to exclude");
   }
 
-  bool hasSize1Dimension = false;
-  for (auto dim : dimensions) {
-    if (shape::shapeOf(shapeInfo)[dim] == 1) {
-      hasSize1Dimension = true;
-      break;
-    }
-  }
-
-  if (dimsToExclude->size() == 0 || dimsToExclude->size() == rank || hasSize1Dimension) {
+  if (dimsToExclude->size() == 0 || dimsToExclude->size() == rank) {
     const LongType totalElements = shape::length(shapeInfo);
     
     auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));

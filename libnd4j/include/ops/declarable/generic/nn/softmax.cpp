@@ -39,10 +39,15 @@ CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
-  REQUIRE_TRUE(dim < rank, 0,
-               "SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, "
+  // Normalize negative dimension to positive (e.g., -1 -> rank-1)
+  if (dim < 0) {
+    dim += rank;
+  }
+
+  REQUIRE_TRUE(dim >= 0 && dim < rank, 0,
+               "SOFTMAX OP: the value of input integer parameter (dimension) must be in range [0, %i), "
                "but got dimension = %i instead !",
                rank, dim);
 
@@ -56,12 +61,17 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto softmaxedOut = INPUT_VARIABLE(2);
   auto gradI = OUTPUT_VARIABLE(0);
-  
-  const int rank = input->rankOf();
-  const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
-  REQUIRE_TRUE(dim < rank, 0,
-               "SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, "
+  const int rank = input->rankOf();
+  int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+
+  // Normalize negative dimension to positive (e.g., -1 -> rank-1)
+  if (dim < 0) {
+    dim += rank;
+  }
+
+  REQUIRE_TRUE(dim >= 0 && dim < rank, 0,
+               "SOFTMAX_BP OP: the value of input integer parameter (dimension) must be in range [0, %i), "
                "but got dimension = %i instead !",
                rank, dim);
 

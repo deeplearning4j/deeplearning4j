@@ -142,6 +142,7 @@ void pad(LaunchContext* context, const int mode, NDArray& input, NDArray& paddin
   const auto xType = input.dataType();
   const auto yType = paddings.dataType();
 
+  // dim3 convention: x=threadsPerBlock, y=blocksPerGrid, z=sharedMem
   BUILD_DOUBLE_SELECTOR(
       xType, yType, padCudaLauncher,
       (padLaunch.y, padLaunch.x, padLaunch.z, context->getCudaStream(), mode, input.specialBuffer(),

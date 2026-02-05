@@ -22,6 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/MmulHelper.h>
@@ -411,10 +412,10 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
   int lwork = 0;
   int *d_info = nullptr;
   // allocate memory for permutation vector
-  auto err = cudaMalloc((void **)&d_info, sizeof(LongType));
-  if (err) {
-    throw cuda_exception::build("helpers::lup_: Cannot allocate memory for solver info buffer", err);
-  }
+  int lupDevId = 0; cudaGetDevice(&lupDevId);
+  d_info = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), lupDevId, nullptr));
+  if (d_info == nullptr) THROW_EXCEPTION("helpers::lup_: Cannot allocate memory for solver info buffer");
+  cudaError_t err;
 
   DataType dtype = input->dataType();
   switch (dtype) {  // there are two implementations with cublas for LUP decomposition - double and float
@@ -428,10 +429,8 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
         throw cuda_exception::build("helpers::lup_: Cannot create cuSolver handle", status);
       }
 
-      err = cudaMalloc((void **)&d_work, sizeof(float) * lwork);
-      if (err) {
-        throw cuda_exception::build("helpers::lup_: Cannot allocate memory for solver data buffer", err);
-      }
+      d_work = reinterpret_cast<double*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(float) * lwork, lupDevId, nullptr));
+      if (d_work == nullptr) THROW_EXCEPTION("helpers::lup_: Cannot allocate memory for solver data buffer");
 
       if (permutation == nullptr) {
         status = cusolverDnDgetrf(*cusolverH, n, n, matrix, n, d_work, nullptr, d_info);
@@ -460,10 +459,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
           permutation->assign(&permutVector);
         }
       }
-      err = cudaFree(d_work);
-      if (err) {
-        throw cuda_exception::build("helpers::lup_: Cannot deallocate memory for solver data buffer", err);
-      }
+      sd::memory::CudaMemoryPool::getInstance().free(d_work, lupDevId, nullptr);
     } break;
     case FLOAT32: {
       float *matrix = reinterpret_cast<float *>(input->specialBuffer());
@@ -474,10 +470,8 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
         throw cuda_exception::build("helpers::lup_: Cannot create cuSolver handle", status);
       }
 
-      err = cudaMalloc((void **)&d_work, sizeof(float) * lwork);
-      if (err) {
-        throw cuda_exception::build("helpers::lup_: Cannot allocate memory for solver data buffer", err);
-      }
+      d_work = reinterpret_cast<float*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(float) * lwork, lupDevId, nullptr));
+      if (d_work == nullptr) THROW_EXCEPTION("helpers::lup_: Cannot allocate memory for solver data buffer (float)");
 
       if (permutation == nullptr)
         status = cusolverDnSgetrf(*cusolverH, n, n, matrix, n, d_work, nullptr, d_info);
@@ -498,19 +492,13 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
           permutation->assign(&permutVector);
         }
       }
-      err = cudaFree(d_work);
-      if (err) {
-        throw cuda_exception::build("helpers::lup_: Cannot deallocate memory for solver data buffer", err);
-      }
+      sd::memory::CudaMemoryPool::getInstance().free(d_work, lupDevId, nullptr);
     }
   }
   if (CUSOLVER_STATUS_SUCCESS != status) {
     throw cuda_exception::build("helpers::lup_: Cannot make LU decomposition", status);
   }
-  err = cudaFree(d_info);
-  if (err) {
-    throw cuda_exception::build("helpers::lup_: Cannot deallocate memory for solver info buffer", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(d_info, lupDevId, nullptr);
 
   input->tickWriteDevice();
 }
@@ -979,14 +967,12 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempOutput->shapeInfo(), &dims);
   const LongType batchSize = packX->numberOfTads();
   int *dInfoArray = nullptr;
-  auto err = cudaMalloc((void **)&dArrayBatch, sizeof(F *) * batchSize);
-  if (err) {
-    throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver batch data buffer", err);
-  }
-  err = cudaMalloc((void **)&dInfoArray, sizeof(LongType) * batchSize);
-  if (err) {
-    throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver errors buffer", err);
-  }
+  int cholDevId = 0; cudaGetDevice(&cholDevId);
+  dArrayBatch = reinterpret_cast<F**>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(F *) * batchSize, cholDevId, nullptr));
+  if (dArrayBatch == nullptr) THROW_EXCEPTION("helpers::cholesky_: Cannot allocate memory for solver batch data buffer");
+  dInfoArray = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType) * batchSize, cholDevId, nullptr));
+  if (dInfoArray == nullptr) THROW_EXCEPTION("helpers::cholesky_: Cannot allocate memory for solver errors buffer");
+  cudaError_t err;
   auto stream = context->getCudaStream();
   fillBatchKernel<F><<<1, batchSize, 128, *stream>>>(dArrayBatch, reinterpret_cast<F *>(tempOutput->specialBuffer()),
                                                      packX->specialOffsets(), batchSize);
@@ -1010,14 +996,8 @@ Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool 
                                                           n);
   sd::DebugHelper::checkErrorCode(stream, "adjustResultsKernel failed");
 
-  err = cudaFree(dArrayBatch);
-  if (err) {
-    throw cuda_exception::build("helpers::cholesky_: Cannot deallocate memory for solver batch data buffer", err);
-  }
-  err = cudaFree(dInfoArray);
-  if (err) {
-    throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver errors buffer", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(dArrayBatch, cholDevId, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(dInfoArray, cholDevId, nullptr);
 
   if (!inplace)
     output->assign(tempOutput);

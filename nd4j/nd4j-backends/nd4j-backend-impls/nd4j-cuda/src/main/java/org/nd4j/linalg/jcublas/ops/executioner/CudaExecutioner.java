@@ -228,9 +228,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         checkForCompression(op);
         op.validateDataTypes(null);
 
-        // normalizeAxis converts null, empty, or {-1} to empty array (meaning "reduce all")
-        // Empty array means "reduce all dimensions" in native code
+        // Normalize negative axes first (e.g., -1 → rank-1), then check for "reduce all"
         dimension = Shape.normalizeAxis(op.x().rank(), dimension);
+        if (Shape.wholeArrayDimension(dimension)) {
+            dimension = new long[0];
+        }
 
         // Validate dimensions are within rank bounds
         for (int i = 0; i < dimension.length; i++)
@@ -345,7 +347,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dim,
                         ((Variance) op).isBiasCorrected());
             }
-        } else if (op.y() != null) {
+        } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
+            // Only use Reduce3 for actual two-input reductions (dot, cosine, etc.)
+            // NOT for single-input reductions where y contains the axes tensor
             if (ret.isScalar()) {
                 Nd4j.getNativeOps().execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
                         x,
@@ -461,7 +465,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (dimArray != null && dimArray.data() != null) {
             dimLong = dimArray.toLongVector();
         }
-        val dimension = Shape.normalizeAxis(op.x().rank(), dimLong);
+
+        // Normalize negative axes first (e.g., -1 → rank-1), then check for "reduce all"
+        dimLong = Shape.normalizeAxis(op.x().rank(), dimLong);
+        if (Shape.wholeArrayDimension(dimLong)) {
+            dimLong = new long[0];
+        }
+
+        val dimension = dimLong;
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -543,7 +554,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (dimArray != null && dimArray.data() != null) {
             dimLong = dimArray.toLongVector();
         }
-        val dimension = Shape.normalizeAxis(op.x().rank(), dimLong);
+        // Normalize negative axes first, then check for "reduce all"
+        dimLong = Shape.normalizeAxis(op.x().rank(), dimLong);
+        if (Shape.wholeArrayDimension(dimLong)) {
+            dimLong = new long[0];
+        }
+        val dimension = dimLong;
 
         if (op.x().isEmpty()) {
             for (val d:dimension) {
@@ -646,7 +662,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             invoke(broadcastOp, oc);
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
-            invoke(indexAccumulation, oc, indexAccumulation.dimensions().toLongVector());
+            INDArray idxDims = indexAccumulation.dimensions();
+            long[] idxDimLong = (idxDims != null && idxDims.data() != null) ? idxDims.toLongVector() : new long[0];
+            invoke(indexAccumulation, oc, idxDimLong);
         } else if (op instanceof RandomOp) {
             exec((RandomOp) op, oc, Nd4j.getRandom());
         } else if (op instanceof CustomOp) {
@@ -778,8 +796,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        // normalizeAxis converts null, empty, or {-1} to empty array (meaning "reduce all")
+        // Normalize negative axes first, then check for "reduce all"
         dimension = Shape.normalizeAxis(x.rank(), dimension);
+        if (Shape.wholeArrayDimension(dimension)) {
+            dimension = new long[0];
+        }
 
         // Empty dimension array means "reduce all dimensions" (scalar output)
         if (dimension.length == 0) {
@@ -904,9 +925,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         checkForCompression(op);
 
-        // normalizeAxis converts null, empty, or {-1} to empty array (meaning "reduce all")
-        // Empty array means "reduce all dimensions" in native code
+        // Normalize negative axes first (e.g., -1 → rank-1), then check for "reduce all"
         dimension = Shape.normalizeAxis(x.rank(), dimension);
+        if (Shape.wholeArrayDimension(dimension)) {
+            dimension = new long[0];
+        }
 
         // FIXME: this should be moved down to C++ on per-op basis
         // reduce to scalar case, ReduceBool ops require special treatment
@@ -1018,7 +1041,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         extraArgs,
                         zb,
                         ((Variance) op).isBiasCorrected());
-            } else if (y != null) {
+            } else if (y != null && op.getOpType() == Op.Type.REDUCE3) {
+                // Only use Reduce3 for actual two-input reductions (dot, cosine, etc.)
                 Nd4j.getNativeOps().execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         extraArgs,
@@ -1056,7 +1080,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         } else {
 
-            if (y != null) {
+            if (y != null && op.getOpType() == Op.Type.REDUCE3) {
+                // Only use Reduce3 for actual two-input reductions (dot, cosine, etc.)
                 Nd4j.getNativeOps().execReduce3Tad(
                         xShapeInfoHostPointer,
                         op.opNum(),
@@ -1713,16 +1738,58 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public  INDArray[] exec(@NonNull CustomOp op) {
-        // Device-aware execution: switch to input array's device BEFORE any allocations
-        // This ensures output arrays are allocated on the same device as inputs
+        // Device-aware execution: ensure all inputs are on the same device as the output
+        // When an output is pre-specified (e.g., a.add(b) creates result on current device),
+        // we use the OUTPUT's device as target because the caller expects result there.
+        // This handles cross-device operations by migrating inputs to the output's device.
         List<INDArray> inputs = op.inputArguments();
-        if (inputs != null && !inputs.isEmpty()) {
+        List<INDArray> outputs = op.outputArguments();
+
+        // Determine target device: prefer output's device, fall back to first input's device
+        int targetDeviceId = -1;
+        if (outputs != null && !outputs.isEmpty()) {
+            INDArray firstOutput = outputs.get(0);
+            if (firstOutput != null) {
+                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
+            }
+        }
+        if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
             INDArray firstInput = inputs.get(0);
             if (firstInput != null) {
-                int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
-                int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-                    Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
+            }
+        }
+
+        if (targetDeviceId >= 0) {
+            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+            // Switch to target device
+            if (targetDeviceId != currentDeviceId) {
+                Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
+            }
+
+            // Check if any input arrays need migration when P2P is not available
+            if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && inputs != null) {
+                boolean migrationOccurred = false;
+
+                // Migrate all inputs that are on different devices
+                for (int i = 0; i < inputs.size(); i++) {
+                    INDArray input = inputs.get(i);
+                    if (input != null) {
+                        int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
+                        if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
+                            // Migrate this input to the target device
+                            INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
+                            // Replace in the input list directly
+                            inputs.set(i, migrated);
+                            migrationOccurred = true;
+                        }
+                    }
+                }
+
+                // Sync after migration to ensure data is fully transferred
+                if (migrationOccurred) {
+                    Nd4j.getExecutioner().commit();
                 }
             }
         }
@@ -1816,25 +1883,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (status != 0)
             throw ND4JOpExceptionUtils.opExecutionException(op, "Status code: " + status, null);
 
-        // check if input && output needs update
-        for (val in:op.inputArguments()) {
-            if (!in.isEmpty())
+        // Actualize pointers for context arrays (NOT op.inputArguments()/op.outputArguments()
+        // which are stale arrays from graph construction, not the current execution's arrays).
+        for (val in : context.getInputArrays()) {
+            if (in != null && !in.isEmpty() && in.data() != null)
                 ((BaseCudaDataBuffer) in.data()).actualizePointerAndIndexer();
         }
 
-        for (val out:op.outputArguments()) {
-            if (!out.isEmpty()) {
-                ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();
-                AtomicAllocator.getInstance().tickDeviceWrite(out);
-            }
-
-        }
-
-        // Also tick outputs from OpContext - these may be different from op.outputArguments().
-        // When using OpContext, the native code writes directly to context outputs, but the Java-side
-        // counter tracking only happened for op.outputArguments(). Without this, subsequent operations
-        // may incorrectly think the HOST buffer is "actual" and do an unwanted HOST->DEVICE sync,
-        // corrupting the data with stale/uninitialized HOST values.
         for (val out : context.getOutputArrays()) {
             if (out != null && !out.isEmpty() && out.data() != null) {
                 ((BaseCudaDataBuffer) out.data()).actualizePointerAndIndexer();

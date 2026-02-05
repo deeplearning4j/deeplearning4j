@@ -19,6 +19,7 @@
 #include <helpers/logger.h>
 #include <system/Environment.h>
 #include <atomic>
+#include <thread>
 #include <legacy/NativeOps.h>
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -30,6 +31,15 @@ extern std::atomic<size_t> g_dataBufferCount;
 extern std::atomic<size_t> g_dataBufferBytes;
 
 using OpaqueDataBuffer = sd::InteropDataBuffer;
+
+// CPU stubs for dbClose diagnostics (only meaningful on CUDA)
+void dbCloseGetDiagnostics(sd::LongType* outStats) {
+  for (int i = 0; i < 9; i++) outStats[i] = 0;
+}
+
+void dbCloseResetDiagnostics() {
+  // no-op on CPU
+}
 
 /**
  * CPU implementation of dbClose - closes and frees a DataBuffer.
@@ -43,19 +53,30 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbClose: dataBuffer is null");
 
+  if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+    auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
+    sd_printf("dbClose: called on buffer at %p, isConstant=%d, cachedLen=%lld, cachedPrimary=%p, cachedSpecial=%p, threadId=%llu\n",
+              dataBuffer, dataBuffer->isConstant.load() ? 1 : 0, (long long)dataBuffer->_cachedLenInBytes,
+              dataBuffer->_cachedPrimaryPtr, dataBuffer->_cachedSpecialPtr,
+              (unsigned long long)tid);
+    fflush(stdout);
+  }
+
   // Check constant flag FIRST (public field, safe to access)
   // Constant buffers should never be freed
   if(dataBuffer->isConstant.load(std::memory_order_acquire)) {
-    if(sd::Environment::getInstance().isVerbose()) {
+    if(sd::Environment::getInstance().isVerbose() || sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
       sd_printf("dbClose: skipping constant buffer at %p\n", dataBuffer);
+      fflush(stdout);
     }
     return;
   }
 
   if(!dataBuffer->tryClose()) {
     // Another thread already closed this buffer - do nothing
-    if(sd::Environment::getInstance().isVerbose()) {
+    if(sd::Environment::getInstance().isVerbose() || sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
       sd_printf("dbClose: buffer at %p already closed by another thread\n", dataBuffer);
+      fflush(stdout);
     }
     return;
   }
@@ -111,6 +132,16 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   // 2. tryClose() ensures only ONE thread executes this code
   // 3. We waited for all in-flight accesses to complete
   if(db != nullptr) {
+    if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+      sd_printf("dbClose: about to delete DataBuffer %p (primary=%p, special=%p, lenInBytes=%lld, isConstant=%d) for InteropDataBuffer %p\n",
+                db, db->primary(), db->special(), (long long)db->getLenInBytes(),
+                db->isConstant ? 1 : 0, dataBuffer);
+      fflush(stdout);
+    }
     delete db;
+    if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+      sd_printf("dbClose: successfully deleted DataBuffer for InteropDataBuffer %p\n", dataBuffer);
+      fflush(stdout);
+    }
   }
 }

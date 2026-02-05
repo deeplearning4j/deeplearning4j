@@ -24,12 +24,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.config.ModelConfig;
+import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -155,8 +157,14 @@ public class ModelParallelVLM implements AutoCloseable {
                     .policySpill(SpillPolicy.EXTERNAL)
                     .policyMirroring(MirroringPolicy.FULL)
                     .build();
-            MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(
-                    wsConfig, "ModelParallelVLM-" + device.toString());
+            String workspaceId = "ModelParallelVLM-" + device.toString();
+            MemoryWorkspace ws;
+            if (device.getDeviceType() == DeviceType.CUDA_GPU) {
+                ws = Nd4j.getWorkspaceManager().createNewWorkspace(
+                        wsConfig, workspaceId, device.getDeviceIndex());
+            } else {
+                ws = Nd4j.getWorkspaceManager().createNewWorkspace(wsConfig, workspaceId);
+            }
             deviceWorkspaces.put(device, ws);
         }
 
@@ -259,12 +267,40 @@ public class ModelParallelVLM implements AutoCloseable {
      */
     public String generate(File imageFile, String prompt, int maxNewTokens,
                           double temperature, boolean doSample) throws IOException {
+        return generateWithMetrics(imageFile, prompt, maxNewTokens, temperature, doSample).getText();
+    }
+
+    /**
+     * Generate text from an image file, returning detailed metrics.
+     *
+     * @param imageFile the image file
+     * @param prompt the text prompt
+     * @return the generation result with metrics
+     * @throws IOException if loading fails
+     */
+    public GenerationResult generateWithMetrics(File imageFile, String prompt) throws IOException {
+        return generateWithMetrics(imageFile, prompt, 512, 1.0, true);
+    }
+
+    /**
+     * Generate text from an image file with parameters, returning detailed metrics.
+     *
+     * @param imageFile the image file
+     * @param prompt the text prompt
+     * @param maxNewTokens maximum tokens to generate
+     * @param temperature sampling temperature
+     * @param doSample whether to sample
+     * @return the generation result with metrics
+     * @throws IOException if loading fails
+     */
+    public GenerationResult generateWithMetrics(File imageFile, String prompt, int maxNewTokens,
+                                                double temperature, boolean doSample) throws IOException {
         checkNotClosed();
 
         // Preprocess image on vision encoder device
         INDArray image = imagePreprocessor.preprocessOnDevice(imageFile, visionEncoderDevice);
 
-        return generateFromImage(image, prompt, maxNewTokens, temperature, doSample);
+        return generateFromImageWithMetrics(image, prompt, maxNewTokens, temperature, doSample);
     }
 
     /**
@@ -279,6 +315,21 @@ public class ModelParallelVLM implements AutoCloseable {
      */
     public String generateFromImage(INDArray image, String prompt, int maxNewTokens,
                                     double temperature, boolean doSample) {
+        return generateFromImageWithMetrics(image, prompt, maxNewTokens, temperature, doSample).getText();
+    }
+
+    /**
+     * Generate text from a preprocessed image tensor, returning detailed metrics.
+     *
+     * @param image the preprocessed image tensor
+     * @param prompt the text prompt
+     * @param maxNewTokens maximum tokens to generate
+     * @param temperature sampling temperature
+     * @param doSample whether to sample
+     * @return the generation result with metrics
+     */
+    public GenerationResult generateFromImageWithMetrics(INDArray image, String prompt, int maxNewTokens,
+                                                         double temperature, boolean doSample) {
         checkNotClosed();
 
         // Ensure image is on vision encoder device
@@ -296,7 +347,9 @@ public class ModelParallelVLM implements AutoCloseable {
 
         // Step 3: Encode prompt on embed tokens device
         Encoding promptEncoding = tokenizer.encode(prompt, true);
-        INDArray textEmbeddings = embedTextOnDevice(promptEncoding.getIds());
+        int[] promptIds = promptEncoding.getIds();
+        int promptTokenCount = promptIds.length;
+        INDArray textEmbeddings = embedTextOnDevice(promptIds);
 
         // Step 4: Transfer text embeddings to decoder device if different
         if (!decoderDevice.equals(embedTokensDevice)) {
@@ -307,8 +360,13 @@ public class ModelParallelVLM implements AutoCloseable {
         INDArray combinedEmbeddings = Nd4j.concat(1, imageEmbeddings, textEmbeddings);
         ensureOnDevice(combinedEmbeddings, decoderDevice);
 
-        // Step 6: Autoregressive generation on decoder device
+        // Step 6: Autoregressive generation on decoder device with timing
         StringBuilder generated = new StringBuilder();
+        List<Integer> generatedTokenIds = new ArrayList<>();
+        long startNanos = System.nanoTime();
+        long firstTokenLatencyNanos = 0;
+        int generatedTokenCount = 0;
+        GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
         for (int i = 0; i < maxNewTokens; i++) {
             // Run decoder
@@ -321,8 +379,16 @@ public class ModelParallelVLM implements AutoCloseable {
             // Get next token (greedy or sampling)
             int nextTokenId = getNextToken(logits, temperature, doSample);
 
+            // Record first token latency
+            if (generatedTokenCount == 0) {
+                firstTokenLatencyNanos = System.nanoTime() - startNanos;
+            }
+            generatedTokenCount++;
+            generatedTokenIds.add(nextTokenId);
+
             // Check for EOS
             if (nextTokenId == tokenizer.getEosTokenId()) {
+                finishReason = GenerationResult.FinishReason.EOS;
                 break;
             }
 
@@ -338,7 +404,22 @@ public class ModelParallelVLM implements AutoCloseable {
             combinedEmbeddings = Nd4j.concat(1, combinedEmbeddings, newTokenEmbed);
         }
 
-        return generated.toString();
+        long totalNanos = System.nanoTime() - startNanos;
+        long totalMs = totalNanos / 1_000_000;
+        long firstTokenMs = firstTokenLatencyNanos / 1_000_000;
+        int[] tokenIdArray = generatedTokenIds.stream().mapToInt(Integer::intValue).toArray();
+
+        return GenerationResult.builder()
+                .text(generated.toString())
+                .tokenIds(tokenIdArray)
+                .generatedTokenCount(generatedTokenCount)
+                .promptTokenCount(promptTokenCount)
+                .totalTokenCount(promptTokenCount + generatedTokenCount)
+                .finishReason(finishReason)
+                .firstTokenLatencyMs(firstTokenMs)
+                .generationTimeMs(totalMs)
+                .tokensPerSecond(totalNanos > 0 ? (generatedTokenCount * 1_000_000_000.0) / totalNanos : 0)
+                .build();
     }
 
     /**

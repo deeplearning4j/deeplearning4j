@@ -35,20 +35,36 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // When input types differ, cast the mismatched input to the output type.
+  // All fast-path kernels (fused, pairwiseTransform, broadcast, scalar) use
+  // single-type templates and will misread memory if types don't match.
+  NDArray *castX = nullptr, *castY = nullptr;
+  auto cleanupCasts = [&]() { delete castX; delete castY; };
+  if (x->dataType() != z->dataType()) {
+    castX = x->cast(z->dataType());
+    x = castX;
+  }
+  if (y->dataType() != z->dataType()) {
+    castY = y->cast(z->dataType());
+    y = castY;
+  }
+
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   // This is the most common case in BERT (residual connections, etc.)
   if (x->isSameShape(y)) {
-    // Ultra-fast path for contiguous same-shape arrays
+    // Ultra-fast path for contiguous same-shape same-type arrays
     const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
     const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
     const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
 
     if (xContiguous && yContiguous && zContiguous) {
       helpers::fusedAddContiguous(*x, *y, *z);
+      cleanupCasts();
       return Status::OK;
     }
 
     x->applyPairwiseTransform(pairwise::Add, y, z, nullptr);
+    cleanupCasts();
     return Status::OK;
   }
 
@@ -58,10 +74,12 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
 
   if (yLen == 1) {
     x->applyScalarArr(scalar::Add, y, z);
+    cleanupCasts();
     return Status::OK;
   }
   if (xLen == 1) {
     y->applyScalarArr(scalar::Add, x, z);
+    cleanupCasts();
     return Status::OK;
   }
 
@@ -89,11 +107,20 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
 
       if (xContiguous && yContiguous && zContiguous) {
         helpers::fusedAdd1DLast(*x, *y, *z);
+        cleanupCasts();
         return Status::OK;
       }
 
       std::vector<sd::LongType> dims = {xRank - 1};
-      x->applyBroadcast(broadcast::Add, &dims, y, z);
+      if (yRank > 1) {
+        std::vector<sd::LongType> yShape = {yLen};
+        auto yReshaped = y->reshape(y->ordering(), yShape);
+        x->applyBroadcast(broadcast::Add, &dims, yReshaped, z);
+        delete yReshaped;
+      } else {
+        x->applyBroadcast(broadcast::Add, &dims, y, z);
+      }
+      cleanupCasts();
       return Status::OK;
     }
   }
@@ -109,7 +136,15 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
     }
     if (compatible && (xRank == 1 || x->sizeAt(-1) == y->sizeAt(-1))) {
       std::vector<sd::LongType> dims = {yRank - 1};
-      y->applyBroadcast(broadcast::Add, &dims, x, z);
+      if (xRank > 1) {
+        std::vector<sd::LongType> xShape = {xLen};
+        auto xReshaped = x->reshape(x->ordering(), xShape);
+        y->applyBroadcast(broadcast::Add, &dims, xReshaped, z);
+        delete xReshaped;
+      } else {
+        y->applyBroadcast(broadcast::Add, &dims, x, z);
+      }
+      cleanupCasts();
       return Status::OK;
     }
   }
@@ -134,12 +169,16 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
       }
     }
     if (allTrailingMatch && leadingOnes > 0 && leadingOnes < yRank) {
-      // y broadcasts along first 'leadingOnes' dimensions
       std::vector<sd::LongType> dims;
+      std::vector<sd::LongType> yShape;
       for (int i = leadingOnes; i < xRank; i++) {
         dims.push_back(i);
+        yShape.push_back(y->sizeAt(i));
       }
-      x->applyBroadcast(broadcast::Add, &dims, y, z);
+      auto yReshaped = y->reshape(y->ordering(), yShape);
+      x->applyBroadcast(broadcast::Add, &dims, yReshaped, z);
+      delete yReshaped;
+      cleanupCasts();
       return Status::OK;
     }
   }
@@ -163,21 +202,28 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
     }
     if (allTrailingMatch && leadingOnes > 0 && leadingOnes < xRank) {
       std::vector<sd::LongType> dims;
+      std::vector<sd::LongType> xShape;
       for (int i = leadingOnes; i < yRank; i++) {
         dims.push_back(i);
+        xShape.push_back(x->sizeAt(i));
       }
-      y->applyBroadcast(broadcast::Add, &dims, x, z);
+      auto xReshaped = x->reshape(x->ordering(), xShape);
+      y->applyBroadcast(broadcast::Add, &dims, xReshaped, z);
+      delete xReshaped;
+      cleanupCasts();
       return Status::OK;
     }
   }
 
   // Standard path with broadcasting support
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Add(), x, y, z);
-  if (tZ == nullptr)
+  if (tZ == nullptr) {
+    cleanupCasts();
     return Status::KERNEL_FAILURE;
-  else if (tZ != z && !tZ->isEmpty()) {
+  } else if (tZ != z && !tZ->isEmpty()) {
     OVERWRITE_RESULT(tZ);
   }
+  cleanupCasts();
   return Status::OK;
 }
 

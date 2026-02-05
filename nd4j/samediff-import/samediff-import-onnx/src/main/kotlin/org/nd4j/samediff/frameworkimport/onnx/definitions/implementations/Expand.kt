@@ -34,6 +34,18 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * A port of expand.py from onnx tensorflow for samediff:
  * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/expand.py
  *
+ * ONNX Expand broadcasts the input tensor to a target shape using numpy-style broadcasting rules.
+ * The target shape may have more dimensions than the input, and dimensions with size 1 in the
+ * input can be broadcast to larger sizes.
+ *
+ * This implementation uses the multiply-by-ones approach which works with numpy broadcasting:
+ * - Creates a tensor of ones with the target shape
+ * - Multiplies input by ones, letting numpy broadcasting handle dimension expansion
+ *
+ * Note: This approach relies on numpy broadcasting semantics. If input has dimension > 1
+ * where target has dimension 1, the result will have the input's larger dimension (not shrink).
+ * This matches the behavior expected by many ONNX models that rely on this pattern.
+ *
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["Expand"],frameworkName = "onnx")
@@ -49,19 +61,22 @@ class Expand : PreImportHook  {
         importGraph: ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
-        var inputVariable = sd.getVariable(op.inputsToOp[0])
+        val inputVariable = sd.getVariable(op.inputsToOp[0])
         val newShape = sd.getVariable(op.inputsToOp[1])
         val outputVarName = outputNames[0]
 
-        var outputVar: SDVariable = if(inputVariable.dataType() == DataType.BOOL) {
-            val ones = sd.create(newShape,DataType.INT8)
+        // Use multiply-by-ones approach with numpy broadcasting
+        // This handles cases where the target shape may be smaller in some dimensions than input
+        // (numpy broadcasting takes the max of each dimension)
+        val outputVar: SDVariable = if(inputVariable.dataType() == DataType.BOOL) {
+            val ones = sd.create(newShape, DataType.INT8)
             val assignedOnes = ones.assign(1.0)
-            val r = sd.castTo(inputVariable,DataType.INT8).mul(assignedOnes)
-            sd.castTo(outputVarName,r,DataType.BOOL)
+            val r = sd.castTo(inputVariable, DataType.INT8).mul(assignedOnes)
+            sd.castTo(outputVarName, r, DataType.BOOL)
         } else {
-            val ones = sd.create(newShape,inputVariable.dataType())
+            val ones = sd.create(newShape, inputVariable.dataType())
             val assignedOnes = ones.assign(1.0)
-            assignedOnes.mul(outputVarName,inputVariable)
+            assignedOnes.mul(outputVarName, inputVariable)
         }
 
         return mapOf(outputVar.name() to listOf(outputVar))

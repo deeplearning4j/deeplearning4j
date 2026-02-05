@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
@@ -59,43 +60,30 @@ public class CudaDeallocator implements Deallocator {
 
     @Override
     public void deallocate() {
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
+        }
+
         synchronized (lock) {
-            // Check constant flag FIRST - constant buffers (like shape info)
-            // should NEVER be freed. Without this check, shape info buffers would be
-            // deallocated causing use-after-free crashes when native code accesses them.
-            if (isConstant) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Skipping deallocation of constant buffer");
-                }
+            if (isConstant || deallocated) {
                 return;
             }
 
-            // Check if already deallocated to prevent double-free
-            if (deallocated) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Skipping already-deallocated buffer");
-                }
-                return;
-            }
-
-            // Check if buffer is already null to prevent double-free.
-            // The OpaqueDataBuffer is shared with OpaqueDataBufferDeallocator.
-            // Whichever deallocator runs first should set the pointer to null,
-            // and the other should see isNull() == true and skip.
             if (opaqueDataBuffer == null || opaqueDataBuffer.isNull()) {
-                if (log.isTraceEnabled()) {
-                    log.trace("Skipping deallocation of already-freed buffer");
-                }
                 deallocated = true;
                 return;
             }
 
-            // Mark as deallocated BEFORE actual deallocation to prevent races
+            if (!opaqueDataBuffer.tryMarkForDeallocation()) {
+                deallocated = true;
+                return;
+            }
+
             deallocated = true;
         }
 
-        //update the log event with the actual time of de allocation and then
-        //perform logging
         if(logEvent != null) {
             logEvent.setEventTimeMs(System.currentTimeMillis());
             EventLogger.getInstance().log(logEvent);
@@ -105,20 +93,15 @@ public class CudaDeallocator implements Deallocator {
         boolean switchedDevice = false;
 
         if (currentDevice != targetDevice) {
-            // Switch to the target device and reset cached context
             Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
             switchedDevice = true;
         }
 
         try {
-            // Synchronize the device before deleting to ensure all async ops are complete
             Nd4j.getExecutioner().commit();
-
             NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(opaqueDataBuffer);
-
             opaqueDataBuffer.setNull();
         } finally {
-            // Restore original device context
             if (switchedDevice) {
                 Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
             }

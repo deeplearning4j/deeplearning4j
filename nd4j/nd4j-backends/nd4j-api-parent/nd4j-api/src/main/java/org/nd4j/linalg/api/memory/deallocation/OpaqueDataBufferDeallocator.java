@@ -21,32 +21,38 @@
 package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
+import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Deallocator for OpaqueDataBuffer instances.
  * This class integrates OpaqueDataBuffer with the DeallocatorService,
- * ensuring reliable cleanup of native DataBuffer memory without relying on
- * unreliable Java finalizers.
+ * ensuring reliable cleanup of native DataBuffer memory.
  *
- * <p>When an OpaqueDataBuffer is created, an instance of this deallocator
- * is registered with the DeallocatorService, which will call deallocate()
- * when the Java object becomes unreachable.</p>
+ * <p>IMPORTANT: This class implements Deallocatable but NOT Deallocator.
+ * The deallocator() method returns a separate BufferDeallocator instance.
+ * This separation is critical: DeallocatableReference (PhantomReference) stores
+ * the Deallocator returned by deallocator(). If deallocator() returned 'this',
+ * the DeallocatableReference would hold a strong reference to the referent,
+ * preventing the PhantomReference from ever being enqueued, which means the
+ * GC-based cleanup path would never fire.</p>
  *
  * @author Adam Gibson
  * @see DeallocatorService
  * @see OpaqueDataBuffer
  */
 @Slf4j
-public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
-    private OpaqueDataBuffer buffer;
+public class OpaqueDataBufferDeallocator implements Deallocatable {
     private final long uniqueId;
     private final int targetDevice;
-    private volatile boolean deallocated = false;
-    private volatile boolean constant = false;
+    private final BufferDeallocator innerDeallocator;
 
     /**
      * Creates a new deallocator for the given OpaqueDataBuffer.
@@ -54,93 +60,15 @@ public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
      * @param buffer The OpaqueDataBuffer to manage
      * @param uniqueId Unique identifier for tracking
      * @param targetDevice The device this buffer is allocated on
+     * @param allocationBytes The size of the allocation in bytes
      */
-    public OpaqueDataBufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, int targetDevice) {
+    public OpaqueDataBufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, int targetDevice, long allocationBytes) {
         if (buffer == null) {
             throw new IllegalArgumentException("OpaqueDataBuffer cannot be null");
         }
-        this.buffer = buffer;
         this.uniqueId = uniqueId;
         this.targetDevice = targetDevice;
-    }
-
-    @Override
-    public void deallocate() {
-        // Check constant flag first - constant buffers (like shape info) should never be freed
-        if (constant) {
-            return;
-        }
-
-        if (deallocated) {
-            return;
-        }
-
-        synchronized (this) {
-            if (constant || deallocated) {
-                return;
-            }
-
-            try {
-                if (buffer != null && !buffer.isNull()) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("Deallocating OpaqueDataBuffer with uniqueId: {}", uniqueId);
-                    }
-
-                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                    int bufferDevice = targetDevice;
-                    try {
-                        bufferDevice = buffer.deviceId();
-                    } catch (Exception e) {
-                        // Fall back to targetDevice if native query fails
-                    }
-
-                    int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
-                    if (deviceCount <= 0 || bufferDevice < 0 || bufferDevice >= deviceCount) {
-                        if (Nd4j.getEnvironment().isDebug()) {
-                            log.debug("OpaqueDataBuffer deallocator: invalid buffer deviceId={} (devices={}); using targetDevice={}",
-                                    bufferDevice, deviceCount, targetDevice);
-                        }
-                        bufferDevice = targetDevice;
-                    }
-                    if (deviceCount > 0 && (bufferDevice < 0 || bufferDevice >= deviceCount)) {
-                        if (Nd4j.getEnvironment().isDebug()) {
-                            log.debug("OpaqueDataBuffer deallocator: invalid targetDevice={} (devices={}); using currentDevice={}",
-                                    targetDevice, deviceCount, currentDevice);
-                        }
-                        bufferDevice = currentDevice;
-                    }
-                    boolean switchedDevice = false;
-
-                    if (currentDevice != bufferDevice) {
-                        // Switch to the actual buffer device and reset cached context
-                        Nd4j.getAffinityManager().unsafeSetDevice(bufferDevice);
-                        switchedDevice = true;
-                    }
-
-                    try {
-                        // Synchronize the device before closing to ensure all async ops are complete
-                        Nd4j.getExecutioner().commit();
-
-                        // Call native cleanup
-                        // Note: setNull() is called immediately after to prevent any potential
-                        // double-free from JavaCPP's NativeDeallocator. The retainReference()
-                        // called during creation should prevent automatic deallocation.
-                        Nd4j.getNativeOps().dbClose(buffer);
-                        buffer.setNull();
-                    } finally {
-                        // Restore original device context
-                        if (switchedDevice) {
-                            Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Error deallocating OpaqueDataBuffer with uniqueId: " + uniqueId, e);
-            } finally {
-                buffer = null;
-                deallocated = true;
-            }
-        }
+        this.innerDeallocator = new BufferDeallocator(buffer, uniqueId, targetDevice, allocationBytes);
     }
 
     @Override
@@ -150,7 +78,7 @@ public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
 
     @Override
     public Deallocator deallocator() {
-        return this;
+        return innerDeallocator;
     }
 
     @Override
@@ -158,43 +86,155 @@ public class OpaqueDataBufferDeallocator implements Deallocatable, Deallocator {
         return targetDevice;
     }
 
-    @Override
     public boolean isConstant() {
-        return constant;
+        return innerDeallocator.isConstant();
+    }
+
+    public void setConstant(boolean constant) {
+        innerDeallocator.setConstant(constant);
+    }
+
+    public boolean isDeallocated() {
+        return innerDeallocator.isDeallocated();
+    }
+
+    public OpaqueDataBuffer getBuffer() {
+        return innerDeallocator.getBuffer();
     }
 
     /**
-     * Updates the constant flag for this deallocator.
-     *
-     * @param constant true if this buffer should never be deallocated
+     * Marks this deallocator as having completed deallocation.
+     * Called by OpaqueDataBuffer.closeBuffer() after it performs dbClose directly.
      */
-    @Override
-    public void setConstant(boolean constant) {
-        synchronized (this) {
-            // If already deallocated, setting constant won't help - but don't throw,
-            // as this could be called during cleanup
-            if (deallocated && constant) {
-                log.warn("setConstant(true) called on already-deallocated OpaqueDataBuffer - this may indicate a race condition");
+    public void markDeallocated() {
+        innerDeallocator.markDeallocated();
+    }
+
+    /**
+     * The actual Deallocator implementation. This is a SEPARATE object from the
+     * Deallocatable (OpaqueDataBufferDeallocator) to avoid the strong reference cycle
+     * that would prevent PhantomReference enqueuing.
+     */
+    @Slf4j
+    static class BufferDeallocator implements Deallocator {
+        private OpaqueDataBuffer buffer;
+        private final long uniqueId;
+        private final int targetDevice;
+        private final long allocationBytes;
+        private final AtomicBoolean deallocated = new AtomicBoolean(false);
+        private volatile boolean constant = false;
+
+        BufferDeallocator(OpaqueDataBuffer buffer, long uniqueId, int targetDevice, long allocationBytes) {
+            this.buffer = buffer;
+            this.uniqueId = uniqueId;
+            this.targetDevice = targetDevice;
+            this.allocationBytes = allocationBytes;
+        }
+
+        @Override
+        public void deallocate() {
+            if (constant || deallocated.get()) {
+                return;
             }
+
+            if (DeallocatorService.getShutdownInProgress().get()) {
+                return;
+            }
+
+            synchronized (this) {
+                if (constant || deallocated.get()) {
+                    return;
+                }
+
+                try {
+                    if (buffer != null && !buffer.isNull()) {
+                        if (!buffer.tryMarkForDeallocation()) {
+                            // Another deallocator (e.g. explicit closeBuffer) already claimed this buffer
+                            return;
+                        }
+
+                        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                        int bufferDevice = targetDevice;
+                        try {
+                            bufferDevice = buffer.deviceId();
+                        } catch (Exception e) {
+                            // Fall back to targetDevice if native query fails
+                        }
+
+                        int deviceCount = Nd4j.getAffinityManager().getNumberOfDevices();
+                        if (deviceCount <= 0 || bufferDevice < 0 || bufferDevice >= deviceCount) {
+                            bufferDevice = targetDevice;
+                        }
+                        if (deviceCount > 0 && (bufferDevice < 0 || bufferDevice >= deviceCount)) {
+                            bufferDevice = currentDevice;
+                        }
+                        boolean switchedDevice = false;
+
+                        if (currentDevice != bufferDevice) {
+                            Nd4j.getAffinityManager().unsafeSetDevice(bufferDevice);
+                            switchedDevice = true;
+                        }
+
+                        try {
+                            Nd4j.getExecutioner().commit();
+                            Nd4j.getNativeOps().dbClose(buffer);
+                            buffer.setNull();
+
+                            if (allocationBytes > 0) {
+                                DeviceDescriptor actualDevice = resolveDeviceDescriptor(bufferDevice);
+                                if (actualDevice != null) {
+                                    DeviceMemoryManager.getInstance().recordDeallocation(actualDevice, allocationBytes);
+                                }
+                            }
+                        } finally {
+                            if (switchedDevice) {
+                                Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Error deallocating OpaqueDataBuffer with uniqueId: " + uniqueId, e);
+                } finally {
+                    buffer = null;
+                    deallocated.set(true);
+                }
+            }
+        }
+
+        @Override
+        public boolean isConstant() {
+            return constant;
+        }
+
+        @Override
+        public void setConstant(boolean constant) {
             this.constant = constant;
         }
-    }
 
-    /**
-     * Returns whether this deallocator has already been invoked.
-     *
-     * @return true if deallocate() has been called
-     */
-    public boolean isDeallocated() {
-        return deallocated;
-    }
+        boolean isDeallocated() {
+            return deallocated.get();
+        }
 
-    /**
-     * Returns the OpaqueDataBuffer being managed (may be null if deallocated).
-     *
-     * @return The managed buffer or null
-     */
-    public OpaqueDataBuffer getBuffer() {
-        return buffer;
+        OpaqueDataBuffer getBuffer() {
+            return buffer;
+        }
+
+        void markDeallocated() {
+            synchronized (this) {
+                this.buffer = null;
+                this.deallocated.set(true);
+            }
+        }
+
+        private static DeviceDescriptor resolveDeviceDescriptor(int deviceId) {
+            BackendRegistry registry = BackendRegistry.getInstance();
+            if (deviceId >= 0) {
+                DeviceDescriptor byId = registry.getDevice(DeviceDescriptor.cuda(deviceId).getDeviceId());
+                return byId != null ? byId : DeviceDescriptor.cuda(deviceId);
+            }
+
+            DeviceDescriptor cpu = registry.getDefaultCpuDevice();
+            return cpu != null ? cpu : DeviceDescriptor.cpu();
+        }
     }
 }

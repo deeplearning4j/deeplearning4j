@@ -333,11 +333,18 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
       }
 
 
-      // Update indices list for actual slicing operation
+      // Update indices list for actual slicing operation.
+      // Always push a triplet per dimension to maintain the rank*3 contract
+      // expected by calcSubArrShapeInfoAndOffset. For empty slices (size_i==0),
+      // push begin==end to signal an empty range.
       if (indicesList != nullptr) {
         if (size_i > 0 || shrink_i) {
           indicesList->push_back(begin_idx);
           indicesList->push_back(end_idx);
+          indicesList->push_back(stride_idx);
+        } else {
+          indicesList->push_back(begin_idx);
+          indicesList->push_back(begin_idx);
           indicesList->push_back(stride_idx);
         }
       }

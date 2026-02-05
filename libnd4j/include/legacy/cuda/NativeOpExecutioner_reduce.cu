@@ -317,14 +317,10 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void con
     std::string errorMessage = "NativeOpExecutioner::execReduce3 requires Y operand to have X type. X type: " + sd::DataTypeUtils::asString(xType) + ", Y type: " + sd::DataTypeUtils::asString(yType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ,
                                      dZShapeInfo, allocationPointer, reductionPointer, nullptr),
-                        SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -357,17 +353,13 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, const vo
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3 requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   auto numBlocks = shape::length(hZShapeInfo);
   dim3 launchDims = getReduceDims(numBlocks);
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
       ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension,
              dimensionLength, 1, allocationPointer, xTadOnlyShapeInfo, xTadOffsets, yTadOnlyShapeInfo, yTadOffsets),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -396,14 +388,10 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext* lc, int opNum, vo
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3Scalar requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                         ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ,
                                      dZShapeInfo, allocationPointer, reductionPointer, nullptr),
-                        SD_COMMON_TYPES, SD_FLOAT_TYPES);
+                        SD_COMMON_TYPES, SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -437,7 +425,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext* lc, int opNum, const
       xType, zType, functions::reduce3::Reduce3,
       ::execAll(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo,
                 dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_COMMON_TYPES, SD_COMMON_TYPES);
 
   auto res = cudaStreamSynchronize(*stream);
   if (res != 0) {
@@ -473,18 +461,13 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext* lc, int opNum, const
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (!sd::DataTypeUtils::isR(zType)) {
-    std::string errorMessage = "NativeOpExecutioner::execReduce3TAD requires Z operand to have floating point data type. Z data type: "
-                               + sd::DataTypeUtils::asString(zType);
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
   auto numBlocks = shape::length(hZShapeInfo);
   dim3 launchDims = getReduceDims(numBlocks);
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::reduce3::Reduce3,
       ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension,
              dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, yTadShapeInfo, yTadOffsets),
-      SD_COMMON_TYPES, SD_FLOAT_TYPES);
+      SD_COMMON_TYPES, SD_COMMON_TYPES);
 
   auto res = cudaStreamSynchronize(*stream);
   if (res != 0) {

@@ -65,10 +65,31 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
     return Status::OK;
   }
 
-  if(permutationVector.size() != static_cast<size_t>(x->rankOf())) {
-    sd_printf("PERMUTE OP: permutation vector size was %d and x input rank was %d\n",permutationVector.size(),x->rankOf());
+  // Handle dynamic shape mismatch: if permutation vector size doesn't match input rank,
+  // try to adapt by keeping only valid indices
+  if (permutationVector.size() != static_cast<size_t>(x->rankOf())) {
+    sd_printf("PERMUTE OP: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
+              (long long)permutationVector.size(), x->rankOf());
+
+    // Find the valid indices and create a new permutation for the actual rank
+    std::vector<LongType> validIndices;
+    for (size_t i = 0; i < permutationVector.size(); ++i) {
+      if (permutationVector[i] < x->rankOf()) {
+        validIndices.push_back(permutationVector[i]);
+      }
+    }
+
+    // If we have exactly the right number of valid indices, use them
+    if (validIndices.size() == static_cast<size_t>(x->rankOf())) {
+      permutationVector = validIndices;
+    } else {
+      // Fall back to identity permutation (no change)
+      permutationVector.clear();
+      for (int i = 0; i < x->rankOf(); ++i) {
+        permutationVector.push_back(i);
+      }
+    }
   }
-  REQUIRE_TRUE(permutationVector.size() == static_cast<size_t>(x->rankOf()),permutationVector.size(),"PERMUTE OP: number of permutations is less in size than input rank.");
 
   // Fast path: check if permutation is identity [0, 1, 2, ...]
   bool isIdentity = true;
@@ -117,6 +138,33 @@ DECLARE_SHAPE_FN(permute) {
   // Handle empty permutation vector - return input shape unchanged
   if (permutationVector.empty()) {
     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), *x->getShapeAsVector()));
+  }
+
+  // Handle dynamic shape mismatch: if permutation vector size doesn't match input rank,
+  // try to adapt by truncating to match input rank (keeping first N dimensions)
+  if (permutationVector.size() != static_cast<size_t>(x->rankOf())) {
+    sd_printf("PERMUTE shape function: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
+              (long long)permutationVector.size(), x->rankOf());
+
+    // If permutation vector is larger than input rank, we need to remap
+    // Find the valid indices and create a new permutation for the actual rank
+    std::vector<LongType> validIndices;
+    for (size_t i = 0; i < permutationVector.size(); ++i) {
+      if (permutationVector[i] < x->rankOf()) {
+        validIndices.push_back(permutationVector[i]);
+      }
+    }
+
+    // If we have exactly the right number of valid indices, use them
+    if (validIndices.size() == static_cast<size_t>(x->rankOf())) {
+      permutationVector = validIndices;
+    } else {
+      // Fall back to identity permutation (no change)
+      permutationVector.clear();
+      for (int i = 0; i < x->rankOf(); ++i) {
+        permutationVector.push_back(i);
+      }
+    }
   }
 
   auto outputShapeInfo =

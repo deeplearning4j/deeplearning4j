@@ -135,6 +135,15 @@ static void gatherNDCudaLauncher(const int blocksPerGrid, const int threadsPerBl
 
 ///////////////////////////////////////////////////////////////////
 void gatherND(LaunchContext *context, NDArray &input, NDArray &indices, NDArray &output) {
+  // Early return if output or indices is empty - no work to do
+  // Note: scalars have lengthOf() == 1, so this won't affect scalar inputs/outputs
+  if (output.isEmpty()) {
+    return;
+  }
+  if (indices.isEmpty()) {
+    return;
+  }
+
   const int maxRank = sd::math::sd_max<int>(indices.rankOf(), sd::math::sd_max<int>(input.rankOf(), output.rankOf()));
 
 
@@ -146,7 +155,7 @@ void gatherND(LaunchContext *context, NDArray &input, NDArray &indices, NDArray 
 
   NDArray::prepareSpecialUse({&output}, {&input, &indices});
   BUILD_DOUBLE_SELECTOR(xType, yType, gatherNDCudaLauncher,
-                        (gatherNdDims.y, gatherNdDims.x, gatherNdDims.z, context->getCudaStream(), input.specialBuffer(),
+                        (gatherNdDims.x, gatherNdDims.y, gatherNdDims.z, context->getCudaStream(), input.specialBuffer(),
                          input.specialShapeInfo(), indices.specialBuffer(), indices.specialShapeInfo(),
                          output.specialBuffer(), output.specialShapeInfo()),
                         SD_COMMON_TYPES, SD_INDEXING_TYPES);

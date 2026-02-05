@@ -155,6 +155,8 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
   }
 
   sd::LongType rank = shapeInfoCast[0];
+
+
   if (rank < 0 || rank > SD_MAX_RANK) {
     std::string errorMessage;
     errorMessage += "createOpaqueNDArray: shapeInfo->primary() contains invalid rank: ";

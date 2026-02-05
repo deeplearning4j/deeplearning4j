@@ -22,6 +22,8 @@ package org.nd4j.linalg.api.device;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.factory.BackendRegistry;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,6 +89,7 @@ public class DeviceMemoryManager {
     // Fallback device when primary is full
     @Getter
     private volatile DeviceDescriptor fallbackDevice;
+    private volatile boolean defaultDeviceUserSet = false;
 
     // Configuration
     @Getter
@@ -99,11 +102,104 @@ public class DeviceMemoryManager {
     private final List<MemoryPressureCallback> pressureCallbacks = new ArrayList<>();
     private final ReentrantReadWriteLock callbackLock = new ReentrantReadWriteLock();
 
+    // =========================================================================
+    // Memory Simulation for Testing
+    // =========================================================================
+
+    /**
+     * Device ID constant for CPU in integer-based device routing.
+     * GPUs use indices 0, 1, 2, etc. CPU uses -1.
+     */
+    public static final int CPU_DEVICE_ID = -1;
+
+    /**
+     * Return value when NO device can accommodate allocation.
+     */
+    public static final int NO_DEVICE_AVAILABLE = -2;
+
+    /**
+     * Enable/disable memory simulation mode globally.
+     * When enabled, simulated free memory values override actual device queries.
+     */
+    private volatile boolean memorySimulationEnabled = false;
+
+    /**
+     * Simulated free memory per device (deviceId -> bytes).
+     * Uses integer device IDs: GPU indices (0, 1, 2...) or CPU_DEVICE_ID (-1).
+     */
+    private final Map<Integer, Long> simulatedFreeMemory = new ConcurrentHashMap<>();
+
+    /**
+     * Track simulated allocations to decrease simulated free memory.
+     */
+    private final Map<Integer, Long> simulatedAllocatedMemory = new ConcurrentHashMap<>();
+
     private DeviceMemoryManager() {
         // Initialize with CPU as default
         defaultDevice = DeviceDescriptor.cpu();
         fallbackDevice = DeviceDescriptor.cpu();
         registerDevice(defaultDevice);
+    }
+
+    private void ensureDevicesRegistered() {
+        boolean hasGpu = registeredDevices.values().stream()
+                .anyMatch(device -> device.getDeviceType().isGpu());
+
+        if (!hasGpu) {
+            try {
+                BackendRegistry registry = BackendRegistry.getInstance();
+                for (DeviceDescriptor device : registry.getAllDevices()) {
+                    registerDevice(device);
+                }
+                hasGpu = registeredDevices.values().stream()
+                        .anyMatch(device -> device.getDeviceType().isGpu());
+            } catch (Exception e) {
+                log.debug("DeviceMemoryManager: unable to auto-register devices: {}", e.getMessage());
+            }
+        }
+
+        if (!defaultDeviceUserSet && hasGpu &&
+                (defaultDevice == null || defaultDevice.getDeviceType() == DeviceType.CPU)) {
+            DeviceDescriptor preferred = null;
+            try {
+                preferred = BackendRegistry.getInstance().getDefaultGpuDevice();
+            } catch (Exception e) {
+                log.debug("DeviceMemoryManager: unable to resolve default GPU device: {}", e.getMessage());
+            }
+            if (preferred == null) {
+                preferred = registeredDevices.values().stream()
+                        .filter(device -> device.getDeviceType().isGpu())
+                        .min(Comparator.comparingInt(DeviceDescriptor::getDeviceIndex))
+                        .orElse(null);
+            }
+            if (preferred != null) {
+                defaultDevice = preferred;
+            }
+        }
+
+        if (fallbackDevice == null) {
+            DeviceDescriptor cpu = null;
+            try {
+                cpu = BackendRegistry.getInstance().getDefaultCpuDevice();
+            } catch (Exception e) {
+                log.debug("DeviceMemoryManager: unable to resolve default CPU device: {}", e.getMessage());
+            }
+            fallbackDevice = cpu != null ? cpu : DeviceDescriptor.cpu();
+            registerDevice(fallbackDevice);
+        }
+    }
+
+    private Integer simulationDeviceId(DeviceDescriptor device) {
+        if (device == null) {
+            return null;
+        }
+        if (device.getDeviceType() == DeviceType.CPU) {
+            return CPU_DEVICE_ID;
+        }
+        if (device.getDeviceType().isGpu()) {
+            return device.getDeviceIndex();
+        }
+        return null;
     }
 
     /**
@@ -202,6 +298,7 @@ public class DeviceMemoryManager {
         // Re-register default CPU device
         defaultDevice = DeviceDescriptor.cpu();
         fallbackDevice = DeviceDescriptor.cpu();
+        defaultDeviceUserSet = false;
         registerDevice(defaultDevice);
     }
 
@@ -253,16 +350,25 @@ public class DeviceMemoryManager {
      */
     public long getAvailableMemory(DeviceDescriptor device) {
         String id = device.getDeviceId();
-        long allocated = allocatedMemory.getOrDefault(id, new AtomicLong(0)).get();
         long cap = memoryCaps.getOrDefault(id, 0L);
+        long allocated = allocatedMemory.getOrDefault(id, new AtomicLong(0)).get();
+
+        Integer simId = simulationDeviceId(device);
+        if (memorySimulationEnabled && simId != null && simulatedFreeMemory.containsKey(simId)) {
+            long simulatedAvailable = getEffectiveFreeMemory(simId, device.getAvailableMemory());
+            if (cap > 0) {
+                return Math.max(0, Math.min(cap, simulatedAvailable));
+            }
+            return Math.max(0, simulatedAvailable);
+        }
 
         if (cap > 0) {
             // Capped: return remaining under cap
             return Math.max(0, cap - allocated);
-        } else {
-            // Unlimited: return device's available memory minus our allocations
-            return Math.max(0, device.getAvailableMemory() - allocated);
         }
+
+        // Unlimited: return device's available memory minus our allocations
+        return Math.max(0, device.getAvailableMemory() - allocated);
     }
 
     /**
@@ -306,6 +412,7 @@ public class DeviceMemoryManager {
     public void setDefaultDevice(DeviceDescriptor device) {
         registerDevice(device);
         this.defaultDevice = device;
+        this.defaultDeviceUserSet = true;
         log.info("Default device set to: {}", device.getDeviceId());
     }
 
@@ -360,6 +467,8 @@ public class DeviceMemoryManager {
      * @return best device, or fallback if none suitable
      */
     public DeviceDescriptor selectDeviceForAllocation(long bytes) {
+        ensureDevicesRegistered();
+
         // First try default device
         if (canAllocate(defaultDevice, bytes)) {
             return defaultDevice;
@@ -403,6 +512,24 @@ public class DeviceMemoryManager {
     }
 
     /**
+     * Select the best device for an allocation, preferring a specific device if possible.
+     *
+     * @param bytes allocation size
+     * @param preferred preferred device (checked first if non-null)
+     * @return selected device
+     */
+    public DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceDescriptor preferred) {
+        ensureDevicesRegistered();
+        if (preferred != null) {
+            registerDevice(preferred);
+            if (canAllocate(preferred, bytes)) {
+                return preferred;
+            }
+        }
+        return selectDeviceForAllocation(bytes);
+    }
+
+    /**
      * Select a device based on a routing policy.
      *
      * @param bytes allocation size
@@ -415,10 +542,8 @@ public class DeviceMemoryManager {
                 return selectPreferringType(bytes, DeviceType.CUDA_GPU, DeviceType.METAL_GPU);
             case PREFER_CPU:
                 return selectPreferringType(bytes, DeviceType.CPU);
-            case ROUND_ROBIN:
-                return selectRoundRobin(bytes);
-            case LEAST_LOADED:
-                return selectLeastLoaded(bytes);
+            case MOST_FREE:
+                return selectMostFree(bytes);
             case MEMORY_PRIORITY:
             default:
                 return selectDeviceForAllocation(bytes);
@@ -439,41 +564,76 @@ public class DeviceMemoryManager {
         return selectDeviceForAllocation(bytes);
     }
 
-    private int roundRobinIndex = 0;
-
-    private synchronized DeviceDescriptor selectRoundRobin(long bytes) {
-        List<DeviceDescriptor> devices = new ArrayList<>(registeredDevices.values());
-        if (devices.isEmpty()) return defaultDevice;
-
-        int attempts = devices.size();
-        while (attempts-- > 0) {
-            roundRobinIndex = (roundRobinIndex + 1) % devices.size();
-            DeviceDescriptor device = devices.get(roundRobinIndex);
-            if (canAllocate(device, bytes)) {
-                return device;
-            }
-        }
-        return defaultDevice;
-    }
-
-    private DeviceDescriptor selectLeastLoaded(long bytes) {
+    /**
+     * Select the GPU device with the most actual free memory that can accommodate
+     * the requested allocation. Uses real CUDA free memory queries, not internal tracking.
+     */
+    private DeviceDescriptor selectMostFree(long bytes) {
         DeviceDescriptor best = null;
-        double lowestLoad = Double.MAX_VALUE;
+        long bestFree = -1;
 
         for (DeviceDescriptor device : registeredDevices.values()) {
-            if (!canAllocate(device, bytes)) continue;
+            if (!device.getDeviceType().isGpu()) continue;
 
-            long total = device.getTotalMemory();
-            long allocated = getAllocatedMemory(device);
-            double load = total > 0 ? (double) allocated / total : 1.0;
-
-            if (load < lowestLoad) {
-                lowestLoad = load;
+            long freeMem = getActualFreeMemory(device);
+            if (freeMem >= bytes && freeMem > bestFree) {
+                bestFree = freeMem;
                 best = device;
             }
         }
 
         return best != null ? best : defaultDevice;
+    }
+
+    /**
+     * Get actual free memory for a device by querying the native runtime.
+     * For GPU devices, this calls into CUDA/ROCm to get real free memory.
+     * Falls back to the descriptor's available memory if native query fails.
+     */
+    public long getActualFreeMemory(DeviceDescriptor device) {
+        if (device.getDeviceType().isGpu()) {
+            try {
+                return NativeOpsHolder.getInstance().getDeviceNativeOps()
+                        .getDeviceFreeMemory(device.getDeviceIndex());
+            } catch (Exception e) {
+                log.debug("Failed to query actual free memory for {}: {}", device.getDeviceId(), e.getMessage());
+            }
+        }
+        return device.getAvailableMemory();
+    }
+
+    /**
+     * Select the best GPU device based on actual free memory.
+     * This is the single mechanism for all GPU device selection in the system.
+     * Returns the device index (int) of the GPU with the most free memory.
+     *
+     * @return GPU device index with the most free memory, or 0 if query fails
+     */
+    public int selectBestGpu() {
+        try {
+            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int numDevices = nativeOps.getAvailableDevices();
+            if (numDevices <= 1) {
+                return 0;
+            }
+
+            long bestFree = -1;
+            int bestDevice = 0;
+            for (int i = 0; i < numDevices; i++) {
+                long freeMem = nativeOps.getDeviceFreeMemory(i);
+                if (freeMem > bestFree) {
+                    bestFree = freeMem;
+                    bestDevice = i;
+                }
+            }
+
+            log.debug("selectBestGpu: device [{}] selected with {} MB free out of {} devices",
+                    bestDevice, bestFree / (1024 * 1024), numDevices);
+            return bestDevice;
+        } catch (Exception e) {
+            log.warn("Failed to query GPU free memory, defaulting to device 0: {}", e.getMessage());
+            return 0;
+        }
     }
 
     // =========================================================================
@@ -487,6 +647,14 @@ public class DeviceMemoryManager {
      * @param bytes bytes allocated
      */
     public void recordAllocation(DeviceDescriptor device, long bytes) {
+        registerDevice(device);
+
+        Integer simId = simulationDeviceId(device);
+        if (memorySimulationEnabled && simId != null && simulatedFreeMemory.containsKey(simId)) {
+            recordSimulatedAllocation(simId, bytes);
+            return;
+        }
+
         String id = device.getDeviceId();
         allocatedMemory.computeIfAbsent(id, k -> new AtomicLong(0));
 
@@ -507,6 +675,12 @@ public class DeviceMemoryManager {
      * @param bytes bytes deallocated
      */
     public void recordDeallocation(DeviceDescriptor device, long bytes) {
+        Integer simId = simulationDeviceId(device);
+        if (memorySimulationEnabled && simId != null && simulatedFreeMemory.containsKey(simId)) {
+            simulatedAllocatedMemory.merge(simId, -bytes, Long::sum);
+            return;
+        }
+
         String id = device.getDeviceId();
         AtomicLong allocated = allocatedMemory.get(id);
         if (allocated != null) {
@@ -656,6 +830,143 @@ public class DeviceMemoryManager {
     }
 
     // =========================================================================
+    // Memory Simulation API (for testing)
+    // =========================================================================
+
+    /**
+     * Enable memory simulation mode for testing OOM scenarios.
+     * When enabled, {@link #getSimulatedFreeMemory} values override actual device queries.
+     *
+     * @param enabled true to enable simulation mode
+     */
+    public void setMemorySimulationEnabled(boolean enabled) {
+        this.memorySimulationEnabled = enabled;
+        if (!enabled) {
+            simulatedAllocatedMemory.clear();
+        }
+        log.info("Memory simulation mode: {}", enabled ? "ENABLED" : "DISABLED");
+    }
+
+    /**
+     * Check if memory simulation mode is enabled.
+     *
+     * @return true if simulation mode is enabled
+     */
+    public boolean isMemorySimulationEnabled() {
+        return memorySimulationEnabled;
+    }
+
+    /**
+     * Set simulated free memory for a specific device.
+     * This value will be used instead of actual memory queries when simulation is enabled.
+     *
+     * <p>Example usage in tests:
+     * <pre>{@code
+     * DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
+     * // Simulate OOM on GPU 0 (only 1MB free)
+     * mgr.setSimulatedFreeMemory(0, 1024 * 1024);
+     * // GPU 1 has plenty of memory
+     * mgr.setSimulatedFreeMemory(1, 8L * 1024 * 1024 * 1024);
+     * // CPU has 32GB
+     * mgr.setSimulatedFreeMemory(DeviceMemoryManager.CPU_DEVICE_ID, 32L * 1024 * 1024 * 1024);
+     * mgr.setMemorySimulationEnabled(true);
+     * }</pre>
+     *
+     * @param deviceId the device ID (GPU index 0+, or CPU_DEVICE_ID for CPU)
+     * @param freeBytes simulated free memory in bytes
+     */
+    public void setSimulatedFreeMemory(int deviceId, long freeBytes) {
+        simulatedFreeMemory.put(deviceId, freeBytes);
+        String deviceName = (deviceId == CPU_DEVICE_ID) ? "CPU" : "GPU " + deviceId;
+        log.info("Set simulated free memory for {}: {} MB", deviceName, freeBytes / (1024 * 1024));
+    }
+
+    /**
+     * Get the simulated free memory for a device.
+     *
+     * @param deviceId the device ID
+     * @return simulated free bytes, or -1 if not set
+     */
+    public long getSimulatedFreeMemory(int deviceId) {
+        return simulatedFreeMemory.getOrDefault(deviceId, -1L);
+    }
+
+    /**
+     * Get the effective free memory for a device, considering simulation mode.
+     * If simulation is enabled and a value is set, returns simulated value.
+     * Otherwise, returns the actual free memory from the device.
+     *
+     * @param deviceId the device ID
+     * @param actualFreeMemory the actual free memory (used if simulation not active)
+     * @return effective free memory in bytes
+     */
+    public long getEffectiveFreeMemory(int deviceId, long actualFreeMemory) {
+        if (memorySimulationEnabled && simulatedFreeMemory.containsKey(deviceId)) {
+            long baseFree = simulatedFreeMemory.get(deviceId);
+            long allocated = simulatedAllocatedMemory.getOrDefault(deviceId, 0L);
+            long effective = Math.max(0, baseFree - allocated);
+            String deviceName = (deviceId == CPU_DEVICE_ID) ? "CPU" : "GPU " + deviceId;
+            log.trace("Simulated free memory for {}: base={} MB, allocated={} MB, effective={} MB",
+                    deviceName, baseFree / (1024 * 1024), allocated / (1024 * 1024), effective / (1024 * 1024));
+            return effective;
+        }
+        return actualFreeMemory;
+    }
+
+    /**
+     * Record a simulated allocation to decrease simulated free memory.
+     *
+     * @param deviceId the device ID
+     * @param bytes bytes allocated
+     */
+    public void recordSimulatedAllocation(int deviceId, long bytes) {
+        if (memorySimulationEnabled && simulatedFreeMemory.containsKey(deviceId)) {
+            simulatedAllocatedMemory.merge(deviceId, bytes, Long::sum);
+            log.trace("Recorded simulated allocation of {} MB on device {}", bytes / (1024 * 1024), deviceId);
+        }
+    }
+
+    /**
+     * Get the simulated allocated memory for a device (for testing verification).
+     *
+     * @param deviceId the device ID
+     * @return simulated allocated bytes
+     */
+    public long getSimulatedAllocatedMemory(int deviceId) {
+        return simulatedAllocatedMemory.getOrDefault(deviceId, 0L);
+    }
+
+    /**
+     * Clear simulated free memory for a specific device.
+     *
+     * @param deviceId the device ID to clear
+     */
+    public void clearSimulatedFreeMemory(int deviceId) {
+        simulatedFreeMemory.remove(deviceId);
+        simulatedAllocatedMemory.remove(deviceId);
+    }
+
+    /**
+     * Clear all simulated memory settings and disable simulation mode.
+     * Call this in test cleanup to restore normal operation.
+     */
+    public void clearAllMemorySimulation() {
+        memorySimulationEnabled = false;
+        simulatedFreeMemory.clear();
+        simulatedAllocatedMemory.clear();
+        log.info("Cleared all memory simulation settings");
+    }
+
+    /**
+     * Get the number of devices with simulated memory limits.
+     *
+     * @return count of devices with simulation configured
+     */
+    public int getSimulatedDeviceCount() {
+        return simulatedFreeMemory.size();
+    }
+
+    // =========================================================================
     // Inner Classes
     // =========================================================================
 
@@ -707,9 +1018,7 @@ public class DeviceMemoryManager {
         PREFER_GPU,
         /** Prefer CPU */
         PREFER_CPU,
-        /** Round-robin across devices */
-        ROUND_ROBIN,
-        /** Select device with lowest memory utilization */
-        LEAST_LOADED
+        /** Select device with the most actual free memory */
+        MOST_FREE
     }
 }

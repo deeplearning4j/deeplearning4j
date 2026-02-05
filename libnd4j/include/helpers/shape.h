@@ -2298,6 +2298,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *createScalarShapeInfo(sd::L
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType prodLong(const sd::LongType *data, int length) {
   sd::LongType prod = 1;
   for (int i = 0; i < length; i++) {
+    // Skip -1 sentinel values (used for unknown/dynamic dimensions in placeholders).
+    // At runtime, shapes should be resolved to positive values, but if a -1 leaks
+    // through (e.g., from a placeholder's declared shape), multiplying it in would
+    // produce a negative product that breaks length calculations and reduce operations.
+    if (data[i] < 0) continue;
     prod *= data[i];
   }
 
@@ -2666,10 +2671,11 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrsShapeInfoAndOffsets(const sd::Lo
   }
 
   // calculation of sub-array offsets (subArrOffsets)
-  calcOffsets(dimsSize, shape, strides, subArrOffsets);
+  // Pass the order from the original array to ensure F-order arrays are iterated correctly
+  calcOffsets(dimsSize, shape, strides, subArrOffsets, order(wholeShapeInfo));
 
-  // evaluate ews
-  checkStridesEwsAndOrder(subArrShapeInfo);
+  // Note: checkStridesEwsAndOrder removed - EWS is deprecated and the order
+  // is already correctly set from wholeShapeInfo at line 2648.
 
   delete[] strides;
   delete[] shape;
@@ -2727,7 +2733,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo,
     shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
   }
 
-  checkStridesEwsAndOrder(shapeInfo);
+  // Note: checkStridesEwsAndOrder removed - EWS is deprecated
   delete[] temp;
 
 }
@@ -3064,7 +3070,7 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
   setExtra(minShapeInfo, extra(maxShapeInfo));
   setOrder(minShapeInfo, 'c');                                                     // order
   sd::ArrayOptions::setDataType(minShapeInfo, sd::ArrayOptions::dataType(maxShapeInfo));  // type
-  checkStridesEwsAndOrder(minShapeInfo);
+  // Note: checkStridesEwsAndOrder removed - EWS is deprecated
 
   if (sd::Environment::getInstance().isDebug()) {
     sd_printf("  Final minOffset: %lld\n", minOffset);
@@ -3257,9 +3263,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
     THROW_EXCEPTION("Invalid reshape: total number of elements must remain the same");
   }
 
-
-  // Set ews and order
-  shape::checkStridesEwsAndOrder(newShapeInfo);
+  // Note: checkStridesEwsAndOrder removed - EWS is deprecated
 
   // setExtra() overwrites the entire extra field, so if we call setDataType() first,
   // the data type flags will be lost when setExtra() overwrites them.

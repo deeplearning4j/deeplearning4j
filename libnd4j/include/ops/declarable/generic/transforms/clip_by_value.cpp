@@ -90,36 +90,68 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
      case HALF2:
        break;
 #if defined(HAS_INT8)
-     case INT8:
+     case INT8: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_INT16)
-     case INT16:
+     case INT16: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_INT32)
-     case INT32:
+     case INT32: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_LONG)
-     case INT64:
+     case INT64: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UINT8)
-     case UINT8:
+     case UINT8: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UINT16)
-     case UINT16:
+     case UINT16: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UINT32)
-     case UINT32:
+     case UINT32: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
 #if defined(HAS_UNSIGNEDLONG)
-     case UINT64:
+     case UINT64: {
+       auto leftValue = left->e<double>(0);
+       auto rightValue = right->e<double>(0);
+       helpers::clipByValue(block.launchContext(), input, leftValue, rightValue, output);
        break;
+     }
 #endif
      case QINT8:
        break;
@@ -155,7 +187,7 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
 DECLARE_SYN(ClipByValue, clipbyvalue);
 
 DECLARE_TYPES(clipbyvalue) {
- getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+ getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
 }
 }  // namespace ops
 }  // namespace sd

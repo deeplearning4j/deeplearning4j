@@ -28,10 +28,6 @@
 #include <memory/MemoryCounter.h>
 #include <sstream>
 
-#if defined(SD_CUDA)
-#include <cuda_runtime.h>
-#endif
-
 #if defined(SD_GCC_FUNCTRACE)
 #include <array/DataBufferLifecycleTracker.h>
 #endif
@@ -79,6 +75,8 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
     fflush(stdout);
   }
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
 #if defined(SD_GCC_FUNCTRACE)
@@ -87,14 +85,8 @@ DataBuffer::DataBuffer(const DataBuffer& other) {
   allocationStackTraceSpecial = nullptr;
   creationStackTrace = nullptr;
 #endif
-  // IMPORTANT: Do NOT copy buffer pointers - allocateBuffers() will allocate new memory
-  // Copying pointers here would cause allocatePrimary/allocateSpecial to return early
-  // (because they check if buffer is already set), leading to shared ownership and double-free
-  _primaryBuffer = nullptr;
-  _specialBuffer = nullptr;
-  // Initialize ownership flags - we'll own the new buffers after allocation
-  _isOwnerPrimary = false;
-  _isOwnerSpecial = false;
+  _primaryBuffer = other._primaryBuffer;
+  _specialBuffer = other._specialBuffer;
 
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
@@ -309,6 +301,8 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
   _isOwnerPrimary = other._isOwnerPrimary;
@@ -328,6 +322,8 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
+  other._primaryAllocBytes = 0;
+  other._specialAllocBytes = 0;
 
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
@@ -357,17 +353,10 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
   deleteBuffers();
 
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
-
-  // IMPORTANT: Ensure buffer pointers are nullptr before allocating
-  // deleteBuffers() only sets them to nullptr if we owned them
-  // If we didn't own them, they still point to old (non-owned) memory
-  // which would cause allocateBuffers() to return early
-  _primaryBuffer = nullptr;
-  _specialBuffer = nullptr;
-  _isOwnerPrimary = false;
-  _isOwnerSpecial = false;
 
   allocateBuffers();
   copyBufferFrom(other);
@@ -403,6 +392,8 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _primaryBuffer = other._primaryBuffer;
   _specialBuffer = other._specialBuffer;
   _lenInBytes = other._lenInBytes;
+  _primaryAllocBytes = other._primaryAllocBytes;
+  _specialAllocBytes = other._specialAllocBytes;
   _dataType = other._dataType;
   _workspace = other._workspace;
   _isOwnerPrimary = other._isOwnerPrimary;
@@ -423,6 +414,8 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   other._primaryBuffer = other._specialBuffer = nullptr;
   other.setAllocFlags(false, false);
   other._lenInBytes = 0;
+  other._primaryAllocBytes = 0;
+  other._specialAllocBytes = 0;
 #if defined(SD_GCC_FUNCTRACE)
   // - Stack trace capture via backward-cpp's backtrace() is NOT safe during early JVM initialization
   // - The JVM's memory mappings and signal handlers aren't fully set up yet
@@ -493,15 +486,11 @@ void DataBuffer::validateIntegrity() const {
 
 ////////////////////////////////////////////////////////////////////////
 void* DataBuffer::primary() {
-  // Validate buffer integrity before returning pointer to catch use-after-free
-  validateIntegrity();
   return _primaryBuffer;
 }
 
 ////////////////////////////////////////////////////////////////////////
 void* DataBuffer::special() {
-  // Validate buffer integrity before returning pointer to catch use-after-free
-  validateIntegrity();
   return _specialBuffer;
 }
 
@@ -559,6 +548,7 @@ void DataBuffer::allocatePrimary() {
 
     ALLOCATE(_primaryBuffer, _workspace, getLenInBytes(), int8_t);
     _isOwnerPrimary = true;
+    _primaryAllocBytes = getLenInBytes();
 
     // count in towards current deviceId if we're not in workspace mode
     if (_workspace == nullptr) {
@@ -572,7 +562,7 @@ void DataBuffer::allocatePrimary() {
     // Record allocation in lifecycle tracker
     array::DataBufferLifecycleTracker::getInstance().recordAllocation(
         _primaryBuffer, getLenInBytes(), getDataType(),
-       array::BufferType::PRIMARY, this, _workspace != nullptr);
+        array::BufferType::PRIMARY, this, _workspace != nullptr);
 #endif
   }
 }
@@ -599,7 +589,10 @@ void DataBuffer::deletePrimary() {
           _primaryBuffer, array::BufferType::PRIMARY);
 #endif
       RELEASE(p, _workspace);
+      _primaryBuffer = nullptr;
     }
+
+    _isOwnerPrimary = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
@@ -609,10 +602,8 @@ void DataBuffer::deletePrimary() {
     }
   }
 
-  // Always reset pointer and ownership flag after delete, regardless of whether we owned it
-  // This prevents stale pointers from causing allocatePrimary() to skip allocation
-  _primaryBuffer = nullptr;
-  _isOwnerPrimary = false;
+
+
 }
 
 void DataBuffer::printPrimaryAllocationStackTraces() {
@@ -631,17 +622,6 @@ void DataBuffer::deleteBuffers() {
   std::lock_guard<std::mutex> lock(_deleteMutex);
   deletePrimary();
   deleteSpecial();
-
-  // Clean up CUDA event used for cross-thread synchronization
-#if defined(SD_CUDA)
-  if (_writeEvent != nullptr) {
-    cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
-    cudaEventDestroy(*event);
-    delete event;
-    _writeEvent = nullptr;
-    _writeEventRecorded.store(false);
-  }
-#endif
 
   // Clean up stack traces to prevent memory leak
 #if defined(SD_GCC_FUNCTRACE)
@@ -665,14 +645,10 @@ void DataBuffer::deleteBuffers() {
 
 ////////////////////////////////////////////////////////////////////////
 DataBuffer::~DataBuffer() {
-  // IMPORTANT: Call deleteBuffers() FIRST while magic number is still valid.
-  // This allows the validation checks in deletePrimary/deleteSpecial to pass.
-  // Then set magic number to 0xDEADBEEF to detect any use-after-free attempts.
-  deleteBuffers();
-
-  // Now mark as destroyed - any future access will see this corrupt magic number
-  // and validateIntegrity() will catch it
+  // Clear magic number to detect use-after-free
+  // If anyone tries to use this buffer after destruction, validateIntegrity() will catch it
   _magicNumber = 0xDEADBEEF;
+  deleteBuffers();
 }
 
 
@@ -688,6 +664,7 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   _primaryBuffer = buffer;
   _isOwnerPrimary = false;
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
+  _primaryAllocBytes = _lenInBytes;
 }
 
 void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
@@ -701,6 +678,7 @@ void DataBuffer::setSpecialBuffer(void* buffer, size_t length) {
 #endif
   this->setSpecial(buffer, false);
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
+  _specialAllocBytes = _lenInBytes;
 }
 
 void DataBuffer::setDataType(DataType dataType) {
@@ -774,5 +752,10 @@ void DataBuffer::close() { this->deleteBuffers(); }
 
 void DataBuffer::setDeviceId(int deviceId) { _deviceId = deviceId; }
 
-void DataBuffer::resetCounters() { setCountersToZero(); }
+void DataBuffer::resetCounters() {
+  _writePrimary.store(0);
+  _writeSpecial.store(0);
+  _readPrimary.store(0);
+  _readSpecial.store(0);
+}
 }  // namespace sd

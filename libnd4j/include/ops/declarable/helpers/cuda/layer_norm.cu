@@ -1,0 +1,255 @@
+/* ******************************************************************************
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// Fused Layer Normalization CUDA kernel
+// Computes: output = (input - mean) / sqrt(variance + epsilon) * gain + bias
+// in a single fused kernel for optimal performance
+//
+
+#include <cuda_runtime.h>
+#include <helpers/DebugHelper.h>
+#include <array/NDArray.h>
+#include <execution/cuda/LaunchDims.h>
+#include <types/float16.h>
+
+namespace sd {
+namespace ops {
+namespace helpers {
+
+constexpr int WARP_SIZE = 32;
+
+//////////////////////////////////////////////////////////////////////////////
+// Warp-level reduction for sum
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+__device__ __forceinline__ T warpReduceSum(T val) {
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    val += __shfl_down_sync(0xffffffff, val, offset);
+  }
+  return val;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Block-level reduction for sum using shared memory
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+__device__ T blockReduceSum(T val, T* sharedMem) {
+  const int lane = threadIdx.x % WARP_SIZE;
+  const int wid = threadIdx.x / WARP_SIZE;
+  const int numWarps = (blockDim.x + WARP_SIZE - 1) / WARP_SIZE;
+
+  // Warp-level reduction
+  val = warpReduceSum(val);
+
+  // Write reduced value from each warp to shared memory
+  if (lane == 0) {
+    sharedMem[wid] = val;
+  }
+  __syncthreads();
+
+  // First warp reduces across all warps
+  val = (threadIdx.x < numWarps) ? sharedMem[threadIdx.x] : static_cast<T>(0);
+  if (wid == 0) {
+    val = warpReduceSum(val);
+  }
+
+  return val;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Fused Layer Norm Kernel - handles one row per block
+// Each row is normalized independently
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+__global__ void layerNormKernel(
+    const T* __restrict__ input,    // [numRows, rowLen]
+    const T* __restrict__ gain,     // [rowLen]
+    const T* __restrict__ bias,     // [rowLen] or nullptr
+    T* __restrict__ output,         // [numRows, rowLen]
+    const LongType numRows,
+    const LongType rowLen,
+    const float epsilon) {
+
+  // Each block handles one row
+  const LongType row = blockIdx.x;
+  if (row >= numRows) return;
+
+  extern __shared__ char sharedMem[];
+  float* sdata = reinterpret_cast<float*>(sharedMem);
+
+  const T* inputRow = input + row * rowLen;
+  T* outputRow = output + row * rowLen;
+
+  // Pass 1: Compute sum and sum of squares in parallel
+  float threadSum = 0.0f;
+  float threadSumSq = 0.0f;
+
+  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+    float val = static_cast<float>(inputRow[i]);
+    threadSum += val;
+    threadSumSq += val * val;
+  }
+
+  // Block-level reduction for sum
+  float totalSum = blockReduceSum(threadSum, sdata);
+  __syncthreads();
+
+  // Block-level reduction for sum of squares
+  float totalSumSq = blockReduceSum(threadSumSq, sdata);
+
+  // Compute mean and inverse standard deviation
+  __shared__ float mean;
+  __shared__ float invStd;
+
+  if (threadIdx.x == 0) {
+    mean = totalSum / static_cast<float>(rowLen);
+    float variance = (totalSumSq / static_cast<float>(rowLen)) - (mean * mean);
+    invStd = rsqrtf(variance + epsilon);
+  }
+  __syncthreads();
+
+  // Pass 2: Normalize, scale, and shift
+  if (bias != nullptr) {
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      float val = static_cast<float>(inputRow[i]);
+      float normalized = (val - mean) * invStd;
+      float g = static_cast<float>(gain[i]);
+      float b = static_cast<float>(bias[i]);
+      outputRow[i] = static_cast<T>(normalized * g + b);
+    }
+  } else {
+    for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+      float val = static_cast<float>(inputRow[i]);
+      float normalized = (val - mean) * invStd;
+      float g = static_cast<float>(gain[i]);
+      outputRow[i] = static_cast<T>(normalized * g);
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Launcher function
+//////////////////////////////////////////////////////////////////////////////
+template <typename T>
+void launchLayerNormKernel(
+    const T* input,
+    const T* gain,
+    const T* bias,
+    T* output,
+    LongType numRows,
+    LongType rowLen,
+    float epsilon,
+    cudaStream_t stream) {
+
+  // One block per row, up to 256 or 512 threads per block
+  int threadsPerBlock = 256;
+  if (rowLen > 256) threadsPerBlock = 512;
+  if (rowLen > 512) threadsPerBlock = 1024;
+
+  // Limit to actual row length if smaller
+  if (rowLen < threadsPerBlock) {
+    threadsPerBlock = ((rowLen + WARP_SIZE - 1) / WARP_SIZE) * WARP_SIZE;
+    if (threadsPerBlock < WARP_SIZE) threadsPerBlock = WARP_SIZE;
+  }
+
+  int numBlocks = numRows;
+
+  // Shared memory for reductions (need space for warp results)
+  int numWarps = (threadsPerBlock + WARP_SIZE - 1) / WARP_SIZE;
+  size_t sharedMemSize = numWarps * sizeof(float);
+
+  layerNormKernel<T><<<numBlocks, threadsPerBlock, sharedMemSize, stream>>>(
+      input, gain, bias, output, numRows, rowLen, epsilon);
+
+  DebugHelper::checkGlobalErrorCode("layerNormKernel failed");
+}
+
+// Explicit instantiations
+template void launchLayerNormKernel<float>(
+    const float*, const float*, const float*, float*,
+    LongType, LongType, float, cudaStream_t);
+
+template void launchLayerNormKernel<double>(
+    const double*, const double*, const double*, double*,
+    LongType, LongType, float, cudaStream_t);
+
+template void launchLayerNormKernel<float16>(
+    const float16*, const float16*, const float16*, float16*,
+    LongType, LongType, float, cudaStream_t);
+
+//////////////////////////////////////////////////////////////////////////////
+// Public interface called from layer_norm op
+//////////////////////////////////////////////////////////////////////////////
+void layerNormCuda(
+    NDArray* input,
+    NDArray* gain,
+    NDArray* bias,
+    NDArray* output,
+    const std::vector<LongType>& axis,
+    float epsilon,
+    LaunchContext* context) {
+
+  // This kernel handles the common case: normalizing over the last dimension
+  // with contiguous data
+  const int rank = input->rankOf();
+  const bool lastDimNorm = (axis.size() == 1 && axis[0] == rank - 1);
+
+  if (!lastDimNorm) {
+    // Fall back to general implementation for non-last-dimension normalization
+    THROW_EXCEPTION("layerNormCuda: Only last dimension normalization is supported");
+  }
+
+  const LongType numRows = input->lengthOf() / input->sizeAt(-1);
+  const LongType rowLen = input->sizeAt(-1);
+
+  NDArray::prepareSpecialUse({output}, {input, gain, bias});
+
+  auto stream = context->getCudaStream();
+  auto dtype = input->dataType();
+
+  if (dtype == DataType::FLOAT32) {
+    launchLayerNormKernel<float>(
+        reinterpret_cast<const float*>(input->specialBuffer()),
+        reinterpret_cast<const float*>(gain->specialBuffer()),
+        bias != nullptr ? reinterpret_cast<const float*>(bias->specialBuffer()) : nullptr,
+        reinterpret_cast<float*>(output->specialBuffer()),
+        numRows, rowLen, epsilon, *stream);
+  } else if (dtype == DataType::DOUBLE) {
+    launchLayerNormKernel<double>(
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const double*>(gain->specialBuffer()),
+        bias != nullptr ? reinterpret_cast<const double*>(bias->specialBuffer()) : nullptr,
+        reinterpret_cast<double*>(output->specialBuffer()),
+        numRows, rowLen, epsilon, *stream);
+  } else if (dtype == DataType::HALF) {
+    launchLayerNormKernel<float16>(
+        reinterpret_cast<const float16*>(input->specialBuffer()),
+        reinterpret_cast<const float16*>(gain->specialBuffer()),
+        bias != nullptr ? reinterpret_cast<const float16*>(bias->specialBuffer()) : nullptr,
+        reinterpret_cast<float16*>(output->specialBuffer()),
+        numRows, rowLen, epsilon, *stream);
+  } else {
+    THROW_EXCEPTION("layerNormCuda: Unsupported data type");
+  }
+
+  NDArray::registerSpecialUse({output}, {input, gain, bias});
+}
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

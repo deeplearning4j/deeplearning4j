@@ -429,13 +429,13 @@ fun ndarrayFromNameSpaceTensor(inputTensor: TensorNamespace.TensorProto): INDArr
 fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArray {
     val shape = inputTensor.dimsList.toLongArray()
     val dtype = convertNd4jDataTypeFromNameSpaceTensorDataType(TensorNamespace.DataType.values()[inputTensor.dataType])
-    val byteArray = inputTensor.rawData.toByteArray()
+    val rawData = inputTensor.rawData
     //note: scalar can be zero
     var totalLen = ArrayUtil.prod(*shape)
 
     // Handle empty data case - return zeros array with proper shape
     // This can happen with external data references or placeholder tensors
-    if(byteArray.isEmpty()) {
+    if(rawData.isEmpty) {
         if(totalLen < 1) totalLen = 1
         return if(shape.isNotEmpty()) {
             Nd4j.zeros(dtype, *shape)
@@ -445,6 +445,7 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
     }
 
     if(dtype == DataType.UTF8) {
+        val byteArray = rawData.toByteArray()
         val rawDataBuffer =  Nd4j.getDataBufferFactory().createUtf8Buffer(byteArray,byteArray.size.toLong())
         if(shape.isNotEmpty() && totalLen > 0) {
             if(rawDataBuffer.length() > 0) {
@@ -459,9 +460,13 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
         if(totalLen < 1)
             totalLen = 1
 
+        // OPTIMIZATION: Try to get ByteBuffer directly from protobuf to avoid double-copy
+        // ByteString.asReadOnlyByteBuffer() returns a view without copying
+        val protoBuffer = rawData.asReadOnlyByteBuffer()
+
+        // We need a direct buffer for Nd4j, so allocate once and copy once (instead of twice)
         val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
-        if(byteArray.size > 0)
-            byteBuffer.put(byteArray)
+        byteBuffer.put(protoBuffer)
         //See: https://github.com/apache/felix/pull/114
         val castBuffer = byteBuffer as Buffer
         castBuffer.rewind()

@@ -22,6 +22,7 @@
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
 #include <legacy/NativeOps.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/image_suppression.h>
 
 #include <queue>
@@ -268,10 +269,12 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
   auto outputBuf = reinterpret_cast<I*>(output->specialBuffer());
 
   bool* shouldSelectD;
-  auto err = cudaMalloc(&shouldSelectD, sizeof(bool));
-  if (err) {
-    throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot allocate memory for bool flag", err);
+  int devId = 0; cudaGetDevice(&devId);
+  shouldSelectD = reinterpret_cast<bool*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(bool), devId, nullptr));
+  if (shouldSelectD == nullptr) {
+    THROW_EXCEPTION("helpers::nonMaxSuppressionV2: Cannot allocate memory for bool flag");
   }
+  cudaError_t err;
   for (I i = 0; i < boxes->sizeAt(0); ++i) {
     bool shouldSelect = numSelected < output->lengthOf();
     if (shouldSelect) {
@@ -297,10 +300,7 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
     }
   }
 
-  err = cudaFree(shouldSelectD);
-  if (err) {
-    throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot deallocate memory for bool flag", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(shouldSelectD, devId, nullptr);
   delete selectedIndices;
 }
 

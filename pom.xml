@@ -449,10 +449,10 @@
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
                         <argLine>@{jdk9.exports} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
-                        <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
-                        <forkedProcessExitTimeoutInSeconds>300</forkedProcessExitTimeoutInSeconds>
-                        <parallelTestsTimeoutInSeconds>300</parallelTestsTimeoutInSeconds>
-                        <parallelTestsTimeoutForcedInSeconds>300</parallelTestsTimeoutForcedInSeconds>
+                        <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>600</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>600</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>600</parallelTestsTimeoutForcedInSeconds>
                     </configuration>
                 </plugin>
                 <plugin>

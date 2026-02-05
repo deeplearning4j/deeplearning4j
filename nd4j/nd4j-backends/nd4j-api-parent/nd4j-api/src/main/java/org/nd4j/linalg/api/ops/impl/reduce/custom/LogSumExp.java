@@ -26,7 +26,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -82,32 +81,34 @@ public class LogSumExp extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //z = log(sum_i exp(x_i)) = log(s)
-        //dL/dx = dL/dz * dz/ds * ds/dx
-        //dz/ds = 1/s
-        SDVariable exp = sameDiff.math.exp(arg());
-        SDVariable sumExp =  null;
-        if(dimensions == null) {
-            if(args().length < 2) {
-                dimensions = new long[]{-1};
-                sumExp = exp.sum(dimensions);
+        // d/dx logsumexp(x) = softmax(x)
+        // dL/dx = dL/dz * softmax(x)  where z = logsumexp(x)
+        SDVariable softmax;
+        if(dimensions == null || dimensions.length == 0) {
+            if(args().length >= 2) {
+                // Dynamic dimensions from second input
+                softmax = sameDiff.nn().softmax(arg());
             } else {
-                sumExp = sameDiff.math().sum(exp,arg(1));
+                // Full reduction: softmax over flattened array
+                // Reshape to 1D, apply softmax, reshape back
+                SDVariable flatInput = sameDiff.reshape(arg(), -1);
+                SDVariable flatSoftmax = sameDiff.nn().softmax(flatInput);
+                softmax = sameDiff.reshape(flatSoftmax, sameDiff.shape(arg()));
+            }
+        } else {
+            // Reduce along specific dimensions - apply softmax along those dimensions
+            // For single dimension, use softmax directly
+            if(dimensions.length == 1) {
+                softmax = sameDiff.nn().softmax(arg(), (int) dimensions[0]);
+            } else {
+                // Multi-dimension: flatten those dims, softmax, unflatten
+                SDVariable flatInput = sameDiff.reshape(arg(), -1);
+                SDVariable flatSoftmax = sameDiff.nn().softmax(flatInput);
+                softmax = sameDiff.reshape(flatSoftmax, sameDiff.shape(arg()));
             }
         }
 
-        SDVariable gradProd = f1.get(0).div(sumExp);
-        if(dimensions == null && args().length > 1) {
-            SDVariable dSumExpdx = new SumBp(sameDiff, arg(), gradProd, keepDims, arg(1)).outputVariable().mul(exp);
-            return Collections.singletonList(dSumExpdx);
-
-
-        } else {
-            SDVariable dSumExpdx = new SumBp(sameDiff, arg(), gradProd, keepDims, dimensions).outputVariable().mul(exp);
-            return Collections.singletonList(dSumExpdx);
-        }
-
-
+        return Collections.singletonList(f1.get(0).mul(softmax));
     }
 
     @Override

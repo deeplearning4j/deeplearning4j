@@ -126,51 +126,74 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             }
         }
 
-        // Simple dependency-based ordering
+        // Kahn's algorithm for topological sort - O(n+e) instead of O(n²)
         val processedNodes = mutableSetOf<String>()
         val sortedNodes = mutableListOf<IRNode<NODE_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>>()
         val nodesByName = originalNodeList.associateBy { nodeNameMapping[it]!! }
 
-        // Keep processing until all nodes are sorted
-        var changed = true
-        while (processedNodes.size < originalNodeList.size && changed) {
-            changed = false
+        // Build node-to-node dependency graph and in-degree counts
+        val nodeDeps = mutableMapOf<String, MutableSet<String>>() // node -> set of nodes it depends on
+        val nodeRdeps = mutableMapOf<String, MutableSet<String>>() // node -> set of nodes that depend on it
+        val inDegree = mutableMapOf<String, Int>()
 
-            for (node in originalNodeList) {
-                val nodeName = nodeNameMapping[node]!!
+        for (node in originalNodeList) {
+            val nodeName = nodeNameMapping[node]!!
+            nodeDeps[nodeName] = mutableSetOf()
+            nodeRdeps.getOrPut(nodeName) { mutableSetOf() }
+        }
 
-                if (nodeName in processedNodes) continue
-
-                // Check if all input dependencies are satisfied
-                val inputVars = nodeInputs[nodeName]!!
-                val allInputsReady = inputVars.all { inputVar ->
-                    val producerNode = varProducer[inputVar]
-                    // Input is ready if:
-                    // 1. It has no producer (external input/constant), OR
-                    // 2. Its producer has already been processed
-                    producerNode == null || producerNode in processedNodes
+        for (node in originalNodeList) {
+            val nodeName = nodeNameMapping[node]!!
+            val inputVars = nodeInputs[nodeName]!!
+            for (inputVar in inputVars) {
+                val producerNode = varProducer[inputVar]
+                if (producerNode != null && producerNode != nodeName) {
+                    nodeDeps[nodeName]!!.add(producerNode)
+                    nodeRdeps.getOrPut(producerNode) { mutableSetOf() }.add(nodeName)
                 }
+            }
+            inDegree[nodeName] = nodeDeps[nodeName]!!.size
+        }
 
-                if (allInputsReady) {
-                    sortedNodes.add(node)
-                    processedNodes.add(nodeName)
-                    changed = true
+        // Initialize queue with nodes that have no dependencies
+        val queue = ArrayDeque<String>()
+        for (node in originalNodeList) {
+            val nodeName = nodeNameMapping[node]!!
+            if (inDegree[nodeName] == 0) {
+                queue.add(nodeName)
+            }
+        }
 
-                    // Debug logging for critical nodes
-                    if (nodeName == "/Equal" || nodeName == "/Where") {
-                        logger.info("Sorted node '$nodeName' at position ${sortedNodes.size - 1}")
-                    }
+        // Process queue
+        while (queue.isNotEmpty()) {
+            val nodeName = queue.removeFirst()
+            sortedNodes.add(nodesByName[nodeName]!!)
+            processedNodes.add(nodeName)
+
+            // Reduce in-degree for dependents
+            for (dependent in nodeRdeps[nodeName] ?: emptySet()) {
+                val newDegree = inDegree[dependent]!! - 1
+                inDegree[dependent] = newDegree
+                if (newDegree == 0) {
+                    queue.add(dependent)
                 }
             }
         }
 
         // Add any remaining nodes (shouldn't happen in a proper DAG)
+        val unprocessedNodes = mutableListOf<String>()
         originalNodeList.forEach { node ->
             val nodeName = nodeNameMapping[node]!!
             if (nodeName !in processedNodes) {
                 sortedNodes.add(node)
-                logger.warn("Added unprocessed node: $nodeName")
+                unprocessedNodes.add(nodeName)
             }
+        }
+        // Log summary instead of per-node to reduce log spam
+        if (unprocessedNodes.isNotEmpty()) {
+            logger.debug("Added {} unprocessed nodes (first 5: {})",
+                unprocessedNodes.size,
+                unprocessedNodes.take(5))
         }
 
         // Create variable order based on processing order
@@ -359,14 +382,51 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             VariableOriginTracer.clear()
         }
 
-        val importInfo = importInfoForEachNodeInGraph(irGraph, dynamicVariables)
+        // Lazy import info: compute per-node on demand instead of upfront for ALL nodes.
+        // This avoids calling applyProcess for every node before we even start the import loop.
+        val opMappingRegistryForImport = OpRegistryHolder.opMappingRegistryForName<GRAPH_TYPE,
+                NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>(irGraph.frameworkName())
+        val importInfoCache = HashMap<String, Pair<MappingContext<GRAPH_TYPE,
+                NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE,
+                DATA_TYPE>, OpNamespace.OpDescriptor>>()
 
+        fun getImportInfoForNode(nodeName: String, node: IRNode<NODE_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>): Pair<MappingContext<GRAPH_TYPE,
+                NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE,
+                DATA_TYPE>, OpNamespace.OpDescriptor> {
+            return importInfoCache.getOrPut(nodeName) {
+                val opMappingProcess = OpRegistryHolder.lookupOpMappingProcess<
+                        GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>(
+                    inputFrameworkOpName = node.opName(), inputFrameworkName = irGraph.frameworkName())
+                val opDefLookup = opMappingRegistryForImport.lookupInputFrameworkOpDef(node.opName())
+                val mappingContext = irGraph.createMappingContext(
+                    opDef = opDefLookup,
+                    node = irGraph.nodeByName(nodeName),
+                    dynamicVariables = dynamicVariables
+                )
+                opMappingProcess.applyProcess(mappingContext)
+            }
+        }
+
+        // Check for controlflow ops by scanning node op names directly (avoids computing importInfo for all nodes)
         var containsControlflow = false
         val controlflowOps = setOf("select","while","enter","if","switch","next_iteration","merge","exit","loop_cond")
-        for (it in importInfo.values) {
-            if (controlflowOps.contains(it.second.name) || it.first.irNode().isControlflowOp()) {
-                containsControlflow = true
-                break
+        for (node in sortResult.sortedNodes) {
+            val opName = node.opName()
+            // Check the nd4j op name via the mapping registry
+            try {
+                val opMappingProcess = OpRegistryHolder.lookupOpMappingProcess<
+                        GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>(
+                    inputFrameworkOpName = opName, inputFrameworkName = irGraph.frameworkName())
+                if (controlflowOps.contains(opMappingProcess.opName()) || node.isControlflowOp()) {
+                    containsControlflow = true
+                    break
+                }
+            } catch (e: Exception) {
+                // If we can't look up the op, check the node directly
+                if (node.isControlflowOp()) {
+                    containsControlflow = true
+                    break
+                }
             }
         }
 
@@ -444,51 +504,22 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             val nodeName = sortResult.nodeNameMapping[node]!!
             val opName = node.opName()
 
-            // Debug: Equal node processing
-            if (nodeName == "/Equal") {
-                logger.info("=== PROCESSING /Equal NODE ===")
-                logger.info("Node name: $nodeName")
-                logger.info("Op name: $opName")
-                logger.info("Index in sort: $index")
-                logger.info("Number of inputs: ${node.numInputs()}")
-                logger.info("Number of outputs: ${node.numOutputs()}")
-                logger.info("Inputs: ${(0 until node.numInputs()).map { node.inputAt(it) }}")
-                logger.info("Outputs: ${(0 until node.numOutputs()).map { node.outputAt(it) }}")
-                logger.info("Current SameDiff variables: ${sd.variableNames().toList()}")
-            }
-
             // Skip nodes that were already processed in earlier passes
             if (irGraph.nodeIsPlaceHolder(node.nodeName()) ||
                 irGraph.isConstantOpName(opName) ||
                 irGraph.isVariable(nodeName)) {
-                if (nodeName == "/Equal") {
-                    logger.info("DEBUG: /Equal skipped - placeholder: ${irGraph.nodeIsPlaceHolder(node.nodeName())}, constant: ${irGraph.isConstantOpName(opName)}, variable: ${irGraph.isVariable(nodeName)}")
-                }
                 return@forEachIndexed
             }
 
-            val importInfoForNode = importInfo[nodeName] ?: importInfo[node.nodeName()]
+            val importInfoForNode = getImportInfoForNode(nodeName, node)
             val opMappingProcess = OpRegistryHolder.lookupOpMappingProcess<
                     GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>(
                 inputFrameworkOpName = opName, inputFrameworkName = irGraph.frameworkName())
-
-            if (nodeName == "/Equal") {
-                logger.info("ImportInfo found: ${importInfoForNode != null}")
-                logger.info("OpMappingProcess found: ${opMappingProcess != null}")
-                if (opMappingProcess != null) {
-                    logger.info("ND4J op name: ${opMappingProcess.opName()}")
-                }
-            }
 
             val funcContextResult = nodeNameToFuncContext[nodeName]!!
             val df = funcContextResult.dfInstance
             val mappingContext = funcContextResult.mappingContext
             val nd4jOpName = df.opName()
-
-            if (nodeName == "/Equal") {
-                logger.info("Differential function: ${df.javaClass.simpleName}")
-                logger.info("ND4J op name from df: $nd4jOpName")
-            }
 
             val rawAttrMap = HashMap<String, ATTR_VALUE_TYPE>()
             node.attributeMap().forEach { (name, def) ->
@@ -497,16 +528,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
             // Check if node should be skipped
             if (opFilter != null && opFilter.skipOp(node.internalValue(), sd, rawAttrMap, irGraph.internalValue())) {
-                if (nodeName == "/Equal") {
-                    logger.info("DEBUG: /Equal skipped by opFilter")
-                }
                 return@forEachIndexed
             }
 
             if (importOverride?.containsKey(nodeName) == true) {
-                if (nodeName == "/Equal") {
-                    logger.info("DEBUG: /Equal skipped by importOverride")
-                }
                 return@forEachIndexed
             }
 
@@ -521,6 +546,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 if (inName.endsWith(":0")) {
                     inName = inName.substring(0, inName.length - 2)
                 }
+
+                // Skip empty input names - ONNX uses "" for optional inputs that aren't provided
+                if (inName.isEmpty()) {
+                    logger.debug("Skipping empty input at position $i for node '$nodeName' (optional input not provided)")
+                    inNames.add("")  // Add empty placeholder to preserve input indices
+                    continue
+                }
+
                 val isControlDep = isControlDep(origInName)
                 if (isControlDep) {
                     if (controlDeps == null) controlDeps = ArrayList()
@@ -529,12 +562,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     inNames.add(inName)
                 }
 
-                if (nodeName == "/Equal") {
-                    logger.info("Processing input $i: '$origInName' -> '$inName' (controlDep: $isControlDep)")
-                    logger.info("Variable exists in SameDiff: ${sd.hasVariable(inName)}")
-                }
-
-                if (!sd.hasVariable(inName) && !isControlDep) {
+                if (!sd.hasVariable(inName) && !isControlDep && inName.isNotEmpty()) {
                     // Try to resolve missing variables
                     var variableResolved = false
 
@@ -669,11 +697,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 }
             }
 
-            if (nodeName == "/Equal") {
-                logger.info("Final input names for /Equal: $inNames")
-                logger.info("Control dependencies: $controlDeps")
-            }
-
             // Set up the operation
             if(df is DynamicCustomOp) {
                 val opField = DynamicCustomOp::class.java.getDeclaredField("opName")
@@ -688,16 +711,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 .build()
 
             // Handle input array resolution
-            val resolvedArgInputs = importInfoForNode!!.second.argDescriptorList.filter {input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR}
+            val resolvedArgInputs = importInfoForNode.second.argDescriptorList.filter {input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR}
                 .sortedBy { argDescriptor -> argDescriptor.argIndex }
 
             val numInputsToTake = resolvedArgInputs.size
-
-            if (nodeName == "/Equal") {
-                logger.info("Resolved arg inputs count: $numInputsToTake")
-                logger.info("Actual input names count: ${inNames.size}")
-                logger.info("Array resolution type: ${opMappingProcess.arrayResolutionType()}")
-            }
 
             if(numInputsToTake != inNames.size) {
                 when(opMappingProcess.arrayResolutionType()) {
@@ -747,10 +764,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             } else
                 op.inputsToOp = inNames
 
-            if (nodeName == "/Equal") {
-                logger.info("Final op.inputsToOp: ${op.inputsToOp}")
-            }
-
             // Process pre-hooks and initialize operation
             val attributes = mappingContext!!.nodeAttributesAsMap()
             var proceedWithInit = true
@@ -761,10 +774,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     this as ImportGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>,
                     dynamicVariables as Map<String,GeneratedMessageV3>
                 ).proceedWithInit
-            }
-
-            if (nodeName == "/Equal") {
-                logger.info("proceedWithInit after pre-hooks: $proceedWithInit")
             }
 
             if(proceedWithInit && !sd.ops.containsKey(nodeName))
@@ -778,20 +787,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 rule.postProcess(op, sd, attributes, importInfoForNode.second,node.outputs())
             }
 
-            if (nodeName == "/Equal") {
-                logger.info("=== CREATING OUTPUT VARIABLES FOR /Equal ===")
-                logger.info("proceedWithInit: $proceedWithInit")
-                logger.info("Number of outputs to create: ${node.numOutputs()}")
-            }
-
             // Create output variables
             if(proceedWithInit) {
                 val newInNames = sd.ops[nodeName]!!.inputsToOp
                 val newInDtypes: MutableList<DataType> = ArrayList(newInNames.size)
-
-                if (nodeName == "/Equal") {
-                    logger.info("Input names for output calculation: $newInNames")
-                }
 
                 if (df is Merge) {
                     val v1 = sd.getVariable(newInNames[0])
@@ -805,30 +804,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     for (s in newInNames) {
                         val v = sd.getVariable(s)
                         newInDtypes.add(v.dataType())
-                        if (nodeName == "/Equal") {
-                            logger.info("Input variable '$s': type=${v.dataType()}, shape=${v.shape()?.toString()}")
-                        }
                     }
                 }
 
-                if (nodeName == "/Equal") {
-                    logger.info("Input data types for calculateOutputDataTypes: $newInDtypes")
-                    logger.info("About to call df.calculateOutputDataTypes...")
-                }
-
-                val outputDataTypes = try {
-                    df.calculateOutputDataTypes(newInDtypes)
-                } catch (e: Exception) {
-                    if (nodeName == "/Equal") {
-                        logger.error("ERROR in calculateOutputDataTypes for /Equal: ${e.message}")
-                        e.printStackTrace()
-                    }
-                    throw e
-                }
-
-                if (nodeName == "/Equal") {
-                    logger.info("calculateOutputDataTypes returned: $outputDataTypes")
-                }
+                val outputDataTypes = df.calculateOutputDataTypes(newInDtypes)
 
                 val numOutputs = outputDataTypes.size
 
@@ -844,20 +823,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     val dt = outputDataTypes[i]
                     val varName = node.outputAt(i)
 
-                    if (nodeName == "/Equal") {
-                        logger.info("Creating output variable $i: '$varName' with data type $dt")
-                        logger.info("Variable already exists: ${sd.hasVariable(varName)}")
-                    }
-
                     outSDVars[i] = if(sd.hasVariable(varName)) {
-                        if (nodeName == "/Equal") {
-                            logger.info("Using existing variable '$varName'")
-                        }
                         sd.getVariable(varName)
                     } else {
-                        if (nodeName == "/Equal") {
-                            logger.info("Creating new variable '$varName'")
-                        }
                         sd.`var`(varName, VariableType.ARRAY, null, dt)
                     }
                     outNames.add(varName)
@@ -888,20 +856,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     if (isTracingEnabled) {
                         VariableOriginTracer.traceVariableResolution(varName, nodeName, outSDVars[i], null)
                     }
-
-                    if (nodeName == "/Equal") {
-                        logger.info("Successfully created output variable '$varName'")
-                        logger.info("Variable now exists in SameDiff: ${sd.hasVariable(varName)}")
-                        logger.info("Variable in sd.variables: ${sd.variables.containsKey(varName)}")
-                    }
                 }
 
                 sd.ops[nodeName]!!.outputsOfOp = outNames
-
-                if (nodeName == "/Equal") {
-                    logger.info("Set outputsOfOp to: $outNames")
-                    logger.info("=== /Equal OUTPUT CREATION COMPLETE ===")
-                }
 
                 if(sd.isEagerMode && !containsControlflow && df !is BaseCompatOp) {
                     when(val operation = op.op)  {
@@ -914,26 +871,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         }
                     }
                 }
-            } else {
-                if (nodeName == "/Equal") {
-                    logger.info("DEBUG: /Equal SKIPPED output variable creation because proceedWithInit = false")
-                }
-            }
-
-            // Post-processing check for /Equal
-            if (nodeName == "/Equal") {
-                logger.info("=== POST-PROCESSING /Equal ===")
-                for (i in 0 until node.numOutputs()) {
-                    val outputName = node.outputAt(i)
-                    logger.info("Expected output '$outputName' exists: ${sd.hasVariable(outputName)}")
-                    if (sd.hasVariable(outputName)) {
-                        val variable = sd.getVariable(outputName)
-                        logger.info("  Variable type: ${variable.dataType()}")
-                        logger.info("  Variable shape: ${variable.shape()?.toString()}")
-                    }
-                }
-                logger.info("All SameDiff variables: ${sd.variableNames().toList()}")
-                logger.info("=== END /Equal PROCESSING ===")
             }
         }
 

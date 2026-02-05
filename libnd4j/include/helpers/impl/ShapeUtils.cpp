@@ -763,7 +763,10 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
   }
 
   // sometimes we have 1 and 2d vectors
-  if (shape::isVector(min) && shape::isVector(max) && shape::length(min) == shape::length(max)) {
+  // Only use this shortcut when both have the same rank; otherwise [N] broadcast with [N,1]
+  // would incorrectly return [N,1] instead of the correct [N,N]
+  if (shape::isVector(min) && shape::isVector(max) && shape::length(min) == shape::length(max)
+      && shape::rank(min) == shape::rank(max)) {
     if (shape::rank(min) > shape::rank(max)) {
       resultShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(min);
       return true;

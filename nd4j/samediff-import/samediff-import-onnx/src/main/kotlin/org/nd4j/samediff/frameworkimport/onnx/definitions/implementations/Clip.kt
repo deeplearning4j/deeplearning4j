@@ -49,16 +49,21 @@ class Clip : PreImportHook  {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val min = if(op.inputsToOp.size > 1) {
-            sd.getVariable(op.inputsToOp[1])
+
+        // In ONNX, optional inputs can be empty strings "" meaning "not provided"
+        val minInputName = if (op.inputsToOp.size > 1) op.inputsToOp[1] else ""
+        val maxInputName = if (op.inputsToOp.size > 2) op.inputsToOp[2] else ""
+
+        val min = if (minInputName.isNotEmpty() && sd.hasVariable(minInputName)) {
+            sd.getVariable(minInputName)
         } else {
-            sd.minMax(inputVariable.dataType().toInt(),0)
+            sd.minMax(inputVariable.dataType().toInt(), 0)
         }
 
-        val max = if(op.inputsToOp.size > 2) {
-            sd.getVariable(op.inputsToOp[2])
+        val max = if (maxInputName.isNotEmpty() && sd.hasVariable(maxInputName)) {
+            sd.getVariable(maxInputName)
         } else {
-            sd.minMax(inputVariable.dataType().toInt(),1)
+            sd.minMax(inputVariable.dataType().toInt(), 1)
         }
 
         val clipped = sd.clipByValue(inputVariable,min,max)

@@ -393,6 +393,14 @@ void InteropDataBuffer::registerSpecialUse(const std::vector<const InteropDataBu
     if (v == nullptr) continue;
 
     v->getDataBuffer()->writeSpecial();
+
+    // Update multi-backend coherence: device (special) was written,
+    // so mark CUDA device as MODIFIED and invalidate CPU
+    if (v->_multiBackendWorkspace != nullptr) {
+      auto currentDeviceId = AffinityManager::currentDeviceId();
+      memory::DeviceDescriptor gpuDevice(memory::DeviceType::CUDA_GPU, currentDeviceId);
+      v->_multiBackendWorkspace->markModified(gpuDevice);
+    }
   }
 }
 
@@ -400,6 +408,8 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
                                           const std::vector<const InteropDataBuffer*>& readList,
                                           bool synchronizeWritables) {
   auto currentDeviceId = AffinityManager::currentDeviceId();
+  memory::DeviceDescriptor gpuDevice(memory::DeviceType::CUDA_GPU, currentDeviceId);
+
   for (const auto& v : readList) {
     if (v == nullptr || v->isClosed()) continue;
 
@@ -407,6 +417,18 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
     if(db == nullptr) continue;
 
     if (db->deviceId() != currentDeviceId) db->migrate();
+
+    // If multi-backend workspace coherence says GPU already has valid data,
+    // skip the potentially expensive H2D sync
+    if (v->_multiBackendWorkspace != nullptr) {
+      auto coherence = v->_multiBackendWorkspace->getCoherenceState(gpuDevice);
+      if (coherence == memory::CoherenceState::SHARED ||
+          coherence == memory::CoherenceState::EXCLUSIVE ||
+          coherence == memory::CoherenceState::MODIFIED) {
+        continue;  // GPU data is already valid
+      }
+    }
+
     db->syncToSpecial();
   }
 
@@ -418,7 +440,19 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
     if(db == nullptr) continue;
 
     // special case for legacy ops - views can be updated on host side, thus original array can be not updated
-    if (!db->isSpecialActual()) db->syncToSpecial();
+    if (!db->isSpecialActual()) {
+      // Check coherence before syncing
+      if (v->_multiBackendWorkspace != nullptr) {
+        auto coherence = v->_multiBackendWorkspace->getCoherenceState(gpuDevice);
+        if (coherence != memory::CoherenceState::SHARED &&
+            coherence != memory::CoherenceState::EXCLUSIVE &&
+            coherence != memory::CoherenceState::MODIFIED) {
+          db->syncToSpecial();
+        }
+      } else {
+        db->syncToSpecial();
+      }
+    }
 
     if (db->deviceId() != currentDeviceId) db->migrate();
   }
@@ -432,6 +466,13 @@ void InteropDataBuffer::registerPrimaryUse(const std::vector<const InteropDataBu
     auto db = v->getDataBuffer();
     if (db != nullptr) {
       db->writePrimary();
+
+      // Update multi-backend coherence: host (primary) was written,
+      // so mark CPU as MODIFIED and invalidate GPU devices
+      if (v->_multiBackendWorkspace != nullptr) {
+        memory::DeviceDescriptor cpuDevice(memory::DeviceType::CPU, 0);
+        v->_multiBackendWorkspace->markModified(cpuDevice);
+      }
     }
   }
 }
@@ -439,12 +480,25 @@ void InteropDataBuffer::registerPrimaryUse(const std::vector<const InteropDataBu
 void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                           const std::vector<const InteropDataBuffer*>& readList,
                                           bool synchronizeWritables) {
+  memory::DeviceDescriptor cpuDevice(memory::DeviceType::CPU, 0);
+
   // Sync read buffers from device to host
   for (const auto& v : readList) {
     if (v == nullptr || v->isClosed()) continue;
 
     auto db = v->getDataBuffer();
     if (db == nullptr) continue;
+
+    // If multi-backend workspace coherence says CPU already has valid data,
+    // skip the potentially expensive D2H sync
+    if (v->_multiBackendWorkspace != nullptr) {
+      auto coherence = v->_multiBackendWorkspace->getCoherenceState(cpuDevice);
+      if (coherence == memory::CoherenceState::SHARED ||
+          coherence == memory::CoherenceState::EXCLUSIVE ||
+          coherence == memory::CoherenceState::MODIFIED) {
+        continue;  // CPU data is already valid
+      }
+    }
 
     // Transfer metrics are tracked inside syncToPrimary
     db->syncToPrimary(LaunchContext::defaultContext(), false);
@@ -459,8 +513,26 @@ void InteropDataBuffer::preparePrimaryUse(const std::vector<const InteropDataBuf
 
     db->allocatePrimary();
     if (synchronizeWritables && !db->isPrimaryActual()) {
-      db->syncToPrimary(LaunchContext::defaultContext(), false);
+      // Check coherence before syncing
+      if (v->_multiBackendWorkspace != nullptr) {
+        auto coherence = v->_multiBackendWorkspace->getCoherenceState(cpuDevice);
+        if (coherence != memory::CoherenceState::SHARED &&
+            coherence != memory::CoherenceState::EXCLUSIVE &&
+            coherence != memory::CoherenceState::MODIFIED) {
+          db->syncToPrimary(LaunchContext::defaultContext(), false);
+        }
+      } else {
+        db->syncToPrimary(LaunchContext::defaultContext(), false);
+      }
     }
+  }
+}
+
+void InteropDataBuffer::setWorkspace(memory::Workspace* workspace) {
+  _workspace = workspace;
+  if (workspace != nullptr) {
+    // Workspace owns the memory, so this buffer should not free it
+    markOwner(false);
   }
 }
 

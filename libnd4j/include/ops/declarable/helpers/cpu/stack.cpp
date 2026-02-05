@@ -65,8 +65,17 @@ template <typename T>
 static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int dim) {
   const int numOfSubArrs = inArrs.size();
 
-  // no op on empty
-  if (inArrs[0]->rankOf() == 0 && !inArrs[0]->isEmpty()) {
+  // Check if ALL inputs are effectively single-element tensors (scalar or [1])
+  // This handles the case where some inputs are scalar and others are [1]
+  bool allSingleElement = true;
+  for (int i = 0; i < numOfSubArrs && allSingleElement; ++i) {
+    if (!inArrs[i]->isEmpty() && inArrs[i]->lengthOf() != 1) {
+      allSingleElement = false;
+    }
+  }
+
+  // no op on empty - use scalar path for all single-element tensors
+  if (allSingleElement && !inArrs[0]->isEmpty()) {
     // Scalar case - use direct buffer access
     T* outBuff = output.bufferAsT<T>();
     auto func = PRAGMA_THREADS_FOR {

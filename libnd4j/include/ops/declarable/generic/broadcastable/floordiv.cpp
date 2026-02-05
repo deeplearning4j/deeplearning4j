@@ -88,7 +88,14 @@ BROADCASTABLE_OP_IMPL(floordiv, 0, 0) {
     }
     if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
       std::vector<sd::LongType> dims = {xRank - 1};
-      x->applyBroadcast(broadcast::FloorDiv, &dims, y, z);
+      if (yRank > 1) {
+        std::vector<sd::LongType> yShape = {yLen};
+        auto yReshaped = y->reshape(y->ordering(), yShape);
+        x->applyBroadcast(broadcast::FloorDiv, &dims, yReshaped, z);
+        delete yReshaped;
+      } else {
+        x->applyBroadcast(broadcast::FloorDiv, &dims, y, z);
+      }
       return Status::OK;
     }
   }

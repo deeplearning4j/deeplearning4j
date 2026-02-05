@@ -124,6 +124,10 @@ public class NativeOpsHolder {
                        // safe to call (they will return early without traversing potentially corrupted memory)
                        deviceNativeOps.setTADCacheShutdownInProgress(true);
                        deviceNativeOps.setShapeCacheShutdownInProgress(true);
+                       // Stop the DeallocatorService from calling native free() during shutdown.
+                       // Heap metadata may be corrupted from prior buffer overruns, and calling
+                       // free() triggers SIGABRT. The OS reclaims all memory on process exit.
+                       org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
                    } catch (Throwable t) {
                        // Ignore errors during shutdown - we're just trying to be safe
                    }

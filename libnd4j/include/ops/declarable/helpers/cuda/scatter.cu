@@ -430,10 +430,14 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 
     for (LongType j = 0; j < len; j++) {
       if (is1Dcase) {
+        // For 1D case, x contains the index values directly
+        // j iterates through x elements, i iterates through z positions
+        // We check if x[j] == i (meaning update z[i] with y[j])
         if (x[j * xStride[xNonUnitDim]] != i) continue;
 
-        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
-        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+        // Compute offsets directly for 1D case (coords not initialized for this path)
+        yOffset = j * yStride[yNonUnitDim];
+        zOffset = i * zStride[zNonUnitDim];
       } else {
         INDEX2COORDS(j, xRank - 1, xShape, yCoords);
 
@@ -552,10 +556,21 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void* vx, const Long
     }
 
     // Map y coordinates to x and z coordinates
+    // Read the index values from x (indices array) to determine which z position to update
+    bool validIndex = true;
     for (LongType j = 0; j < xLastDim; ++j) {
       yCoords[xRank - 1] = j;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, zCoords[j]);
+      LongType xOffset;
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
+      zCoords[j] = x[xOffset];  // Get the actual index value from x
+      // Bounds check: ensure index is within z's dimension
+      if (zCoords[j] < 0 || zCoords[j] >= shape::shapeOf(zShapeInfo)[j]) {
+        validIndex = false;
+        break;
+      }
     }
+
+    if (!validIndex) continue;
 
     // Adjust remaining coordinates for z
     for (LongType j = xLastDim + 1; j < zRank; ++j) {

@@ -52,10 +52,33 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
   inArrs[0] = input;
   const sd::LongType* firstShape = input->shapeInfo();
 
+  // Helper lambda to check if two shapes are compatible for stacking
+  // Treats scalar [] and [1] as compatible (common in ONNX models)
+  auto shapesCompatibleForStack = [](const sd::LongType* shapeA, const sd::LongType* shapeB) -> bool {
+    // If shapes are equal, they're compatible
+    if (shape::equalsSoft(shapeA, shapeB)) return true;
+
+    // Check if one is scalar and other is [1] - treat as compatible
+    int rankA = shape::rank(shapeA);
+    int rankB = shape::rank(shapeB);
+    sd::LongType lengthA = shape::length(shapeA);
+    sd::LongType lengthB = shape::length(shapeB);
+
+    // Both must have length 1 (scalar or [1] tensor)
+    if (lengthA == 1 && lengthB == 1) {
+      // Allow scalar vs [1] compatibility
+      if ((rankA == 0 && rankB == 1) || (rankA == 1 && rankB == 0)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   for (int i = 1; i < numInputs; ++i) {
     inArrs[i] = INPUT_VARIABLE(i);
-    REQUIRE_TRUE(shape::equalsSoft(firstShape, inArrs[i]->shapeInfo()), 0,
-                 "STACK op: the shapes of all input arrays must be the same !");
+    REQUIRE_TRUE(shapesCompatibleForStack(firstShape, inArrs[i]->shapeInfo()), 0,
+                 "STACK op: the shapes of all input arrays must be the same or compatible (scalar vs [1])!");
   }
 
   // empty arrays are a no op

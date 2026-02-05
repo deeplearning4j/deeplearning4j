@@ -141,10 +141,9 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
       return sd::Status::OK;
     }
 
-    const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
-    auto put = sign * gradO->e(0);
-    gradI->p(ind, put);
-    delete put;
+    const double sign = input->e<double>(ind) >= 0.0 ? 1.0 : -1.0;
+    const double gradOVal = gradO->e<double>(0);
+    gradI->p(ind, sign * gradOVal);
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);

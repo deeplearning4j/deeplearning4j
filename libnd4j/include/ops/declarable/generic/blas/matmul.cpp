@@ -36,6 +36,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
+  NDArray* originalZ = z;  // Save original output pointer for copy-back after reshape
   if(x->isEmpty() || y->isEmpty())
     return Status::OK;
   int iSize = (int)block.getIArguments()->size();
@@ -86,12 +87,14 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     LongType batchSize = x->lengthOf() / (xM * xK);
 
     std::vector<LongType> newXShape = {batchSize * xM, xK};
-    xReshaped = new NDArray(x->reshape(x->ordering(), newXShape));
+    bool xCanView = x->ews() == 1;
+    xReshaped = x->reshape(x->ordering(), newXShape, !xCanView);
 
     // Flatten z to 2D: [product(batch...) * M, N]
     LongType zN = z->sizeAt(-1);
     std::vector<LongType> newZShape = {batchSize * xM, zN};
-    zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
+    bool zCanView = z->ews() == 1;
+    zReshaped = z->reshape(z->ordering(), newZShape, !zCanView);
 
     x = xReshaped;
     z = zReshaped;
@@ -103,12 +106,14 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     LongType batchSize = y->lengthOf() / (yK * yN);
 
     std::vector<LongType> newYShape = {yK, batchSize * yN};
-    yReshaped = new NDArray(y->reshape(y->ordering(), newYShape));
+    bool yCanView = y->ews() == 1;
+    yReshaped = y->reshape(y->ordering(), newYShape, !yCanView);
 
     // Flatten z to 2D: [M, product(batch...) * N]
     LongType zM = z->sizeAt(-2);
     std::vector<LongType> newZShape = {zM, batchSize * yN};
-    zReshaped = new NDArray(z->reshape(z->ordering(), newZShape));
+    bool zCanView = z->ews() == 1;
+    zReshaped = z->reshape(z->ordering(), newZShape, !zCanView);
 
     y = yReshaped;
     z = zReshaped;
@@ -152,7 +157,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
   }
   // ******* end of input validation ******* //
 
-  MmulHelper::matmul(x, y, z, transX, transY, alpha, beta, z);
+  MmulHelper::matmul(x, y, z, transX, transY, alpha, beta, originalZ);
 
   // Clean up reshaped arrays
   delete xReshaped;

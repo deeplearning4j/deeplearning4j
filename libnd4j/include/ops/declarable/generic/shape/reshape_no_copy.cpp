@@ -2,9 +2,12 @@
 // Created by agibsonccc on 8/30/24.
 //
 
+#include <system/op_boilerplate.h>
+#if NOT_EXCLUDED(OP_reshape_no_copy)
 #include <helpers/reshapeNoCopy.h>
 #include <helpers/shape.h>
 #include <ops/declarable/headers/shape.h>
+#include <cstring>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
@@ -19,14 +22,11 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   //note that the calculate output shape that sets this flag does not have access to the data buffer
   if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
       || output->dataBuffer() != input->dataBuffer()) {
-    // For reshape, we want to preserve LINEAR element order (not logical positions).
-    // This means we can use memcpy which preserves the raw byte order.
-    // The new shape/strides will correctly interpret the data in the new order.
+    // Buffers differ (fresh allocation) or copy flag is set.
+    // Use assign() which correctly iterates over logical elements,
+    // handling non-contiguous views, different strides, and different buffer sizes.
     if (input->lengthOf() == output->lengthOf() && input->lengthOf() > 0) {
-      input->syncToHost();
-      std::memcpy(output->buffer(), input->buffer(), input->lengthOf() * input->sizeOfT());
-      output->tickWriteHost();
-      output->syncToDevice();
+      output->assign(input);
     }
   }
   // the rest is no op, we don't need to copy we just needed the new shape
@@ -137,14 +137,16 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
-  // Handle -1 in shape specification
+  // Handle -1 and 0 in shape specification
+  // ONNX semantics: 0 means "copy dimension from input at same position"
   sd::LongType negativeOneCount = 0;
   sd::LongType negativeOneIndex = -1;
   sd::LongType totalElements = shape::length(inShape);
   sd::LongType knownDimProduct = 1;
-  
+  sd::LongType inputRank = shape::rank(inShape);
+
   // Count -1s and calculate product of known dimensions
-  // Note: 0 is valid for empty arrays, only reject negative values other than -1
+  // Handle 0 = copy from input (ONNX semantics)
   bool hasZeroDim = false;
   for (size_t i = 0; i < newShape.size(); i++) {
     if (newShape[i] == -1) {
@@ -159,7 +161,20 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       errorMessage += std::to_string(newShape.size());
       THROW_EXCEPTION(errorMessage.c_str());
     } else if (newShape[i] == 0) {
-      hasZeroDim = true;
+      // ONNX semantics: 0 means "copy dimension from input at same position"
+      if (i < static_cast<size_t>(inputRank)) {
+        sd::LongType inputDim = shape::shapeOf(inShape)[i];
+        newShape[i] = inputDim;
+        if (inputDim == 0) {
+          hasZeroDim = true;
+        } else {
+          knownDimProduct *= inputDim;
+        }
+      } else {
+        // Position beyond input rank - treat as 1 (padding case)
+        newShape[i] = 1;
+        knownDimProduct *= 1;
+      }
     } else {
       knownDimProduct *= newShape[i];
     }
@@ -183,6 +198,30 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       THROW_EXCEPTION(errorMessage.c_str());
     } else {
       newShape[negativeOneIndex] = totalElements / knownDimProduct;
+    }
+  }
+
+  // Validate that the target shape's total element count matches the input's element count.
+  // This catches bugs where wrong dimensions are passed (e.g., from Java char-widening
+  // or incorrect shape calculations), which would create a view with more elements than
+  // the underlying buffer, causing heap corruption when ops read/write past the end.
+  if (!hasZeroDim && totalElements > 0 && negativeOneCount == 0) {
+    sd::LongType targetElements = 1;
+    for (size_t i = 0; i < newShape.size(); i++) {
+      targetElements *= newShape[i];
+    }
+    if (targetElements != totalElements) {
+      std::string errorMessage = "reshape_no_copy: Cannot reshape array of ";
+      errorMessage += std::to_string(totalElements);
+      errorMessage += " elements into shape [";
+      for (size_t i = 0; i < newShape.size(); i++) {
+        if (i > 0) errorMessage += ", ";
+        errorMessage += std::to_string(newShape[i]);
+      }
+      errorMessage += "] (";
+      errorMessage += std::to_string(targetElements);
+      errorMessage += " elements). Element counts must match.";
+      THROW_EXCEPTION(errorMessage.c_str());
     }
   }
 
@@ -249,5 +288,7 @@ DECLARE_TYPES(reshape_no_copy) {
       ->setAllowedOutputTypes(sd::DataType::ANY)
       ->setSameMode(true);
 }
-}
-}
+}  // namespace ops
+}  // namespace sd
+
+#endif

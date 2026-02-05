@@ -117,58 +117,46 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setIArguments(long... arguments) {
-        if (arguments.length > 0) {
-            super.setIArguments(arguments);
-            LongPointer iArgs = new LongPointer(arguments);
-            nativeOps.setGraphContextIArguments(context, iArgs, arguments.length);
-        }
+        super.setIArguments(arguments);
+        LongPointer iArgs = arguments.length > 0 ? new LongPointer(arguments) : new LongPointer(0);
+        nativeOps.setGraphContextIArguments(context, iArgs, arguments.length);
     }
 
     @Override
     public void setBArguments(boolean... arguments) {
-        if (arguments.length > 0) {
-            super.setBArguments(arguments);
-            BooleanPointer bArgs = new BooleanPointer(arguments);
-            nativeOps.setGraphContextBArguments(context, bArgs, arguments.length);
-        }
+        super.setBArguments(arguments);
+        BooleanPointer bArgs = arguments.length > 0 ? new BooleanPointer(arguments) : new BooleanPointer(0);
+        nativeOps.setGraphContextBArguments(context, bArgs, arguments.length);
     }
 
     @Override
     public void setTArguments(double... arguments) {
-        if (arguments.length > 0) {
-            super.setTArguments(arguments);
-            DoublePointer tArgs = new DoublePointer(arguments);
-            nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
-        };
+        super.setTArguments(arguments);
+        DoublePointer tArgs = arguments.length > 0 ? new DoublePointer(arguments) : new DoublePointer(0);
+        nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
     }
 
     @Override
     public void setDArguments(DataType... arguments) {
-        if (arguments.length > 0) {
-            super.setDArguments(arguments);
-            val args = new int[arguments.length];
-            for (int e = 0; e < arguments.length; e++)
-                args[e] = arguments[e].toInt();
+        super.setDArguments(arguments);
+        val args = new int[arguments.length];
+        for (int e = 0; e < arguments.length; e++)
+            args[e] = arguments[e].toInt();
 
-            IntPointer dArgs =  new IntPointer(args);
-            nativeOps.setGraphContextDArguments(context,dArgs, arguments.length);
-        }
+        IntPointer dArgs = args.length > 0 ? new IntPointer(args) : new IntPointer(0);
+        nativeOps.setGraphContextDArguments(context, dArgs, arguments.length);
     }
 
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {
-        // Use the single-array approach like CpuOpContext - bypasses OpaqueNDArrayArr issues
         int idx = 0;
         for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
             if (array == null) {
                 continue;  // Skip null inputs
             }
-            // Sync HOST to DEVICE before passing to native ops
-            // This ensures data written via Java putScalar() is available on GPU
-            if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
-                nativeOps.dbSyncToSpecial(array.data().opaqueBuffer());
-            }
+            // Note: OpaqueNDArray.fromINDArray() already calls syncToSpecial()
+            // so we don't need a separate sync here.
             fastpath_in.put(idx, array);
             singleInputArrayRefs.put(idx, array);
             OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
@@ -250,7 +238,13 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public INDArray getIntermediateResult(int index) {
+        if (context == null || context.isNull()) {
+            throw new IllegalStateException("Cannot get intermediate result: OpContext native context is null");
+        }
         LongPointer shapeInfo = nativeOps.intermediateResultShapeInfoAt(index,context);
+        if (shapeInfo == null || shapeInfo.isNull()) {
+            throw new IllegalStateException("Failed to retrieve intermediate result shape info at index " + index + ": returned null");
+        }
         long rank = shapeInfo.get(0);
         shapeInfo.capacity(Shape.shapeInfoLength(rank));
         DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
@@ -292,12 +286,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        // Sync HOST to DEVICE before passing to native ops
-        // This ensures data written via Java putScalar() is available on GPU
-        if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
-            nativeOps.dbSyncToSpecial(array.data().opaqueBuffer());
-        }
-        // Store strong reference to INDArray to prevent GC while this OpContext is alive
+        // Note: OpaqueNDArray.fromINDArray() already handles syncToSpecial()
+        // for non-constant arrays, so no separate sync needed here.
         singleInputArrayRefs.put(index, array);
         OpaqueNDArray opaqueArray = OpaqueNDArray.fromINDArray(array);
         inputOpaqueArrayRefs.put(index, opaqueArray);
@@ -351,25 +341,32 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         if (closed) {
             return;
         }
-        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        boolean switched = false;
-        if (currentDevice != deviceId) {
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
-            switched = true;
-        }
-        try {
-            Nd4j.getExecutioner().commit();
-            super.purge();
-            if (context != null && !context.isNull()) {
-                nativeOps.ctxPurge(context);
-            }
-        } finally {
-            if (switched) {
-                Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
-            }
+        Nd4j.getExecutioner().commit();
+        super.purge();
+        if (context != null && !context.isNull()) {
+            nativeOps.ctxPurge(context);
         }
     }
 
+    @Override
+    public void purgeForReuse() {
+        if (closed) {
+            return;
+        }
+        // Skip the Java commit() - the caller (InferenceSession) does a single
+        // commit() after the full execution loop instead of per-op.
+        // Use ctxPurgeNoSync to clear the native fast path vectors without
+        // cudaDeviceSynchronize() - the kernel has already read the array pointers
+        // at launch time, so clearing the vectors is safe without a full device sync.
+        super.purgeForReuse();
+        singleInputArrayRefs.clear();
+        singleOutputArrayRefs.clear();
+        inputOpaqueArrayRefs.clear();
+        outputOpaqueArrayRefs.clear();
+        if (context != null && !context.isNull()) {
+            nativeOps.ctxPurgeNoSync(context);
+        }
+    }
 
     @Override
     public long getUniqueId() {
@@ -386,5 +383,19 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     @Override
     public int targetDevice() {
         return deviceId;
+    }
+
+    @Override
+    public void attachWorkspace(Pointer workspacePointer) {
+        if (context != null && workspacePointer != null) {
+            nativeOps.attachWorkspaceToContext(context, workspacePointer);
+        }
+    }
+
+    @Override
+    public void detachWorkspace() {
+        if (context != null) {
+            nativeOps.detachWorkspaceFromContext(context);
+        }
     }
 }

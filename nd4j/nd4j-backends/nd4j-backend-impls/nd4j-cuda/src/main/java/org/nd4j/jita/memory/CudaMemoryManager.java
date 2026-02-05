@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.CpuBackendLoader;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,15 +39,31 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.api.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author raver119@gmail.com
  */
 @Slf4j
 public class CudaMemoryManager extends BasicMemoryManager {
+
+    /**
+     * Tracks allocations that were requested as DEVICE but fell back to HOST due to GPU memory exhaustion.
+     * Key: pointer address, Value: true if this was a fallback HOST allocation for a DEVICE request.
+     * This is needed to properly route release() calls to freeHost() instead of freeDevice().
+     */
+    private static final ConcurrentHashMap<Long, Boolean> hostFallbackAllocations = new ConcurrentHashMap<>();
+
+    /**
+     * Whether to enable CPU fallback when CUDA allocation fails.
+     * Can be disabled via system property: nd4j.cuda.memory.fallback.enabled=false
+     */
+    private static final boolean CPU_FALLBACK_ENABLED = Boolean.parseBoolean(
+            System.getProperty("nd4j.cuda.memory.fallback.enabled", "true"));
 
     /**
      * This method returns Pointer to allocated memory chunk
@@ -74,32 +91,150 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             return ptr;
         } else if (kind == MemoryKind.DEVICE) {
-            val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
-            log.trace("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            // Try CUDA device allocation first
+            Pointer ptr = tryAllocateDevice(bytes);
 
-            val ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
-            if (ec != 0) {
-                val em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
-                throw new RuntimeException(em + "; Bytes: [" + bytes + "]; Error code [" + ec + "]; DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "]");
+            if (ptr != null) {
+                // Successful CUDA allocation
+                if (initialize) {
+                    val context = AtomicAllocator.getInstance().getDeviceContext();
+                    int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                    if (i == 0)
+                        throw new ND4JIllegalStateException("memset failed on device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                    context.getSpecialStream().synchronize();
+                }
+                return ptr;
             }
 
-            if (ptr == null)
-                throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
+            // CUDA allocation failed - attempt recovery
+            log.warn("CUDA device allocation failed for {} bytes on device_{}, attempting recovery...",
+                    bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-            if (initialize) {
-                val context = AtomicAllocator.getInstance().getDeviceContext();
+            // Step 1: Trigger garbage collection and synchronize
+            triggerMemoryReclamation();
 
-                int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
-                if (i == 0)
-                    throw new ND4JIllegalStateException("memset failed on device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
-
-                context.getSpecialStream().synchronize();
+            // Step 2: Retry CUDA allocation
+            ptr = tryAllocateDevice(bytes);
+            if (ptr != null) {
+                log.info("CUDA allocation succeeded after memory reclamation for {} bytes", bytes);
+                if (initialize) {
+                    val context = AtomicAllocator.getInstance().getDeviceContext();
+                    int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                    if (i == 0)
+                        throw new ND4JIllegalStateException("memset failed on device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                    context.getSpecialStream().synchronize();
+                }
+                return ptr;
             }
 
+            // Step 3: Check if CPU fallback is available and enabled
+            if (CPU_FALLBACK_ENABLED && CpuBackendLoader.isCpuBackendAvailable()) {
+                log.warn("CUDA allocation still failed after GC. Falling back to HOST memory for {} bytes. " +
+                        "CPU backend (nd4j-native) is available for execution.", bytes);
 
-            return ptr; //allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getDevicePointer();
+                // Allocate in HOST memory instead
+                ptr = allocateHostFallback(bytes, initialize);
+                if (ptr != null) {
+                    // Track this as a fallback allocation so release() knows to use freeHost
+                    hostFallbackAllocations.put(ptr.address(), Boolean.TRUE);
+                    log.info("Successfully allocated {} bytes in HOST memory as CUDA fallback", bytes);
+                    return ptr;
+                }
+            }
+
+            // All recovery attempts failed - throw with detailed info
+            val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            String cpuStatus = CpuBackendLoader.isCpuBackendAvailable() ?
+                    "CPU backend available but allocation failed" :
+                    "CPU backend NOT available (add nd4j-native to classpath for fallback)";
+            throw new RuntimeException(String.format(
+                    "CUDA memory allocation failed and recovery unsuccessful. " +
+                    "Requested: %d bytes (%.2f MB); Device: %d; %s. " +
+                    "Consider: (1) reducing batch size, (2) adding nd4j-native for CPU fallback, " +
+                    "(3) freeing unused arrays, or (4) using a GPU with more VRAM.",
+                    bytes, bytes / (1024.0 * 1024.0), deviceId, cpuStatus));
         } else
             throw new RuntimeException("Unknown MemoryKind requested: " + kind);
+    }
+
+    /**
+     * Attempt to allocate device memory without throwing on failure.
+     * @return pointer if successful, null if allocation failed
+     */
+    private Pointer tryAllocateDevice(long bytes) {
+        val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
+        log.trace("Attempting allocation of {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        val ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+        if (ec != 0) {
+            // Clear the error state
+            NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+            return null;
+        }
+
+        if (ptr == null || ptr.address() == 0L) {
+            return null;
+        }
+
+        return ptr;
+    }
+
+    /**
+     * Allocate memory in HOST as a fallback when DEVICE allocation fails.
+     * Uses CPU NativeOps if available for proper host allocation.
+     */
+    private Pointer allocateHostFallback(long bytes, boolean initialize) {
+        try {
+            // Try using CPU backend's NativeOps for host allocation if available
+            NativeOps cpuNativeOps = CpuBackendLoader.loadCpuNativeOps();
+            Pointer ptr;
+
+            if (cpuNativeOps != null) {
+                // Use CPU backend for host allocation - this ensures proper CPU-side memory management
+                ptr = cpuNativeOps.mallocHost(bytes, 0);
+            } else {
+                // Fall back to CUDA's host allocation (pinned memory)
+                ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+            }
+
+            if (ptr == null || ptr.address() == 0L) {
+                log.error("HOST memory allocation also failed for {} bytes", bytes);
+                return null;
+            }
+
+            if (initialize) {
+                Pointer.memset(ptr, 0, bytes);
+            }
+
+            return ptr;
+        } catch (Exception e) {
+            log.error("Exception during HOST fallback allocation: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Trigger memory reclamation across the system.
+     * This synchronizes CUDA operations, runs GC, and gives time for async deallocations.
+     */
+    private void triggerMemoryReclamation() {
+        try {
+            // Synchronize all pending CUDA operations
+            Nd4j.getExecutioner().commit();
+
+            // Run Java garbage collector
+            System.gc();
+
+            // Brief pause for async deallocations to complete
+            Thread.sleep(50);
+
+            // Synchronize again after GC
+            Nd4j.getExecutioner().commit();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.debug("Exception during memory reclamation: {}", e.getMessage());
+        }
     }
 
     /**
@@ -235,12 +370,50 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public void release(Pointer pointer, MemoryKind kind) {
+        if (pointer == null || pointer.address() == 0L) {
+            return;
+        }
+
         if (kind == MemoryKind.DEVICE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, 0);
+            // Check if this was a HOST fallback allocation that was tracked
+            Boolean wasFallback = hostFallbackAllocations.remove(pointer.address());
+            if (wasFallback != null && wasFallback) {
+                // This was actually allocated in HOST memory as a CUDA fallback
+                log.trace("Releasing HOST fallback allocation at address {}", pointer.address());
+                releaseHostFallback(pointer);
+            } else {
+                // Normal CUDA device allocation
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, 0);
+            }
             pointer.setNull();
         } else if (kind == MemoryKind.HOST) {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
             pointer.setNull();
+        }
+    }
+
+    /**
+     * Release memory that was allocated in HOST as a CUDA fallback.
+     * Uses CPU NativeOps if that was used for allocation, otherwise uses CUDA's freeHost.
+     */
+    private void releaseHostFallback(Pointer pointer) {
+        try {
+            NativeOps cpuNativeOps = CpuBackendLoader.getCpuNativeOps();
+            if (cpuNativeOps != null) {
+                // Free using CPU backend
+                cpuNativeOps.freeHost(pointer);
+            } else {
+                // Free using CUDA's host free
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
+            }
+        } catch (Exception e) {
+            log.warn("Exception releasing HOST fallback allocation: {}", e.getMessage());
+            // Try the other method as last resort
+            try {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
+            } catch (Exception e2) {
+                log.error("Failed to release HOST fallback allocation: {}", e2.getMessage());
+            }
         }
     }
 
@@ -341,5 +514,50 @@ public class CudaMemoryManager extends BasicMemoryManager {
             // Catch native errors like UnsatisfiedLinkError
             log.trace("Native error during context release: {}", e.getMessage());
         }
+    }
+
+    // =========================================================================
+    // Fallback Allocation Monitoring
+    // =========================================================================
+
+    /**
+     * Get the number of active HOST fallback allocations (DEVICE requests that fell back to HOST).
+     * This is useful for monitoring memory pressure situations.
+     *
+     * @return count of active fallback allocations
+     */
+    public static int getHostFallbackAllocationCount() {
+        return hostFallbackAllocations.size();
+    }
+
+    /**
+     * Check if any HOST fallback allocations are currently active.
+     * When this returns true, it indicates the GPU ran out of memory at some point
+     * and some allocations are being served from HOST memory.
+     *
+     * @return true if there are active fallback allocations
+     */
+    public static boolean hasHostFallbackAllocations() {
+        return !hostFallbackAllocations.isEmpty();
+    }
+
+    /**
+     * Check if CPU fallback is enabled and available.
+     * CPU fallback requires: (1) nd4j.cuda.memory.fallback.enabled=true (default)
+     * and (2) nd4j-native on the classpath.
+     *
+     * @return true if CPU fallback can be used when CUDA memory is exhausted
+     */
+    public static boolean isCpuFallbackAvailable() {
+        return CPU_FALLBACK_ENABLED && CpuBackendLoader.isCpuBackendAvailable();
+    }
+
+    /**
+     * Clear the fallback allocation tracking (for testing purposes).
+     * WARNING: Only call this if you know what you're doing - calling this
+     * while fallback allocations are still in use will cause memory leaks.
+     */
+    public static void clearFallbackTracking() {
+        hostFallbackAllocations.clear();
     }
 }

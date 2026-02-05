@@ -1713,6 +1713,20 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+    Op("squeezeAll") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "Squeeze"
+        Input(NUMERIC, "x") { description = "Input variable" }
+        Output(NUMERIC, "output"){ description = "Output variable" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Remove all dimensions of size 1 from the input tensor.
+                For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]
+                This is the NumPy-style squeeze with no axis specified.
+            """.trimIndent()
+        }
+    }
+
     Op("stack") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         argsFirst = true

@@ -18,7 +18,7 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.vlm;
+package org.eclipse.deeplearning4j.vlm.data;
 
 import lombok.Builder;
 import lombok.Data;
@@ -32,9 +32,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Utility class for downloading VLM test models from HuggingFace and other sources.
+ * Utility class for downloading VLM models from HuggingFace and other sources.
  *
- * Supports downloading ONNX and GGUF format models for vision-language testing.
+ * Supports downloading ONNX and GGUF format models for vision-language pipelines.
  */
 @Slf4j
 public class VLMModelDownloader {

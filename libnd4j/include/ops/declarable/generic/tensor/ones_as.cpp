@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(ones_as, 1, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
-  int one = one;
+  int one = 1;
   output->assign(one);
 
   return Status::OK;

@@ -148,6 +148,9 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
 
         if(x == null)
@@ -155,10 +158,12 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
         long[] reducedShape = x.rank() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
-        DataType retType = arg().dataType();
+        DataType retType = x != null ? x.dataType() : arg().dataType();
         if(!retType.isFPType())
             retType = Nd4j.defaultFloatingPointType();
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, retType).toShapeInfo()));
+        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, retType).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

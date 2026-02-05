@@ -56,6 +56,13 @@ public class DeallocatableReference extends PhantomReference<Deallocatable> {
             return;
         }
 
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process
+        // memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
+        }
+
         if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
             Nd4j.getDeallocatorService().registerDeallocatbleToListener(this);
         }

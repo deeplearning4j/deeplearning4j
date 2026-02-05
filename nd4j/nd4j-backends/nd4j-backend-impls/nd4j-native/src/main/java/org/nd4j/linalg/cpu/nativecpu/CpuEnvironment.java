@@ -491,6 +491,16 @@ public class CpuEnvironment implements Environment {
     }
 
     @Override
+    public long cudaPinnedHostLimit() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaPinnedHostLimit(long limitInMB) {
+        // No-op for CPU
+    }
+
+    @Override
     public boolean cudaUseUnifiedMemory() {
         return false;
     }

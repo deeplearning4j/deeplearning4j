@@ -24,6 +24,8 @@
 #if NOT_EXCLUDED(OP_Where)
 
 #include <helpers/ShapeUtils.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <array/ArrayOptions.h>
 #include <ops/declarable/headers/boolean.h>
 #include <ops/declarable/helpers/where.h>
 
@@ -35,7 +37,8 @@ inline bool evaluateCondition(NDArray* condition, int index) {
  switch(condition->dataType()) {
 #if defined(HAS_BOOL)
    case DataType::BOOL:
-     return condition->e<bool>(index);
+     // Read BOOL as int8 and compare to 0 for consistent behavior
+     return condition->e<int8_t>(index) != 0;
 #endif
 #if defined(HAS_INT8)
    case DataType::INT8:
@@ -105,82 +108,6 @@ inline bool evaluateCondition(NDArray* condition, int index) {
  }
 }
 
-// Helper function to perform element-wise where with proper broadcasting
-void performBroadcastedWhere(NDArray* condition, NDArray* x, NDArray* y, NDArray* z) {
- // We'll process each element of the output array z
- // and determine the appropriate indices for condition, x, and y based on broadcasting rules
-
- auto* zShape = z->getShapeAsVector();
- auto* condShape = condition->getShapeAsVector();
- auto* xShape = x->getShapeAsVector();
- auto* yShape = y->getShapeAsVector();
-
- // For each element in the output array
- for (LongType i = 0; i < z->lengthOf(); i++) {
-   // Convert linear index to multi-dimensional indices for output array
-   std::vector<LongType> zIndices(z->rankOf());
-   LongType remainder = i;
-   for (int dim = z->rankOf() - 1; dim >= 0; dim--) {
-     zIndices[dim] = remainder % z->sizeAt(dim);
-     remainder /= z->sizeAt(dim);
-   }
-
-   // Calculate corresponding indices in condition, x, and y arrays using broadcasting rules
-   auto getLinearIndex = [](const std::vector<LongType>& multiIndices, const std::vector<LongType>& shape, NDArray* array) -> LongType {
-     LongType linearIndex = 0;
-     LongType stride = 1;
-     int srcDim = shape.size() - 1;
-
-     for (int dim = multiIndices.size() - 1; dim >= 0; dim--) {
-       LongType srcIndex = 0;
-       if (srcDim >= 0) {
-         if (shape[srcDim] == 1) {
-           srcIndex = 0; // Broadcast dimension
-         } else {
-           srcIndex = multiIndices[dim];
-         }
-         srcDim--;
-       }
-       linearIndex += srcIndex * stride;
-       if (srcDim >= 0) {
-         stride *= shape[srcDim + 1];
-       }
-     }
-     return linearIndex;
-   };
-
-   LongType condIndex = condition->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *condShape, condition);
-   LongType xIndex = x->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *xShape, x);
-   LongType yIndex = y->lengthOf() == 1 ? 0 : getLinearIndex(zIndices, *yShape, y);
-
-   // Apply the where logic
-   if (z->isR()) {
-#ifdef HAS_DOUBLE
-     auto result = evaluateCondition(condition, condIndex) ?
-                                                           x->e<double>(xIndex) : y->e<double>(yIndex);
-#elif defined(HAS_FLOAT32)
-     auto result = evaluateCondition(condition, condIndex) ?
-                                                           x->e<float>(xIndex) : y->e<float>(yIndex);
-#else
-#error "No floating-point type available for where operation"
-#endif
-     z->p(i, result);
-   } else{
-     auto result = evaluateCondition(condition, condIndex) ?
-                                                           x->e<LongType>(xIndex) : y->e<LongType>(yIndex);
-     z->p(i, result);
-   }
- }
-
- // Sync output to device after all element-wise writes to HOST
- z->syncToDevice();
-
- delete zShape;
- delete condShape;
- delete xShape;
- delete yShape;
-}
-
 CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
  auto condition = INPUT_VARIABLE(0);
  auto z = OUTPUT_VARIABLE(0);
@@ -195,57 +122,20 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
                 "X and Y must have equal shapes or be broadcastable. X shape: %s, Y shape: %s",
                 ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
 
-   // Sync inputs to HOST for element-wise access via e<T>()
-   condition->syncToHost();
-   x->syncToHost();
-   y->syncToHost();
-
-   // Case 1: All arrays have exact shape matching (element-wise operation)
-   if (condition->isSameShape(x) && x->isSameShape(y)) {
-     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
-     for (int e = 0; e < condition->lengthOf(); e++) {
-       if (z->isR()) {
-#ifdef HAS_DOUBLE
-         auto r = !evaluateCondition(condition, e) ? y->e<double>(e) : x->e<double>(e);
-#elif defined(HAS_FLOAT32)
-         auto r = !evaluateCondition(condition, e) ? y->e<float>(e) : x->e<float>(e);
-#else
-#error "No floating-point type available for where operation"
-#endif
-         z->p(e, r);
-       } else {
-         auto r = !evaluateCondition(condition, e) ? y->e<LongType>(e) : x->e<LongType>(e);
-         z->p(e, r);
-       }
-     }
-     // Sync output to device after HOST writes
-     z->syncToDevice();
+   // Case 1: All arrays have exact shape matching or are broadcastable (element-wise operation)
+   if ((condition->isSameShape(x) && x->isSameShape(y)) ||
+       (ShapeUtils::areShapesBroadcastable(*condition, *x) &&
+        ShapeUtils::areShapesBroadcastable(*condition, *y) &&
+        ShapeUtils::areShapesBroadcastable(*x, *y))) {
+     // Use GPU-accelerated helper for element-wise where
+     helpers::_whereElementWise(block.launchContext(), *condition, *x, *y, *z);
    }
-   // Case 2: Broadcasting is possible (most flexible case)
-   else if (ShapeUtils::areShapesBroadcastable(*condition, *x) &&
-            ShapeUtils::areShapesBroadcastable(*condition, *y) &&
-            ShapeUtils::areShapesBroadcastable(*x, *y)) {
-     performBroadcastedWhere(condition, x, y, z);
-   }
-   // Case 3: TAD-mask operation (legacy behavior for specific cases)
+   // Case 2: TAD-mask operation (condition is 1D, selecting entire TADs)
    else if (condition->rankOf() == 1 && condition->lengthOf() == x->sizeAt(0)) {
-     std::vector<LongType> zero({0});
-     auto dims = ShapeUtils::evalDimsToExclude(x->rankOf(), 1, zero.data());
-     auto tadsX = x->allTensorsAlongDimension(*dims);
-     auto tadsY = y->allTensorsAlongDimension(*dims);
-     auto tadsZ = z->allTensorsAlongDimension(*dims);
-
-     for (int e = 0; e < tadsX.size(); e++) {
-       if (!evaluateCondition(condition, e)) {
-         tadsZ.at(e)->assign(tadsY.at(e));
-       } else {
-         tadsZ.at(e)->assign(tadsX.at(e));
-       }
-     }
-
-     delete dims;
+     std::vector<LongType> axis({0});
+     helpers::_whereTad(block.launchContext(), *condition, *x, *y, *z, axis);
    }
-   // Case 4: Invalid shapes - provide detailed error message
+   // Case 3: Invalid shapes - provide detailed error message
    else {
      std::string condShape = ShapeUtils::shapeAsString(condition);
      std::string xShape = ShapeUtils::shapeAsString(x);
@@ -260,19 +150,14 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
                   condShape.c_str(), xShape.c_str(), yShape.c_str());
    }
  } else {
-   // in this case we return 2D matrix, which basically contains coordinates fo true
+   // in this case we return 2D matrix, which basically contains coordinates of true elements
    REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead",
                 block.width());
    auto output = OUTPUT_VARIABLE(0);
-   std::vector<LongType> zero({0});
 
-   int width = condition->rankOf();
    if (z->isEmpty()) return Status::OK;
 
-   std::vector<LongType> *dims = ShapeUtils::evalDimsToExclude(width,1,zero.data());
-
    helpers::_where(block.launchContext(), *condition, *output, block.workspace());
-   delete dims;
  }
  return Status::OK;
 }
@@ -298,38 +183,53 @@ DECLARE_SHAPE_FN(Where) {
    // output shape is the 2D tensor num_true x rankOf (inShape)
    auto condition = INPUT_VARIABLE(0);
    auto inShape = inputShape->at(0);
+
+   // Sync condition to host before accessing data via e<T>()
+   condition->syncToHost();
+
    LongType numOfTrue = 0;  // condition->reduceNumber(reduce::CountNonZero, nullptr).e<sd::LongType>(0);
+
+   // Debug: print condition info
+   sd_debug("Where shape function: condition shape=%s, dtype=%d, length=%lld\n",
+            ShapeUtils::shapeAsString(condition).c_str(),
+            static_cast<int>(condition->dataType()),
+            condition->lengthOf());
+
    for (LongType i = 0; i < condition->lengthOf(); i++)
      if (evaluateCondition(condition, i)) numOfTrue++;
 
+   sd_debug("Where shape function: found %lld true values out of %lld total\n", numOfTrue, condition->lengthOf());
+
    LongType * theNewShape;
-   if (numOfTrue > 0) {
+   LongType conditionRank = shape::rank(inShape);
+
+   if (numOfTrue == 0) {
+     // For empty result, use emptyShapeInfoWithShape which properly sets up empty arrays
+     std::vector<LongType> emptyShape = {0, conditionRank};
+#if defined(HAS_LONG)
+     theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(INT64, emptyShape);
+#else
+     theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(INT32, emptyShape);
+#endif
+   } else {
+     // For non-empty result, create shape [numOfTrue, conditionRank]
      LongType* newShape;
      ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);
-     newShape[0] = 2;
-     newShape[1] = numOfTrue;
-     newShape[2] = shape::rank(inShape);
-     newShape[3] = 1;
-     newShape[4] = 1;
-     newShape[5] = 0;
-     newShape[6] = 1;
-     newShape[7] = 99;
+     newShape[0] = 2;  // rank
+     newShape[1] = numOfTrue;  // rows (number of true elements)
+     newShape[2] = conditionRank;  // cols (coordinates per true element)
+     newShape[3] = conditionRank;  // stride for dim 0
+     newShape[4] = 1;  // stride for dim 1
+     newShape[5] = 0;  // offset
+     newShape[6] = 1;  // ews
+     newShape[7] = 99; // order 'c'
 #if defined(HAS_LONG)
      ShapeUtils::updateStridesAndType(newShape, INT64, 'c');
 #else
-     // Fallback to INT32 if INT64 is not available
      ShapeUtils::updateStridesAndType(newShape, INT32, 'c');
 #endif
-
      theNewShape = CONSTANT(newShape);
      RELEASE(newShape, block.getWorkspace());
-   } else {
-#if defined(HAS_LONG)
-     theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INT64);
-#else
-     // Fallback to INT32 if INT64 is not available
-     theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(INT32);
-#endif
    }
 
    return SHAPELIST(theNewShape);

@@ -151,4 +151,9 @@ public class Fill extends DynamicCustomOp {
         Preconditions.checkNotNull(dtype, "Output datatype was null (not set)");
         return Collections.singletonList(dtype);
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

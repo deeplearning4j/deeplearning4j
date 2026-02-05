@@ -351,6 +351,18 @@ void trimMemoryPool(int deviceId) {
   // no-op for CPU
 }
 
+sd::LongType getPinnedHostBytesUsed() {
+  return 0;  // no pinned memory on CPU
+}
+
+sd::LongType getPinnedHostBytesLimit() {
+  return 0;  // no pinned memory on CPU
+}
+
+void setPinnedHostBytesLimit(sd::LongType maxBytes) {
+  // no-op for CPU
+}
+
 /**
  * Returns the maximum number open mp threads
  */
@@ -425,6 +437,10 @@ int getDeviceId(void* deviceId) { return 0; }
 int registerEvent(sd::Pointer event, sd::Pointer stream) { return 0L; }
 
 int setDevice(int deviceId) { return 0L; }
+
+void setAvailableDevices(int *devices, int size) {
+  // no-op for CPU backend
+}
 
 sd::LongType getDeviceFreeMemory(int deviceId) { return 0L; }
 
@@ -2643,3 +2659,88 @@ BUILD_SINGLE_TEMPLATE( void tearGeneric,
 BUILD_SINGLE_TEMPLATE( void shuffleGeneric,
                       (OpaqueNDArrayArr, OpaqueNDArrayArr, int, int *,sd::LongType *, sd::LongType),
                       SD_COMMON_TYPES);
+
+// ========================
+// Workspace Management API Implementation (CPU)
+// ========================
+
+OpaqueWorkspace createNativeWorkspace(sd::LongType initialSize) {
+    return new sd::memory::Workspace(initialSize, 0);
+}
+
+void destroyNativeWorkspace(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        delete workspace;
+    }
+}
+
+void workspaceScopeIn(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        workspace->scopeIn();
+    }
+}
+
+void workspaceScopeOut(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        workspace->scopeOut();
+    }
+}
+
+void attachWorkspaceToContext(OpaqueContext* ctx, OpaqueWorkspace workspace) {
+    if (ctx != nullptr) {
+        ctx->attachWorkspace(workspace);
+    }
+}
+
+void detachWorkspaceFromContext(OpaqueContext* ctx) {
+    if (ctx != nullptr) {
+        ctx->forgetWorkspace();
+    }
+}
+
+sd::LongType getWorkspaceCurrentOffset(OpaqueWorkspace workspace) {
+    if (workspace == nullptr) return 0;
+    return workspace->getCurrentOffset();
+}
+
+sd::LongType getWorkspaceAllocatedSize(OpaqueWorkspace workspace) {
+    if (workspace == nullptr) return 0;
+    return workspace->getAllocatedSize();
+}
+
+// Multi-Backend Workspace API (CPU)
+
+OpaqueMultiBackendWorkspace createNativeMultiBackendWorkspace(
+    sd::LongType initialSize, int primaryDeviceType, int primaryDeviceIndex) {
+    return createMultiBackendWorkspace(initialSize, primaryDeviceType, primaryDeviceIndex);
+}
+
+void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle) {
+    destroyMultiBackendWorkspace(handle);
+}
+
+void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes) {
+    return mbwAllocateBytes(handle, numBytes);
+}
+
+void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {
+    mbwScopeIn(handle);
+}
+
+void nativeMbwScopeOut(OpaqueMultiBackendWorkspace handle) {
+    mbwScopeOut(handle);
+}
+
+void nativeMbwTransferTo(OpaqueMultiBackendWorkspace handle,
+    int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex) {
+    mbwTransferTo(handle, srcDeviceType, srcDeviceIndex, dstDeviceType, dstDeviceIndex);
+}
+
+int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex) {
+    return mbwGetCoherenceState(handle, deviceType, deviceIndex);
+}
+
+sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle) {
+    return mbwGetTotalAllocatedSize(handle);
+}

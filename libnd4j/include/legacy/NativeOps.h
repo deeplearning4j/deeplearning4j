@@ -48,6 +48,7 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugInfo.h>
 #include <memory/MemoryCounter.h>
+#include <memory/MultiBackendWorkspace.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <csignal>
 #include <cstdio>
@@ -69,6 +70,8 @@ typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
 typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
+typedef sd::memory::Workspace* OpaqueWorkspace;
+typedef sd::memory::MultiBackendWorkspace* OpaqueMultiBackendWorkspace;
 
 
 
@@ -261,6 +264,9 @@ SD_LIB_EXPORT bool isMemoryPoolEnabled() ;
 SD_LIB_EXPORT void setMemoryPoolEnabled(bool enabled) ;
 SD_LIB_EXPORT void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* reservedBytes) ;
 SD_LIB_EXPORT void trimMemoryPool(int deviceId) ;
+SD_LIB_EXPORT sd::LongType getPinnedHostBytesUsed() ;
+SD_LIB_EXPORT sd::LongType getPinnedHostBytesLimit() ;
+SD_LIB_EXPORT void setPinnedHostBytesLimit(sd::LongType maxBytes) ;
 
 SD_LIB_EXPORT sd::Pointer createContext() ;
 SD_LIB_EXPORT sd::Pointer createStream() ;
@@ -465,6 +471,7 @@ SD_LIB_EXPORT sd::Pointer lcBlasHandle(OpaqueLaunchContext lc) ;
 SD_LIB_EXPORT sd::Pointer lcSolverHandle(OpaqueLaunchContext lc) ;
 SD_LIB_EXPORT void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) ;
 SD_LIB_EXPORT void ctxPurge(OpaqueContext *ptr) ;
+SD_LIB_EXPORT void ctxPurgeNoSync(OpaqueContext *ptr) ;
 SD_LIB_EXPORT int binaryLevel() ;
 SD_LIB_EXPORT int optimalLevel() ;
 SD_LIB_EXPORT bool isMinimalRequirementsMet() ;
@@ -503,6 +510,8 @@ SD_LIB_EXPORT void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) ;
 SD_LIB_EXPORT void dbClose(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbCloseGetDiagnostics(sd::LongType* outStats) ;
+SD_LIB_EXPORT void dbCloseResetDiagnostics() ;
 SD_LIB_EXPORT int dbDeviceId(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) ;
 SD_LIB_EXPORT int dbLocality(OpaqueDataBuffer *dataBuffer) ;
@@ -1354,5 +1363,95 @@ SD_LIB_EXPORT int exportOpTimingChromeTrace(const char* filename);
  * @return 1 on success, 0 on failure
  */
 SD_LIB_EXPORT int exportOpTimingCSV(const char* filename);
+
+// ========================
+// Workspace Management API
+// ========================
+
+/**
+ * Create a native workspace for bump-allocated memory.
+ * @param initialSize initial allocation in bytes
+ * @return opaque workspace pointer
+ */
+SD_LIB_EXPORT OpaqueWorkspace createNativeWorkspace(sd::LongType initialSize);
+
+/**
+ * Destroy a native workspace and free all memory.
+ */
+SD_LIB_EXPORT void destroyNativeWorkspace(OpaqueWorkspace workspace);
+
+/**
+ * Enter workspace scope - resets offsets for new allocation cycle.
+ */
+SD_LIB_EXPORT void workspaceScopeIn(OpaqueWorkspace workspace);
+
+/**
+ * Exit workspace scope - resets offsets, making memory reusable.
+ */
+SD_LIB_EXPORT void workspaceScopeOut(OpaqueWorkspace workspace);
+
+/**
+ * Attach a workspace to an op execution context.
+ * All subsequent allocations by ops using this context will come from the workspace.
+ */
+SD_LIB_EXPORT void attachWorkspaceToContext(OpaqueContext* ctx, OpaqueWorkspace workspace);
+
+/**
+ * Detach workspace from context (ops will allocate from heap again).
+ */
+SD_LIB_EXPORT void detachWorkspaceFromContext(OpaqueContext* ctx);
+
+/**
+ * Get the current used size (offset) of the workspace.
+ */
+SD_LIB_EXPORT sd::LongType getWorkspaceCurrentOffset(OpaqueWorkspace workspace);
+
+/**
+ * Get the total allocated size of the workspace.
+ */
+SD_LIB_EXPORT sd::LongType getWorkspaceAllocatedSize(OpaqueWorkspace workspace);
+
+// ========================
+// Multi-Backend Workspace API (for multi-device / multi-GPU support)
+// ========================
+
+/**
+ * Create a multi-backend workspace with device awareness.
+ */
+SD_LIB_EXPORT OpaqueMultiBackendWorkspace createNativeMultiBackendWorkspace(
+    sd::LongType initialSize, int primaryDeviceType, int primaryDeviceIndex);
+
+/**
+ * Destroy a multi-backend workspace.
+ */
+SD_LIB_EXPORT void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle);
+
+/**
+ * Allocate bytes from multi-backend workspace on primary device.
+ */
+SD_LIB_EXPORT void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes);
+
+/**
+ * Multi-backend workspace scope management.
+ */
+SD_LIB_EXPORT void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle);
+SD_LIB_EXPORT void nativeMbwScopeOut(OpaqueMultiBackendWorkspace handle);
+
+/**
+ * Transfer data between devices in multi-backend workspace.
+ */
+SD_LIB_EXPORT void nativeMbwTransferTo(OpaqueMultiBackendWorkspace handle,
+    int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex);
+
+/**
+ * Get coherence state for a device.
+ */
+SD_LIB_EXPORT int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex);
+
+/**
+ * Get total allocated size across all devices.
+ */
+SD_LIB_EXPORT sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle);
 
 #endif // NATIVEOPS_H

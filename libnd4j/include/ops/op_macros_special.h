@@ -881,7 +881,7 @@ class OP_NAME { \
    private:                                                                 \
     static SD_HOST_DEVICE SD_INLINE Z binary_op_logic(X d1, X d2) { BINARY_OP }           \
     static SD_HOST_DEVICE SD_INLINE Z binary_params_op_logic(X d1, X d2, X* params) { BINARY_PARAMS_OP } \
-    static SD_INLINE Z unary_params_op_logic(X d1, X* params) { UNARY_PARAMS_OP } \
+    static SD_HOST_DEVICE SD_INLINE Z unary_params_op_logic(X d1, X* params) { UNARY_PARAMS_OP } \
     static SD_HOST_DEVICE SD_INLINE Z binary_op_simd(X d1, X d2) { return binary_op_logic(d1, d2); } \
     static SD_HOST_DEVICE SD_INLINE Z binary_params_op_simd(X d1, X d2, X* params) { return binary_params_op_logic(d1, d2, params); } \
     static SD_HOST_DEVICE SD_INLINE Z unary_params_op_simd(X d1, X* params) { return unary_params_op_logic(d1, params); } \

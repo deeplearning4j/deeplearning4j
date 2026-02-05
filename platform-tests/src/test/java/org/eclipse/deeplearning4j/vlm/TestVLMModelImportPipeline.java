@@ -24,17 +24,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
+import org.eclipse.deeplearning4j.vlm.model.DecoderGraphFixer;
+import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
+import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
+import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.*;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
@@ -97,36 +105,44 @@ public class TestVLMModelImportPipeline {
     private static final String PDF_MAX_PAGES_PROPERTY = "vlm.test.pdf.maxPages"; // Max pages to process
     private static final String PDF_DPI_PROPERTY = "vlm.test.pdf.dpi";         // Render DPI (default 150)
     private static final String MAX_TILES_PROPERTY = "vlm.test.maxTiles";      // Max tiles per image (default -1 = no limit)
+    private static final String MAX_TOKENS_PROPERTY = "vlm.test.maxTokens";    // Max tokens to generate (default 50)
 
     private static String pdfPath;
     private static int specificPage = -1;   // -1 means process all/range
     private static int maxPages = -1;       // -1 means no limit
     private static int renderDpi = 150;
     private static int maxTiles = -1;       // -1 means no limit
+    private static int maxTokensConfig = 50; // default token generation limit
 
     @BeforeAll
     public static void setup() {
-        pdfPath = System.getProperty(PDF_PATH_PROPERTY);
+        String rawPdfPath = System.getProperty(PDF_PATH_PROPERTY);
+        pdfPath = (rawPdfPath != null && !rawPdfPath.isEmpty()) ? rawPdfPath : null;
 
-        // Parse page selection properties
+        // Parse page selection properties (handle empty strings from Maven property forwarding)
         String pageStr = System.getProperty(PDF_PAGE_PROPERTY);
-        if (pageStr != null) {
+        if (pageStr != null && !pageStr.isEmpty()) {
             specificPage = Integer.parseInt(pageStr);
         }
 
         String maxPagesStr = System.getProperty(PDF_MAX_PAGES_PROPERTY);
-        if (maxPagesStr != null) {
+        if (maxPagesStr != null && !maxPagesStr.isEmpty()) {
             maxPages = Integer.parseInt(maxPagesStr);
         }
 
         String dpiStr = System.getProperty(PDF_DPI_PROPERTY);
-        if (dpiStr != null) {
+        if (dpiStr != null && !dpiStr.isEmpty()) {
             renderDpi = Integer.parseInt(dpiStr);
         }
 
         String maxTilesStr = System.getProperty(MAX_TILES_PROPERTY);
-        if (maxTilesStr != null) {
+        if (maxTilesStr != null && !maxTilesStr.isEmpty()) {
             maxTiles = Integer.parseInt(maxTilesStr);
+        }
+
+        String maxTokensStr = System.getProperty(MAX_TOKENS_PROPERTY);
+        if (maxTokensStr != null && !maxTokensStr.isEmpty()) {
+            maxTokensConfig = Integer.parseInt(maxTokensStr);
         }
 
         log.info("VLM Model Import Pipeline Test Configuration:");
@@ -135,6 +151,7 @@ public class TestVLMModelImportPipeline {
         log.info("  Max Pages: {}", maxPages > 0 ? maxPages : "(no limit)");
         log.info("  Render DPI: {}", renderDpi);
         log.info("  Max Tiles: {}", maxTiles > 0 ? maxTiles : "(no limit)");
+        log.info("  Max Tokens: {}", maxTokensConfig);
         log.info("  Model Cache Dir: {}", VLMModelDownloader.getCacheDir());
         log.info("  Debug mode: {}", Nd4j.getEnvironment().isDebug());
         log.info("  Verbose mode: {}", Nd4j.getEnvironment().isVerbose());
@@ -415,808 +432,554 @@ public class TestVLMModelImportPipeline {
     @Test
     @DisplayName("Full SmolDocling pipeline: PDF -> Vision -> Decoder -> Text")
     public void testSmolDoclingFullPipeline() throws Exception {
-        log.info("=== SmolDocling Full Pipeline ===");
-
-
-        // Download vision encoder, decoder, embed_tokens, and tokenizer
-        log.info("Downloading SmolDocling vision encoder...");
+        // ==================== STEP 1: Download Models ====================
+        log.info("STEP 1: Downloading models...");
         var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
-
-        log.info("Downloading SmolDocling decoder...");
         var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
-
-        log.info("Downloading SmolDocling embed_tokens...");
         var embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
-
-        log.info("Downloading SmolDocling tokenizer...");
         var tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
-        var tokenizerConfigResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+        log.info("STEP 1 DONE: All models downloaded.");
 
-        // Load tokenizer for text decoding
-        log.info("Loading tokenizer from: {}", tokenizerResult.getModelFile().getAbsolutePath());
+        // ==================== STEP 2: Load Tokenizer ====================
+        log.info("STEP 2: Loading tokenizer...");
         Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
-        log.info("Tokenizer loaded: vocab_size={}, eos_token_id={}, bos_token_id={}",
+        log.info("STEP 2 DONE: vocab_size={}, eos={}, bos={}",
                 tokenizer.getVocabSize(), tokenizer.getEosTokenId(), tokenizer.getBosTokenId());
 
-        // Import models - IMPORTANT: Use separate importer instances to avoid shared state
-        // that can cause double free when native resources are shared across models
-        log.info("Importing vision encoder...");
-        OnnxFrameworkImporter visionImporter = new OnnxFrameworkImporter();
-        SameDiff visionEncoder = visionImporter.runImport(visionResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
-        log.info("Vision encoder: {} variables, inputs={}, outputs={}",
-                visionEncoder.variables().size(), visionEncoder.inputs(), visionEncoder.outputs());
+        // ==================== STEP 3: Import ONNX Models ====================
+        log.info("STEP 3: Importing ONNX models...");
+        OnnxFrameworkImporter importer = new OnnxFrameworkImporter();
 
-        // ===== COMPREHENSIVE VISION ENCODER DEBUGGING =====
-        log.info("===== VISION ENCODER MODEL INSPECTION =====");
+        SameDiff visionEncoder = importer.runImport(visionResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        log.info("  Vision encoder: {} variables", visionEncoder.variables().size());
 
-        // Check key weight tensors to ensure they were loaded correctly
-        String[] keyWeights = {
-                "vision_model.embeddings.patch_embedding.weight",
-                "vision_model.embeddings.patch_embedding.bias",
-                "vision_model.embeddings.position_embedding.weight",
-                "vision_model.encoder.layers.0.layer_norm1.weight",
-                "vision_model.encoder.layers.0.self_attn.q_proj.bias",
-                "vision_model.post_layernorm.weight",
-                "onnx::MatMul_3025"  // Connector linear weight - critical for image_features output
-        };
-        for (String weightName : keyWeights) {
-            SDVariable var = visionEncoder.getVariable(weightName);
-            if (var != null) {
-                INDArray arr = var.getArr();
-                if (arr != null) {
-                    double min = arr.minNumber().doubleValue();
-                    double max = arr.maxNumber().doubleValue();
-                    boolean allZero = (min == 0.0 && max == 0.0);
-                    log.info("Weight '{}': shape={}, dtype={}, min={}, max={}, mean={}, allZero={}",
-                            weightName, java.util.Arrays.toString(arr.shape()), arr.dataType(),
-                            min, max, arr.meanNumber(), allZero);
-                    if (allZero && arr.length() > 1) {
-                        log.error("CRITICAL: Weight '{}' is ALL ZEROS! This will cause broken output.", weightName);
-                    }
-                } else {
-                    log.warn("Weight '{}': array is NULL", weightName);
-                }
-            } else {
-                log.warn("Weight '{}': variable NOT FOUND", weightName);
-            }
-        }
+        SameDiff decoder = importer.runImport(decoderResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        log.info("  Decoder: {} variables", decoder.variables().size());
 
-        // Also check all onnx::MatMul weights for zeros
-        log.info("Checking all MatMul weights for zero values...");
-        int zeroWeightCount = 0;
-        for (String varName : visionEncoder.getVariables().keySet()) {
-            if (varName.startsWith("onnx::MatMul_")) {
-                SDVariable var = visionEncoder.getVariable(varName);
-                if (var != null && var.getArr() != null) {
-                    INDArray arr = var.getArr();
-                    double min = arr.minNumber().doubleValue();
-                    double max = arr.maxNumber().doubleValue();
-                    if (min == 0.0 && max == 0.0) {
-                        log.error("MatMul weight '{}' is ALL ZEROS! shape={}", varName, java.util.Arrays.toString(arr.shape()));
-                        zeroWeightCount++;
-                    }
-                }
-            }
-        }
-        if (zeroWeightCount > 0) {
-            log.error("Found {} MatMul weights that are ALL ZEROS - model weights may not have loaded correctly!", zeroWeightCount);
-        } else {
-            log.info("All MatMul weights have non-zero values.");
-        }
+        SameDiff embedTokens = importer.runImport(embedTokensResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        log.info("  Embed tokens: {} variables", embedTokens.variables().size());
 
-        // List all operations in the vision encoder
-        log.info("Vision encoder has {} operations", visionEncoder.getOps().size());
-        int opCount = 0;
-        for (String opName : visionEncoder.getOps().keySet()) {
-            if (opCount < 20 || opName.contains("patch_embedding") || opName.contains("layer_norm") || opName.contains("connector")) {
-                var op = visionEncoder.getOps().get(opName);
-                log.info("  Op[{}]: {} -> inputs={}, outputs={}",
-                        opCount, opName, op.getInputsToOp(), op.getOutputsOfOp());
-            }
-            opCount++;
-        }
-        if (opCount > 20) {
-            log.info("  ... and {} more operations", opCount - 20);
-        }
+        // Apply required graph fixes
+        DecoderGraphFixer.fixRepeatKVReshape(decoder);
+        DecoderGraphFixer.fixDecoderInputsEmbeds(decoder);
+        log.info("STEP 3 DONE: All models imported and patched.");
 
-        // Check the output variable
-        for (String outputName : visionEncoder.outputs()) {
-            SDVariable outVar = visionEncoder.getVariable(outputName);
-            if (outVar != null) {
-                log.info("Output '{}': type={}, shape={}", outputName, outVar.getVariableType(),
-                        java.util.Arrays.toString(outVar.getShape()));
-            }
-        }
-        log.info("===== END VISION ENCODER INSPECTION =====");
-
-        log.info("Importing decoder...");
-        OnnxFrameworkImporter decoderImporter = new OnnxFrameworkImporter();
-        SameDiff decoder = decoderImporter.runImport(decoderResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
-        log.info("Decoder: {} variables, inputs={}, outputs={}",
-                decoder.variables().size(), decoder.inputs(), decoder.outputs());
-
-        log.info("Importing embed_tokens...");
-        OnnxFrameworkImporter embedImporter = new OnnxFrameworkImporter();
-        SameDiff embedTokens = embedImporter.runImport(embedTokensResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
-        log.info("Embed tokens: {} variables, inputs={}, outputs={}",
-                embedTokens.variables().size(), embedTokens.inputs(), embedTokens.outputs());
-
-        // Fix the decoder model: the ONNX model has input_ids baked in as a constant
-        // We need to add input_ids as a dynamic placeholder and fix the attention mask computation
-        fixDecoderInputIds(decoder, tokenizer);
-        log.info("Fixed decoder input_ids: now has inputs={}", decoder.inputs());
-
-        // Diagnose and potentially fix the repeat_kv Reshape operations
-        fixRepeatKVReshape(decoder);
-        // Ensure inputs_embeds is wired into the decoder graph
-        fixDecoderInputsEmbeds(decoder);
-        boolean debugGraph = Boolean.parseBoolean(System.getProperty("vlm.test.debugGraph", "true"));
-        if (debugGraph) {
-            logDecoderInputUsage(decoder, "inputs_embeds");
-            logDecoderInputUsage(decoder, "attention_mask");
-            logDecoderInputUsage(decoder, "position_ids");
-            logVariablesContaining(decoder, "inputs_embeds");
-        }
-
-        // ==================== SMOLDOCLING PROMPT TEMPLATE ====================
-        // SmolDocling expects a chat-formatted prompt with <image> token that gets replaced
-        // with vision embeddings. Format: <|im_start|>User:<image>PROMPT<end_of_utterance>\nAssistant:
-        int imageTokenId = resolveImageTokenId(tokenizer);
-        log.info("Resolved <image> token id: {}", imageTokenId);
-        String promptText = "Convert this page to docling.";
-
-        // Load real image from PDF or generate test pattern
+        // ==================== STEP 4: Load and Tile Image ====================
+        long step4Start = System.currentTimeMillis();
+        log.info("STEP 4: Loading image from PDF...");
         BufferedImage pdfImage = loadImageFromPdfOrGenerate(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
-        log.info("Loaded image: {}x{}", pdfImage.getWidth(), pdfImage.getHeight());
+        log.info("  Raw image: {}x{}", pdfImage.getWidth(), pdfImage.getHeight());
 
-        // ==================== IMAGE SPLITTING FOR SMOLDOCLING ====================
-        // SmolDocling/Idefics3 resizes longest edge to 2048, then splits into 512x512 tiles + a global thumbnail.
-        // This is critical for document understanding - shrinking to 512x512 loses all text detail.
-        int longestEdge = 2048;
         int targetSize = 512;
-
-        BufferedImage resizedForTiling = resizeLongestEdge(pdfImage, longestEdge);
-        log.info("Resized for tiling: {}x{}", resizedForTiling.getWidth(), resizedForTiling.getHeight());
-
-        // Split image into tiles
-        SplitImageResult splitResult = splitImageForVLM(resizedForTiling, targetSize);
+        BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(pdfImage, 2048);
+        int effectiveMaxTiles = maxTiles > 0 ? maxTiles : 9;
+        ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, effectiveMaxTiles);
         int numFrames = splitResult.getTotalFrames();
-        log.info("Split image into {} frames ({} tiles + 1 global)", numFrames, splitResult.getTileCount());
+        log.info("STEP 4 DONE: {} frames ({} tiles + 1 global) [{}ms]", numFrames, splitResult.getTileCount(),
+                System.currentTimeMillis() - step4Start);
 
-        // Save each tile for inspection
-        String outputDir = System.getProperty("user.dir") + File.separator + "target" + File.separator + "vlm-test-output";
-        new File(outputDir).mkdirs();
-        for (int i = 0; i < splitResult.frames.size(); i++) {
-            BufferedImage frame = splitResult.frames.get(i);
-            String tileName = i < splitResult.getTileCount()
-                    ? String.format("tile_%02d_r%d_c%d.png", i, i / Math.max(1, splitResult.numCols), i % Math.max(1, splitResult.numCols))
-                    : "tile_global.png";
-            saveImage(frame, outputDir + File.separator + tileName);
-        }
-        log.info("Saved {} tile images to {}", splitResult.frames.size(), outputDir);
-
-        boolean disableNormalize = Boolean.parseBoolean(System.getProperty("vlm.test.disableNormalize", "false"));
-        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, !disableNormalize);
-
-        // Preprocess all frames into a 5D tensor [batch, numFrames, channels, H, W]
-        INDArray imageInput = preprocessFramesForSmolDocling(splitResult.frames, preprocessor, targetSize);
-        log.info("Preprocessed {} frames into tensor: {}", numFrames, java.util.Arrays.toString(imageInput.shape()));
-
-        // Save first preprocessed tile for visual inspection
-        savePreprocessedTensor(imageInput,
-                disableNormalize ? new double[]{0.0, 0.0, 0.0} : new double[]{0.5, 0.5, 0.5},
-                disableNormalize ? new double[]{1.0, 1.0, 1.0} : new double[]{0.5, 0.5, 0.5},
-                "preprocessed_tile_0.png");
-
+        // ==================== STEP 5: Preprocess Frames ====================
+        long step5Start = System.currentTimeMillis();
+        log.info("STEP 5: Preprocessing frames...");
+        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
+        INDArray imageInput = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
         preprocessor.shutdown();
+        log.info("STEP 5 DONE: tensor shape={} [{}ms]", java.util.Arrays.toString(imageInput.shape()),
+                System.currentTimeMillis() - step5Start);
 
-        // ==================== PROCESS EACH FRAME THROUGH VISION ENCODER ====================
-        // The vision encoder processes one frame at a time, then we concatenate embeddings
+        // ==================== STEP 6: Run Vision Encoder Per Frame ====================
+        long step6Start = System.currentTimeMillis();
+        log.info("STEP 6: Running vision encoder on {} frames...", numFrames);
         List<String> visionInputNames = visionEncoder.inputs();
-        log.info("Vision encoder inputs: {}", visionInputNames);
-        if (debugGraph) {
-            for (String inputName : visionInputNames) {
-                SDVariable var = visionEncoder.getVariable(inputName);
-                if (var != null) {
-                    log.info("Vision input '{}' shape={}, dtype={}", inputName,
-                            java.util.Arrays.toString(var.getShape()), var.dataType());
-                }
-            }
-        }
-        boolean disablePixelMask = Boolean.parseBoolean(System.getProperty("vlm.test.disablePixelMask", "false"));
-        if (disablePixelMask) {
-            log.warn("Pixel attention mask disabled via -Dvlm.test.disablePixelMask=true");
-        }
-
+        String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
         List<INDArray> frameEmbeddings = new java.util.ArrayList<>();
 
-        // ===== DEBUG: Test vision encoder with a simple forward pass first =====
-        log.info("===== VISION ENCODER DEBUG FORWARD PASS =====");
-        // Enable ND4J debug and verbose mode to see all op executions
-        Nd4j.getEnvironment().setDebug(true);
-        Nd4j.getEnvironment().setVerbose(true);
-        {
-            // Create a simple test input
-            INDArray testPixelValues = Nd4j.rand(DataType.FLOAT, 1, 1, 3, targetSize, targetSize).muli(2).subi(1); // [-1, 1]
-            INDArray testMask = Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize);
-
-            log.info("Test input pixel_values: shape={}, dtype={}, min={}, max={}, mean={}",
-                    java.util.Arrays.toString(testPixelValues.shape()), testPixelValues.dataType(),
-                    testPixelValues.minNumber(), testPixelValues.maxNumber(), testPixelValues.meanNumber());
-            log.info("Test input mask: shape={}, dtype={}, all_true={}",
-                    java.util.Arrays.toString(testMask.shape()), testMask.dataType(), testMask.all());
-
-            // Find intermediate outputs to trace - capture ALL LayerNorm ops to find where NaN starts
-            List<String> intermediateOutputs = new java.util.ArrayList<>();
-            for (String varName : visionEncoder.getVariables().keySet()) {
-                if (varName.contains("patch_embedding") && varName.contains("output")) {
-                    intermediateOutputs.add(varName);
-                } else if (varName.contains("layer_norm1") && varName.contains("output") && varName.contains("layers.0")) {
-                    // Capture ALL layer_norm1 ops: Sub, Pow, ReduceMean, Add, Sqrt, Div, Mul
-                    intermediateOutputs.add(varName);
-                } else if (varName.contains("connector") && varName.contains("output")) {
-                    intermediateOutputs.add(varName);
-                }
-            }
-            // Log all layer_norm1 variables found for debugging
-            log.info("LayerNorm1 intermediate vars: {}", intermediateOutputs.stream()
-                    .filter(v -> v.contains("layer_norm1")).collect(java.util.stream.Collectors.toList()));
-            intermediateOutputs.addAll(visionEncoder.outputs());
-            log.info("Will trace {} intermediate outputs: {}", intermediateOutputs.size(),
-                    intermediateOutputs.size() <= 10 ? intermediateOutputs : intermediateOutputs.subList(0, 10) + "...");
-
-            // Run forward pass with intermediate outputs
-            Map<String, INDArray> testInputs = new java.util.HashMap<>();
-            testInputs.put("pixel_values", testPixelValues);
-            testInputs.put("pixel_attention_mask", testMask);
-
-            try {
-                Map<String, INDArray> testOutputs = visionEncoder.output(testInputs, intermediateOutputs.toArray(new String[0]));
-                for (var entry : testOutputs.entrySet()) {
-                    INDArray arr = entry.getValue();
-                    boolean allZero = arr.minNumber().doubleValue() == 0.0 && arr.maxNumber().doubleValue() == 0.0;
-                    log.info("  Intermediate '{}': shape={}, dtype={}, min={}, max={}, mean={}, allZero={}",
-                            entry.getKey(), java.util.Arrays.toString(arr.shape()), arr.dataType(),
-                            arr.minNumber(), arr.maxNumber(), arr.meanNumber(), allZero);
-                }
-            } catch (Exception e) {
-                log.error("Error running intermediate outputs: {}", e.getMessage());
-                // Fall back to just the final output
-                Map<String, INDArray> testOutputs = visionEncoder.output(testInputs, visionEncoder.outputs().toArray(new String[0]));
-                for (var entry : testOutputs.entrySet()) {
-                    INDArray arr = entry.getValue();
-                    log.info("  Final output '{}': shape={}, min={}, max={}, mean={}",
-                            entry.getKey(), java.util.Arrays.toString(arr.shape()),
-                            arr.minNumber(), arr.maxNumber(), arr.meanNumber());
-                }
-            }
-        }
-        log.info("===== END VISION ENCODER DEBUG =====");
-
-        boolean retryNoNormalize = Boolean.parseBoolean(System.getProperty("vlm.test.retryNoNormalize", "true"));
-        boolean retryDisablePixelMask = Boolean.parseBoolean(System.getProperty("vlm.test.retryDisablePixelMask", "true"));
-        boolean needsRetry = false;
-
         for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
-            log.info("Processing frame {}/{}", frameIdx + 1, numFrames);
+            long frameStart = System.currentTimeMillis();
+            INDArray frameSlice = imageInput.get(
+                    NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
+                    NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+            INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
 
-            // Extract single frame: [1, 1, 3, H, W]
-            INDArray singleFrame = imageInput.get(
-                    NDArrayIndex.point(0),
-                    NDArrayIndex.point(frameIdx),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all()
-            ).dup().reshape(1, 1, 3, targetSize, targetSize);
-
-            // Diagnostic: Log input stats
-            log.info("  Frame {} input pixel_values: shape={}, dtype={}, min={}, max={}, mean={}",
-                    frameIdx, java.util.Arrays.toString(singleFrame.shape()), singleFrame.dataType(),
-                    singleFrame.minNumber(), singleFrame.maxNumber(), singleFrame.meanNumber());
-
-            // Create input map for this frame
             Map<String, INDArray> visionInputMap = new java.util.HashMap<>();
             for (String inputName : visionInputNames) {
                 if (inputName.equals("pixel_values")) {
                     visionInputMap.put(inputName, singleFrame);
                 } else if (inputName.equals("pixel_attention_mask")) {
-                    INDArray mask;
-                    if (disablePixelMask) {
-                        mask = Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize);
-                    } else {
-                        ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                        mask = createPixelAttentionMask(region.width, region.height, targetSize);
-                    }
-                    if (frameIdx == 0) {
-                        log.info("  Frame {} mask: dtype={}, all_true={}",
-                                frameIdx, mask.dataType(), mask.all());
-                    }
-                    visionInputMap.put(inputName, mask);
+                    ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
+                    visionInputMap.put(inputName,
+                            ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
                 }
             }
 
-            // Run vision encoder for this frame
-            Map<String, INDArray> visionOutputs = visionEncoder.output(
-                    visionInputMap,
-                    visionEncoder.outputs().toArray(new String[0]));
-
-            // Log available outputs for debugging with value stats
-            for (var entry : visionOutputs.entrySet()) {
-                INDArray out = entry.getValue();
-                log.info("  Frame {} output '{}': shape={}, min={}, max={}, mean={}",
-                        frameIdx, entry.getKey(), java.util.Arrays.toString(out.shape()),
-                        out.minNumber(), out.maxNumber(), out.meanNumber());
-            }
-
-            // Select the correct vision embeddings (usually last_hidden_state)
-            VisionOutput selected = selectVisionOutput(visionOutputs);
+            Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
+            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
             if (selected == null) {
-                throw new RuntimeException("Vision encoder produced no usable outputs");
+                throw new RuntimeException("Vision encoder produced no usable outputs for frame " + frameIdx);
             }
-            INDArray out = selected.tensor.dup();  // IMPORTANT: dup to avoid workspace reuse issues
-            log.info("  Frame {} selected output '{}': shape={}, min={}, max={}, mean={}",
-                    frameIdx, selected.name, java.util.Arrays.toString(out.shape()),
-                    out.minNumber(), out.maxNumber(), out.meanNumber());
-            if (frameIdx == 0 && isAllZeroOrNaN(out) && retryNoNormalize) {
-                needsRetry = true;
-            }
+            INDArray out = selected.tensor.dup();
+            log.info("  Frame {}/{}: output shape={} [{}ms]", frameIdx + 1, numFrames,
+                    java.util.Arrays.toString(out.shape()), System.currentTimeMillis() - frameStart);
             frameEmbeddings.add(out);
 
-            // CRITICAL: Release memory from forward pass to prevent OOM
-            // Close all output arrays except the one we dup'd
+            // Release frame resources
             for (var entry : visionOutputs.entrySet()) {
-                if (entry.getValue() != selected.tensor) {
-                    entry.getValue().close();
-                }
+                INDArray arr = entry.getValue();
+                if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
             }
-            // Close the original selected tensor (we have a dup)
-            selected.tensor.close();
-            // Close input arrays
             singleFrame.close();
             for (var entry : visionInputMap.entrySet()) {
-                if (!entry.getKey().equals("pixel_values")) {
-                    entry.getValue().close();
-                }
+                if (!entry.getKey().equals("pixel_values")) entry.getValue().close();
             }
-            // Clear placeholder arrays and op inputs from the graph
             visionEncoder.clearPlaceholders(false);
             visionEncoder.clearOpInputs();
+            visionEncoder.resetSession();
+            Nd4j.getExecutioner().commit();
         }
 
-        if (needsRetry) {
-            log.warn("Vision output is all-zero/NaN. Retrying with no normalization and full mask.");
-            if (retryDisablePixelMask) {
-                disablePixelMask = true;
-            }
-            VLMImagePreprocessor retryPreprocessor = createSmolDoclingPreprocessor(targetSize, false);
-            INDArray retryInput = preprocessFramesForSmolDocling(splitResult.frames, retryPreprocessor, targetSize);
-            retryPreprocessor.shutdown();
-            imageInput = retryInput;
-            frameEmbeddings.clear();
-            for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
-                INDArray singleFrame = imageInput.get(
-                        NDArrayIndex.point(0),
-                        NDArrayIndex.point(frameIdx),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.all()
-                ).dup().reshape(1, 1, 3, targetSize, targetSize);
-
-                Map<String, INDArray> visionInputMap = new java.util.HashMap<>();
-                for (String inputName : visionInputNames) {
-                    if (inputName.equals("pixel_values")) {
-                        visionInputMap.put(inputName, singleFrame);
-                    } else if (inputName.equals("pixel_attention_mask")) {
-                        INDArray mask = Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize);
-                        visionInputMap.put(inputName, mask);
-                    }
-                }
-
-                Map<String, INDArray> visionOutputs = visionEncoder.output(
-                        visionInputMap,
-                        visionEncoder.outputs().toArray(new String[0]));
-                VisionOutput selected = selectVisionOutput(visionOutputs);
-                if (selected == null) {
-                    throw new RuntimeException("Vision encoder produced no usable outputs on retry");
-                }
-                INDArray out = selected.tensor.dup();
-                log.info("  Retry frame {} output '{}': shape={}, min={}, max={}, mean={}",
-                        frameIdx, selected.name, java.util.Arrays.toString(out.shape()),
-                        out.minNumber(), out.maxNumber(), out.meanNumber());
-                frameEmbeddings.add(out);
-
-                // CRITICAL: Release memory from forward pass to prevent OOM
-                for (var entry : visionOutputs.entrySet()) {
-                    if (entry.getValue() != selected.tensor) {
-                        entry.getValue().close();
-                    }
-                }
-                selected.tensor.close();
-                singleFrame.close();
-                for (var entry : visionInputMap.entrySet()) {
-                    if (!entry.getKey().equals("pixel_values")) {
-                        entry.getValue().close();
-                    }
-                }
-                visionEncoder.clearPlaceholders(false);
-                visionEncoder.clearOpInputs();
-            }
-        }
-
-        // Concatenate all frame embeddings along sequence dimension
-        // Each frame gives [1, 64, 576], concatenate to [1, numFrames*64, 576]
+        // Concatenate frame embeddings
         INDArray visionEmbeddings;
         if (frameEmbeddings.size() == 1) {
-            visionEmbeddings = frameEmbeddings.get(0);
+            visionEmbeddings = frameEmbeddings.get(0).dup();
         } else {
-            // Stack along sequence dimension (dim 1)
-            visionEmbeddings = Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0]));
+            visionEmbeddings = Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0])).dup();
         }
-        log.info("Combined vision embeddings: shape={}", java.util.Arrays.toString(visionEmbeddings.shape()));
-        if (visionEmbeddings.rank() != 3) {
-            throw new IllegalStateException("Expected vision embeddings rank 3, got " + visionEmbeddings.rank());
+        for (INDArray fe : frameEmbeddings) {
+            if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
         }
+        frameEmbeddings.clear();
+        visionEncoder.resetSession();
+        log.info("STEP 6 DONE: vision embeddings shape={} [{}ms total, {}ms/frame avg]",
+                java.util.Arrays.toString(visionEmbeddings.shape()),
+                System.currentTimeMillis() - step6Start,
+                (System.currentTimeMillis() - step6Start) / numFrames);
 
-        int imageSeqLenPerImage = (int) frameEmbeddings.get(0).size(1);
-        for (int i = 1; i < frameEmbeddings.size(); i++) {
-            if (frameEmbeddings.get(i).size(1) != imageSeqLenPerImage) {
-                log.warn("Frame {} has seq_len {} (expected {})",
-                        i, frameEmbeddings.get(i).size(1), imageSeqLenPerImage);
-            }
-        }
+        // ==================== STEP 7: Build Prompt and Get Text Embeddings ====================
+        long step7Start = System.currentTimeMillis();
+        log.info("STEP 7: Building prompt and computing text embeddings...");
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+        int imageSeqLenPerImage = (int) visionEmbeddings.size(1) / numFrames;
+        String imagePrompt = ImagePromptBuilder.buildImagePromptString(splitResult.numRows, splitResult.numCols, imageSeqLenPerImage);
+        String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
 
-        String imagePrompt = buildImagePromptString(splitResult.numRows, splitResult.numCols, imageSeqLenPerImage);
-        String chatPrompt = "<|im_start|>User:" + imagePrompt + promptText + "<end_of_utterance>\nAssistant:";
-        log.info("Chat prompt length: {} chars", chatPrompt.length());
-
-        // Tokenize the prompt
         int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
-        log.info("Tokenized prompt: {} tokens", promptTokenIds.length);
-        int promptImageTokens = countOccurrences(promptTokenIds, imageTokenId);
-        log.info("Prompt <image> tokens: {} (vision tokens: {})", promptImageTokens, visionEmbeddings.size(1));
-        if (promptImageTokens == 0) {
-            log.warn("Prompt contains no <image> tokens after expansion");
-        }
+        log.info("  Prompt: {} tokens, {} <image> tokens", promptTokenIds.length,
+                ImagePromptBuilder.countOccurrences(promptTokenIds, imageTokenId));
 
-        // === Autoregressive Text Generation with Decoder ===
-        log.info("=== Starting Text Generation ===");
-        log.info("Decoder inputs required: {}", decoder.inputs());
-
-        // Debug: Print decoder inputs and outputs
-        log.info("Decoder has {} inputs, {} outputs", decoder.inputs().size(), decoder.outputs().size());
-        log.info("Decoder inputs: {}", decoder.inputs());
-        for (String inputName : decoder.inputs()) {
-            if (!inputName.startsWith("past_key_values")) {
-                log.info("  Input '{}': var exists={}", inputName, decoder.hasVariable(inputName));
-            }
-        }
-
-        // Get vision output dimensions
-        long batchSize = visionEmbeddings.shape()[0];
-        long visionSeqLen = visionEmbeddings.shape()[1];
-        long hiddenSize = visionEmbeddings.shape()[2];
-        log.info("Vision embeddings: batch={}, seq_len={}, hidden={}", batchSize, visionSeqLen, hiddenSize);
-        if (visionSeqLen <= 0) {
-            throw new IllegalStateException("Vision embeddings sequence length is <= 0");
-        }
-
-        // Get text embeddings for the prompt tokens
-        log.info("Getting text embeddings for {} prompt tokens", promptTokenIds.length);
         INDArray promptTokenIdsTensor = Nd4j.createFromArray(promptTokenIds)
-                .reshape(1, promptTokenIds.length)
-                .castTo(DataType.LONG);
-
+                .reshape(1, promptTokenIds.length).castTo(DataType.LONG);
         String embedInputName = embedTokens.inputs().isEmpty() ? "input_ids" : embedTokens.inputs().get(0);
-        Map<String, INDArray> embedInputMap = Map.of(embedInputName, promptTokenIdsTensor);
-        Map<String, INDArray> embedOutputs = embedTokens.output(embedInputMap, embedTokens.outputs().toArray(new String[0]));
+        String[] embedOutputNames = embedTokens.outputs().toArray(new String[0]);
 
+        Map<String, INDArray> embedOutputs = embedTokens.output(Map.of(embedInputName, promptTokenIdsTensor), embedOutputNames);
         INDArray textEmbeddings = null;
         for (var entry : embedOutputs.entrySet()) {
-            textEmbeddings = entry.getValue().dup();  // IMPORTANT: dup to avoid workspace reuse issues
-            log.info("Text embeddings: shape={}", java.util.Arrays.toString(textEmbeddings.shape()));
+            textEmbeddings = entry.getValue().dup();
         }
-
         if (textEmbeddings == null) {
             throw new RuntimeException("embed_tokens produced no output");
         }
 
-        // Check dimensions - vision and text must have matching hidden size
-        long visionHiddenSize = visionEmbeddings.shape()[2];
-        long textHiddenSize = textEmbeddings.shape()[2];
-        log.info("Vision hidden size: {}, Text hidden size: {}", visionHiddenSize, textHiddenSize);
-
-        if (visionHiddenSize != textHiddenSize) {
-            throw new IllegalStateException("Hidden size mismatch: vision=" + visionHiddenSize + " text=" + textHiddenSize);
+        long hiddenSize = visionEmbeddings.shape()[2];
+        if (hiddenSize != textEmbeddings.shape()[2]) {
+            throw new IllegalStateException("Hidden size mismatch: vision=" + hiddenSize + " text=" + textEmbeddings.shape()[2]);
         }
 
-        // Replace <image> token embeddings with vision embeddings (ONNX reference behavior)
-        INDArray inputsEmbeds = textEmbeddings.dup();
-        int imageSlots = countOccurrences(promptTokenIds, imageTokenId);
-        if (imageSlots != visionSeqLen) {
-            log.warn("Image token slots ({}) != vision tokens ({}). Will fill {} slots.",
-                    imageSlots, visionSeqLen, Math.min(imageSlots, (int) visionSeqLen));
-        }
+        // Merge vision embeddings into text embeddings at <image> token positions
+        INDArray inputsEmbeds = EmbeddingMerger.mergeEmbeddings(textEmbeddings, visionEmbeddings,
+                promptTokenIds, imageTokenId);
+        log.info("STEP 7 DONE: merged embeddings shape={} [{}ms]", java.util.Arrays.toString(inputsEmbeds.shape()),
+                System.currentTimeMillis() - step7Start);
 
-        // Diagnostic: Check vision embedding values
-        log.info("Vision embeddings stats: min={}, max={}, mean={}",
-                visionEmbeddings.minNumber(), visionEmbeddings.maxNumber(), visionEmbeddings.meanNumber());
-        log.info("Text embeddings stats: min={}, max={}, mean={}",
-                textEmbeddings.minNumber(), textEmbeddings.maxNumber(), textEmbeddings.meanNumber());
+        // ==================== STEP 8: Autoregressive Decoding ====================
+        long step8Start = System.currentTimeMillis();
+        log.info("STEP 8: Generating text (max {} tokens, greedy)...", maxTokensConfig);
 
-        INDArray visionFlat = visionEmbeddings.reshape((int) visionSeqLen, (int) visionHiddenSize);
-        int fillCount = Math.min(imageSlots, (int) visionSeqLen);
-        int fillIdx = 0;
-        for (int pos = 0; pos < promptTokenIds.length && fillIdx < fillCount; pos++) {
-            if (promptTokenIds[pos] == imageTokenId) {
-                inputsEmbeds.put(
-                        new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(pos), NDArrayIndex.all()},
-                        visionFlat.getRow(fillIdx)
-                );
-                fillIdx++;
-            }
-        }
-        log.info("Filled {} of {} image token positions", fillIdx, imageSlots);
-        if (fillIdx < visionSeqLen) {
-            log.warn("Only filled {} of {} vision tokens", fillIdx, visionSeqLen);
-        }
+        // Enable native op timing tracking
+        org.nd4j.nativeblas.NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.resetOpTiming();
+        nativeOps.setOpTimingEnabled(1, 1);  // enabled=1, detailed=1 (phase-level)
+        log.info("Native op timing ENABLED (detailed mode)");
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        List<String> presentKeyNames = kvNames.keyNames;
+        List<String> presentValueNames = kvNames.valueNames;
+        List<String> decoderInputNames = decoder.inputs();
 
-        // Diagnostic: Check final inputsEmbeds
-        log.info("Final inputsEmbeds stats: min={}, max={}, mean={}",
-                inputsEmbeds.minNumber(), inputsEmbeds.maxNumber(), inputsEmbeds.meanNumber());
-
-        // Configure sampling - use greedy decoding (temperature=0) for deterministic output
-        SamplingConfig samplingConfig = SamplingConfig.builder()
-                .temperature(0.0)  // Greedy decoding
-                .topK(1)           // Only consider top token
-                .topP(1.0)
-                .maxNewTokens(50)
-                .doSample(false)   // Disable sampling for greedy
-                .build();
-        Sampler sampler = Sampler.fromConfig(samplingConfig);
-        log.info("Using sampler with temp={}, topK={}, topP={}",
-                samplingConfig.getTemperature(), samplingConfig.getTopK(), samplingConfig.getTopP());
-        boolean debugEmbeds = Boolean.parseBoolean(System.getProperty("vlm.test.debugEmbeds", "true"));
-
-        // Track generated tokens
-        List<Integer> generatedTokens = new java.util.ArrayList<>();
         int eosTokenId = tokenizer.getEosTokenId();
-        log.info("EOS token ID: {}", eosTokenId);
+        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
+        Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
+                .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokensConfig).doSample(false).build());
 
-        // Find the logits output name and KV cache output names
-        String logitsOutputName = null;
-        List<String> presentKeyNames = new java.util.ArrayList<>();
-        List<String> presentValueNames = new java.util.ArrayList<>();
-
-        for (String outputName : decoder.outputs()) {
-            if (outputName.contains("logit") || outputName.equals("logits")) {
-                logitsOutputName = outputName;
-            } else if (outputName.contains("present") && outputName.contains("key")) {
-                presentKeyNames.add(outputName);
-            } else if (outputName.contains("present") && outputName.contains("value")) {
-                presentValueNames.add(outputName);
-            }
-        }
-        if (logitsOutputName == null && !decoder.outputs().isEmpty()) {
-            logitsOutputName = decoder.outputs().get(0);
-        }
-        log.info("Using logits output: {}", logitsOutputName);
-        log.info("Found {} present key outputs, {} present value outputs", presentKeyNames.size(), presentValueNames.size());
-
-        // Sort to ensure consistent ordering
-        java.util.Collections.sort(presentKeyNames);
-        java.util.Collections.sort(presentValueNames);
-
-        // For first step, use full prompt embeddings (with vision tokens injected)
+        List<Integer> generatedTokens = new java.util.ArrayList<>();
+        Map<String, INDArray> kvCache = new java.util.HashMap<>();
         INDArray currentEmbeddings = inputsEmbeds;
         INDArray currentInputIds = promptTokenIdsTensor;
-        int maxTokens = Math.min(20, samplingConfig.getMaxNewTokens());
-
-        // KV cache storage - maps from layer index to cached tensors
-        Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        long batchSize = 1;
         long pastSeqLen = 0;
 
-        for (int step = 0; step < maxTokens; step++) {
-            // Build decoder inputs for this step
+        for (int step = 0; step < maxTokensConfig; step++) {
             Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
-
             long currentSeqLen = currentEmbeddings.shape()[1];
             long totalSeqLen = currentSeqLen + pastSeqLen;
-            log.info("Step {}: currentSeqLen={}, pastSeqLen={}, totalSeqLen={}", step, currentSeqLen, pastSeqLen, totalSeqLen);
 
-            for (String inputName : decoder.inputs()) {
+            for (String inputName : decoderInputNames) {
                 if (inputName.equals("inputs_embeds")) {
                     decoderInputMap.put(inputName, currentEmbeddings);
                 } else if (inputName.equals("attention_mask")) {
-                    INDArray mask = Nd4j.ones(DataType.LONG, batchSize, totalSeqLen);
-                    decoderInputMap.put(inputName, mask);
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen));
                 } else if (inputName.equals("input_ids")) {
                     decoderInputMap.put(inputName, currentInputIds);
                 } else if (inputName.equals("position_ids")) {
-                    INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                            .reshape(1, currentSeqLen).castTo(DataType.LONG);
-                    decoderInputMap.put(inputName, posIds);
+                    decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG));
                 } else if (inputName.startsWith("past_key_values.")) {
-                    // Use cached KV if available, otherwise create empty tensor
-                    // Map past_key_values.X.key -> present.X.key from cache
                     String presentName = inputName.replace("past_key_values", "present");
                     if (kvCache.containsKey(presentName)) {
                         decoderInputMap.put(inputName, kvCache.get(presentName));
                     } else {
-                        // First step: empty KV cache with shape [batch, num_heads, 0, head_dim]
-                        INDArray emptyKv = createEmptyKvCache(decoder, inputName, batchSize, visionHiddenSize);
-                        decoderInputMap.put(inputName, emptyKv);
+                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(decoder, inputName, batchSize, hiddenSize));
                     }
                 }
             }
 
-            // Run decoder - get ALL outputs including present KV values
+            // Request logits + KV cache outputs
             List<String> allOutputs = new java.util.ArrayList<>();
             allOutputs.add(logitsOutputName);
             allOutputs.addAll(presentKeyNames);
             allOutputs.addAll(presentValueNames);
-            String layernormOutName = "/model/layers.0/input_layernorm/output_0";
-            if (debugEmbeds && decoder.hasVariable(layernormOutName)) {
-                allOutputs.add(layernormOutName);
-            }
-
             Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap, allOutputs.toArray(new String[0]));
 
             INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
-            if (logitsRaw == null) {
-                log.error("No logits output found");
-                break;
-            }
-            INDArray logits = logitsRaw.dup();  // IMPORTANT: dup to avoid workspace reuse issues
-            if (debugEmbeds && decoderOutputs.containsKey("/model/layers.0/input_layernorm/output_0")) {
-                INDArray ln = decoderOutputs.get("/model/layers.0/input_layernorm/output_0");
-                if (ln != null) {
-                    log.info("Step {} layernorm0 stats: min={}, max={}, mean={}",
-                            step, ln.minNumber(), ln.maxNumber(), ln.meanNumber());
-                }
-            }
+            if (logitsRaw == null) { log.error("No logits output"); break; }
+            INDArray logits = logitsRaw.dup();
 
-            // Store present KV values for next step
+            // Update KV cache
             for (String presentName : presentKeyNames) {
-                INDArray presentVal = decoderOutputs.get(presentName);
-                if (presentVal != null) {
-                    kvCache.put(presentName, presentVal.dup());
-                }
+                INDArray pv = decoderOutputs.get(presentName);
+                if (pv != null) { INDArray old = kvCache.put(presentName, pv); if (old != null) old.close(); }
             }
             for (String presentName : presentValueNames) {
-                INDArray presentVal = decoderOutputs.get(presentName);
-                if (presentVal != null) {
-                    kvCache.put(presentName, presentVal.dup());
-                }
-            }
-            if (step == 0) {
-                log.info("Stored {} KV cache entries", kvCache.size());
+                INDArray pv = decoderOutputs.get(presentName);
+                if (pv != null) { INDArray old = kvCache.put(presentName, pv); if (old != null) old.close(); }
             }
 
-            // Get logits for the last position: [batch, seq, vocab] -> [vocab]
+            // Sample from last position
             INDArray lastLogits;
             if (logits.rank() == 3) {
-                long lastPos = logits.size(1) - 1;
-                lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(lastPos), NDArrayIndex.all());
-            } else if (logits.rank() == 2) {
-                lastLogits = logits.getRow(0);
+                lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
             } else {
-                log.error("Unexpected logits shape: {}", java.util.Arrays.toString(logits.shape()));
-                break;
+                lastLogits = logits.getRow(0);
             }
-
-            // IMPORTANT: Sample BEFORE any debug decoder calls that may corrupt workspace memory
-            // Make a safe copy of logits for sampling since debug code below may run another decoder.output()
             INDArray logitsForSampling = lastLogits.dup();
             int nextTokenId = sampler.sample(logitsForSampling);
-
-            if (step == 0) {
-                // Log top-k tokens and basic stats for debugging
-                log.info("Step 0 logits stats: min={}, max={}, mean={}",
-                        logitsForSampling.minNumber(), logitsForSampling.maxNumber(), logitsForSampling.meanNumber());
-                INDArray probs = SamplerUtils.softmax(logitsForSampling.dup());
-                INDArray[] topK = SamplerUtils.topK(logitsForSampling, 5);
-                log.info("Step 0 top-5 tokens:");
-                for (int i = 0; i < 5; i++) {
-                    int idx = topK[0].getInt(i);
-                    double logitVal = topK[1].getDouble(i);
-                    double probVal = probs.getDouble(idx);
-                    String tok = tokenizer.decode(new int[]{idx}, false);
-                    log.info("  #{}: id={}, logit={}, prob={}, text='{}'", i + 1, idx, logitVal, probVal, tok);
-                }
-                log.info("Sampled token: id={}", nextTokenId);
-
-                if (debugEmbeds) {
-                    // Compare logits with zeroed inputs_embeds to verify embeddings are used
-                    // NOTE: This runs another decoder.output() which corrupts workspace memory
-                    // That's why we sample BEFORE this block using the dup'd logitsForSampling
-
-                    Map<String, INDArray> zeroInputMap = new java.util.HashMap<>(decoderInputMap);
-                    zeroInputMap.put("inputs_embeds", Nd4j.zerosLike(currentEmbeddings));
-                    Map<String, INDArray> zeroOutputs = decoder.output(zeroInputMap, new String[]{logitsOutputName});
-                    INDArray zeroLogits = zeroOutputs.get(logitsOutputName);
-                    if (zeroLogits != null) {
-                        INDArray zeroLast;
-                        if (zeroLogits.rank() == 3) {
-                            long lastPos = zeroLogits.size(1) - 1;
-                            zeroLast = zeroLogits.get(NDArrayIndex.point(0), NDArrayIndex.point(lastPos), NDArrayIndex.all()).dup();
-                        } else if (zeroLogits.rank() == 2) {
-                            zeroLast = zeroLogits.getRow(0).dup();
-                        } else {
-                            zeroLast = zeroLogits.dup();
-                        }
-                        double diff = logitsForSampling.sub(zeroLast).norm2Number().doubleValue();
-                        log.info("Step 0 logits diff vs zero-embed (L2): {}", diff);
-                    } else {
-                        log.warn("Zero-embed logits not produced");
-                    }
-                }
-            }
             generatedTokens.add(nextTokenId);
 
-            // Decode and log the token
-            String tokenText = tokenizer.decode(new int[]{nextTokenId}, false);  // Keep special tokens for DocTags
-            log.info("Step {}: token_id={}, text='{}'", step, nextTokenId, tokenText);
+            String tokenText = tokenizer.decode(new int[]{nextTokenId}, false);
+            log.info("  Step {}: '{}' (id={})", step, tokenText, nextTokenId);
 
-            // Check for EOS
-            if (nextTokenId == eosTokenId) {
-                log.info("EOS token generated at step {}", step);
+            if (nextTokenId == eosTokenId || (endOfUtteranceTokenId != null && nextTokenId == endOfUtteranceTokenId)) {
+                log.info("  Stop token at step {}", step);
                 break;
             }
 
-            // CRITICAL: Release memory from decoder forward pass
-            // Close the raw logits (we have a dup)
-            logitsRaw.close();
-            // Close decoder outputs that we already dup'd into kvCache
-            for (var entry : decoderOutputs.entrySet()) {
-                String key = entry.getKey();
-                // Don't close if we're still using it
-                if (!key.equals(logitsOutputName)) {
-                    entry.getValue().close();
-                }
-            }
+            logits.close();
+            logitsForSampling.close();
             decoder.clearPlaceholders(false);
-            decoder.clearOpInputs();
 
-            // Update for next step: get embedding for the new token
+            // Get embedding for next token
             INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-            Map<String, INDArray> newEmbedInputMap = Map.of(embedInputName, newTokenTensor);
-            Map<String, INDArray> newEmbedOutputs = embedTokens.output(newEmbedInputMap, embedTokens.outputs().toArray(new String[0]));
-
-            // Get the new token embedding for next step
+            Map<String, INDArray> newEmbedOutputs = embedTokens.output(Map.of(embedInputName, newTokenTensor), embedOutputNames);
             INDArray prevEmbeddings = currentEmbeddings;
             for (var entry : newEmbedOutputs.entrySet()) {
-                currentEmbeddings = entry.getValue().dup();  // Shape: [1, 1, hidden_size]
-                entry.getValue().close();  // Close the original
+                currentEmbeddings = entry.getValue();
             }
-            // Close previous embeddings
-            if (prevEmbeddings != null) {
-                prevEmbeddings.close();
-            }
+            if (prevEmbeddings != null) prevEmbeddings.close();
             currentInputIds = newTokenTensor;
             embedTokens.clearPlaceholders(false);
-            embedTokens.clearOpInputs();
-
-            // Update past sequence length for attention mask
             pastSeqLen += currentSeqLen;
         }
 
-        // Decode all generated tokens to text
+        long step8End = System.currentTimeMillis();
+        long step8Total = step8End - step8Start;
+
+        // Flush and print native op timing stats
+        nativeOps.setOpTimingEnabled(0, 0);  // disable before flush
+        nativeOps.flushOpTiming();
+        log.info("========== OP TIMING STATS (Top 30) ==========");
+        nativeOps.printOpTimingStats(30);
+        log.info("========== OP TIMING THREAD STATS ==========");
+        nativeOps.printOpTimingThreadStats();
+        // Export CSV for detailed analysis
+        String csvPath = "/tmp/vlm-op-timing.csv";
+        int csvResult = nativeOps.exportOpTimingCSV(csvPath);
+        log.info("Op timing CSV export to {}: {}", csvPath, csvResult == 1 ? "SUCCESS" : "FAILED");
+        nativeOps.resetOpTiming();
+
+        // ==================== STEP 9: Output Results ====================
         int[] tokenIds = generatedTokens.stream().mapToInt(Integer::intValue).toArray();
-        String generatedText = tokenizer.decode(tokenIds, false);  // Keep special tokens for DocTags
+        String generatedText = tokenizer.decode(tokenIds, false);
 
-        log.info("=== Generated DocTags Text ===");
-        log.info("Token count: {}", generatedTokens.size());
-        log.info("Token IDs: {}", generatedTokens);
-        log.info("Generated text: {}", generatedText);
+        log.info("========================================");
+        log.info("GENERATED TEXT ({} tokens):", generatedTokens.size());
+        log.info("{}", generatedText);
+        log.info("========================================");
+        log.info("TIMING SUMMARY:");
+        log.info("  Step 4 (tile):     {}ms", step5Start - step4Start);
+        log.info("  Step 5 (preproc):  {}ms", step6Start - step5Start);
+        log.info("  Step 6 (vision):   {}ms ({} frames, {}ms/frame)", step7Start - step6Start,
+                numFrames, (step7Start - step6Start) / numFrames);
+        log.info("  Step 7 (embed):    {}ms", step8Start - step7Start);
+        log.info("  Step 8 (decode):   {}ms ({} tokens, {}ms/token)", step8Total,
+                generatedTokens.size(), generatedTokens.size() > 0 ? step8Total / generatedTokens.size() : 0);
+        log.info("  Total pipeline:    {}ms", step8End - step4Start);
 
-        // Basic validation
         assertNotNull(generatedText, "Generated text should not be null");
         assertTrue(generatedTokens.size() > 0, "Should have generated at least one token");
 
-        // Clean up tokenizer
         tokenizer.close();
+        log.info("Pipeline complete.");
 
-        log.info("=== SmolDocling Pipeline Complete ===");
+        // Suppress deallocation during JVM exit to avoid SIGABRT from corrupted heap metadata
+        org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
+    }
+
+    /**
+     * Simplified SmolDocling test: no tiling, just resize to 512x512 and run one frame.
+     * Useful for isolating decoder quality issues from tiling/multi-frame complexity.
+     *
+     * Run with:
+     *   -Dtest=TestVLMModelImportPipeline#testSmolDoclingSimpleNoTiling
+     *   -Dvlm.test.pdf.path=/path/to/file.pdf -Dvlm.test.pdf.page=10
+     *   -Dvlm.test.maxTokens=200
+     */
+    @Test
+    @DisplayName("SmolDocling simple: single 512x512 frame, no tiling")
+    public void testSmolDoclingSimpleNoTiling() throws Exception {
+        // STEP 1: Download models
+        log.info("STEP 1: Downloading models...");
+        var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+        var embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+        var tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+        log.info("STEP 1 DONE.");
+
+        // STEP 2: Load tokenizer
+        log.info("STEP 2: Loading tokenizer...");
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
+        log.info("STEP 2 DONE: vocab_size={}", tokenizer.getVocabSize());
+
+        // STEP 3: Import models
+        log.info("STEP 3: Importing ONNX models...");
+        OnnxFrameworkImporter importer = new OnnxFrameworkImporter();
+        SameDiff visionEncoder = importer.runImport(visionResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        SameDiff decoder = importer.runImport(decoderResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        SameDiff embedTokens = importer.runImport(embedTokensResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        DecoderGraphFixer.fixRepeatKVReshape(decoder);
+        DecoderGraphFixer.fixDecoderInputsEmbeds(decoder);
+        log.info("STEP 3 DONE.");
+
+        // STEP 4: Load image - resize directly to 512x512 (no tiling)
+        log.info("STEP 4: Loading and resizing image (no tiling)...");
+        int targetSize = 512;
+        BufferedImage pdfImage = loadImageFromPdfOrGenerate(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        log.info("  Raw image: {}x{}", pdfImage.getWidth(), pdfImage.getHeight());
+
+        // Resize directly to 512x512
+        BufferedImage resized = ImageTiler.resizeImage(pdfImage, targetSize, targetSize);
+        log.info("  Resized to: {}x{}", resized.getWidth(), resized.getHeight());
+
+        // STEP 5: Preprocess into tensor
+        log.info("STEP 5: Preprocessing single frame...");
+        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
+        INDArray pixelValues = preprocessor.preprocess(resized);
+        preprocessor.shutdown();
+        // preprocessor gives [1, 3, 512, 512], vision encoder wants [1, 1, 3, 512, 512]
+        pixelValues = pixelValues.reshape(1, 1, 3, targetSize, targetSize);
+        log.info("STEP 5 DONE: tensor shape={}", java.util.Arrays.toString(pixelValues.shape()));
+
+        // STEP 6: Run vision encoder (single frame)
+        log.info("STEP 6: Running vision encoder (1 frame)...");
+        Map<String, INDArray> visionInputMap = new java.util.HashMap<>();
+        for (String inputName : visionEncoder.inputs()) {
+            if (inputName.equals("pixel_values")) {
+                visionInputMap.put(inputName, pixelValues);
+            } else if (inputName.equals("pixel_attention_mask")) {
+                visionInputMap.put(inputName, Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize));
+            }
+        }
+        String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
+        Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
+
+        VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
+        if (selected == null) throw new RuntimeException("Vision encoder produced no output");
+        INDArray visionEmbeddings = selected.tensor.dup();
+        log.info("STEP 6 DONE: vision embeddings shape={}, min={}, max={}, mean={}",
+                java.util.Arrays.toString(visionEmbeddings.shape()),
+                visionEmbeddings.minNumber(), visionEmbeddings.maxNumber(), visionEmbeddings.meanNumber());
+
+        // Release vision encoder memory
+        for (var entry : visionOutputs.entrySet()) {
+            INDArray arr = entry.getValue();
+            if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
+        }
+        pixelValues.close();
+        visionEncoder.clearPlaceholders(false);
+        visionEncoder.clearOpInputs();
+        visionEncoder.resetSession();
+        Nd4j.getExecutioner().commit();
+
+        // STEP 7: Build prompt with single image (no grid)
+        log.info("STEP 7: Building prompt...");
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+        long imageSeqLen = visionEmbeddings.size(1);
+
+        // For a single frame (no tiling), use a simple prompt with imageSeqLen <image> tokens
+        StringBuilder imageTokens = new StringBuilder();
+        for (int i = 0; i < imageSeqLen; i++) {
+            imageTokens.append("<image>");
+        }
+        String chatPrompt = "<|im_start|>User:" + imageTokens + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+
+        int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
+        int imageCount = ImagePromptBuilder.countOccurrences(promptTokenIds, imageTokenId);
+        log.info("  Prompt: {} tokens, {} <image> tokens, vision seq_len={}", promptTokenIds.length, imageCount, imageSeqLen);
+
+        // Get text embeddings
+        INDArray promptIdsTensor = Nd4j.createFromArray(promptTokenIds).reshape(1, promptTokenIds.length).castTo(DataType.LONG);
+        String embedInputName = embedTokens.inputs().isEmpty() ? "input_ids" : embedTokens.inputs().get(0);
+        String[] embedOutputNames = embedTokens.outputs().toArray(new String[0]);
+        Map<String, INDArray> embedOutputs = embedTokens.output(Map.of(embedInputName, promptIdsTensor), embedOutputNames);
+        INDArray textEmbeddings = null;
+        for (var entry : embedOutputs.entrySet()) {
+            textEmbeddings = entry.getValue().dup();
+        }
+        if (textEmbeddings == null) throw new RuntimeException("embed_tokens produced no output");
+
+        long hiddenSize = visionEmbeddings.shape()[2];
+        if (hiddenSize != textEmbeddings.shape()[2]) {
+            throw new IllegalStateException("Hidden size mismatch: vision=" + hiddenSize + " text=" + textEmbeddings.shape()[2]);
+        }
+
+        // Merge vision embeddings into text at <image> positions
+        INDArray inputsEmbeds = EmbeddingMerger.mergeEmbeddings(textEmbeddings, visionEmbeddings,
+                promptTokenIds, imageTokenId);
+        log.info("STEP 7 DONE: merged embeddings shape={}", java.util.Arrays.toString(inputsEmbeds.shape()));
+
+        // STEP 8: Autoregressive decoding
+        int maxTokens = maxTokensConfig;
+        log.info("STEP 8: Generating text (max {} tokens, greedy)...", maxTokens);
+
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        List<String> decoderInputNames = decoder.inputs();
+        int eosTokenId = tokenizer.getEosTokenId();
+        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
+        Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
+                .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokens).doSample(false).build());
+
+        List<Integer> generatedTokens = new java.util.ArrayList<>();
+        Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        INDArray currentEmbeddings = inputsEmbeds;
+        INDArray currentInputIds = promptIdsTensor;
+        long pastSeqLen = 0;
+
+        for (int step = 0; step < maxTokens; step++) {
+            Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
+            long currentSeqLen = currentEmbeddings.shape()[1];
+            long totalSeqLen = currentSeqLen + pastSeqLen;
+
+            for (String inputName : decoderInputNames) {
+                if (inputName.equals("inputs_embeds")) {
+                    decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (inputName.equals("attention_mask")) {
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen));
+                } else if (inputName.equals("input_ids")) {
+                    decoderInputMap.put(inputName, currentInputIds);
+                } else if (inputName.equals("position_ids")) {
+                    decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG));
+                } else if (inputName.startsWith("past_key_values.")) {
+                    String presentName = inputName.replace("past_key_values", "present");
+                    if (kvCache.containsKey(presentName)) {
+                        decoderInputMap.put(inputName, kvCache.get(presentName));
+                    } else {
+                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                    }
+                }
+            }
+
+            List<String> allOutputs = new java.util.ArrayList<>();
+            allOutputs.add(logitsOutputName);
+            allOutputs.addAll(kvNames.keyNames);
+            allOutputs.addAll(kvNames.valueNames);
+            Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap, allOutputs.toArray(new String[0]));
+
+            INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
+            if (logitsRaw == null) { log.error("No logits output"); break; }
+            INDArray logits = logitsRaw.dup();
+
+            for (String pn : kvNames.keyNames) {
+                INDArray pv = decoderOutputs.get(pn);
+                if (pv != null) { INDArray old = kvCache.put(pn, pv); if (old != null) old.close(); }
+            }
+            for (String pn : kvNames.valueNames) {
+                INDArray pv = decoderOutputs.get(pn);
+                if (pv != null) { INDArray old = kvCache.put(pn, pv); if (old != null) old.close(); }
+            }
+
+            INDArray lastLogits = logits.rank() == 3
+                    ? logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all())
+                    : logits.getRow(0);
+            INDArray logitsForSampling = lastLogits.dup();
+            int nextTokenId = sampler.sample(logitsForSampling);
+            generatedTokens.add(nextTokenId);
+
+            String tokenText = tokenizer.decode(new int[]{nextTokenId}, false);
+            log.info("  Step {}: '{}' (id={})", step, tokenText, nextTokenId);
+
+            if (nextTokenId == eosTokenId || (endOfUtteranceTokenId != null && nextTokenId == endOfUtteranceTokenId)) {
+                log.info("  Stop token at step {}", step);
+                break;
+            }
+
+            logits.close();
+            logitsForSampling.close();
+            decoder.clearPlaceholders(false);
+
+            INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+            Map<String, INDArray> newEmbedOutputs = embedTokens.output(Map.of(embedInputName, newTokenTensor), embedOutputNames);
+            INDArray prevEmbeddings = currentEmbeddings;
+            for (var entry : newEmbedOutputs.entrySet()) {
+                currentEmbeddings = entry.getValue();
+            }
+            if (prevEmbeddings != null) prevEmbeddings.close();
+            currentInputIds = newTokenTensor;
+            embedTokens.clearPlaceholders(false);
+            pastSeqLen += currentSeqLen;
+        }
+
+        // STEP 9: Output
+        int[] tokenIds = generatedTokens.stream().mapToInt(Integer::intValue).toArray();
+        String generatedText = tokenizer.decode(tokenIds, false);
+
+        log.info("========================================");
+        log.info("GENERATED TEXT ({} tokens, no tiling):", generatedTokens.size());
+        log.info("{}", generatedText);
+        log.info("========================================");
+
+        assertNotNull(generatedText);
+        assertTrue(generatedTokens.size() > 0);
+        tokenizer.close();
+        log.info("Simple pipeline complete.");
+
+        org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
     }
 
     @Test
@@ -1441,9 +1204,9 @@ public class TestVLMModelImportPipeline {
             int nextToken = sampler.sample(logits);
             generatedTokens.add(nextToken);
 
-            // Check for EOS
-            if (nextToken == eosToken) {
-                log.info("EOS token generated at step {}", step);
+            // Check for EOS or end_of_utterance (49279)
+            if (nextToken == eosToken || nextToken == 49279) {
+                log.info("EOS/stop token generated at step {} (token_id={})", step, nextToken);
                 break;
             }
         }
@@ -1653,14 +1416,14 @@ public class TestVLMModelImportPipeline {
             for (Map.Entry<String, INDArray> entry : outputs.entrySet()) {
                 INDArray out = entry.getValue();
                 log.info("Output '{}': shape={}, dtype={}",
-                    entry.getKey(),
-                    java.util.Arrays.toString(out.shape()),
-                    out.dataType());
+                        entry.getKey(),
+                        java.util.Arrays.toString(out.shape()),
+                        out.dataType());
 
                 // Show output statistics
                 if (out.length() > 0) {
                     log.info("  min={}, max={}, mean={}",
-                        out.minNumber(), out.maxNumber(), out.meanNumber());
+                            out.minNumber(), out.maxNumber(), out.meanNumber());
 
                     // For classification outputs, show top predictions
                     if (out.rank() == 2 && out.size(1) > 1) {
@@ -1698,161 +1461,7 @@ public class TestVLMModelImportPipeline {
         return indices;
     }
 
-    /**
-     * Expand a single <image> token into a sequence that matches the vision token count.
-     */
-    private int[] expandImageTokens(int[] promptTokenIds, int imageTokenId, int imageTokenCount) {
-        if (imageTokenCount <= 0) {
-            return promptTokenIds;
-        }
-        int firstImagePos = -1;
-        int occurrences = 0;
-        for (int i = 0; i < promptTokenIds.length; i++) {
-            if (promptTokenIds[i] == imageTokenId) {
-                occurrences++;
-                if (firstImagePos < 0) {
-                    firstImagePos = i;
-                }
-            }
-        }
-        if (firstImagePos < 0) {
-            log.warn("No <image> token found for expansion");
-            return promptTokenIds;
-        }
 
-        int newLen = promptTokenIds.length - 1 + imageTokenCount;
-        int[] expanded = new int[newLen];
-        int outIdx = 0;
-        for (int i = 0; i < promptTokenIds.length; i++) {
-            int id = promptTokenIds[i];
-            if (id == imageTokenId && i == firstImagePos) {
-                for (int k = 0; k < imageTokenCount; k++) {
-                    expanded[outIdx++] = imageTokenId;
-                }
-            } else {
-                expanded[outIdx++] = id;
-            }
-        }
-
-        if (occurrences > 1) {
-            log.warn("Found {} <image> tokens; only expanded the first one", occurrences);
-        }
-        return expanded;
-    }
-
-    private int countOccurrences(int[] ids, int targetId) {
-        int count = 0;
-        for (int id : ids) {
-            if (id == targetId) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private int resolveImageTokenId(Tokenizer tokenizer) {
-        Integer id = tokenizer.getTokenId("<image>");
-        if (id != null && id >= 0) {
-            return id;
-        }
-        int[] encoded = tokenizer.encode("<image>", false).getIds();
-        if (encoded.length == 1) {
-            return encoded[0];
-        }
-        log.warn("Could not resolve <image> token id from tokenizer; using fallback 49190");
-        return 49190;
-    }
-
-    /**
-     * Build the expanded image prompt string following Idefics3 processor logic.
-     * Uses row/col tokens and a global image token when split into tiles.
-     */
-    private String buildImagePromptString(int imageRows, int imageCols, int imageSeqLen) {
-        String fake = "<fake_token_around_image>";
-        String image = "<image>";
-        String global = "<global-img>";
-
-        if (imageRows <= 0 || imageCols <= 0) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(fake).append(global);
-            for (int i = 0; i < imageSeqLen; i++) {
-                sb.append(image);
-            }
-            sb.append(fake);
-            return sb.toString();
-        }
-
-        StringBuilder sb = new StringBuilder();
-        for (int r = 1; r <= imageRows; r++) {
-            for (int c = 1; c <= imageCols; c++) {
-                sb.append(fake);
-                sb.append("<row_").append(r).append("_col_").append(c).append(">");
-                for (int i = 0; i < imageSeqLen; i++) {
-                    sb.append(image);
-                }
-                sb.append(fake);
-            }
-            sb.append("\n");
-        }
-
-        sb.append("\n");
-        sb.append(fake).append(global);
-        for (int i = 0; i < imageSeqLen; i++) {
-            sb.append(image);
-        }
-        sb.append(fake);
-
-        return sb.toString();
-    }
-
-    private INDArray createEmptyKvCache(SameDiff decoder, String inputName, long batchSize, long hiddenSize) {
-        long numHeads = -1;
-        long headDim = -1;
-        DataType kvType = DataType.FLOAT;
-
-        SDVariable inputVar = decoder.getVariable(inputName);
-        if (inputVar != null && inputVar.getShape() != null && inputVar.getShape().length >= 4) {
-            long[] shape = inputVar.getShape();
-            if (inputVar.dataType() != null) {
-                kvType = inputVar.dataType();
-            }
-            if (shape[1] > 0) {
-                numHeads = shape[1];
-            }
-            if (shape[3] > 0) {
-                headDim = shape[3];
-            }
-        }
-
-        if (numHeads <= 0 || headDim <= 0) {
-            String presentName = inputName.replace("past_key_values", "present");
-            SDVariable presentVar = decoder.getVariable(presentName);
-            if (presentVar != null && presentVar.getShape() != null && presentVar.getShape().length >= 4) {
-                long[] shape = presentVar.getShape();
-                if (numHeads <= 0 && shape[1] > 0) {
-                    numHeads = shape[1];
-                }
-                if (headDim <= 0 && shape[3] > 0) {
-                    headDim = shape[3];
-                }
-            }
-        }
-
-        if (headDim <= 0 && numHeads > 0 && hiddenSize > 0) {
-            headDim = Math.max(1, hiddenSize / numHeads);
-        }
-        if (numHeads <= 0 && headDim > 0 && hiddenSize > 0) {
-            numHeads = Math.max(1, hiddenSize / headDim);
-        }
-        if (headDim <= 0) {
-            headDim = 64;
-        }
-        if (numHeads <= 0) {
-            numHeads = Math.max(1, hiddenSize / headDim);
-        }
-
-        return Nd4j.zeros(kvType, batchSize, numHeads, 0, headDim);
-    }
 
     /**
      * Load a single image from PDF (first page or configured page) or generate a test pattern.
@@ -2018,361 +1627,8 @@ public class TestVLMModelImportPipeline {
         return pdfPath != null && new File(pdfPath).exists();
     }
 
-    // ==================== Image Splitting for SmolDocling ====================
 
-    /**
-     * Split an image into tiles for SmolDocling/Idefics3 processing.
-     * This implements the split_image logic from Idefics3ImageProcessor.
-     *
-     * The algorithm:
-     * 1. If image is larger than maxSize in either dimension, split into tiles
-     * 2. Each tile is padded to maxSize x maxSize (preserving scale)
-     * 3. Also include a global resized+pad version of the full image
-     *
-     * @param image The input image
-     * @param maxSize The maximum tile size (512 for SmolDocling)
-     * @return SplitImageResult containing the frames and metadata
-     */
-    private SplitImageResult splitImageForVLM(BufferedImage image, int maxSize) {
-        int width = image.getWidth();
-        int height = image.getHeight();
 
-        log.info("Splitting image {}x{} into {}x{} tiles (maxTiles={})", width, height, maxSize, maxSize,
-                maxTiles > 0 ? maxTiles : "unlimited");
-
-        List<BufferedImage> frames = new java.util.ArrayList<>();
-        List<ContentRegion> contentRegions = new java.util.ArrayList<>();
-        int numSplitsH = 0;
-        int numSplitsW = 0;
-
-        if (height > maxSize || width > maxSize) {
-            // Calculate number of splits needed
-            numSplitsH = (int) Math.ceil((double) height / maxSize);
-            numSplitsW = (int) Math.ceil((double) width / maxSize);
-
-            // If maxTiles is set, reduce the grid to fit within the limit
-            // Reserve 1 slot for global image, so limit tiles to maxTiles - 1
-            if (maxTiles > 0) {
-                int maxTilesForGrid = Math.max(1, maxTiles - 1);  // At least 1 tile
-                int totalTiles = numSplitsH * numSplitsW;
-                if (totalTiles > maxTilesForGrid) {
-                    // Find the best grid configuration that maximizes coverage
-                    // For tall images, prefer more rows; for wide images, prefer more columns
-                    double imageAspect = (double) height / width;  // > 1 for tall images
-
-                    int bestH = 1, bestW = 1;
-                    int bestCount = 1;
-                    double bestAspectMatch = Double.MAX_VALUE;
-
-                    // Try all valid grid configurations
-                    for (int h = 1; h <= Math.min(numSplitsH, maxTilesForGrid); h++) {
-                        int maxW = maxTilesForGrid / h;
-                        for (int w = 1; w <= Math.min(numSplitsW, maxW); w++) {
-                            int count = h * w;
-                            if (count <= maxTilesForGrid) {
-                                double gridAspect = (double) h / w;
-                                double aspectMatch = Math.abs(Math.log(gridAspect) - Math.log(imageAspect));
-
-                                // Prefer more tiles, with tie-breaker on aspect ratio match
-                                if (count > bestCount ||
-                                    (count == bestCount && aspectMatch < bestAspectMatch)) {
-                                    bestH = h;
-                                    bestW = w;
-                                    bestCount = count;
-                                    bestAspectMatch = aspectMatch;
-                                }
-                            }
-                        }
-                    }
-
-                    numSplitsH = bestH;
-                    numSplitsW = bestW;
-                    log.info("Reduced grid from {}x{} to {}x{} ({} tiles) to fit maxTiles={}, imageAspect={}",
-                            (int) Math.ceil((double) height / maxSize),
-                            (int) Math.ceil((double) width / maxSize),
-                            numSplitsH, numSplitsW, numSplitsH * numSplitsW, maxTiles, imageAspect);
-                }
-            }
-
-            // Idefics3 row/col tokens are defined for up to 6x6 grid
-            int maxGrid = 6;
-            if (numSplitsH > maxGrid || numSplitsW > maxGrid) {
-                double scale = Math.min((double) maxGrid / numSplitsH, (double) maxGrid / numSplitsW);
-                int newH = Math.max(1, (int) Math.floor(numSplitsH * scale));
-                int newW = Math.max(1, (int) Math.floor(numSplitsW * scale));
-                newH = Math.min(maxGrid, newH);
-                newW = Math.min(maxGrid, newW);
-                log.info("Reducing grid {}x{} to {}x{} to fit row/col token limits",
-                        numSplitsH, numSplitsW, newH, newW);
-                numSplitsH = newH;
-                numSplitsW = newW;
-            }
-
-            // Calculate optimal tile size to evenly divide the image
-            int optimalHeight = (int) Math.ceil((double) height / numSplitsH);
-            int optimalWidth = (int) Math.ceil((double) width / numSplitsW);
-
-            log.info("Splitting into {}x{} grid ({} tiles), optimal tile size: {}x{}",
-                    numSplitsH, numSplitsW, numSplitsH * numSplitsW, optimalHeight, optimalWidth);
-
-            // Create tiles
-            for (int r = 0; r < numSplitsH; r++) {
-                for (int c = 0; c < numSplitsW; c++) {
-                    int startX = c * optimalWidth;
-                    int startY = r * optimalHeight;
-                    int endX = Math.min(startX + optimalWidth, width);
-                    int endY = Math.min(startY + optimalHeight, height);
-
-                    int tileWidth = endX - startX;
-                    int tileHeight = endY - startY;
-
-                    // Crop the tile
-                    BufferedImage tile = image.getSubimage(startX, startY, tileWidth, tileHeight);
-
-                    int contentW = tileWidth;
-                    int contentH = tileHeight;
-
-                    // If tile is larger than maxSize (possible when maxTiles limits the grid), downscale to fit
-                    if (tileWidth > maxSize || tileHeight > maxSize) {
-                        ResizeResult resized = resizeToFit(tile, maxSize, maxSize);
-                        tile = resized.image;
-                        contentW = resized.width;
-                        contentH = resized.height;
-                    }
-
-                    // Pad to maxSize x maxSize (preserve content scale)
-                    if (contentW != maxSize || contentH != maxSize) {
-                        tile = padToSize(tile, maxSize, maxSize);
-                    }
-
-                    frames.add(tile);
-                    contentRegions.add(new ContentRegion(contentW, contentH));
-                    log.info("  Tile [{},{}]: crop ({},{}) to ({},{}), content {}x{}, padded to {}x{}",
-                            r, c, startX, startY, endX, endY, contentW, contentH, maxSize, maxSize);
-                }
-            }
-        }
-
-        // Always add the global resized image at the end (keep aspect ratio, pad to square)
-        ResizeResult globalResize = resizeToFit(image, maxSize, maxSize);
-        BufferedImage globalImage = padToSize(globalResize.image, maxSize, maxSize);
-        frames.add(globalImage);
-        contentRegions.add(new ContentRegion(globalResize.width, globalResize.height));
-        log.info("  Added global resized image ({}x{})", maxSize, maxSize);
-
-        log.info("Total frames: {} ({} tiles + 1 global)", frames.size(), frames.size() - 1);
-
-        return new SplitImageResult(frames, contentRegions, numSplitsH, numSplitsW);
-    }
-
-    /**
-     * Resize image so that the longest edge matches the target length.
-     */
-    private BufferedImage resizeLongestEdge(BufferedImage image, int longestEdge) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-        int maxDim = Math.max(width, height);
-        if (maxDim == longestEdge) {
-            return image;
-        }
-        double scale = (double) longestEdge / (double) maxDim;
-        int newW = Math.max(1, (int) Math.round(width * scale));
-        int newH = Math.max(1, (int) Math.round(height * scale));
-        return resizeImage(image, newW, newH);
-    }
-
-    /**
-     * Resize an image to fit within the target size while preserving aspect ratio.
-     */
-    private ResizeResult resizeToFit(BufferedImage image, int targetWidth, int targetHeight) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-        if (width <= targetWidth && height <= targetHeight) {
-            return new ResizeResult(image, width, height);
-        }
-        double scale = Math.min((double) targetWidth / (double) width, (double) targetHeight / (double) height);
-        int newW = Math.max(1, (int) Math.round(width * scale));
-        int newH = Math.max(1, (int) Math.round(height * scale));
-        return new ResizeResult(resizeImage(image, newW, newH), newW, newH);
-    }
-
-    /**
-     * Pad an image to the target size (top-left aligned).
-     */
-    private BufferedImage padToSize(BufferedImage image, int targetWidth, int targetHeight) {
-        if (image.getWidth() == targetWidth && image.getHeight() == targetHeight) {
-            return image;
-        }
-        BufferedImage padded = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = padded.createGraphics();
-        g2d.setColor(Color.BLACK);
-        g2d.fillRect(0, 0, targetWidth, targetHeight);
-        g2d.drawImage(image, 0, 0, null);
-        g2d.dispose();
-        return padded;
-    }
-
-    /**
-     * Resize an image to the specified dimensions using high-quality interpolation.
-     */
-    private BufferedImage resizeImage(BufferedImage original, int targetWidth, int targetHeight) {
-        BufferedImage resized = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = resized.createGraphics();
-
-        // Use high-quality rendering hints
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        g2d.drawImage(original, 0, 0, targetWidth, targetHeight, null);
-        g2d.dispose();
-
-        return resized;
-    }
-
-    private static class ResizeResult {
-        final BufferedImage image;
-        final int width;
-        final int height;
-
-        ResizeResult(BufferedImage image, int width, int height) {
-            this.image = image;
-            this.width = width;
-            this.height = height;
-        }
-    }
-
-    /**
-     * Result of splitting an image into tiles.
-     */
-    private static class SplitImageResult {
-        final List<BufferedImage> frames;
-        final List<ContentRegion> contentRegions;
-        final int numRows;
-        final int numCols;
-
-        SplitImageResult(List<BufferedImage> frames, List<ContentRegion> contentRegions, int numRows, int numCols) {
-            this.frames = frames;
-            this.contentRegions = contentRegions;
-            this.numRows = numRows;
-            this.numCols = numCols;
-        }
-
-        int getTileCount() {
-            return numRows * numCols;
-        }
-
-        int getTotalFrames() {
-            return frames.size();
-        }
-    }
-
-    private static class ContentRegion {
-        final int width;
-        final int height;
-
-        ContentRegion(int width, int height) {
-            this.width = width;
-            this.height = height;
-        }
-    }
-
-    private static class VisionOutput {
-        final String name;
-        final INDArray tensor;
-
-        VisionOutput(String name, INDArray tensor) {
-            this.name = name;
-            this.tensor = tensor;
-        }
-    }
-
-    /**
-     * Preprocess multiple image frames for SmolDocling.
-     * Each frame is normalized and converted to a tensor.
-     *
-     * @param frames List of BufferedImage frames
-     * @param preprocessor The VLM preprocessor to use
-     * @param targetSize The target size (512)
-     * @return INDArray with shape [batch, numFrames, channels, height, width]
-     */
-    private INDArray preprocessFramesForSmolDocling(List<BufferedImage> frames,
-                                                     VLMImagePreprocessor preprocessor,
-                                                     int targetSize) {
-        int numFrames = frames.size();
-        INDArray result = Nd4j.create(DataType.FLOAT, 1, numFrames, 3, targetSize, targetSize);
-
-        for (int f = 0; f < numFrames; f++) {
-            BufferedImage frame = frames.get(f);
-
-            // Preprocess this frame (resize + normalize)
-            INDArray frameTensor = preprocessor.preprocess(frame);  // [1, 3, H, W]
-
-            // Copy into the 5D tensor
-            for (int c = 0; c < 3; c++) {
-                for (int y = 0; y < targetSize; y++) {
-                    for (int x = 0; x < targetSize; x++) {
-                        float val = frameTensor.getFloat(0, c, y, x);
-                        result.putScalar(new long[]{0, f, c, y, x}, val);
-                    }
-                }
-            }
-
-            log.info("Preprocessed frame {}/{}: min={}, max={}, mean={}",
-                    f + 1, numFrames,
-                    frameTensor.minNumber(), frameTensor.maxNumber(), frameTensor.meanNumber());
-        }
-
-        return result;
-    }
-
-    /**
-     * Create a pixel attention mask for a padded frame.
-     */
-    private INDArray createPixelAttentionMask(int contentWidth, int contentHeight, int targetSize) {
-        if (contentWidth >= targetSize && contentHeight >= targetSize) {
-            return Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize);
-        }
-        INDArray mask = Nd4j.zeros(DataType.BOOL, 1, 1, targetSize, targetSize);
-        if (contentWidth > 0 && contentHeight > 0) {
-            mask.get(
-                    NDArrayIndex.point(0),
-                    NDArrayIndex.point(0),
-                    NDArrayIndex.interval(0, contentHeight),
-                    NDArrayIndex.interval(0, contentWidth)
-            ).assign(1);
-        }
-        return mask;
-    }
-
-    /**
-     * Select the best vision output tensor (prefer last_hidden_state).
-     */
-    private VisionOutput selectVisionOutput(Map<String, INDArray> outputs) {
-        if (outputs == null || outputs.isEmpty()) {
-            return null;
-        }
-
-        for (var entry : outputs.entrySet()) {
-            String name = entry.getKey();
-            INDArray tensor = entry.getValue();
-            if (name.contains("last_hidden_state") && tensor != null && tensor.rank() == 3) {
-                return new VisionOutput(name, tensor);
-            }
-        }
-
-        VisionOutput best = null;
-        for (var entry : outputs.entrySet()) {
-            INDArray tensor = entry.getValue();
-            if (tensor != null && tensor.rank() == 3) {
-                if (best == null || tensor.size(1) > best.tensor.size(1)) {
-                    best = new VisionOutput(entry.getKey(), tensor);
-                }
-            }
-        }
-
-        return best;
-    }
 
     private void logDecoderInputUsage(SameDiff decoder, String inputName) {
         org.nd4j.autodiff.samediff.internal.Variable var = decoder.getVariables().get(inputName);
@@ -2412,71 +1668,6 @@ public class TestVLMModelImportPipeline {
             config.setImageStd(new double[]{0.5, 0.5, 0.5});
         }
         return VLMImagePreprocessor.fromConfig(config);
-    }
-
-    private boolean isAllZeroOrNaN(INDArray arr) {
-        double min = arr.minNumber().doubleValue();
-        double max = arr.maxNumber().doubleValue();
-        if (Double.isNaN(min) || Double.isNaN(max) || Double.isInfinite(min) || Double.isInfinite(max)) {
-            return true;
-        }
-        return min == 0.0 && max == 0.0;
-    }
-
-    private void fixDecoderInputsEmbeds(SameDiff decoder) {
-        String targetOpName = null;
-        for (String opName : decoder.getOps().keySet()) {
-            if (opName.contains("/model/layers.0/input_layernorm") && opName.contains("LayerNorm")) {
-                targetOpName = opName;
-                break;
-            }
-        }
-        if (targetOpName == null) {
-            for (String opName : decoder.getOps().keySet()) {
-                if (opName.contains("input_layernorm")) {
-                    targetOpName = opName;
-                    break;
-                }
-            }
-        }
-        if (targetOpName == null) {
-            log.warn("Could not locate input_layernorm op to wire inputs_embeds");
-            return;
-        }
-
-        org.nd4j.autodiff.samediff.internal.SameDiffOp op = decoder.getOps().get(targetOpName);
-        if (op == null || op.getInputsToOp() == null || op.getInputsToOp().isEmpty()) {
-            log.warn("input_layernorm op '{}' has no inputs", targetOpName);
-            return;
-        }
-
-        List<String> inputs = new java.util.ArrayList<>(op.getInputsToOp());
-        String oldInput = inputs.get(0);
-        if ("inputs_embeds".equals(oldInput)) {
-            log.info("inputs_embeds already wired into '{}'", targetOpName);
-            return;
-        }
-
-        log.info("Rewiring '{}' input[0] from '{}' to 'inputs_embeds'", targetOpName, oldInput);
-        inputs.set(0, "inputs_embeds");
-        op.setInputsToOp(inputs);
-
-        org.nd4j.autodiff.samediff.internal.Variable inputVar = decoder.getVariables().get("inputs_embeds");
-        if (inputVar != null) {
-            List<String> inputsForOp = inputVar.getInputsForOp();
-            if (inputsForOp == null) {
-                inputsForOp = new java.util.ArrayList<>();
-                inputVar.setInputsForOp(inputsForOp);
-            }
-            if (!inputsForOp.contains(targetOpName)) {
-                inputsForOp.add(targetOpName);
-            }
-        }
-
-        org.nd4j.autodiff.samediff.internal.Variable oldVar = decoder.getVariables().get(oldInput);
-        if (oldVar != null && oldVar.getInputsForOp() != null) {
-            oldVar.getInputsForOp().remove(targetOpName);
-        }
     }
 
     /**
@@ -2672,175 +1863,6 @@ public class TestVLMModelImportPipeline {
     // ==================== Helper Methods ====================
 
     /**
-     * Fix the decoder model's baked-in input_ids constant.
-     *
-     * The ONNX model has input_ids baked in as a constant during export.
-     * This method rewires the graph so that the input_ids_subgraph output
-     * dynamically matches the attention_mask shape.
-     *
-     * The issue: /model/attn_mask_reformat/Add fails because:
-     * - attn_mask_subgraph/Where_2/output_0 has shape [1, 1, 1, N] (from attention_mask)
-     * - input_ids_subgraph/Expand/output_0 has shape [1, 1, 1, 4] (baked-in constant)
-     *
-     * The fix: Replace the input to the Add operation with a dynamic zeros tensor
-     * that matches the attention_mask derived shape.
-     *
-     * @param decoder The SameDiff decoder model to fix
-     * @param tokenizer The tokenizer (used to get special token IDs)
-     */
-    private void fixDecoderInputIds(SameDiff decoder, Tokenizer tokenizer) {
-        log.info("=== Fixing decoder input_ids ===");
-
-        // Find the Add operation that combines attention masks
-        String addOpName = "/model/attn_mask_reformat/Add";
-        org.nd4j.autodiff.samediff.internal.SameDiffOp addOp = decoder.getOps().get(addOpName);
-
-        if (addOp == null) {
-            log.warn("Could not find Add operation at {}, listing available ops with 'Add':", addOpName);
-            for (String opName : decoder.getOps().keySet()) {
-                if (opName.contains("Add") && opName.contains("attn_mask")) {
-                    log.info("  Found op: {}", opName);
-                    addOp = decoder.getOps().get(opName);
-                    addOpName = opName;
-                }
-            }
-        }
-
-        if (addOp == null) {
-            log.error("Could not find the Add operation for attention mask reformatting");
-            return;
-        }
-
-        log.info("Found Add operation: {}", addOpName);
-        log.info("  Inputs: {}", addOp.getInputsToOp());
-        log.info("  Outputs: {}", addOp.getOutputsOfOp());
-
-        // Find which input is the input_ids_subgraph output (the one with wrong shape)
-        String inputIdsSubgraphOutput = null;
-        String attnMaskSubgraphOutput = null;
-        int inputIdsIndex = -1;
-
-        for (int i = 0; i < addOp.getInputsToOp().size(); i++) {
-            String inputName = addOp.getInputsToOp().get(i);
-            if (inputName.contains("input_ids_subgraph")) {
-                inputIdsSubgraphOutput = inputName;
-                inputIdsIndex = i;
-                log.info("  Input[{}] is input_ids_subgraph: {}", i, inputName);
-            } else if (inputName.contains("attn_mask_subgraph")) {
-                attnMaskSubgraphOutput = inputName;
-                log.info("  Input[{}] is attn_mask_subgraph: {}", i, inputName);
-            }
-        }
-
-        if (inputIdsSubgraphOutput == null || attnMaskSubgraphOutput == null) {
-            log.error("Could not identify input_ids_subgraph and attn_mask_subgraph outputs");
-            log.error("  inputIdsSubgraphOutput: {}", inputIdsSubgraphOutput);
-            log.error("  attnMaskSubgraphOutput: {}", attnMaskSubgraphOutput);
-            return;
-        }
-
-        // Get the attn_mask_subgraph output variable to match its shape
-        SDVariable attnMaskOutput = decoder.getVariable(attnMaskSubgraphOutput);
-        if (attnMaskOutput == null) {
-            log.error("Could not find variable: {}", attnMaskSubgraphOutput);
-            return;
-        }
-
-        log.info("attn_mask_subgraph output shape: {}", java.util.Arrays.toString(attnMaskOutput.getShape()));
-
-        // Create a zeros tensor that matches the attn_mask_subgraph output shape
-        // Use zerosLike which dynamically computes the shape at runtime
-        SDVariable dynamicZeros = decoder.zerosLike("_fix_input_ids_zeros", attnMaskOutput);
-
-        // Replace the input in the Add operation
-        log.info("Replacing input[{}] '{}' with '{}'", inputIdsIndex, inputIdsSubgraphOutput, dynamicZeros.name());
-
-        // Update the inputsToOp list
-        List<String> newInputs = new java.util.ArrayList<>(addOp.getInputsToOp());
-        newInputs.set(inputIdsIndex, dynamicZeros.name());
-        addOp.setInputsToOp(newInputs);
-
-        // Update the variable's inputsForOp tracking
-        org.nd4j.autodiff.samediff.internal.Variable zerosVar = decoder.getVariables().get(dynamicZeros.name());
-        if (zerosVar != null) {
-            List<String> inputsForOp = zerosVar.getInputsForOp();
-            if (inputsForOp == null) {
-                inputsForOp = new java.util.ArrayList<>();
-                zerosVar.setInputsForOp(inputsForOp);
-            }
-            inputsForOp.add(addOpName);
-        }
-
-        // Remove the old variable from being an input for this op
-        org.nd4j.autodiff.samediff.internal.Variable oldVar = decoder.getVariables().get(inputIdsSubgraphOutput);
-        if (oldVar != null && oldVar.getInputsForOp() != null) {
-            oldVar.getInputsForOp().remove(addOpName);
-        }
-
-        log.info("=== Fix complete ===");
-        log.info("Add operation now has inputs: {}", addOp.getInputsToOp());
-    }
-
-    /**
-     * Fix the repeat_kv Reshape operations in the decoder model.
-     *
-     * The ONNX model uses shape [0, 0, 3, -1] for reshaping k/v projections,
-     * where 0 means "copy from input". The Reshape import hook handles this
-     * by creating dynamic operations, but there may be issues with how these
-     * execute at runtime.
-     *
-     * This method diagnoses the reshape constants and fixes them if needed.
-     */
-    private void fixRepeatKVReshape(SameDiff decoder) {
-        log.info("=== Checking repeat_kv Reshape operations ===");
-
-        // Find Reshape operations in repeat_kv paths
-        for (String opName : decoder.getOps().keySet()) {
-            if (opName.contains("repeat_kv") && opName.contains("Reshape_1")) {
-                org.nd4j.autodiff.samediff.internal.SameDiffOp op = decoder.getOps().get(opName);
-                log.info("Found Reshape: {}", opName);
-                log.info("  Inputs: {}", op.getInputsToOp());
-                log.info("  Outputs: {}", op.getOutputsOfOp());
-
-                // Check the shape input
-                if (op.getInputsToOp().size() >= 2) {
-                    String shapeInputName = op.getInputsToOp().get(1);
-                    SDVariable shapeVar = decoder.getVariable(shapeInputName);
-                    if (shapeVar != null) {
-                        log.info("  Shape variable: {}", shapeInputName);
-                        log.info("  Shape var type: {}", shapeVar.getVariableType());
-                        INDArray shapeArr = shapeVar.getArr();
-                        if (shapeArr != null) {
-                            log.info("  Shape values: {}", shapeArr);
-                        } else {
-                            log.info("  Shape array is null (computed at runtime)");
-                        }
-                    }
-                }
-
-                // Only check first layer for now
-                break;
-            }
-        }
-
-        // Check the shape constants
-        log.info("\n=== Checking shape constants ===");
-        for (String varName : decoder.getVariables().keySet()) {
-            if (varName.contains("0, 0, 3, -1") || varName.contains("constants") && varName.contains("INT64")) {
-                SDVariable var = decoder.getVariable(varName);
-                log.info("Constant: {}", varName);
-                log.info("  Type: {}", var.getVariableType());
-                INDArray arr = var.getArr();
-                if (arr != null) {
-                    log.info("  Values: {}", arr);
-                }
-            }
-        }
-
-        log.info("=== repeat_kv check complete ===");
-    }
-
-    /**
      * Create a VLMImagePreprocessor configured for the given model.
      */
     private VLMImagePreprocessor createPreprocessor(VLMModelDownloader.VLMModel model) {
@@ -2866,5 +1888,192 @@ public class TestVLMModelImportPipeline {
         INDArray result = preprocessor.preprocess(testImage);
         preprocessor.shutdown();
         return result;
+    }
+
+    /**
+     * Test that Java image loading + preprocessing matches Python/PIL exactly.
+     * Loads the same PNG, resizes to 512x512, normalizes with mean=0.5 std=0.5,
+     * and compares pixel values at known positions against Python reference values.
+     *
+     * Python reference values (PIL LANCZOS resize, (x/255 - 0.5)/0.5 normalize):
+     *   R[0,0]=0.811765, G[0,0]=0.764706, B[0,0]=0.592157
+     *   R[256,256]=-0.105882, G[256,256]=-0.600000, B[256,256]=-0.741176
+     *   R[511,511]=0.333333, G[511,511]=0.176471, B[511,511]=-0.317647
+     */
+    @Test
+    @DisplayName("Image preprocessing: Java vs Python pixel value comparison")
+    public void testImagePreprocessingMatchesPython() throws Exception {
+        log.info("=== Image Preprocessing Comparison: Java vs Python ===");
+
+        // Load the same image used in the Python reference
+        String pdfPath = System.getProperty(PDF_PATH_PROPERTY);
+        assertNotNull(pdfPath, "Set -Dvlm.test.pdf.path to run this test");
+
+        File pdfFile = new File(pdfPath);
+        if (!pdfFile.isAbsolute()) {
+            pdfFile = new File(System.getProperty("user.dir"), pdfPath);
+        }
+        assertTrue(pdfFile.exists(), "PDF not found: " + pdfFile);
+
+        int pageIndex = Integer.parseInt(System.getProperty(PDF_PAGE_PROPERTY, "10"));
+        int dpi = Integer.parseInt(System.getProperty(PDF_DPI_PROPERTY, "150"));
+
+        // Render PDF page to BufferedImage (same as the main pipeline)
+        PDDocument doc = PDDocument.load(pdfFile);
+        PDFRenderer renderer = new PDFRenderer(doc);
+        BufferedImage pdfImage = renderer.renderImageWithDPI(pageIndex, dpi, ImageType.RGB);
+        doc.close();
+        log.info("Rendered page {}: {}x{}", pageIndex, pdfImage.getWidth(), pdfImage.getHeight());
+
+        // Save the rendered image so we can compare with Python
+        File renderedFile = new File(System.getProperty("user.dir") + "/target/vlm-test-output/rendered_page.png");
+        renderedFile.getParentFile().mkdirs();
+        ImageIO.write(pdfImage, "PNG", renderedFile);
+        log.info("Saved rendered page to: {}", renderedFile.getAbsolutePath());
+
+        // Step 1: Resize to 512x512 (squish, no aspect ratio preservation)
+        int targetSize = 512;
+        BufferedImage resized = ImageTiler.resizeImage(pdfImage, targetSize, targetSize);
+        log.info("Java resized: {}x{}", resized.getWidth(), resized.getHeight());
+
+        // Check raw pixel values at corners BEFORE normalization
+        int rgb00 = resized.getRGB(0, 0);
+        int r00 = (rgb00 >> 16) & 0xFF;
+        int g00 = (rgb00 >> 8) & 0xFF;
+        int b00 = rgb00 & 0xFF;
+        log.info("Java raw pixel [0,0] RGB: [{}, {}, {}]", r00, g00, b00);
+        log.info("Python raw pixel [0,0] RGB: [231, 225, 203]");
+
+        int rgb256 = resized.getRGB(256, 256);
+        int r256 = (rgb256 >> 16) & 0xFF;
+        int g256 = (rgb256 >> 8) & 0xFF;
+        int b256 = rgb256 & 0xFF;
+        log.info("Java raw pixel [256,256] RGB: [{}, {}, {}]", r256, g256, b256);
+        log.info("Python raw pixel [256,256] RGB: [114, 51, 33]");
+
+        int rgb511 = resized.getRGB(511, 511);
+        int r511 = (rgb511 >> 16) & 0xFF;
+        int g511 = (rgb511 >> 8) & 0xFF;
+        int b511 = rgb511 & 0xFF;
+        log.info("Java raw pixel [511,511] RGB: [{}, {}, {}]", r511, g511, b511);
+        log.info("Python raw pixel [511,511] RGB: [170, 150, 87]");
+
+        // Step 2: Run through the preprocessor (rescale + normalize)
+        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
+        INDArray tensor = preprocessor.preprocess(resized);
+        preprocessor.shutdown();
+        log.info("Preprocessed tensor: shape={}, dtype={}", java.util.Arrays.toString(tensor.shape()), tensor.dataType());
+        log.info("  min={}, max={}, mean={}", tensor.minNumber(), tensor.maxNumber(), tensor.meanNumber());
+
+        // Extract normalized values at the same positions as Python reference
+        // tensor shape is [1, 3, 512, 512] = [batch, channel, h, w]
+        float jR00 = tensor.getFloat(0, 0, 0, 0);
+        float jG00 = tensor.getFloat(0, 1, 0, 0);
+        float jB00 = tensor.getFloat(0, 2, 0, 0);
+        log.info("Java normalized [0,0]: R={}, G={}, B={}", jR00, jG00, jB00);
+        log.info("Python normalized [0,0]: R=0.811765, G=0.764706, B=0.592157");
+
+        float jR256 = tensor.getFloat(0, 0, 256, 256);
+        float jG256 = tensor.getFloat(0, 1, 256, 256);
+        float jB256 = tensor.getFloat(0, 2, 256, 256);
+        log.info("Java normalized [256,256]: R={}, G={}, B={}", jR256, jG256, jB256);
+        log.info("Python normalized [256,256]: R=-0.105882, G=-0.600000, B=-0.741176");
+
+        float jR511 = tensor.getFloat(0, 0, 511, 511);
+        float jG511 = tensor.getFloat(0, 1, 511, 511);
+        float jB511 = tensor.getFloat(0, 2, 511, 511);
+        log.info("Java normalized [511,511]: R={}, G={}, B={}", jR511, jG511, jB511);
+        log.info("Python normalized [511,511]: R=0.333333, G=0.176471, B=-0.317647");
+
+        // Step 3: Check if the source images even match
+        // The Python reference uses /tmp/page10-010.png which was rendered at 150 DPI
+        // If that file exists, load it in Java and compare
+        File pythonImageFile = new File("/tmp/page10-010.png");
+        if (pythonImageFile.exists()) {
+            BufferedImage pythonImage = ImageIO.read(pythonImageFile);
+            log.info("Python source image: {}x{}", pythonImage.getWidth(), pythonImage.getHeight());
+            log.info("Java rendered image: {}x{}", pdfImage.getWidth(), pdfImage.getHeight());
+
+            if (pythonImage.getWidth() == pdfImage.getWidth() && pythonImage.getHeight() == pdfImage.getHeight()) {
+                // Same size - compare pixels
+                int diffPixels = 0;
+                long totalDiff = 0;
+                for (int y = 0; y < Math.min(100, pdfImage.getHeight()); y++) {
+                    for (int x = 0; x < Math.min(100, pdfImage.getWidth()); x++) {
+                        int pRgb = pythonImage.getRGB(x, y);
+                        int jRgb = pdfImage.getRGB(x, y);
+                        if (pRgb != jRgb) {
+                            diffPixels++;
+                            totalDiff += Math.abs(((pRgb >> 16) & 0xFF) - ((jRgb >> 16) & 0xFF));
+                            totalDiff += Math.abs(((pRgb >> 8) & 0xFF) - ((jRgb >> 8) & 0xFF));
+                            totalDiff += Math.abs((pRgb & 0xFF) - (jRgb & 0xFF));
+                        }
+                    }
+                }
+                log.info("Source image comparison (first 100x100): diffPixels={}, totalDiff={}", diffPixels, totalDiff);
+            } else {
+                log.warn("Source images have different sizes - Python: {}x{}, Java: {}x{}",
+                        pythonImage.getWidth(), pythonImage.getHeight(), pdfImage.getWidth(), pdfImage.getHeight());
+            }
+
+            // Also resize the Python source image with Java's bilinear and compare
+            BufferedImage pythonResizedByJava = ImageTiler.resizeImage(pythonImage, targetSize, targetSize);
+            int pjR00 = (pythonResizedByJava.getRGB(0, 0) >> 16) & 0xFF;
+            int pjG00 = (pythonResizedByJava.getRGB(0, 0) >> 8) & 0xFF;
+            int pjB00 = pythonResizedByJava.getRGB(0, 0) & 0xFF;
+            log.info("Python image resized by Java [0,0] RGB: [{}, {}, {}]", pjR00, pjG00, pjB00);
+            log.info("Python image resized by Python [0,0] RGB: [231, 225, 203]");
+            log.info("Java image resized by Java [0,0] RGB: [{}, {}, {}]", r00, g00, b00);
+        }
+
+        // Step 4: Compute overall statistics for comparison
+        // Python reference: min=-1.000000, max=1.000000, mean=0.174427
+        log.info("=== Overall Statistics Comparison ===");
+        log.info("Java:   min={}, max={}, mean={}", tensor.minNumber(), tensor.maxNumber(), tensor.meanNumber());
+        log.info("Python: min=-1.000000, max=1.000000, mean=0.174427");
+
+        // Step 5: Also load the Python reference binary and compare element-wise
+        File refBin = new File("/tmp/python_vision_input_3x512x512.bin");
+        if (refBin.exists()) {
+            log.info("Loading Python reference tensor from {}", refBin.getAbsolutePath());
+            java.io.DataInputStream dis = new java.io.DataInputStream(
+                    new java.io.BufferedInputStream(new java.io.FileInputStream(refBin)));
+            float[] pythonData = new float[3 * 512 * 512];
+            byte[] buf = new byte[4];
+            for (int i = 0; i < pythonData.length; i++) {
+                dis.readFully(buf);
+                // numpy saves in little-endian
+                int bits = (buf[0] & 0xFF) | ((buf[1] & 0xFF) << 8) | ((buf[2] & 0xFF) << 16) | ((buf[3] & 0xFF) << 24);
+                pythonData[i] = Float.intBitsToFloat(bits);
+            }
+            dis.close();
+
+            INDArray pythonTensor = Nd4j.create(pythonData, new long[]{1, 3, 512, 512}, 'c');
+            log.info("Python tensor loaded: shape={}, min={}, max={}, mean={}",
+                    java.util.Arrays.toString(pythonTensor.shape()),
+                    pythonTensor.minNumber(), pythonTensor.maxNumber(), pythonTensor.meanNumber());
+
+            // Element-wise difference
+            INDArray diff = tensor.sub(pythonTensor);
+            double maxAbsDiff = diff.amaxNumber().doubleValue();
+            double meanAbsDiff = Nd4j.math.abs(diff).meanNumber().doubleValue();
+            double l2Diff = diff.norm2Number().doubleValue();
+            log.info("Element-wise difference: maxAbsDiff={}, meanAbsDiff={}, L2={}", maxAbsDiff, meanAbsDiff, l2Diff);
+
+            // Per-channel difference
+            for (int c = 0; c < 3; c++) {
+                INDArray chanDiff = tensor.get(NDArrayIndex.point(0), NDArrayIndex.point(c), NDArrayIndex.all(), NDArrayIndex.all())
+                        .sub(pythonTensor.get(NDArrayIndex.point(0), NDArrayIndex.point(c), NDArrayIndex.all(), NDArrayIndex.all()));
+                log.info("Channel {} diff: max={}, mean={}, L2={}",
+                        c, chanDiff.amaxNumber(), Nd4j.math.abs(chanDiff).meanNumber(), chanDiff.norm2Number());
+            }
+
+            pythonTensor.close();
+        } else {
+            log.warn("Python reference binary not found at {}. Run test_vision_fixed_input.py first.", refBin.getAbsolutePath());
+        }
+
+        tensor.close();
+        log.info("=== Image Preprocessing Comparison Complete ===");
     }
 }

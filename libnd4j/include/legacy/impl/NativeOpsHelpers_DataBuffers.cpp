@@ -132,6 +132,7 @@ void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) {
 }
 
 void ctxPurge(OpaqueContext *ptr) { ptr->clearFastPath(); }
+void ctxPurgeNoSync(OpaqueContext *ptr) { ptr->clearFastPathNoSync(); }
 
 int lastErrorCode() { return sd::LaunchContext::defaultContext()->errorReference()->errorCode(); }
 
@@ -204,13 +205,25 @@ void pushIntermediateResult(OpaqueContext *contextPointer,
 }
 
 OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueContext *contextPointer) {
+  if (contextPointer == nullptr) {
+    THROW_EXCEPTION("intermediateResultDataAt: contextPointer is null");
+  }
   auto arr = contextPointer->intermediateResult(index);
+  if (arr == nullptr) {
+    THROW_EXCEPTION("intermediateResultDataAt: intermediateResult returned null");
+  }
   return new OpaqueDataBuffer(arr->dataBuffer());
 }
 
 const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer) {
+  if (contextPointer == nullptr) {
+    THROW_EXCEPTION("intermediateResultShapeInfoAt: contextPointer is null");
+  }
   auto context = reinterpret_cast<sd::graph::Context *>(contextPointer);
   auto arr = context->intermediateResult(index);
+  if (arr == nullptr) {
+    THROW_EXCEPTION("intermediateResultShapeInfoAt: intermediateResult returned null");
+  }
   return arr->shapeInfo();
 }
 
@@ -293,9 +306,37 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
 
   buffer->markOwner(false);
 
+  // Clean up stale auto-allocated buffers BEFORE setting external pointers.
+  // dbAllocateDataBuffer(0,...) creates a small internal buffer on CUDA (device side).
+  // If the caller only provides a host pointer (e.g., HOST_ONLY workspace), the stale
+  // auto-allocated device buffer must be cleared. Otherwise syncToPrimary will try to
+  // cudaMemcpyAsync from the tiny stale device buffer using the full _lenInBytes,
+  // causing "invalid argument" errors.
+  // We clear BEFORE setPrimary/setSpecial so that the final _lenInBytes is correct
+  // (setPrimary/setSpecial update _lenInBytes based on the element count).
+  if (special == nullptr && primary != nullptr) {
+    // Only host pointer provided (e.g., HOST_ONLY workspace) — clear stale device buffer.
+    // setSpecial(nullptr, 0) -> setSpecialBuffer(nullptr, 0) -> frees old device memory,
+    // nulls the pointer, and temporarily sets _lenInBytes=0.
+    // setPrimary below will restore _lenInBytes to the correct value.
+    buffer->setSpecial(nullptr, 0);
+  }
+
   if (primary != nullptr) buffer->setPrimary(primary, elements);
 
-  if (special != nullptr) buffer->setSpecial(special, elements);
+  if (special != nullptr) {
+    buffer->setSpecial(special, elements);
+  } else if (primary != nullptr) {
+    // After clearing the stale special buffer and setting primary, the sync counters
+    // still indicate "special is more recent" (from the initial writeSpecial() in the
+    // DataBuffer constructor). This causes isSpecialActual() to return true, and
+    // syncToSpecial() skips allocation+copy entirely — leaving no device buffer.
+    // Fix: mark primary as written so syncToSpecial() knows H2D transfer is needed.
+    auto db = buffer->dataBuffer();
+    if (db != nullptr) {
+      db->writePrimary();
+    }
+  }
 
   return buffer;
 }

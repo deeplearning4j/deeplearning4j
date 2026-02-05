@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -101,9 +103,51 @@ public class ReshapeNoCopy extends DynamicCustomOp {
                     throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
                 DataBuffer shapeInfo = list.get(0);
-                // This is reshape NO COPY - just create a view with the new shape, sharing input's data
-                INDArray newOut = Nd4j.createFromDescriptor(inputArguments.get(0).data(), shapeInfo);
-                addOutputArgument(newOut);
+                long[] shapeInfoLong = shapeInfo.asLong();
+
+                // Check if the C++ backend set the ARRAY_NEEDS_COPY flag, indicating that
+                // the reshape cannot be done as a view and requires a data copy.
+                // When this flag is set, we must allocate a NEW buffer for the output
+                // so the C++ op can copy data into it. This ensures isView() returns false.
+                boolean needsCopy = ArrayOptionsHelper.arrayNeedsCopy(shapeInfoLong);
+
+                // Check if the C++ backend set the copy-offset flag, indicating that the
+                // reshaped output should share the input's data buffer AND preserve its offset.
+                // Without this, views at non-zero offsets lose their position after reshape.
+                int copyOffsetInputIndex = ArrayOptionsHelper.getCopyOffsetInputIndex(shapeInfoLong);
+                INDArray inputArr = inputArguments.get(0);
+                long inputOffset = inputArr.offset();
+
+                if (needsCopy) {
+                    // The reshape cannot be done as a view — allocate a fresh buffer.
+                    // The C++ op will copy data from input to this new buffer.
+                    long[] shape = Shape.shape(shapeInfoLong);
+                    char ordering = Shape.order(shapeInfoLong);
+                    INDArray newOut = Nd4j.createUninitialized(inputArr.dataType(), shape, ordering);
+                    addOutputArgument(newOut);
+                } else if (copyOffsetInputIndex >= 0 && copyOffsetInputIndex < inputArguments.size()) {
+                    INDArray input = inputArguments.get(copyOffsetInputIndex);
+                    long[] shape = Shape.shape(shapeInfoLong);
+                    long[] strides = Shape.stride(shapeInfoLong);
+                    char ordering = Shape.order(shapeInfoLong);
+
+                    INDArray newOut = Nd4j.create(input.data(), shape, strides, input.offset(), ordering, true);
+                    addOutputArgument(newOut);
+                } else {
+                    if (inputOffset != 0) {
+                        // The C++ backend did NOT set the flag but the input has a non-zero offset.
+                        // This means the flag was lost or not set. Apply offset manually.
+                        long[] shape = Shape.shape(shapeInfoLong);
+                        long[] strides = Shape.stride(shapeInfoLong);
+                        char ordering = Shape.order(shapeInfoLong);
+                        INDArray newOut = Nd4j.create(inputArr.data(), shape, strides, inputOffset, ordering, true);
+                        addOutputArgument(newOut);
+                    } else {
+                        // Fallback: create view sharing input's data (original behavior)
+                        INDArray newOut = Nd4j.createFromDescriptor(inputArguments.get(0).data(), shapeInfo);
+                        addOutputArgument(newOut);
+                    }
+                }
                 shapeOverride = true;
             } catch (ND4JIllegalStateException e) {
                 throw e;
@@ -138,5 +182,10 @@ public class ReshapeNoCopy extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         // The output type is the same as the input type
         return Collections.singletonList(inputDataTypes.get(0));
+    }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
     }
 }

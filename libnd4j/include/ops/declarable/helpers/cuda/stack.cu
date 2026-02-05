@@ -104,7 +104,16 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
-  if (inArrs[0]->rankOf() < 1 && !inArrs[0]->isEmpty()) {
+  // Check if ALL inputs are effectively single-element tensors (scalar or [1])
+  // This handles the case where some inputs are scalar and others are [1]
+  bool allSingleElement = true;
+  for (int i = 0; i < numOfSubArrs && allSingleElement; ++i) {
+    if (!inArrs[i]->isEmpty() && inArrs[i]->lengthOf() != 1) {
+      allSingleElement = false;
+    }
+  }
+
+  if (allSingleElement && !inArrs[0]->isEmpty()) {
     std::vector<void *> hInBuffers(numOfSubArrs);
 
     for (int i = 0; i < numOfSubArrs; ++i) hInBuffers[i] = inArrs[i]->specialBuffer();

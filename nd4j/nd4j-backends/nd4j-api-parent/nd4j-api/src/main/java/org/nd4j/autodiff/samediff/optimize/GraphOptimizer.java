@@ -56,8 +56,11 @@ public class GraphOptimizer {
         return Arrays.<OptimizerSet>asList(
                 new UnusedFunctionOptimizations(),
                 new ConstantFunctionOptimizations(),
+                new AlgebraicOptimizations(),        // x+0->x, x*1->x, x*0->0, etc.
                 new IdentityFunctionOptimizations(),
                 new ShapeFunctionOptimizations(),
+                new ActivationFusionOptimizations(), // sigmoid(x)*x -> swish, SwiGLU detection
+                new NormalizationFusionOptimizations(), // RMSNorm detection
                 new LinearFusionOptimizations(),
                 new AttentionFusionOptimizations(),  // Fuse attention patterns
                 new UnusedFunctionOptimizations(),
@@ -80,14 +83,13 @@ public class GraphOptimizer {
     public static SameDiff optimize(SameDiff graph, List<String> requiredOutputs, List<OptimizerSet> optimizations, OptimizationDebugger debugger){
         long startTime = System.currentTimeMillis();
 
-        // Use shallow clone - copies graph structure but shares array data
-        // This is MUCH faster than graph.dup() which serializes/deserializes everything
-        SameDiff sd = shallowCloneForOptimization(graph);
+        // Use full dup() - shallowClone shares DifferentialFunction objects which corrupts the original
+        SameDiff sd = graph.dup();
 
         ArrayHolder cArr = sd.getConstantArrays();
         ArrayHolder vArr = sd.getVariablesArrays();
 
-        OptimizationHelper h = new OptimizationHelper(graph, new OptimizationConfig());
+        OptimizationHelper h = new OptimizationHelper(sd, new OptimizationConfig());
         // Initialize fast HashMap caches for O(1) lookups instead of PatriciaTrie O(k)
         h.initializeCaches(sd);
 

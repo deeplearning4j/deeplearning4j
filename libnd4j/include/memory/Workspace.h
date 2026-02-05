@@ -100,6 +100,18 @@ class SD_LIB_EXPORT Workspace {
   void scopeIn();
   void scopeOut();
 
+  /**
+   * Get the raw host (secondary) memory pointer for this workspace.
+   * On CPU backend this is the primary pointer; on CUDA it is the pinned host pointer.
+   */
+  void* getHostPointer() const { return _ptrHost; }
+
+  /**
+   * Get the raw device (primary) memory pointer for this workspace.
+   * On CPU backend this may be nullptr; on CUDA it is the device pointer.
+   */
+  void* getDevicePointer() const { return _ptrDevice; }
+
   /*
    * This method creates NEW workspace of the same memory size and returns pointer to it
    */

@@ -83,7 +83,7 @@ public class DeallocatorService {
     //for the amount of memory overhead it has. String compression
     //with a large number of objects is more important over throughput.
     @Getter
-    private Map<Long,DeallocatableReference> referenceMap = Collections.synchronizedMap(new WeakHashMap<>());
+    private Map<Long,DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
 
     @Getter
     private Map<Long,String> referenceTypes = new ConcurrentHashMap<>();
@@ -94,6 +94,14 @@ public class DeallocatorService {
     private Counter<String> deallocated = new Counter<>();
 
     private static AtomicBoolean blockDeallocator = new AtomicBoolean(false);
+
+    /**
+     * When true, the deallocator threads skip native deallocation entirely.
+     * Set during JVM shutdown to avoid calling free() on potentially corrupted heap
+     * metadata. The OS reclaims all process memory on exit anyway.
+     */
+    @Getter
+    private static final AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
 
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
     private Boolean noPointerGc;

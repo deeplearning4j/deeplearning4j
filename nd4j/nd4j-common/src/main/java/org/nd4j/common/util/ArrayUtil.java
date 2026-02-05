@@ -1349,8 +1349,12 @@ public class ArrayUtil {
         if (mult.isEmpty())
             return 0;
         long ret = 1;
-        for (int i = 0; i < mult.size(); i++)
-            ret *= mult.get(i).longValue();
+        for (int i = 0; i < mult.size(); i++) {
+            long val = mult.get(i).longValue();
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (val < 0) continue;
+            ret *= val;
+        }
         return ret;
     }
 
@@ -1365,8 +1369,11 @@ public class ArrayUtil {
         if (mult.length < 1)
             return 0;
         long ret = 1;
-        for (int i = 0; i < mult.length; i++)
+        for (int i = 0; i < mult.length; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (mult[i] < 0) continue;
             ret *= mult[i];
+        }
         return ret;
     }
 
@@ -1374,8 +1381,11 @@ public class ArrayUtil {
         if (mult.length < 1)
             return 0;
         long ret = 1;
-        for (int i = 0; i < mult.length; i++)
+        for (int i = 0; i < mult.length; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (mult[i] < 0) continue;
             ret *= mult[i];
+        }
         return ret;
     }
 

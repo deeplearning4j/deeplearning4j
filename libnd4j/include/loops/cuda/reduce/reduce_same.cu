@@ -257,6 +257,8 @@ SD_DEVICE SD_INLINE  void ReduceSameFunction<X>::execScalarCuda(
     xRank      = shape::rank(xShapeInfo);
     xShapePtr  = shape::shapeOf(xShapeInfo);
     xStridePtr = shape::stride(xShapeInfo);
+
+
   }
   __syncthreads();
 

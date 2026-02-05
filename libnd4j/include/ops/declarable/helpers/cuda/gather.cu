@@ -88,6 +88,9 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const LongType* xSh
     // Get the gather index directly from y - this is the element index to gather from x
     LongType gatherIdx = y[yIndex];
 
+    // Bounds check: skip if gather index is out of range
+    if (gatherIdx < 0 || gatherIdx >= xLen) continue;
+
     // For linear gather, use the gather index directly with x stride
     // x is 1D so we just need to multiply by stride
     LongType xIndex = gatherIdx * xStridePtr[0];
@@ -198,6 +201,10 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
   LongType axis = numOfIntArgs > 0 ? intArgs[0] : 0;
   if (axis < 0) axis += inputRank;
 
+  // Special handling for 1D input with axis=0 (matches CPU implementation)
+  // This handles cases like gathering from shape arrays where we want flat indexing
+  bool is1DFlatGather = (inputRank == 1 && axis == 0);
+
   if (indices == nullptr && numOfIntArgs == 2) {  // scalar case
     NDArray* scalar = (*input)(intArgs[1], {axis});
     output->assign(scalar);
@@ -217,6 +224,16 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
       output->assign(inSubArr);
       delete inSubArr;
     }
+  } else if (indices != nullptr && is1DFlatGather) {
+    // Special case: 1D input with axis=0 - use direct flat indexing
+    // This is critical for shape array operations in models like transformers
+    NDArray::prepareSpecialUse({output}, {input, indices});
+    BUILD_DOUBLE_SELECTOR(
+        input->dataType(), indices->dataType(), gatherCudaLinear,
+        (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(),
+         indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()),
+        SD_COMMON_TYPES, SD_INDEXING_TYPES);
+    NDArray::registerSpecialUse({output}, {input, indices});
   } else {
     NDArray* pIndices = const_cast<NDArray*>(indices);
     if (indices == nullptr) {

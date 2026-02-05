@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeformableConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -765,28 +766,17 @@ public class SDCNN extends SDOps {
    * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
    * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param mask Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null. (NUMERIC type)
-   * @param kH Kernel height
-   * @param kW Kernel width
-   * @param sH Stride height
-   * @param sW Stride width
-   * @param pH Padding height
-   * @param pW Padding width
-   * @param dH Dilation height
-   * @param dW Dilation width
-   * @param groups Convolution groups
-   * @param deformableGroups Number of deformable/offset groups
-   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @param DeformableConv2DConfig Configuration Object
    * @return output Result of deformable convolution (NUMERIC type)
    */
   public SDVariable deformableConv2d(SDVariable input, SDVariable weights, SDVariable offset,
-      SDVariable bias, SDVariable mask, int kH, int kW, int sH, int sW, int pH, int pW, int dH,
-      int dW, int groups, int deformableGroups, boolean nchw) {
+      SDVariable bias, SDVariable mask, DeformableConv2DConfig DeformableConv2DConfig) {
     SDValidation.validateNumerical("deformableConv2d", "input", input);
     SDValidation.validateNumerical("deformableConv2d", "weights", weights);
     SDValidation.validateNumerical("deformableConv2d", "offset", offset);
     SDValidation.validateNumerical("deformableConv2d", "bias", bias);
     SDValidation.validateNumerical("deformableConv2d", "mask", mask);
-    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, kH, kW, sH, sW, pH, pW, dH, dW, groups, deformableGroups, nchw).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, DeformableConv2DConfig).outputVariable();
   }
 
   /**
@@ -808,28 +798,18 @@ public class SDCNN extends SDOps {
    * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
    * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param mask Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null. (NUMERIC type)
-   * @param kH Kernel height
-   * @param kW Kernel width
-   * @param sH Stride height
-   * @param sW Stride width
-   * @param pH Padding height
-   * @param pW Padding width
-   * @param dH Dilation height
-   * @param dW Dilation width
-   * @param groups Convolution groups
-   * @param deformableGroups Number of deformable/offset groups
-   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @param DeformableConv2DConfig Configuration Object
    * @return output Result of deformable convolution (NUMERIC type)
    */
   public SDVariable deformableConv2d(String name, SDVariable input, SDVariable weights,
-      SDVariable offset, SDVariable bias, SDVariable mask, int kH, int kW, int sH, int sW, int pH,
-      int pW, int dH, int dW, int groups, int deformableGroups, boolean nchw) {
+      SDVariable offset, SDVariable bias, SDVariable mask,
+      DeformableConv2DConfig DeformableConv2DConfig) {
     SDValidation.validateNumerical("deformableConv2d", "input", input);
     SDValidation.validateNumerical("deformableConv2d", "weights", weights);
     SDValidation.validateNumerical("deformableConv2d", "offset", offset);
     SDValidation.validateNumerical("deformableConv2d", "bias", bias);
     SDValidation.validateNumerical("deformableConv2d", "mask", mask);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, kH, kW, sH, sW, pH, pW, dH, dW, groups, deformableGroups, nchw).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, bias, mask, DeformableConv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -849,16 +829,15 @@ public class SDCNN extends SDOps {
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
    * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
    * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
-   * @param kH Kernel height
-   * @param kW Kernel width
+   * @param DeformableConv2DConfig Configuration Object
    * @return output Result of deformable convolution (NUMERIC type)
    */
   public SDVariable deformableConv2d(SDVariable input, SDVariable weights, SDVariable offset,
-      int kH, int kW) {
+      DeformableConv2DConfig DeformableConv2DConfig) {
     SDValidation.validateNumerical("deformableConv2d", "input", input);
     SDValidation.validateNumerical("deformableConv2d", "weights", weights);
     SDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, null, null, kH, kW, 1, 1, 0, 0, 1, 1, 1, 1, true).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, null, null, DeformableConv2DConfig).outputVariable();
   }
 
   /**
@@ -878,16 +857,15 @@ public class SDCNN extends SDOps {
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
    * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
    * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
-   * @param kH Kernel height
-   * @param kW Kernel width
+   * @param DeformableConv2DConfig Configuration Object
    * @return output Result of deformable convolution (NUMERIC type)
    */
   public SDVariable deformableConv2d(String name, SDVariable input, SDVariable weights,
-      SDVariable offset, int kH, int kW) {
+      SDVariable offset, DeformableConv2DConfig DeformableConv2DConfig) {
     SDValidation.validateNumerical("deformableConv2d", "input", input);
     SDValidation.validateNumerical("deformableConv2d", "weights", weights);
     SDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, null, null, kH, kW, 1, 1, 0, 0, 1, 1, 1, 1, true).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(sd,input, weights, offset, null, null, DeformableConv2DConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

@@ -36,19 +36,33 @@ BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
+  // When input types differ, cast to output type to avoid type-punning in kernels
+  NDArray *castX = nullptr, *castY = nullptr;
+  auto cleanupCasts = [&]() { delete castX; delete castY; };
+  if (x->dataType() != z->dataType()) {
+    castX = x->cast(z->dataType());
+    x = castX;
+  }
+  if (y->dataType() != z->dataType()) {
+    castY = y->cast(z->dataType());
+    y = castY;
+  }
+
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   if (x->isSameShape(y)) {
-    // Ultra-fast path for contiguous same-shape
+    // Ultra-fast path for contiguous same-shape arrays
     const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
     const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
     const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
 
     if (xContiguous && yContiguous && zContiguous) {
       helpers::fusedSubtractContiguous(*x, *y, *z);
+      cleanupCasts();
       return Status::OK;
     }
 
     x->applyPairwiseTransform(pairwise::Subtract, y, z, nullptr);
+    cleanupCasts();
     return Status::OK;
   }
 
@@ -58,11 +72,13 @@ BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
 
   if (yLen == 1) {
     x->applyScalarArr(scalar::Subtract, y, z);
+    cleanupCasts();
     return Status::OK;
   }
   if (xLen == 1) {
     // x - y where x is scalar: use ReverseSubtract
     y->applyScalarArr(scalar::ReverseSubtract, x, z);
+    cleanupCasts();
     return Status::OK;
   }
 
@@ -77,18 +93,28 @@ BROADCASTABLE_OP_IMPL(subtract, 0, 0) {
     }
     if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
       std::vector<sd::LongType> dims = {xRank - 1};
-      x->applyBroadcast(broadcast::Subtract, &dims, y, z);
+      if (yRank > 1) {
+        std::vector<sd::LongType> yShape = {yLen};
+        auto yReshaped = y->reshape(y->ordering(), yShape);
+        x->applyBroadcast(broadcast::Subtract, &dims, yReshaped, z);
+        delete yReshaped;
+      } else {
+        x->applyBroadcast(broadcast::Subtract, &dims, y, z);
+      }
+      cleanupCasts();
       return Status::OK;
     }
   }
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Subtract(), x, y, z);
-  if (tZ == nullptr)
+  if (tZ == nullptr) {
+    cleanupCasts();
     return Status::KERNEL_FAILURE;
-  else if (tZ != z) {
+  } else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
+  cleanupCasts();
   return Status::OK;
 }
 DECLARE_SYN(Sub, subtract);

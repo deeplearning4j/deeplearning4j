@@ -33,6 +33,7 @@ import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
@@ -2226,20 +2227,21 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     protected void release() {
+        boolean shutdown = DeallocatorService.getShutdownInProgress().get();
+        Deallocator dealloc = deallocator();
         this.released.set(true);
 
-        if (deallocator != null && !deallocator.isConstant()) {
+        if (!shutdown && dealloc != null && !dealloc.isConstant()) {
             try {
-                deallocator.deallocate();
+                dealloc.deallocate();
             } catch (Exception e) {
-                // Log but don't throw - we still want to clean up Java references
                 log.debug("Error during deallocation: {}", e.getMessage());
             }
         }
 
         this.indexer = null;
         this.pointer = null;
-        this.ptrDataBuffer = null;  // Clear opaque buffer to prevent stale pointer access
+        this.ptrDataBuffer = null;
         Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
     }
 

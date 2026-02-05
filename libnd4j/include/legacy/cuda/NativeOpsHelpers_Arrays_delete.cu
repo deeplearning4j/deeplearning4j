@@ -66,32 +66,19 @@ void deleteNDArray(OpaqueNDArray array) {
   if (gotDeviceId && bufferDeviceId != currentDevice) {
     cudaError_t setDevErr = cudaSetDevice(bufferDeviceId);
     if (setDevErr != cudaSuccess) {
-      // Can't set device - fall back to syncing ALL devices
+      // Can't set device - log and proceed with current device
       cudaGetLastError();  // Clear the error
-      sd_debug("deleteNDArray [CUDA]: Failed to set device %d: %s. Syncing all devices.\n",
+      sd_debug("deleteNDArray [CUDA]: Failed to set device %d: %s. Proceeding on current device.\n",
                bufferDeviceId, cudaGetErrorString(setDevErr));
-
-      // Sync all devices as fallback - expensive but safe
-      int numDevices = 0;
-      cudaGetDeviceCount(&numDevices);
-      for (int d = 0; d < numDevices; d++) {
-        cudaSetDevice(d);
-        cudaDeviceSynchronize();
-      }
-      cudaSetDevice(currentDevice);  // Restore
     }
   }
 
-  cudaError_t syncErr = cudaDeviceSynchronize();
-  if (syncErr != cudaSuccess) {
-    // Sync failed - this is a problem. Log it but we still need to try to clean up.
-    // It's safer to proceed than to leak, but the caller should investigate why sync failed.
-    sd_debug("deleteNDArray [CUDA]: cudaDeviceSynchronize failed: %s. Proceeding with deletion.\n",
-             0, cudaGetErrorString(syncErr));
-    cudaGetLastError();  // Clear the error state
-  }
+  // NOTE: Do NOT access array->dataBuffer() here for event sync.
+  // The DataBuffer may already be freed by dbClose() on the GC thread,
+  // making array->dataBuffer() a dangling pointer. Accessing it causes
+  // stack corruption via cudaEventSynchronize on a garbage event handle.
+  // Event sync is handled in dbClose() which owns the DataBuffer lifecycle.
 
-  // Now safe to delete the array - all CUDA operations are complete
   delete array;
 
   // Restore original device context if we switched devices

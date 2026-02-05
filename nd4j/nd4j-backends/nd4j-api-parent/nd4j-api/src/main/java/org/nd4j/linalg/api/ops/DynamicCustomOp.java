@@ -100,6 +100,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     protected SDVariable[] outputVariables;
     private List<DataBuffer> outputShapes;
 
+    /**
+     * Signature of inputs (shapes, dtypes, iArgs, and small integer input values)
+     * that produced the cached outputShapes. DynamicCustomOps need a richer signature
+     * than standard ops because many derive output shape from input values (e.g. create,
+     * reshape, ConstantOfShape) or from iArgs, not just input shapes.
+     */
+    private transient long cachedInputShapeSignature;
+
     public DynamicCustomOp() {
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
@@ -511,49 +519,67 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         }
                     }
 
-                try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
-                    ctx.setIArguments(iArguments);
-                    ctx.setDArguments(dArguments);
-                    ctx.setTArguments(tArguments);
-                    ctx.setBArguments(bArguments);
-                    ctx.setInputArrays(inputArguments);
-                    ctx.setOutputArrays(outputArguments);
-
-                    SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
-                    for(Listener  l : sameDiff.getListeners()) {
-                        l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
-                    }
-
-                    INDArray[] exec;
-                    exec = Nd4j.getExecutioner().exec(this,ctx);
-
-
-                    for(Listener  l : sameDiff.getListeners()) {
-                        l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
-                    }
-
-                    for(Listener  l : sameDiff.getListeners()) {
-                        for(int i = 0; i < outputVariables.length; i++) {
-                            l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariables[i].name()),exec[i]);
-                        }
-                    }
-
-                    if(outputVariables.length != exec.length) {
-                        log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
-                    }
+                // During graph building (import), skip actual op execution and just set output
+                // shapes from calculateOutputShape. This avoids running the full forward pass
+                // during model import, which is extremely expensive for large models.
+                if(SameDiff.isInGraphBuildingMode()) {
                     for (int i = 0; i < outputVariables.length; i++) {
-                        if(i >= exec.length) {
-                            INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
-                            outputVariables[i].setShape(stub.shape());
-                            sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
-                        }  else {
-                            outputVariables[i].setShape(exec[i].shape());
-                            sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                        INDArray outArr;
+                        if(i < outputArguments().size()) {
+                            outArr = outputArguments().get(i);
+                        } else if(i < longShapeDescriptors.size()) {
+                            outArr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
+                        } else {
+                            outArr = Nd4j.scalar(0.0f);
                         }
+                        outputVariables[i].setShape(outArr.shape());
+                        sameDiff.setEagerArrForVarName(outputVariables[i].name(), outArr);
                     }
-                } catch (Exception e) {
-                    log.warn("Error during eager execution of operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
-                    // Don't rethrow - allow execution to continue
+                } else {
+                    try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                        ctx.setIArguments(iArguments);
+                        ctx.setDArguments(dArguments);
+                        ctx.setTArguments(tArguments);
+                        ctx.setBArguments(bArguments);
+                        ctx.setInputArrays(inputArguments);
+                        ctx.setOutputArrays(outputArguments);
+
+                        SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
+                        for(Listener  l : sameDiff.getListeners()) {
+                            l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
+                        }
+
+                        INDArray[] exec;
+                        exec = Nd4j.getExecutioner().exec(this,ctx);
+
+
+                        for(Listener  l : sameDiff.getListeners()) {
+                            l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
+                        }
+
+                        for(Listener  l : sameDiff.getListeners()) {
+                            for(int i = 0; i < outputVariables.length; i++) {
+                                l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariables[i].name()),exec[i]);
+                            }
+                        }
+
+                        if(outputVariables.length != exec.length) {
+                            log.warn("During eager execution of op " + getOwnName() + " of type " + opName() + " the output variables had length " + outputVariables.length + " while execution output was " + exec.length + " stub scalar variables will be used.");
+                        }
+                        for (int i = 0; i < outputVariables.length; i++) {
+                            if(i >= exec.length) {
+                                INDArray stub = Nd4j.scalar(1.0f).reshape(1,1,1,1,1,1,1);
+                                outputVariables[i].setShape(stub.shape());
+                                sameDiff.setEagerArrForVarName(outputVariables[i].name(),stub);
+                            }  else {
+                                outputVariables[i].setShape(exec[i].shape());
+                                sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error during eager execution of operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
+                        // Don't rethrow - allow execution to continue
+                    }
                 }
             }
         }
@@ -903,8 +929,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
         val descriptor = getDescriptor();
-        if (outputShapes != null && !outputShapes.isEmpty())
-            return outputShapes;
+
+        // Check cached output shapes using a rich signature that includes
+        // input shapes, dtypes, iArgs, and small integer input values.
+        if (outputShapes != null && !outputShapes.isEmpty() && oc != null) {
+            long sig = computeDynamicOpSignature(oc);
+            if (sig == cachedInputShapeSignature) {
+                return outputShapes;
+            }
+        }
 
         if (descriptor == null) {
             throw new IllegalStateException("Could not find descriptor for op: " + opName()
@@ -942,7 +975,90 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             ret = Nd4j.getExecutioner().calculateOutputShape(this);
         else
             ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
+
+        // Cache result with rich signature
+        if (oc != null && ret != null && !ret.isEmpty()) {
+            outputShapes = ret;
+            cachedInputShapeSignature = computeDynamicOpSignature(oc);
+        }
+
         return ret;
+    }
+
+    /**
+     * Compute a rich signature for DynamicCustomOp that captures all factors affecting output shape:
+     * input shapes/dtypes, iArgs, tArgs, bArgs, dArgs, in-place flag, pre-allocated output shapes,
+     * and actual values of small integer inputs (for ops like create, reshape, ConstantOfShape).
+     */
+    private long computeDynamicOpSignature(OpContext oc) {
+        // Start with the base input shape signature (shapes + dtypes)
+        long h = BaseOp.computeInputShapeSignature(oc);
+
+        // In-place flag: output shape == first input shape when in-place
+        h = h * 31 + (isInplaceCall() ? 1 : 0);
+
+        // iArgs - axis, dimensions, shape values
+        List<Long> iArgs = oc.getIArguments();
+        h = h * 31 + iArgs.size();
+        for (Long iArg : iArgs) {
+            h = h * 31 + iArg;
+        }
+
+        // bArgs - boolean flags that can toggle shape behavior
+        List<Boolean> bArgs = oc.getBArguments();
+        h = h * 31 + bArgs.size();
+        for (Boolean bArg : bArgs) {
+            h = h * 31 + (bArg ? 1 : 0);
+        }
+
+        // tArgs - floating point args (rarely affect shape, but can in some ops)
+        List<Double> tArgs = oc.getTArguments();
+        h = h * 31 + tArgs.size();
+        for (Double tArg : tArgs) {
+            h = h * 31 + Double.doubleToLongBits(tArg);
+        }
+
+        // dArgs - data type args that determine output dtype
+        List<DataType> dArgs = oc.getDArguments();
+        h = h * 31 + dArgs.size();
+        for (DataType dArg : dArgs) {
+            h = h * 31 + dArg.ordinal();
+        }
+
+        // For ops where input values determine output shape, hash the actual values.
+        // We must read values (not just identity-hash the DataBuffer) because the array
+        // cache can recycle the same DataBuffer object with different values written to it.
+        // These are typically small integer arrays (shape descriptors, <10 elements).
+        // Note: InferenceSession already calls commit()+dbForceSyncToPrimary() before
+        // calculateOutputShape(), so we don't need to sync here.
+        if (outputShapeDependsOnInputData()) {
+            int n = oc.numInputArguments();
+            for (int i = 0; i < n; i++) {
+                INDArray arr = oc.getInputArray(i);
+                if (arr != null && arr.length() > 0
+                        && (arr.dataType() == DataType.INT || arr.dataType() == DataType.LONG
+                        || arr.dataType() == DataType.INT8 || arr.dataType() == DataType.INT16)) {
+                    if (arr.data() != null && !arr.data().wasClosed()) {
+                        long len = arr.length();
+                        h = h * 31 + len;
+                        for (long j = 0; j < len; j++) {
+                            h = h * 31 + arr.getLong(j);
+                        }
+                    }
+                }
+            }
+        }
+
+        return h;
+    }
+
+    /**
+     * Override to return true for ops where output shape depends on input data values,
+     * not just input shapes. Examples: create, reshape, expand, broadcast_to.
+     * When true, input integer values are included in the shape cache signature.
+     */
+    public boolean outputShapeDependsOnInputData() {
+        return false;
     }
 
     @Override

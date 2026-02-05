@@ -220,12 +220,20 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //initialize a context and inject it for pulling out the im2col forward pass.
         OpContext ctx = Nd4j.getExecutioner().injectNewContext();
         INDArray z;
-        INDArray im2col;
+        INDArray im2col2d;
         try {
             z = Nd4j.cnn().conv2d(input, weights, bias, config);
-            im2col = ctx.getIntermediateResult(0);
+            INDArray im2col = ctx.getIntermediateResult(0);
+            // im2col (col) shape is [bS, oH, oW, kH, kW, iC]
+            long outH = im2col.size(1);
+            long outW = im2col.size(2);
+            im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
+            // dup() while context is still alive - intermediate results are freed on ctx.close()
+            try(MemoryWorkspace ws1 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                this.lastZ = z.dup();
+                this.im2col2d = im2col2d.dup();
+            }
         } finally {
-            // Close OpContext to prevent native memory leak
             Nd4j.getExecutioner().clearOpContext();
             try {
                 ctx.close();
@@ -233,14 +241,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 throw new RuntimeException(e);
             }
         }
-        long outH = im2col.size(-1);
-        long outW = im2col.size(-2);
-        INDArray im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
-        try(MemoryWorkspace ws1 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            this.lastZ = z.dup();
-            this.im2col2d = im2col2d.dup();
-        }
-
 
         INDArray leveragedRet = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, z);
         return new Pair<>(leveragedRet, forBackprop ? im2col2d : null);

@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueNDArray;
 
 /**
@@ -77,36 +76,15 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
             return;
         }
 
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
+        }
+
         synchronized (this) {
             if (constant || deallocated) {
                 return;
-            }
-
-            // DEFENSE-IN-DEPTH: Check if underlying buffers are constant.
-            // Even if this OpaqueNDArray's constant flag wasn't set, if the underlying
-            // data buffers are marked constant, we should NOT deallocate. This handles
-            // timing issues where setConstant() was called on the buffer but not yet
-            // propagated to the OpaqueNDArray.
-            if (array != null && !array.isNull()) {
-                try {
-                    OpaqueDataBuffer dataBufferRef = array.getDataBufferRef();
-                    if (dataBufferRef != null && dataBufferRef.getDeallocator() != null
-                            && dataBufferRef.getDeallocator().isConstant()) {
-                        // Underlying data buffer is constant - don't deallocate this array
-                        constant = true;  // Update our flag for future calls
-                        return;
-                    }
-                    OpaqueDataBuffer shapeInfoBufferRef = array.getShapeInfoBufferRef();
-                    if (shapeInfoBufferRef != null && shapeInfoBufferRef.getDeallocator() != null
-                            && shapeInfoBufferRef.getDeallocator().isConstant()) {
-                        // Underlying shape buffer is constant - don't deallocate this array
-                        constant = true;  // Update our flag for future calls
-                        return;
-                    }
-                } catch (Exception e) {
-                    // If we can't check, err on the side of caution and continue with deallocation
-                    // The deallocator checks already provide some protection
-                }
             }
 
             try {

@@ -2499,16 +2499,22 @@ public class Shape {
     public static long length(int[] buffer) {
         long ret = 1;
         int limit = Shape.rank(buffer) + 1;
-        for (int i = 1; i < limit; i++)
+        for (int i = 1; i < limit; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (buffer[i] < 0) continue;
             ret *= buffer[i];
+        }
         return ret;
     }
 
     public static long length(long[] buffer) {
         long ret = 1;
         int limit = Shape.rank(buffer) + 1;
-        for (int i = 1; i < limit; i++)
+        for (int i = 1; i < limit; i++) {
+            // Skip -1 sentinel values (unknown/dynamic dimensions from placeholders)
+            if (buffer[i] < 0) continue;
             ret *= buffer[i];
+        }
         return ret;
     }
 
@@ -3169,8 +3175,12 @@ public class Shape {
      * @return true if arr.length == 1 && arr[0] is -1 (sentinel for "reduce all")
      */
     public static boolean wholeArrayDimension(long... arr) {
-        // -1 is the standard sentinel for "reduce all dimensions"
-        return arr == null || arr.length == 0 || (arr.length == 1 && arr[0] == -1);
+        // null or empty means "reduce all dimensions".
+        // NOTE: {-1} is NOT treated as "reduce all" because -1 also means
+        // "last axis" in NumPy/ONNX convention. Callers that want "reduce all"
+        // should pass null or empty array, not {-1}.
+        // Legacy code that used {-1} as sentinel should be updated to use {} instead.
+        return arr == null || arr.length == 0;
     }
 
     public static long[] uniquify(long[] array) {
@@ -3205,15 +3215,8 @@ public class Shape {
         if (axis == null || axis.length == 0)
             return new long[0];
 
-        // Check for -1 sentinel - convert to empty array
-        // -1 is the standard sentinel for "reduce all dimensions"
-        for (val v : axis) {
-            if (v == -1) {
-                return new long[0];
-            }
-        }
-
-        // first we should get rid of all negative axis
+        // Normalize negative axes: -1 -> rank-1, -2 -> rank-2, etc.
+        // Note: -1 means "last axis", NOT "reduce all". This follows NumPy convention.
         long[] tmp = new long[axis.length];
 
         int cnt = 0;
@@ -3631,9 +3634,12 @@ public class Shape {
     public static INDArray ndArrayDimFromLong(long... dimensions) {
         INDArray result;
         if (dimensions == null || dimensions.length == 0) {
-            // Return -1 sentinel for "reduce all dimensions"
-            // Don't use Nd4j.empty() as it causes CUDA synchronization issues
-            result = Nd4j.createFromArray(-1L);
+            // Empty dimensions = "reduce all". Return null.
+            // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
+            // conflicts with NumPy convention where -1 means "last axis".
+            // normalizeAxis() would convert -1 to rank-1, causing reduce ops
+            // to only reduce along the last axis instead of all dimensions.
+            return null;
         } else {
             result = Nd4j.createFromArray(dimensions);
         }
@@ -3658,11 +3664,14 @@ public class Shape {
      * @return             Shape of the output array for the reduction
      */
     public static long[] reductionShape(INDArray x, long[] dimension, boolean newFormat, boolean keepDims) {
-        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
+        // Normalize negative axes BEFORE checking wholeArrayDimension,
+        // so that dimension={-1} (meaning "last axis") is converted to
+        // dimension={rank-1} and NOT misinterpreted as "reduce all" sentinel.
         for(int i = 0; i < dimension.length; i++) {
             if(dimension[i] < 0)
                 dimension[i] += x.rank();
         }
+        boolean wholeArray = Shape.wholeArrayDimension(dimension) || dimension.length == x.rank();
 
         long[] retShape;
         if(!newFormat) {

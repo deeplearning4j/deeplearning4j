@@ -161,7 +161,17 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
    * @return
    */
   NDArray *intermediateResult(int idx) {
-    return _intermediateResults.at(idx);
+    if (idx < 0 || idx >= static_cast<int>(_intermediateResults.size())) {
+      std::string msg = "intermediateResult: index " + std::to_string(idx) +
+                        " out of bounds, size=" + std::to_string(_intermediateResults.size());
+      THROW_EXCEPTION(msg.c_str());
+    }
+    auto result = _intermediateResults[idx];
+    if (result == nullptr) {
+      std::string msg = "intermediateResult: NDArray at index " + std::to_string(idx) + " is null";
+      THROW_EXCEPTION(msg.c_str());
+    }
+    return result;
   }
 
   /**
@@ -309,6 +319,7 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
    * PLEASE NOTE: I/T/B/D args will stay intact
    */
   void clearFastPath();
+  void clearFastPathNoSync();
 
   void setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer);
 

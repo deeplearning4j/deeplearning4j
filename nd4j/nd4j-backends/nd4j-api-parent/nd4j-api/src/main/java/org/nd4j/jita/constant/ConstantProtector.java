@@ -64,6 +64,12 @@ public class ConstantProtector {
         }
     }
 
+    private synchronized void ensureDeviceCapacity(int deviceId) {
+        while (deviceCache.size() <= deviceId) {
+            deviceCache.add(new ConcurrentHashMap<>());
+        }
+    }
+
     public void persistDataBuffer(DataBuffer buffer) {
         protectorLegacy.add(buffer);
     }
@@ -73,26 +79,32 @@ public class ConstantProtector {
     }
 
     public void persistDataBuffer(int deviceId, ShapeDescriptor descriptor, Pair<DataBuffer, long[]> buffer) {
+        ensureDeviceCapacity(deviceId);
         deviceCache.get(deviceId).put(LongShapeDescriptor.fromShapeDescriptor(descriptor), buffer);
     }
 
     public void persistDataBuffer(int deviceId, LongShapeDescriptor descriptor, Pair<DataBuffer, long[]> buffer) {
+        ensureDeviceCapacity(deviceId);
         deviceCache.get(deviceId).put(descriptor, buffer);
     }
 
     public Pair<DataBuffer, long[]> getDataBuffer(int deviceId, ShapeDescriptor descriptor) {
+        ensureDeviceCapacity(deviceId);
         return deviceCache.get(deviceId).get(LongShapeDescriptor.fromShapeDescriptor(descriptor));
     }
 
     public Pair<DataBuffer, long[]> getDataBuffer(int deviceId, LongShapeDescriptor descriptor) {
+        ensureDeviceCapacity(deviceId);
         return deviceCache.get(deviceId).get(descriptor);
     }
 
     public boolean containsDataBuffer(int deviceId, ShapeDescriptor descriptor) {
+        ensureDeviceCapacity(deviceId);
         return deviceCache.get(deviceId).containsKey(LongShapeDescriptor.fromShapeDescriptor(descriptor));
     }
 
     public boolean containsDataBuffer(int deviceId, LongShapeDescriptor descriptor) {
+        ensureDeviceCapacity(deviceId);
         return deviceCache.get(deviceId).containsKey(descriptor);
     }
 

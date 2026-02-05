@@ -28,9 +28,9 @@
 #if NOT_EXCLUDED(OP_rms_norm) || NOT_EXCLUDED(OP_rope) || NOT_EXCLUDED(OP_silu) || \
     NOT_EXCLUDED(OP_quantized_matmul) || NOT_EXCLUDED(OP_grouped_query_attention) || \
     NOT_EXCLUDED(OP_flash_attention) || NOT_EXCLUDED(OP_kv_cache_update) || \
-    NOT_EXCLUDED(OP_apply_alibi) || NOT_EXCLUDED(OP_sliding_window_attention)
+    NOT_EXCLUDED(OP_apply_alibi) || NOT_EXCLUDED(OP_sliding_window_attention) || \
+    NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_mean_square)
 
-#include <ops/declarable/headers/llm.h>
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/FlashAttentionHelper.h>
@@ -713,7 +713,179 @@ DECLARE_TYPES(sliding_window_attention) {
 }
 #endif
 
+//////////////////////////////////////////////////////////////////////////
+// swish_mul - SwiGLU component: swish(x) * y
+#if NOT_EXCLUDED(OP_swish_mul)
+CONFIGURABLE_OP_IMPL(swish_mul, 2, 1, true, 0, 0) {
+    auto x = INPUT_VARIABLE(0);  // Input for swish activation
+    auto y = INPUT_VARIABLE(1);  // Gate tensor
+    auto output = OUTPUT_VARIABLE(0);
+
+    // swish_mul(x, y) = silu(x) * y = x * sigmoid(x) * y
+    NDArray* sigmoid = x->transform(transform::Sigmoid);
+    NDArray* swish = (*x) * (*sigmoid);
+    delete sigmoid;
+
+    NDArray* result = (*swish) * (*y);
+    delete swish;
+
+    output->assign(result);
+    delete result;
+
+    return Status::OK;
+}
+
+DECLARE_TYPES(swish_mul) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+CONFIGURABLE_OP_IMPL(swish_mul_bp, 3, 2, true, 0, 0) {
+    auto x = INPUT_VARIABLE(0);
+    auto y = INPUT_VARIABLE(1);
+    auto gradOut = INPUT_VARIABLE(2);
+    auto gradX = OUTPUT_VARIABLE(0);
+    auto gradY = OUTPUT_VARIABLE(1);
+
+    // Forward: out = silu(x) * y = x * sigmoid(x) * y
+    // Let s = sigmoid(x), so out = x * s * y
+    //
+    // d(out)/dx = y * (s + x * s * (1 - s)) = y * s * (1 + x * (1 - s))
+    // d(out)/dy = x * s = silu(x)
+
+    NDArray* sigmoid = x->transform(transform::Sigmoid);
+
+    // Gradient w.r.t. y: gradY = gradOut * silu(x) = gradOut * x * sigmoid(x)
+    NDArray* silu = (*x) * (*sigmoid);
+    NDArray* gradYResult = (*gradOut) * (*silu);
+    gradY->assign(gradYResult);
+    delete gradYResult;
+
+    // Gradient w.r.t. x: gradX = gradOut * y * sigmoid(x) * (1 + x * (1 - sigmoid(x)))
+    // = gradOut * y * (sigmoid + x * sigmoid * (1 - sigmoid))
+    NDArray* oneMinusSigmoid = (*sigmoid) * (-1.0f);
+    NDArray* oneMinusSigmoid2 = (*oneMinusSigmoid) + 1.0f;
+    delete oneMinusSigmoid;
+
+    NDArray* sigmoidDeriv = (*sigmoid) * (*oneMinusSigmoid2);  // sigmoid * (1 - sigmoid)
+    delete oneMinusSigmoid2;
+
+    NDArray* xSigmoidDeriv = (*x) * (*sigmoidDeriv);  // x * sigmoid * (1 - sigmoid)
+    delete sigmoidDeriv;
+
+    NDArray* siluDeriv = (*sigmoid) + (*xSigmoidDeriv);  // sigmoid + x * sigmoid * (1 - sigmoid)
+    delete sigmoid;
+    delete xSigmoidDeriv;
+    delete silu;
+
+    NDArray* gradXTemp = (*gradOut) * (*y);
+    NDArray* gradXResult = (*gradXTemp) * (*siluDeriv);
+    delete gradXTemp;
+    delete siluDeriv;
+
+    gradX->assign(gradXResult);
+    delete gradXResult;
+
+    return Status::OK;
+}
+
+DECLARE_TYPES(swish_mul_bp) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// mean_square - Mean of squared values
+#if NOT_EXCLUDED(OP_mean_square)
+CUSTOM_OP_IMPL(mean_square, 1, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    bool keepDims = block.getIArguments()->size() > 0 ? INT_ARG(0) != 0 : true;
+
+    // mean(x * x) along last dimension
+    NDArray* squared = (*input) * (*input);
+    std::vector<LongType> axis = {input->rankOf() - 1};
+    NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, keepDims);
+    delete squared;
+
+    output->assign(meanSquared);
+    delete meanSquared;
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(mean_square) {
+    auto inShape = inputShape->at(0);
+    auto rank = shape::rank(inShape);
+    auto dtype = ArrayOptions::dataType(inShape);
+
+    bool keepDims = block.getIArguments()->size() > 0 ? INT_ARG(0) != 0 : true;
+
+    if (keepDims) {
+        // Same shape but last dimension = 1
+        std::vector<LongType> outShape;
+        for (int i = 0; i < rank - 1; i++) {
+            outShape.push_back(shape::sizeAt(inShape, static_cast<LongType>(i)));
+        }
+        outShape.push_back(1);
+        return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', outShape));
+    } else {
+        // Reduced shape without last dimension
+        std::vector<LongType> outShape;
+        for (int i = 0; i < rank - 1; i++) {
+            outShape.push_back(shape::sizeAt(inShape, static_cast<LongType>(i)));
+        }
+        if (outShape.empty()) {
+            outShape.push_back(1);  // Scalar case
+        }
+        return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', outShape));
+    }
+}
+
+DECLARE_TYPES(mean_square) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+CUSTOM_OP_IMPL(mean_square_bp, 2, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto gradOut = INPUT_VARIABLE(1);
+    auto gradIn = OUTPUT_VARIABLE(0);
+
+    bool keepDims = block.getIArguments()->size() > 0 ? INT_ARG(0) != 0 : true;
+
+    std::vector<LongType> axis = {input->rankOf() - 1};
+    auto n = input->sizeAt(axis[0]);
+
+    // d/dx[mean(x^2)] = 2*x / n
+    NDArray* grad = (*input) * (2.0f / static_cast<float>(n));
+
+    // Broadcast gradOut to match input shape and multiply with grad
+    NDArray* result = (*grad) * (*gradOut);
+    gradIn->assign(result);
+    delete result;
+    delete grad;
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(mean_square_bp) {
+    auto inShape = inputShape->at(0);
+    return SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
+}
+
+DECLARE_TYPES(mean_square_bp) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
 }  // namespace ops
 }  // namespace sd
 
 #endif
+// NOTE: fused_gelu, fused_layer_norm, fused_rope, fused_bias_dropout_residual,
+// and fused_rms_norm_swiglu are implemented in fused_llm_ops.cpp which calls
+// the platform-specific helpers.

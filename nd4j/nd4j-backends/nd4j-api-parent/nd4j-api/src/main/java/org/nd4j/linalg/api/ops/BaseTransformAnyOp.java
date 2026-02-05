@@ -118,19 +118,28 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         if(oc == null) {
             return calculateOutputShape();
         }
+
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray input = oc.getInputArray(0);
         if(input == null) {
             return Collections.emptyList();
         }
+        List<DataBuffer> ret;
         // For pairwise ops with two inputs, compute broadcast shape
         if(oc.numInputArguments() > 1) {
             INDArray input2 = oc.getInputArray(1);
             if(input2 != null) {
                 long[] broadcastShape = org.nd4j.linalg.api.shape.Shape.broadcastOutputShape(input.shape(), input2.shape());
-                return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(broadcastShape, input.dataType()).toShapeInfo()));
+                ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(broadcastShape, input.dataType()).toShapeInfo()));
+                setCachedOutputShapes(oc, ret);
+                return ret;
             }
         }
-        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(input.shape(), input.dataType()).toShapeInfo()));
+        ret = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(input.shape(), input.dataType()).toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

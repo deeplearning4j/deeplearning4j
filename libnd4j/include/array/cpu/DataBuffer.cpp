@@ -53,6 +53,7 @@ void DataBuffer::expand(const uint64_t size) {
 
     _primaryBuffer = newBuffer;
     _lenInBytes = size;
+    _primaryAllocBytes = size;
     _isOwnerPrimary = true;
   }
 }

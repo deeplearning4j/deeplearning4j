@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <system/op_boilerplate.h>
 
+#include <execution/LaunchContext.h>
+
 #include <atomic>
 #include <cstring>
 
@@ -38,6 +40,14 @@
 
 namespace sd {
 namespace memory {
+
+// Helper: get the current CUDA compute stream (never nullptr unless no context).
+static cudaStream_t currentStream() {
+  auto ctx = LaunchContext::defaultContext();
+  if (ctx != nullptr && ctx->getCudaStream() != nullptr)
+    return *ctx->getCudaStream();
+  return nullptr;
+}
 Workspace::Workspace(ExternalWorkspace *external) {
   if (external->sizeHost() > 0) {
     _ptrHost = (char *)external->pointerHost();
@@ -63,7 +73,8 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
     auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondarySize, cudaHostAllocDefault);
     if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
 
-    cudaMemset(this->_ptrHost, 0, secondarySize);
+    // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
+    std::memset(this->_ptrHost, 0, secondarySize);
     this->_allocatedHost = true;
   } else
     this->_allocatedHost = false;
@@ -71,10 +82,17 @@ Workspace::Workspace(LongType primarySize, LongType secondarySize) {
   if (primarySize > 0) {
     int deviceId = 0;
     cudaGetDevice(&deviceId);
-    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primarySize, deviceId, nullptr));
+    cudaStream_t stream = currentStream();
+    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primarySize, deviceId, stream));
     if (_ptrDevice == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
 
-    cudaMemset(this->_ptrDevice, 0, primarySize);
+    // Use cudaMemsetAsync on the SAME stream as the allocation to maintain correct
+    // stream ordering. cudaMallocAsync makes memory available on its stream, so
+    // cudaMemsetAsync on the same stream is guaranteed to execute after the allocation.
+    // Using synchronous cudaMemset (which runs on stream 0) would require implicit
+    // synchronization via legacy default stream semantics, which breaks under
+    // per-thread default stream mode.
+    cudaMemsetAsync(this->_ptrDevice, 0, primarySize, stream);
     this->_allocatedDevice = true;
   } else
     this->_allocatedDevice = false;
@@ -94,14 +112,16 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
   if (this->_currentSize < primaryBytes) {
     int deviceId = 0;
     cudaGetDevice(&deviceId);
+    cudaStream_t stream = currentStream();
     if (this->_allocatedDevice && !_externalized) {
-      CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, nullptr);
+      CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, stream);
     }
 
-    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primaryBytes, deviceId, nullptr));
+    _ptrDevice = reinterpret_cast<char*>(CudaMemoryPool::getInstance().allocate(primaryBytes, deviceId, stream));
     if (_ptrDevice == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
 
-    cudaMemset(this->_ptrDevice, 0, primaryBytes);
+    // Use same stream as allocation for correct stream ordering
+    cudaMemsetAsync(this->_ptrDevice, 0, primaryBytes, stream);
     this->_currentSize = primaryBytes;
     this->_allocatedDevice = true;
   }
@@ -112,7 +132,8 @@ void Workspace::init(LongType primaryBytes, LongType secondaryBytes) {
     auto res = cudaHostAlloc(reinterpret_cast<void **>(&_ptrHost), secondaryBytes, cudaHostAllocDefault);
     if (res != 0) throw cuda_exception::build("Can't allocate [HOST] memory", res);
 
-    cudaMemset(this->_ptrHost, 0, secondaryBytes);
+    // Host memory from cudaHostAlloc is CPU-accessible, use memset directly
+    std::memset(this->_ptrHost, 0, secondaryBytes);
     this->_currentSizeSecondary = secondaryBytes;
     this->_allocatedHost = true;
   }
@@ -130,8 +151,9 @@ void Workspace::freeSpills() {
 
   int deviceId = 0;
   cudaGetDevice(&deviceId);
+  cudaStream_t stream = currentStream();
   for (auto v : _spills) {
-    CudaMemoryPool::getInstance().free(v, deviceId, nullptr);
+    CudaMemoryPool::getInstance().free(v, deviceId, stream);
   }
 
   for (auto v : _spillsSecondary) cudaFreeHost(v);
@@ -146,7 +168,7 @@ Workspace::~Workspace() {
   if (this->_allocatedDevice && !_externalized) {
     int deviceId = 0;
     cudaGetDevice(&deviceId);
-    CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, nullptr);
+    CudaMemoryPool::getInstance().free((void *)this->_ptrDevice, deviceId, currentStream());
   }
 
   freeSpills();
@@ -168,7 +190,10 @@ void Workspace::scopeIn() {
   _cycleAllocations = 0;
 }
 
-void Workspace::scopeOut() { _offset = 0; }
+void Workspace::scopeOut() {
+  _offset = 0;
+  _offsetSecondary = 0;
+}
 
 LongType Workspace::getSpilledSize() { return _spillsSize.load(); }
 
@@ -226,8 +251,13 @@ void *Workspace::allocateBytes(MemoryType type, LongType numBytes) {
 
         int deviceId = 0;
         cudaGetDevice(&deviceId);
-        Pointer p = CudaMemoryPool::getInstance().allocate(numBytes, deviceId, nullptr);
-        if (p == nullptr) throw cuda_exception::build("Can't allocate [DEVICE] memory", cudaErrorMemoryAllocation);
+        Pointer p = CudaMemoryPool::getInstance().allocate(numBytes, deviceId, currentStream());
+        if (p == nullptr) {
+          // GPU OOM: fall back to pinned host memory (accessible from GPU via unified addressing)
+          sd_debug("DEVICE OOM - falling back to pinned host workspace for %lld bytes\n", numBytes);
+          // Re-route to HOST allocation path to keep accounting consistent
+          return allocateBytes(HOST, numBytes);
+        }
 
         _mutexSpills.lock();
         _spills.push_back(p);

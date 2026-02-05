@@ -338,6 +338,54 @@ public class MultiBackendWorkspaceManager {
     }
 
     /**
+     * Handle memory pressure callbacks by releasing or compacting workspaces on a device.
+     *
+     * @param device the device under pressure
+     * @param utilization current utilization (0.0 to 1.0)
+     */
+    public void handleMemoryPressure(@NonNull DeviceDescriptor device, double utilization) {
+        log.debug("Handling memory pressure on device {} (utilization {})", device.getDeviceId(), utilization);
+
+        Set<MultiBackendWorkspace> uniqueWorkspaces =
+                Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Map<String, MultiBackendWorkspace> workspaces : threadWorkspaces.values()) {
+            if (workspaces != null) {
+                uniqueWorkspaces.addAll(workspaces.values());
+            }
+        }
+        uniqueWorkspaces.addAll(globalWorkspaces.values());
+
+        for (MultiBackendWorkspace workspace : uniqueWorkspaces) {
+            if (workspace == null || !workspace.hasMemoryOnDevice(device)) {
+                continue;
+            }
+
+            try {
+                DeviceDescriptor primary = workspace.getPrimaryDevice();
+                boolean isPrimary = primary != null && device.getDeviceId().equals(primary.getDeviceId());
+                if (isPrimary) {
+                    workspace.compactOnDevice(device);
+                } else {
+                    workspace.releaseOnDevice(device);
+                    DeviceAwareWorkspaceConfiguration config = workspace.getMultiBackendConfiguration();
+                    if (workspace.isMirroringEnabled()
+                            && config.getMirrorDevices() != null) {
+                        for (DeviceDescriptor mirrorDevice : config.getMirrorDevices()) {
+                            if (device.getDeviceId().equals(mirrorDevice.getDeviceId())) {
+                                workspace.setMirroringEnabled(false);
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to handle memory pressure for workspace {} on device {}",
+                        workspace.getId(), device.getDeviceId(), e);
+            }
+        }
+    }
+
+    /**
      * Scope out of all workspaces (leave all active scopes)
      * @return a dummy workspace representing "outside all workspaces"
      */

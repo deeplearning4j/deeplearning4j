@@ -80,6 +80,9 @@ public class CudaShortDataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaShortDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
 
     /**
      * Initialize the opType of this buffer

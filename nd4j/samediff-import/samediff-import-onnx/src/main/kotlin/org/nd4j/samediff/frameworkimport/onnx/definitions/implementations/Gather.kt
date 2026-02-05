@@ -57,7 +57,7 @@ class Gather : PreImportHook {
         var indicesVariable = sd.getVariable(op.inputsToOp[1])
 
         // Get axis attribute (default to 0 if not specified)
-        val axis = attributes["axis"]?.let { (it as Long).toInt() } ?: 0
+        var axis = attributes["axis"]?.let { (it as Long).toInt() } ?: 0
 
         // ONNX allows float indices but SameDiff requires integer indices
         // Cast to INT64 if indices are not already an integer type
@@ -66,9 +66,32 @@ class Gather : PreImportHook {
             indicesVariable = sd.castTo("${outputNames[0]}_indices_int", indicesVariable, DataType.INT64)
         }
 
-        // Call SameDiff's gather method directly
-        // Note: ONNX models may have 2D index constants like [[0]] with shape [1,1]
-        // The standard gather handles this - output rank = indices.rank + input.rank - 1
+        // Handle scalar-like CONSTANT indices. ONNX models exported from PyTorch often have
+        // scalar indices wrapped as [1] or [1,1]. Per ONNX Gather spec, output rank =
+        // indices_rank + data_rank - 1, so extra dimensions in indices propagate to output.
+        //
+        // For CONSTANT indices with exactly one element, squeeze to scalar to match PyTorch behavior.
+        // Uses sd.getArrForVarName() for constants (same pattern as ReduceSum.kt) - this is
+        // different from accessing .arr property directly.
+        val indicesVarType = indicesVariable.variableType
+        if (indicesVarType == org.nd4j.autodiff.samediff.VariableType.CONSTANT) {
+            val indicesArr = sd.getArrForVarName(indicesVariable.name())
+            if (indicesArr != null && indicesArr.length() == 1L) {
+                // Single-element constant - squeeze to scalar for PyTorch compatibility
+                indicesVariable = sd.squeezeAll("${outputNames[0]}_indices_squeezed", indicesVariable)
+            }
+        }
+
+        // Handle negative axis per ONNX spec: axis can be negative,
+        // meaning it counts from the last dimension. We resolve it using
+        // the data variable's known rank when available.
+        if (axis < 0) {
+            val dataShape = dataVariable.shape
+            if (dataShape != null) {
+                axis = dataShape.size + axis
+            }
+        }
+
         val outputVar = sd.gather(outputNames[0], dataVariable, indicesVariable, axis)
 
         return mapOf(outputNames[0] to listOf(outputVar))

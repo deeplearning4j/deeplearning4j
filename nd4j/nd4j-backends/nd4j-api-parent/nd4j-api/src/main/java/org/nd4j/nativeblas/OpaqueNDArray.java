@@ -49,6 +49,14 @@ import org.nd4j.linalg.factory.Nd4j;
 @Slf4j
 public class OpaqueNDArray extends Pointer {
 
+    /**
+     * Flag to enable/disable Java stack trace capture for debugging.
+     * Stack trace capture is expensive and should only be enabled for debugging.
+     * Set via system property "nd4j.opaque.stacktrace" (default: false).
+     */
+    private static final boolean CAPTURE_STACK_TRACE =
+            Boolean.parseBoolean(System.getProperty("nd4j.opaque.stacktrace", "false"));
+
     // Track the deallocator for this instance
     private OpaqueNDArrayDeallocator deallocator;
 
@@ -90,7 +98,8 @@ public class OpaqueNDArray extends Pointer {
             long offset) {
 
         // Capture Java stack trace BEFORE calling native - this gives us the full call path
-        String javaStackTrace = captureJavaStackTrace();
+        // Only capture if debugging is enabled (expensive operation)
+        String javaStackTrace = CAPTURE_STACK_TRACE ? captureJavaStackTrace() : null;
 
         int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         int targetDevice = currentDevice;
@@ -148,15 +157,27 @@ public class OpaqueNDArray extends Pointer {
 
                 registerWithDeallocatorService(array);
 
-                boolean isConstant = false;
-                if (buffer != null && buffer.getDeallocator() != null && buffer.getDeallocator().isConstant()) {
-                    isConstant = true;
-                }
-                if (shapeInfo != null && shapeInfo.getDeallocator() != null && shapeInfo.getDeallocator().isConstant()) {
-                    isConstant = true;
-                }
-                if (isConstant) {
-                    array.setConstant(true);
+                // Mark the OpaqueNDArray as constant if either data buffer or shape info is constant.
+                // This protects the OpaqueNDArray wrapper from premature GC/deallocation.
+                // IMPORTANT: setConstant on OpaqueNDArray must NOT propagate the constant flag
+                // to the data buffer if the data buffer isn't actually constant - otherwise
+                // intermediate output arrays can never be freed, causing GPU memory leaks.
+                boolean dataIsConstant = buffer != null && buffer.getDeallocator() != null && buffer.getDeallocator().isConstant();
+                boolean shapeIsConstant = shapeInfo != null && shapeInfo.getDeallocator() != null && shapeInfo.getDeallocator().isConstant();
+                if (dataIsConstant || shapeIsConstant) {
+                    // Only mark the deallocator constant (prevents GC from freeing native NDArray wrapper).
+                    // Do NOT call array.setConstant(true) which would propagate to data buffers.
+                    if (array.deallocator != null) {
+                        array.deallocator.setConstant(true);
+                    }
+                    // Only propagate constant to data buffer if it's actually constant
+                    if (dataIsConstant && buffer != null) {
+                        buffer.setConstant(true);
+                    }
+                    // Shape info is already constant, just ensure it stays that way
+                    if (shapeIsConstant && shapeInfo != null) {
+                        shapeInfo.setConstant(true);
+                    }
                 }
 
                 // Update the allocation record with the full Java stack trace captured from Java side
@@ -334,6 +355,12 @@ public class OpaqueNDArray extends Pointer {
      */
     @Override
     public void close() {
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
+        }
+
         if (deallocator != null) {
             // Only deallocate if not already done - prevents double-free
             if (!deallocator.isDeallocated()) {
@@ -402,6 +429,20 @@ public class OpaqueNDArray extends Pointer {
         if(array == null) {
             return null;
         }
+
+        // Sync host→device before passing to native ops.
+        // Java-side operations like putScalar() write to the HOST buffer and mark it as
+        // authoritative. Native CUDA ops read from the DEVICE buffer. Without this sync,
+        // the device buffer may contain stale data, causing operations like maxNumber()
+        // to return incorrect results after putScalar() or put() modifications.
+        // On CPU backend, dbSyncToSpecial is a no-op.
+        if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
+            OpaqueDataBuffer opaqueBuffer = array.data().opaqueBuffer();
+            if (opaqueBuffer != null && !opaqueBuffer.isNull()) {
+                opaqueBuffer.syncToSpecial();
+            }
+        }
+
         OpaqueNDArray opaque = array.getOrCreateOpaqueNDArray();
         if (opaque == null || opaque.isNull()) {
             throw new IllegalStateException(
@@ -554,6 +595,16 @@ public class OpaqueNDArray extends Pointer {
      */
     public OpaqueDataBuffer getShapeInfoBufferRef() {
         return shapeInfoBufferRef;
+    }
+
+    /**
+     * Gets the special buffer reference held by this OpaqueNDArray.
+     * Used by the deallocator to keep the buffer alive during NDArray cleanup.
+     *
+     * @return The special buffer reference or null
+     */
+    public OpaqueDataBuffer getSpecialBufferRef() {
+        return specialBufferRef;
     }
 
     /**

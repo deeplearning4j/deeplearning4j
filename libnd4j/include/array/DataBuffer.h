@@ -45,6 +45,10 @@ class SD_LIB_EXPORT DataBuffer {
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
   LongType _lenInBytes = 0;
+  // Track actual allocated sizes independently to prevent overrun when
+  // setPrimaryBuffer/setSpecialBuffer are called with different sizes.
+  LongType _primaryAllocBytes = 0;
+  LongType _specialAllocBytes = 0;
   memory::Workspace *_workspace = nullptr;
 
   std::atomic<int> _deviceId;
@@ -162,6 +166,11 @@ class SD_LIB_EXPORT DataBuffer {
    * @return true if the buffer is valid, false otherwise
    */
   bool isValid() const { return _magicNumber == MAGIC_NUMBER && !closed; }
+
+#if defined(SD_CUDA)
+  void* writeEvent() const { return _writeEvent; }
+  bool writeEventRecorded() const { return _writeEventRecorded.load(std::memory_order_acquire); }
+#endif
 
   void allocatePrimary();
   void allocateSpecial();

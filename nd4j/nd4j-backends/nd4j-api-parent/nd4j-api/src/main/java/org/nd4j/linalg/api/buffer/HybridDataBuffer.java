@@ -254,10 +254,14 @@ public interface HybridDataBuffer extends DataBuffer {
     default void workspaceCopy(DeviceDescriptor sourceDevice, DeviceDescriptor targetDevice) {
         MultiBackendWorkspace workspace = getMultiBackendWorkspace();
         if (workspace != null) {
-            workspace.transferTo(sourceDevice, targetDevice);
-        } else {
-            ensureAvailableOn(targetDevice);
+            try {
+                workspace.transferTo(sourceDevice, targetDevice);
+                return;
+            } catch (UnsupportedOperationException e) {
+                // Fall back to buffer-level transfer if workspace doesn't implement data movement
+            }
         }
+        ensureAvailableOn(targetDevice);
     }
 
     // ========================

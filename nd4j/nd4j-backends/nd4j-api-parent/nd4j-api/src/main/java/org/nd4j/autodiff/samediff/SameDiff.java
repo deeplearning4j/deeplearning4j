@@ -121,6 +121,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
+    // Default for plan-based execution applied to newly created sessions
+    private volatile boolean planBasedExecutionDefault = false;
+
     @Getter
     private Map<String, SameDiff> sameDiffFunctionInstances;
 
@@ -426,16 +429,36 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public static InferenceFactory getInferenceFactory() {
         if (INFERENCE_FACTORY == null){
-
             synchronized(SameDiff.class){
                 if(INFERENCE_FACTORY == null) {
-                    //bind default one
-                    INFERENCE_FACTORY = new DefaultInferenceFactory();
+                    // Auto-enable workspace mode for CUDA backends unless disabled via system property
+                    boolean autoWorkspace = Boolean.parseBoolean(
+                            System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO, "true"));
+                    if (autoWorkspace && isCudaBackend()) {
+                        long wsSize = Long.parseLong(
+                                System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_SIZE, "268435456"));
+                        INFERENCE_FACTORY = new WorkspaceInferenceFactory(wsSize);
+                        log.info("SameDiff: Auto-enabled workspace mode for CUDA backend (size={}MB). " +
+                                "Disable with -D{}=false", wsSize / (1024 * 1024),
+                                org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO);
+                    } else {
+                        INFERENCE_FACTORY = new DefaultInferenceFactory();
+                    }
                 }
             }
-
         }
         return INFERENCE_FACTORY;
+    }
+
+    /**
+     * Check if the current backend is CUDA-based.
+     */
+    private static boolean isCudaBackend() {
+        try {
+            return Nd4j.getBackend().getClass().getSimpleName().contains("Cuda");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -468,6 +491,72 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             return new InferenceSession(sameDiff);
         }
     };
+
+    /**
+     * An InferenceFactory that creates InferenceSessions backed by a workspace
+     * for bump-allocated intermediate arrays. Output arrays are heap-allocated
+     * and survive workspace cycling.
+     */
+    public static class WorkspaceInferenceFactory implements InferenceFactory {
+        private final long workspaceSize;
+
+        public WorkspaceInferenceFactory(long workspaceSize) {
+            this.workspaceSize = workspaceSize;
+        }
+
+        @Override
+        public InferenceSession create(SameDiff sameDiff) {
+            return new InferenceSession(sameDiff,
+                new org.nd4j.autodiff.samediff.internal.memory.WorkspaceSessionMemMgr(workspaceSize));
+        }
+    }
+
+    /**
+     * Enable workspace-backed memory for inference. Intermediate arrays are bump-allocated
+     * from a reusable workspace, avoiding per-op malloc/free overhead. Output arrays returned
+     * to the caller are heap-allocated and survive workspace cycling.
+     *
+     * Beneficial for autoregressive inference with repeated same-sized forward passes.
+     *
+     * @param workspaceBytes Initial workspace size in bytes
+     */
+    public void enableWorkspaceMode(long workspaceBytes) {
+        closeAllSessions();
+        bindInferenceFactory(new WorkspaceInferenceFactory(workspaceBytes));
+    }
+
+    /**
+     * Disable workspace-backed memory and revert to default heap allocation for inference.
+     */
+    public void disableWorkspaceMode() {
+        closeAllSessions();
+        bindInferenceFactory(new DefaultInferenceFactory());
+    }
+
+    /**
+     * Enable multi-GPU workspace mode. Threads are assigned to GPUs in round-robin fashion,
+     * each with its own workspace for bump allocation.
+     *
+     * @param workspaceBytesPerGpu workspace size per GPU in bytes
+     */
+    public void enableMultiGpuWorkspaceMode(long workspaceBytesPerGpu) {
+        closeAllSessions();
+        int numGpus;
+        try {
+            numGpus = Nd4j.getAffinityManager().getNumberOfDevices();
+        } catch (Exception e) {
+            numGpus = 1;
+        }
+        final int gpuCount = numGpus;
+        bindInferenceFactory(new InferenceFactory() {
+            @Override
+            public InferenceSession create(SameDiff sameDiff) {
+                return new InferenceSession(sameDiff,
+                    new org.nd4j.autodiff.samediff.internal.memory.MultiGpuWorkspaceSessionMemMgr(
+                        workspaceBytesPerGpu, gpuCount));
+            }
+        });
+    }
 
     static {
         // try to set the inferenceFactory using the config
@@ -3231,7 +3320,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
             log.info("Creating new InferenceSession for thread {}", threadId);
-            sessions.put(threadId, getInferenceFactory().create(this));
+            InferenceSession session = getInferenceFactory().create(this);
+            if (planBasedExecutionDefault) {
+                session.setPlanBasedExecutionEnabled(true);
+            }
+            sessions.put(threadId, session);
         }
 
         List<String> phNames = inputs();
@@ -3963,6 +4056,139 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Enable or disable plan-based execution on all current and future InferenceSessions.
+     * When enabled, the first execution with a given set of placeholder shapes compiles
+     * an ExecutionPlan with pre-computed shapes and a contiguous memory layout.
+     * Subsequent executions with the same shapes reuse the plan with no per-op
+     * shape inference or dynamic allocation.
+     *
+     * @param enabled true to enable, false to disable
+     */
+    public void setPlanBasedExecution(boolean enabled) {
+        for (InferenceSession session : sessions.values()) {
+            session.setPlanBasedExecutionEnabled(enabled);
+        }
+        // Also set on the factory so new sessions inherit the setting
+        this.planBasedExecutionDefault = enabled;
+    }
+
+    /**
+     * Get the InferenceSession for the current thread, creating one if needed.
+     */
+    public InferenceSession getOrCreateSession() {
+        long threadId = Thread.currentThread().getId();
+        if (!sessions.containsKey(threadId)) {
+            InferenceSession session = getInferenceFactory().create(this);
+            if (planBasedExecutionDefault) {
+                session.setPlanBasedExecutionEnabled(true);
+            }
+            sessions.put(threadId, session);
+        }
+        return sessions.get(threadId);
+    }
+
+    /**
+     * Reset the InferenceSession for the current thread, releasing its workspace and cached state.
+     * This frees native GPU memory held by the workspace (which can be several GB after learning).
+     * The session will be automatically recreated on the next output() call.
+     *
+     * <p>Use this in multi-model pipelines after you're done with one model's inference
+     * and before starting another model, to free GPU memory for the second model.</p>
+     */
+    public void resetSession() {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession session = sessions.remove(threadId);
+        if (session != null) {
+            // Collect all unique DataBuffers from intermediate arrays.
+            // Many arrays are views that share a parent DataBuffer. The INDArray-level close()
+            // refuses to close views (isView() check), but we can close the underlying DataBuffer
+            // directly. Using IdentityHashMap ensures each physical buffer is closed exactly once.
+            IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+            Map<VarId, SDValue> nodeOutputs = session.getNodeValueOutputs();
+            if (nodeOutputs != null) {
+                for (SDValue value : nodeOutputs.values()) {
+                    if (value != null) {
+                        switch (value.getSdValueType()) {
+                            case TENSOR:
+                                INDArray tensor = value.getTensorValue();
+                                if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
+                                    uniqueBuffers.put(tensor.data(), Boolean.TRUE);
+                                }
+                                break;
+                            case LIST:
+                                if (value.getListValue() != null) {
+                                    for (INDArray arr : value.getListValue()) {
+                                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                                            uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                                        }
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+                nodeOutputs.clear();
+            }
+
+            // Close each unique DataBuffer directly, bypassing INDArray isView() checks.
+            // This is safe because the entire session is being destroyed - no array from this
+            // session should be used after resetSession(). Callers must dup() arrays they need.
+            int closedCount = 0;
+            int skippedReleased = 0, skippedAttached = 0, skippedConstant = 0;
+            for (DataBuffer buf : uniqueBuffers.keySet()) {
+                if (buf.closeable()) {
+                    try {
+                        buf.close();
+                        closedCount++;
+                    } catch (Exception e) {
+                        // Buffer may already be deallocated; ignore
+                    }
+                } else {
+                    // Log why buffer is not closeable for debugging
+                    if (buf.wasClosed()) skippedReleased++;
+                    else if (buf.isAttached()) skippedAttached++;
+                    else if (buf.isConstant()) skippedConstant++;
+                }
+            }
+            if (skippedReleased > 0 || skippedAttached > 0 || skippedConstant > 0) {
+                log.info("SameDiff resetSession: {} buffers not closeable (released={}, attached={}, constant={})",
+                        skippedReleased + skippedAttached + skippedConstant, skippedReleased, skippedAttached, skippedConstant);
+            }
+
+            // Close active OpContexts
+            Map<String, OpContext> opContexts = session.getOpContexts();
+            if (opContexts != null) {
+                for (OpContext ctx : opContexts.values()) {
+                    if (ctx != null) {
+                        try {
+                            ctx.close();
+                        } catch (Exception e) {
+                            log.warn("Error closing OpContext during resetSession: {}", e.getMessage());
+                        }
+                    }
+                }
+                opContexts.clear();
+            }
+
+            // Close pooled OpContexts and clear accumulated thread-local state.
+            // Without this, pooled contexts accumulate stale native pointers across
+            // repeated session resets, causing double-free crashes.
+            session.closePooledResources();
+
+            // Close the memory manager to free workspace/cache memory
+            SessionMemMgr memMgr = session.getMmgr();
+            if (memMgr != null) {
+                try {
+                    memMgr.close();
+                } catch (Exception e) {
+                    log.warn("Error closing SessionMemMgr during resetSession: {}", e.getMessage());
+                }
+            }
+            log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released", threadId, closedCount);
+        }
+    }
+
+    /**
      * Close all OpContexts in all cached InferenceSessions and clear the sessions map.
      * This prevents native memory leaks from OpContext objects when sessions are cleared.
      */
@@ -4001,6 +4227,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                             }
                         }
                         opContexts.clear();
+                    }
+
+                    // Close the session's memory manager to free native workspace resources
+                    SessionMemMgr memMgr = session.getMmgr();
+                    if (memMgr != null) {
+                        try {
+                            memMgr.close();
+                        } catch (Exception e) {
+                            log.warn("Error closing SessionMemMgr during session cleanup: {}", e.getMessage());
+                        }
                     }
                 } catch (Exception e) {
                     log.warn("Error cleaning up session: {}", e.getMessage());

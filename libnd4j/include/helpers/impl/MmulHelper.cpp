@@ -1238,12 +1238,27 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     const int yRankT = yT->rankOf();
     const int zRankT = zT->rankOf();
 
+#if !defined(SD_CUDA)
+    // CPU: use mmulBatched for 3D/4D with matching ranks (uses OneDNN/BLAS)
     if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
       mmulBatched(xT, yT, zT, alpha, beta);
     } else {
       // Fall back to mmulNxN for other cases
       mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
     }
+#else
+    // CUDA: try cuBLAS strided batched GEMM first (most efficient for 3D/4D)
+    // Falls back to mmulNxN with custom CUDA kernel if cuBLAS can't handle it
+    if ((xRankT == 3 || xRankT == 4) && xRankT == yRankT && yRankT == zRankT) {
+      if (!tryBlasStridedBatched(xT, yT, zT, alpha, beta)) {
+        // cuBLAS couldn't handle it (non-contiguous, unsupported type, etc.)
+        // Fall back to custom CUDA kernel
+        mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
+      }
+    } else {
+      mmulNxN(xT, yT, zT, alpha, beta, z->ordering());
+    }
+#endif
   }
 
   // Cleanup
@@ -1251,7 +1266,12 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
   if (yT != y && yT != nullptr) delete yT;
 
   if (realFinalResult != nullptr && realFinalResult != z) {
-    realFinalResult->assign(z);
+    // Skip redundant copy when the result already shares the same buffer.
+    if (realFinalResult->getDataBuffer() != z->getDataBuffer() ||
+        realFinalResult->offset() != z->offset() ||
+        realFinalResult->lengthOf() != z->lengthOf()) {
+      realFinalResult->assign(z);
+    }
   }
 }
 

@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.eclipse.deeplearning4j</groupId>
+        <artifactId>nd4j-tokenizers</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>tokenizers-native-preset</artifactId>
+    <packaging>jar</packaging>
+
+    <name>tokenizers-native-preset</name>
+    <description>JavaCPP presets for tokenizers native bindings</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate platform-specific JARs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <!-- Main JAR (no natives) -->
+                    <execution>
+                        <id>default-jar</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>org/eclipse/deeplearning4j/tokenizers/bindings/${javacpp.platform}${javacpp.platform.extension}/*</exclude>
+                                <exclude>**/*.so</exclude>
+                                <exclude>**/*.dll</exclude>
+                                <exclude>**/*.dylib</exclude>
+                                <exclude>**/*.jnilib</exclude>
+                                <exclude>**/*.vso</exclude>
+                                <exclude>lib/**</exclude>
+                                <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+
+                    <!-- Platform-specific JAR -->
+                    <execution>
+                        <id>${javacpp.platform}${javacpp.platform.extension}</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                            <skipIfEmpty>true</skipIfEmpty>
+                            <includes>
+                                <include>org/eclipse/deeplearning4j/tokenizers/bindings/${javacpp.platform}${javacpp.platform.extension}/*</include>
+                                <include>**/*.so</include>
+                                <include>**/*.dll</include>
+                                <include>**/*.dylib</include>
+                                <include>**/*.jnilib</include>
+                                <include>**/*.vso</include>
+                                <include>lib/**</include>
+                                <include>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- JavaCPP plugin for preset compilation -->
+            <plugin>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+                <configuration>
+                    <properties>${javacpp.platform}</properties>
+                    <propertyKeysAndValues>
+                        <property>
+                            <name>platform.root</name>
+                            <value>${javacpp.platform.root}</value>
+                        </property>
+                        <property>
+                            <name>platform.compiler</name>
+                            <value>${javacpp.platform.compiler}</value>
+                        </property>
+                        <property>
+                            <name>platform.extension</name>
+                            <value>${javacpp.platform.extension}</value>
+                        </property>
+                    </propertyKeysAndValues>
+                    <classPath>${project.build.outputDirectory}</classPath>
+                    <!-- Include paths for C headers -->
+                    <includePaths>
+                        <includePath>${project.basedir}/../libtokenizers/target/native/include</includePath>
+                        <includePath>${project.basedir}/../libtokenizers/target/native/include/tokenizers</includePath>
+                        <includePath>${project.basedir}/../libtokenizers/include</includePath>
+                    </includePaths>
+                    <linkPaths>
+                        <!-- Primary JavaCPP structure path -->
+                        <linkPath>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}</linkPath>
+                        <!-- Legacy paths for backward compatibility -->
+                        <linkPath>${project.basedir}/../libtokenizers/target/native/${javacpp.platform}</linkPath>
+                        <linkPath>${project.basedir}/../libtokenizers/target/native/lib</linkPath>
+                        <linkPath>${project.basedir}/../libtokenizers/target/native/lib64</linkPath>
+                        <!-- Build directory -->
+                        <linkPath>${project.basedir}/../libtokenizers/build</linkPath>
+                    </linkPaths>
+                    <preloadPaths>
+                        <!-- Primary JavaCPP structure path -->
+                        <preloadPath>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/${javacpp.platform}</preloadPath>
+                        <!-- Legacy paths -->
+                        <preloadPath>${project.basedir}/../libtokenizers/target/native/${javacpp.platform}</preloadPath>
+                        <preloadPath>${project.basedir}/../libtokenizers/target/native/lib</preloadPath>
+                        <preloadPath>${project.basedir}/../libtokenizers/target/native/lib64</preloadPath>
+                    </preloadPaths>
+                    <resourcePath>${project.basedir}/../libtokenizers/target/native/lib64</resourcePath>
+                    <buildResources>
+                        <buildResource>/${javacpp.platform.library.path}/</buildResource>
+                        <buildResource>/lib/</buildResource>
+                        <buildResource>/</buildResource>
+                        <buildResource>${project.basedir}/../libtokenizers/target/native/lib64</buildResource>
+                    </buildResources>
+                    <linkResources>
+                        <linkResource>/${javacpp.platform.library.path}/</linkResource>
+                        <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
+                    </linkResources>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>parse</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>javacpp-compiler</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                        <configuration>
+                            <copyLibs>true</copyLibs>
+                            <copyResources>true</copyResources>
+                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <outputDirectory>${project.build.directory}/classes/org/eclipse/deeplearning4j/tokenizers/bindings/${javacpp.platform}${javacpp.platform.extension}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!-- Platform-specific profiles -->
+        <profile>
+            <id>linux-x86_64</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <javacpp.platform>linux-x86_64</javacpp.platform>
+                <javacpp.platform.root>/usr</javacpp.platform.root>
+                <javacpp.platform.compiler>g++</javacpp.platform.compiler>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                    <arch>amd64</arch>
+                </os>
+            </activation>
+            <properties>
+                <javacpp.platform>windows-x86_64</javacpp.platform>
+                <javacpp.platform.compiler>cl.exe</javacpp.platform.compiler>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macosx-x86_64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <properties>
+                <javacpp.platform>macosx-x86_64</javacpp.platform>
+                <javacpp.platform.compiler>clang++</javacpp.platform.compiler>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>macosx-arm64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <javacpp.platform>macosx-arm64</javacpp.platform>
+                <javacpp.platform.compiler>clang++</javacpp.platform.compiler>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>default-javacpp</id>
+            <activation>
+                <property>
+                    <name>!javacpp.platform.extension</name>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                    <classifier>${javacpp.platform}</classifier>
+                    <version>${javacpp.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>compat-profile</id>
+            <activation>
+                <property>
+                    <name>javacpp.platform.extension</name>
+                    <value>/.+/</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp</artifactId>
+                    <version>${javacpp.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+</project>

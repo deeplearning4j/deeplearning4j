@@ -21,6 +21,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/sg_cb.h>
 
 #include "helpers/DebugHelper.h"
@@ -188,8 +189,10 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
   auto stream = s0.getContext()->getCudaStream();
 
   T *neu1e;
-  auto err = cudaMalloc(&neu1e, sizeof(T) * vectorLength);
-  err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
+  int sgDevId1 = 0; cudaGetDevice(&sgDevId1);
+  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId1, nullptr));
+  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for skipgram neu1e");
+  auto err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
   // hierarchic softmax goes first (if enabled)
 
   auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
@@ -237,10 +240,7 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
     throw cuda_exception::build("helpers::skipgram_: Cannot synchronize stream after addInfVectorKernel", err);
   }
 
-  err = cudaFree(neu1e);
-  if (0 != err) {
-    throw cuda_exception::build("helpers::skipgram_: Cannot deallocate temp memory for lingual net", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId1, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void skipgram_,
                       (NDArray & syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
@@ -286,8 +286,10 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
 
   for (int t = 0; t < numTargets; t++) {
     T *neu1e;
-    auto err = cudaMalloc(&neu1e, vectorLength * sizeof(T));
-    err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
+    int sgDevId2 = 0; cudaGetDevice(&sgDevId2);
+    neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(vectorLength * sizeof(T), sgDevId2, nullptr));
+    if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for skipgramBatch neu1e");
+    auto err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
 
     auto target = bTarget[t];
     auto alpha = lr.e<double>(t);
@@ -339,12 +341,8 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
                                   err);
     }
 
-    // optionally release temp arrays
-    err = cudaFree(neu1e);
-    if (err != 0) {
-      throw cuda_exception::build("helpers::skipgramBatchExec_: Cannot deallocate memory with stage", err);
-      break;
-    }
+    // release temp arrays
+    sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId2, nullptr);
   }
 }
 BUILD_SINGLE_TEMPLATE( void skipgramBatchExec_,
@@ -479,9 +477,12 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   T *neu1;   // = new T[vectorLength];
   T *neu1e;  // = new T[vectorLength];
   size_t buffSize = sizeof(T) * vectorLength;
-  auto err = cudaMalloc(&neu1, buffSize);
-  err = cudaMalloc(&neu1e, buffSize);
-  err = cudaMemset(neu1, 0, buffSize);
+  int sgDevId3 = 0; cudaGetDevice(&sgDevId3);
+  neu1 = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(buffSize, sgDevId3, nullptr));
+  if (neu1 == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for cbow neu1");
+  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(buffSize, sgDevId3, nullptr));
+  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp memory for cbow neu1e");
+  auto err = cudaMemset(neu1, 0, buffSize);
   err = cudaMemset(neu1e, 0, buffSize);
 
   // building neu1 for current window
@@ -553,15 +554,8 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
   if (0 != err) {
     throw cuda_exception::build("helpers::cbow_: Cannot synchronize stream after kernel executing", err);
   }
-  err = cudaFree(neu1);
-  if (0 != err) {
-    throw cuda_exception::build("helpers::cbow_: Cannot deallocate memory for synonims table", err);
-  }
-
-  err = cudaFree(neu1e);
-  if (0 != err) {
-    throw cuda_exception::build("helpers::cbow_: Cannot deallocate memory for antonims table", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(neu1, sgDevId3, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId3, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void cbow_,
                       (LaunchContext * lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable,
@@ -678,19 +672,15 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
   T *neu1;  // = reinterpret_cast<T*>(neuVector.specialBuffer());// = vectorLength <= 600 ? sneu1 : new T[vectorLength];
   T *neu1e;  // = reinterpret_cast<T*>(neuVector.specialBuffer()); // = vectorLength <= 600 ? sneu1e : new
              // T[vectorLength];
-  auto cerr = cudaMalloc(&neu1, sizeof(T) * vectorLength);
-  if (cerr) {
-    throw cuda_exception::build("Cannot allocate temp vector buffer", cerr);
-  }
-  cerr = cudaMalloc(&neu1e, sizeof(T) * vectorLength);
-  if (cerr) {
-    throw cuda_exception::build("Cannot allocate temp vector buffer", cerr);
-  }
+  int sgDevId4 = 0; cudaGetDevice(&sgDevId4);
+  neu1 = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId4, nullptr));
+  if (neu1 == nullptr) THROW_EXCEPTION("Cannot allocate temp vector buffer neu1");
+  neu1e = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(T) * vectorLength, sgDevId4, nullptr));
+  if (neu1e == nullptr) THROW_EXCEPTION("Cannot allocate temp vector buffer neu1e");
   int *actualContext;
-  cerr = cudaMalloc(&actualContext, sizeof(LongType));
-  if (cerr) {
-    throw cuda_exception::build("Cannot allocate counter buffer", cerr);
-  }
+  actualContext = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), sgDevId4, nullptr));
+  if (actualContext == nullptr) THROW_EXCEPTION("Cannot allocate counter buffer");
+  cudaError_t cerr;
 
   for (int e = 0; e < numTargets; e++) {
     auto alpha = lr.e<double>(e);
@@ -759,18 +749,9 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
     throw cuda_exception::build("Cannot syncronize stream before memory deallocation", cerr);
   }
 
-  cerr = cudaFree(neu1);
-  if (cerr) {
-    throw cuda_exception::build("Cannot deallocate temp buffer1", cerr);
-  }
-  cerr = cudaFree(neu1e);
-  if (cerr) {
-    throw cuda_exception::build("Cannot deallocate temp buffer1 E", cerr);
-  }
-  cerr = cudaFree(actualContext);
-  if (cerr) {
-    throw cuda_exception::build("Cannot deallocate temp buffer1", cerr);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(neu1, sgDevId4, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(neu1e, sgDevId4, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(actualContext, sgDevId4, nullptr);
 }
 BUILD_SINGLE_TEMPLATE( void cbowBatchExec_,
                       (LaunchContext * lc, NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable,

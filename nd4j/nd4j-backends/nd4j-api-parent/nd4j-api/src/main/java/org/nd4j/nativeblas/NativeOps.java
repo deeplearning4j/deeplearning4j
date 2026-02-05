@@ -269,6 +269,27 @@ public interface NativeOps {
   * @param deviceId The device whose pool to trim
   */
  void trimMemoryPool(int deviceId);
+
+ /**
+  * Get current pinned host memory usage from failover allocations.
+  * @return bytes currently allocated in pinned host memory
+  */
+ long getPinnedHostBytesUsed();
+
+ /**
+  * Get pinned host memory limit for failover allocations.
+  * @return max bytes, or 0 for unlimited
+  */
+ long getPinnedHostBytesLimit();
+
+ /**
+  * Set pinned host memory limit for failover allocations.
+  * When exceeded, allocations will fail instead of consuming unbounded host memory.
+  * Set to 0 for unlimited (default).
+  * @param maxBytes maximum bytes allowed for pinned host failover
+  */
+ void setPinnedHostBytesLimit(long maxBytes);
+
  Pointer createContext();
  Pointer createStream();
  Pointer createEvent();
@@ -482,6 +503,7 @@ public interface NativeOps {
  void clearLastError();
  void ctxShapeFunctionOverride(org.nd4j.nativeblas.OpaqueContext ptr, boolean reallyOverride);
  void ctxPurge(org.nd4j.nativeblas.OpaqueContext ptr);
+ void ctxPurgeNoSync(org.nd4j.nativeblas.OpaqueContext ptr);
  int binaryLevel();
  int optimalLevel();
  boolean isMinimalRequirementsMet();
@@ -508,6 +530,8 @@ public interface NativeOps {
  void dbTickDeviceWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, long elements);
  void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbCloseGetDiagnostics(org.bytedeco.javacpp.LongPointer outStats);
+ void dbCloseResetDiagnostics();
  int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSetDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, int deviceId);
  int dbLocality(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
@@ -1203,4 +1227,135 @@ public interface NativeOps {
   * @return 1 on success, 0 on failure
   */
  int exportOpTimingCSV(String filename);
+
+ // ========================
+ // Workspace Management API
+ // ========================
+
+ /**
+  * Create a native workspace for bump-allocated memory.
+  * @param initialSize initial allocation in bytes
+  * @return opaque workspace pointer
+  */
+ Pointer createNativeWorkspace(long initialSize);
+
+ /**
+  * Destroy a native workspace and free all memory.
+  */
+ void destroyNativeWorkspace(Pointer workspace);
+
+ /**
+  * Enter workspace scope - resets offsets for new allocation cycle.
+  */
+ void workspaceScopeIn(Pointer workspace);
+
+ /**
+  * Exit workspace scope - resets offsets, making memory reusable.
+  */
+ void workspaceScopeOut(Pointer workspace);
+
+ /**
+  * Attach a workspace to an op execution context.
+  */
+ void attachWorkspaceToContext(OpaqueContext ctx, Pointer workspace);
+
+ /**
+  * Detach workspace from context.
+  */
+ void detachWorkspaceFromContext(OpaqueContext ctx);
+
+ /**
+  * Get the current used size (offset) of the workspace.
+  */
+ long getWorkspaceCurrentOffset(Pointer workspace);
+
+ /**
+  * Get the total allocated size of the workspace.
+  */
+ long getWorkspaceAllocatedSize(Pointer workspace);
+
+ // ========================
+ // Multi-Backend Workspace API
+ // ========================
+
+ /**
+  * Create a multi-backend workspace with device awareness.
+  */
+ Pointer createNativeMultiBackendWorkspace(long initialSize, int primaryDeviceType, int primaryDeviceIndex);
+
+ /**
+  * Destroy a multi-backend workspace.
+  */
+ void destroyNativeMultiBackendWorkspace(Pointer handle);
+
+ /**
+  * Allocate bytes from multi-backend workspace on primary device.
+  */
+ Pointer nativeMbwAllocateBytes(Pointer handle, long numBytes);
+
+ /**
+  * Multi-backend workspace scope in.
+  */
+ void nativeMbwScopeIn(Pointer handle);
+
+ /**
+  * Multi-backend workspace scope out.
+  */
+ void nativeMbwScopeOut(Pointer handle);
+
+ /**
+  * Transfer data between devices in multi-backend workspace.
+  */
+ void nativeMbwTransferTo(Pointer handle, int srcDeviceType, int srcDeviceIndex,
+                          int dstDeviceType, int dstDeviceIndex);
+
+ /**
+  * Get coherence state for a device.
+  */
+ int nativeMbwGetCoherenceState(Pointer handle, int deviceType, int deviceIndex);
+
+ /**
+  * Get total allocated size across all devices.
+  */
+ long nativeMbwGetTotalAllocatedSize(Pointer handle);
+
+ /**
+  * Allocate bytes on a specific device in a multi-backend workspace.
+  * @param handle multi-backend workspace handle
+  * @param numBytes bytes to allocate
+  * @param deviceType device type (0=CPU, 1=CUDA)
+  * @param deviceIndex device index
+  * @return pointer to allocated memory, or null on failure
+  */
+ default Pointer nativeMbwAllocateBytesOnDevice(Pointer handle, long numBytes, int deviceType, int deviceIndex) {
+     throw new UnsupportedOperationException("nativeMbwAllocateBytesOnDevice not implemented in this backend");
+ }
+
+ /**
+  * Sync a specific device (e.g., cudaDeviceSynchronize for CUDA devices).
+  */
+ default void nativeMbwSyncDevice(Pointer handle, int deviceType, int deviceIndex) {
+     throw new UnsupportedOperationException("nativeMbwSyncDevice not implemented in this backend");
+ }
+
+ /**
+  * Sync all devices in the workspace.
+  */
+ default void nativeMbwSyncAllDevices(Pointer handle) {
+     throw new UnsupportedOperationException("nativeMbwSyncAllDevices not implemented in this backend");
+ }
+
+ /**
+  * Get the allocated size on a specific device.
+  */
+ default long nativeMbwGetAllocatedSizeOnDevice(Pointer handle, int deviceType, int deviceIndex) {
+     throw new UnsupportedOperationException("nativeMbwGetAllocatedSizeOnDevice not implemented in this backend");
+ }
+
+ /**
+  * Get the current workspace offset on the primary device.
+  */
+ default long nativeMbwGetCurrentOffset(Pointer handle) {
+     throw new UnsupportedOperationException("nativeMbwGetCurrentOffset not implemented in this backend");
+ }
 }

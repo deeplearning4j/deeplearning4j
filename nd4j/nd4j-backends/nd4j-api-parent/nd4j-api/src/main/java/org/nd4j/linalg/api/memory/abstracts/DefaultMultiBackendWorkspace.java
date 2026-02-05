@@ -274,36 +274,16 @@ public class DefaultMultiBackendWorkspace implements MultiBackendWorkspace {
 
     @Override
     public void transferTo(DeviceDescriptor sourceDevice, DeviceDescriptor targetDevice) {
-        // Synchronous transfer
-        try {
-            transferToAsync(sourceDevice, targetDevice).get();
-        } catch (Exception e) {
-            throw new RuntimeException("Transfer failed", e);
-        }
+        throw new UnsupportedOperationException(
+                "DefaultMultiBackendWorkspace does not implement data movement; " +
+                "use buffer-level transfers or NativeMultiBackendWorkspace");
     }
 
     @Override
     public Future<Void> transferToAsync(DeviceDescriptor sourceDevice, DeviceDescriptor targetDevice) {
-        return transferExecutor.submit(() -> {
-            // Get source workspace
-            MemoryWorkspace sourceWorkspace = deviceWorkspaces.get(sourceDevice.getDeviceId());
-            if (sourceWorkspace == null) {
-                return null;
-            }
-
-            // Ensure target workspace exists
-            ensureDeviceWorkspace(targetDevice);
-
-            // Update coherence states
-            setCoherenceState(sourceDevice, 0, CoherenceState.SHARED);
-            setCoherenceState(targetDevice, 0, CoherenceState.SHARED);
-
-            totalTransfers.incrementAndGet();
-            totalBytesTransferred.addAndGet(sourceWorkspace.getCurrentSize());
-
-            log.debug("Transferred workspace data from {} to {}", sourceDevice.getDeviceId(), targetDevice.getDeviceId());
-            return null;
-        });
+        throw new UnsupportedOperationException(
+                "DefaultMultiBackendWorkspace does not implement async data movement; " +
+                "use buffer-level transfers or NativeMultiBackendWorkspace");
     }
 
     @Override

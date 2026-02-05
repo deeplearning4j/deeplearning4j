@@ -49,6 +49,7 @@ import org.tensorflow.framework.NodeDef;
 
 import java.nio.Buffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -62,6 +63,67 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     protected DataBuffer extraArgz;
 
     protected INDArray dimensionz;
+
+    /**
+     * Cached output shapes from the last calculateOutputShape call.
+     * The DataBuffers point to DirectShapeTrie-managed constant native memory,
+     * so storing references is safe with zero additional heap overhead.
+     * Combined with cachedInputShapeSignature, this avoids redundant shape
+     * calculations when the same op sees identical input shapes across
+     * autoregressive decode steps.
+     */
+    private transient List<DataBuffer> cachedOutputShapes;
+    private transient long cachedInputShapeSignature;
+
+    /**
+     * Check if cached output shapes are still valid for the given OpContext.
+     * Returns the cached shapes if the input shape signature matches, or null
+     * if shapes need to be recomputed.
+     */
+    protected List<DataBuffer> getCachedOutputShapes(OpContext oc) {
+        if (cachedOutputShapes != null && !cachedOutputShapes.isEmpty() && oc != null) {
+            long sig = computeInputShapeSignature(oc);
+            if (sig == cachedInputShapeSignature) {
+                return cachedOutputShapes;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Store computed output shapes in the cache along with the input shape signature.
+     */
+    protected void setCachedOutputShapes(OpContext oc, List<DataBuffer> shapes) {
+        if (oc != null && shapes != null && !shapes.isEmpty()) {
+            cachedOutputShapes = shapes;
+            cachedInputShapeSignature = computeInputShapeSignature(oc);
+        }
+    }
+
+    /**
+     * Compute a compact signature from input array shapes in an OpContext.
+     * Uses a hash of (numInputs, rank, dimensions, dtype) for each input.
+     * Zero-allocation: just arithmetic on primitives.
+     */
+    static long computeInputShapeSignature(OpContext oc) {
+        long h = 17;
+        int n = oc.numInputArguments();
+        h = h * 31 + n;
+        for (int i = 0; i < n; i++) {
+            INDArray arr = oc.getInputArray(i);
+            if (arr != null) {
+                long[] shape = arr.shape();
+                h = h * 31 + shape.length;
+                for (long dim : shape) {
+                    h = h * 31 + dim;
+                }
+                h = h * 31 + arr.dataType().ordinal();
+            } else {
+                h = h * 31 - 1;
+            }
+        }
+        return h;
+    }
 
     public BaseOp() {
     }
@@ -357,6 +419,16 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             // Allocate output array
             if (z == null) {
                 z = Nd4j.create(outputDataType, outputShape);
+            }
+
+            // During graph building (import), skip actual op execution - just set output shapes.
+            // This avoids running the full forward pass during model import.
+            if(SameDiff.isInGraphBuildingMode()) {
+                if(newVars.length > 0) {
+                    newVars[0].setShape(z.shape());
+                    sameDiff.setEagerArrForVarName(newVars[0].name(), z);
+                }
+                return;
             }
 
             // Execute with enhanced validation
@@ -694,15 +766,18 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     protected void defineDimensions(long... dimensions) {
+        // Normalize negative axes first (e.g., -1 → rank-1) before checking
+        // for "reduce all". This ensures -1 is correctly treated as "last axis"
+        // per NumPy/ONNX convention, not as a "reduce all" sentinel.
+        // Callers that want "reduce all" should pass empty/null dimensions.
         if (dimensions != null && dimensions.length > 0) {
             if(x != null) {
                 dimensions = Shape.normalizeAxis(x.rank(), dimensions);
             }
         }
-
-        // Note: null/empty dimensions means "reduce all dimensions"
-        // The execution code (Shape.normalizeAxis) will convert empty to {-1}
-        // which signals "reduce all" to the reduction logic.
+        if (Shape.wholeArrayDimension(dimensions)) {
+            dimensions = null;
+        }
 
         // Set allocation context so lifecycle tracking can associate
         // this allocation with the specific operation being constructed
@@ -712,9 +787,15 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         }
         try {
             if (dimensions == null || dimensions.length == 0) {
-                // Empty dimensions = reduce all. Use -1 sentinel value.
-                // Don't use Nd4j.empty() as it causes CUDA synchronization issues.
-                this.dimensionz = Nd4j.createFromArray(-1L).detach();
+                // Empty dimensions = reduce all. Leave dimensionz as null.
+                // Both CudaExecutioner and NativeOpExecutioner handle null dimensions()
+                // correctly by treating it as "reduce all dimensions".
+                // NOTE: Do NOT use Nd4j.createFromArray(-1L) here. The -1 sentinel
+                // conflicts with NumPy convention where -1 means "last axis".
+                // normalizeAxis() would convert -1 to rank-1, causing reduce ops
+                // to only reduce along the last axis instead of all dimensions.
+                this.dimensionz = null;
+                return;
             } else {
                 this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
             }

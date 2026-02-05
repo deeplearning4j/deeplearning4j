@@ -827,7 +827,7 @@ public class DifferentialFunctionClassHolder {
                         val configFieldClass = configField.getType();
 
                         for (val field : configFieldClass.getDeclaredFields()) {
-                            if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                            if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
                                 field.setAccessible(true);
@@ -840,7 +840,7 @@ public class DifferentialFunctionClassHolder {
                         }
                     } else {
                         for (Field field : current.getDeclaredFields()) {
-                            if (!Modifier.isStatic(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
+                            if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers()) && !fieldNamesOpsIgnore.contains(field.getName()) &&
                                     (!classFieldsToIgnore.containsKey(current) || !classFieldsToIgnore.get(current).contains(field.getName()))) {
                                 fields.add(field);
                                 field.setAccessible(true);

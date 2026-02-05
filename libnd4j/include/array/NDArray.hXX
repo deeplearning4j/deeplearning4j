@@ -769,7 +769,28 @@ NDArray::NDArray(sd::LongType *shapeInfo, const bool copyStrides, sd::LaunchCont
  */
 NDArray::~NDArray() {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    sd_print("NDArray::~NDArray() - destructor printing creation trace:\n");
+    bool isViewFlag = false;
+    if (_shapeInfo != nullptr) {
+      uintptr_t addr = reinterpret_cast<uintptr_t>(_shapeInfo);
+      if (addr > 0x10000) {
+        isViewFlag = shape::isViewConst(_shapeInfo);
+      }
+    }
+    sd_printf("NDArray::~NDArray() - destructor: this=%p, buffer=%p, shapeInfo=%p, ownsBuffer=%d, isView=%d\n",
+              this, _buffer, _shapeInfo, _ownsBuffer ? 1 : 0, isViewFlag ? 1 : 0);
+    // Only access DataBuffer fields if we own it - otherwise it may already be freed
+    // by the DeallocatorService processing OpaqueDataBuffer before OpaqueNDArray
+    if (_buffer != nullptr && _ownsBuffer) {
+      uintptr_t bufAddr = reinterpret_cast<uintptr_t>(_buffer);
+      if (bufAddr > 0x10000 && _buffer->isValid()) {
+        sd_printf("  DataBuffer: primary=%p, special=%p, lenInBytes=%lld, isConstant=%d, closed=%d\n",
+                  _buffer->primary(), _buffer->special(), (long long)_buffer->getLenInBytes(),
+                  _buffer->isConstant ? 1 : 0, _buffer->isClosed() ? 1 : 0);
+      } else if (bufAddr > 0x10000) {
+        sd_printf("  DataBuffer: ALREADY FREED or INVALID (isDestroyed=%d)\n",
+                  _buffer->isDestroyed() ? 1 : 0);
+      }
+    }
     fflush(stdout);
   }
 
@@ -3348,7 +3369,9 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
   for (const auto& dim : shape_vector) {
     arrLength *= dim;
   }
-  if (arrLength != array->lengthOf() && !array->isScalar()) {
+  // Allow scalar expansion: if array has 1 element (scalar or length-1), it can be expanded to any shape
+  // This is used in ONNX models for broadcasting scalar conditions
+  if (arrLength != array->lengthOf() && !array->isScalar() && array->lengthOf() != 1) {
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
   sd::LongType shapeInfoLength = shape::shapeInfoLength(shape_vector.size());
@@ -3510,7 +3533,7 @@ NDArray *NDArray::permute(LongType *dimensions, const int rank, const bool copyT
     }
     auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(shapeInfoPermuted);
 
-    NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType*>(buff->primary()), getContext());
+    NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType*>(buff->primary()), getContext(), offset());
 
     return ret;
   }
@@ -4638,7 +4661,8 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   for (const auto &item : shape) arrLength *= item;
 
   //don't validate scalar case reshape 0 -> 1,1 should be valid
-  if (arrLength != this->lengthOf() && !isScalar()) {
+  // Also allow length-1 arrays to be expanded (scalar broadcasting pattern)
+  if (arrLength != this->lengthOf() && !isScalar() && this->lengthOf() != 1) {
     std::string errorMessage;
     errorMessage += "NDArray::reshapei: bad length of new shape !\n";
     errorMessage += "Shape: ";
@@ -5070,20 +5094,12 @@ T NDArray::e( sd::LongType i) {
   // sometimes we don't know the number of elements.
   // Due to this we have to omit validation here.
   const auto rp = getOffset(i);
-  std::vector<NDArray *> *emptyVec = new std::vector<NDArray *>();
-  std::vector<NDArray *> *thisVec = new std::vector<NDArray *>();
-  thisVec->push_back(this);
-  NDArray::preparePrimaryUse(*emptyVec, *thisVec);
-  NDArray::registerPrimaryUse(*emptyVec, *thisVec);
+  NDArray::preparePrimaryUse({}, {this});
+  NDArray::registerPrimaryUse({}, {this});
   // Check both buffer and shapeInfo before calling dataType()
   if (getDataBuffer() != nullptr && _shapeInfo != nullptr) {
-    delete emptyVec;
-    delete thisVec;
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), rp), SD_COMMON_TYPES_ALL);
   }
-
-  delete emptyVec;
-  delete thisVec;
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_COMMON_TYPES_ALL);
 BUILD_SINGLE_UNCHAINED_TEMPLATE( SD_LIB_EXPORT, NDArray::e(sd::LongType), SD_STRING_TYPES);
@@ -6828,6 +6844,9 @@ NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
 
   // Mark as view since sub-array shares buffer with parent
   auto newShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfoWithView(subArrShapeInfo);
+
+  // Free the temporary shape info - bufferForShapeInfoWithView already copied the data
+  RELEASE(subArrShapeInfo, getContext()->getWorkspace());
 
   // Tripwire: validate all pointers before creating result NDArray
   auto parentDataBuffer = getDataBuffer();

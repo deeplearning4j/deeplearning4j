@@ -93,9 +93,9 @@
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
 
-        <test.nogc>true</test.nogc>
+        <test.nogc>false</test.nogc>
         <test.prefix></test.prefix>
-        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
+        <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
         <tests></tests>
@@ -596,6 +596,26 @@
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>samediff-vlm</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <!-- LLM (Large Language Model) support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>samediff-llm</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Native HuggingFace tokenizers library (Rust-based, required for tokenization) -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>tokenizers-native</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform}</classifier>
         </dependency>
 
         <!-- GGML/GGUF model import support -->
@@ -1593,12 +1613,12 @@
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
-                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
                     <testFailureIgnore>false</testFailureIgnore>
                     <properties>
                         <org.nd4j.imports.tfgraphs.failfast>true</org.nd4j.imports.tfgraphs.failfast>
-                        <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
+                        <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
                         <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
@@ -1620,6 +1640,12 @@
                         <org.nd4j.libnd4j.test.filter>${libnd4j.test.filter}</org.nd4j.libnd4j.test.filter>
                         <org.nd4j.libnd4j.test.timeout>${libnd4j.test.timeout}</org.nd4j.libnd4j.test.timeout>
                         <org.nd4j.libnd4j.autobuild>${libnd4j.autobuild}</org.nd4j.libnd4j.autobuild>
+                        <!-- VLM test configuration -->
+                        <vlm.test.pdf.path>${vlm.test.pdf.path}</vlm.test.pdf.path>
+                        <vlm.test.pdf.page>${vlm.test.pdf.page}</vlm.test.pdf.page>
+                        <vlm.test.pdf.maxPages>${vlm.test.pdf.maxPages}</vlm.test.pdf.maxPages>
+                        <vlm.test.pdf.dpi>${vlm.test.pdf.dpi}</vlm.test.pdf.dpi>
+                        <vlm.test.maxTiles>${vlm.test.maxTiles}</vlm.test.maxTiles>
                     </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
@@ -1628,7 +1654,7 @@
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
-                    <argLine>-Djava.compiler=NONE -Dorg.bytedeco.javacpp.logger.debug=true   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Dorg.bytedeco.javacpp.logger.debug=false   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>

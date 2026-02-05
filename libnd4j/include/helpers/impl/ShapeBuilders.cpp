@@ -306,7 +306,9 @@ LongType* ShapeBuilders::createSubArrShapeInfo(const LongType* inShapeInfo, cons
 
 
 
-  shape::checkStridesEwsAndOrder(subArrShapeInfo);
+  // Note: checkStridesEwsAndOrder removed - EWS is deprecated and the order
+  // is already correctly set from the input shape at line 292. That function
+  // was incorrectly overriding the order based on stride contiguity patterns.
   if(isEmpty)
     ArrayOptions::togglePropertyBit(subArrShapeInfo, ARRAY_EMPTY);
   return subArrShapeInfo;

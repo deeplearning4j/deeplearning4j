@@ -52,6 +52,7 @@ import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
@@ -1479,29 +1480,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public Number normmaxNumber() {
-        return normmax(-1).getDouble(0);
+        return normmax().getDouble(0);
     }
 
     @Override
     public Number norm2Number() {
-        return norm2(-1).getDouble(0);
+        return norm2().getDouble(0);
     }
 
     @Override
     public Number norm1Number() {
-        return norm1(-1).getDouble(0);
+        return norm1().getDouble(0);
     }
 
     @Override
     public Number stdNumber() {
-        return std(-1).getDouble(0);
+        return std().getDouble(0);
     }
 
     @Override
     public Number prodNumber() {
         if(isScalar())
             return getNumber(0);
-        return prod(-1).getDouble(0);
+        return prod().getDouble(0);
     }
 
     @Override
@@ -1509,41 +1510,41 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("meanNumber", false);
         if(isScalar())
             return getNumber(0);
-        return mean(-1).getDouble(0);
+        return mean().getDouble(0);
     }
 
     @Override
     public Number ameanNumber() {
-        return amean(-1).getDouble(0);
+        return amean().getDouble(0);
     }
 
     @Override
     public Number varNumber() {
-        return var(-1).getDouble(0);
+        return var().getDouble(0);
     }
 
     @Override
     public Number maxNumber() {
         if(isScalar())
             return getNumber(0);
-        return max(-1).getDouble(0);
+        return max().getDouble(0);
     }
 
     @Override
     public Number amaxNumber() {
-        return amax(-1).getDouble(0);
+        return amax().getDouble(0);
     }
 
     @Override
     public Number minNumber() {
         if(isScalar())
             return getNumber(0);
-        return min(-1).getDouble(0);
+        return min().getDouble(0);
     }
 
     @Override
     public Number aminNumber() {
-        return amin(-1).getDouble(0);
+        return amin().getDouble(0);
     }
 
     @Override
@@ -1557,9 +1558,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // Clean up result array
             if (result != null) {
                 try {
-                    if (result.data() != null) {
-                        result.data().close();
-                    }
                     result.close();
                 } catch (Exception e) {
                     // Ignore close errors
@@ -1579,24 +1577,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("sum", false);
         if(isScalar())
             return getNumber(0);
-        val scalar = sum(-1);
+        val scalar = sum();
         Nd4j.getExecutioner().commit();
         return scalar.getDouble(0);
     }
 
     @Override
     public Number entropyNumber() {
-        return entropy(-1).getDouble(0);
+        return entropy().getDouble(0);
     }
 
     @Override
     public Number shannonEntropyNumber() {
-        return shannonEntropy(-1).getDouble(0);
+        return shannonEntropy().getDouble(0);
     }
 
     @Override
     public Number logEntropyNumber() {
-        return logEntropy(-1).getDouble(0);
+        return logEntropy().getDouble(0);
     }
 
     @Override
@@ -2498,10 +2496,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     specifiedIndex = duplicated.data().asInt();
                 } finally {
                     try {
-                        if (duplicated.data() != null) {
-                            duplicated.data().close();
-                        }
-                        duplicated.close();
+                            duplicated.close();
                     } catch (Exception e) {
                         // Ignore close errors
                     }
@@ -2597,10 +2592,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     specifiedIndex = duplicated.data().asInt();
                 } finally {
                     try {
-                        if (duplicated.data() != null) {
-                            duplicated.data().close();
-                        }
-                        duplicated.close();
+                            duplicated.close();
                     } catch (Exception e) {
                         // Ignore close errors
                     }
@@ -2942,10 +2934,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } finally {
                 // Clean up the duplicate after use
                 try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
-                    }
-                    duplicated.close();
+                        duplicated.close();
                 } catch (Exception e) {
                     // Ignore close errors
                 }
@@ -3118,10 +3107,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } finally {
                 // Clean up the duplicate after use
                 try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
-                    }
-                    duplicated.close();
+                        duplicated.close();
                 } catch (Exception e) {
                     // Ignore close errors
                 }
@@ -3496,10 +3482,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 ret[i] = duplicated.data().asDouble();
             } finally {
                 try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
-                    }
-                    duplicated.close();
+                        duplicated.close();
                 } catch (Exception e) {
                     // Ignore close errors
                 }
@@ -3523,10 +3506,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return duplicated.data().asDouble();
         } finally {
             try {
-                if (duplicated.data() != null) {
-                    duplicated.data().close();
-                }
-                duplicated.close();
+                    duplicated.close();
             } catch (Exception e) {
                 // Ignore close errors
             }
@@ -3547,10 +3527,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return duplicated.data().asFloat();
         } finally {
             try {
-                if (duplicated.data() != null) {
-                    duplicated.data().close();
-                }
-                duplicated.close();
+                    duplicated.close();
             } catch (Exception e) {
                 // Ignore close errors
             }
@@ -3574,10 +3551,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 ret[i] = duplicated.data().asFloat();
             } finally {
                 try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
-                    }
-                    duplicated.close();
+                        duplicated.close();
                 } catch (Exception e) {
                     // Ignore close errors
                 }
@@ -3603,10 +3577,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 return duplicated.data().asInt();
             } finally {
                 try {
-                    if (duplicated.data() != null) {
-                        duplicated.data().close();
-                    }
-                    duplicated.close();
+                        duplicated.close();
                 } catch (Exception e) {
                     // Ignore close errors
                 }
@@ -3641,10 +3612,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 // Only clean up if we actually created a new array (not if dup returned 'this')
                 if (shouldCleanup) {
                     try {
-                        if (duplicated.data() != null) {
-                            duplicated.data().close();
-                        }
-                        duplicated.close();
+                            duplicated.close();
                     } catch (Exception e) {
                         // Ignore close errors
                     }
@@ -3678,10 +3646,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } finally {
                 if (shouldCleanup) {
                     try {
-                        if (duplicated.data() != null) {
-                            duplicated.data().close();
-                        }
-                        duplicated.close();
+                            duplicated.close();
                     } catch (Exception e) {
                         // Ignore close errors
                     }
@@ -3715,10 +3680,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } finally {
                 if (shouldCleanup) {
                     try {
-                        if (duplicated.data() != null) {
-                            duplicated.data().close();
-                        }
-                        duplicated.close();
+                            duplicated.close();
                     } catch (Exception e) {
                         // Ignore close errors
                     }
@@ -4467,6 +4429,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         ReshapeNoCopy reshape = new ReshapeNoCopy(this,newShape,null,order);
         INDArray ret = Arrays.stream(getExecutioner().exec(reshape)).findFirst().orElseThrow();
         logViewCreationIfNeccessary();
+
+        if (enforceView && !ret.isView()) {
+            throw new ND4JIllegalStateException("Unable to reshape array as view, array is not c contiguous.");
+        }
 
         return ret;
     }
@@ -5955,9 +5921,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } finally {
                 // Clean up the duplicate after use
                 try {
-                    if (copy.data() != null) {
-                        copy.data().close();
-                    }
                     copy.close();
                 } catch (Exception e) {
                     // Ignore close errors
@@ -6582,6 +6545,23 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public void clearOpaqueNDArray() {
         synchronized (opaqueNDArrayLock) {
+            if (opaqueNDArray != null) {
+                // Explicitly close the old OpaqueNDArray to delete the native NDArray* wrapper
+                // immediately. Without this, the orphaned OpaqueNDArray lingers until GC runs,
+                // and the DeallocatorService may delete it at random times - racing with active
+                // CUDA operations that use the same underlying data buffer.
+                // This is critical when ArrayCacheMemoryMgr recycles arrays: assignNewId() calls
+                // clearOpaqueNDArray(), and the old native wrapper must be cleaned up before the
+                // recycled array is used by new operations.
+                try {
+                    opaqueNDArray.close();
+                } catch (Exception e) {
+                    // Log but don't throw - we're in cleanup
+                    if (log.isTraceEnabled()) {
+                        log.trace("Error closing OpaqueNDArray during clear: {}", e.getMessage());
+                    }
+                }
+            }
             opaqueNDArray = null;
         }
     }
@@ -6612,6 +6592,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void close() {
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            return;
+        }
+
         // empty arrays have no buffer at all
         if (released || isEmpty() || !closeable())
             return;
@@ -6678,6 +6664,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public void assignNewId() {
         arrayId = arrayCounter.incrementAndGet();
         clearOpaqueNDArray();
+    }
+
+    /**
+     * Lightweight ID reassignment for array cache recycling.
+     * Only changes the Java-side ID without clearing the native OpaqueNDArray wrapper.
+     * Safe to use when the underlying data buffer and shape have not changed (same
+     * dtype, same shape, same DataBuffer object) - which is the case when recycling
+     * from ArrayCacheMemoryMgr. The OpaqueNDArray wrapper still points to the same
+     * native buffers and remains valid.
+     */
+    public void recycleId() {
+        arrayId = arrayCounter.incrementAndGet();
     }
 
 

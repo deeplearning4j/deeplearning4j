@@ -21,6 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/top_k.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -456,6 +457,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
 
   // Device memory for zero offset (needed for async kernel execution)
   LongType* deviceZeroOffset = nullptr;
+  int topkDevId = 0; cudaGetDevice(&topkDevId);
 
   std::shared_ptr<TadPack> packX, packI, packZ;
 
@@ -471,7 +473,8 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
     zTadShapeInfo = values->specialShapeInfo();
 
     // Allocate device memory for the zero offset
-    cudaMalloc(&deviceZeroOffset, sizeof(LongType));
+    deviceZeroOffset = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType), topkDevId, nullptr));
+    if (deviceZeroOffset == nullptr) THROW_EXCEPTION("Cannot allocate memory for top_k zero offset");
     cudaMemsetAsync(deviceZeroOffset, 0, sizeof(LongType), *context->getCudaStream());
 
     // Single TAD starting at offset 0
@@ -521,10 +524,8 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
 
   // Clean up device memory for 1D case (after kernel completes via stream sync in caller)
   if (deviceZeroOffset != nullptr) {
-    // Queue the free to happen after the kernel completes
-    cudaStreamAddCallback(*context->getCudaStream(), [](cudaStream_t stream, cudaError_t status, void* userData) {
-      cudaFree(userData);
-    }, deviceZeroOffset, 0);
+    cudaStreamSynchronize(*context->getCudaStream());
+    sd::memory::CudaMemoryPool::getInstance().free(deviceZeroOffset, topkDevId, nullptr);
   }
 
   return Status::OK;

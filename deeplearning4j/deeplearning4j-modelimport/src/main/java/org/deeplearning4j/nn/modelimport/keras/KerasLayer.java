@@ -344,7 +344,6 @@ public class KerasLayer {
                     }
                     else {
                         layer.setParam(paramName, variable);
-
                     }
 
                 } catch (Exception e) {

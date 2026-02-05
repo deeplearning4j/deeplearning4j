@@ -73,10 +73,10 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   static inline LongType inChannels(const LongType* inputShapeInfo, int weightFormat) {
-    if (weightFormat == 0) {  // [kH, kW, iC, oC] or
+    if (weightFormat == 0) {  // [kH, kW, iC, oC]
       return shape::sizeAt(inputShapeInfo, -2);
     } else if(weightFormat == 1) { //[oC, iC, kH, kW]
-      return shape::sizeAt(inputShapeInfo, -2);
+      return shape::sizeAt(inputShapeInfo, 1);
     } else if (weightFormat == 2) {  // [oC, kH, kW, iC]
       return shape::sizeAt(inputShapeInfo, -1);
     } else {

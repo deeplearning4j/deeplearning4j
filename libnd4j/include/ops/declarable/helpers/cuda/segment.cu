@@ -21,6 +21,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
@@ -80,7 +81,9 @@ static bool unsortedSegmentIndicesValidate_(LaunchContext* context, NDArray* ind
   I exp = expected;
   auto stream = context->getCudaStream();
   I* devFound;
-  cudaMalloc(&devFound, sizeof(I));
+  int devId = 0; cudaGetDevice(&devId);
+  devFound = reinterpret_cast<I*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(I), devId, nullptr));
+  if (devFound == nullptr) THROW_EXCEPTION("Cannot allocate memory for segment validation");
   cudaMemcpy(devFound, &found, sizeof(I), cudaMemcpyHostToDevice);
 
   dim3 launchDims = segmentValidateIndices(indices->lengthOf());
@@ -89,7 +92,7 @@ static bool unsortedSegmentIndicesValidate_(LaunchContext* context, NDArray* ind
   sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentIndexValidateKernel failed");
 
   cudaMemcpy(&found, devFound, sizeof(I), cudaMemcpyDeviceToHost);
-  cudaFree(devFound);
+  sd::memory::CudaMemoryPool::getInstance().free(devFound, devId, nullptr);
   output = found;
   return expected == output;
 }

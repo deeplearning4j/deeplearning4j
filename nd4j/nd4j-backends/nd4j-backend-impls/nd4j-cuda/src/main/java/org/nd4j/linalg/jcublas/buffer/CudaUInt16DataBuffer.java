@@ -80,6 +80,9 @@ public class CudaUInt16DataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaUInt16DataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
 
     /**
      * Initialize the opType of this buffer

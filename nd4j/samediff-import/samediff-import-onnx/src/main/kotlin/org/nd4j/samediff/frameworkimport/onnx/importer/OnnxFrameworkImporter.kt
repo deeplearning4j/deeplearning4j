@@ -52,7 +52,10 @@ class OnnxFrameworkImporter: FrameworkImporter {
     val opDefs = loadedGraphBuilder.build()
 
     fun loadGraph(fileName: String): OnnxIRGraph {
-        val loadGraph = Onnx.ModelProto.parseFrom(Files.readAllBytes(File(fileName).toPath()))
+        // Use streaming parsing instead of reading entire file into memory
+        val loadGraph = Files.newInputStream(File(fileName).toPath()).buffered(65536).use { stream ->
+            Onnx.ModelProto.parseFrom(stream)
+        }
         return OnnxIRGraph(loadGraph.graph, registry)
     }
 
@@ -66,17 +69,110 @@ class OnnxFrameworkImporter: FrameworkImporter {
         if(suggestDynamicVariables) {
             val newDynamicVariables  = suggestDynamicVariables(loadGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
             val dynamicVariablesConverted = convertToOnnxTensors(newDynamicVariables)
+            // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors
+            addInitializersToDynamicVariables(loadGraph, dynamicVariablesConverted)
             val ret =   onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
             ret.outputs().addAll(loadGraph.outputList)
             return ret
         } else {
             val dynamicVariablesConverted = convertToOnnxTensors(dynamicVariables)
+            // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors
+            addInitializersToDynamicVariables(loadGraph, dynamicVariablesConverted)
             val ret =  onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
             ret.outputs().addAll(loadGraph.outputList)
             return ret
 
         }
 
+    }
+
+    /**
+     * Add all ONNX initializers and Constant node outputs to the dynamicVariables map.
+     * This allows PreImportHooks to access constant tensor values (like axes for Unsqueeze)
+     * which are stored as ONNX initializers or Constant nodes.
+     */
+    private fun addInitializersToDynamicVariables(
+        graph: OnnxIRGraph,
+        dynamicVariables: MutableMap<String, Onnx.TensorProto>
+    ) {
+        val graphDef = graph.graphDef()
+
+        // Add all initializers (direct tensor constants)
+        for (initializer in graphDef.initializerList) {
+            val name = initializer.name
+            // Only add if not already present (don't override user-provided values)
+            if (!dynamicVariables.containsKey(name)) {
+                dynamicVariables[name] = initializer
+            }
+        }
+
+        // Add all Constant node outputs (opset 13+ uses Constant nodes for some constants)
+        for (node in graphDef.nodeList) {
+            if (node.opType == "Constant") {
+                // Get the output name (what other nodes reference this constant by)
+                val outputNames = node.outputList
+
+                // Extract the tensor from the Constant node's attributes
+                val tensor = extractTensorFromConstantNode(node)
+                if (tensor != null) {
+                    for (outputName in outputNames) {
+                        val cleanName = outputName.replace(":0", "")
+                        if (!dynamicVariables.containsKey(cleanName)) {
+                            dynamicVariables[cleanName] = tensor
+                        }
+                        if (!dynamicVariables.containsKey(outputName)) {
+                            dynamicVariables[outputName] = tensor
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Extract the tensor value from a Constant node's attributes.
+     */
+    private fun extractTensorFromConstantNode(node: Onnx.NodeProto): Onnx.TensorProto? {
+        for (attr in node.attributeList) {
+            when (attr.name) {
+                "value" -> return attr.t
+                "value_int" -> {
+                    // Build a scalar INT64 tensor
+                    return Onnx.TensorProto.newBuilder()
+                        .setDataType(Onnx.TensorProto.DataType.INT64_VALUE)
+                        .addInt64Data(attr.i)
+                        .build()
+                }
+                "value_ints" -> {
+                    // Build a 1D INT64 tensor
+                    return Onnx.TensorProto.newBuilder()
+                        .setDataType(Onnx.TensorProto.DataType.INT64_VALUE)
+                        .addAllInt64Data(attr.intsList)
+                        .addDims(attr.intsCount.toLong())
+                        .build()
+                }
+                "value_float" -> {
+                    // Build a scalar FLOAT tensor
+                    return Onnx.TensorProto.newBuilder()
+                        .setDataType(Onnx.TensorProto.DataType.FLOAT_VALUE)
+                        .addFloatData(attr.f)
+                        .build()
+                }
+                "value_floats" -> {
+                    // Build a 1D FLOAT tensor
+                    return Onnx.TensorProto.newBuilder()
+                        .setDataType(Onnx.TensorProto.DataType.FLOAT_VALUE)
+                        .addAllFloatData(attr.floatsList)
+                        .addDims(attr.floatsCount.toLong())
+                        .build()
+                }
+            }
+        }
+        // Fallback: try first attribute's tensor
+        if (node.attributeCount > 0 && node.getAttribute(0).hasT()) {
+            return node.getAttribute(0).t
+        }
+        return null
     }
 
 

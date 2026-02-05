@@ -67,8 +67,25 @@ class Conv : PreImportHook  {
         val xShape = sd.shape(inputVariable)
 
         // Get kernel_shape from ONNX attributes - this determines the rank
-        val kernelShapeList = attributes["kernel_shape"] as List<Int>
-        val kernelShape = kernelShapeList.map { input -> input }.toIntArray()
+        // If kernel_shape is not provided, infer it from weights tensor shape
+        // Weights shape is [C_out, C_in/groups, kernel_shape...]
+        val kernelShape: IntArray
+        val kernelShapeAttr = attributes["kernel_shape"]
+        if (kernelShapeAttr != null && kernelShapeAttr is List<*> && kernelShapeAttr.isNotEmpty()) {
+            @Suppress("UNCHECKED_CAST")
+            val kernelShapeList = kernelShapeAttr as List<Int>
+            kernelShape = kernelShapeList.map { input -> input }.toIntArray()
+        } else {
+            // Infer from weights - weights are [out_channels, in_channels/groups, *kernel_shape]
+            val weightsArr = inWeights.arr
+            if (weightsArr != null) {
+                val wShape = weightsArr.shape()
+                kernelShape = wShape.drop(2).map { it.toInt() }.toIntArray()
+            } else {
+                // Default to 2D conv with kernel size 1 if we can't determine
+                throw IllegalArgumentException("kernel_shape attribute is required when weights shape is not statically known")
+            }
+        }
         val spatialSize = kernelShape.size
         val rank = spatialSize + 2
 
@@ -140,8 +157,8 @@ class Conv : PreImportHook  {
             val dim0 = sd.squeeze(sd.gather(inWeightsShape, sd.constant(0), 0), 0)
             val dim1 = sd.squeeze(sd.gather(inWeightsShape, sd.constant(1), 0), 0)
             val dim3 = sd.squeeze(sd.gather(inWeightsShape, sd.constant(3), 0), 0)
-            val lastDim = sd.math.floorDiv(dim3, sd.constant(groups.toInt()))
-            val depthWiseFilterShape = sd.stack(0, dim0, dim1, sd.constant(-1), lastDim)
+            val lastDim = sd.math.floorDiv(dim3, sd.constant(Nd4j.createFromArray(groups.toLong())))
+            val depthWiseFilterShape = sd.stack(0, dim0, dim1, sd.constant(Nd4j.createFromArray(-1L)), lastDim)
             weights = sd.reshape(weights, depthWiseFilterShape)
             inputVariable = sd.permute(inputVariable,*ImportUtils.getPermFromFormats(storageComputeFormat.first,storageComputeFormat.second))
             xs.add(inputVariable)

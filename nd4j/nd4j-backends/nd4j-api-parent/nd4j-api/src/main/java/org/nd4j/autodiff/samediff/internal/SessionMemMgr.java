@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -66,9 +67,34 @@ public interface SessionMemMgr extends Closeable {
     void release(INDArray array);
 
     /**
+     * Enter scope before forward pass. Default: no-op.
+     * Implementations may use this to activate a workspace or prepare resources.
+     */
+    default void scopeIn() {}
+
+    /**
+     * Exit scope after forward pass. Default: no-op.
+     * Implementations may use this to reset a workspace or release cached arrays.
+     */
+    default void scopeOut() {}
+
+    /**
      * Close the session memory manager and clean up any memory / resources, if any
      */
     void close();
 
     INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer);
+
+    /**
+     * Returns a pointer to the native C++ Workspace object, suitable for passing to
+     * {@link org.nd4j.linalg.api.ops.OpContext#attachWorkspace(Pointer)}.
+     * Default implementation returns null (no native workspace available).
+     */
+    default Pointer getNativeWorkspacePointer() { return null; }
+
+    /**
+     * Returns true if this memory manager is backed by a native workspace,
+     * meaning allocations are bump-allocated from a pre-reserved region.
+     */
+    default boolean isWorkspaceBacked() { return false; }
 }

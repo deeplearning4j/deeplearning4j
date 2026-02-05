@@ -43,6 +43,16 @@ public class Squeeze extends DynamicCustomOp {
     public Squeeze() {
     }
 
+    /**
+     * Squeeze all dimensions of size 1 from the input tensor.
+     * This is the NumPy-style squeeze with no axis specified.
+     */
+    public Squeeze(SameDiff sameDiff, SDVariable arg) {
+        super(null, sameDiff, new SDVariable[]{arg});
+        // No iArguments means squeeze all dims of size 1 (per C++ implementation)
+        this.squeezeDims = null;
+    }
+
     public Squeeze(SameDiff sameDiff, SDVariable arg, int squeezeDims) {
         this(sameDiff, arg, new int[] {squeezeDims});
     }
@@ -56,6 +66,15 @@ public class Squeeze extends DynamicCustomOp {
     public Squeeze(INDArray x, int axis) {
         addInputArgument(x);
         addIArgument(axis);
+    }
+
+    /**
+     * Squeeze all dimensions of size 1 from the input array.
+     * This is the NumPy-style squeeze with no axis specified.
+     */
+    public Squeeze(INDArray x) {
+        addInputArgument(x);
+        // No iArguments means squeeze all dims of size 1 (per C++ implementation)
     }
 
     @Override
@@ -114,4 +133,9 @@ public class Squeeze extends DynamicCustomOp {
 
     // Note: initializeOutputs is handled by the default CustomOp implementation which
     // automatically creates views when the C++ shape function sets ARRAY_COPY_OFFSET_INPUT_X flags
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

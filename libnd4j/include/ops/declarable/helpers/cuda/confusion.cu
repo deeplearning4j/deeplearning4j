@@ -22,6 +22,7 @@
 #include <exceptions/cuda_exception.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
+#include <memory/cuda/CudaMemoryPool.h>
 
 #include <ops/declarable/helpers/confusion.h>
 
@@ -103,8 +104,9 @@ predictions->syncToDevice();
 
  dim3 conf = getLaunchDims("confusion_matrix");
  if (labelsLongBuffer == nullptr) {
-   auto err = cudaMalloc(&labelsLongBuffer, labels->lengthOf() * sizeof(LongType));
-   if (err != 0) throw cuda_exception::build("Cannot allocate memory for labels long buffer", err);
+   int devId = 0; cudaGetDevice(&devId);
+   labelsLongBuffer = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(labels->lengthOf() * sizeof(LongType), devId, nullptr));
+   if (labelsLongBuffer == nullptr) THROW_EXCEPTION("Cannot allocate memory for labels long buffer");
    // copy with type conversion
    copyBuffers<X><<<conf.x, conf.y, conf.z, *stream>>>(labelsLongBuffer, labels->specialBuffer(), labels->lengthOf());
    sd::DebugHelper::checkGlobalErrorCode("copyBuffers  failed");
@@ -112,8 +114,9 @@ predictions->syncToDevice();
  }
 
  if (predictionLongBuffer == nullptr) {
-   auto err = cudaMalloc(&predictionLongBuffer, predictions->lengthOf() * sizeof(LongType));
-   if (err != 0) throw cuda_exception::build("Cannot allocate memory for predictions long buffer", err);
+   int devId2 = 0; cudaGetDevice(&devId2);
+   predictionLongBuffer = reinterpret_cast<LongType*>(sd::memory::CudaMemoryPool::getInstance().allocate(predictions->lengthOf() * sizeof(LongType), devId2, nullptr));
+   if (predictionLongBuffer == nullptr) THROW_EXCEPTION("Cannot allocate memory for predictions long buffer");
    // copy with type conversion
    copyBuffers<X>
        <<<256, 512, 1024, *stream>>>(predictionLongBuffer, predictions->specialBuffer(), predictions->lengthOf());
@@ -135,13 +138,13 @@ predictions->syncToDevice();
  manager.synchronize();
 
  if (predictionLongBuffer != predictions->specialBuffer()) {
-   cudaError_t err = cudaFree(predictionLongBuffer);
-   if (err != 0) throw cuda_exception::build("Cannot deallocate memory for predictions long buffer", err);
+   int devIdFree1 = 0; cudaGetDevice(&devIdFree1);
+   sd::memory::CudaMemoryPool::getInstance().free(predictionLongBuffer, devIdFree1, nullptr);
  }
 
  if (labelsLongBuffer != labels->specialBuffer()) {
-   cudaError_t err = cudaFree(labelsLongBuffer);
-   if (err != 0) throw cuda_exception::build("Cannot deallocate memory for labels long buffer", err);
+   int devIdFree2 = 0; cudaGetDevice(&devIdFree2);
+   sd::memory::CudaMemoryPool::getInstance().free(labelsLongBuffer, devIdFree2, nullptr);
  }
 }
 

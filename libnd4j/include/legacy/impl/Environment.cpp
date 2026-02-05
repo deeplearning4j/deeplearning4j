@@ -869,6 +869,28 @@ void Environment::initCudaEnvironment() {
 #endif
  }
 #endif
+ const char* cudaPinnedHostLimitVar = std::getenv("SD_CUDA_PINNED_HOST_LIMIT");
+#ifdef SD_CUDA
+ if (cudaPinnedHostLimitVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string limitStr(cudaPinnedHostLimitVar);
+     int64_t limit = std::stoll(limitStr);
+     if (limit > 0) {
+       _cudaPinnedHostLimit.store(limit);
+     }
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string limitStr(cudaPinnedHostLimitVar);
+   int64_t limit = std::stoll(limitStr);
+   if (limit > 0) {
+     _cudaPinnedHostLimit.store(limit);
+   }
+#endif
+ }
+#endif
  const char* cudaUnifiedMemVar = std::getenv("SD_CUDA_USE_UNIFIED_MEMORY");
 #ifdef SD_CUDA
  if (cudaUnifiedMemVar != nullptr) {

@@ -214,9 +214,7 @@ DECLARE_UNARY_SIMPLE_OP(Reciprocal, static_cast<X>(1) / d1)
 // =============================================================================
 
 
-DECLARE_UNARY_CONDITIONAL_OP(Sign,
-                             (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0)),
-                             static_cast<X>(1), static_cast<X>(-1))
+DECLARE_UNARY_SIMPLE_OP(Sign, (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0)))
 
 
 DECLARE_UNARY_CONDITIONAL_OP(HardTanhDerivative,

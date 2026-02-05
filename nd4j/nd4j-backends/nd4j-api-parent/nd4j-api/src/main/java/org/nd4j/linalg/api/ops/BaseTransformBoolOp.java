@@ -121,6 +121,9 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
@@ -128,7 +131,9 @@ public abstract class BaseTransformBoolOp extends BaseTransformOp implements Tra
         LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.emptyWithShape(x.shape(),DataType.BOOL) :
                 LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL);
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        return Collections.singletonList(Nd4j.createBuffer(desc.toShapeInfo()));
+        List<DataBuffer> ret = Collections.singletonList(Nd4j.createBuffer(desc.toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
+        return ret;
     }
 
     @Override

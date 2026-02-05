@@ -38,32 +38,44 @@ BROADCASTABLE_OP_IMPL(divide, 0, 0) {
 
   REQUIRE_TRUE(!y->isB(), 0, "DIVIDE OP: you can't divide by bool array!");
 
+  // When input types differ, cast to output type to avoid type-punning in kernels
+  NDArray *castX = nullptr, *castY = nullptr;
+  auto cleanupCasts = [&]() { delete castX; delete castY; };
+  if (x->dataType() != z->dataType()) {
+    castX = x->cast(z->dataType());
+    x = castX;
+  }
+  if (y->dataType() != z->dataType()) {
+    castY = y->cast(z->dataType());
+    y = castY;
+  }
+
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   if (x->isSameShape(y)) {
-    // Ultra-fast path for contiguous same-shape
     const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
     const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
     const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
 
     if (xContiguous && yContiguous && zContiguous) {
       helpers::fusedDivideContiguous(*x, *y, *z);
+      cleanupCasts();
       return Status::OK;
     }
 
     x->applyPairwiseTransform(pairwise::Divide, y, z, nullptr);
+    cleanupCasts();
     return Status::OK;
   }
 
-  // Fast path: scalar or effectively-scalar (length 1) divisor
   const auto xLen = x->lengthOf();
   const auto yLen = y->lengthOf();
 
   if (yLen == 1) {
     x->applyScalarArr(scalar::Divide, y, z);
+    cleanupCasts();
     return Status::OK;
   }
 
-  // Fast path: 1D-like divisor broadcast along last dimension
   const auto xRank = x->rankOf();
   const auto yRank = y->rankOf();
 
@@ -74,18 +86,28 @@ BROADCASTABLE_OP_IMPL(divide, 0, 0) {
     }
     if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
       std::vector<sd::LongType> dims = {xRank - 1};
-      x->applyBroadcast(broadcast::Divide, &dims, y, z);
+      if (yRank > 1) {
+        std::vector<sd::LongType> yShape = {yLen};
+        auto yReshaped = y->reshape(y->ordering(), yShape);
+        x->applyBroadcast(broadcast::Divide, &dims, yReshaped, z);
+        delete yReshaped;
+      } else {
+        x->applyBroadcast(broadcast::Divide, &dims, y, z);
+      }
+      cleanupCasts();
       return Status::OK;
     }
   }
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Divide(), x, y, z);
-  if (tZ == nullptr)
+  if (tZ == nullptr) {
+    cleanupCasts();
     return Status::KERNEL_FAILURE;
-  else if (tZ != z) {
+  } else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
+  cleanupCasts();
   return Status::OK;
 }
 DECLARE_SYN(Div, divide);

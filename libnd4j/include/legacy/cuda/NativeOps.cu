@@ -47,6 +47,7 @@
 #include <curand.h>
 #include <helpers/DebugHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
+#include <memory/MultiBackendWorkspace.h>
 
 #include <execution/cuda/LaunchDims.h>
 #include <loops/special_kernels.h>
@@ -234,7 +235,9 @@ void _printDeviceBuffer(OpaqueDataBuffer *buffer) {
   auto xType = buffer->dataBuffer()->getDataType();
   sd::LongType len = buffer->dataBuffer()->getNumElements();
   _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
-  cudaDeviceSynchronize();
+  auto stream = sd::LaunchContext::defaultContext()->getCudaStream();
+  if (stream != nullptr)
+    cudaStreamSynchronize(*stream);
   sd::DebugHelper::checkGlobalErrorCode("print device buffer(...) failed");
 
 
@@ -358,7 +361,13 @@ void enableP2P(bool enable) {
   cudaSetDevice(curDevice);
 }
 
-bool isP2PAvailable() { return supportedP2P; }
+bool isP2PAvailable() {
+  // Disabled P2P by default - P2P memory access is unreliable across different GPU configurations
+  // Cross-device operations will use explicit migration through host memory instead
+  // P2P can be re-enabled by setting allowedP2P = true and uncommenting the return below
+  // return supportedP2P && allowedP2P;
+  return false;
+}
 
 // initializeDevicesAndFunctions moved to NativeOps_utils.cu for SD_GCC_FUNCTRACE builds
 
@@ -533,6 +542,28 @@ void trimMemoryPool(int deviceId) {
   sd::memory::CudaMemoryPool::getInstance().trimPool(deviceId);
 }
 
+/**
+ * Get current pinned host memory usage from failover allocations
+ */
+sd::LongType getPinnedHostBytesUsed() {
+  return static_cast<sd::LongType>(sd::memory::CudaMemoryPool::getInstance().getPinnedHostBytesUsed());
+}
+
+/**
+ * Get pinned host memory limit for failover allocations
+ */
+sd::LongType getPinnedHostBytesLimit() {
+  return static_cast<sd::LongType>(sd::memory::CudaMemoryPool::getInstance().getPinnedHostBytesLimit());
+}
+
+/**
+ * Set pinned host memory limit for failover allocations.
+ * Set to 0 for unlimited (default).
+ */
+void setPinnedHostBytesLimit(sd::LongType maxBytes) {
+  sd::memory::CudaMemoryPool::getInstance().setPinnedHostBytesLimit(static_cast<size_t>(maxBytes));
+}
+
 sd::Pointer createContext() { return 0L; }
 
 sd::Pointer createStream() {
@@ -596,19 +627,44 @@ sd::LongType getDeviceFreeMemoryDefault() {
 sd::LongType getDeviceFreeMemory(int device) {
   int orig = -1;
 
-  cudaGetDevice(&orig);
+  // Clear any previous CUDA errors that might be lingering
+  cudaError_t prevErr = cudaGetLastError();
+  if (prevErr != cudaSuccess) {
+    sd_debug("getDeviceFreeMemory: Cleared previous CUDA error: %s\n", cudaGetErrorString(prevErr));
+  }
+
+  cudaError_t err = cudaGetDevice(&orig);
+  if (err != cudaSuccess) {
+    sd_debug("getDeviceFreeMemory: cudaGetDevice failed: %s\n", cudaGetErrorString(err));
+    return 0;
+  }
 
   if (device >= 0 && device != orig) {
-    cudaSetDevice(device);
+    err = cudaSetDevice(device);
+    if (err != cudaSuccess) {
+      sd_debug("getDeviceFreeMemory: cudaSetDevice(%d) failed: %s\n", device, cudaGetErrorString(err));
+      return 0;
+    }
   }
 
   size_t memFree = 0;
   size_t memTotal = 0;
 
-  cudaMemGetInfo(&memFree, &memTotal);
+  err = cudaMemGetInfo(&memFree, &memTotal);
+  if (err != cudaSuccess) {
+    sd_debug("getDeviceFreeMemory: cudaMemGetInfo failed for device %d: %s\n", device, cudaGetErrorString(err));
+    // Try to restore original device before returning
+    if (device >= 0 && device != orig) {
+      cudaSetDevice(orig);
+    }
+    return 0;
+  }
 
   if (device >= 0 && device != orig) {
-    cudaSetDevice(orig);
+    err = cudaSetDevice(orig);
+    if (err != cudaSuccess) {
+      sd_debug("getDeviceFreeMemory: Failed to restore device to %d: %s\n", orig, cudaGetErrorString(err));
+    }
   }
 
   return (sd::LongType)memFree;
@@ -617,18 +673,43 @@ sd::LongType getDeviceFreeMemory(int device) {
 sd::LongType getDeviceTotalMemory(int device) {
   int orig = -1;
 
-  cudaGetDevice(&orig);
+  // Clear any previous CUDA errors that might be lingering
+  cudaError_t prevErr = cudaGetLastError();
+  if (prevErr != cudaSuccess) {
+    sd_debug("getDeviceTotalMemory: Cleared previous CUDA error: %s\n", cudaGetErrorString(prevErr));
+  }
+
+  cudaError_t err = cudaGetDevice(&orig);
+  if (err != cudaSuccess) {
+    sd_debug("getDeviceTotalMemory: cudaGetDevice failed: %s\n", cudaGetErrorString(err));
+    return 0;
+  }
 
   if (device >= 0 && device != orig) {
-    cudaSetDevice(device);
+    err = cudaSetDevice(device);
+    if (err != cudaSuccess) {
+      sd_debug("getDeviceTotalMemory: cudaSetDevice(%d) failed: %s\n", device, cudaGetErrorString(err));
+      return 0;
+    }
   }
+
   size_t memFree = 0;
   size_t memTotal = 0;
 
-  cudaMemGetInfo(&memFree, &memTotal);
+  err = cudaMemGetInfo(&memFree, &memTotal);
+  if (err != cudaSuccess) {
+    sd_debug("getDeviceTotalMemory: cudaMemGetInfo failed for device %d: %s\n", device, cudaGetErrorString(err));
+    if (device >= 0 && device != orig) {
+      cudaSetDevice(orig);
+    }
+    return 0;
+  }
 
   if (device >= 0 && device != orig) {
-    cudaSetDevice(orig);
+    err = cudaSetDevice(orig);
+    if (err != cudaSuccess) {
+      sd_debug("getDeviceTotalMemory: Failed to restore device to %d: %s\n", orig, cudaGetErrorString(err));
+    }
   }
 
   return (sd::LongType)memTotal;
@@ -1125,23 +1206,103 @@ void clearLastError() {
   // Clear any pending CUDA errors first
   cudaError_t err = cudaGetLastError();
 
-  // If there was a serious error, we need to be more aggressive about cleanup
+  // If there was a serious error, synchronize the stream to flush bad state
   if (err != cudaSuccess) {
-    // Try to synchronize the device - this may help flush bad state
-    cudaDeviceSynchronize();
-    cudaGetLastError();  // Clear any error from synchronize
-
-    // If the context was really corrupted, try to reset the device streams
-    // by getting a fresh stream from the context
     auto ctx = sd::LaunchContext::defaultContext();
     if (ctx != nullptr) {
-      // Force stream synchronization
       auto stream = ctx->getCudaStream();
       if (stream != nullptr) {
         cudaStreamSynchronize(*stream);
-        cudaGetLastError();
+        cudaGetLastError();  // Clear any error from synchronize
       }
     }
   }
+}
+
+// ========================
+// Workspace Management API Implementation (CUDA)
+// ========================
+
+OpaqueWorkspace createNativeWorkspace(sd::LongType initialSize) {
+    // For CUDA, allocate both device and host (pinned) memory
+    return new sd::memory::Workspace(initialSize, initialSize);
+}
+
+void destroyNativeWorkspace(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        delete workspace;
+    }
+}
+
+void workspaceScopeIn(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        workspace->scopeIn();
+    }
+}
+
+void workspaceScopeOut(OpaqueWorkspace workspace) {
+    if (workspace != nullptr) {
+        workspace->scopeOut();
+    }
+}
+
+void attachWorkspaceToContext(OpaqueContext* ctx, OpaqueWorkspace workspace) {
+    if (ctx != nullptr) {
+        ctx->attachWorkspace(workspace);
+    }
+}
+
+void detachWorkspaceFromContext(OpaqueContext* ctx) {
+    if (ctx != nullptr) {
+        ctx->forgetWorkspace();
+    }
+}
+
+sd::LongType getWorkspaceCurrentOffset(OpaqueWorkspace workspace) {
+    if (workspace == nullptr) return 0;
+    return workspace->getCurrentOffset();
+}
+
+sd::LongType getWorkspaceAllocatedSize(OpaqueWorkspace workspace) {
+    if (workspace == nullptr) return 0;
+    return workspace->getAllocatedSize();
+}
+
+// Multi-Backend Workspace API (CUDA)
+using namespace sd::memory;
+
+OpaqueMultiBackendWorkspace createNativeMultiBackendWorkspace(
+    sd::LongType initialSize, int primaryDeviceType, int primaryDeviceIndex) {
+    return createMultiBackendWorkspace(initialSize, primaryDeviceType, primaryDeviceIndex);
+}
+
+void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle) {
+    destroyMultiBackendWorkspace(handle);
+}
+
+void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes) {
+    return mbwAllocateBytes(handle, numBytes);
+}
+
+void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {
+    mbwScopeIn(handle);
+}
+
+void nativeMbwScopeOut(OpaqueMultiBackendWorkspace handle) {
+    mbwScopeOut(handle);
+}
+
+void nativeMbwTransferTo(OpaqueMultiBackendWorkspace handle,
+    int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex) {
+    mbwTransferTo(handle, srcDeviceType, srcDeviceIndex, dstDeviceType, dstDeviceIndex);
+}
+
+int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex) {
+    return mbwGetCoherenceState(handle, deviceType, deviceIndex);
+}
+
+sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle) {
+    return mbwGetTotalAllocatedSize(handle);
 }
 

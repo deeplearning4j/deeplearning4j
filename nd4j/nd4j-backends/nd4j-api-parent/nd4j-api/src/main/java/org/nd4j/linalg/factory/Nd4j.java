@@ -1624,6 +1624,23 @@ public class Nd4j {
         return getDataBufferFactory().createBuffer(buffer, type, length);
     }
 
+    /**
+     * Create a buffer from a ByteBuffer with CPU-only allocation for lazy GPU migration.
+     * On GPU backends, this allocates only the host (CPU) buffer and defers GPU allocation
+     * until the data is actually needed on the device during execution.
+     *
+     * This is particularly useful for model loading where weights can be loaded to CPU
+     * first and lazily transferred to GPU as needed, reducing initial load time and
+     * memory pressure.
+     *
+     * @param buffer the underlying buffer to create from
+     * @param type the data type
+     * @param length the number of elements
+     * @return a DataBuffer with CPU-only allocation (GPU allocation deferred)
+     */
+    public static DataBuffer createBufferCpuOnly(ByteBuffer buffer, DataType type, long length) {
+        return getDataBufferFactory().createBufferCpuOnly(buffer, type, length);
+    }
 
     /**
      * Create a buffer equal of length prod(shape)

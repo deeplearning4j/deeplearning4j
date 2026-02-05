@@ -36,6 +36,18 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
   auto indices = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
+  // Early return if output is empty (e.g., when indices is empty)
+  // Note: scalars have lengthOf() == 1, so this won't affect scalar outputs
+  if (output->isEmpty()) {
+    return sd::Status::OK;
+  }
+
+  // Early return if indices is empty (but not if it's a scalar)
+  // Scalars have rankOf() == 0 and lengthOf() == 1
+  if (indices->isEmpty()) {
+    return sd::Status::OK;
+  }
+
   const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
 
   const int rankIn = input->rankOf();
@@ -65,9 +77,9 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(gather_nd) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+      ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS, BOOL})
       ->setAllowedInputTypes(1, {ALL_INTS})
-      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+      ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS, BOOL});
 }
 
 DECLARE_SHAPE_FN(gather_nd) {

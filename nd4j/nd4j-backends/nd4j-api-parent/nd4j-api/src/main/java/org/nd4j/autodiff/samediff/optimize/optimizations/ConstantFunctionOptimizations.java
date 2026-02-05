@@ -27,9 +27,13 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -40,6 +44,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Slf4j
 public class ConstantFunctionOptimizations extends BaseOptimizerSet {
 
     public static final String CONSTANT_FN_FOLDING_MAX_SIZE = "optimizer.constants.function.max.output.size";
@@ -62,7 +67,9 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
             long maxSizeToApply = Long.parseLong(helper.getProperties().getProperty(CONSTANT_FN_FOLDING_MAX_SIZE, String.valueOf(CONSTANT_FN_FOLDING_MAX_SIZE_DEFAULT)));
             //Apply the optimization:
             DifferentialFunction df = op.getOp();
+
             df.clearArrays();
+
             for (int i = 0; i < in.size(); i++) {
                 String s = in.get(i);
                 INDArray arr = sd.getVariable(s).getArr();
@@ -79,15 +86,47 @@ public class ConstantFunctionOptimizations extends BaseOptimizerSet {
             INDArray[] outputs;
             if (df instanceof CustomOp) {
                 CustomOp o = (CustomOp) df;
-                Nd4j.exec(o);
-                outputs = new INDArray[o.numOutputArguments()];
-                for (int j = 0; j < outputs.length; j++) {
-                    outputs[j] = o.getOutputArgument(j);
+                OpContext ctx = Nd4j.getExecutioner().buildContext();
+                try {
+                    // Set inputs on the context
+                    for (int i = 0; i < in.size(); i++) {
+                        ctx.setInputArray(i, o.getInputArgument(i));
+                    }
+                    // Execute with context
+                    Nd4j.getExecutioner().exec(o, ctx);
+                    outputs = new INDArray[o.numOutputArguments()];
+                    for (int j = 0; j < outputs.length; j++) {
+                        outputs[j] = o.getOutputArgument(j);
+                    }
+                } finally {
+                    try { ctx.close(); } catch (Exception ignored) {}
                 }
             } else {
                 Op o = (Op) df;
-                Nd4j.exec(o);
-                outputs = new INDArray[]{o.z()};
+                OpContext ctx = Nd4j.getExecutioner().buildContext();
+                try {
+                    // Set input arrays on the context
+                    if (o.y() != null) {
+                        ctx.setInputArrays(o.x(), o.y());
+                    } else {
+                        ctx.setInputArrays(o.x());
+                    }
+
+                    // Calculate output shape and allocate output array
+                    List<DataBuffer> outputShape = ((BaseOp) o).calculateOutputShape(ctx);
+                    if (outputShape != null && !outputShape.isEmpty()) {
+                        DataBuffer shapeDesc = outputShape.get(0);
+                        INDArray z = Nd4j.createFromDescriptor(shapeDesc);
+                        ctx.setOutputArray(0, z);
+                    }
+
+                    // Execute with context - this properly handles ScalarOps
+                    Nd4j.getExecutioner().exec(o, ctx);
+
+                    outputs = new INDArray[]{ctx.getOutputArray(0)};
+                } finally {
+                    try { ctx.close(); } catch (Exception ignored) {}
+                }
             }
             long sizeCount = 0;
             for (INDArray i : outputs) {

@@ -58,29 +58,33 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     wAxes = {1, 2, 3};
 
 
-  // Create col with memory layout optimized for later reshape: {bS, oH, oW, kH, kW, iC}
+  // Create col in C-order {bS, oH, oW, kH, kW, iC}.
+  // im2col writes through colP strides, filling col so that
+  // col[b, oh, ow, kh, kw, ic] = input patch value at that position.
+  // C-order reshape of col to [bS*oH*oW, kH*kW*iC] then gives:
+  //   row = spatial position (b, oh, ow)
+  //   col = kernel+channel position (kH, kW, iC) in C-order
   std::vector<sd::LongType> colShape = {bS, oH, oW, kH, kW, iC};
-  std::vector<sd::LongType> perm = {0, 3, 4, 5, 1, 2};
+  // Permute col [bS, oH, oW, kH, kW, iC] -> colP [bS, iC, kH, kW, oH, oW]
+  // so im2col (which expects output [bS, iC, kH, kW, oH, oW]) writes correctly.
+  // dim mapping: new0=old0(bS), new1=old5(iC), new2=old3(kH), new3=old4(kW), new4=old1(oH), new5=old2(oW)
+  std::vector<sd::LongType> perm = {0, 5, 3, 4, 1, 2};
   NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
 
-  // colP is a VIEW of col - it shares col's DataBuffer with a different shape/strides.
-  // We must NOT delete col while colP is in use, as that would free the underlying memory.
-  // Both col and colP will be stored as intermediate results for the backward pass to manage.
+  // colP is a VIEW of col with shape [bS, iC, kH, kW, oH, oW] and permuted strides.
+  // im2col indexes using colP's strides, which maps channel/kernel/spatial writes
+  // into the correct positions in col's contiguous C-order buffer.
   NDArray *colP = col->permute(perm, false, false);
 
   // Push col (the owner) as intermediate result first - framework handles cleanup
   // colP (the view) will be pushed later and used by backward pass
   block.pushIntermediateResult(col);
 
-  std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
-  NDArray mmulResult('f', mmulResultShape, output->dataType(), output->getContext());
-  std::vector<LongType> permuteForOutput = {0, 3, 1, 2};
-
   //----- calculation of output -----//
   auto ctx = block.launchContext();
 
   NDArray *inputNchw = nullptr;  // Track NHWC permutation for cleanup
-  NDArray *zeroVal =  NDArrayFactory::create(0.f, input->getContext());
+  NDArray *zeroVal = NDArrayFactory::create(0.f, input->getContext());
   if (isNCHW) {
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
                     *zeroVal);
@@ -95,45 +99,64 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   delete zeroVal;
   block.pushIntermediateResult(colP);
 
-  std::vector<sd::LongType> shape = {bS * oH * oW, kH * kW * iC};
-  NDArray *colReshaped = colP->reshape('c', shape, false);
-  std::vector<sd::LongType> perm2 = {3,2,1,0};
+  // Reshape col to [bS*oH*oW, kH*kW*iC] in C-order.
+  // col is contiguous C-order [bS, oH, oW, kH, kW, iC], so this is zero-copy.
+  // Row i = (b, oh, ow) in C-order: b*(oH*oW) + oh*oW + ow
+  // Column j = (kh, kw, ic) in C-order: kh*(kW*iC) + kw*iC + ic
+  std::vector<sd::LongType> colShape2d = {bS * oH * oW, kH * kW * iC};
+  NDArray *colReshaped = col->reshape('c', colShape2d, false);
 
-  NDArray *weightsPermuted = weights->permute(perm2, false, false);
-
-  std::vector<sd::LongType> wShape = {iC * kH * kW, oC};
-  NDArray *reshapedW = weightsPermuted->reshape('f',wShape, false);
-  NDArray *colpPReshapedAddr = colReshaped;
-
-  NDArray *reshapedWAddr = reshapedW;
-  MmulHelper::matmul(colpPReshapedAddr, reshapedWAddr, &mmulResult, false, false, 1.0, 0.0);
-
-  // Clean up after matmul
-  delete colReshaped;
-  delete weightsPermuted;
-  delete reshapedW;
-
-  std::vector<sd::LongType>lastShape = {oH,oW,bS,oC};
-  NDArray *reshaped = mmulResult.reshape('f', lastShape, false);
-  std::vector<sd::LongType> permute2 = {2,3,1,0};
-  NDArray *permuted = reshaped->permute(permute2, false, false);
-
-  // Clean up reshaped after permute
-  delete reshaped;
-
-  // Reshape and copy result to output
-  if (isNCHW) {
-    output->assign(permuted);
-    delete permuted;
+  // Prepare weights as [kH*kW*iC, oC] with rows in C-order of (kH, kW, iC)
+  // to match the im2col column ordering.
+  // Strategy: permute weights to [kH, kW, iC, oC], dup to C-contiguous,
+  // then C-order reshape to [kH*kW*iC, oC].
+  NDArray *weightsKWIO = nullptr;
+  std::vector<sd::LongType> wShape = {kH * kW * iC, oC};
+  if (wFormat == 0) {
+    // [kH, kW, iC, oC] - already target layout, no permutation needed
+    weightsKWIO = weights->dup('c');
+  } else if (wFormat == 1) {
+    // [oC, iC, kH, kW] -> [kH, kW, iC, oC]
+    std::vector<sd::LongType> wPerm = {2, 3, 1, 0};
+    NDArray *wp = weights->permute(wPerm, false, false);
+    weightsKWIO = wp->dup('c');
+    delete wp;
   } else {
-    std::vector<sd::LongType> perm3 = {0,2,3,1};
-    NDArray *permuted2 = permuted->permute(perm3, false, false);
-    output->assign(permuted2);
-    delete permuted;   // Delete the first copy
-    delete permuted2;  // Delete the second copy
+    // [oC, kH, kW, iC] -> [kH, kW, iC, oC]
+    std::vector<sd::LongType> wPerm = {1, 2, 3, 0};
+    NDArray *wp = weights->permute(wPerm, false, false);
+    weightsKWIO = wp->dup('c');
+    delete wp;
   }
+  NDArray *reshapedW = weightsKWIO->reshape('c', wShape, false);
 
-  // Clean up NHWC permutation if it was created
+  // Matmul: [bS*oH*oW, kH*kW*iC] x [kH*kW*iC, oC] -> [bS*oH*oW, oC]
+  std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
+  NDArray mmulResult('c', mmulResultShape, output->dataType(), output->getContext());
+  MmulHelper::matmul(colReshaped, reshapedW, &mmulResult, false, false, 1.0, 0.0);
+
+  // Clean up matmul intermediates
+  delete colReshaped;
+  delete reshapedW;
+  delete weightsKWIO;
+
+  // Reshape mmulResult to [bS, oH, oW, oC] (NHWC layout) in C-order.
+  // Row i = b*(oH*oW) + oh*oW + ow maps back to (b, oh, ow) correctly.
+  std::vector<sd::LongType> nhwcShape = {bS, oH, oW, oC};
+  NDArray *outputNHWC = mmulResult.reshape('c', nhwcShape, false);
+
+  if (isNCHW) {
+    // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    std::vector<sd::LongType> nhwcToNchw = {0, 3, 1, 2};
+    NDArray *outputNCHW = outputNHWC->permute(nhwcToNchw, false, false);
+    output->assign(outputNCHW);
+    delete outputNCHW;
+  } else {
+    output->assign(outputNHWC);
+  }
+  delete outputNHWC;
+
+  // Clean up NHWC input permutation if created
   if (inputNchw != nullptr) {
     delete inputNchw;
   }

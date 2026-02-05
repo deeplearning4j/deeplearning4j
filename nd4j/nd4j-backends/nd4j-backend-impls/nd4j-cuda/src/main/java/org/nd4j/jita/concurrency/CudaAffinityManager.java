@@ -27,6 +27,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -54,7 +55,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
     private static Logger logger = LoggerFactory.getLogger(CudaAffinityManager.class);
 
     private Map<Long, Integer> affinityMap = new ConcurrentHashMap<>();
-    private AtomicInteger devPtr = new AtomicInteger(0);
     private ThreadLocal<AtomicBoolean> affiliated = new ThreadLocal<>();
 
     private AtomicInteger numberOfDevices = new AtomicInteger(-1);
@@ -104,10 +104,25 @@ public class CudaAffinityManager extends BasicAffinityManager {
             return deviceId;
         }
 
-        deviceId = getNextDevice(threadId);
-        affinityMap.put(threadId, deviceId);
-        unsafeSetDevice(deviceId);
-        return deviceId;
+        RuntimeException lastException = null;
+        int attempts = Math.max(1, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
+        for (int i = 0; i < attempts; i++) {
+            deviceId = getNextDevice(threadId);
+            affinityMap.put(threadId, deviceId);
+            try {
+                unsafeSetDevice(deviceId);
+                return deviceId;
+            } catch (RuntimeException e) {
+                lastException = e;
+                affinityMap.remove(threadId);
+                logger.warn("Failed to set CUDA device [{}] for thread [{}]: {}", deviceId, threadId, e.getMessage());
+                if (deviceId != null && deviceId >= 0) {
+                    CudaEnvironment.getInstance().getConfiguration().banDevice(deviceId);
+                }
+            }
+        }
+
+        throw new RuntimeException("No usable CUDA devices available for thread " + threadId, lastException);
     }
 
     /**
@@ -131,36 +146,32 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
 
     /**
-     * This method returns device id available. Round-robin balancing used here.
+     * Selects the best available GPU device for a new thread by delegating to
+     * {@link DeviceMemoryManager}. The device with the most actual free memory
+     * is chosen.
      *
-     * @param threadId this parameter can be anything, it's used for logging only.
-     * @return
+     * @param threadId used for logging only.
+     * @return device id
      */
     protected Integer getNextDevice(long threadId) {
-        Integer device = null;
         if (CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().isEmpty()) {
             logger.warn("No available CUDA devices configured; defaulting to device [0]");
             return 0;
         }
 
-        if (!CudaEnvironment.getInstance().getConfiguration().isForcedSingleGPU() && getNumberOfDevices() > 0) {
-            // simple round-robin here
-            synchronized (this) {
-                device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(devPtr.getAndIncrement());
-
-                // We check only for number of entries here, not their actual values
-                if (devPtr.get() >= CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size())
-                    devPtr.set(0);
-
-                val t = Thread.currentThread();
-                val n = t.getId() == threadId ? t.getName() : "N/A";
-
-                logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId, n, device, CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().size());
-            }
-        } else {
-            device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(0);
+        if (CudaEnvironment.getInstance().getConfiguration().isForcedSingleGPU() || getNumberOfDevices() <= 1) {
+            int device = CudaEnvironment.getInstance().getConfiguration().getAvailableDevices().get(0);
             logger.debug("Single device is forced, mapping to device [{}]", device);
+            return device;
         }
+
+        // Delegate to DeviceMemoryManager - single mechanism for all device selection
+        int device = DeviceMemoryManager.getInstance().selectBestGpu();
+
+        val t = Thread.currentThread();
+        val n = t.getId() == threadId ? t.getName() : "N/A";
+        logger.debug("Mapping thread [{} - {}] to device [{}], out of [{}] devices...",
+                threadId, n, device, getNumberOfDevices());
 
         return device;
     }

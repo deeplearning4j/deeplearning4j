@@ -159,4 +159,9 @@ public class Pad extends DynamicCustomOp {
                 "Expected 1-3 input datatypes for %s, got %s", getClass(), inputDataTypes);     //input, padding, pad value
         return Collections.singletonList(inputDataTypes.get(0));
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

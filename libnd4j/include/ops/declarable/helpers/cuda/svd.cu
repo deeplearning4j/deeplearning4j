@@ -23,6 +23,7 @@
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/svd.h>
@@ -138,8 +139,9 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   // allocate memory for dWork
   void* dWork = nullptr;
-  cudaError_t status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdQR: cuda failed !", status2);
+  int svdDevId = 0; cudaGetDevice(&svdDevId);
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdQR: Cannot allocate memory for dWork");
 
   signed char jobu, jobvt;
 
@@ -197,9 +199,7 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   //for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  // if (devInfo) cudaFree(devInfo);
-  // if (dWork) cudaFree(dWork);
-  // if (rWork) cudaFree(rWork);
+  if (dWork) sd::memory::CudaMemoryPool::getInstance().free(dWork, svdDevId, nullptr);
 
 }
 
@@ -355,8 +355,9 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   // allocate memory dWork
   void* dWork = nullptr;
-  auto status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
+  int svdDevId2 = 0; cudaGetDevice(&svdDevId2);
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId2, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdJcb: Cannot allocate memory for dWork");
 
   PointersManager manager(context, "svdJcb");
 
@@ -395,8 +396,8 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  if (devInfo) cudaFree(devInfo);
-  if (dWork) cudaFree(dWork);
+  if (devInfo) sd::memory::CudaMemoryPool::getInstance().free(devInfo, svdDevId2, nullptr);
+  if (dWork) sd::memory::CudaMemoryPool::getInstance().free(dWork, svdDevId2, nullptr);
   if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
 
 
@@ -479,8 +480,10 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   // devInfo
   int* devInfo = nullptr;
-  auto status2 = cudaMalloc((void**)&devInfo, sizeof(LongType) * bS);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
+  int svdDevId3 = 0; cudaGetDevice(&svdDevId3);
+  devInfo = reinterpret_cast<int*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(LongType) * bS, svdDevId3, nullptr));
+  if (devInfo == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for devInfo");
+  auto status2 = cudaDeviceSynchronize(); // keep existing sync
   status2 = cudaDeviceSynchronize();
   if (status2 != cudaSuccess) throw cuda_exception::build("svdJcb: cuda failed !", status2);
 
@@ -515,8 +518,8 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   // allocate memory dWork
   void* dWork = nullptr;
-  status2 = cudaMalloc((void**)&dWork, A->sizeOfT() * lwork);
-  if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
+  dWork = sd::memory::CudaMemoryPool::getInstance().allocate(A->sizeOfT() * lwork, svdDevId3, nullptr);
+  if (dWork == nullptr) THROW_EXCEPTION("svdBatched: Cannot allocate memory for dWork");
   status2 = cudaDeviceSynchronize();
   if (status2 != cudaSuccess) throw cuda_exception::build("svdBatched: cuda failed !", status2);
 
@@ -555,8 +558,8 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 
-  if (devInfo) cudaFree(devInfo);
-  if (dWork) cudaFree(dWork);
+  if (devInfo) sd::memory::CudaMemoryPool::getInstance().free(devInfo, svdDevId3, nullptr);
+  if (dWork) sd::memory::CudaMemoryPool::getInstance().free(dWork, svdDevId3, nullptr);
   if (handle) cusolverDnDestroy(handle);
   if (gesvdjParams) cusolverDnDestroyGesvdjInfo(gesvdjParams);
 

@@ -462,7 +462,7 @@ public class FlatBuffersMapper {
 
                 ByteBuffer bb = fa.bufferAsByteBuffer();
                 if (bb != null && bb.remaining() > 0) {
-                    bb.position(0); // Reset position
+                    // DO NOT reset position - bufferAsByteBuffer() already positions at data start
                     switch (dataType) {
                         case FLOAT:
                             scalar = Nd4j.constantScalar(bb.getFloat());
@@ -601,8 +601,10 @@ public class FlatBuffersMapper {
         TRANSFORM_SAME - Abs, Ceil, etc
          */
 
-            ((DifferentialFunction) op).setPropertiesForFunction(props);
-            return (DifferentialFunction) op;
+            DifferentialFunction df = (DifferentialFunction) op;
+            df.setOwnName(name);
+            df.setPropertiesForFunction(props);
+            return df;
         }
     }
 

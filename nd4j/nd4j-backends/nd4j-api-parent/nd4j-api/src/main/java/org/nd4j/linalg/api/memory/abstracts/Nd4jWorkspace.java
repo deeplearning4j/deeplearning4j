@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -35,6 +37,7 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.common.util.ND4JFileUtils;
@@ -382,6 +385,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return requiredMemory;
     }
 
+    protected DeviceDescriptor resolveCpuDevice() {
+        DeviceDescriptor cpu = BackendRegistry.getInstance().getDefaultCpuDevice();
+        return cpu != null ? cpu : DeviceDescriptor.cpu();
+    }
+
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
 
         /*
@@ -405,7 +413,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                     numElements);
 
-            externalAllocations.add(new PointersPair(pointer, null));
+            DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+            externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
             AllocationsTracker.getInstance().getTracker(id).allocateExternal(type,kind,numElements,requiredMemory);
             return pointer;
         }
@@ -471,7 +480,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
 
-                        externalAllocations.add(new PointersPair(pointer, null));
+                        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
+                        externalAllocations.add(new PointersPair(null, requiredMemory, pointer, null));
 
                         return pointer;
                     } else {
@@ -482,6 +492,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize),
                                 numElements);
 
+                        DeviceMemoryManager.getInstance().recordAllocation(resolveCpuDevice(), requiredMemory);
                         pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, pointer, null));
 
 

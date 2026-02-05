@@ -323,19 +323,20 @@ val sigmoid = OnnxMappingProcess(
 )
 
 
+// LogSoftmax handled by PreImportHook (LogSoftmax.kt) to ensure axis defaults to -1 per ONNX opset 13+
 val logSoftmax = OnnxMappingProcess(
-        opName = "log_softmax",
+        opName = "noop",
         inputFrameworkOpName = "LogSoftmax",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimension" to "axis"))),
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf(),
         opMappingRegistry = onnxOpRegistry
 )
+// Softmax handled by PreImportHook (Softmax.kt) to ensure axis defaults to -1 per ONNX opset 13+
 val softmax = OnnxMappingProcess(
-        opName = "softmax",
+        opName = "noop",
         inputFrameworkOpName = "Softmax",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(valueMappings(mutableMapOf("dimension" to "axis")),
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]),
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf(),
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -449,9 +450,7 @@ val gatherElements = OnnxMappingProcess(
 val gatherNd = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "GatherND",
-        opName = "gather_nd",
-        attributeMappingRules = booleanConstant(inputName = "checkIndices",constantValue = true,argumentIndex = 0),
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("indices" to "indices","input" to "data")))
+        opName = "noop"  // Actual implementation in GatherND.kt PreImportHook
 )
 
 
@@ -1012,56 +1011,33 @@ val reduceLogSum = OnnxMappingProcess(
 
 val reduceLogSumExp = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceLogSumExp",
-        opName = "reduce_logsumexp",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mutableMapOf("keepDims" to "keepdims")),
-                valueMappings(mutableMapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceLogSumExp.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceMax = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceMax",
-        opName = "reduce_max",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceMax.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceMean = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceMean",
-        opName = "reduce_mean",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceMean.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceMin = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceMin",
-        opName = "reduce_min",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(
-                invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceMin.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 val reduceProd = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceProd",
-        opName = "reduce_prod",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                listNumberToListNumber(outputAttributeValue =  "dimensions",inputAttributeValue = "axes")),
+        opName = "noop",  // Actual implementation in ReduceProd.kt PreImportHook (handles axes as input tensor in opset 18+)
         opMappingRegistry = onnxOpRegistry
 )
 
 val reduceSum = OnnxMappingProcess(
         inputFrameworkOpName = "ReduceSum",
-        opName = "reduce_sum",
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(invertBooleanNumber(mapOf("keepDims" to "keepdims")),
-                ndarrayToIntList(mutableMapOf( "dimensions" to "axes"))),
+        opName = "noop",  // Actual implementation in ReduceSum.kt PreImportHook (handles axes as input tensor in opset 13+)
         opMappingRegistry = onnxOpRegistry
 )
 
@@ -1162,14 +1138,7 @@ val not = OnnxMappingProcess(
 )
 
 
-val pow = OnnxMappingProcess(
-        opName = "pow_pairwise",
-        inputFrameworkOpName = "Pow",
-        opMappingRegistry = onnxOpRegistry,
-        attributeMappingRules = listOf(
-                booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0)[0]),
-        tensorMappingRules = listOf(mappingNDArrayInputs((mutableMapOf("input" to "X","y" to "Y"))))
-)
+// Pow is handled by PreImportHook in implementations/Pow.kt for proper broadcasting support
 
 val size = OnnxMappingProcess(
         opName = "size",
@@ -1728,37 +1697,44 @@ val skipLayerNormalization = OnnxMappingProcess(
 )
 
 object OnnxOpDeclarations {
+        @Volatile
+        private var initialized = false
 
         fun init() {
-                val onnxops = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
-                val groupedOps = onnxops.values.groupBy { input -> input.name }
-                val singleGroupedOps = HashMap<String,Onnx.NodeProto>()
-                groupedOps.forEach { name,node ->
-                        singleGroupedOps[name] = node[0]
+                if (initialized) return
+                synchronized(this) {
+                        if (initialized) return
+                        val onnxops = OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")
+                        val groupedOps = onnxops.values.groupBy { input -> input.name }
+                        val singleGroupedOps = HashMap<String,Onnx.NodeProto>()
+                        groupedOps.forEach { name,node ->
+                                singleGroupedOps[name] = node[0]
+                        }
+
+                        OpRegistryHolder.registerOpList("onnx", singleGroupedOps)
+
+                        names.forEach {
+                                defineOnnxSingleTransform(inputFrameworkOpName = it.key,inputOpName = it.value)
+                        } ?: "Error initializing single defined transforms in onnx."
+
+                        pairWiseNames.forEach {
+                                defineOnnxPairwiseTransforms(opName = it.value,inputFrameworkOpName = it.key)
+                        } ?: "Error initializing pair wise transforms"
+
+                        onnxops.values.forEach {
+                                onnxOpRegistry.registerInputFrameworkOpDef(it.name,it)
+                        }
+
+                        OpDescriptorLoaderHolder.nd4jOpDescriptor.opListList.forEach {
+                                onnxOpRegistry.registerNd4jOpDef(it.name,it)
+                        }
+
+                        MicrosoftOnnxExtensions.registerMicrosoftExtensions(onnxOpRegistry)
+
+
+                        OpRegistryHolder.registerOpMappingRegistry("onnx", onnxOpRegistry)
+                        initialized = true
                 }
-
-                OpRegistryHolder.registerOpList("onnx", singleGroupedOps)
-
-                names.forEach {
-                        defineOnnxSingleTransform(inputFrameworkOpName = it.key,inputOpName = it.value)
-                } ?: "Error initializing single defined transforms in onnx."
-
-                pairWiseNames.forEach {
-                        defineOnnxPairwiseTransforms(opName = it.value,inputFrameworkOpName = it.key)
-                } ?: "Error initializing pair wise transforms"
-
-                onnxops.values.forEach {
-                        onnxOpRegistry.registerInputFrameworkOpDef(it.name,it)
-                }
-
-                OpDescriptorLoaderHolder.nd4jOpDescriptor.opListList.forEach {
-                        onnxOpRegistry.registerNd4jOpDef(it.name,it)
-                }
-
-                MicrosoftOnnxExtensions.registerMicrosoftExtensions(onnxOpRegistry)
-
-
-                OpRegistryHolder.registerOpMappingRegistry("onnx", onnxOpRegistry)
         }
 
         init {

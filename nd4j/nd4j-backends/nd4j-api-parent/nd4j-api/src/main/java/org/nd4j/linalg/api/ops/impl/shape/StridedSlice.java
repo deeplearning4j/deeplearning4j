@@ -376,4 +376,8 @@ public class StridedSlice extends DynamicCustomOp {
         return Collections.singletonList(dataTypes.get(0));
     }
 
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

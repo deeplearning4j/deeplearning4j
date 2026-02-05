@@ -35,6 +35,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import org.junit.jupiter.api.Test;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -159,6 +163,227 @@ public class MemoryMgrTest extends BaseNd4jTestWithBackends {
         assertEquals(4 * 2000, mmgr.getCurrentCacheSize().get());
         assertEquals(2000, mmgr.getLruCache().size());
         assertEquals(2000, mmgr.getLruCacheValues().size());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testViewsNeverCached(Nd4jBackend backend) {
+        // Bug fix test: views should never enter the cache because they share
+        // a DataBuffer with the parent. Caching and reusing a view would corrupt
+        // the parent's data.
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+
+            INDArray parent = Nd4j.create(DataType.FLOAT, 10, 10);
+            INDArray view = parent.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all());
+            assertTrue(view.isView(), "get() should produce a view");
+
+            long cacheSizeBefore = mmgr.getCurrentCacheSize().get();
+            mmgr.release(view);
+            long cacheSizeAfter = mmgr.getCurrentCacheSize().get();
+
+            // Cache size should not increase - view should have been rejected
+            assertEquals(cacheSizeBefore, cacheSizeAfter,
+                    "Cache size should not change when releasing a view");
+
+            // Allocating the same shape should NOT return the view
+            INDArray allocated = mmgr.allocate(false, DataType.FLOAT, 5, 10);
+            assertFalse(allocated.isView(),
+                    "Allocate should never return a view from cache");
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testViewsNeverReturnedFromAllocate(Nd4jBackend backend) {
+        // Bug fix test: even if a view somehow enters the cache (e.g. via older code path),
+        // allocate() should skip it and return a fresh array.
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+
+            // Release a normal array first so cache has entries
+            INDArray normal = Nd4j.create(DataType.FLOAT, 5, 10);
+            mmgr.release(normal);
+
+            // Allocate should return the cached array (not a view)
+            INDArray result = mmgr.allocate(false, DataType.FLOAT, 5, 10);
+            assertNotNull(result);
+            assertFalse(result.isView(), "Cached array returned by allocate should not be a view");
+            assertArrayEquals(new long[]{5, 10}, result.shape());
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScopeOutPreservesCacheWhenEnabled(Nd4jBackend backend) {
+        // Bug fix test: scopeOut() should NOT destroy the cache when caching is enabled.
+        // This is needed for autoregressive generation where the same graph is executed
+        // repeatedly and arrays should be reused across steps.
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+
+            // Add some arrays to cache
+            for (int i = 0; i < 10; i++) {
+                mmgr.release(Nd4j.create(DataType.FLOAT, 100));
+            }
+            long cacheSizeBefore = mmgr.getCurrentCacheSize().get();
+            assertTrue(cacheSizeBefore > 0, "Cache should have entries");
+
+            // scopeOut should be a no-op when cache is enabled
+            mmgr.scopeOut();
+
+            assertEquals(cacheSizeBefore, mmgr.getCurrentCacheSize().get(),
+                    "scopeOut() should not clear cache when caching is enabled");
+            assertEquals(10, mmgr.getLruCache().size(),
+                    "LRU cache should still have all entries after scopeOut");
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testScopeOutClearsCacheWhenDisabled(Nd4jBackend backend) {
+        // Verify original behavior: scopeOut() should destroy cache when disabled
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(false);
+
+            // Release arrays (when cache disabled, they just get closed immediately)
+            // So first enable cache to populate it, then disable and call scopeOut
+            ArrayCacheMemoryMgr.setEnableCache(true);
+            for (int i = 0; i < 5; i++) {
+                mmgr.release(Nd4j.create(DataType.FLOAT, 50));
+            }
+            assertTrue(mmgr.getCurrentCacheSize().get() > 0, "Cache should have entries");
+
+            // Now disable cache and call scopeOut - should clear everything
+            ArrayCacheMemoryMgr.setEnableCache(false);
+            mmgr.scopeOut();
+
+            assertEquals(0, mmgr.getCurrentCacheSize().get(),
+                    "scopeOut() should clear cache when disabled");
+            assertEquals(0, mmgr.getLruCache().size(),
+                    "LRU cache should be empty after scopeOut with cache disabled");
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCacheReuseAcrossSimulatedDecodeSteps(Nd4jBackend backend) {
+        // Test that arrays released at end of one "decode step" are reused in next step.
+        // This simulates what happens in autoregressive generation.
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+
+            // Step 1: allocate, compute, release
+            INDArray a1 = mmgr.allocate(false, DataType.FLOAT, 4, 8);
+            INDArray a2 = mmgr.allocate(false, DataType.FLOAT, 4, 8);
+            a1.assign(1.0f);
+            a2.assign(2.0f);
+
+            mmgr.release(a1);
+            mmgr.release(a2);
+
+            long cacheAfterRelease = mmgr.getCurrentCacheSize().get();
+            assertTrue(cacheAfterRelease > 0, "Cache should have entries after release");
+
+            // Step 2: allocate same shapes - should get cached arrays back
+            INDArray b1 = mmgr.allocate(false, DataType.FLOAT, 4, 8);
+            INDArray b2 = mmgr.allocate(false, DataType.FLOAT, 4, 8);
+
+            // Cache should be smaller after allocating from it
+            long cacheAfterAlloc = mmgr.getCurrentCacheSize().get();
+            assertTrue(cacheAfterAlloc < cacheAfterRelease,
+                    "Cache size should decrease after allocating cached arrays");
+
+            // Shapes should match
+            assertArrayEquals(new long[]{4, 8}, b1.shape());
+            assertArrayEquals(new long[]{4, 8}, b2.shape());
+
+            // Arrays should not be views
+            assertFalse(b1.isView());
+            assertFalse(b2.isView());
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testCacheDoesNotReturnWrongShape(Nd4jBackend backend) {
+        // Verify cache only returns arrays with matching shape
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+
+            // Cache arrays with shape [512]
+            INDArray big = Nd4j.create(DataType.FLOAT, 512);
+            mmgr.release(big);
+
+            // Request shape [1] - should NOT get the [512] array
+            INDArray small = mmgr.allocate(false, DataType.FLOAT, 1);
+            assertArrayEquals(new long[]{1}, small.shape(),
+                    "Allocate should return correct shape, not a cached different shape");
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testViewDataIntegrityAfterRelease(Nd4jBackend backend) {
+        // Critical test: releasing a view must NOT corrupt the parent's data.
+        // If a view were cached and reused for a different op, the parent array
+        // would be silently corrupted.
+        ArrayCacheMemoryMgr mmgr = new ArrayCacheMemoryMgr();
+        boolean wasCacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+        try {
+            ArrayCacheMemoryMgr.setEnableCache(true);
+
+            INDArray parent = Nd4j.ones(DataType.FLOAT, 10).mul(42.0f);
+            INDArray view = parent.get(NDArrayIndex.interval(0, 5));
+            assertTrue(view.isView());
+
+            // Release the view (should be rejected by cache)
+            mmgr.release(view);
+
+            // Parent data should be intact
+            for (int i = 0; i < 10; i++) {
+                assertEquals(42.0f, parent.getFloat(i), 1e-5,
+                        "Parent data should not be corrupted after releasing view");
+            }
+
+            // Allocate same shape - should get a fresh array, not the view
+            INDArray fresh = mmgr.allocate(false, DataType.FLOAT, 5);
+
+            // Write different data to the fresh allocation
+            fresh.assign(99.0f);
+
+            // Parent should still be 42.0
+            for (int i = 0; i < 10; i++) {
+                assertEquals(42.0f, parent.getFloat(i), 1e-5,
+                        "Parent data must not be affected by writing to separately allocated array");
+            }
+        } finally {
+            ArrayCacheMemoryMgr.setEnableCache(wasCacheEnabled);
+        }
     }
 
 }

@@ -125,19 +125,34 @@ class Slice : PreImportHook {
                 }
             }
 
-            // Fallback: use axes variable dynamically
-            // This requires building full arrays for stridedSlice
+            // Axes-based slicing: need to build full arrays for all dimensions
+            // For dimensions not in axes, use default values (0 for start, shape[dim] for end, 1 for step)
             var axes = sd.getVariable(op.inputsToOp[3])
             axes = axes.reshape(-1).castTo(DataType.INT64)
 
-            // Use stridedSlice with the provided parameters
-            // For the general case, we apply the slice on the specified axes
+            // Get input shape (as a 1D tensor of dimension sizes)
+            val inputShape = sd.shape(inputVariable).castTo(DataType.INT64)
+
+            // Build default arrays: starts=0, ends=shape[dim], steps=1
+            val defaultStarts = sd.zerosLike(inputShape)
+            val defaultEnds = inputShape
+            val defaultSteps = sd.onesLike(inputShape)
+
+            // Create indices for scatter: axes tells us which positions to update
+            val axesExpanded = sd.expandDims(axes, 1)
+
+            // Scatter the provided values into the default arrays at the specified axes positions
+            // scatterNdUpdate(input, indices, updates) - updates input at indices with updates values
+            val fullStarts = sd.scatterNdUpdate("${op.name}_fullStarts", defaultStarts, axesExpanded, starts)
+            val fullEnds = sd.scatterNdUpdate("${op.name}_fullEnds", defaultEnds, axesExpanded, ends)
+            val fullSteps = sd.scatterNdUpdate("${op.name}_fullSteps", defaultSteps, axesExpanded, steps)
+
             val result = sd.stridedSlice(
                 outputNames[0],
                 inputVariable,
-                starts,
-                ends,
-                steps,
+                fullStarts,
+                fullEnds,
+                fullSteps,
                 0, 0, 0, 0, 0
             )
 

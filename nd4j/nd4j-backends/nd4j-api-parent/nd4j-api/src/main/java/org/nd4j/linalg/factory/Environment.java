@@ -631,9 +631,16 @@ public interface Environment {
     
     /** Returns the caching allocator limit in MB */
     int cudaCachingAllocatorLimit();
-    
+
     /** Set the caching allocator limit in MB */
     void setCudaCachingAllocatorLimit(int limitInMB);
+
+    /** Returns the pinned host memory limit in MB (default 8192 = 8 GB) */
+    long cudaPinnedHostLimit();
+
+    /** Set the pinned host memory limit in MB. Controls the maximum host memory
+     *  used as fallback when GPU memory is exhausted. */
+    void setCudaPinnedHostLimit(long limitInMB);
     
     /** Returns whether unified memory is used */
     boolean cudaUseUnifiedMemory();

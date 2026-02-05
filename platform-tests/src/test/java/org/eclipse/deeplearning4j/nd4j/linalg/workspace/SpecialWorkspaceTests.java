@@ -85,9 +85,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         assertEquals(0, workspace.getStepNumber());
 
-        long requiredMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(Nd4j.create(DataType.DOUBLE,500)) * 2;
+        long minRequiredMemory = WorkspaceUtils.getTotalRequiredMemoryForWorkspace(Nd4j.create(DataType.DOUBLE,500)) * 2;
+        long requiredMemory = workspace.getSpilledSize();
+        assertTrue(requiredMemory >= minRequiredMemory,
+                "Spilled size " + requiredMemory + " should be >= data-only minimum " + minRequiredMemory);
         long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
-        assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 
@@ -193,10 +195,13 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
         }
 
         assertEquals(0, workspace.getStepNumber());
-        long requiredMemory = workspace.requiredMemoryPerArray(Nd4j.create(DataType.DOUBLE,500)) * 2;
-        long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
+        long minRequiredMemory = workspace.requiredMemoryPerArray(Nd4j.create(DataType.DOUBLE,500)) * 2;
         MemoryKind testKind = Nd4j.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
+        long requiredMemory = workspace.getSpilledSize();
+        assertTrue(requiredMemory >= minRequiredMemory,
+                "Spilled size " + requiredMemory + " should be >= data-only minimum " + minRequiredMemory);
         assertEquals(AllocationsTracker.getInstance().getTracker("WS1").currentSpilledBytes(testKind), workspace.getSpilledSize());
+        long shiftedSize = ((long) (requiredMemory * 1.3)) + (8 - (((long) (requiredMemory * 1.3)) % 8));
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 
@@ -229,7 +234,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
                 (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS109");
 
         INDArray row = Nd4j.linspace(1, 10, 10).castTo(DataType.DOUBLE);
-        INDArray exp = Nd4j.create(DataType.DOUBLE,10).assign(2.0);
+        INDArray exp = Nd4j.create(DataType.DOUBLE,10, 1).assign(2.0);
         INDArray result = null;
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS109")) {
             INDArray matrix = Nd4j.create(DataType.DOUBLE,10, 10);

@@ -32,9 +32,13 @@ import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
 import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.execution.ExecutionNode;
+import org.nd4j.autodiff.samediff.execution.ExecutionPlan;
+import org.nd4j.autodiff.samediff.execution.ExecutionPlanCache;
+import org.nd4j.autodiff.samediff.execution.ExecutionPlanCompiler;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.DAGCache;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
+import org.nd4j.autodiff.samediff.execution.PlanExecutor;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
 import org.nd4j.common.base.Preconditions;
@@ -64,6 +68,10 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.bytedeco.javacpp.LongPointer;
 
 import org.nd4j.shade.wstx.util.StringUtil;
 
@@ -75,6 +83,12 @@ import java.util.stream.Collectors;
 public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,OpContext>> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
+
+
+    // Ops with data-dependent output shapes that can't be cached even with non-INT/LONG inputs.
+    // Where: output length depends on number of true elements in BOOL input.
+    // unique: output length depends on number of unique values.
+    private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("Where", "unique");
 
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
     //freed array ids to track for allocation, sometimes SDValues contain dup arrays that get freed twice.
@@ -96,6 +110,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private final ThreadLocal<Map<String,OpContext>> opContextsTl =
             ThreadLocal.withInitial(ConcurrentHashMap::new);
 
+    // Thread-local OpContext pool: reuse OpContexts via purge() instead of close()/rebuild.
+    // This avoids the native alloc/dealloc cost of creating a new OpContext per op per step.
+    private final ThreadLocal<Deque<OpContext>> opContextPoolTl =
+            ThreadLocal.withInitial(ArrayDeque::new);
+
     // DAG cache for avoiding expensive convergence process
     private final DAGCache dagCache = new DAGCache();
 
@@ -105,6 +124,78 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // Cached constant/variable values to avoid repeated PatriciaTrie lookups on every output() call.
     // Key is a DAGCache.CacheKey-like identifier; value is a pre-built map of const/var name -> SDValue.
     private volatile Map<String, SDValue> cachedConstVarValues;
+
+    // Shape cache: keyed by (opName hash + input shapes hash) to avoid redundant calculateOutputShape JNI calls.
+    // For autoregressive generation, most ops have identical input shapes across decode steps.
+    private final ThreadLocal<Map<Long, List<DataBuffer>>> outputShapeCacheTl =
+            ThreadLocal.withInitial(HashMap::new);
+
+    // Output array cache: reuse intermediate arrays whose shapes don't change between steps.
+    // Keyed by variable name. Only non-output (intermediate) arrays are cached.
+    private final ThreadLocal<Map<String, INDArray>> outputArrayCacheTl =
+            ThreadLocal.withInitial(HashMap::new);
+
+
+    // ---- Java-side execution timing ----
+    // Enable with -Dorg.nd4j.inference.timing=true
+    // Tracks where wall-clock time goes during graph execution (shape calc, alloc, exec, etc.)
+    private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
+            System.getProperty("org.nd4j.inference.timing", "false"));
+    // Per-call accumulators (reset each output() call)
+    private long timingDagLookupNs, timingInitValuesNs, timingExecLoopNs, timingOutputDupNs, timingCleanupNs;
+    // Per-op phase accumulators within executeOperations
+    private long timingOpContextAcquireNs, timingInputResolveNs, timingShapeCalcNs;
+    private long timingMemAllocNs, timingNativeExecNs, timingResultStoreNs;
+    private long timingDepTrackNs, timingArrayReleaseNs;
+    private long timingIntLongSyncNs;
+    private int timingIntLongSyncCount, timingIntLongSyncSkipCount;
+    private int timingOpCount, timingShapeCacheHits, timingShapeCacheMisses;
+
+    private void resetTimingCounters() {
+        timingDagLookupNs = timingInitValuesNs = timingExecLoopNs = timingOutputDupNs = timingCleanupNs = 0;
+        timingOpContextAcquireNs = timingInputResolveNs = timingShapeCalcNs = 0;
+        timingMemAllocNs = timingNativeExecNs = timingResultStoreNs = 0;
+        timingDepTrackNs = timingArrayReleaseNs = 0;
+        timingIntLongSyncNs = 0;
+        timingIntLongSyncCount = timingIntLongSyncSkipCount = 0;
+        timingOpCount = timingShapeCacheHits = timingShapeCacheMisses = 0;
+    }
+
+    private void printTimingSummary() {
+        double totalMs = (timingDagLookupNs + timingInitValuesNs + timingExecLoopNs +
+                timingOutputDupNs + timingCleanupNs) / 1_000_000.0;
+        log.info("=== InferenceSession Timing ({} ops, {}ms total) ===", timingOpCount,
+                String.format("%.1f", totalMs));
+        log.info("  DAG lookup:       {}ms", String.format("%.2f", timingDagLookupNs / 1_000_000.0));
+        log.info("  Init values:      {}ms", String.format("%.2f", timingInitValuesNs / 1_000_000.0));
+        log.info("  Exec loop:        {}ms", String.format("%.2f", timingExecLoopNs / 1_000_000.0));
+        log.info("    OpCtx acquire:  {}ms", String.format("%.2f", timingOpContextAcquireNs / 1_000_000.0));
+        log.info("    Input resolve:  {}ms", String.format("%.2f", timingInputResolveNs / 1_000_000.0));
+        log.info("    INT/LONG sync:  {}ms (synced={}, skipped={})",
+                String.format("%.2f", timingIntLongSyncNs / 1_000_000.0), timingIntLongSyncCount, timingIntLongSyncSkipCount);
+        log.info("    Shape calc:     {}ms (hits={}, misses={})",
+                String.format("%.2f", timingShapeCalcNs / 1_000_000.0), timingShapeCacheHits, timingShapeCacheMisses);
+        long[] cc = ArrayCacheMemoryMgr.getCacheCounters();
+        log.info("    Mem alloc:      {}ms (exact={}, capacity={}, miss={}, viewSkip={}, cached={}, capKeys={})",
+                String.format("%.2f", timingMemAllocNs / 1_000_000.0), cc[0], cc[1], cc[2], cc[3], cc[4], cc[5]);
+        ArrayCacheMemoryMgr.resetCacheCounters();
+        log.info("    Native exec:    {}ms", String.format("%.2f", timingNativeExecNs / 1_000_000.0));
+        log.info("    Result store:   {}ms", String.format("%.2f", timingResultStoreNs / 1_000_000.0));
+        log.info("    Dep tracking:   {}ms", String.format("%.2f", timingDepTrackNs / 1_000_000.0));
+        log.info("    Array release:  {}ms", String.format("%.2f", timingArrayReleaseNs / 1_000_000.0));
+        log.info("  Output dup:       {}ms", String.format("%.2f", timingOutputDupNs / 1_000_000.0));
+        log.info("  Cleanup:          {}ms", String.format("%.2f", timingCleanupNs / 1_000_000.0));
+    }
+
+    // ---- Plan-based execution (ORT-style pre-allocated workspace) ----
+    // When enabled, the first execution compiles an ExecutionPlan with pre-computed shapes
+    // and a contiguous memory layout. Subsequent executions with the same placeholder shapes
+    // reuse the plan and workspace with zero per-op allocation or shape inference.
+    @Getter @Setter
+    private volatile boolean planBasedExecutionEnabled = false;
+
+    private final ExecutionPlanCache planCache = new ExecutionPlanCache();
+    private final ThreadLocal<PlanExecutor> planExecutorTl = new ThreadLocal<>();
 
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
@@ -116,6 +207,33 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     public AbstractDependencyTracker<SDValue, Dep> getArrayUseTracker() {
         return arrayUseTracker();
+    }
+
+    /**
+     * Get the plan cache for plan-based execution.
+     */
+    public ExecutionPlanCache getPlanCache() {
+        return planCache;
+    }
+
+    /**
+     * Accessor for plan-based execution diagnostics/tests.
+     */
+    public PlanExecutor getPlanExecutor() {
+        return planExecutorTl.get();
+    }
+
+    /**
+     * Clear all caches (DAG cache, plan cache, constant/variable cache).
+     * Call when the graph structure changes.
+     */
+    public void clearAllCaches() {
+        dagCache.clear();
+        planCache.clear();
+        cachedConstVarValues = null;
+        cachedInputsList = null;
+        outputShapeCacheTl.get().clear();
+        outputArrayCacheTl.get().clear();
     }
 
     public void setArrayUseTracker(AbstractDependencyTracker<SDValue, Dep> tracker) {
@@ -130,9 +248,56 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return opContextsTl.get();
     }
 
+    /**
+     * Close all pooled OpContexts and clear accumulated thread-local state.
+     * Must be called during resetSession() to prevent stale native pointers
+     * from being reused in subsequent sessions.
+     */
+    public void closePooledResources() {
+        // Close pooled OpContexts that were returned via purge() during execution.
+        // These hold live native pointers that become stale after session reset.
+        Deque<OpContext> pool = opContextPoolTl.get();
+        int pooledClosed = 0;
+        for (OpContext ctx : pool) {
+            if (ctx != null) {
+                try {
+                    ctx.close();
+                    pooledClosed++;
+                } catch (Exception e) {
+                    // Already closed or invalid; ignore
+                }
+            }
+        }
+        pool.clear();
+
+        // Clear freed arrays tracker to avoid stale entries
+        freedArraysTl.get().clear();
+
+        // Clear output shape and array caches
+        outputShapeCacheTl.get().clear();
+        outputArrayCacheTl.get().clear();
+
+        if (pooledClosed > 0) {
+            log.info("Closed {} pooled OpContexts during session cleanup", pooledClosed);
+        }
+    }
+
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
         mmgr = new ArrayCacheMemoryMgr();
+    }
+
+    /**
+     * Create an InferenceSession with a custom SessionMemMgr.
+     * Use {@link org.nd4j.autodiff.samediff.internal.memory.WorkspaceSessionMemMgr}
+     * for workspace-backed memory management during inference.
+     *
+     * @param sameDiff the SameDiff instance
+     * @param memMgr   the memory manager to use for allocations
+     */
+    public InferenceSession(@NonNull SameDiff sameDiff, @NonNull SessionMemMgr memMgr) {
+        super(sameDiff);
+        mmgr = memMgr;
     }
 
 
@@ -148,11 +313,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Clear freed arrays tracking from previous execution
         freedArrays().clear();
 
-        // NOTE: Do NOT clear dagCache here. The DAG is purely structural (depends only on
-        // requested outputs and graph topology, not on placeholder values). Clearing it forces
-        // expensive DAG rebuild (5000+ ops) on every call, which is catastrophic for
-        // autoregressive generation where the same outputs are requested hundreds of times.
-        // The cache is keyed by output set and will naturally serve different output combinations.
+        if (TIMING_ENABLED) resetTimingCounters();
 
         log.debug("Executing forward pass for {} variables", variables.size());
 
@@ -165,10 +326,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             // Build corrected DAG with caching (replaces broken initSubgraph)
+            long t0 = TIMING_ENABLED ? System.nanoTime() : 0;
             ForwardExecutionDAG dag = dagCache.getOrCompute(allRequired, () -> {
                 ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
                 return builder.buildForwardDAG(allRequired);
             });
+            if (TIMING_ENABLED) timingDagLookupNs = System.nanoTime() - t0;
 
             // Debug: Print execution plan when debug mode is enabled
             if (Nd4j.getEnvironment().isDebug()) {
@@ -323,12 +486,40 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 log.info(sb.toString());
             }
 
+            // Enter memory manager scope before any allocations
+            mmgr.scopeIn();
+
             // Preprocess placeholders using existing logic
             Map<String, INDArray> processedPlaceholders = preprocessPlaceholders(placeholderValues, at);
+
+            // ---- Plan-based execution path (ORT-style pre-allocated workspace) ----
+            // When enabled and no SDValue placeholders are used, try the fast path:
+            // compile once, then execute with pre-allocated workspace and no shape inference.
+            if (planBasedExecutionEnabled &&
+                (otherPlaceHolderValues == null || otherPlaceHolderValues.isEmpty()) &&
+                (listeners == null || listeners.isEmpty())) {
+                try {
+                    Map<String, SDValue> planResults = executePlanBased(
+                            dag, processedPlaceholders, allRequired, variables);
+                    if (planResults != null) {
+                        filteredResults = planResults;
+                        // Commit pending async ops
+                        Nd4j.getExecutioner().commit();
+                        log.debug("Plan-based execution completed successfully");
+                        return ExecutionResult.builder().valueOutputs(filteredResults).build();
+                    }
+                } catch (Exception e) {
+                    log.warn("Plan-based execution failed, falling back to standard path: {}", e.getMessage());
+                    // Fall through to standard execution
+                }
+            }
+
             Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
             // Execute with corrected ordering
+            long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
             Map<String, SDValue> results = executeOperations(dag, processedPlaceholders,
                     processedOtherPlaceholders, allRequired, listeners, at, batch);
+            if (TIMING_ENABLED) timingExecLoopNs = System.nanoTime() - tExec0;
 
             // Commit all pending operations before accessing results.
             // This ensures async operations (CUDA streams, etc.) complete before values are read.
@@ -388,8 +579,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Clear array use tracker to prevent stale dependencies from accumulating
             arrayUseTracker().clear();
         } finally {
-            log.debug("CLEANUP: Phase 1 - closing {} OpContexts", opContexts().size());
-            // Close OpContext instances to prevent native memory leak
+            long tCleanup0 = TIMING_ENABLED ? System.nanoTime() : 0;
+            // Close any remaining OpContext instances
             try {
                 for (Map.Entry<String, OpContext> entry : opContexts().entrySet()) {
                     OpContext ctx = entry.getValue();
@@ -407,12 +598,44 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 opContexts().clear();
             }
 
-            // Close memory manager to release cached arrays
+            // Detach workspace-backed output arrays BEFORE scopeOut resets the workspace.
+            // Views and workspace-backed arrays become invalid when the workspace cycles.
+            if (mmgr.isWorkspaceBacked() && filteredResults != null) {
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (Map.Entry<String, SDValue> entry : filteredResults.entrySet()) {
+                        SDValue val = entry.getValue();
+                        if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                            INDArray arr = val.getTensorValue();
+                            if (arr != null && arr.isAttached()) {
+                                entry.setValue(SDValue.create(arr.detach()));
+                            }
+                        } else if (val != null && val.getSdValueType() == SDValueType.LIST) {
+                            List<INDArray> list = val.getListValue();
+                            boolean needsDetach = false;
+                            for (INDArray arr : list) {
+                                if (arr != null && arr.isAttached()) {
+                                    needsDetach = true;
+                                    break;
+                                }
+                            }
+                            if (needsDetach) {
+                                List<INDArray> detached = new java.util.ArrayList<>(list.size());
+                                for (INDArray arr : list) {
+                                    detached.add(arr != null && arr.isAttached() ? arr.detach() : arr);
+                                }
+                                entry.setValue(SDValue.create(detached));
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Exit memory manager scope to release/recycle cached arrays
             if (mmgr != null) {
                 try {
-                    mmgr.close();
+                    mmgr.scopeOut();
                 } catch (Exception e) {
-                    log.warn("Error closing memory manager: {}", e.getMessage());
+                    log.warn("Error in memory manager scope out: {}", e.getMessage());
                 }
             }
 
@@ -427,12 +650,60 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // which releases the array cache, and on the arrayUseTracker releasing
             // intermediate arrays during execution.
 
+            if (TIMING_ENABLED) {
+                timingCleanupNs = System.nanoTime() - tCleanup0;
+                printTimingSummary();
+            }
             log.debug("CLEANUP: all phases complete");
         }
 
         return ExecutionResult.builder().valueOutputs(filteredResults).build();
     }
 
+
+    /**
+     * Execute using the plan-based fast path: compile an ExecutionPlan with pre-computed
+     * shapes and a contiguous memory layout, then execute with a single workspace allocation
+     * and no per-op shape inference.
+     *
+     * @return results as SDValue map, or null if plan-based execution is not possible
+     */
+    private Map<String, SDValue> executePlanBased(ForwardExecutionDAG dag,
+                                                   Map<String, INDArray> placeholderArrays,
+                                                   Set<String> allRequired,
+                                                   List<String> requestedOutputs) {
+        // Compile or retrieve cached plan
+        Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
+        ExecutionPlan plan = planCache.getOrCompute(allRequired, placeholderArrays, () -> {
+            log.debug("Compiling execution plan for {} outputs", allRequired.size());
+            return ExecutionPlanCompiler.compile(sameDiff, dag, placeholderArrays, outputSet);
+        });
+
+        if (plan == null) {
+            return null;
+        }
+
+        // Get or create thread-local PlanExecutor
+        PlanExecutor executor = planExecutorTl.get();
+        if (executor == null) {
+            executor = new PlanExecutor(sameDiff);
+            planExecutorTl.set(executor);
+        }
+
+        // Execute
+        Map<String, INDArray> rawResults = executor.execute(plan, placeholderArrays);
+
+        // Wrap results as SDValues
+        Map<String, SDValue> sdResults = new LinkedHashMap<>();
+        for (String outputName : requestedOutputs) {
+            INDArray arr = rawResults.get(outputName);
+            if (arr != null) {
+                sdResults.put(outputName, SDValue.create(arr));
+            }
+        }
+
+        return sdResults;
+    }
 
     private Map<String, SDValue> executeOperations(ForwardExecutionDAG dag,
                                                    Map<String, INDArray> placeholderValues,
@@ -447,7 +718,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         Set<String> completedOps = new LinkedHashSet<>();
 
         // Initialize constants, variables, and placeholders
+        long tInit0 = TIMING_ENABLED ? System.nanoTime() : 0;
         initializeValues(variableValues, dag, placeholderValues, otherPlaceholderValues);
+        if (TIMING_ENABLED) timingInitValuesNs = System.nanoTime() - tInit0;
 
         // Execute operations in corrected topological order
         List<ExecutionNode> executionOrder = dag.getFrameAwareExecutionOrder();
@@ -483,22 +756,24 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             executeNode(node, variableValues, allRequired, listeners, at, batch);
 
             // Mark as completed
+            long tDep0 = TIMING_ENABLED ? System.nanoTime() : 0;
             completedOps.add(node.getOperationName());
 
-            // Store results for requested outputs
-            // After each operation execution, sync to nodeValueOutputs
-            for (String outputVar : node.getOutputVariables()) {
-                if (variableValues.containsKey(outputVar)) {
-                    VarId vid = new VarId(outputVar, currentFrame, currentFrameIter, currParentFrame);
-                    putNodeValue(variableValues.get(outputVar), vid);
-                }
-            }
+            // NOTE: We intentionally do NOT sync results to nodeValueOutputs here.
+            // nodeValueOutputs is part of AbstractSession's old execution path and is
+            // never read during our executeOperations flow. Writing to it causes unbounded
+            // memory growth during autoregressive generation (5000+ intermediate arrays
+            // per step x hundreds of steps). All lookups during execution use the local
+            // variableValues map instead.
 
             // Mark operation dependency as satisfied in arrayUseTracker
             Dep opDep = new OpDep(node.getOperationName(), OUTER_FRAME, 0, null);
             arrayUseTracker().markSatisfied(opDep, true);
 
+            if (TIMING_ENABLED) timingDepTrackNs += System.nanoTime() - tDep0;
+
             // Release any arrays that are no longer needed
+            long tRelease0 = TIMING_ENABLED ? System.nanoTime() : 0;
             if (arrayUseTracker().hasNewAllSatisfied()) {
                 List<SDValue> canClose = arrayUseTracker().getNewAllSatisfiedList();
                 for (SDValue value : canClose) {
@@ -527,6 +802,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     }
                 }
             }
+            if (TIMING_ENABLED) timingArrayReleaseNs += System.nanoTime() - tRelease0;
         }
 
         // DIAGNOSTIC: Unblock the DeallocatorService after execution
@@ -536,11 +812,205 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             System.out.flush();
         }
 
+        // Collect output arrays and detach them (create independent copies).
+        // This breaks shared data buffer references with intermediates so
+        // intermediates can be safely closed to free GPU memory immediately.
+        long tDup0 = TIMING_ENABLED ? System.nanoTime() : 0;
         for(String output : allRequired) {
             if(!variableValues.containsKey(output)) {
                 throw new IllegalStateException("Output: " + output + " missing from the final output!");
             }
-            results.put(output,variableValues.get(output));
+            SDValue val = variableValues.get(output);
+            if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                INDArray arr = val.getTensorValue();
+                if (arr != null) {
+                    // dup() creates an independent copy with its own data buffer
+                    results.put(output, SDValue.create(arr.dup()));
+                } else {
+                    results.put(output, val);
+                }
+            } else if (val != null && val.getSdValueType() == SDValueType.LIST) {
+                List<INDArray> list = val.getListValue();
+                if (list != null) {
+                    List<INDArray> duped = new java.util.ArrayList<>(list.size());
+                    for (INDArray arr : list) {
+                        duped.add(arr != null ? arr.dup() : null);
+                    }
+                    results.put(output, SDValue.create(duped));
+                } else {
+                    results.put(output, val);
+                }
+            } else {
+                results.put(output, val);
+            }
+        }
+
+        if (TIMING_ENABLED) timingOutputDupNs = System.nanoTime() - tDup0;
+
+        // Handle intermediate arrays: either return to cache or close directly.
+        Set<String> preserveNames = new HashSet<>();
+        preserveNames.addAll(dag.getConstants());
+        preserveNames.addAll(dag.getVariables());
+        if (placeholderValues != null) {
+            preserveNames.addAll(placeholderValues.keySet());
+        }
+
+        boolean cacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
+
+        if (cacheEnabled) {
+            // Cache-enabled path: keep intermediate arrays for direct reuse by variable name
+            // in the next step. Arrays that were already freed by the dependency tracker during
+            // execution are skipped. Remaining arrays go to outputArrayCacheTl for zero-cost
+            // reuse (no ArrayCacheMemoryMgr deque lookup needed).
+            int releasedToCache = 0;
+            Set<INDArray> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (Map.Entry<String, SDValue> entry : variableValues.entrySet()) {
+                if (preserveNames.contains(entry.getKey())) continue;
+                SDValue value = entry.getValue();
+                if (value == null) continue;
+                switch (value.getSdValueType()) {
+                    case TENSOR:
+                        INDArray tensor = value.getTensorValue();
+                        if (tensor != null && !tensor.wasClosed() && seen.add(tensor)
+                                && !freedArrays().contains(tensor.getId())) {
+                            mmgr.release(tensor);
+                            freedArrays().add(tensor.getId());
+                            releasedToCache++;
+                        }
+                        break;
+                    case LIST:
+                        if (value.getListValue() != null) {
+                            for (INDArray arr : value.getListValue()) {
+                                if (arr != null && !arr.wasClosed() && seen.add(arr)
+                                        && !freedArrays().contains(arr.getId())) {
+                                    mmgr.release(arr);
+                                    freedArrays().add(arr.getId());
+                                    releasedToCache++;
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            variableValues.clear();
+            log.info("Released {} intermediate arrays to cache for reuse.", releasedToCache);
+        } else {
+            // No-cache path: close DataBuffers directly to free GPU memory immediately.
+            // First, collect DataBuffers belonging to constants/variables/placeholders.
+            IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+            for (String name : preserveNames) {
+                SDValue value = variableValues.get(name);
+                if (value == null) continue;
+                switch (value.getSdValueType()) {
+                    case TENSOR:
+                        INDArray tensor = value.getTensorValue();
+                        if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
+                            protectedBuffers.put(tensor.data(), Boolean.TRUE);
+                        }
+                        break;
+                    case LIST:
+                        if (value.getListValue() != null) {
+                            for (INDArray arr : value.getListValue()) {
+                                if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                                    protectedBuffers.put(arr.data(), Boolean.TRUE);
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+
+            IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+            for (Map.Entry<String, SDValue> entry : variableValues.entrySet()) {
+                if (preserveNames.contains(entry.getKey())) continue;
+                SDValue value = entry.getValue();
+                if (value == null) continue;
+                switch (value.getSdValueType()) {
+                    case TENSOR:
+                        INDArray tensor = value.getTensorValue();
+                        if (tensor != null && !tensor.wasClosed() && tensor.data() != null
+                                && !protectedBuffers.containsKey(tensor.data())) {
+                            uniqueBuffers.put(tensor.data(), Boolean.TRUE);
+                        }
+                        break;
+                    case LIST:
+                        if (value.getListValue() != null) {
+                            for (INDArray arr : value.getListValue()) {
+                                if (arr != null && !arr.wasClosed() && arr.data() != null
+                                        && !protectedBuffers.containsKey(arr.data())) {
+                                    uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                                }
+                            }
+                        }
+                        break;
+                }
+            }
+            variableValues.clear();
+
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            Nd4j.getExecutioner().commit();
+
+            int releasedCount = 0;
+            long releasedBytes = 0;
+            int skippedConstant = 0, skippedAttached = 0, skippedReleased = 0;
+            int closeErrors = 0;
+            nativeOps.dbCloseResetDiagnostics();
+            for (DataBuffer buf : uniqueBuffers.keySet()) {
+                if (buf.closeable()) {
+                    try {
+                        releasedBytes += buf.length() * buf.getElementSize();
+                        buf.close();
+                        releasedCount++;
+                    } catch (Exception e) {
+                        closeErrors++;
+                        log.info("Error closing buffer: {}", e.getMessage());
+                    }
+                } else {
+                    if (buf.wasClosed()) skippedReleased++;
+                    else if (buf.isAttached()) skippedAttached++;
+                    else if (buf.isConstant()) skippedConstant++;
+                }
+            }
+            try {
+                LongPointer nativeStats = new LongPointer(9);
+                nativeOps.dbCloseGetDiagnostics(nativeStats);
+                log.info("Native dbClose stats: total={}, null={}, constant={}, alreadyClosed={}, noDataBuffer={}, notOwner={}, deviceError={}, deleted={}, freedBytes={}MB",
+                        nativeStats.get(0), nativeStats.get(1), nativeStats.get(2), nativeStats.get(3),
+                        nativeStats.get(4), nativeStats.get(5), nativeStats.get(6), nativeStats.get(7),
+                        nativeStats.get(8) / (1024 * 1024));
+                nativeOps.dbCloseResetDiagnostics();
+            } catch (Exception e) {
+                log.info("Could not get native dbClose diagnostics: {}", e.getMessage());
+            }
+            if (closeErrors > 0) {
+                log.info("Close errors: {}", closeErrors);
+            }
+            if (releasedCount > 0 || uniqueBuffers.size() > 0) {
+                Nd4j.getExecutioner().commit();
+                try {
+                    for (int d = 0; d < numDevices; d++) {
+                        nativeOps.trimMemoryPool(d);
+                    }
+                } catch (Exception e) {
+                    log.debug("Failed to trim memory pool: {}", e.getMessage());
+                }
+
+                log.info("Released {} of {} unique data buffers ({} MB) after forward execution. Skipped: constant={}, attached={}, released={}.",
+                        releasedCount, uniqueBuffers.size(), releasedBytes / (1024 * 1024),
+                        skippedConstant, skippedAttached, skippedReleased);
+
+                for (int d = 0; d < numDevices; d++) {
+                    try {
+                        long gpuFree = nativeOps.getDeviceFreeMemory(d);
+                        LongPointer usedPtr = new LongPointer(1);
+                        LongPointer reservedPtr = new LongPointer(1);
+                        nativeOps.getMemoryPoolStats(d, usedPtr, reservedPtr);
+                        log.info("GPU{} free={}MB, pool: used={}MB, reserved={}MB",
+                                d, gpuFree / (1024 * 1024), usedPtr.get() / (1024 * 1024), reservedPtr.get() / (1024 * 1024));
+                    } catch (Exception e) { /* ignore */ }
+                }
+            }
         }
 
         return results;
@@ -1296,20 +1766,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         SameDiffOp sameDiffOp = sameDiff.getOps().get(opName);
         DifferentialFunction op = sameDiffOp.getOp();
 
-        // Create a NEW OpContext for each operation execution.
-        // Accumulating OpContexts in a map causes unbounded memory growth:
-        // - For 6000+ chunks with 200+ ops each = 1.2M+ OpContexts
-        // - This causes the server to crash after ~20 minutes of processing
-        //
-        // The OpContext is used temporarily to:
-        // 1. Set input arrays
-        // 2. Execute the operation
-        // 3. Store results in variableValues
-        // After execution, the OpContext can be immediately closed since results are
-        // already stored in variableValues, not in the OpContext.
-        OpContext opContext = Nd4j.getExecutioner().buildContext();
+        // Reuse OpContext from pool when available, avoiding native alloc/dealloc per op.
+        long tOpCtx0 = TIMING_ENABLED ? System.nanoTime() : 0;
+        Deque<OpContext> pool = opContextPoolTl.get();
+        OpContext opContext = pool.pollFirst();
+        if (opContext == null) {
+            opContext = Nd4j.getExecutioner().buildContext();
+        }
+        if (TIMING_ENABLED) timingOpContextAcquireNs += System.nanoTime() - tOpCtx0;
 
         // Prepare inputs
+        long tInput0 = TIMING_ENABLED ? System.nanoTime() : 0;
         String[] argNames = op.argNames();
         if (argNames == null || argNames.length == 0) {
             // Safety check: if no input names are available but the operation requires inputs,
@@ -1390,11 +1857,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     throw new ND4JIllegalStateException("Input array was closed! For argument '" + argName + "' at index " + i + " for op '" + op.getOwnName() + "' (" + op.opName() + ") with id " + inputArrays[i].getId());
                 }
 
-                // Check for use-after-free corruption in scalar arrays.
-                // When a buffer is freed and reused by InteropDataBuffer, the magic number 0xAB12CD34EF56
-                // gets written where the data used to be. This is a telltale sign of use-after-free.
-                // Also check for pointer-like values which indicate memory was reused for other allocations.
-                if (inputArrays[i] != null && inputArrays[i].isScalar() && inputArrays[i].dataType() == DataType.INT64) {
+                // Use-after-free corruption checks for scalar INT64 arrays.
+                // Guarded by isDebug() because getLong(0) forces a D→H sync on GPU,
+                // causing thousands of GPU-blocking transfers per step.
+                if (Nd4j.getEnvironment().isDebug() && inputArrays[i] != null && inputArrays[i].isScalar() && inputArrays[i].dataType() == DataType.INT64) {
                     long value = inputArrays[i].getLong(0);
                     // InteropDataBuffer magic number: 0xAB12CD34EF56 = 188097240559446
                     if (value == 0xAB12CD34EF56L) {
@@ -1405,10 +1871,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             "Variable name: '" + argName + "'. Array id: " + inputArrays[i].getId() + ". " +
                             "This is a critical memory management bug - please report this issue.");
                     }
-                    // Check for pointer-like values (heap addresses typically start with 0x7f on 64-bit Linux)
-                    // Values > 0x100000000000 (1TB) are likely pointers, not actual data
-                    // BUT exclude Long.MAX_VALUE and Long.MIN_VALUE as these are valid sentinel values
-                    // used by ONNX and other frameworks (e.g., for "infer this dimension" in reshape)
                     if (value > 0x100000000000L && value != Long.MAX_VALUE && value != Long.MIN_VALUE) {
                         throw new ND4JIllegalStateException(
                             "USE-AFTER-FREE DETECTED: Input scalar at index " + i + " for op '" + op.getOwnName() +
@@ -1443,12 +1905,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             log.trace("Skipping operation {} because input {} is from inactive Switch branch",
                                     op.getOwnName(), argName);
                         }
-                        // Close the opContext we created before returning
+                        // Return opContext to pool before returning
                         try {
-                            opContext.close();
+                            opContext.purgeForReuse();
+                            pool.offerFirst(opContext);
                         } catch (Exception e) {
+                            try { opContext.close(); } catch (Exception ignored) {}
                             if (log.isTraceEnabled()) {
-                                log.trace("Error closing OpContext while skipping {}: {}", opName, e.getMessage());
+                                log.trace("Error returning OpContext to pool while skipping {}: {}", opName, e.getMessage());
                             }
                         }
                         // Store null for this operation's outputs so Merge can properly select the active branch
@@ -1469,6 +1933,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             opContext.setInputArrays(inputArrays);
         }
+        if (TIMING_ENABLED) timingInputResolveNs += System.nanoTime() - tInput0;
 
         // Handle different operation types
         // NOTE: Do NOT call clearOpaqueNDArraysFromOpContext here!
@@ -1477,6 +1942,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // heap corruption. The OpaqueNDArrays will be properly cleaned up when:
         // 1. The OpContext is closed (immediately after operation execution below)
         // 2. The INDArrays are garbage collected
+
+        // Attach native workspace to OpContext if available - this allows C++ ops to
+        // use bump allocation for internal temporaries instead of per-op malloc/cudaMalloc
+        org.bytedeco.javacpp.Pointer wsPtr = mmgr.getNativeWorkspacePointer();
+        if (wsPtr != null) {
+            opContext.attachWorkspace(wsPtr);
+        }
+
         try {
             if (op instanceof CustomOp) {
                 executeCustomOp((CustomOp) op, opContext, node, variableValues, allRequired);
@@ -1484,6 +1957,24 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 executeStandardOp((Op) op, opContext, node, variableValues, allRequired);
             } else {
                 throw new UnsupportedOperationException("Unsupported operation type: " + op.getClass().getName());
+            }
+
+            // View safety: if workspace-backed, replace view outputs with detached copies
+            // to prevent dangling pointers when workspace resets on next scopeIn/scopeOut cycle
+            if (mmgr.isWorkspaceBacked()) {
+                List<String> viewCheckNames = node.getOutputVariables();
+                for (String outName : viewCheckNames) {
+                    SDValue val = variableValues.get(outName);
+                    if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
+                        INDArray arr = val.getTensorValue();
+                        if (arr != null && arr.isView()) {
+                            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                INDArray detached = arr.dup();
+                                variableValues.put(outName, SDValue.create(detached));
+                            }
+                        }
+                    }
+                }
             }
 
             // Call listeners after operation execution
@@ -1510,15 +2001,22 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
         } finally {
+            // Detach workspace before returning OpContext to pool.
+            // Do NOT commit() here - the op has already been enqueued on the CUDA stream.
+            // Calling commit() per-op forces a GPU sync which serializes all work.
+            if (wsPtr != null) {
+                opContext.detachWorkspace();
+            }
 
-            // This prevents unbounded memory growth from accumulating OpContexts.
-            // The operation results are already stored in variableValues, so
-            // the OpContext is no longer needed after this point.
+            // Return OpContext to pool after purging, avoiding native alloc/dealloc overhead.
+            // purge() clears input/output arrays but keeps the native context alive for reuse.
             try {
-                opContext.close();
+                opContext.purgeForReuse();
+                opContextPoolTl.get().offerFirst(opContext);
             } catch (Exception e) {
+                try { opContext.close(); } catch (Exception ignored) {}
                 if (log.isTraceEnabled()) {
-                    log.trace("Error closing OpContext for {}: {}", opName, e.getMessage());
+                    log.trace("Error returning OpContext to pool for {}: {}", opName, e.getMessage());
                 }
             }
         }
@@ -1526,24 +2024,114 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     private void executeCustomOp(CustomOp customOp, OpContext opContext, ExecutionNode node,
                                  Map<String, SDValue> variableValues, Set<String> allRequired) {
-
         DynamicCustomOp dynOp = (DynamicCustomOp) customOp;
 
         // Set op arguments (NOT input arrays - they are already set by executeRegularOperation)
         // customOp.inputArguments() returns stale arrays from graph import/construction,
         // NOT the arrays from the current execution context. The correct inputs were
         // already set by executeRegularOperation via opContext.setInputArrays(inputArrays).
+        // Only set arguments when non-empty to avoid unnecessary array allocations and JNI calls.
         opContext.setIArguments(dynOp.iArgs());
         opContext.setTArguments(dynOp.tArgs());
         opContext.setDArguments(dynOp.dArgs());
         opContext.setBArguments(dynOp.bArgs());
-        // Calculate output shapes
-        List<DataBuffer> outShape = dynOp.calculateOutputShape(opContext);
-        if (outShape == null || outShape.isEmpty()) {
-            throw new IllegalStateException("No output shapes calculated for op: " + customOp.opName());
+
+        // Calculate output shapes with caching: for autoregressive generation, most ops
+        // have identical input shapes across decode steps. Cache by (opName + input shapes + args).
+        // Ops with data-dependent output shapes (Where, unique) are never cacheable.
+        // Ops with INT/LONG inputs (reshape, permute, create, etc.) ARE cacheable but we
+        // include the actual input values in the cache key to handle different values correctly.
+        boolean isDataDependent = DATA_DEPENDENT_OUTPUT_OPS.contains(customOp.opName());
+        boolean cacheable = !isDataDependent;
+        boolean hasIntLongInputs = false;
+        if (cacheable) {
+            List<INDArray> cacheCheckInputs = opContext.getInputArrays();
+            for (int ci = 0; ci < cacheCheckInputs.size(); ci++) {
+                INDArray cin = cacheCheckInputs.get(ci);
+                if (cin != null && (cin.dataType() == DataType.INT || cin.dataType() == DataType.LONG)) {
+                    hasIntLongInputs = true;
+                    break;
+                }
+            }
         }
 
+        // For ops with INT/LONG inputs, sync those inputs from device to host BEFORE
+        // shape calculation AND cache key computation (both read values on the host).
+        // Optimizations:
+        // 1. Skip sync for constant buffers - their host data is always current (never modified by GPU).
+        // 2. Only sync small arrays (length <= 32) - these carry shape/axis parameters read on host.
+        //    Large INT/LONG arrays (attention masks, position IDs) are only used by GPU kernels.
+        // 3. Data-dependent ops (Where, unique) always need full sync since shape functions read all data.
+        long tSync0 = TIMING_ENABLED ? System.nanoTime() : 0;
+        if (hasIntLongInputs || isDataDependent) {
+            boolean needsSync = isDataDependent; // data-dependent ops always need full sync
+            if (!needsSync) {
+                List<INDArray> inputArrays = opContext.getInputArrays();
+                for (int i = 0; i < inputArrays.size(); i++) {
+                    INDArray in = inputArrays.get(i);
+                    if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()
+                            && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG
+                            || in.dataType() == DataType.BOOL)
+                            && !in.data().isConstant()
+                            && in.length() <= 32) {
+                        needsSync = true;
+                        break;
+                    }
+                }
+            }
+            if (needsSync) {
+                if (TIMING_ENABLED) timingIntLongSyncCount++;
+                Nd4j.getExecutioner().commit();
+                NativeOps syncNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                List<INDArray> inputArrays = opContext.getInputArrays();
+                for (int i = 0; i < inputArrays.size(); i++) {
+                    INDArray in = inputArrays.get(i);
+                    if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()
+                            && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG
+                            || in.dataType() == DataType.BOOL)
+                            && !in.data().isConstant()) {
+                        // For non-data-dependent ops, only sync small arrays needed for shape key
+                        if (isDataDependent || in.length() <= 32) {
+                            syncNativeOps.dbForceSyncToPrimary(in.data().opaqueBuffer());
+                        }
+                    }
+                }
+            } else {
+                if (TIMING_ENABLED) timingIntLongSyncSkipCount++;
+            }
+        }
+        if (TIMING_ENABLED) timingIntLongSyncNs += System.nanoTime() - tSync0;
+
+        long tShape0 = TIMING_ENABLED ? System.nanoTime() : 0;
+        List<DataBuffer> outShape = null;
+        Map<Long, List<DataBuffer>> shapeCache = null;
+        long shapeKey = 0;
+        if (cacheable) {
+            shapeCache = outputShapeCacheTl.get();
+            shapeKey = computeShapeKey(customOp.opName(), opContext);
+            outShape = shapeCache.get(shapeKey);
+        }
+        if (outShape == null) {
+            if (TIMING_ENABLED) timingShapeCacheMisses++;
+            // Calculate shape outside workspace scope so shape buffers are heap-allocated,
+            // not workspace-backed. Otherwise, resetSession() destroys the workspace and
+            // cached shape buffers become dangling pointers, causing corruption on reuse.
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                outShape = dynOp.calculateOutputShape(opContext);
+            }
+            if (outShape == null || outShape.isEmpty()) {
+                throw new IllegalStateException("No output shapes calculated for op: " + customOp.opName());
+            }
+            if (cacheable && shapeCache != null) {
+                shapeCache.put(shapeKey, outShape);
+            }
+        } else {
+            if (TIMING_ENABLED) timingShapeCacheHits++;
+        }
+        if (TIMING_ENABLED) timingShapeCalcNs += System.nanoTime() - tShape0;
+
         // Allocate output arrays
+        long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
         List<String> outputNames = node.getOutputVariables();
         INDArray[] outputArrays = new INDArray[outShape.size()];
 
@@ -1551,29 +2139,44 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             for (int i = 0; i < outShape.size(); i++) {
                 DataBuffer shapeBuffer = outShape.get(i);
                 long[] shape = shapeBuffer.asLong();
-
-                // Get output datatype from the shape buffer returned by calculateOutputShape
-                // This is critical for ops like argmax/argmin which return INT64 regardless of input type
                 DataType dt = Shape.dataType(shape);
+                long[] actualShape = Shape.shape(shape);
 
-                boolean isOutput = allRequired.contains(outputNames.get(i));
-                outputArrays[i] = mmgr.allocate(isOutput, dt, Shape.shape(shape));
+                boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
+                outputArrays[i] = mmgr.allocate(isOutput, dt, actualShape);
             }
 
             opContext.setOutputArrays(outputArrays);
         } finally {
-            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
-            // and must NOT be closed here - they are shared across operations.
-            // Closing them would corrupt the shape cache, leading to use-after-free bugs that
-            // manifest as JVM heap corruption (crashes in SymbolTable::do_lookup, G1 GC, etc.)
-            // See DynamicCustomOp.java comment: "Shape buffers returned by calculateOutputShape()
-            // are CACHED by ConstantShapeHelper and must NOT be closed"
+            // Shape buffers from calculateOutputShape() are CACHED by ConstantShapeHelper - do not close.
+        }
+        if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
+
+        // Re-sync input arrays to device after calculateOutputShape().
+        // Some shape functions (e.g. Where) call syncToHost() on inputs to read data values,
+        // which marks the host buffer as primary. The GPU kernel then accesses a stale device
+        // buffer, causing cudaErrorIllegalAddress. Re-syncing ensures device buffers are current.
+        if (DATA_DEPENDENT_OUTPUT_OPS.contains(customOp.opName())) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            List<INDArray> inputArrays = opContext.getInputArrays();
+            for (int i = 0; i < inputArrays.size(); i++) {
+                INDArray in = inputArrays.get(i);
+                if (in != null && !in.isEmpty() && in.data() != null && !in.data().wasClosed()) {
+                    nativeOps.dbSyncToSpecial(in.data().opaqueBuffer());
+                }
+            }
         }
 
         // Execute the operation
+        long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
         Nd4j.exec(dynOp, opContext);
+        if (TIMING_ENABLED) {
+            timingNativeExecNs += System.nanoTime() - tExec0;
+            timingOpCount++;
+        }
 
         // Store results and track for deallocation
+        long tStore0 = TIMING_ENABLED ? System.nanoTime() : 0;
         for (int i = 0; i < outputArrays.length && i < outputNames.size(); i++) {
             SDValue outputValue = SDValue.create(outputArrays[i]);
             variableValues.put(outputNames.get(i), outputValue);
@@ -1587,55 +2190,63 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
             }
         }
+        if (TIMING_ENABLED) timingResultStoreNs += System.nanoTime() - tStore0;
     }
 
     private void executeStandardOp(Op op, OpContext opContext, ExecutionNode node,
                                    Map<String, SDValue> variableValues, Set<String> allRequired) {
 
-        // Calculate output shape
-        List<DataBuffer> outputShape = ((BaseOp) op).calculateOutputShape(opContext);
+        // Calculate output shape outside workspace scope so shape buffers are heap-allocated
+        long tShape0 = TIMING_ENABLED ? System.nanoTime() : 0;
+        List<DataBuffer> outputShape;
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            outputShape = ((BaseOp) op).calculateOutputShape(opContext);
+        }
         if (outputShape == null || outputShape.isEmpty()) {
             throw new IllegalStateException("No output shape calculated for op: " + op.opName());
+        }
+        if (TIMING_ENABLED) {
+            timingShapeCalcNs += System.nanoTime() - tShape0;
+            timingShapeCacheMisses++; // standard ops don't use shape cache
         }
 
         // Declare variables before try block so they're in scope after
         List<String> outputNames = node.getOutputVariables();
         INDArray outputArray = null;
 
+        long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
         try {
-            // Allocate output array - the shapeBuffer is OWNED by outputArray after allocation
-            // We must NOT close it as it's the array's shape descriptor
             DataBuffer shapeBuffer = outputShape.get(0);
             boolean isOutput = !outputNames.isEmpty() && allRequired.contains(outputNames.get(0));
             outputArray = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
 
             opContext.setOutputArray(0, outputArray);
-
-            // Execute the operation
-            Nd4j.exec(op, opContext);
         } finally {
-            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
-            // and must NOT be closed here - they are shared across operations.
-            // Closing them would corrupt the shape cache, leading to use-after-free bugs that
-            // manifest as JVM heap corruption (crashes in SymbolTable::do_lookup, G1 GC, etc.)
-            // See DynamicCustomOp.java comment: "Shape buffers returned by calculateOutputShape()
-            // are CACHED by ConstantShapeHelper and must NOT be closed"
+        }
+        if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
+
+        // Execute the operation
+        long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
+        Nd4j.exec(op, opContext);
+        if (TIMING_ENABLED) {
+            timingNativeExecNs += System.nanoTime() - tExec0;
+            timingOpCount++;
         }
 
         // Store result and track for deallocation
+        long tStore0 = TIMING_ENABLED ? System.nanoTime() : 0;
         if (!outputNames.isEmpty()) {
             SDValue outputValue = SDValue.create(outputArray);
             String varName = outputNames.get(0);
             variableValues.put(varName, outputValue);
 
-            // Add to arrayUseTracker so it can be released when no longer needed
             if (allRequired.contains(varName)) {
-                // This is a final output, don't deallocate
                 arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
             } else {
                 arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
             }
         }
+        if (TIMING_ENABLED) timingResultStoreNs += System.nanoTime() - tStore0;
     }
 
     private void handleReduceOpAxis(Op op, OpContext opContext) {
@@ -3163,7 +3774,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 opContext.setIArguments(c.iArgs());
                 opContext.setTArguments(c.tArgs());
                 opContext.setBArguments(c.bArgs());
-                List<DataBuffer> shape = c.calculateOutputShape(opContext);
+                List<DataBuffer> shape;
+                try (MemoryWorkspace ws2 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    shape = c.calculateOutputShape(opContext);
+                }
                 try {
                     // shape.get(0) is OWNED by the output array after allocation - don't close it
                     INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
@@ -3231,7 +3845,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     opContext.setIArguments(s.iArgs());
                     opContext.setTArguments(s.tArgs());
                     opContext.setBArguments(s.bArgs());
-                    List<DataBuffer> shape = s.calculateOutputShape(opContext);
+                    List<DataBuffer> shape;
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        shape = s.calculateOutputShape(opContext);
+                    }
                     try {
                         // shape.get(0) is OWNED by the output array after allocation - don't close it
                         INDArray out = mmgr.allocateFromDescriptor(false, shape.get(0));
@@ -3569,7 +4186,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 oc.setOutputArray(0, oc.getInputArray(0));
 
             } else {
-                List<DataBuffer> outShape = customOp.calculateOutputShape(oc);
+                List<DataBuffer> outShape;
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    outShape = customOp.calculateOutputShape(oc);
+                }
                 Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
                 String[] outNames = df.outputVariablesNames();
                 Preconditions.checkState(outNames.length == outShape.size(), "Error in operation shape calculation for op \"%s\": Got %s op output shapes for an operation" +
@@ -3667,7 +4287,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 INDArray z = mmgr.allocate(false, oc.getInputArray(0).dataType(), oc.getInputArray(0).shape());
                 oc.setOutputArray(0, z);
             } else {
-                List<DataBuffer> outputShape = ((BaseOp) op).calculateOutputShape(oc);
+                List<DataBuffer> outputShape;
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    outputShape = ((BaseOp) op).calculateOutputShape(oc);
+                }
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 // Note: outputShape.get(0) (stored as lsd) is OWNED by the output array after allocation
                 // We must NOT close it as it becomes the array's shape descriptor
@@ -3717,6 +4340,72 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // DO NOT USE THIS METHOD
         // Left here for documentation purposes only
         log.warn("clearOpaqueNDArraysFromOpContext is deprecated and should not be called - ignoring");
+    }
+
+    /**
+     * Compute a hash key for output shape caching based on op name, input array shapes,
+     * and all op arguments (iArgs, tArgs, dArgs, bArgs) since they all affect output shapes.
+     */
+    private long computeShapeKey(String opName, OpContext opContext) {
+        long hash = opName.hashCode() * 0x9E3779B97F4A7C15L;
+        List<INDArray> inputs = opContext.getInputArrays();
+        for (int i = 0; i < inputs.size(); i++) {
+            INDArray in = inputs.get(i);
+            if (in != null) {
+                long[] s = in.shape();
+                for (long dim : s) {
+                    hash ^= dim;
+                    hash *= 0x517CC1B727220A95L;
+                }
+                hash ^= in.dataType().ordinal();
+                hash *= 0x9E3779B97F4A7C15L;
+                // For INT/LONG inputs, include actual values in key.
+                // These carry shape/axis/permutation parameters whose VALUES
+                // determine output shape (e.g. permute order, reshape target, gather axis).
+                // Data is already synced to host by the caller.
+                if ((in.dataType() == DataType.INT || in.dataType() == DataType.LONG)
+                        && in.length() > 0 && in.length() <= 32
+                        && in.data() != null && !in.data().wasClosed()) {
+                    for (long j = 0; j < in.length(); j++) {
+                        hash ^= in.getLong(j);
+                        hash *= 0x517CC1B727220A95L;
+                    }
+                }
+            }
+        }
+        // Include iArgs in key (e.g. conv2d kernel sizes, strides, padding)
+        List<Long> iArgs = opContext.getIArguments();
+        if (iArgs != null) {
+            for (Long arg : iArgs) {
+                hash ^= arg;
+                hash *= 0x517CC1B727220A95L;
+            }
+        }
+        // Include tArgs (floating point arguments)
+        List<Double> tArgs = opContext.getTArguments();
+        if (tArgs != null) {
+            for (Double arg : tArgs) {
+                hash ^= Double.doubleToLongBits(arg);
+                hash *= 0x9E3779B97F4A7C15L;
+            }
+        }
+        // Include dArgs (data type arguments)
+        List<DataType> dArgs = opContext.getDArguments();
+        if (dArgs != null) {
+            for (DataType dt : dArgs) {
+                hash ^= dt.ordinal();
+                hash *= 0x517CC1B727220A95L;
+            }
+        }
+        // Include bArgs (boolean arguments)
+        List<Boolean> bArgs = opContext.getBArguments();
+        if (bArgs != null) {
+            for (Boolean b : bArgs) {
+                hash ^= b ? 1L : 0L;
+                hash *= 0x9E3779B97F4A7C15L;
+            }
+        }
+        return hash;
     }
 
 }

@@ -24,6 +24,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspaceManager;
 import org.nd4j.linalg.api.ops.executioner.TransferMetrics;
 
 import java.util.*;
@@ -56,6 +57,8 @@ public class DeviceRoutingConfiguration {
 
     private static volatile DeviceRoutingConfiguration CURRENT;
     private static final Object LOCK = new Object();
+    private static final DeviceMemoryManager.MemoryPressureCallback PRESSURE_CALLBACK =
+            (device, utilization) -> MultiBackendWorkspaceManager.getInstance().handleMemoryPressure(device, utilization);
 
     // =========================================================================
     // Device Selection Policy
@@ -286,6 +289,12 @@ public class DeviceRoutingConfiguration {
         // Apply routing policy
         mgr.setAutoFallbackEnabled(autoFallbackEnabled);
         mgr.setMemoryPressureThreshold(memoryPressureThreshold);
+        if (evictOnPressure) {
+            mgr.removeMemoryPressureCallback(PRESSURE_CALLBACK);
+            mgr.addMemoryPressureCallback(PRESSURE_CALLBACK);
+        } else {
+            mgr.removeMemoryPressureCallback(PRESSURE_CALLBACK);
+        }
 
         // Apply memory caps
         for (DeviceDescriptor device : mgr.getRegisteredDevices()) {
@@ -448,7 +457,7 @@ public class DeviceRoutingConfiguration {
      */
     public static DeviceRoutingConfiguration multiGpuBalanced() {
         return builder()
-                .defaultPolicy(DeviceMemoryManager.DeviceRoutingPolicy.LEAST_LOADED)
+                .defaultPolicy(DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE)
                 .gpuMemoryCapFraction(0.85)
                 .autoTransferEnabled(true)
                 .asyncTransferEnabled(true)
@@ -492,7 +501,7 @@ public class DeviceRoutingConfiguration {
      */
     public static DeviceRoutingConfiguration multiGpuWithMetrics() {
         return builder()
-                .defaultPolicy(DeviceMemoryManager.DeviceRoutingPolicy.LEAST_LOADED)
+                .defaultPolicy(DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE)
                 .gpuMemoryCapFraction(0.85)
                 .autoTransferEnabled(true)
                 .asyncTransferEnabled(true)

@@ -237,74 +237,20 @@ public class Hdf5Archive implements Closeable {
             int nbDims = space.getSimpleExtentNdims();
             long[] dims = new long[nbDims];
             space.getSimpleExtentDims(dims);
-            float[] dataBuffer;
-            FloatPointer fp;
-            int j;
-            INDArray data;
-            switch (nbDims) {
-                case 5: /* 3D Convolution weights */
-                    dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3] * dims[4])];
-                    fp = new FloatPointer(dataBuffer);
-                    dataset.read(fp, dataType);
-                    fp.get(dataBuffer);
-                    data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2], (int) dims[3], (int) dims[4]);
-                    j = 0;
-                    for (int i1 = 0; i1 < dims[0]; i1++)
-                        for (int i2 = 0; i2 < dims[1]; i2++)
-                            for (int i3 = 0; i3 < dims[2]; i3++)
-                                for (int i4 = 0; i4 < dims[3]; i4++)
-                                    for (int i5 = 0; i5 < dims[4]; i5++)
-                                        data.putScalar(new int[] { i1, i2, i3, i4, i5 }, dataBuffer[j++]);
-                    break;
-                case 4: /* 2D Convolution weights */
-                    dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3])];
-                    fp = new FloatPointer(dataBuffer);
-                    dataset.read(fp, dataType);
-                    fp.get(dataBuffer);
-                    data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2], (int) dims[3]);
-                    j = 0;
-                    for (int i1 = 0; i1 < dims[0]; i1++)
-                        for (int i2 = 0; i2 < dims[1]; i2++)
-                            for (int i3 = 0; i3 < dims[2]; i3++)
-                                for (int i4 = 0; i4 < dims[3]; i4++)
-                                    data.putScalar(i1, i2, i3, i4, dataBuffer[j++]);
-                    break;
-                case 3:
-                    dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2])];
-                    fp = new FloatPointer(dataBuffer);
-                    dataset.read(fp, dataType);
-                    fp.get(dataBuffer);
-                    data = Nd4j.create((int) dims[0], (int) dims[1], (int) dims[2]);
-                    j = 0;
-                    for (int i1 = 0; i1 < dims[0]; i1++)
-                        for (int i2 = 0; i2 < dims[1]; i2++)
-                            for (int i3 = 0; i3 < dims[2]; i3++)
-                                data.putScalar(i1, i2, i3, dataBuffer[j++]);
-                    break;
-                case 2: /* Dense and Recurrent weights */
-                    dataBuffer = new float[(int) (dims[0] * dims[1])];
-                    fp = new FloatPointer(dataBuffer);
-                    dataset.read(fp, dataType);
-                    fp.get(dataBuffer);
-                    data = Nd4j.create((int) dims[0], (int) dims[1]);
-                    j = 0;
-                    for (int i1 = 0; i1 < dims[0]; i1++)
-                        for (int i2 = 0; i2 < dims[1]; i2++)
-                            data.putScalar(i1, i2, dataBuffer[j++]);
-                    break;
-                case 1: /* Bias */
-                    dataBuffer = new float[(int) dims[0]];
-                    fp = new FloatPointer(dataBuffer);
-                    dataset.read(fp, dataType);
-                    fp.get(dataBuffer);
-                    data = Nd4j.create((int) dims[0]);
-                    j = 0;
-                    for (int i1 = 0; i1 < dims[0]; i1++)
-                        data.putScalar(i1, dataBuffer[j++]);
-                    break;
-                default:
-                    throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
+            if (nbDims < 1 || nbDims > 5) {
+                throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
             }
+            int totalLength = 1;
+            int[] intDims = new int[nbDims];
+            for (int i = 0; i < nbDims; i++) {
+                intDims[i] = (int) dims[i];
+                totalLength *= intDims[i];
+            }
+            float[] dataBuffer = new float[totalLength];
+            FloatPointer fp = new FloatPointer(dataBuffer);
+            dataset.read(fp, dataType);
+            fp.get(dataBuffer);
+            INDArray data = Nd4j.create(dataBuffer, intDims, 'c');
             space.deallocate();
             dataset.deallocate();
             return data;

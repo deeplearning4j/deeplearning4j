@@ -118,6 +118,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _cudaUseDeviceHost{false};
   std::atomic<int> _cudaEventLimit{4};
   std::atomic<int> _cudaCachingAllocatorLimit{0}; // in MB
+  std::atomic<int64_t> _cudaPinnedHostLimit{8LL * 1024}; // in MB, default 8 GB
   std::atomic<bool> _cudaUseUnifiedMemory{false};
   std::atomic<int> _cudaPrefetchSize{0}; // in MB
   std::atomic<bool> _cudaGraphOptimization{false};
@@ -381,6 +382,8 @@ class SD_LIB_EXPORT Environment {
   void setCudaEventLimit(int limit);
   int cudaCachingAllocatorLimit() { return _cudaCachingAllocatorLimit.load(); }
   void setCudaCachingAllocatorLimit(int limitInMB);
+  int64_t cudaPinnedHostLimit() { return _cudaPinnedHostLimit.load(); }
+  void setCudaPinnedHostLimit(int64_t limitInMB);
   bool cudaUseUnifiedMemory() { return _cudaUseUnifiedMemory.load(); }
   void setCudaUseUnifiedMemory(bool unified);
   int cudaPrefetchSize() { return _cudaPrefetchSize.load(); }

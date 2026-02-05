@@ -182,8 +182,10 @@ void fusedAddContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
   auto stream = x.getContext()->getCudaStream();
 
+  NDArray::prepareSpecialUse({&z}, {&x, &y});
   BUILD_SINGLE_SELECTOR(x.dataType(), addContiguousLauncher,
     (x.specialBuffer(), y.specialBuffer(), z.specialBuffer(), len, stream), SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({&z}, {&x, &y});
 
   sd::DebugHelper::checkErrorCode(stream, "fusedAddContiguous failed");
 }
@@ -192,8 +194,10 @@ void fusedSubtractContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
   auto stream = x.getContext()->getCudaStream();
 
+  NDArray::prepareSpecialUse({&z}, {&x, &y});
   BUILD_SINGLE_SELECTOR(x.dataType(), subtractContiguousLauncher,
     (x.specialBuffer(), y.specialBuffer(), z.specialBuffer(), len, stream), SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({&z}, {&x, &y});
 
   sd::DebugHelper::checkErrorCode(stream, "fusedSubtractContiguous failed");
 }
@@ -202,8 +206,10 @@ void fusedMultiplyContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
   auto stream = x.getContext()->getCudaStream();
 
+  NDArray::prepareSpecialUse({&z}, {&x, &y});
   BUILD_SINGLE_SELECTOR(x.dataType(), multiplyContiguousLauncher,
     (x.specialBuffer(), y.specialBuffer(), z.specialBuffer(), len, stream), SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({&z}, {&x, &y});
 
   sd::DebugHelper::checkErrorCode(stream, "fusedMultiplyContiguous failed");
 }
@@ -212,8 +218,10 @@ void fusedDivideContiguous(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType len = x.lengthOf();
   auto stream = x.getContext()->getCudaStream();
 
+  NDArray::prepareSpecialUse({&z}, {&x, &y});
   BUILD_SINGLE_SELECTOR(x.dataType(), divideContiguousLauncher,
     (x.specialBuffer(), y.specialBuffer(), z.specialBuffer(), len, stream), SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({&z}, {&x, &y});
 
   sd::DebugHelper::checkErrorCode(stream, "fusedDivideContiguous failed");
 }
@@ -223,8 +231,10 @@ void fusedAdd1DLast(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType numRows = x.lengthOf() / lastDim;
   auto stream = x.getContext()->getCudaStream();
 
+  NDArray::prepareSpecialUse({&z}, {&x, &y});
   BUILD_SINGLE_SELECTOR(x.dataType(), add1DLastLauncher,
     (x.specialBuffer(), y.specialBuffer(), z.specialBuffer(), numRows, lastDim, stream), SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({&z}, {&x, &y});
 
   sd::DebugHelper::checkErrorCode(stream, "fusedAdd1DLast failed");
 }
@@ -234,8 +244,10 @@ void fusedMultiply1DLast(NDArray& x, NDArray& y, NDArray& z) {
   const sd::LongType numRows = x.lengthOf() / lastDim;
   auto stream = x.getContext()->getCudaStream();
 
+  NDArray::prepareSpecialUse({&z}, {&x, &y});
   BUILD_SINGLE_SELECTOR(x.dataType(), multiply1DLastLauncher,
     (x.specialBuffer(), y.specialBuffer(), z.specialBuffer(), numRows, lastDim, stream), SD_COMMON_TYPES);
+  NDArray::registerSpecialUse({&z}, {&x, &y});
 
   sd::DebugHelper::checkErrorCode(stream, "fusedMultiply1DLast failed");
 }

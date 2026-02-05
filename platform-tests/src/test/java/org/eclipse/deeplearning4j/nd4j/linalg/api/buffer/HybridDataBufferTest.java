@@ -972,12 +972,12 @@ public class HybridDataBufferTest extends BaseNd4jTestWithBackends {
         assertEquals(DeviceType.CPU, selected.getDeviceType(),
                 "PREFER_CPU should select CPU");
 
-        // Test LEAST_LOADED policy (both empty, should pick higher priority)
+        // Test MOST_FREE policy (both empty, should pick GPU with more free memory)
         memoryManager.setDevicePriority(gpuDevice, 100);
         memoryManager.setDevicePriority(cpuDevice, 50);
         selected = memoryManager.selectDevice(1024,
-                DeviceMemoryManager.DeviceRoutingPolicy.LEAST_LOADED);
-        // Should pick GPU as both are equally loaded but GPU has higher priority
+                DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
+        // Should pick a device based on actual free memory
         assertNotNull(selected);
     }
 

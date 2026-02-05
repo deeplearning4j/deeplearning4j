@@ -240,6 +240,25 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("intermediateResultDataAt").javaText(
                         "@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);"))
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
+                .put(new Info("OpaqueWorkspace").cast().pointerTypes("Pointer"))
+                // Workspace management functions - explicit javaText to ensure correct pointer semantics
+                .put(new Info("createNativeWorkspace").javaText(
+                        "public native @Cast(\"OpaqueWorkspace\") Pointer createNativeWorkspace(@Cast(\"sd::LongType\") long initialSize);"))
+                .put(new Info("destroyNativeWorkspace").javaText(
+                        "public native void destroyNativeWorkspace(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("workspaceScopeIn").javaText(
+                        "public native void workspaceScopeIn(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("workspaceScopeOut").javaText(
+                        "public native void workspaceScopeOut(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("attachWorkspaceToContext").javaText(
+                        "public native void attachWorkspaceToContext(org.nd4j.nativeblas.OpaqueContext ctx, @Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("detachWorkspaceFromContext").javaText(
+                        "public native void detachWorkspaceFromContext(org.nd4j.nativeblas.OpaqueContext ctx);"))
+                .put(new Info("getWorkspaceCurrentOffset").javaText(
+                        "public native @Cast(\"sd::LongType\") long getWorkspaceCurrentOffset(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("getWorkspaceAllocatedSize").javaText(
+                        "public native @Cast(\"sd::LongType\") long getWorkspaceAllocatedSize(@Cast(\"OpaqueWorkspace\") Pointer workspace);"))
+                .put(new Info("OpaqueMultiBackendWorkspace").cast().pointerTypes("Pointer"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
                 // Ensure RandomGenerator functions don't use @ByVal - they should return/accept pointers
                 .put(new Info("createRandomGenerator").javaText(

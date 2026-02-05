@@ -24,6 +24,7 @@
 
 #include <cuda_runtime.h>
 #include <helpers/PointersManager.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/relative_position_bias.h>
 #include <system/selective_rendering.h>
 
@@ -128,7 +129,9 @@ static void relativePositionBiasCuda_(sd::LaunchContext* context,
         }
 
         T* slopesDevice;
-        cudaMalloc(&slopesDevice, numHeads * sizeof(T));
+        int rpbDevId = 0; cudaGetDevice(&rpbDevId);
+        slopesDevice = reinterpret_cast<T*>(sd::memory::CudaMemoryPool::getInstance().allocate(numHeads * sizeof(T), rpbDevId, nullptr));
+        if (slopesDevice == nullptr) THROW_EXCEPTION("Cannot allocate memory for ALiBi slopes");
         cudaMemcpyAsync(slopesDevice, slopesVec.data(), numHeads * sizeof(T),
                         cudaMemcpyHostToDevice, *context->getCudaStream());
 
@@ -145,7 +148,7 @@ static void relativePositionBiasCuda_(sd::LaunchContext* context,
             outputBuffer, slopesDevice, numHeads, seqLen,
             outHeadStride, outRowStride, outColStride);
 
-        cudaFree(slopesDevice);
+        sd::memory::CudaMemoryPool::getInstance().free(slopesDevice, rpbDevId, nullptr);
     } else {
         // Learned bias mode
         const T* biasBuffer = biasTable->specialBufferasT<T>();

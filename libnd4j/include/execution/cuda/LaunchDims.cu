@@ -138,6 +138,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"scatter_nd", {dim3(GRID_SIZE_SCATTER_ND, BLOCK_SIZE_SCATTER_ND, SHARED_MEM_SIZE_SCATTER_ND)}},
     {"scatter_simple", {dim3(GRID_SIZE_SCATTER_SIMPLE, BLOCK_SIZE_SCATTER_SIMPLE, SHARED_MEM_SIZE_SCATTER_SIMPLE)}},
     {"scatter_update", {dim3(GRID_SIZE_SCATTER_UPDATE, BLOCK_SIZE_SCATTER_UPDATE, SHARED_MEM_SIZE_SCATTER_UPDATE)}},
+    {"where", {dim3(GRID_SIZE_WHERE, BLOCK_SIZE_WHERE, SHARED_MEM_SIZE_WHERE)}},
     {"segment_indices", {dim3(GRID_SIZE_SEGMENT_INDICES_VALIDATE, BLOCK_SIZE_SEGMENT_INDICES_VALIDATE, SHARED_MEM_SIZE_SEGMENT_INDICES_VALIDATE)}},
     {"segment", {dim3(GRID_SIZE_SEGMENT, BLOCK_SIZE_SEGMENT, SHARED_MEM_SIZE_SEGMENT)}},
     {"segment_tad", {dim3(GRID_SIZE_SEGMENT_TAD, BLOCK_SIZE_SEGMENT_TAD, SHARED_MEM_SIZE_SEGMENT_TAD)}},
@@ -305,6 +306,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"scatter_nd", {"GRID_SIZE_SCATTER_ND", "BLOCK_SIZE_SCATTER_ND", "SHARED_MEM_SIZE_SCATTER_ND"}},
     {"scatter_simple", {"GRID_SIZE_SCATTER_SIMPLE", "BLOCK_SIZE_SCATTER_SIMPLE", "SHARED_MEM_SIZE_SCATTER_SIMPLE"}},
     {"scatter_update", {"GRID_SIZE_SCATTER_UPDATE", "BLOCK_SIZE_SCATTER_UPDATE", "SHARED_MEM_SIZE_SCATTER_UPDATE"}},
+    {"where", {"GRID_SIZE_WHERE", "BLOCK_SIZE_WHERE", "SHARED_MEM_SIZE_WHERE"}},
     {"segment_indices", {"GRID_SIZE_SEGMENT_INDICES_VALIDATE", "BLOCK_SIZE_SEGMENT_INDICES_VALIDATE", "SHARED_MEM_SIZE_SEGMENT_INDICES_VALIDATE"}},
     {"segment", {"GRID_SIZE_SEGMENT", "BLOCK_SIZE_SEGMENT", "SHARED_MEM_SIZE_SEGMENT"}},
     {"segment_tad", {"GRID_SIZE_SEGMENT_TAD", "BLOCK_SIZE_SEGMENT_TAD", "SHARED_MEM_SIZE_SEGMENT_TAD"}},
@@ -664,7 +666,7 @@ dim3 getBatchNormDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_BATCHNORM", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_BATCHNORM", blocksPerGrid);
   sharedMemory = getEnvVariable("SHARED_MEM_SIZE_BATCHNORM", sharedMemory);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 
 
 }
@@ -681,7 +683,7 @@ dim3 getCompareAndBitpackDims(int length) {
     threadsPerBlock = 256;
   if(blocksPerGrid < 1)
     blocksPerGrid = 128;
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 
 
 }
@@ -706,7 +708,7 @@ dim3 getConcat(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_CONCAT", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_CONCAT", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_CONCAT", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getBetaInc(int maxIter,int length,int dataTypeSize) {
@@ -718,7 +720,7 @@ dim3 getBetaInc(int maxIter,int length,int dataTypeSize) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_BETA_INC", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_BETA_INC", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_BETA_INC", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getCross(int length,int rank,int lastSize) {
@@ -729,7 +731,7 @@ dim3 getCross(int length,int rank,int lastSize) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_CONCAT", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_CONCAT", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_CONCAT", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 
@@ -741,7 +743,7 @@ dim3 getDilation(int outputLength,int weightRank,int outputRank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_CONCAT", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_CONCAT", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_CONCAT", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getGatherLinear(int numSubArrs) {
@@ -764,7 +766,7 @@ dim3 getGatherNd(int outputLength,int maxRank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_GATHER", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_GATHER", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_GATHER", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getHashCodeSplit(int length,int blockSize) {
@@ -775,7 +777,7 @@ dim3 getHashCodeSplit(int length,int blockSize) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_HASHCODE_SPLIT", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_HASHCODE_SPLIT", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_HASHCODE_SPLIT", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 getHashCodeInternal(int numBlocks) {
@@ -786,7 +788,7 @@ dim3 getHashCodeInternal(int numBlocks) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_HASHCODE_INTERNAL", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_HASHCODE_INTERNAL", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_HASHCODE_INTERNAL", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 cropAndResize(int batchSize,int imageHeight,int imageWidth,int cropHeight,int cropWidth) {
@@ -798,7 +800,7 @@ dim3 cropAndResize(int batchSize,int imageHeight,int imageWidth,int cropHeight,i
   threadsPerBlock = getEnvVariable("GRID_SIZE_CROP_AND_RESIZE", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_CROP_AND_RESIZE", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_CROP_AND_RESIZE", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 
 }
@@ -810,7 +812,7 @@ dim3 imageHelper(int numTads) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_IMAGE_HELPERS", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_GRID_SIZE_IMAGE_HELPERS", blocksPerGrid);
   sharedMemory = getEnvVariable("SHARED_MEM_SIZE_GRID_SIZE_IMAGE_HELPERS", sharedMemory);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 }
 
 dim3 lrnDims(int tadLength,int numTads, int xDTypeSize,int zDTypeSize) {
@@ -853,7 +855,7 @@ dim3 matrixSetDiagDims(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_MATRIX_SET_DIAG", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_MATRIX_SET_DIAG", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_MATRIX_SET_DIAG", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 mergeDims(int length) {
@@ -863,7 +865,7 @@ dim3 mergeDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_MERGE", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_MERGE", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_MERGE", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -875,17 +877,18 @@ dim3 oneHotDims(int length,int rank,int shapeSize) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_ONE_HOT", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_ONE_HOT", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_ONE_HOT", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 padDims(int length,int rank) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
   int sharedMem = 8 * threadsPerBlock * rank + 128;
-  threadsPerBlock = getEnvVariable("GRID_SIZE_PAD", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_PAD", blocksPerGrid);
+  threadsPerBlock = getEnvVariable("BLOCK_SIZE_PAD", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("GRID_SIZE_PAD", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_PAD", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  // Convention: x=threadsPerBlock, y=blocksPerGrid, z=sharedMem
+  return dim3(threadsPerBlock, blocksPerGrid, sharedMem);
 
 }
 
@@ -896,7 +899,7 @@ dim3 polygammaDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_POLYGAMMA", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_POLYGAMMA", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_POLYGAMMA", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -907,7 +910,7 @@ dim3 prefixDims(int numTads,int sizeOfDataType) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_PREFIX", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_PREFIX", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_PREFIX", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 randomShuffleFisherDims(int power,int inputDataTypeSize) {
@@ -917,7 +920,7 @@ dim3 randomShuffleFisherDims(int power,int inputDataTypeSize) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_RANDOM_SHUFFLE_FISHER", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_RANDOM_SHUFFLE_FISHER", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_RANDOM_SHUFFLE_FISHER", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 randomShuffleMergeDims(int j,int length) {
@@ -930,7 +933,7 @@ dim3 randomShuffleMergeDims(int j,int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_RANDOM_SHUFFLE_MERGE", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_RANDOM_SHUFFLE_MERGE", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_RANDOM_SHUFFLE_MERGE", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 
@@ -941,7 +944,7 @@ dim3 batchToSpaceNdLaunch(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_BATCH_TO_SPACE_ND", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_BATCH_TO_SPACE_ND", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_BATCH_TO_SPACE_ND", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -952,7 +955,7 @@ dim3 spaceToBatchLaunch(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SPACE_TO_BATCH", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SPACE_TO_BATCH", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SPACE_TO_BATCH", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -963,7 +966,7 @@ dim3 spaceToBatchNdLaunch(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SPACE_TO_BATCH", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SPACE_TO_BATCH", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SPACE_TO_BATCH", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 scatterDims(int length,int rank) {
@@ -973,7 +976,7 @@ dim3 scatterDims(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SCATTER", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SCATTER", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SCATTER", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -985,7 +988,7 @@ dim3 scatterDimsCheckIndices(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SCATTER_CHECK_INDICES", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SCATTER_CHECK_INDICES", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SCATTER_CHECK_INDICES", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -996,7 +999,7 @@ dim3 scatterNdDims(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SCATTER_ND", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SCATTER_ND", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SCATTER_ND", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -1008,7 +1011,7 @@ dim3 segmentValidateIndices(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SEGMENT_INDICES_VALIDATE", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SEGMENT_INDICES_VALIDATE", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SEGMENT_INDICES_VALIDATE", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 
@@ -1063,7 +1066,7 @@ dim3 sruBiDims(int len,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_SRU_BI", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_SRU_BI", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_SRU_BI", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -1075,7 +1078,7 @@ dim3 stackDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_STACK", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_STACK", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_STACK", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 topkDims(int numTads) {
@@ -1085,7 +1088,7 @@ dim3 topkDims(int numTads) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_TOP_K", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_TOP_K", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_TOP_K", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -1108,7 +1111,7 @@ dim3 invertPermutationDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_INVERT_PERMUTATION", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_INVERT_PERMUTATION", blocksPerGrid);
   sharedMemory = getEnvVariable("SHARED_MEM_SIZE_INVERT_PERMUTATION", sharedMemory);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 
 }
 
@@ -1119,7 +1122,7 @@ dim3 traceDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_TRACE", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_TRACE", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_TRACE", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -1130,7 +1133,7 @@ dim3 triuDims(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_TRIU", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_TRIU", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_TRIU", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -1141,7 +1144,7 @@ dim3 tileDims(int length,int rank) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_TILE", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_TILE", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_TILE", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 
 }
 
@@ -1152,7 +1155,7 @@ dim3 updaterDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_UPDATER", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_UPDATER", blocksPerGrid);
   sharedMemory = getEnvVariable("SHARED_MEM_SIZE_UPDATER", sharedMemory);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 }
 
 dim3 zetaDims(int length) {
@@ -1162,7 +1165,7 @@ dim3 zetaDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_ZETA", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_ZETA", blocksPerGrid);
   sharedMemory = getEnvVariable("SHARED_MEM_SIZE_ZETA", sharedMemory);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMemory);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMemory);
 }
 
 dim3 resizeNeighborDims(int batchSize,int height,int width) {
@@ -1182,27 +1185,29 @@ dim3 clipDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_CLIP", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_CLIP", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_CLIP", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 dim3 mirrorPadLinearDims(int length) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
   int sharedMem = 512;
-  threadsPerBlock = getEnvVariable("GRID_SIZE_MIRROR_PAD_LINEAR", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_MIRROR_PAD_LINEAR", blocksPerGrid);
+  threadsPerBlock = getEnvVariable("BLOCK_SIZE_MIRROR_PAD_LINEAR", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("GRID_SIZE_MIRROR_PAD_LINEAR", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_LINEAR", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  // Convention: x=threadsPerBlock, y=blocksPerGrid, z=sharedMem
+  return dim3(threadsPerBlock, blocksPerGrid, sharedMem);
 }
 
 dim3 mirrorPadTad(int length,int rank) {
   int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
   int sharedMem = threadsPerBlock * sizeof(sd::LongType) * rank + 256;
-  threadsPerBlock = getEnvVariable("GRID_SIZE_MIRROR_PAD_TAD", threadsPerBlock);
-  blocksPerGrid = getEnvVariable("BLOCK_SIZE_MIRROR_PAD_TAD", blocksPerGrid);
+  threadsPerBlock = getEnvVariable("BLOCK_SIZE_MIRROR_PAD_TAD", threadsPerBlock);
+  blocksPerGrid = getEnvVariable("GRID_SIZE_MIRROR_PAD_TAD", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_MIRROR_PAD_TAD", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  // Convention: x=threadsPerBlock, y=blocksPerGrid, z=sharedMem
+  return dim3(threadsPerBlock, blocksPerGrid, sharedMem);
 }
 
 dim3 digammaDims(int length) {
@@ -1212,7 +1217,7 @@ dim3 digammaDims(int length) {
   threadsPerBlock = getEnvVariable("GRID_SIZE_DIGAMMA", threadsPerBlock);
   blocksPerGrid = getEnvVariable("BLOCK_SIZE_DIGAMMA", blocksPerGrid);
   sharedMem = getEnvVariable("SHARED_MEM_SIZE_DIGAMMA", sharedMem);
-  return dim3(threadsPerBlock,blocksPerGrid,sharedMem);
+  return dim3(blocksPerGrid, threadsPerBlock, sharedMem);
 }
 
 

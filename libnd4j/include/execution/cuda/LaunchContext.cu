@@ -150,17 +150,23 @@ LaunchContext* LaunchContext::defaultContext() {
 }
 
 void* LaunchContext::getReductionPointer() const {
-  if (_externalReductionPointer != nullptr) return _externalReductionPointer;
+  // IMPORTANT: Always use the thread-local contextBuffers reduction buffer instead of
+  // external pointer. The external pointer passed from Java may point to freed memory if
+  // contextBuffers was reinitialized between the time Java obtained the pointer and now.
+  // Using the thread-local contextBuffers ensures we always have a valid buffer that
+  // matches the current device and stream (getCudaStream() already does this).
   return contextBuffers.reductionBuffer();
 };
 
 void* LaunchContext::getScalarPointer() const {
-  if (_externalScalarPointer != nullptr) return _externalScalarPointer;
+  // Always use thread-local contextBuffers to match getCudaStream() behavior.
+  // See getReductionPointer() comment for rationale.
   return contextBuffers.scalarBuffer();
 };
 
 LongType* LaunchContext::getAllocationPointer() const {
-  if (_externalAllocationPointer != nullptr) return reinterpret_cast<LongType*>(_externalAllocationPointer);
+  // Always use thread-local contextBuffers to match getCudaStream() behavior.
+  // See getReductionPointer() comment for rationale.
   return reinterpret_cast<LongType*>(contextBuffers.allocationBuffer());
 };
 
@@ -205,7 +211,15 @@ void LaunchContext::setCudaSpecialStream(cudaStream_t* cudaStream){
 
 void LaunchContext::setCublasHandle(void* handle) { _cublasHandle = handle; };
 
-void LaunchContext::swapContextBuffers(ContextBuffers& buffers) { contextBuffers = buffers; };
+void LaunchContext::swapContextBuffers(ContextBuffers& buffers) {
+  // Use move assignment to properly transfer ownership of GPU resources (streams,
+  // reduction/allocation buffers) into the thread-local contextBuffers.
+  // Copy assignment sets _allocated=false on the copy, leaving the thread-local
+  // with pointers it doesn't own — if the original is destroyed, those become dangling.
+  // Move assignment transfers ownership: the thread-local becomes the owner and the
+  // source is left in a safe empty state.
+  contextBuffers = std::move(buffers);
+};
 
 void LaunchContext::releaseBuffers() {
   contextBuffers.release();

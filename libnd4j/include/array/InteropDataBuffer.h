@@ -22,6 +22,8 @@
 
 #include <array/DataBuffer.h>
 #include <array/DataType.h>
+#include <memory/Workspace.h>
+#include <memory/MultiBackendWorkspace.h>
 #include <system/common.h>
 
 #include <memory>
@@ -106,6 +108,8 @@ class SD_LIB_EXPORT InteropDataBuffer {
   std::atomic<DataBuffer*> _dataBuffer{nullptr};
   bool owner;
   DataType _dataType = DataType::UNKNOWN;
+  memory::Workspace* _workspace = nullptr;  // Workspace backing this buffer (null = heap-allocated)
+  memory::MultiBackendWorkspace* _multiBackendWorkspace = nullptr;  // Multi-device workspace for coherence tracking
  public:
   size_t _cachedLenInBytes = 0;
   void* _cachedPrimaryPtr = nullptr;  // Cached for deallocation tracking
@@ -296,6 +300,43 @@ class SD_LIB_EXPORT InteropDataBuffer {
   void setSpecial(void *ptr, size_t length);
 
   void expand(size_t newlength);
+
+  /**
+   * Set the workspace that backs this buffer. When workspace is set, the buffer
+   * does not own its memory (workspace manages the lifecycle).
+   * Pass nullptr to detach from workspace.
+   */
+  void setWorkspace(memory::Workspace* workspace);
+
+  /**
+   * Get the workspace backing this buffer (nullptr if heap-allocated).
+   */
+  memory::Workspace* getWorkspace() const { return _workspace; }
+
+  /**
+   * Check if this buffer is backed by a workspace (vs heap-allocated).
+   */
+  bool isWorkspaceBacked() const { return _workspace != nullptr; }
+
+  /**
+   * Set the multi-backend workspace for coherence tracking.
+   * This enables cross-device coherence state optimization during sync operations.
+   */
+  void setMultiBackendWorkspace(memory::MultiBackendWorkspace* mbw) { _multiBackendWorkspace = mbw; }
+
+  /**
+   * Get the multi-backend workspace (nullptr if not set).
+   */
+  memory::MultiBackendWorkspace* getMultiBackendWorkspace() const { return _multiBackendWorkspace; }
+
+  /**
+   * Invalidate cached pointers. Must be called when workspace cycles
+   * (scopeOut/scopeIn) to ensure stale cached pointers are not used.
+   */
+  void invalidateCachedPointers() {
+    _cachedPrimaryPtr = nullptr;
+    _cachedSpecialPtr = nullptr;
+  }
 
   int deviceId() const;
   void setDeviceId(int deviceId);

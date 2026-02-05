@@ -532,6 +532,8 @@ public static final int
   //for Debug purposes
   public native void showCounters(@Cast("char*") String msg1, @Cast("char*") String msg2);
   public native void showCounters(@Cast("char*") BytePointer msg1, @Cast("char*") BytePointer msg2);
+  // Reset host/device sync counters when reusing buffers.
+  public native void resetCounters();
 
   /**
    * This method deletes buffers, if we're owners
@@ -735,14 +737,46 @@ public static final int
   public ConstantShapeBuffer() { super((Pointer)null); allocate(); }
   private native void allocate();
 
-  // Copy constructor - creates a non-owning copy that doesn't delete pointers.
-  // This is critical for JavaCPP @ByVal returns which create temporary copies.
-  // Without this, the default shallow copy would delete shared pointers on destruction.
-  public ConstantShapeBuffer(@Const @ByRef ConstantShapeBuffer other) { super((Pointer)null); allocate(other); }
-  private native void allocate(@Const @ByRef ConstantShapeBuffer other);
+  // =========================================================================
+  // COPY PREVENTION
+  // =========================================================================
+  //
+  // Copy construction and assignment are DELETED to prevent heap corruption.
+  //
+  // The previous implementation allowed copying, creating non-owning copies
+  // that shared pointers with the original. This was dangerous because:
+  //
+  // 1. DANGLING POINTERS: If the original buffer is deleted while copies exist,
+  //    the copies have dangling pointers to freed memory.
+  //
+  // 2. REFERENCE COUNT CONFUSION: Each copy had its own refCount, so the
+  //    original could be deleted (refCount=0) while copies still held pointers.
+  //
+  // 3. JNI/JavaCPP ISSUES: The copy constructor was used for @ByVal returns,
+  //    creating temporaries with shared pointers that could outlive the original.
+  //
+  // HOW TO ADAPT CODE THAT PREVIOUSLY COPIED ConstantShapeBuffer:
+  //
+  // - Use POINTERS instead of values:
+  //     ConstantShapeBuffer* buf = helper.bufferForShapeInfo(...);
+  //     // Use buf directly, don't copy
+  //
+  // - Use REFERENCES for function parameters:
+  //     void process(const ConstantShapeBuffer& buffer) { ... }
+  //
+  // - For JavaCPP/JNI: Use pointer returns (@ByRef or Pointer) instead of @ByVal
+  //
+  // - For STL containers: Use std::vector<ConstantShapeBuffer*> instead of
+  //     std::vector<ConstantShapeBuffer>
+  //
+  // =========================================================================
+  
+  
 
-  // Copy assignment operator
-  public native @ByRef @Name("operator =") ConstantShapeBuffer put(@Const @ByRef ConstantShapeBuffer other);
+  // Move semantics ARE allowed - source is invalidated after move
+  public ConstantShapeBuffer(@ByRef(true) ConstantShapeBuffer other) { super((Pointer)null); allocate(other); }
+  @NoException(true) private native void allocate(@ByRef(true) ConstantShapeBuffer other);
+  public native @ByRef @Name("operator =") @NoException(true) ConstantShapeBuffer put(@ByRef(true) ConstantShapeBuffer other);
 
   /**
    * Check if this buffer is valid (not garbage/use-after-free).
@@ -1891,11 +1925,23 @@ public native @Cast("sd::Pointer") Pointer mallocHost(@Cast("sd::LongType") long
 public native @Cast("sd::Pointer") Pointer mallocDevice(@Cast("sd::LongType") long memorySize, int deviceId, int flags);
 public native int freeHost(@Cast("sd::Pointer") Pointer pointer);
 public native int freeDevice(@Cast("sd::Pointer") Pointer pointer, int deviceId);
+
+// CUDA Memory Pool functions (CUDA 11.2+)
+public native @Cast("bool") boolean isMemoryPoolEnabled();
+public native void setMemoryPoolEnabled(@Cast("bool") boolean enabled);
+public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") LongPointer usedBytes, @Cast("sd::LongType*") LongPointer reservedBytes);
+public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") LongBuffer usedBytes, @Cast("sd::LongType*") LongBuffer reservedBytes);
+public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") long[] usedBytes, @Cast("sd::LongType*") long[] reservedBytes);
+public native void trimMemoryPool(int deviceId);
+
 public native @Cast("sd::Pointer") Pointer createContext();
 public native @Cast("sd::Pointer") Pointer createStream();
 public native @Cast("sd::Pointer") Pointer createEvent();
 public native int registerEvent(@Cast("sd::Pointer") Pointer event, @Cast("sd::Pointer") Pointer stream);
 public native int setDevice(int deviceId);
+public native void setAvailableDevices(IntPointer devices, int size);
+public native void setAvailableDevices(IntBuffer devices, int size);
+public native void setAvailableDevices(int[] devices, int size);
 public native @Cast("sd::LongType") long getDeviceFreeMemoryDefault();
 public native @Cast("sd::LongType") long getDeviceFreeMemory(int device);
 public native @Cast("sd::LongType") long getDeviceTotalMemory(int device);
@@ -2106,6 +2152,7 @@ public native @Cast("sd::Pointer") Pointer lcBlasHandle(@ByVal org.nd4j.nativebl
 public native @Cast("sd::Pointer") Pointer lcSolverHandle(@ByVal org.nd4j.nativeblas.OpaqueLaunchContext lc);
 public native void ctxShapeFunctionOverride(org.nd4j.nativeblas.OpaqueContext ptr, @Cast("bool") boolean reallyOverride);
 public native void ctxPurge(org.nd4j.nativeblas.OpaqueContext ptr);
+public native void ctxPurgeNoSync(org.nd4j.nativeblas.OpaqueContext ptr);
 public native int binaryLevel();
 public native int optimalLevel();
 public native @Cast("bool") boolean isMinimalRequirementsMet();
@@ -2123,41 +2170,65 @@ public native void dbExpandBuffer(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffe
 public native int dbUseCount(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbForceSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbForceSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 
 /**
  * Batched asynchronous synchronization of multiple data buffers from host to device.
- * Uses multiple CUDA streams to transfer data in parallel for better performance
- * during model loading.
+ * Uses multiple CUDA streams to transfer data in parallel, providing better performance
+ * than individual synchronous transfers for model loading.
+ *
+ * @param buffers Array of OpaqueDataBuffer pointers to sync
+ * @param bufferCount Number of buffers in the array
+ * @param streamCount Number of CUDA streams to use for parallel transfers (typically 2-8)
  */
-@Override
-public void batchSyncToSpecialAsync(org.nd4j.nativeblas.OpaqueDataBuffer[] buffers, int bufferCount, int streamCount) {
-    // Fall back to individual sync calls since native array passing is complex
-    for (int i = 0; i < bufferCount && i < buffers.length; i++) {
-        if (buffers[i] != null) {
-            dbSyncToSpecial(buffers[i]);
-        }
-    }
-}
+public native void batchSyncToSpecialAsync(@Cast("OpaqueDataBuffer**") PointerPointer buffers, int bufferCount, int streamCount);
+public native void batchSyncToSpecialAsync(@ByPtrPtr org.nd4j.nativeblas.OpaqueDataBuffer buffers, int bufferCount, int streamCount);
 
+public native void dbMigrate(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbTickHostRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbTickHostWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbTickDeviceWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long elements);
 public native void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbCloseGetDiagnostics(@Cast("sd::LongType*") org.bytedeco.javacpp.LongPointer outStats);
+public native void dbCloseResetDiagnostics();
 public native int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbSetDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, int deviceId);
 public native int dbLocality(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
-public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long length);
-public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
-public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
+@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long length);
+@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
+@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
+
+/**
+ * Create an externalized data buffer that is ALREADY marked as constant.
+ * This is critical for preventing race conditions where the Java GC can
+ * finalize the buffer before setConstant() is called.
+ *
+ * The constant flag is set IN NATIVE CODE before returning to Java,
+ * eliminating the race window between buffer creation and marking constant.
+ *
+ * @param elements Number of elements
+ * @param dataType Data type integer
+ * @param primary Primary (host) pointer
+ * @param special Special (device) pointer
+ * @return Buffer that is already marked as constant and will never be deallocated
+ */
+@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("sd::Pointer") Pointer primary, @Cast("sd::Pointer") Pointer special);
 
 /**
  * Set the constant flag on an OpaqueDataBuffer.
  * Constant buffers (like shape info) should never be freed by the deallocator.
  * This propagates the flag from Java to the native InteropDataBuffer.
+ *
+ * @param dataBuffer The buffer to mark as constant
+ * @param isConstant true to mark as constant, false otherwise
+ * @return true if the flag was successfully set, false if the buffer was invalid
+ *         (already closed or freed). If false is returned, the buffer may have
+ *         been deallocated by GC and should not be used.
  */
-public native void dbSetConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("bool") boolean isConstant);
+public native @Cast("bool") boolean dbSetConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("bool") boolean isConstant);
 
 /**
  * Check if a buffer is marked as constant.
@@ -2270,7 +2341,7 @@ public native @ByVal org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx
                                                       @Cast("sd::DataType") int dtype, char order, @Cast("sd::LongType") long ews,
                                                       @Cast("sd::LongType") long extras);
 
-public native org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
+@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(@Cast("sd::LongType") long elements, int dataType, @Cast("bool") boolean allocateBoth);
 
 
 public native @ByVal org.nd4j.nativeblas.OpaqueLaunchContext defaultLaunchContext();
@@ -2314,7 +2385,7 @@ public native void setIntermediateResult(org.nd4j.nativeblas.OpaqueContext conte
                                          org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, @Cast("sd::LongType") long dataOffset);
 public native void pushIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, org.nd4j.nativeblas.OpaqueDataBuffer buffer,
                                           org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, @Cast("sd::LongType") long offset);
-public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
+@org.bytedeco.javacpp.annotation.NoDeallocator public native org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
 public native @Cast("const sd::LongType*") LongPointer intermediateResultShapeInfoAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
 public native @Cast("char*") String lastErrorMessage();
 public native int lastErrorCode();
@@ -2552,8 +2623,10 @@ public native void clearShapeCache();
 
 /**
  * Marks that shutdown is in progress for the shape cache.
+ *
  * When set to true, clearShapeCache() becomes a no-op to avoid segfaults
- * during JVM shutdown when buffers may still have external references.
+ * during JVM/application shutdown when buffers may still have external
+ * references or memory allocators may be in an inconsistent state.
  *
  * @param inProgress true to mark shutdown in progress, false otherwise
  */
@@ -2996,6 +3069,76 @@ public native int exportOpTimingChromeTrace(@Cast("char*") BytePointer filename)
  */
 public native int exportOpTimingCSV(@Cast("char*") String filename);
 public native int exportOpTimingCSV(@Cast("char*") BytePointer filename);
+
+/**
+ * Create a new multi-backend workspace.
+ */
+public native Pointer nativeCreateMultiBackendWorkspace();
+
+/**
+ * Destroy a multi-backend workspace.
+ */
+public native void nativeDestroyMultiBackendWorkspace(Pointer handle);
+
+/**
+ * Allocate bytes from a multi-backend workspace.
+ */
+public native Pointer nativeMbwAllocateBytes(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle, @Cast("sd::LongType") long numBytes);
+
+/**
+ * Scope into a multi-backend workspace.
+ */
+public native void nativeMbwScopeIn(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
+
+/**
+ * Scope out of a multi-backend workspace.
+ */
+public native void nativeMbwScopeOut(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
+
+/**
+ * Transfer data between devices in a multi-backend workspace.
+ */
+public native void nativeMbwTransferTo(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+        int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex);
+
+/**
+ * Get coherence state.
+ */
+public native int nativeMbwGetCoherenceState(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+        int deviceType, int deviceIndex);
+
+/**
+ * Get total allocated size.
+ */
+public native @Cast("sd::LongType") long nativeMbwGetTotalAllocatedSize(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
+
+/**
+ * Allocate bytes on a specific device in a multi-backend workspace.
+ */
+public native Pointer nativeMbwAllocateBytesOnDevice(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+        @Cast("sd::LongType") long numBytes, int deviceType, int deviceIndex);
+
+/**
+ * Sync a specific device.
+ */
+public native void nativeMbwSyncDevice(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+        int deviceType, int deviceIndex);
+
+/**
+ * Sync all devices in the workspace.
+ */
+public native void nativeMbwSyncAllDevices(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
+
+/**
+ * Get the allocated size on a specific device.
+ */
+public native @Cast("sd::LongType") long nativeMbwGetAllocatedSizeOnDevice(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle,
+        int deviceType, int deviceIndex);
+
+/**
+ * Get the current workspace offset on the primary device.
+ */
+public native @Cast("sd::LongType") long nativeMbwGetCurrentOffset(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
 
 // #endif // NATIVEOPS_H
 
@@ -3684,6 +3827,7 @@ public static final int
   public native void makeBothBuffersActual();
 
   public native void syncToHost();
+  public native void forceSyncToHost();  // Force sync even if counters say host is actual
   public native void syncToDevice();
   public native void syncShape();
 
@@ -6031,6 +6175,16 @@ public static final int
   public native @ByRef NDArrayVector intermediateResults();
 
   public native void pushIntermediateResult(NDArray array);
+
+  /**
+   * Clear all intermediate results, deleting the stored NDArray objects.
+   * Call this when the backward pass is not needed or when reusing the Context.
+   */
+  public native void clearIntermediateResults();
+
+  /**
+   * Get the number of intermediate results stored.
+   */
 
   public native void setIntermediateResult(int idx, NDArray array);
 
@@ -12371,59 +12525,32 @@ public static final int SD_ALL_OPS_ACTIVATED = 1;
 
 // #if defined(SD_CUDA)
 
-// #if defined(_RELEASE)
+// #include <memory/cuda/CudaMemoryPool.h>
 
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
+// Use CudaMemoryPool for all CUDA allocations to ensure consistent alloc/free pairing
 // #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)
 //   if (WORKSPACE == nullptr) {
-//     auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8);
-//     if (erc_##VARIABLE != 0) {
-//      THROW_EXCEPTION("[DEVICE] allocation failed", erc_##VARIABLE);
-//     } else {
-//     };
+//     int deviceId_##VARIABLE = 0;
+//     cudaGetDevice(&deviceId_##VARIABLE);
+//     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;
+//     VARIABLE = reinterpret_cast<TT*>(sd::memory::CudaMemoryPool::getInstance().aocate(
+//         allocSize_##VARIABLE, deviceId_##VARIABLE, nullptr));
+//     if (VARIABLE == nullptr) {
+//       THROW_EXCEPTION("[DEVICE] allocation failed");
+//     }
 //   } else {
-//     VARIABLE =
-//         reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, LENGTH * sizeof(TT) + 8));
+//     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;
+//     VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE));
 //   }
+
 // #define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
 //   if (VARIABLE != nullptr) {
 //     if (WORKSPACE == nullptr) {
-//       auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));
-//       if (erc_##VARIABLE != 0) {
-//         THROW_EXCEPTION("[DEVICE] deallocation failed", erc_##VARIABLE);
-//       };
-//     };
-//   };
-
-// #else
-
-
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
-// #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)
-//   if (WORKSPACE == nullptr) {
-// 
-//     /* Calculate allocation size */
-//     size_t allocSize = LENGTH * sizeof(TT) + 8;
-// 
-//     /* Allocation with proper error handling */
-//     checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&VARIABLE), allocSize));
-// 
-//   } else {
-//     /* Using workspace allocator */
-//     size_t allocSize = LENGTH * sizeof(TT) + 8;
-//     VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize));
+//       int deviceId_##VARIABLE = 0;
+//       cudaGetDevice(&deviceId_##VARIABLE);
+//       sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceId_##VARIABLE, nullptr);
+//     }
 //   }
-// #define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
-//   if (VARIABLE != nullptr) {
-//     if (WORKSPACE == nullptr) {
-//       auto erc_##VARIABLE = cudaFree(reinterpret_cast<void*>(VARIABLE));
-//       if (erc_##VARIABLE != 0) {
-//         throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);
-//       };
-//     };
-//   };
-
-// #endif
 
 // #else
 

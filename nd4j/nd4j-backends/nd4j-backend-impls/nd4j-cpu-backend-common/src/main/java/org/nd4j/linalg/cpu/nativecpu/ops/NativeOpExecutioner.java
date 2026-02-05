@@ -193,7 +193,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimArray != null && dimArray.data() != null) {
             dimLong = dimArray.toLongVector();
         }
-        val dimension = Shape.normalizeAxis(x.rank(), dimLong);
+        // Normalize negative axes first, then check for "reduce all"
+        dimLong = Shape.normalizeAxis(x.rank(), dimLong);
+        if (Shape.wholeArrayDimension(dimLong)) {
+            dimLong = new long[0];
+        }
+        val dimension = dimLong;
 
         if (x.isEmpty()) {
             for (val d:dimension) {
@@ -311,7 +316,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (dimArray != null && dimArray.data() != null) {
             dimLong = dimArray.toLongVector();
         }
-        val dimension = Shape.normalizeAxis(x.rank(), dimLong);
+        // Normalize negative axes first (e.g., -1 → rank-1) per NumPy/ONNX convention,
+        // THEN check for "reduce all" sentinel (null/empty).
+        dimLong = Shape.normalizeAxis(x.rank(), dimLong);
+        if (Shape.wholeArrayDimension(dimLong)) {
+            dimLong = new long[0];
+        }
+        val dimension = dimLong;
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
@@ -1078,7 +1089,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (name != null) {
             getNativeOps().setAllocationContext(name);
         }
-        try (val context = buildContext()) {
+        // Check if a context was injected by the caller via injectNewContext().
+        // If so, the caller owns the context lifecycle and we must NOT close it here,
+        // because the caller may need to read intermediate results after exec() returns.
+        boolean injectedContext = this.nextOpContext.get() != null;
+        val context = buildContext();
+        try {
             op.setupOpContextFromCustomOp(context);
             boolean shapeOverride = op.initializeOutputs(context);
             long start = profilingConfigurableHookIn(op,context);
@@ -1102,8 +1118,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } finally {
             // Clear allocation context after op execution
             getNativeOps().clearAllocationContext();
-            // Clear ThreadLocal to prevent stale context references
-            clearOpContext();
+            if (injectedContext) {
+                // Just remove from ThreadLocal - caller owns the context lifecycle
+                // and may still need to call getIntermediateResult() on it.
+                nextOpContext.remove();
+            } else {
+                // We created the context, so close it
+                try {
+                    context.close();
+                } catch (Exception e) {
+                    log.warn("Error closing OpContext: {}", e.getMessage());
+                }
+                nextOpContext.remove();
+            }
         }
 
 

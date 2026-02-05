@@ -31,7 +31,18 @@ OP_IMPL(boolean_not, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  x->applyTransform(transform::Not, z);
+  // Sync input to host for reliable access
+  x->syncToHost();
+
+  // Perform explicit boolean negation element by element
+  for (sd::LongType i = 0; i < x->lengthOf(); i++) {
+    // Read as int8 and check if non-zero, then negate
+    bool inputVal = x->e<int8_t>(i) != 0;
+    z->p(i, !inputVal);
+  }
+
+  // Sync output to device
+  z->syncToDevice();
 
   return Status::OK;
 }

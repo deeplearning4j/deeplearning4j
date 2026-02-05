@@ -72,7 +72,7 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
         SDVariable v = sd.var("variable", Nd4j.scalar(1.0));
         SDVariable out = v.sub("out", c2);
 
-        SameDiff copy = sd.dup();
+        // REMOVED: SameDiff copy = sd.dup(); - unused and may corrupt original
 
         SameDiff optimized = GraphOptimizer.optimize(sd, "out");
         assertEquals(3, optimized.getVariables().size());       //"add", "variable", "out" -> "c" should be removed
@@ -154,7 +154,11 @@ public class TestOptimization extends BaseNd4jTestWithBackends {
                 .build();
 
         SameDiff optimized = OptimizationTestUtil.testOptimization(conf);
-        assertEquals(3, optimized.getOps().size());
+        // After identity removal AND bias fusion optimization, we get:
+        // - xw_plus_b (fused mmul + add)
+        // - softmax
+        // = 2 ops total
+        assertEquals(2, optimized.getOps().size());
         assertFalse(optimized.hasVariable(i1.name()));
         assertFalse(optimized.hasVariable(i2.name()));
         assertFalse(optimized.hasVariable(i3.name()));

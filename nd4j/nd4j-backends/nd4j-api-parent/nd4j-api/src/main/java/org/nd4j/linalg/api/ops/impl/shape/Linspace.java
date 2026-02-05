@@ -139,4 +139,9 @@ public class Linspace extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return Arrays.asList(sameDiff.zerosLike(arg(0)), sameDiff.zerosLike(arg(1)), sameDiff.zerosLike(arg(2)));
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

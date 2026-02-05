@@ -1692,7 +1692,9 @@ function(srcore_generate_javacpp_header combinations_2 combinations_3 output_dir
     endforeach()
     string(APPEND javacpp_content "} // namespace indexreduce\n\n")
 
-    # SummaryStatsReduce (X,Z)
+    # SummaryStatsReduce (X,Z) - Z must be float type (variance/std require float output)
+    # SummaryStats calculates variance, std deviation, etc. which semantically require float outputs
+    set(float_cpp_types "float;double;float16;bfloat16")
     string(APPEND javacpp_content "namespace summarystats {\n")
     foreach(pair IN LISTS combinations_2)
         string(REPLACE "," ";" pair_list "${pair}")
@@ -1700,7 +1702,11 @@ function(srcore_generate_javacpp_header combinations_2 combinations_3 output_dir
         list(GET pair_list 1 t2)
         list(GET type_cpp_types ${t1} cpp_type1)
         list(GET type_cpp_types ${t2} cpp_type2)
-        string(APPEND javacpp_content "template class SummaryStatsReduce<${cpp_type1}, ${cpp_type2}>;\n")
+        # Only generate SummaryStatsReduce when output type is float
+        list(FIND float_cpp_types "${cpp_type2}" is_float_idx)
+        if(is_float_idx GREATER_EQUAL 0)
+            string(APPEND javacpp_content "template class SummaryStatsReduce<${cpp_type1}, ${cpp_type2}>;\n")
+        endif()
     endforeach()
     string(APPEND javacpp_content "} // namespace summarystats\n\n")
 

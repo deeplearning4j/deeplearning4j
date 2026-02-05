@@ -55,23 +55,29 @@ public class ForwardExecutionDAGBuilder {
     // This eliminates O(N) linear scans through all operations for each variable lookup
     private Map<String, String> variableToProducerOpCache;
 
+    // Cached reverse lookup map: variable name -> consumer operation names
+    // This eliminates O(N) linear scans when finding all consumers of a variable
+    private Map<String, Set<String>> variableToConsumerOpsCache;
+
     public ForwardExecutionDAGBuilder(SameDiff sameDiff) {
         this.sameDiff = sameDiff;
-        buildVariableToProducerCache();
+        buildCaches();
     }
 
     /**
-     * Build the reverse lookup cache mapping variables to their producer operations.
+     * Build the reverse lookup caches for both producer and consumer operations.
      * This is built once at construction time and provides O(1) lookups instead of O(N) scans.
      */
-    private void buildVariableToProducerCache() {
+    private void buildCaches() {
         variableToProducerOpCache = new HashMap<>();
+        variableToConsumerOpsCache = new HashMap<>();
 
         for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
             String opName = entry.getKey();
             SameDiffOp op = entry.getValue();
-            List<String> outputs = op.getOutputsOfOp();
 
+            // Build producer cache from outputs
+            List<String> outputs = op.getOutputsOfOp();
             if (outputs != null) {
                 for (String output : outputs) {
                     variableToProducerOpCache.put(output, opName);
@@ -82,9 +88,24 @@ public class ForwardExecutionDAGBuilder {
                     }
                 }
             }
+
+            // Build consumer cache from inputs
+            List<String> inputs = op.getInputsToOp();
+            if (inputs != null) {
+                for (String input : inputs) {
+                    // Add this op as a consumer of the input variable
+                    variableToConsumerOpsCache.computeIfAbsent(input, k -> new HashSet<>()).add(opName);
+                    // Also index by stripped name for multi-output pattern matching
+                    String baseName = stripVariableSuffix(input);
+                    if (!baseName.equals(input)) {
+                        variableToConsumerOpsCache.computeIfAbsent(baseName, k -> new HashSet<>()).add(opName);
+                    }
+                }
+            }
         }
 
-        log.debug("Built variable-to-producer cache with {} entries", variableToProducerOpCache.size());
+        log.debug("Built caches: {} producer entries, {} consumer entries",
+                variableToProducerOpCache.size(), variableToConsumerOpsCache.size());
     }
     
     /**
@@ -95,7 +116,7 @@ public class ForwardExecutionDAGBuilder {
      * @return Properly structured DAG with operation-to-operation dependencies
      */
     public ForwardExecutionDAG buildForwardDAG(Collection<String> requestedOutputs) {
-        log.info("Building forward execution DAG for outputs: {}", requestedOutputs);
+        log.debug("Building forward execution DAG for outputs: {}", requestedOutputs);
 
         Set<String> requiredOperations = new HashSet<>();
         Set<String> requiredVariables = new HashSet<>();
@@ -121,7 +142,7 @@ public class ForwardExecutionDAGBuilder {
             }
         }
 
-        log.info("Converged after {} iterations: {} operations, {} variables",
+        log.debug("Converged after {} iterations: {} operations, {} variables",
                 iteration, requiredOperations.size(), requiredVariables.size());
 
         validateCompleteness(requestedOutputs, allPlaceholders, requiredVariables);
@@ -228,15 +249,18 @@ public class ForwardExecutionDAGBuilder {
     private Set<String> findAllConsumerOperations(String variableName) {
         Set<String> consumers = new HashSet<>();
 
-        for (Map.Entry<String, SameDiffOp> entry : sameDiff.getOps().entrySet()) {
-            SameDiffOp op = entry.getValue();
-            if (op.getInputsToOp() != null) {
-                for (String input : op.getInputsToOp()) {
-                    if (input.equals(variableName) || stripVariableSuffix(input).equals(stripVariableSuffix(variableName))) {
-                        consumers.add(entry.getKey());
-                        break;
-                    }
-                }
+        // Use cached lookup - O(1) instead of O(N) scan through all ops
+        Set<String> directConsumers = variableToConsumerOpsCache.get(variableName);
+        if (directConsumers != null) {
+            consumers.addAll(directConsumers);
+        }
+
+        // Also check by stripped name for multi-output pattern matching
+        String baseName = stripVariableSuffix(variableName);
+        if (!baseName.equals(variableName)) {
+            Set<String> baseConsumers = variableToConsumerOpsCache.get(baseName);
+            if (baseConsumers != null) {
+                consumers.addAll(baseConsumers);
             }
         }
 
@@ -267,7 +291,7 @@ public class ForwardExecutionDAGBuilder {
             }
         }
 
-        log.info("Validation passed: {} outputs, {} placeholders included",
+        log.debug("Validation passed: {} outputs, {} placeholders included",
                 requestedOutputs.size(), allPlaceholders.size());
     }
 
@@ -409,7 +433,7 @@ public class ForwardExecutionDAGBuilder {
             }
         }
         
-        log.info("Created topological execution order with {} nodes", result.size());
+        log.debug("Created topological execution order with {} nodes", result.size());
         return result;
     }
     

@@ -326,6 +326,12 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public void purgeForReuse() {
+        fastpath_in.clear();
+        fastpath_out.clear();
+    }
+
+    @Override
     public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
         if (inputArrs != null) {
             setInputArrays(inputArrs);

@@ -233,8 +233,8 @@ public class DeviceRoutingTest {
     }
 
     @Test
-    @DisplayName("Should select device with LEAST_LOADED policy")
-    void testLeastLoadedPolicy() {
+    @DisplayName("Should select device with MOST_FREE policy")
+    void testMostFreePolicy() {
         DeviceDescriptor cpu = DeviceDescriptor.cpu();
         DeviceDescriptor cuda = DeviceDescriptor.cuda(0);
 
@@ -249,10 +249,10 @@ public class DeviceRoutingTest {
         memoryManager.recordAllocation(cpu, 800);  // 80% loaded
         memoryManager.recordAllocation(cuda, 200); // 20% loaded
 
-        DeviceDescriptor selected = memoryManager.selectDevice(100, DeviceRoutingPolicy.LEAST_LOADED);
+        DeviceDescriptor selected = memoryManager.selectDevice(100, DeviceRoutingPolicy.MOST_FREE);
 
         assertEquals(cuda.getDeviceId(), selected.getDeviceId(),
-            "LEAST_LOADED should select less loaded device (CUDA)");
+            "MOST_FREE should select device with more free memory (CUDA)");
     }
 
     @Test

@@ -37,6 +37,7 @@ limitations under the License.
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <ops/declarable/helpers/image_resize.h>
 
 #include "execution/cuda/LaunchDims.h"
@@ -168,15 +169,13 @@ static Status resizeBilinearFunctor_(LaunchContext* context, NDArray * images, i
   BilinearInterpolationData* xs_;  // = xs.data();
   BilinearInterpolationData* ys_;  // = xs.data();
 
-  cudaError_t err = cudaMalloc(&xs_, sizeof(BilinearInterpolationData) * (outWidth + 1));
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resize_image: Cannot allocate memory for vertical parts rectangulars", err);
-  }
+  int irDevId = 0; cudaGetDevice(&irDevId);
+  xs_ = reinterpret_cast<BilinearInterpolationData*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(BilinearInterpolationData) * (outWidth + 1), irDevId, nullptr));
+  if (xs_ == nullptr) THROW_EXCEPTION("helpers::resize_image: Cannot allocate memory for vertical parts rectangulars");
 
-  err = cudaMalloc(&ys_, sizeof(BilinearInterpolationData) * (outHeight + 1));
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resize_image: Cannot allocate memory for horizontal parts rectangulars", err);
-  }
+  ys_ = reinterpret_cast<BilinearInterpolationData*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(BilinearInterpolationData) * (outHeight + 1), irDevId, nullptr));
+  if (ys_ == nullptr) THROW_EXCEPTION("helpers::resize_image: Cannot allocate memory for horizontal parts rectangulars");
+  cudaError_t err;
   dim3 launchDims = getLaunchDims("image_resize_interp_weights");
 
   auto stream = context->getCudaStream();
@@ -195,16 +194,8 @@ static Status resizeBilinearFunctor_(LaunchContext* context, NDArray * images, i
   err = cudaStreamSynchronize(*stream);
   NDArray::registerSpecialUse({output}, {images});
 
-  err = cudaFree(xs_);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resize_image: Cannot deallocate memory for vertical parts rectangulars", err);
-  }
-
-  err = cudaFree(ys_);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resize_image: Cannot deallocate memory for horizontical parts rectangulars",
-                                err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(xs_, irDevId, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(ys_, irDevId, nullptr);
 
   return Status::OK;
 }
@@ -389,15 +380,13 @@ float* initCoeffsTable(const double a, cudaStream_t* stream) {
   // convolution algorithm.
   // https://en.wikipedia.org/wiki/Bicubic_interpolation
   float* coeffs_table;  // = new float[(kTableSize + 1) * 2];
-  auto err = cudaMalloc(&coeffs_table, sizeof(float) * ((kTableSize + 1) * 2));
-  if (err != 0) {
-    throw cuda_exception::build("helpers::initCoeffsTable: Cannot allocate memory for vertical parts rectangulars",
-                                err);
-  }
+  int irDevId2 = 0; cudaGetDevice(&irDevId2);
+  coeffs_table = reinterpret_cast<float*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(float) * ((kTableSize + 1) * 2), irDevId2, nullptr));
+  if (coeffs_table == nullptr) THROW_EXCEPTION("helpers::initCoeffsTable: Cannot allocate memory for coeffs table");
 
   dim3 launchDims = getLaunchDims("image_resize_init_coeffs");
   initCoefTableKernel<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(static_cast<float>(a), coeffs_table, kTableSize);
-  err = cudaStreamSynchronize(*stream);
+  cudaError_t err = cudaStreamSynchronize(*stream);
   if (err != 0) {
     throw cuda_exception::build("helpers::initCoeffsTable: Cannot synchronize kernel", err);
   }
@@ -444,11 +433,10 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
   auto outWidth = resizerState.outWidth;
   CachedInterpolationCalculator calc;  // = new CachedInterpolationCalculator;
   CachedInterpolationCalculator* pCalcD;
-  auto err = cudaMalloc(&pCalcD, sizeof(CachedInterpolationCalculator));
-  if (err != 0) {
-    cuda_exception::build(
-        "helpers::computeXWeightsAndIndices: Cannot allocated device memory for interpolate calculator", err);
-  }
+  int irDevId3 = 0; cudaGetDevice(&irDevId3);
+  pCalcD = reinterpret_cast<CachedInterpolationCalculator*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(CachedInterpolationCalculator), irDevId3, nullptr));
+  if (pCalcD == nullptr) THROW_EXCEPTION("helpers::computeXWeightsAndIndices: Cannot allocate device memory for interpolate calculator");
+  cudaError_t err;
   err = cudaMemcpyAsync(pCalcD, &calc, sizeof(CachedInterpolationCalculator), cudaMemcpyHostToDevice, *stream);
   if (err != 0) {
     cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator",
@@ -459,11 +447,7 @@ static void computeXWeightsAndIndices(float const* coeffsTable, const ImageResiz
   advanceWeightsAndIndicesKernel<Scaler><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(coeffsTable, pCalcD, pXWais, resizerState.inWidth,
                                                                      resizerState.widthScale, outWidth,
                                                                      resizerState.channels, exclude_outside);
-  err = cudaFree(pCalcD);
-  if (err != 0) {
-    cuda_exception::build(
-        "helpers::computeXWeightsAndIndices: Cannot deallocated device memory for interpolate calculator", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(pCalcD, irDevId3, nullptr);
   err = cudaStreamSynchronize(*stream);
   if (err != 0) {
     cuda_exception::build(
@@ -637,10 +621,10 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
   const auto numChannels = resizerState.channels;
   auto stream = resizerState.stream;  // output->getContext()->getCudaStream();
   ImageResizerState* resizerStateD;
-  auto err = cudaMalloc(&resizerStateD, sizeof(ImageResizerState));
-  if (err != 0) {
-    throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for resizerState", err);
-  }
+  int irDevId4 = 0; cudaGetDevice(&irDevId4);
+  resizerStateD = reinterpret_cast<ImageResizerState*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(ImageResizerState), irDevId4, nullptr));
+  if (resizerStateD == nullptr) THROW_EXCEPTION("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for resizerState");
+  cudaError_t err;
   err = cudaMemcpyAsync(resizerStateD, &resizerState, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
   if (err != 0) {
     throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot set up memory for resizerState", err);
@@ -648,11 +632,8 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
 
 
   WeightsAndIndices* xWais;
-  err = cudaMalloc(&xWais, sizeof(WeightsAndIndices) * resizerState.outWidth);
-  if (err != 0) {
-    throw cuda_exception::build(
-        "helpers::bicubicInterpolateWithCaching: Cannot allocate memory for weights and indices", err);
-  }
+  xWais = reinterpret_cast<WeightsAndIndices*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(WeightsAndIndices) * resizerState.outWidth, irDevId4, nullptr));
+  if (xWais == nullptr) THROW_EXCEPTION("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for weights and indices");
 
   auto coeffsTable = initCoeffsTable(
       coefficient, stream);
@@ -678,24 +659,9 @@ static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerSta
     throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Kernels finished with error", err);
   }
 
-  err = cudaFree(resizerStateD);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for resizerState",
-                                err);
-  }
-
-
-  err = cudaFree(xWais);
-  if (err != 0) {
-    throw cuda_exception::build(
-        "helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for weights and indices", err);
-  }
-
-  err = cudaFree(coeffsTable);
-  if (err != 0) {
-    throw cuda_exception::build(
-        "helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for coefficients table", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(resizerStateD, irDevId4, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(xWais, irDevId4, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(coeffsTable, irDevId4, nullptr);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -793,10 +759,10 @@ static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, Cached
       reinterpret_cast<float*>(output->specialBuffer());  // output is always float. TO DO: provide another float types
                                                           // also with  template <typename X, typename Z> declaration
   ImageResizerState* pSt;
-  auto err = cudaMalloc(&pSt, sizeof(ImageResizerState));
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot allocate memory for ImageResizerState", err);
-  }
+  int irDevId5 = 0; cudaGetDevice(&irDevId5);
+  pSt = reinterpret_cast<ImageResizerState*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(ImageResizerState), irDevId5, nullptr));
+  if (pSt == nullptr) THROW_EXCEPTION("helpers::resizeArea: Cannot allocate memory for ImageResizerState");
+  cudaError_t err;
 
   err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
   if (err != 0) {
@@ -804,24 +770,16 @@ static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, Cached
   }
   ScaleCache<T>* cachePool;
   auto cachePoolSize = sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight;
-  err = cudaMalloc(&cachePool, cachePoolSize);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot allocate memory for cache", err);
-  }
+  cachePool = reinterpret_cast<ScaleCache<T>*>(sd::memory::CudaMemoryPool::getInstance().allocate(cachePoolSize, irDevId5, nullptr));
+  if (cachePool == nullptr) THROW_EXCEPTION("helpers::resizeArea: Cannot allocate memory for cache");
   resizeAreaKernel<T><<<128, 128, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->specialShapeInfo(), outputPtr,
                                                    output->specialShapeInfo(), cachePool);
   err = cudaStreamSynchronize(*stream);
   if (err != 0) {
     throw cuda_exception::build("helpers::resizeArea: An error occured with kernel running", err);
   }
-  err = cudaFree(cachePool);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot deallocate memory for cache", err);
-  }
-  err = cudaFree(pSt);
-  if (err != 0) {
-    throw cuda_exception::build("helpers::resizeArea: Cannot deallocate memory for ImageResizeState", err);
-  }
+  sd::memory::CudaMemoryPool::getInstance().free(cachePool, irDevId5, nullptr);
+  sd::memory::CudaMemoryPool::getInstance().free(pSt, irDevId5, nullptr);
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 template <typename T>
@@ -833,23 +791,18 @@ Status resizeAreaFunctor_(LaunchContext* context, NDArray * image, int const wid
   if (Status::OK == res) {
     CachedInterpolation* xCached;
     //(st.outWidth);
-    auto err = cudaMalloc(&xCached, sizeof(CachedInterpolation) * st.outWidth);
-    if (err != 0) {
-      throw cuda_exception::build("helpers::resizeAreaFunctor_: Cannot allocate memory for cached interpolations", err);
-    }
+    int irDevId6 = 0; cudaGetDevice(&irDevId6);
+    xCached = reinterpret_cast<CachedInterpolation*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(CachedInterpolation) * st.outWidth, irDevId6, nullptr));
+    if (xCached == nullptr) THROW_EXCEPTION("helpers::resizeAreaFunctor_: Cannot allocate memory for cached interpolations");
     NDArray::prepareSpecialUse({output}, {image});
     dim3 launchDims = getLaunchDims("image_resize_fill_interp");
     fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
     resizeArea<T>(stream, st, xCached, image, output);
-    err = cudaStreamSynchronize(*stream);
+    cudaError_t err = cudaStreamSynchronize(*stream);
     if (err != 0) {
       throw cuda_exception::build("helpers::resizeAreaFunctor_: Error occured when kernel was running", err);
     }
-    err = cudaFree(xCached);
-    if (err != 0) {
-      throw cuda_exception::build("helpers::resizeAreaFunctor_: Cannot deallocate memory for cached interpolations",
-                                  err);
-    }
+    sd::memory::CudaMemoryPool::getInstance().free(xCached, irDevId6, nullptr);
     NDArray::registerSpecialUse({output}, {image});
   }
 

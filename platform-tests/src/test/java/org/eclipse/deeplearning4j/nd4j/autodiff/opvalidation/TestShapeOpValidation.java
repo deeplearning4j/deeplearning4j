@@ -3006,4 +3006,46 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
         log.info("Multiple stack test passed");
     }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testStridedSliceEmptyDimension(Nd4jBackend backend) {
+        // Test 1: strided_slice where begin==end on one dimension produces empty output
+        // This previously caused out-of-bounds reads because _preprocess_strided_slice
+        // skipped pushing index triplets for empty dimensions, but calcSubArrShapeInfoAndOffset
+        // always reads rank*3 entries.
+        INDArray in = Nd4j.rand(DataType.FLOAT, 3, 4, 5);
+        INDArray begin = Nd4j.createFromArray(0, 2, 0);
+        INDArray end = Nd4j.createFromArray(3, 2, 5);
+        INDArray stride = Nd4j.createFromArray(1, 1, 1);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in, begin, end, stride)
+                .addIntegerArguments(0, 0, 0, 0, 0) // no masks
+                .build();
+
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(op);
+        assertEquals(1, shapes.size());
+        long[] shape = Shape.shape(shapes.get(0).asLong());
+        // dim 1 has begin==end so output should have 0 elements in that dim
+        assertArrayEquals(new long[]{3, 0, 5}, shape,
+                "strided_slice with begin==end on dim 1 should produce shape [3,0,5]");
+
+        // Test 2: strided_slice on a 2D array with begin==end on dim 0
+        INDArray in2 = Nd4j.rand(DataType.FLOAT, 5, 3);
+        INDArray begin2 = Nd4j.createFromArray(2, 0);
+        INDArray end2 = Nd4j.createFromArray(2, 3);
+        INDArray stride2 = Nd4j.createFromArray(1, 1);
+
+        DynamicCustomOp op2 = DynamicCustomOp.builder("strided_slice")
+                .addInputs(in2, begin2, end2, stride2)
+                .addIntegerArguments(0, 0, 0, 0, 0)
+                .build();
+
+        List<DataBuffer> shapes2 = Nd4j.getExecutioner().calculateOutputShape(op2);
+        assertEquals(1, shapes2.size());
+        long[] shape2 = Shape.shape(shapes2.get(0).asLong());
+        assertArrayEquals(new long[]{0, 3}, shape2,
+                "strided_slice with begin==end on dim 0 should produce shape [0,3]");
+    }
 }

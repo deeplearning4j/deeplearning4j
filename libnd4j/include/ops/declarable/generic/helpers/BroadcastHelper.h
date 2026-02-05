@@ -124,9 +124,12 @@ class BroadcastHelper {
         x->applyPairwiseTransform(op.p, y, z, extraArgs);
         return z;
       } else {
+        // Create output array with y's shape but BOOL dtype for comparison result
         auto* yShapeVec = y->getShapeAsVector();
-        auto tZ = NDArrayFactory::valueOf(*yShapeVec, y, y->ordering());
+        auto tZ = NDArrayFactory::create(y->ordering(), *yShapeVec, BOOL, z->getContext());
         delete yShapeVec;
+        // Actually perform the comparison: x (scalar) vs y (array)
+        x->applyPairwiseTransform(op.p, y, tZ, extraArgs);
         return tZ;
       }
     } else if (xIsScalar && yIsScalar) {

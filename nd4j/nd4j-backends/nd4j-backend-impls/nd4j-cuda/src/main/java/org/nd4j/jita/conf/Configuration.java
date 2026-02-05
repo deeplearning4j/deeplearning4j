@@ -210,6 +210,21 @@ public class Configuration implements Serializable {
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
+    // Minimum free memory threshold to consider a device healthy (bytes)
+    private static final long MIN_FREE_BYTES = 64L * 1024L * 1024L;
+
+    private static final class DeviceMemoryInfo {
+        private final int deviceId;
+        private final long freeBytes;
+        private final long totalBytes;
+
+        private DeviceMemoryInfo(int deviceId, long freeBytes, long totalBytes) {
+            this.deviceId = deviceId;
+            this.freeBytes = freeBytes;
+            this.totalBytes = totalBytes;
+        }
+    }
+
     public boolean isInitialized() {
         return initialized.get();
     }
@@ -392,30 +407,120 @@ public class Configuration implements Serializable {
         parseEnvironmentVariables();
     }
 
+    private long minimumFreeBytes(long totalBytes) {
+        if (totalBytes <= 0) {
+            return 0;
+        }
+        double minFreeRatio = 1.0 - maximumDeviceMemoryUsed;
+        if (minFreeRatio <= 0.0) {
+            return 0;
+        }
+        long minFree = (long) Math.ceil(totalBytes * minFreeRatio);
+        return Math.max(minFree, MIN_FREE_BYTES);
+    }
 
-    void updateDevice() {
-        if (!availableDevices.isEmpty())
-            return;
+    private List<DeviceMemoryInfo> probeDevices(int deviceCount) {
+        List<DeviceMemoryInfo> devices = new ArrayList<>();
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
+        for (int i = 0; i < deviceCount; i++) {
+            if (bannedDevices.contains(i)) {
+                log.info("Skipping banned CUDA device [{}]", i);
+                continue;
+            }
+
+            long total = nativeOps.getDeviceTotalMemory(i);
+            long free = nativeOps.getDeviceFreeMemory(i);
+            if (total <= 0 && free <= 0) {
+                log.warn("Skipping CUDA device [{}]: unable to query memory or initialize device", i);
+                continue;
+            }
+
+            devices.add(new DeviceMemoryInfo(i, free, total));
+        }
+
+        return devices;
+    }
+
+    private List<DeviceMemoryInfo> filterByFreeMemory(List<DeviceMemoryInfo> devices, boolean includeLowMemory) {
+        List<DeviceMemoryInfo> usable = new ArrayList<>();
+        List<DeviceMemoryInfo> lowMemory = new ArrayList<>();
+
+        for (DeviceMemoryInfo info : devices) {
+            if (info.totalBytes > 0) {
+                long minFree = minimumFreeBytes(info.totalBytes);
+                if (info.freeBytes < minFree) {
+                    lowMemory.add(info);
+                    log.warn("CUDA device [{}] below free memory threshold: free={}MB, total={}MB (minFree={}MB)",
+                            info.deviceId,
+                            info.freeBytes / (1024 * 1024),
+                            info.totalBytes / (1024 * 1024),
+                            minFree / (1024 * 1024));
+                    continue;
+                }
+            }
+            usable.add(info);
+        }
+
+        if (usable.isEmpty() && !lowMemory.isEmpty()) {
+            log.warn("All CUDA devices are below free-memory threshold; falling back to low-memory devices");
+            return lowMemory;
+        }
+
+        if (includeLowMemory && !lowMemory.isEmpty()) {
+            usable.addAll(lowMemory);
+        }
+
+        return usable;
+    }
+
+    private List<Integer> detectAvailableDevices(boolean includeLowMemory) {
         int cnt = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
 
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");
 
-        // Use all available devices by default, only restrict if explicitly forced to single GPU
-        if (forceSingleGPU) {
-            int selected = selectBestDevice(cnt);
+        List<DeviceMemoryInfo> devices = probeDevices(cnt);
+        if (devices.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<DeviceMemoryInfo> filtered = filterByFreeMemory(devices, includeLowMemory);
+        filtered.sort((a, b) -> {
+            long memA = a.totalBytes > 0 ? a.totalBytes : a.freeBytes;
+            long memB = b.totalBytes > 0 ? b.totalBytes : b.freeBytes;
+            return Long.compare(memB, memA);
+        });
+
+        List<Integer> deviceIds = new ArrayList<>(filtered.size());
+        for (DeviceMemoryInfo info : filtered) {
+            deviceIds.add(info.deviceId);
+        }
+
+        return deviceIds;
+    }
+
+
+    void updateDevice() {
+        if (!availableDevices.isEmpty())
+            return;
+
+        List<Integer> detectedDevices = detectAvailableDevices(false);
+        if (detectedDevices.isEmpty())
+            throw new RuntimeException("No usable CUDA devices were found in system");
+
+        // Use a single device unless multi-GPU is explicitly enabled
+        if (forceSingleGPU || !autoMultiGpuEnabled) {
+            int selected = detectedDevices.get(0);
             availableDevices.add(selected);
-            log.info("Selected CUDA device [{}] as default (forceSingleGPU=true, deviceCount={})",
-                    selected, cnt);
+            log.info("Selected CUDA device [{}] as default (multi-GPU disabled, detectedDevices={})",
+                    selected, detectedDevices.size());
             return;
         }
 
-        // Add all available devices
-        for (int i = 0; i < cnt; i++) {
-            availableDevices.add(i);
-        }
-        log.info("Using all {} available CUDA devices", cnt);
+        // Add all available devices, starting with the best one (most memory)
+        availableDevices.addAll(detectedDevices);
+        log.info("Using all {} available CUDA devices, primary device: {}", detectedDevices.size(), detectedDevices.get(0));
     }
 
 
@@ -497,33 +602,11 @@ public class Configuration implements Serializable {
         if (!availableDevices.isEmpty())
             return;
 
-        int cnt = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
-        if (cnt == 0)
-            throw new RuntimeException("No CUDA devices were found in system");
+        List<Integer> detectedDevices = detectAvailableDevices(true);
+        if (detectedDevices.isEmpty())
+            throw new RuntimeException("No usable CUDA devices were found in system");
 
-        for (int i = 0; i < cnt; i++) {
-            availableDevices.add(i);
-        }
-    }
-
-    private int selectBestDevice(int deviceCount) {
-        int bestDevice = 0;
-        long bestFree = -1;
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-
-        for (int i = 0; i < deviceCount; i++) {
-            try {
-                long free = nativeOps.getDeviceFreeMemory(i);
-                if (free > bestFree) {
-                    bestFree = free;
-                    bestDevice = i;
-                }
-            } catch (Exception e) {
-                log.debug("Failed to query free memory for device {}: {}", i, e.getMessage());
-            }
-        }
-
-        return bestDevice;
+        availableDevices.addAll(detectedDevices);
     }
 
     /**

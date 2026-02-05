@@ -39,8 +39,19 @@ void deleteNDArray(OpaqueNDArray array) {
     return;
   }
 
+  if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+    sd_printf("deleteNDArray: deleting NDArray at %p, shapeInfo=%p\n",
+              array, array->shapeInfo());
+    fflush(stdout);
+  }
+
   g_opaqueArrayCount.fetch_sub(1, std::memory_order_relaxed);
 
   // On CPU, just delete the array directly - all operations are synchronous
   delete array;
+
+  if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+    sd_printf("deleteNDArray: successfully deleted NDArray\n");
+    fflush(stdout);
+  }
 }

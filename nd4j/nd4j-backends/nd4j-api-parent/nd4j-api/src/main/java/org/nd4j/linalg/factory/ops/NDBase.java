@@ -737,18 +737,6 @@ public class NDBase {
    * @return output Output variable (NUMERIC type)
    */
   public INDArray expandDims(INDArray x, int axis) {
-    // Validate axis bounds before calling native code
-    int rank = x.rank();
-    int adjustedAxis = axis;
-    if (adjustedAxis < 0) {
-      adjustedAxis += rank + 1;
-    }
-    if (adjustedAxis < 0 || adjustedAxis > rank) {
-      throw new org.nd4j.linalg.exception.ND4JIllegalStateException(
-          "ExpandDims: axis " + axis + " is out of bounds for input array with rank " + rank +
-          ". Valid range is [" + (-(rank+1)) + ", " + rank + "]");
-    }
-
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ExpandDims(x, axis));
     try {
       return __tmp[0];
@@ -3163,6 +3151,30 @@ public class NDBase {
   public INDArray squeeze(INDArray x, int axis) {
     NDValidation.validateNumerical("squeeze", "x", x);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Squeeze(x, axis));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Remove all dimensions of size 1 from the input tensor.<br>
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
+   * This is the NumPy-style squeeze with no axis specified.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray squeezeAll(INDArray x) {
+    NDValidation.validateNumerical("squeezeAll", "x", x);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Squeeze(x));
     try {
       return __tmp[0];
     } finally {

@@ -114,39 +114,40 @@ SD_KERNEL SD_INLINE void scalarAlongDimensionCachedKernel(
 ////////////////////////////////////////////////////////////////////////
 // A kernel to apply a scalar transform to a shaped buffer, with caching logic
 // for shape info in shared memory to reduce overhead.
+// Parameters match scalar.chpp convention:
+//   x = the array input (iterate over this)
+//   y = the scalar input (extract y[0])
 template <typename X, typename Z, typename OpType>
 SD_KERNEL SD_INLINE void scalarSimpleShapedCachedKernel(
-   void const* x,                 // the "scalar" input
-   void const* y,                 // the "array" input
-   const sd::LongType* xShapeInfo,// we just read rank from here if needed
+   void const* x,                 // the array input (to iterate over)
+   void const* y,                 // the scalar input (extract y[0])
+   const sd::LongType* xShapeInfo,// shape info for x array
    void* params,
    void* z,
    const sd::LongType* zShapeInfo,
    sd::LongType* allocationBuffer) {
 
- auto scalar = reinterpret_cast<const X*>(x)[0];
- auto yTyped = reinterpret_cast<const X*>(y);
+ // x is the array, y is the scalar - matches scalar.chpp convention
+ auto xTyped = reinterpret_cast<const X*>(x);
+ auto scalar = reinterpret_cast<const X*>(y)[0];
  auto zTyped = reinterpret_cast<Z*>(z);
  auto extra  = reinterpret_cast<X*>(params);
 
  __shared__ sd::LongType length;
- __shared__ int yRank;
- __shared__ const sd::LongType* yShapePtr;
- __shared__ const sd::LongType* yStridePtr;
+ __shared__ int xRank;
+ __shared__ const sd::LongType* xShapePtr;
+ __shared__ const sd::LongType* xStridePtr;
 
  __shared__ int zRank;
  __shared__ const sd::LongType* zShapePtr;
  __shared__ const sd::LongType* zStridePtr;
 
  if (threadIdx.x == 0) {
-   length      = shape::length(xShapeInfo);  // or maybe shape::length(zShapeInfo)
-   // Actually we only need length from either input array's shape
-   // but let's assume x is scalar, so let's do it from z shape if that's a shaped array
-   // For now we keep as is.
+   length      = shape::length(xShapeInfo);
 
-   yRank       = shape::rank(xShapeInfo);    // or we do: shape::rank(some-other-shape)
-   yShapePtr   = shape::shapeOf(xShapeInfo);
-   yStridePtr  = shape::stride(xShapeInfo);
+   xRank       = shape::rank(xShapeInfo);
+   xShapePtr   = shape::shapeOf(xShapeInfo);
+   xStridePtr  = shape::stride(xShapeInfo);
 
    zRank       = shape::rank(zShapeInfo);
    zShapePtr   = shape::shapeOf(zShapeInfo);
@@ -158,20 +159,20 @@ SD_KERNEL SD_INLINE void scalarSimpleShapedCachedKernel(
  const auto totalThreads = gridDim.x * blockDim.x;
 
  for (sd::LongType i = tid; i < length; i += totalThreads) {
-   sd::LongType coordsY[SD_MAX_RANK];
+   sd::LongType coordsX[SD_MAX_RANK];
    sd::LongType coordsZ[SD_MAX_RANK];
-   sd::LongType offsetY;
+   sd::LongType offsetX;
    sd::LongType offsetZ;
 
-   // get offset for Y
-   INDEX2COORDS(i, yRank, yShapePtr, coordsY);
-   COORDS2INDEX(yRank, yStridePtr, coordsY, offsetY);
+   // get offset for X (the array)
+   INDEX2COORDS(i, xRank, xShapePtr, coordsX);
+   COORDS2INDEX(xRank, xStridePtr, coordsX, offsetX);
 
    // get offset for Z
    INDEX2COORDS(i, zRank, zShapePtr, coordsZ);
    COORDS2INDEX(zRank, zStridePtr, coordsZ, offsetZ);
 
-   zTyped[offsetZ] = OpType::op(yTyped[offsetY], scalar, extra);
+   zTyped[offsetZ] = OpType::op(xTyped[offsetX], scalar, extra);
  }
 }
 

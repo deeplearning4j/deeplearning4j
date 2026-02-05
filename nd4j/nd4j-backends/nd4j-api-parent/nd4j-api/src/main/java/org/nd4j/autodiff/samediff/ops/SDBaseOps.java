@@ -4717,6 +4717,34 @@ public class SDBaseOps {
   }
 
   /**
+   * Remove all dimensions of size 1 from the input tensor.<br>
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
+   * This is the NumPy-style squeeze with no axis specified.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable squeezeAll(SDVariable x) {
+    SDValidation.validateNumerical("squeezeAll", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.shape.Squeeze(sd,x).outputVariable();
+  }
+
+  /**
+   * Remove all dimensions of size 1 from the input tensor.<br>
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
+   * This is the NumPy-style squeeze with no axis specified.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable squeezeAll(String name, SDVariable x) {
+    SDValidation.validateNumerical("squeezeAll", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Squeeze(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Stack a set of N INDArray of rank X into one rank X+1 variable.<br>
    * If inputs have shape [a,b,c] then output has shape:<br>
    * axis = 0: [N,a,b,c]<br>

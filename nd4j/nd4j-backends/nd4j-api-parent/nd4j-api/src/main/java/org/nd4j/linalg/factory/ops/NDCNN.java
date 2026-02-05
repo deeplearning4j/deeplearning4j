@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeformableConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -607,28 +608,17 @@ public class NDCNN {
    * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
    * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param mask Optional modulation mask for Deformable Conv v2. Shape: [batch, kH*kW*deformableGroups, outputHeight, outputWidth]. May be null. (NUMERIC type)
-   * @param kH Kernel height
-   * @param kW Kernel width
-   * @param sH Stride height
-   * @param sW Stride width
-   * @param pH Padding height
-   * @param pW Padding width
-   * @param dH Dilation height
-   * @param dW Dilation width
-   * @param groups Convolution groups
-   * @param deformableGroups Number of deformable/offset groups
-   * @param nchw If true: input is in NCHW format. False: NHWC format
+   * @param DeformableConv2DConfig Configuration Object
    * @return output Result of deformable convolution (NUMERIC type)
    */
   public INDArray deformableConv2d(INDArray input, INDArray weights, INDArray offset, INDArray bias,
-      INDArray mask, int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, int groups,
-      int deformableGroups, boolean nchw) {
+      INDArray mask, DeformableConv2DConfig DeformableConv2DConfig) {
     NDValidation.validateNumerical("deformableConv2d", "input", input);
     NDValidation.validateNumerical("deformableConv2d", "weights", weights);
     NDValidation.validateNumerical("deformableConv2d", "offset", offset);
     NDValidation.validateNumerical("deformableConv2d", "bias", bias);
     NDValidation.validateNumerical("deformableConv2d", "mask", mask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, bias, mask, kH, kW, sH, sW, pH, pW, dH, dW, groups, deformableGroups, nchw));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, bias, mask, DeformableConv2DConfig));
     try {
       return __tmp[0];
     } finally {
@@ -658,16 +648,15 @@ public class NDCNN {
    * @param input Input tensor - 4d CNN activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (NUMERIC type)
    * @param weights Convolution weights. Shape: [outputChannels, inputChannels/groups, kernelHeight, kernelWidth] (NUMERIC type)
    * @param offset Learned offsets. Shape: [batch, 2*kH*kW*deformableGroups, outputHeight, outputWidth] (NUMERIC type)
-   * @param kH Kernel height
-   * @param kW Kernel width
+   * @param DeformableConv2DConfig Configuration Object
    * @return output Result of deformable convolution (NUMERIC type)
    */
-  public INDArray deformableConv2d(INDArray input, INDArray weights, INDArray offset, int kH,
-      int kW) {
+  public INDArray deformableConv2d(INDArray input, INDArray weights, INDArray offset,
+      DeformableConv2DConfig DeformableConv2DConfig) {
     NDValidation.validateNumerical("deformableConv2d", "input", input);
     NDValidation.validateNumerical("deformableConv2d", "weights", weights);
     NDValidation.validateNumerical("deformableConv2d", "offset", offset);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, null, null, kH, kW, 1, 1, 0, 0, 1, 1, 1, 1, true));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DeformableConv2D(input, weights, offset, null, null, DeformableConv2DConfig));
     try {
       return __tmp[0];
     } finally {

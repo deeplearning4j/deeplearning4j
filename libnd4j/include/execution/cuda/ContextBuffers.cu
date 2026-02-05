@@ -153,6 +153,10 @@ void ContextBuffers::release() {
       cudaSetDevice(currentDevice);
     }
 
+    // Clear any errors that may have occurred during release.
+    // This prevents sticky errors from affecting subsequent operations.
+    cudaGetLastError();
+
     _allocated = false;
     _deviceId = -1;
     this->_specialStream = nullptr;
@@ -181,6 +185,15 @@ void ContextBuffers::initialize() {
   // Without this, if reductionBuffer()/scalarBuffer()/allocationBuffer()
   // is called first (instead of execStream()), we might allocate on wrong device.
   cudaSetDevice(_deviceId);
+
+  // Clear any previous CUDA errors before attempting allocations.
+  // This prevents sticky errors from cross-device operations from causing
+  // subsequent allocations to fail.
+  cudaError_t prevErr = cudaGetLastError();
+  if (prevErr != cudaSuccess) {
+    sd_debug("ContextBuffers::initialize: Cleared previous CUDA error: %s (device %d)\n",
+             cudaGetErrorString(prevErr), _deviceId);
+  }
 
   _reductionPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr);
   if (_reductionPointer == nullptr) throw cuda_exception::build("_reductionPointer allocation failed", cudaErrorMemoryAllocation);

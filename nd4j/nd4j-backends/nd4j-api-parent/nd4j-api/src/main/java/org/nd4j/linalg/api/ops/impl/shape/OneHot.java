@@ -218,4 +218,9 @@ public class OneHot extends DynamicCustomOp {
             return Collections.singletonList(DEFAULT_DTYPE);
         }
     }
+
+    @Override
+    public boolean outputShapeDependsOnInputData() {
+        return true;
+    }
 }

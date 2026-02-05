@@ -220,12 +220,12 @@ static void clipByValue_(NDArray* input, double leftBound, double rightBound, ND
 }
 
 void clipByValue(LaunchContext* context, NDArray* input, double leftBound, double rightBound, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_FLOAT_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE( void clipByValue_,
                       (NDArray * input, double leftBound, double rightBound, NDArray* output);
-                      , SD_FLOAT_TYPES);
+                      , SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

@@ -383,9 +383,6 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
                 // Clean up result array
                 if (zeroCheckResult != null) {
                     try {
-                        if (zeroCheckResult.data() != null) {
-                            zeroCheckResult.data().close();
-                        }
                         zeroCheckResult.close();
                     } catch (Exception e) {
                         // Ignore close errors

@@ -321,21 +321,31 @@ public class VLMImagePreprocessor {
     private INDArray normalize(INDArray image, double[] mean, double[] std) {
         // image shape: [1, C, H, W]
         // Normalize each channel: (x - mean) / std
+        // Use broadcast-based approach to avoid in-place ops on CUDA views,
+        // which can cause stale data in reduction operations.
 
         long[] shape = image.shape();
         int numChannels = (int) shape[1];
+        int channels = Math.min(numChannels, Math.min(mean.length, std.length));
 
-        for (int c = 0; c < numChannels && c < mean.length && c < std.length; c++) {
-            INDArray channel = image.get(
-                    NDArrayIndex.all(),
-                    NDArrayIndex.point(c),
-                    NDArrayIndex.all(),
-                    NDArrayIndex.all()
-            );
-            channel.subi(mean[c]).divi(std[c]);
+        // Build [1, C, 1, 1] shaped mean and std arrays for broadcasting
+        float[] meanData = new float[channels];
+        float[] stdData = new float[channels];
+        for (int c = 0; c < channels; c++) {
+            meanData[c] = (float) mean[c];
+            stdData[c] = (float) std[c];
         }
 
-        return image;
+        INDArray meanArr = Nd4j.create(meanData, new int[]{1, channels, 1, 1});
+        INDArray stdArr = Nd4j.create(stdData, new int[]{1, channels, 1, 1});
+
+        // (image - mean) / std via broadcasting — returns a new contiguous array
+        INDArray result = image.sub(meanArr).div(stdArr);
+
+        meanArr.close();
+        stdArr.close();
+
+        return result;
     }
 
     private INDArray ensureNCHW(INDArray image) {

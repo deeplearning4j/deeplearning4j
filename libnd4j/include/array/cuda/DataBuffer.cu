@@ -25,6 +25,7 @@
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
+#include <memory/cuda/CudaMemoryPool.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
 #include <helpers/TransferMetrics.h>
@@ -46,8 +47,20 @@ void DataBuffer::expand(const uint64_t size) {
     auto currentDeviceId = AffinityManager::currentDeviceId();
     auto oldDeviceId = _deviceId.load();  // Save old device ID for releasing old buffer
 
-    // Allocate new buffer on current device
-    ALLOCATE_SPECIAL(newSpecialBuffer, _workspace, size, int8_t);
+    // Allocate new buffer, tracking actual device in case of failover
+    int actualExpandDevice = currentDeviceId;
+    if (_workspace == nullptr) {
+      size_t allocSize = size + 8;
+      newSpecialBuffer = reinterpret_cast<int8_t*>(
+          memory::CudaMemoryPool::getInstance().allocate(allocSize, currentDeviceId, nullptr, &actualExpandDevice));
+      if (newSpecialBuffer == nullptr) {
+        THROW_EXCEPTION("[DEVICE] expand allocation failed");
+      }
+    } else {
+      size_t allocSize = size + 8;
+      newSpecialBuffer = reinterpret_cast<int8_t*>(
+          _workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
+    }
 #if defined(SD_GCC_FUNCTRACE)
     array::DataBufferLifecycleTracker::getInstance().recordAllocation(
         newSpecialBuffer, size, _dataType,array::BufferType::SPECIAL, this, _workspace != nullptr);
@@ -100,9 +113,12 @@ void DataBuffer::expand(const uint64_t size) {
 
     _specialBuffer = newSpecialBuffer;
     _lenInBytes = size;
+    _specialAllocBytes = size;
+    if (_primaryBuffer != nullptr) _primaryAllocBytes = size;
     _isOwnerSpecial = true;
 
-    _deviceId.store(currentDeviceId);
+    // Store actual device where memory was allocated (may differ from currentDeviceId after failover)
+    _deviceId.store(actualExpandDevice);
   }
 }
 
@@ -110,6 +126,8 @@ DataBuffer DataBuffer::dup() {
   DataBuffer result;
   result._dataType = _dataType;
   result._lenInBytes = _lenInBytes;
+  result._primaryAllocBytes = 0;
+  result._specialAllocBytes = 0;
   // Don't copy buffer pointers - allocateBuffers will create new ones
   result._primaryBuffer = nullptr;
   result._specialBuffer = nullptr;
@@ -396,10 +414,27 @@ void DataBuffer::allocateSpecial() {
       }
     }
 
-    ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
+    // Allocate device memory, tracking which device it actually ends up on
+    // (failover may place it on a different GPU or pinned host memory)
+    int actualDevice = deviceId;
+    if (_workspace == nullptr) {
+      size_t allocSize = getLenInBytes() + 8;
+      _specialBuffer = reinterpret_cast<int8_t*>(
+          memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, nullptr, &actualDevice));
+      if (_specialBuffer == nullptr) {
+        THROW_EXCEPTION("[DEVICE] allocation failed");
+      }
+    } else {
+      size_t allocSize = getLenInBytes() + 8;
+      _specialBuffer = reinterpret_cast<int8_t*>(
+          _workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
+      actualDevice = deviceId;  // workspace allocations stay on requested device
+    }
     _isOwnerSpecial = true;
+    _specialAllocBytes = getLenInBytes();
 
-    _deviceId.store(deviceId);
+    // Store the ACTUAL device where memory was allocated, not the requested device
+    _deviceId.store(actualDevice);
 
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer allocation
@@ -409,9 +444,8 @@ void DataBuffer::allocateSpecial() {
 #endif
 
     if (_workspace == nullptr) {
-      memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
+      memory::MemoryCounter::getInstance().countIn(actualDevice >= 0 ? actualDevice : deviceId, getLenInBytes());
       memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
-
     }
   } else if(getLenInBytes() == 0) {
     std::string errorMessage;
@@ -437,6 +471,19 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   }
 
   allocatePrimary();
+
+  // If primary buffer exists but is undersized (e.g., setPrimaryBuffer was called
+  // with a smaller size, then setSpecialBuffer increased _lenInBytes), reallocate
+  // to prevent buffer overrun during cudaMemcpy.
+  if (_primaryBuffer != nullptr && _primaryAllocBytes > 0 && _primaryAllocBytes < getLenInBytes()) {
+    if (_isOwnerPrimary) {
+      auto ipb = reinterpret_cast<int8_t*>(_primaryBuffer);
+      RELEASE(ipb, _workspace);
+    }
+    _primaryBuffer = nullptr;
+    _primaryAllocBytes = 0;
+    allocatePrimary();
+  }
 
   auto bufferDeviceId = _deviceId.load();
   auto currentDeviceId = AffinityManager::currentDeviceId();
@@ -527,6 +574,17 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 
   allocateSpecial();
 
+  // If special buffer exists but is undersized, reallocate to prevent overrun
+  if (_specialBuffer != nullptr && _specialAllocBytes > 0 && _specialAllocBytes < getLenInBytes()) {
+    if (_isOwnerSpecial) {
+      auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
+      RELEASE_SPECIAL(isb, _workspace);
+    }
+    _specialBuffer = nullptr;
+    _specialAllocBytes = 0;
+    allocateSpecial();
+  }
+
   auto bufferDeviceId = _deviceId.load();
   auto currentDeviceId = AffinityManager::currentDeviceId();
   bool switchedDevice = false;
@@ -539,10 +597,14 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // Track H2D transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  // Use async memcpy - works best with pinned (page-locked) host memory
-  // With CudaPinnedMemoryPool, _primaryBuffer is pinned, enabling true async DMA
-  // Use default stream (0) for H2D since we don't have a context here
+  // Use the compute stream from LaunchContext for proper stream ordering.
+  // Using stream 0 would create unnecessary serialization with all other streams
+  // in legacy default stream mode, and would be incorrect under per-thread default streams.
   cudaStream_t stream = 0;
+  auto ctx = LaunchContext::defaultContext();
+  if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
+    stream = *ctx->getCudaStream();
+  }
   auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
   if (res != cudaSuccess) {
     // Restore device before throwing
@@ -881,6 +943,19 @@ void DataBuffer::migrate() {
     return;
   }
 
+  // Clear any previous CUDA errors to ensure clean state
+  cudaError_t prevErr = cudaGetLastError();
+  if (prevErr != cudaSuccess) {
+    sd_debug("DataBuffer::migrate: Cleared previous CUDA error before migration: %s\n", cudaGetErrorString(prevErr));
+  }
+
+  // Verify we're on the expected device before starting
+  int actualDevice = -1;
+  cudaGetDevice(&actualDevice);
+  if (actualDevice != currentDeviceId) {
+    cudaSetDevice(currentDeviceId);
+  }
+
   memory::Workspace* newWorkspace = nullptr;
   void* newBuffer;
   void* oldBuffer = _specialBuffer;  // Save old buffer pointer for deallocation
@@ -888,17 +963,90 @@ void DataBuffer::migrate() {
   // Start timing the transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  // Allocate on current (target) device
-  ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
+  // Allocate on current (target) device, tracking actual device in case of failover
+  int actualMigrateDevice = currentDeviceId;
+  {
+    size_t allocSize = getLenInBytes() + 8;
+    newBuffer = reinterpret_cast<void*>(
+        memory::CudaMemoryPool::getInstance().allocate(allocSize, currentDeviceId, nullptr, &actualMigrateDevice));
+    if (newBuffer == nullptr) {
+      THROW_EXCEPTION("[DEVICE] migrate allocation failed");
+    }
+  }
 
   if (_specialBuffer != nullptr) {
-    // Copy from old device to new device (cross-device copy)
-    auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
-    if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpy failed!", res);
+    // Copy from old device to new device
+    if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+      // Cross-device copy - stage through host memory for reliability
+      void* hostStaging = nullptr;
+      auto allocRes = cudaMallocHost(&hostStaging, getLenInBytes());
+      if (allocRes != cudaSuccess) {
+        std::string err = "DataBuffer::migrate: cudaMallocHost for staging failed! Error: " +
+                          std::string(cudaGetErrorString(allocRes)) +
+                          ", bytes: " + std::to_string(getLenInBytes()) +
+                          ", from device " + std::to_string(oldDeviceId) + " to device " + std::to_string(currentDeviceId);
+        THROW_EXCEPTION(err.c_str());
+      }
+
+      // Copy from source device to host - need to be on source device for this
+      auto setRes = cudaSetDevice(oldDeviceId);
+      if (setRes != cudaSuccess) {
+        cudaFreeHost(hostStaging);
+        cudaSetDevice(currentDeviceId);
+        std::string err = "DataBuffer::migrate: Failed to switch to source device " + std::to_string(oldDeviceId) +
+                          ": " + std::string(cudaGetErrorString(setRes));
+        THROW_EXCEPTION(err.c_str());
+      }
+
+      // Synchronize the default stream on source device to ensure prior operations complete
+      auto srcStream = sd::LaunchContext::defaultContext()->getCudaStream();
+      if (srcStream != nullptr)
+        cudaStreamSynchronize(*srcStream);
+
+      auto d2hRes = cudaMemcpy(hostStaging, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
+      if (d2hRes != cudaSuccess) {
+        cudaFreeHost(hostStaging);
+        cudaSetDevice(currentDeviceId);
+        std::string err = "DataBuffer::migrate: D2H copy failed! Error: " + std::string(cudaGetErrorString(d2hRes)) +
+                          ", bytes: " + std::to_string(getLenInBytes()) + ", from device " + std::to_string(oldDeviceId);
+        THROW_EXCEPTION(err.c_str());
+      }
+
+      // Switch back to target device for H2D copy
+      setRes = cudaSetDevice(currentDeviceId);
+      if (setRes != cudaSuccess) {
+        cudaFreeHost(hostStaging);
+        std::string err = "DataBuffer::migrate: Failed to switch to target device " + std::to_string(currentDeviceId) +
+                          ": " + std::string(cudaGetErrorString(setRes));
+        THROW_EXCEPTION(err.c_str());
+      }
+
+      auto h2dRes = cudaMemcpy(newBuffer, hostStaging, getLenInBytes(), cudaMemcpyHostToDevice);
+      cudaFreeHost(hostStaging);
+      if (h2dRes != cudaSuccess) {
+        std::string err = "DataBuffer::migrate: H2D copy failed! Error: " + std::string(cudaGetErrorString(h2dRes)) +
+                          ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(currentDeviceId);
+        THROW_EXCEPTION(err.c_str());
+      }
+
+      // cudaMemcpy is synchronous, no additional sync needed
+    } else {
+      // Same device copy or unknown source device
+      auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+      if (res != cudaSuccess) {
+        std::string err = "DataBuffer::migrate: cudaMemcpy D2D failed! Error: " + std::string(cudaGetErrorString(res)) +
+                          ", bytes: " + std::to_string(getLenInBytes()) + ", device " + std::to_string(currentDeviceId);
+        THROW_EXCEPTION(err.c_str());
+      }
+    }
   } else if (_primaryBuffer != nullptr) {
     // Copy from host to device if no special buffer exists
     auto res = cudaMemcpy(newBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
-    if (res != 0) throw cuda_exception::build("DataBuffer::migrate: cudaMemcpy H2D failed!", res);
+    if (res != cudaSuccess) {
+      std::string err = "DataBuffer::migrate: cudaMemcpy H2D failed! Error: " + std::string(cudaGetErrorString(res)) +
+                        ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(currentDeviceId);
+      THROW_EXCEPTION(err.c_str());
+    }
   }
 
   auto endTime = std::chrono::high_resolution_clock::now();
@@ -935,8 +1083,8 @@ void DataBuffer::migrate() {
   _isOwnerSpecial = true;
   _specialBuffer = newBuffer;
 
-  // Update device ID to the current device
-  _deviceId.store(currentDeviceId);
+  // Store actual device where memory was allocated (may differ after failover)
+  _deviceId.store(actualMigrateDevice);
 }
 
 ////////////////////////////////////////////////////////////////////////

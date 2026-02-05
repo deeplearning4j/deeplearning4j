@@ -56,6 +56,7 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.DefaultNd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
+import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.nativeblas.OpaqueVariable;
 import org.nd4j.nativeblas.OpaqueVariablesSet;
@@ -74,7 +75,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected AtomicBoolean debug = new AtomicBoolean(false);
 
     protected ThreadLocal<OpContext> nextOpContext = new ThreadLocal<>();
-
 
     public DefaultOpExecutioner() {}
 
@@ -1147,9 +1147,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             }
             errorMessage.append("\nOp num inputs: ").append(op.numInputArguments());
             errorMessage.append("\nOpContext num inputs: ").append(opContext.numInputArguments());
-            // Also check native context inputs
             errorMessage.append("\nOpContext native num inputs: ").append(opContext.numInputsNative());
-            // Log input array details from opContext
             if (opContext.numInputArguments() > 0) {
                 errorMessage.append("\nOpContext input arrays:");
                 for (int i = 0; i < opContext.numInputArguments(); i++) {
@@ -1174,6 +1172,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         for (int e = 0; e < Nd4j.getNativeOps().getShapeListSize(ptrptr); e++)
             result.add(getShapeFromPointer(op,opContext,new PagedPointer(Nd4j.getNativeOps().getShape(ptrptr, e)).asLongPointer()));
 
+        // Free the ShapeList container now that we've extracted all shapes.
+        // The shape pointers themselves are from ConstantShapeHelper (permanent cache)
+        // and are NOT freed by deleteShapeList (_autoremovable is false).
+        Nd4j.getNativeOps().deleteShapeList(ptrptr);
+
         if (log.isTraceEnabled()) {
             String[] arr = new String[result.size()];
             for (int i = 0; i < result.size(); i++) {
@@ -1189,7 +1192,31 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     protected DataBuffer getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
         val rank = (int) ptr.get(0);
         int len = Shape.shapeInfoLength(rank);
-        DataBuffer buffer = Nd4j.createBuffer(ptr.capacity(len),Shape.shapeInfoLength(rank),DataType.INT64);
+
+        // Read shape info from native pointer into Java array
+        long[] shapeInfo = new long[len];
+        ptr.capacity(len);
+        ptr.get(shapeInfo, 0, len);
+
+        // Route through ConstantShapeHelper C++ cache for stable, device-aware pointers.
+        // This ensures the returned DataBuffer references permanent cache memory
+        // (not temporary ShapeList memory) and has both host and device pointers on CUDA.
+        OpaqueConstantShapeBuffer csb = Nd4j.getNativeOps().cacheAndStoreShapeBuffer(shapeInfo);
+        if (csb == null) {
+            throw new RuntimeException("Failed to cache shape buffer for op: " + op.opName());
+        }
+
+        Pointer primaryPtr = Nd4j.getNativeOps().getConstantShapeBufferPrimary(csb);
+        Pointer specialPtr = Nd4j.getNativeOps().getConstantShapeBufferSpecial(csb);
+
+        DataBuffer buffer;
+        if (specialPtr != null && specialPtr.address() != 0) {
+            // CUDA: create buffer with both host and device pointers from cache
+            buffer = Nd4j.createBuffer(primaryPtr, specialPtr, len, DataType.INT64);
+        } else {
+            // CPU: create buffer with host pointer only
+            buffer = Nd4j.createBuffer(primaryPtr, len, DataType.INT64);
+        }
         buffer.setConstant(true);
         return buffer;
     }

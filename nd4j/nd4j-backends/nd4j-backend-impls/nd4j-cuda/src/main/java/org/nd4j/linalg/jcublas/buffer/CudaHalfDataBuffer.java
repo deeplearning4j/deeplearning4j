@@ -89,6 +89,10 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    public CudaHalfDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
+
     public CudaHalfDataBuffer(double[] data, boolean copy) {
         super(data.length, 2, true);
         setData(data);

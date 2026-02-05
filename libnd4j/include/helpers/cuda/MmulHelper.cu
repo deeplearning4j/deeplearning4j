@@ -774,6 +774,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 // cuBLAS Strided Batch GEMM - most efficient for contiguous batched data on GPU
 // Uses cublasSgemmStridedBatched/cublasDgemmStridedBatched/cublasHgemmStridedBatched
 // This avoids kernel launch overhead for each batch element
+// Supports both 3D [batch, M, K] and 4D [batch0, batch1, M, K] tensors
 //////////////////////////////////////////////////////////////////////////
 bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
                                         double alpha, double beta) {
@@ -781,8 +782,8 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   const int bRank = B->rankOf();
   const int cRank = C->rankOf();
 
-  // Only handle 3D tensors for now (simplest case)
-  if (aRank != 3 || bRank != 3 || cRank != 3) {
+  // Handle 3D and 4D tensors with matching ranks
+  if (aRank != bRank || bRank != cRank || (aRank != 3 && aRank != 4)) {
     return false;
   }
 
@@ -805,51 +806,103 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
     return false;
   }
 
-  const LongType batchSize = A->sizeAt(0);
-  const LongType M = A->sizeAt(1);
-  const LongType K = A->sizeAt(2);
-  const LongType N = B->sizeAt(2);
+  // For 4D tensors, flatten first two batch dimensions
+  // 3D: [batch, M, K] @ [batch, K, N] -> [batch, M, N]
+  // 4D: [b0, b1, M, K] @ [b0, b1, K, N] -> [b0, b1, M, N] (treat as [b0*b1, M, K] @ [b0*b1, K, N])
+  LongType batchSize;
+  LongType M, K, N;
+
+  if (aRank == 3) {
+    batchSize = A->sizeAt(0);
+    M = A->sizeAt(1);
+    K = A->sizeAt(2);
+    N = B->sizeAt(2);
+  } else {  // aRank == 4
+    // Flatten first two batch dimensions
+    batchSize = A->sizeAt(0) * A->sizeAt(1);
+    M = A->sizeAt(2);
+    K = A->sizeAt(3);
+    N = B->sizeAt(3);
+
+    // Verify batch dimensions match
+    if (A->sizeAt(0) != B->sizeAt(0) || A->sizeAt(1) != B->sizeAt(1) ||
+        A->sizeAt(0) != C->sizeAt(0) || A->sizeAt(1) != C->sizeAt(1)) {
+      return false;
+    }
+  }
 
   if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0) {
     return false;
   }
 
-  // Check B dimensions match
-  if (B->sizeAt(0) != batchSize || B->sizeAt(1) != K) {
+  // Check inner dimensions match for matmul
+  const int kAxisA = aRank - 1;  // Last axis of A
+  const int kAxisB = aRank - 2;  // Second-to-last axis of B
+  if (A->sizeAt(kAxisA) != B->sizeAt(kAxisB)) {
     return false;
   }
 
-  // Check C dimensions match
-  if (C->sizeAt(0) != batchSize || C->sizeAt(1) != M || C->sizeAt(2) != N) {
+  // Check C dimensions match expected output
+  if (C->sizeAt(-2) != M || C->sizeAt(-1) != N) {
     return false;
   }
 
   // cuBLAS is column-major, so we need to check for compatible memory layouts
-  // For row-major [batch, M, K]: stride[2]=1, stride[1]=K, stride[0]=M*K
+  // For row-major [..., M, K]: stride[-1]=1, stride[-2]=K
   // We'll use the trick: C = A*B in row-major is equivalent to C^T = B^T * A^T in col-major
   // So we swap A and B and compute B * A instead
 
-  // Check for contiguous row-major layout
-  const bool aRowMajor = (A->strideAt(2) == 1) && (A->strideAt(1) == K);
-  const bool bRowMajor = (B->strideAt(2) == 1) && (B->strideAt(1) == N);
-  const bool cRowMajor = (C->strideAt(2) == 1) && (C->strideAt(1) == N);
+  // Check for contiguous row-major layout (innermost dimensions)
+  const bool aRowMajor = (A->strideAt(-1) == 1) && (A->strideAt(-2) == K);
+  const bool bRowMajor = (B->strideAt(-1) == 1) && (B->strideAt(-2) == N);
+  const bool cRowMajor = (C->strideAt(-1) == 1) && (C->strideAt(-2) == N);
 
   if (!aRowMajor || !bRowMajor || !cRowMajor) {
     return false;
   }
 
-  // Check batch strides are contiguous
-  const LongType expectedStrideA = M * K;
-  const LongType expectedStrideB = K * N;
-  const LongType expectedStrideC = M * N;
+  // Calculate strides for batched operation
+  // For 3D: stride between batches is stride[0]
+  // For 4D: stride between batches is stride[1] (stride within b0), and we need contiguous b0*b1
+  long long strideA, strideB, strideC;
 
-  if (A->strideAt(0) < expectedStrideA || B->strideAt(0) < expectedStrideB || C->strideAt(0) < expectedStrideC) {
-    return false;
+  if (aRank == 3) {
+    const LongType expectedStrideA = M * K;
+    const LongType expectedStrideB = K * N;
+    const LongType expectedStrideC = M * N;
+
+    if (A->strideAt(0) < expectedStrideA || B->strideAt(0) < expectedStrideB || C->strideAt(0) < expectedStrideC) {
+      return false;
+    }
+
+    strideA = A->strideAt(0);
+    strideB = B->strideAt(0);
+    strideC = C->strideAt(0);
+  } else {  // aRank == 4
+    // For 4D, we need the stride between individual batch elements
+    // Each batch element is M*K for A, K*N for B, M*N for C
+    const LongType expectedStrideA = M * K;
+    const LongType expectedStrideB = K * N;
+    const LongType expectedStrideC = M * N;
+
+    // Check that the 4D tensor is laid out as contiguous batches
+    // stride[1] should be M*K (stride between b1 elements)
+    // stride[0] should be b1*M*K (stride between b0 elements)
+    if (A->strideAt(-3) < expectedStrideA || B->strideAt(-3) < expectedStrideB || C->strideAt(-3) < expectedStrideC) {
+      return false;
+    }
+
+    // Also verify outer batch dimension is contiguous
+    LongType b1 = A->sizeAt(1);
+    if (A->strideAt(0) < b1 * expectedStrideA || B->strideAt(0) < b1 * expectedStrideB || C->strideAt(0) < b1 * expectedStrideC) {
+      return false;
+    }
+
+    // Use the inner batch stride (stride[1] for 4D = stride[-3])
+    strideA = A->strideAt(-3);
+    strideB = B->strideAt(-3);
+    strideC = C->strideAt(-3);
   }
-
-  const long long strideA = A->strideAt(0);
-  const long long strideB = B->strideAt(0);
-  const long long strideC = C->strideAt(0);
 
   // Get cuBLAS handle
   auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());

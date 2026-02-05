@@ -157,6 +157,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        List<DataBuffer> cached = getCachedOutputShapes(oc);
+        if (cached != null) return cached;
+
         INDArray x = oc != null ? oc.getInputArray(0) : x();
 
         val ret = new ArrayList<DataBuffer>(1);
@@ -168,13 +171,14 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             s = arg().getShape();
         }
 
-        val aT = arg().dataType();
+        val aT = x != null ? x.dataType() : arg().dataType();
         // Handle null scalarValue (can happen for prototype instances in OP_NAME_MAP)
         val sT = (scalarValue != null) ? scalarValue.dataType() : aT;
 
         LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.fromShape(x.shape(),Shape.pickPairwiseDataType(aT, sT)) :
                 LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT));
         ret.add(Nd4j.createBuffer(desc.toShapeInfo()));
+        setCachedOutputShapes(oc, ret);
         return ret;
     }
 

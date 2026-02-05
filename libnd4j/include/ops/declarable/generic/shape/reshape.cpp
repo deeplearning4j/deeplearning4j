@@ -23,7 +23,6 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
 #include <ops/declarable/headers/shape.h>
-#include <system/Environment.h>
 #include <cstring>
 #include <cstdio>
 namespace sd {
@@ -48,23 +47,33 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   }
 
   const sd::LongType len = x->lengthOf();
+  const sd::LongType zLen = z->lengthOf();
 
-  // Validate lengths match
-  if (!x->isScalar()) {
-    REQUIRE_TRUE(len == z->lengthOf(), 0,
-                 "Reshape: lengths before and after reshape should match, but "
-                 "got %i vs %i",
-                 len, z->lengthOf());
+  // Special case: scalar/length-1 input being expanded to larger output
+  // This is used in ONNX models for broadcasting scalar conditions
+  if ((x->isScalar() || len == 1) && zLen > 1) {
+    // Fill output with the scalar value
+    z->assign(x);
+    return Status::OK;
   }
 
-  // Check if we're on CPU backend
-  const bool isCpuBackend = Environment::getInstance().isCPU();
+  // Validate lengths match for non-scalar inputs
+  if (!x->isScalar()) {
+    REQUIRE_TRUE(len == zLen, 0,
+                 "Reshape: lengths before and after reshape should match, but "
+                 "got %i vs %i",
+                 len, zLen);
+  }
 
   // Fast path: contiguous arrays can use direct memcpy (CPU only)
   const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
   const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
 
-  if (isCpuBackend && xContiguous && zContiguous) {
+#if defined(SD_CUDA)
+  // GPU path: use assign which handles device buffers properly
+  z->assign(x);
+#else
+  if (xContiguous && zContiguous) {
     // CPU path: sync to host and use memcpy
     x->syncToHost();
     std::memcpy(z->buffer(), x->buffer(), len * x->sizeOfT());
@@ -72,10 +81,10 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
     z->tickWriteHost();
     z->syncToDevice();
   } else {
-    // GPU path or non-contiguous: use assign which handles device buffers properly
-    // assign() calls prepareSpecialUse/registerSpecialUse internally for proper sync
+    // Non-contiguous: use assign
     z->assign(x);
   }
+#endif
 
   return Status::OK;
 }
@@ -124,21 +133,34 @@ LongType* handleScalarAndLength1Case(NDArray* x, std::vector<LongType>& reshapeA
   return nullptr;
 }
 
-void processReshapeArgs(std::vector<LongType>& reshapeArgs, std::vector<LongType>& shapeNew,
+void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vector<LongType>& shapeNew,
                         LongType& newShapeLen, int& pos, bool& newShapeEmpty) {
   newShapeLen = 1;
   pos = -1;
   newShapeEmpty = false;
 
   for (size_t i = 0; i < reshapeArgs.size(); i++) {
-    int dim = reshapeArgs[i];
+    LongType dim = reshapeArgs[i];
     if (dim == -1) {
       REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
       pos = i;
       shapeNew.push_back(1);
     } else if (dim == 0) {
-      shapeNew.push_back(0);
-      newShapeEmpty = true;
+      // ONNX semantics: 0 means "copy dimension from input at same position"
+      // If the position is within input's rank, copy the input dimension
+      // Otherwise treat as empty/zero dimension
+      if (i < static_cast<size_t>(x->rankOf())) {
+        LongType inputDim = x->sizeAt(i);
+        shapeNew.push_back(inputDim);
+        if (inputDim == 0) {
+          newShapeEmpty = true;
+        } else {
+          newShapeLen *= inputDim;
+        }
+      } else {
+        // Position beyond input rank - treat as 1 (padding case)
+        shapeNew.push_back(1);
+      }
     } else {
       shapeNew.push_back(dim);
       newShapeLen *= dim;
@@ -261,8 +283,8 @@ DECLARE_SHAPE_FN(reshape) {
   int pos;
   bool newShapeEmpty;
 
-  // Process reshape arguments
-  processReshapeArgs(reshapeArgs, shapeNew, newShapeLen, pos, newShapeEmpty);
+  // Process reshape arguments (with ONNX "0 means copy from input" support)
+  processReshapeArgs(x, reshapeArgs, shapeNew, newShapeLen, pos, newShapeEmpty);
 
   // Compute unknown dimension if needed
   computeUnknownDimension(x, shapeNew, pos, newShapeLen, newShapeEmpty);

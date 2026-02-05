@@ -38,6 +38,9 @@
 #include <cstring>
 #include <sstream>
 #include <vector>
+#ifdef __linux__
+#include <malloc.h>
+#endif
 
 namespace sd {
 namespace ops {
@@ -1161,6 +1164,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
       sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
                 type.c_str(), first->c_str());
+      delete first;
     }
 
     for (size_t e = 0; e < static_cast<size_t>(numOutputs); e++) {
@@ -1195,6 +1199,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
       sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
                 type.c_str(), first->c_str());
+      delete first;
     }
   }
 

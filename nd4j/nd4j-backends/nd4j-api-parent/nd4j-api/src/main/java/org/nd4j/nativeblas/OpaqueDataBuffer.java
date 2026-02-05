@@ -23,13 +23,20 @@ package org.nd4j.nativeblas;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueDataBufferDeallocator;
+import org.nd4j.linalg.api.ops.executioner.CpuBackendLoader;
+import org.nd4j.linalg.factory.BackendRegistry;
+import org.nd4j.linalg.factory.DeviceAwareNd4j;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * OpaqueDataBuffer is a JavaCPP wrapper for the native InteropDataBuffer.
@@ -48,12 +55,29 @@ public class OpaqueDataBuffer extends Pointer {
     private static final int MAX_TRIES = 5;
     private String allocationTrace = null;
     public static AtomicBoolean currentlyExecuting = new AtomicBoolean(false);
-    
+
     // Track the deallocator for this instance
     private OpaqueDataBufferDeallocator deallocator;
 
+    /**
+     * Whether to enable CPU fallback when CUDA/GPU allocation fails.
+     * Can be disabled via system property: nd4j.memory.fallback.enabled=false
+     */
+    private static final boolean CPU_FALLBACK_ENABLED = Boolean.parseBoolean(
+            System.getProperty("nd4j.memory.fallback.enabled", "true"));
+
+    /**
+     * Tracks buffers that were allocated using CPU NativeOps as a fallback.
+     * Key: buffer address, Value: the CPU NativeOps used for allocation (needed for deallocation).
+     */
+    private static final ConcurrentHashMap<Long, NativeOps> cpuFallbackBuffers = new ConcurrentHashMap<>();
+
     // Track if buffer has been explicitly closed to prevent double-free
     private volatile boolean explicitlyClosed = false;
+
+    // Atomic flag to coordinate between multiple deallocators (CudaDeallocator and OpaqueDataBufferDeallocator)
+    // Only the first deallocator to claim this flag should perform the actual deallocation
+    private final AtomicBoolean markedForDeallocation = new AtomicBoolean(false);
 
     /**
      * Record the current allocation stack trace.
@@ -129,7 +153,7 @@ public class OpaqueDataBuffer extends Pointer {
      * @throws RuntimeException if registration fails (buffer must be cleaned up by caller)
      */
     private static void registerWithDeallocatorService(OpaqueDataBuffer buffer) {
-        registerWithDeallocatorService(buffer, false);
+        registerWithDeallocatorService(buffer, false, 0L);
     }
 
     /**
@@ -143,14 +167,14 @@ public class OpaqueDataBuffer extends Pointer {
      * @param isConstant If true, marks the deallocator as constant immediately to prevent deallocation
      * @throws RuntimeException if registration fails (buffer must be cleaned up by caller)
      */
-    private static void registerWithDeallocatorService(OpaqueDataBuffer buffer, boolean isConstant) {
+    private static void registerWithDeallocatorService(OpaqueDataBuffer buffer, boolean isConstant, long allocationBytes) {
         try {
             DeallocatorService service = Nd4j.getDeallocatorService();
             long uniqueId = service.nextValue();
             int targetDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
             OpaqueDataBufferDeallocator deallocator = new OpaqueDataBufferDeallocator(
-                buffer, uniqueId, targetDevice
+                buffer, uniqueId, targetDevice, allocationBytes
             );
 
             if (isConstant) {
@@ -236,7 +260,7 @@ public class OpaqueDataBuffer extends Pointer {
                 try {
                     // Pass isConstant=true so Java side knows it's constant,
                     // but dbSetConstant will see it's already constant and succeed
-                    registerWithDeallocatorService(ret, true);
+                    registerWithDeallocatorService(ret, true, 0L);
                 } catch (Exception e) {
                     // Constant buffers should never fail registration since they're
                     // already protected on native side, but handle just in case
@@ -257,7 +281,7 @@ public class OpaqueDataBuffer extends Pointer {
 
                 // Register with DeallocatorService
                 try {
-                    registerWithDeallocatorService(ret, false);
+                    registerWithDeallocatorService(ret, false, 0L);
                 } catch (Exception e) {
                     // LEAK FIX: Clean up buffer if registration fails
                     Nd4j.getNativeOps().dbClose(ret);
@@ -269,6 +293,39 @@ public class OpaqueDataBuffer extends Pointer {
         // If ret is null, it means allocation failed - throw an exception with context
         if (ret == null || ret.isNull()) {
             throw new IllegalStateException("Failed to allocate external data buffer with " + numElements + " elements of type " + dataType);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Creates a workspace-backed data buffer that does NOT register with DeallocatorService.
+     * The workspace owns the memory lifecycle; the buffer must not outlive the workspace scope.
+     *
+     * <p>Use this for buffers allocated from workspace memory pools. Since the workspace
+     * manages all memory via bump allocation and scope-based recycling, individual buffer
+     * deallocation is unnecessary and would cause double-free errors.</p>
+     *
+     * @param numElements Number of elements
+     * @param dataType Data type of the buffer
+     * @param primary Primary (host) pointer from workspace, or null
+     * @param special Special (device) pointer from workspace, or null
+     * @return Buffer wrapping workspace memory, NOT registered with DeallocatorService
+     */
+    public static OpaqueDataBuffer workspaceDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special) {
+        OpaqueDataBuffer ret = Nd4j.getNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
+
+        if (ret != null && !ret.isNull()) {
+            ret.retainReference();
+
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                ret.captureTrace();
+
+            // Do NOT register with DeallocatorService - workspace owns this memory
+        }
+
+        if (ret == null || ret.isNull()) {
+            throw new IllegalStateException("Failed to allocate workspace data buffer with " + numElements + " elements of type " + dataType);
         }
 
         return ret;
@@ -296,6 +353,23 @@ public class OpaqueDataBuffer extends Pointer {
         OpaqueDataBuffer buffer = null;
         int ec = 0;
         String em = null;
+        long bytes = allocationBytes(numElements, dataType);
+        DeviceDescriptor selectedDevice = null;
+
+        DeviceMemoryManager memoryManager = DeviceMemoryManager.getInstance();
+        boolean routingEnabled = DeviceAwareNd4j.isRoutingEnabled();
+        boolean simulationEnabled = memoryManager.isMemorySimulationEnabled();
+
+        if (routingEnabled || simulationEnabled) {
+            selectedDevice = selectDeviceForAllocation(bytes, routingEnabled, memoryManager);
+            if (selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                int targetDevice = selectedDevice.getDeviceIndex();
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                if (targetDevice >= 0 && currentDevice != targetDevice) {
+                    Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+                }
+            }
+        }
 
         // Ensure device is assigned for this thread before any native allocation.
         // This ensures the native code allocates the buffer on the correct device.
@@ -316,7 +390,18 @@ public class OpaqueDataBuffer extends Pointer {
 
                     // Register with DeallocatorService
                     try {
-                        registerWithDeallocatorService(buffer);
+                        registerWithDeallocatorService(buffer, false, bytes);
+
+                        if (routingEnabled || simulationEnabled) {
+                            DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
+                            if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
+                                    && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                                actualDevice = selectedDevice;
+                            }
+                            if (actualDevice != null) {
+                                memoryManager.recordAllocation(actualDevice, bytes);
+                            }
+                        }
                         
                         // Capture trace if needed
                         if(Nd4j.getNativeOps().isFuncTrace())
@@ -378,6 +463,23 @@ public class OpaqueDataBuffer extends Pointer {
         OpaqueDataBuffer buffer = null;
         int ec = 0;
         String em = null;
+        long bytes = allocationBytes(numElements, dataType);
+        DeviceDescriptor selectedDevice = null;
+
+        DeviceMemoryManager memoryManager = DeviceMemoryManager.getInstance();
+        boolean routingEnabled = DeviceAwareNd4j.isRoutingEnabled();
+        boolean simulationEnabled = memoryManager.isMemorySimulationEnabled();
+
+        if (routingEnabled || simulationEnabled) {
+            selectedDevice = selectDeviceForAllocation(bytes, routingEnabled, memoryManager);
+            if (selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                int targetDevice = selectedDevice.getDeviceIndex();
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                if (targetDevice >= 0 && currentDevice != targetDevice) {
+                    Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+                }
+            }
+        }
 
         // Ensure device is assigned for this thread before any native allocation.
         // This ensures the native code allocates the buffer on the correct device.
@@ -394,7 +496,18 @@ public class OpaqueDataBuffer extends Pointer {
 
                     // Register with DeallocatorService, marking as constant if requested
                     try {
-                        registerWithDeallocatorService(buffer, isConstant);
+                        registerWithDeallocatorService(buffer, isConstant, isConstant ? 0L : bytes);
+
+                        if (!isConstant && (routingEnabled || simulationEnabled)) {
+                            DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
+                            if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
+                                    && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                                actualDevice = selectedDevice;
+                            }
+                            if (actualDevice != null) {
+                                memoryManager.recordAllocation(actualDevice, bytes);
+                            }
+                        }
 
                         // Capture trace if needed
                         if(Nd4j.getNativeOps().isFuncTrace())
@@ -486,12 +599,19 @@ public class OpaqueDataBuffer extends Pointer {
 
         for (int t = 0; t < MAX_TRIES; t++) {
             try {
-                // NOTE: Do NOT call retainReference() - it prevents DeallocatorService from working!
-                // DeallocatorService relies on the Java object becoming garbage-collectible
                 buffer = Nd4j.getNativeOps().dbCreateView(this, bytesLength);
-                
+
                 // Check if view creation succeeded
                 if(buffer != null && !buffer.isNull()) {
+                    // Prevent JavaCPP's NativeDeallocator from running on this buffer.
+                    // Without retainReference(), BOTH JavaCPP's DeallocatorThread AND our
+                    // DeallocatorService would try to free this buffer, causing a double-free
+                    // that corrupts glibc heap metadata (manifests as "corrupted size vs.
+                    // prev_size in fastbins" or SIGSEGV in _int_free).
+                    // retainReference() does NOT prevent GC - it only disables JavaCPP's
+                    // own deallocator. Our DeallocatorService (PhantomReference-based) still works.
+                    buffer.retainReference();
+
                     // Register with DeallocatorService
                     try {
                         registerWithDeallocatorService(buffer);
@@ -610,36 +730,110 @@ public class OpaqueDataBuffer extends Pointer {
         }
     }
 
+    // Diagnostics: track closeBuffer outcomes
+    private static final java.util.concurrent.atomic.AtomicLong dbCloseCallCount = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong dbCloseSkipShutdown = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong dbCloseSkipNull = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong dbCloseSkipExplicit = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong dbCloseSkipMark = new java.util.concurrent.atomic.AtomicLong();
+    private static final java.util.concurrent.atomic.AtomicLong dbCloseSuccess = new java.util.concurrent.atomic.AtomicLong();
+
+    public static String getCloseBufferStats() {
+        return String.format("closeBuffer stats: calls=%d, dbClose=%d, skipShutdown=%d, skipNull=%d, skipExplicit=%d, skipMark=%d",
+                dbCloseCallCount.get(), dbCloseSuccess.get(), dbCloseSkipShutdown.get(),
+                dbCloseSkipNull.get(), dbCloseSkipExplicit.get(), dbCloseSkipMark.get());
+    }
+
+    public static void resetCloseBufferStats() {
+        dbCloseCallCount.set(0);
+        dbCloseSkipShutdown.set(0);
+        dbCloseSkipNull.set(0);
+        dbCloseSkipExplicit.set(0);
+        dbCloseSkipMark.set(0);
+        dbCloseSuccess.set(0);
+    }
+
     public void closeBuffer() {
-        // Check if already closed or null
+        dbCloseCallCount.incrementAndGet();
+
+        // During JVM shutdown, skip native deallocation to avoid calling free()
+        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        if (DeallocatorService.getShutdownInProgress().get()) {
+            dbCloseSkipShutdown.incrementAndGet();
+            return;
+        }
+
         if (this.isNull() || explicitlyClosed) {
-            if (log.isTraceEnabled()) {
-                log.trace("Attempted to close already closed or null OpaqueDataBuffer");
-            }
+            if (this.isNull()) dbCloseSkipNull.incrementAndGet();
+            else dbCloseSkipExplicit.incrementAndGet();
             return;
         }
 
         synchronized (this) {
             if (explicitlyClosed) {
+                dbCloseSkipExplicit.incrementAndGet();
                 return;
             }
             explicitlyClosed = true;
         }
 
-        if (deallocator != null) {
-            // Only deallocate if not already done - prevents double-free
-            if (!deallocator.isDeallocated()) {
-                deallocator.deallocate();
+        // Use tryMarkForDeallocation() directly to coordinate with any GC-based deallocator.
+        // This is the atomic flag that prevents double-free. We call dbClose directly here
+        // instead of delegating to OpaqueDataBufferDeallocator.deallocate() because:
+        // 1. The deallocator may have been marked "deallocated" without actually calling dbClose
+        //    (e.g. if buffer.isNull() was true at the time)
+        // 2. The DeallocatorService PhantomReference path has a strong reference cycle
+        //    (OpaqueDataBufferDeallocator implements both Deallocatable and Deallocator with
+        //    deallocator() returning this), so GC-based cleanup never fires
+        if (!this.isNull() && tryMarkForDeallocation()) {
+            try {
+                printAllocationTraceIfNeeded();
+                if (Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
+                    System.out.println("Java side deallocation current trace: \n " + currentTrace());
+                }
+                Nd4j.getNativeOps().dbClose(this);
+                dbCloseSuccess.incrementAndGet();
+                this.setNull();
+
+                if (deallocator != null) {
+                    deallocator.markDeallocated();
+                }
+            } catch (Exception e) {
+                log.error("Error in closeBuffer dbClose", e);
             }
-            // If deallocator exists but is already deallocated, do nothing
         } else {
-            // Fallback ONLY if not registered with DeallocatorService at all
-            printAllocationTraceIfNeeded();
-            if(Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
-                System.out.println("Java side deallocation current trace: \n " + currentTrace());
-            }
-            Nd4j.getNativeOps().dbClose(this);
+            dbCloseSkipMark.incrementAndGet();
         }
+    }
+
+    /**
+     * Atomically attempts to mark this buffer for deallocation.
+     * This method ensures that only one deallocator (either CudaDeallocator or
+     * OpaqueDataBufferDeallocator) can successfully claim the right to deallocate
+     * this buffer, preventing double-free errors.
+     *
+     * @return true if this call successfully marked the buffer for deallocation,
+     *         false if the buffer was already marked (another deallocator claimed it)
+     */
+    public boolean tryMarkForDeallocation() {
+        // Guard against null - can happen if JavaCPP creates instances
+        // via Pointer(Pointer) without running field initializers
+        if (markedForDeallocation == null) {
+            return true; // treat as first claim so caller proceeds with cleanup
+        }
+        return markedForDeallocation.compareAndSet(false, true);
+    }
+
+    /**
+     * Checks if this buffer has been marked for deallocation.
+     *
+     * @return true if the buffer has been marked for deallocation
+     */
+    public boolean isMarkedForDeallocation() {
+        if (markedForDeallocation == null) {
+            return false;
+        }
+        return markedForDeallocation.get();
     }
 
     /**
@@ -693,6 +887,73 @@ public class OpaqueDataBuffer extends Pointer {
         if (deallocator != null) {
             deallocator.setConstant(isConstant);
         }
+    }
+
+    private static long allocationBytes(long numElements, DataType dataType) {
+        if (numElements == 0) {
+            return dataType.width();
+        }
+        return numElements * dataType.width();
+    }
+
+    private static DeviceDescriptor resolveAllocationDevice(OpaqueDataBuffer buffer) {
+        int deviceId;
+        try {
+            deviceId = buffer.deviceId();
+        } catch (Exception e) {
+            deviceId = -1;
+        }
+
+        BackendRegistry registry = BackendRegistry.getInstance();
+        if (deviceId < 0) {
+            try {
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                if (currentDevice >= 0) {
+                    boolean gpuBackend = false;
+                    try {
+                        String backendName = Nd4j.getBackend().getClass().getSimpleName().toLowerCase();
+                        gpuBackend = backendName.contains("cuda") || backendName.contains("jcublas")
+                                || backendName.contains("rocm") || backendName.contains("metal");
+                    } catch (Exception e) {
+                        // ignore and fall back to registry check
+                    }
+                    if (gpuBackend || registry.hasGpu()) {
+                        deviceId = currentDevice;
+                    }
+                }
+            } catch (Exception e) {
+                // ignore and fall back to CPU
+            }
+        }
+
+        if (deviceId >= 0) {
+            DeviceDescriptor byId = registry.getDevice(DeviceDescriptor.cuda(deviceId).getDeviceId());
+            return byId != null ? byId : DeviceDescriptor.cuda(deviceId);
+        }
+
+        DeviceDescriptor cpu = registry.getDefaultCpuDevice();
+        return cpu != null ? cpu : DeviceDescriptor.cpu();
+    }
+
+    private static DeviceDescriptor selectDeviceForAllocation(long bytes, boolean routingEnabled, DeviceMemoryManager memoryManager) {
+        DeviceDescriptor preferred;
+        if (routingEnabled) {
+            preferred = Nd4j.getDefaultDevice();
+        } else {
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            BackendRegistry registry = BackendRegistry.getInstance();
+            if (currentDevice >= 0) {
+                DeviceDescriptor byId = registry.getDevice(DeviceDescriptor.cuda(currentDevice).getDeviceId());
+                preferred = byId != null ? byId : DeviceDescriptor.cuda(currentDevice);
+            } else {
+                preferred = registry.getDefaultCpuDevice();
+                if (preferred == null) {
+                    preferred = DeviceDescriptor.cpu();
+                }
+            }
+        }
+
+        return memoryManager.selectDeviceForAllocation(bytes, preferred);
     }
 
     /**

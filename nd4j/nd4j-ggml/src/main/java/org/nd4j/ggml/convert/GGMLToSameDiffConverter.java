@@ -378,67 +378,31 @@ public class GGMLToSameDiffConverter {
             throw new IllegalStateException("No ND4J type mapping for: " + dataType);
         }
 
-        ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-        INDArray array;
+        // OPTIMIZATION: Use direct buffer to create INDArray without intermediate primitive arrays
+        // This reduces memory copies: byte[] -> direct buffer -> INDArray (instead of byte[] -> heap buffer -> primitive[] -> INDArray)
+        long numElements = 1;
+        for (long dim : shape) {
+            numElements *= dim;
+        }
+        if (numElements < 1) numElements = 1;
 
-        switch (nd4jType) {
-            case FLOAT:
-                float[] floatData = new float[data.length / 4];
-                buffer.asFloatBuffer().get(floatData);
-                array = Nd4j.create(floatData, shape);
-                break;
+        // Allocate direct buffer and copy data once
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
+        directBuffer.put(data);
+        directBuffer.rewind();
 
-            case HALF:
-                // Read as shorts, ND4J will handle FP16 conversion
-                short[] fp16Data = new short[data.length / 2];
-                buffer.asShortBuffer().get(fp16Data);
-                array = Nd4j.create(fp16Data, shape, DataType.HALF);
-                break;
+        // Create INDArray directly from buffer
+        org.nd4j.linalg.api.buffer.DataBuffer rawDataBuffer = Nd4j.createBuffer(directBuffer, nd4jType, (int) numElements);
+        INDArray array = Nd4j.create(rawDataBuffer);
 
-            case BFLOAT16:
-                short[] bf16Data = new short[data.length / 2];
-                buffer.asShortBuffer().get(bf16Data);
-                array = Nd4j.create(bf16Data, shape, DataType.BFLOAT16);
-                break;
-
-            case DOUBLE:
-                double[] doubleData = new double[data.length / 8];
-                buffer.asDoubleBuffer().get(doubleData);
-                array = Nd4j.create(doubleData, shape);
-                break;
-
-            case BYTE:
-                array = Nd4j.create(data, shape, DataType.BYTE);
-                break;
-
-            case SHORT:
-                short[] shortData = new short[data.length / 2];
-                buffer.asShortBuffer().get(shortData);
-                array = Nd4j.create(shortData, shape, DataType.SHORT);
-                break;
-
-            case INT:
-                int[] intData = new int[data.length / 4];
-                buffer.asIntBuffer().get(intData);
-                array = Nd4j.create(intData, shape, DataType.INT);
-                break;
-
-            case LONG:
-                long[] longData = new long[data.length / 8];
-                buffer.asLongBuffer().get(longData);
-                array = Nd4j.create(longData, shape, DataType.LONG);
-                break;
-
-            default:
-                throw new IllegalStateException("Unsupported data type: " + nd4jType);
+        // Reshape if needed
+        if (shape.length > 0 && rawDataBuffer.length() > 0) {
+            array = array.reshape('c', shape);
         }
 
-        // Convert to target type if needed
-        DataType targetType = getTargetDataType();
-        if (array.dataType() != targetType) {
-            array = array.castTo(targetType);
-        }
-
+        // For non-quantized data, preserve original type to avoid expensive GPU casts
+        // The data is already in a valid format (HALF, FLOAT, etc.) and can be used as-is
+        // Users can explicitly cast later if needed for computation
         return array;
     }
 

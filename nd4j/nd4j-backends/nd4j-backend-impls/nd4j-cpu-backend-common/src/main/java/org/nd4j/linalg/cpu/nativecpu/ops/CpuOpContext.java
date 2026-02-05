@@ -143,7 +143,13 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public INDArray getIntermediateResult(int index) {
+        if (context == null || context.isNull()) {
+            throw new IllegalStateException("Cannot get intermediate result: OpContext native context is null");
+        }
         LongPointer shapeInfo = nativeOps.intermediateResultShapeInfoAt(index,context);
+        if (shapeInfo == null || shapeInfo.isNull()) {
+            throw new IllegalStateException("Failed to retrieve intermediate result shape info at index " + index + ": returned null");
+        }
         long rank = shapeInfo.get(0);
         shapeInfo.capacity(Shape.shapeInfoLength(rank));
         DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
@@ -345,6 +351,21 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     }
 
     @Override
+    public void purgeForReuse() {
+        if (closed) {
+            return;
+        }
+        super.purgeForReuse();
+        singleInputArrayRefs.clear();
+        singleOutputArrayRefs.clear();
+        inputOpaqueArrayRefs.clear();
+        outputOpaqueArrayRefs.clear();
+        if (context != null && !context.isNull()) {
+            nativeOps.ctxPurgeNoSync(context);
+        }
+    }
+
+    @Override
     public long getUniqueId() {
         return BASE_CPU_OP_CONTEXT_OFFSET + id;
     }
@@ -404,6 +425,20 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
             IntPointer dArgs =  new IntPointer(args);
             nativeOps.setGraphContextDArguments(context, dArgs, fastpath_d.size());
+        }
+    }
+
+    @Override
+    public void attachWorkspace(Pointer workspacePointer) {
+        if (context != null && workspacePointer != null) {
+            nativeOps.attachWorkspaceToContext(context, workspacePointer);
+        }
+    }
+
+    @Override
+    public void detachWorkspace() {
+        if (context != null) {
+            nativeOps.detachWorkspaceFromContext(context);
         }
     }
 }

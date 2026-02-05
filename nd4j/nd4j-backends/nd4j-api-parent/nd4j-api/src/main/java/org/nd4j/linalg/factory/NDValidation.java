@@ -31,8 +31,9 @@ public class NDValidation {
     }
 
     /**
-     * Validate that the operation is being applied on a numerical INDArray (not boolean or utf8).
-     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to boolean/utf8 arrays
+     * Validate that the operation is being applied on a numerical INDArray (not utf8).
+     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to utf8 arrays.
+     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
      *
      * @param opName Operation name to print in the exception
      * @param v      Variable to perform operation on
@@ -40,13 +41,14 @@ public class NDValidation {
     public static void validateNumerical(String opName, INDArray v) {
         if (v == null)
             return;
-        if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
+        if (v.dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to array with non-numerical data type " + v.dataType());
     }
 
     /**
-     * Validate that the operation is being applied on numerical INDArrays (not boolean or utf8).
-     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to boolean/utf8 arrays
+     * Validate that the operation is being applied on numerical INDArrays (not utf8).
+     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to utf8 arrays.
+     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
      *
      * @param opName Operation name to print in the exception
      * @param v      Variable to perform operation on
@@ -55,14 +57,15 @@ public class NDValidation {
         if (v == null)
             return;
         for (int i = 0; i < v.length; i++) {
-            if (v[i].dataType() == DataType.BOOL || v[i].dataType() == DataType.UTF8)
+            if (v[i].dataType() == DataType.UTF8)
                 throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to input array " + i + " with non-numerical data type " + v[i].dataType());
         }
     }
 
     /**
-     * Validate that the operation is being applied on a numerical INDArray (not boolean or utf8).
-     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to boolean/utf8 arrays
+     * Validate that the operation is being applied on a numerical INDArray (not utf8).
+     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to utf8 arrays.
+     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
      *
      * @param opName Operation name to print in the exception
      * @param v      Variable to validate datatype for (input to operation)
@@ -70,14 +73,15 @@ public class NDValidation {
     public static void validateNumerical(String opName, String inputName, INDArray v) {
         if (v == null)
             return;
-        if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
-            throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an numerical type type;" +
-                    " got array with non-integer data type " + v.dataType());
+        if (v.dataType() == DataType.UTF8)
+            throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be a numerical type;" +
+                    " got array with non-numerical data type " + v.dataType());
     }
 
     /**
-     * Validate that the operation is being applied on numerical INDArrays (not boolean or utf8).
-     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to boolean/utf8 arrays
+     * Validate that the operation is being applied on numerical INDArrays (not utf8).
+     * Some operations (such as sum, norm2, add(Number) etc) don't make sense when applied to utf8 arrays.
+     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
      *
      * @param opName Operation name to print in the exception
      * @param v      Variable to perform operation on
@@ -86,21 +90,22 @@ public class NDValidation {
         if (v == null)
             return;
         for (int i = 0; i < v.length; i++) {
-            if (v[i].dataType() == DataType.BOOL || v[i].dataType() == DataType.UTF8)
+            if (v[i].dataType() == DataType.UTF8)
                 throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to input \"" + inputName + "\" array " + i + " with non-numerical data type " + v[i].dataType());
         }
     }
 
     /**
-     * Validate that the operation is being applied on numerical INDArrays (not boolean or utf8).
-     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to boolean/utf8 arrays
+     * Validate that the operation is being applied on numerical INDArrays (not utf8).
+     * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to utf8 arrays.
+     * BOOL is allowed as it can be treated as 0/1 integers and is supported by the native backend.
      *
      * @param opName Operation name to print in the exception
      * @param v1     Variable to validate datatype for (input to operation)
      * @param v2     Variable to validate datatype for (input to operation)
      */
     public static void validateNumerical(String opName, INDArray v1, INDArray v2) {
-        if (v1.dataType() == DataType.BOOL || v1.dataType() == DataType.UTF8 || v2.dataType() == DataType.BOOL || v2.dataType() == DataType.UTF8)
+        if (v1.dataType() == DataType.UTF8 || v2.dataType() == DataType.UTF8)
             throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on arrays if one or both variables" +
                     " are non-numerical: got " + v1.dataType() + " and " + v2.dataType());
     }

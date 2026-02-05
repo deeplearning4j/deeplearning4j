@@ -2289,6 +2289,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
         List<LayerWorkspaceMgr> freeWorkspaceManagers = new ArrayList<>();  //Basically used as a stack
+        Map<MemoryWorkspace, LayerWorkspaceMgr> openActivationsWorkspaces = new IdentityHashMap<>();
+        List<MemoryWorkspace>[] closeAtEndIteration = (List<MemoryWorkspace>[])new List[topologicalOrder.length];
 
         WorkspaceMode wsm = (train ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
         boolean noWS = wsm == WorkspaceMode.NONE;
@@ -2363,6 +2365,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
+
+                //Open the activations workspace scope for non-scoped-out, non-input vertices
+                //This scope stays open until the activations have been consumed by all downstream vertices
+                MemoryWorkspace wsAct = null;
+                if (!noWS && !workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS)) {
+                    wsAct = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+                    wsAct.setPreviousWorkspace(initialWorkspace);
+                    openActivationsWorkspaces.put(wsAct, workspaceMgr);
+
+                    int closeableAt = vertexOutputsFullyConsumedByStep[vIdx];
+                    if (closeableAt >= 0) {
+                        if (closeAtEndIteration[closeableAt] == null) {
+                            closeAtEndIteration[closeableAt] = new ArrayList<>();
+                        }
+                        closeAtEndIteration[closeableAt].add(wsAct);
+                    }
+                }
 
                 VertexIndices[] inputsTo = current.getOutputVertices();
 
@@ -2482,11 +2501,32 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
+                //Close any activation workspaces whose outputs have been fully consumed at this step
+                if (!noWS && closeAtEndIteration[i] != null) {
+                    for (MemoryWorkspace ws : closeAtEndIteration[i]) {
+                        LayerWorkspaceMgr wsm2 = openActivationsWorkspaces.remove(ws);
+                        ws.close();
+                        if (wsm2 != null) {
+                            freeWorkspaceManagers.add(wsm2);
+                        }
+                    }
+                    closeAtEndIteration[i] = null;
+                }
 
             }
         } catch (Throwable t2) {
             t = t2;
         } finally {
+            //Close any remaining open activation workspaces
+            for (MemoryWorkspace ws : openActivationsWorkspaces.keySet()) {
+                try {
+                    ws.close();
+                } catch (Exception e) {
+                    //Ignore - we're in cleanup
+                }
+            }
+            openActivationsWorkspaces.clear();
+
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
             if(t != null){

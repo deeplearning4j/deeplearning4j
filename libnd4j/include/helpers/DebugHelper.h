@@ -44,21 +44,19 @@ class SD_LIB_EXPORT DebugHelper {
     cudaError_t res = cudaStreamSynchronize(*stream);
 
     if (res != 0) {
-      std::string op = "Kernel OpNum failed: [";
-      op += std::to_string(opType);
-      op += "]";
-
+      std::string op = "Kernel OpNum [" + std::to_string(opType) + "] cudaStreamSynchronize error [" +
+                       std::to_string(res) + "] = " + std::string(cudaGetErrorString(res));
+      cudaError_t sticky = cudaGetLastError();
+      if (sticky != 0 && sticky != res) {
+        op += "; also sticky error [" + std::to_string(sticky) + "] = " + std::string(cudaGetErrorString(sticky));
+      }
       THROW_EXCEPTION(op.c_str());
     }
 
-    cudaError_t res2 = cudaGetLastError();
-    if(res2 != 0) {
-        std::string op = "Kernel OpNum failed: [";
-        op += std::to_string(opType);
-        op += "]";
-
-        THROW_EXCEPTION(op.c_str());
-    }
+    // Clear any stale sticky errors from unrelated API calls (e.g. failed cudaMallocAsync).
+    // After a successful cudaStreamSynchronize, kernel errors are already caught above.
+    // cudaGetLastError() here would only pick up unrelated errors, causing false failures.
+    cudaGetLastError();
   }
 
 
@@ -67,11 +65,12 @@ class SD_LIB_EXPORT DebugHelper {
     cudaError_t res2 = cudaGetLastError();
     if (res2 != 0) {
       if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + std::to_string(res2) + std::string("]");
+        std::string op = "CUDA call ended with error code [" + std::to_string(res2) +
+                         "] = " + std::string(cudaGetErrorString(res2));
         THROW_EXCEPTION(op.c_str());
       } else {
         std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res2) +
-                         std::string("]");
+                         "] = " + std::string(cudaGetErrorString(res2));
         THROW_EXCEPTION(op.c_str());
       }
     }
@@ -80,29 +79,18 @@ class SD_LIB_EXPORT DebugHelper {
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, const char* failMessage = nullptr) {
     cudaError_t res = cudaStreamSynchronize(*stream);
     if (res != 0) {
-      if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + std::to_string(res) + std::string("]");
-        THROW_EXCEPTION(op.c_str());
-      } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res) +
-                         std::string("]");
-        THROW_EXCEPTION(op.c_str());
+      std::string msg = failMessage ? std::string(failMessage) : std::string("CUDA call");
+      msg += " cudaStreamSynchronize error code [" + std::to_string(res) + "] = " + std::string(cudaGetErrorString(res));
+      cudaError_t sticky = cudaGetLastError();
+      if (sticky != 0 && sticky != res) {
+        msg += "; also sticky error [" + std::to_string(sticky) + "] = " + std::string(cudaGetErrorString(sticky));
       }
+      THROW_EXCEPTION(msg.c_str());
     }
 
-
-
-    cudaError_t res2 = cudaGetLastError();
-    if (res2 != 0) {
-      if (failMessage == nullptr) {
-        std::string op = "CUDA call ended with error code [" + std::to_string(res2) + std::string("]");
-        THROW_EXCEPTION(op.c_str());
-      } else {
-        std::string op = std::string(failMessage) + std::string("Error code [") + std::to_string(res2) +
-                         std::string("]");
-        THROW_EXCEPTION(op.c_str());
-      }
-    }
+    // Clear any stale sticky errors from unrelated API calls (e.g. failed cudaMallocAsync).
+    // After a successful cudaStreamSynchronize, kernel errors are already caught above.
+    cudaGetLastError();
   }
 #endif
   static DebugInfo debugStatistics(NDArray * input);

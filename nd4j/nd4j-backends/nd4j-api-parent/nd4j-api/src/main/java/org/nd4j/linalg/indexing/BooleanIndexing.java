@@ -64,9 +64,6 @@ public class BooleanIndexing {
                 // Clean up result array
                 if (result != null) {
                     try {
-                        if (result.data() != null) {
-                            result.data().close();
-                        }
                         result.close();
                     } catch (Exception e) {
                         // Ignore close errors
@@ -116,9 +113,6 @@ public class BooleanIndexing {
             // Clean up result array
             if (arr != null) {
                 try {
-                    if (arr.data() != null) {
-                        arr.data().close();
-                    }
                     arr.close();
                 } catch (Exception e) {
                     // Ignore close errors
@@ -165,9 +159,6 @@ public class BooleanIndexing {
             // Clean up result array
             if (arr != null) {
                 try {
-                    if (arr.data() != null) {
-                        arr.data().close();
-                    }
                     arr.close();
                 } catch (Exception e) {
                     // Ignore close errors
@@ -201,9 +192,6 @@ public class BooleanIndexing {
                 // Clean up result array
                 if (result != null) {
                     try {
-                        if (result.data() != null) {
-                            result.data().close();
-                        }
                         result.close();
                     } catch (Exception e) {
                         // Ignore close errors

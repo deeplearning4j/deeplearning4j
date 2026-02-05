@@ -59,18 +59,6 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
    THROW_EXCEPTION("shapeInfo is nullptr");
  }
 
-#ifdef SD_CUDA
- cudaError_t syncError = cudaDeviceSynchronize();
- if (syncError != cudaSuccess) {
-   std::string errorMessage = "bufferForShapeInfo: cudaDeviceSynchronize failed with error: ";
-   errorMessage += std::to_string(syncError);
-   errorMessage += " (";
-   errorMessage += cudaGetErrorString(syncError);
-   errorMessage += ")";
-   THROW_EXCEPTION(errorMessage.c_str());
- }
-#endif
-
  LongType inputRank = shape::rank(shapeInfo);
  if(inputRank < 0 || inputRank > SD_MAX_RANK) {
    std::string errorMessage = "bufferForShapeInfo: input shapeInfo has invalid rank: ";

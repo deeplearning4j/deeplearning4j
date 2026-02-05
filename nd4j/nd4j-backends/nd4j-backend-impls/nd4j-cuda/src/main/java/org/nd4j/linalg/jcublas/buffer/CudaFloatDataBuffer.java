@@ -92,6 +92,19 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(underlyingBuffer, dataType, length);
     }
 
+    /**
+     * Constructor with CPU-only allocation for lazy GPU migration.
+     * When cpuOnly is true, data is loaded to CPU memory only and GPU
+     * allocation is deferred until the data is actually needed on the device.
+     *
+     * @param underlyingBuffer source ByteBuffer
+     * @param dataType the data type
+     * @param length number of elements
+     * @param cpuOnly if true, allocate only on CPU (defer GPU allocation)
+     */
+    public CudaFloatDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length, boolean cpuOnly) {
+        super(underlyingBuffer, dataType, length, cpuOnly);
+    }
 
     /**
      * Initialize the opType of this buffer
