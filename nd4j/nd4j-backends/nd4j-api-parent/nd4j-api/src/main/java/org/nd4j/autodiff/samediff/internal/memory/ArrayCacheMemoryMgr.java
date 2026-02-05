@@ -191,6 +191,28 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
 
 
+    public static boolean isCacheEnabled() {
+        return enableCache;
+    }
+
+    public static void setEnableCache(boolean enable) {
+        enableCache = enable;
+    }
+
+    // Debug counters for capacity cache effectiveness
+    private static final ThreadLocal<long[]> cacheCounters = ThreadLocal.withInitial(() -> new long[6]);
+    // [0] = exact hits, [1] = capacity hits, [2] = full misses,
+    // [3] = releases skipped (view), [4] = releases cached, [5] = capacity cache size at lookup
+
+    public static void resetCacheCounters() {
+        long[] c = cacheCounters.get();
+        c[0] = c[1] = c[2] = c[3] = c[4] = c[5] = 0;
+    }
+
+    public static long[] getCacheCounters() {
+        return cacheCounters.get();
+    }
+
     private static boolean isCpu() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         return !"CUDA".equalsIgnoreCase(backend);
@@ -219,8 +241,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                             : null;
                     if(arr != null && (!arr.closeable() || arr.wasClosed() || arr.isView())) {
                         log.trace("Found array closeable, not returning from cache. Only closeable arrays are returnable from the cache.");
-                        if(arr.isView())
+                        if(arr.isView()) {
                             arr.setCloseable(false);
+                        }
+                        // Remove from LRU tracking since we removed it from the cache list
+                        lruCacheForThread.remove(arr.getId());
+                        lruCacheValues.remove(arr.getId());
+                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                        currentCacheSize.set(currentCacheSize.get() - skippedBytes);
                         log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding return. Allocating new array.");
 
                         continue;
@@ -242,6 +270,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                         if (arr.data() != null) {
                             Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
                         }
+                        // Zero out stale data to match Nd4j.create() behavior
+                        arr.assign(0);
                         return arr; // Allocated from cache
                     }
                 }
@@ -281,6 +311,11 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     if(arr.isView()) {
                         //set closeable to prevent reuse elsewhere
                         arr.setCloseable(false);
+                        // Remove from LRU tracking since we removed it from the cache list
+                        getLruCache().remove(arr.getId());
+                        getLruCacheValues().remove(arr.getId());
+                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                        currentCacheSize.set(currentCacheSize.get() - skippedBytes);
                         log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
                     } else {
                         break;
@@ -291,7 +326,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     arr.setOrder(descriptor.getOrder());
                 }
 
-                if (arr != null && !arr.wasClosed()) {
+                if (arr != null && !arr.wasClosed() && arr.closeable()) {
                     // Decrement cache size
                     currentCacheSize.set(currentCacheSize.get() - dataType.width() * arr.data().length());
                     // We need to assign new Id. this way we will break any possible relationship it
@@ -305,6 +340,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     if (arr.data() != null) {
                         Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
                     }
+                    // Zero out stale data to match Nd4j.create() behavior
+                    arr.assign(0);
                     return arr; // Allocated from cache
                 }
             }
@@ -346,9 +383,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 return;
             }
 
-            if (array != null && array.data() != null && Nd4j.getExecutioner().useCount(array.data()) > 1) {
-                return;
-            }
+            // Note: useCount > 1 check removed - it silently leaked arrays (neither cached nor closed).
+            // View arrays are already filtered by the closeable/isView checks above.
 
             long thisBytes = array.data().length() * dt.width();
             if (array.dataType() == DataType.UTF8) {
@@ -373,6 +409,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     long next = iter.next();
                     iter.remove();
                     INDArray nextOldest = lruCacheValues.remove(next);
+                    if (nextOldest == null) continue;
                     DataType ndt = nextOldest.dataType();
                     long nextBytes = ndt.width() * nextOldest.data().length();
                     List<INDArray> listx = arraysForThread.get(ndt, Arrays.toString(nextOldest.shape()));
@@ -428,7 +465,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             Map<Long, INDArray> lruCacheValues = getLruCacheValues();
 
             arraysForThread.values().stream().forEach(input -> input.stream().forEach(arr -> {
-                if (arr.closeable()) {
+                if (arr != null && arr.closeable() && !arr.wasClosed()) {
                     arr.close();
                 }
             }));
@@ -468,6 +505,11 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     if(arr.isView()) {
                         //set closeable to prevent reuse elsewhere
                         arr.setCloseable(false);
+                        // Remove from LRU tracking since we removed it from the cache list
+                        getLruCache().remove(arr.getId());
+                        getLruCacheValues().remove(arr.getId());
+                        long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                        currentCacheSize.set(currentCacheSize.get() - skippedBytes);
                         log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
                     } else {
                         break;
@@ -478,7 +520,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     arr.setOrder(Shape.order(asJava));
                 }
 
-                if (arr != null && !arr.wasClosed()) {
+                if (arr != null && !arr.wasClosed() && arr.closeable()) {
                     // Decrement cache size
                     currentCacheSize.set(currentCacheSize.get() - dataType.width() * arr.data().length());
                     // We need to assign new Id. this way we will break any possible relationship it
@@ -492,6 +534,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     if (arr.data() != null) {
                         Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
                     }
+                    // Zero out stale data to match Nd4j.create() behavior
+                    arr.assign(0);
                     return arr; // Allocated from cache
                 }
             }
