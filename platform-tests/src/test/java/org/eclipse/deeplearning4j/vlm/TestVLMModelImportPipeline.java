@@ -2076,4 +2076,336 @@ public class TestVLMModelImportPipeline {
         tensor.close();
         log.info("=== Image Preprocessing Comparison Complete ===");
     }
+
+    // ==================== Batch Processing Tests ====================
+
+    /**
+     * Test batch processing: process multiple PDF pages in parallel.
+     *
+     * This test demonstrates throughput optimization by processing multiple pages
+     * simultaneously. The per-step overhead (shape calculation, memory management)
+     * is amortized across all sequences in the batch.
+     *
+     * Run with:
+     *   -Dtest=TestVLMModelImportPipeline#testSmolDoclingBatchProcessing
+     *   -Dvlm.test.pdf.path=/path/to/book.pdf
+     *   -Dvlm.test.pdf.maxPages=4  (batch size)
+     *   -Dvlm.test.maxTokens=50
+     */
+    @Test
+    @DisplayName("SmolDocling batch: process multiple pages in parallel")
+    public void testSmolDoclingBatchProcessing() throws Exception {
+        // Skip if no PDF provided
+        if (pdfPath == null || !new File(pdfPath).exists()) {
+            log.info("Skipping batch test - no PDF provided. Use -Dvlm.test.pdf.path=/path/to/book.pdf");
+            return;
+        }
+
+        // ==================== STEP 1: Download Models ====================
+        log.info("=== BATCH PROCESSING TEST ===");
+        log.info("STEP 1: Downloading models...");
+        var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+        var embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+        var tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+        log.info("STEP 1 DONE: All models downloaded.");
+
+        // ==================== STEP 2: Load Tokenizer ====================
+        log.info("STEP 2: Loading tokenizer...");
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
+        log.info("STEP 2 DONE: vocab_size={}", tokenizer.getVocabSize());
+
+        // ==================== STEP 3: Import ONNX Models ====================
+        log.info("STEP 3: Importing ONNX models...");
+        OnnxFrameworkImporter importer = new OnnxFrameworkImporter();
+
+        SameDiff visionEncoder = importer.runImport(visionResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        SameDiff decoder = importer.runImport(decoderResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        SameDiff embedTokens = importer.runImport(embedTokensResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+
+        DecoderGraphFixer.fixRepeatKVReshape(decoder);
+        DecoderGraphFixer.fixDecoderInputsEmbeds(decoder);
+        log.info("STEP 3 DONE: All models imported and patched.");
+
+        // ==================== STEP 4: Load Multiple Pages ====================
+        log.info("STEP 4: Loading multiple pages from PDF...");
+        List<BufferedImage> pages = loadPagesToProcess();
+        int batchSize = pages.size();
+        log.info("STEP 4 DONE: Loaded {} pages for batch processing", batchSize);
+
+        if (batchSize < 2) {
+            log.warn("Batch processing requires at least 2 pages. Use -Dvlm.test.pdf.maxPages=4");
+            return;
+        }
+
+        // ==================== STEP 5: Preprocess All Pages (Simple: no tiling) ====================
+        long step5Start = System.currentTimeMillis();
+        log.info("STEP 5: Preprocessing {} pages (resized to 512x512, no tiling)...", batchSize);
+        int targetSize = 512;
+        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
+
+        List<INDArray> pagePixelValues = new java.util.ArrayList<>();
+        for (int i = 0; i < batchSize; i++) {
+            BufferedImage resized = ImageTiler.resizeImage(pages.get(i), targetSize, targetSize);
+            INDArray pixelValues = preprocessor.preprocess(resized);
+            // Shape: [1, 3, 512, 512] -> [1, 1, 3, 512, 512] for vision encoder
+            pixelValues = pixelValues.reshape(1, 1, 3, targetSize, targetSize);
+            pagePixelValues.add(pixelValues);
+            log.info("  Page {}: preprocessed shape={}", i, java.util.Arrays.toString(pixelValues.shape()));
+        }
+        preprocessor.shutdown();
+        log.info("STEP 5 DONE: [{}ms]", System.currentTimeMillis() - step5Start);
+
+        // ==================== STEP 6: Run Vision Encoder Per Page ====================
+        long step6Start = System.currentTimeMillis();
+        log.info("STEP 6: Running vision encoder on {} pages...", batchSize);
+        List<String> visionInputNames = visionEncoder.inputs();
+        String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
+        List<INDArray> pageEmbeddings = new java.util.ArrayList<>();
+
+        for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
+            Map<String, INDArray> visionInputMap = new java.util.HashMap<>();
+            for (String inputName : visionInputNames) {
+                if (inputName.equals("pixel_values")) {
+                    visionInputMap.put(inputName, pagePixelValues.get(pageIdx));
+                } else if (inputName.equals("pixel_attention_mask")) {
+                    visionInputMap.put(inputName, Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize));
+                }
+            }
+
+            Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
+            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
+            if (selected == null) {
+                throw new RuntimeException("Vision encoder produced no output for page " + pageIdx);
+            }
+            pageEmbeddings.add(selected.tensor.dup());
+            log.info("  Page {}: embedding shape={}", pageIdx, java.util.Arrays.toString(selected.tensor.shape()));
+
+            visionEncoder.clearPlaceholders(false);
+            visionEncoder.clearOpInputs();
+            visionEncoder.resetSession();
+        }
+        log.info("STEP 6 DONE: [{}ms, {}ms/page]", System.currentTimeMillis() - step6Start,
+                (System.currentTimeMillis() - step6Start) / batchSize);
+
+        // ==================== STEP 7: Build Batched Prompt and Embeddings ====================
+        long step7Start = System.currentTimeMillis();
+        log.info("STEP 7: Building batched prompt and embeddings...");
+
+        // Build prompt (same for all pages - single frame, no tiling)
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+        int imageSeqLenPerImage = (int) pageEmbeddings.get(0).size(1);
+        String imagePrompt = ImagePromptBuilder.buildImagePromptString(1, 1, imageSeqLenPerImage);
+        String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+
+        int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
+        log.info("  Prompt: {} tokens, {} <image> tokens", promptTokenIds.length,
+                ImagePromptBuilder.countOccurrences(promptTokenIds, imageTokenId));
+
+        // Get text embeddings (same for all pages)
+        INDArray promptTokenIdsTensor = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, promptTokenIds.length).castTo(DataType.LONG);
+        String embedInputName = embedTokens.inputs().isEmpty() ? "input_ids" : embedTokens.inputs().get(0);
+        String[] embedOutputNames = embedTokens.outputs().toArray(new String[0]);
+
+        Map<String, INDArray> embedOutputs = embedTokens.output(Map.of(embedInputName, promptTokenIdsTensor), embedOutputNames);
+        INDArray textEmbeddings = null;
+        for (var entry : embedOutputs.entrySet()) {
+            textEmbeddings = entry.getValue().dup();
+        }
+
+        // Merge vision + text embeddings for each page
+        List<INDArray> batchedInputsEmbeds = new java.util.ArrayList<>();
+        for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
+            INDArray merged = EmbeddingMerger.mergeEmbeddings(textEmbeddings.dup(), pageEmbeddings.get(pageIdx),
+                    promptTokenIds, imageTokenId);
+            batchedInputsEmbeds.add(merged);
+            log.info("  Page {}: merged embeddings shape={}", pageIdx, java.util.Arrays.toString(merged.shape()));
+        }
+        log.info("STEP 7 DONE: [{}ms]", System.currentTimeMillis() - step7Start);
+
+        // ==================== STEP 8: Batched Autoregressive Decoding ====================
+        long step8Start = System.currentTimeMillis();
+        log.info("STEP 8: Batched decoding ({} pages, max {} tokens)...", batchSize, maxTokensConfig);
+
+        // Stack embeddings for batch: [batchSize, seqLen, hidden]
+        INDArray batchedEmbeddings = Nd4j.vstack(batchedInputsEmbeds.toArray(new INDArray[0]));
+        log.info("  Batched embeddings shape: {}", java.util.Arrays.toString(batchedEmbeddings.shape()));
+
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        List<String> presentKeyNames = kvNames.keyNames;
+        List<String> presentValueNames = kvNames.valueNames;
+        List<String> decoderInputNames = decoder.inputs();
+        long hiddenSize = batchedEmbeddings.shape()[2];
+
+        int eosTokenId = tokenizer.getEosTokenId();
+        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
+        Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
+                .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokensConfig).doSample(false).build());
+
+        // Per-sequence state
+        List<List<Integer>> generatedTokens = new java.util.ArrayList<>();
+        boolean[] finished = new boolean[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            generatedTokens.add(new java.util.ArrayList<>());
+        }
+
+        Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        INDArray currentEmbeddings = batchedEmbeddings;
+        long pastSeqLen = 0;
+
+        int stepsCompleted = 0;
+        for (int step = 0; step < maxTokensConfig; step++) {
+            Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
+            long currentSeqLen = currentEmbeddings.shape()[1];
+            long totalSeqLen = currentSeqLen + pastSeqLen;
+
+            for (String inputName : decoderInputNames) {
+                if (inputName.equals("inputs_embeds")) {
+                    decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (inputName.equals("attention_mask")) {
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSeqLen));
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(batchSize, currentSeqLen, totalSeqLen));
+                } else if (inputName.equals("position_ids")) {
+                    INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                    decoderInputMap.put(inputName, Nd4j.tile(posIds, batchSize, 1));
+                } else if (inputName.startsWith("past_key_values.")) {
+                    String presentName = inputName.replace("past_key_values", "present");
+                    if (kvCache.containsKey(presentName)) {
+                        decoderInputMap.put(inputName, kvCache.get(presentName));
+                    } else {
+                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(decoder, inputName, batchSize, hiddenSize));
+                    }
+                }
+            }
+
+            // Request logits + KV cache outputs
+            List<String> allOutputs = new java.util.ArrayList<>();
+            allOutputs.add(logitsOutputName);
+            allOutputs.addAll(presentKeyNames);
+            allOutputs.addAll(presentValueNames);
+            Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap, allOutputs.toArray(new String[0]));
+
+            INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
+            if (logitsRaw == null) {
+                log.error("No logits output at step {}", step);
+                break;
+            }
+            INDArray logits = logitsRaw.dup();
+
+            // Update KV cache
+            for (String presentName : presentKeyNames) {
+                INDArray pv = decoderOutputs.get(presentName);
+                if (pv != null) {
+                    INDArray old = kvCache.put(presentName, pv);
+                    if (old != null) old.close();
+                }
+            }
+            for (String presentName : presentValueNames) {
+                INDArray pv = decoderOutputs.get(presentName);
+                if (pv != null) {
+                    INDArray old = kvCache.put(presentName, pv);
+                    if (old != null) old.close();
+                }
+            }
+
+            // Sample from last position for each sequence: [batchSize, seqLen, vocab] -> [batchSize, vocab]
+            INDArray lastLogits;
+            if (logits.rank() == 3) {
+                lastLogits = logits.get(NDArrayIndex.all(), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
+            } else {
+                lastLogits = logits;
+            }
+
+            // Batch sampling (greedy argmax for each sequence)
+            int[] nextTokenIds = SamplerUtils.argmaxBatch(lastLogits);
+
+            // Record tokens and check for EOS
+            boolean allFinished = true;
+            for (int i = 0; i < batchSize; i++) {
+                if (!finished[i]) {
+                    generatedTokens.get(i).add(nextTokenIds[i]);
+                    if (nextTokenIds[i] == eosTokenId ||
+                            (endOfUtteranceTokenId != null && nextTokenIds[i] == endOfUtteranceTokenId)) {
+                        finished[i] = true;
+                        log.info("  Page {} finished at step {}", i, step);
+                    }
+                }
+                if (!finished[i]) allFinished = false;
+            }
+
+            if (step % 10 == 0) {
+                int activeCount = 0;
+                for (boolean f : finished) if (!f) activeCount++;
+                log.info("  Step {}: {} sequences still active", step, activeCount);
+            }
+
+            if (allFinished) {
+                log.info("  All sequences finished at step {}", step);
+                break;
+            }
+
+            logits.close();
+            decoder.clearPlaceholders(false);
+
+            // Get embeddings for next tokens
+            INDArray[] nextEmbeds = new INDArray[batchSize];
+            for (int i = 0; i < batchSize; i++) {
+                int tokenId = finished[i] ? eosTokenId : nextTokenIds[i];
+                INDArray tokenTensor = Nd4j.createFromArray(new int[]{tokenId}).reshape(1, 1).castTo(DataType.LONG);
+                Map<String, INDArray> newEmbedOutputs = embedTokens.output(Map.of(embedInputName, tokenTensor), embedOutputNames);
+                for (var entry : newEmbedOutputs.entrySet()) {
+                    nextEmbeds[i] = entry.getValue().dup();
+                }
+            }
+
+            INDArray prevEmbeddings = currentEmbeddings;
+            currentEmbeddings = Nd4j.vstack(nextEmbeds);
+            if (prevEmbeddings != batchedEmbeddings) prevEmbeddings.close();
+            embedTokens.clearPlaceholders(false);
+            pastSeqLen += currentSeqLen;
+            stepsCompleted = step + 1;
+        }
+
+        long step8End = System.currentTimeMillis();
+        long step8Total = step8End - step8Start;
+
+        // ==================== STEP 9: Output Results ====================
+        log.info("========================================");
+        log.info("BATCH PROCESSING RESULTS ({} pages):", batchSize);
+        log.info("========================================");
+
+        int totalTokens = 0;
+        for (int i = 0; i < batchSize; i++) {
+            int[] tokenIds = generatedTokens.get(i).stream().mapToInt(Integer::intValue).toArray();
+            String text = tokenizer.decode(tokenIds, false);
+            totalTokens += tokenIds.length;
+            log.info("PAGE {} ({} tokens):", i, tokenIds.length);
+            log.info("{}", text.length() > 200 ? text.substring(0, 200) + "..." : text);
+            log.info("---");
+        }
+
+        log.info("========================================");
+        log.info("TIMING SUMMARY:");
+        log.info("  Total decode time: {}ms", step8Total);
+        log.info("  Steps completed: {}", stepsCompleted);
+        log.info("  Total tokens generated: {}", totalTokens);
+        log.info("  Effective ms/token: {} (batch amortized)", step8Total * batchSize / Math.max(1, totalTokens));
+        log.info("  Throughput: {} tokens/sec", totalTokens * 1000.0 / Math.max(1, step8Total));
+        log.info("========================================");
+
+        // Cleanup
+        for (INDArray arr : pagePixelValues) arr.close();
+        for (INDArray arr : pageEmbeddings) arr.close();
+        for (INDArray arr : batchedInputsEmbeds) arr.close();
+        for (INDArray arr : kvCache.values()) if (arr != null) arr.close();
+        tokenizer.close();
+
+        org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
+        log.info("Batch processing test complete.");
+    }
 }
