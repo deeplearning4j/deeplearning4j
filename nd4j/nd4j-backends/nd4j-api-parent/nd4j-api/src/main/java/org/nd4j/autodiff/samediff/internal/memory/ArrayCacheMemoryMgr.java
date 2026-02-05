@@ -54,9 +54,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     // Growth factor for over-allocation on cache miss. Buffers are allocated
     // with this multiplier so that next step's slightly larger request (e.g.
     // growing KV cache) can reuse the buffer via capacity matching.
-    // Default 1.0 (disabled) to avoid OOM on memory-constrained systems.
-    // Set org.nd4j.cache.growthFactor=1.1 to enable for systems with headroom.
-    public final static double DEFAULT_GROWTH_FACTOR = 1.0;
+    // Default 1.05 (5% headroom) for better buffer reuse in autoregressive generation.
+    // Disable with org.nd4j.cache.growthFactor=1.0 on memory-constrained systems.
+    public final static double DEFAULT_GROWTH_FACTOR = 1.05;
 
     private static AtomicDouble largerArrayMaxMultiple;
     private static AtomicDouble growthFactor;

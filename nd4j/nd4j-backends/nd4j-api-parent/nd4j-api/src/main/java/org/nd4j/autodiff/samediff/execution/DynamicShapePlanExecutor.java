@@ -78,8 +78,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
             System.getProperty("org.nd4j.inference.timing", "false"));
 
-    private static final boolean SHAPE_OVERRIDE = Boolean.getBoolean(
-            "org.nd4j.inference.dynamicShapePlan.shapeOverride");
+    // Enable shapeFunctionOverride by default to skip redundant C++ shape calculation.
+    // When Java-side calculates shapes and pre-allocates outputs, C++ doesn't need to redo it.
+    private static final boolean SHAPE_OVERRIDE = Boolean.parseBoolean(
+            System.getProperty("org.nd4j.inference.dynamicShapePlan.shapeOverride", "true"));
 
     private final SameDiff sd;
     private final SessionMemMgr mmgr;
@@ -452,44 +454,55 @@ public class DynamicShapePlanExecutor implements Closeable {
             return slot.getCachedOutputShapes();
         }
 
-        // Cache miss — call native shape function directly (bypasses DynamicCustomOp/OpExecutioner layers).
-        // For shape-only ops, use calculateOutputShapesNoSync to skip forceSyncToHost()
-        // which avoids expensive CUDA D2H synchronization on every input array.
+        // Cache miss — try Java-side shape inference first (avoids JNI overhead)
         if (TIMING_ENABLED) timingShapeMisses++;
 
-        List<DataBuffer> outShapes;
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            if (fn instanceof CustomOp) {
-                ctx.setIArguments(slot.getIArgs());
-                ctx.setTArguments(slot.getTArgs());
-                ctx.setBArguments(slot.getBArgs());
-                ctx.setDArguments(slot.getDArgs());
+        List<DataBuffer> outShapes = null;
 
-                long opHash = ((CustomOp) fn).opHash();
-                OpaqueShapeList shapeList;
-                if (!slot.isOutputShapeDependsOnInputValues()) {
-                    // Shape-only op: skip D2H sync (shape function only reads shape info)
-                    shapeList = nativeOps.calculateOutputShapesNoSync(null, opHash,
-                            ctx.contextPointer());
+        // Try Java-side shape calculation from the op itself
+        if (fn instanceof DynamicCustomOp) {
+            ctx.setIArguments(slot.getIArgs());
+            ctx.setTArguments(slot.getTArgs());
+            ctx.setBArguments(slot.getBArgs());
+            ctx.setDArguments(slot.getDArgs());
+            outShapes = ((DynamicCustomOp) fn).calculateOutputShapeFromInputs(ctx);
+        }
+
+        // Fall back to native shape function if Java-side didn't provide a result
+        if (outShapes == null || outShapes.isEmpty()) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                if (fn instanceof CustomOp) {
+                    ctx.setIArguments(slot.getIArgs());
+                    ctx.setTArguments(slot.getTArgs());
+                    ctx.setBArguments(slot.getBArgs());
+                    ctx.setDArguments(slot.getDArgs());
+
+                    long opHash = ((CustomOp) fn).opHash();
+                    OpaqueShapeList shapeList;
+                    if (!slot.isOutputShapeDependsOnInputValues()) {
+                        // Shape-only op: skip D2H sync (shape function only reads shape info)
+                        shapeList = nativeOps.calculateOutputShapesNoSync(null, opHash,
+                                ctx.contextPointer());
+                    } else {
+                        // Value-dependent op: need sync for scalar/tensor value reads
+                        shapeList = nativeOps.calculateOutputShapes2(null, opHash,
+                                ctx.contextPointer());
+                    }
+
+                    if (nativeOps.lastErrorCode() != 0 || shapeList == null) {
+                        throw new RuntimeException("Shape calculation failed for op " +
+                                slot.getOpName() + ": " + nativeOps.lastErrorMessage());
+                    }
+
+                    outShapes = new ArrayList<>();
+                    int numShapes = (int) nativeOps.getShapeListSize(shapeList);
+                    for (int e = 0; e < numShapes; e++) {
+                        outShapes.add(readShapeFromNative(nativeOps, shapeList, e));
+                    }
+                    nativeOps.deleteShapeList(shapeList);
                 } else {
-                    // Value-dependent op: need sync for scalar/tensor value reads
-                    shapeList = nativeOps.calculateOutputShapes2(null, opHash,
-                            ctx.contextPointer());
+                    outShapes = fn.calculateOutputShape(ctx);
                 }
-
-                if (nativeOps.lastErrorCode() != 0 || shapeList == null) {
-                    throw new RuntimeException("Shape calculation failed for op " +
-                            slot.getOpName() + ": " + nativeOps.lastErrorMessage());
-                }
-
-                outShapes = new ArrayList<>();
-                int numShapes = (int) nativeOps.getShapeListSize(shapeList);
-                for (int e = 0; e < numShapes; e++) {
-                    outShapes.add(readShapeFromNative(nativeOps, shapeList, e));
-                }
-                nativeOps.deleteShapeList(shapeList);
-            } else {
-                outShapes = fn.calculateOutputShape(ctx);
             }
         }
 
