@@ -79,8 +79,6 @@ public class DynamicShapePlanExecutor implements Closeable {
     private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
             System.getProperty("org.nd4j.inference.timing", "false"));
 
-    // Enable shapeFunctionOverride by default to skip redundant C++ shape calculation.
-    // When Java-side calculates shapes and pre-allocates outputs, C++ doesn't need to redo it.
     private static final boolean SHAPE_OVERRIDE = Boolean.parseBoolean(
             System.getProperty("org.nd4j.inference.dynamicShapePlan.shapeOverride", "true"));
 
@@ -248,14 +246,26 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (TIMING_ENABLED) timingReleaseNs += System.nanoTime() - tRelease0;
             }
 
-            // Collect output arrays (dup before we close intermediates)
+            // Collect output arrays (dup before we close intermediates).
+            // CRITICAL: commit() first so the async dup copy reads completed GPU data,
+            // then syncToHost() so the host buffer has valid data before closePendingBuffers
+            // frees the source GPU buffers.
+            Nd4j.getExecutioner().commit();
             try (MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 Map<String, Integer> outputMap = plan.getOutputNameToSlotIndex();
                 for (Map.Entry<String, Integer> entry : outputMap.entrySet()) {
                     int slotIdx = entry.getValue();
                     INDArray arr = outputSlots[slotIdx];
                     if (arr != null) {
-                        results.put(entry.getKey(), arr.dup());
+                        INDArray duped = arr.dup();
+                        Nd4j.getExecutioner().commit();
+                        // Force host sync while all GPU buffers still valid.
+                        // On CUDA, getFloat triggers lazyAllocateHostPointer + cudaMemcpy.
+                        // Must happen BEFORE closePendingBuffers frees intermediate GPU buffers.
+                        if (duped.length() > 0 && !duped.isEmpty()) {
+                            duped.getFloat(0);
+                        }
+                        results.put(entry.getKey(), duped);
                     }
                 }
             }
@@ -302,11 +312,11 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Close all pending DataBuffers after execution completes.
      * Sync the execution stream first, then close with GPU address dedup.
      *
-     * Uses dbFreeBuffersOnly() which calls DataBuffer::deleteBuffers() to free both
-     * primary (host) and special (GPU) memory WITHOUT `delete DataBuffer`. This avoids
-     * SIGABRT from pre-existing heap corruption: the DataBuffer destructor's host-side
-     * free() discovers corrupted glibc malloc metadata from CUDA op buffer overruns.
-     * The DataBuffer C++ object (~200B) leaks but total is <500KB per execution.
+     * Uses dbFreeBuffersOnly() which frees GPU memory via cudaFreeAsync and abandons
+     * the host-side pinned buffer (via madvise(MADV_DONTNEED)) rather than calling free().
+     * This avoids the overhead of full DataBuffer destruction for intermediates that are
+     * immediately discarded. The DataBuffer C++ object (~200B) leaks but total is
+     * &lt;500KB per execution.
      */
     private void closePendingBuffers(NativeOps nativeOps) {
         if (pendingClose.isEmpty()) return;
@@ -355,8 +365,6 @@ public class DynamicShapePlanExecutor implements Closeable {
             try {
                 freedBytes += buf.length() * buf.getElementSize();
                 freedCount++;
-                // Free both primary (host) and special (GPU) buffers via deleteBuffers()
-                // without `delete DataBuffer` — avoids SIGABRT from heap corruption.
                 nativeOps.dbFreeBuffersOnly(odb);
             } catch (Exception e) {
                 log.warn("  dbFreeBuffersOnly failed ({}B): {}",
@@ -485,6 +493,16 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         // Step 5: Execute
         ctx.shapeFunctionOverride(SHAPE_OVERRIDE);
+
+        // Attach native workspace to OpContext if available — this allows C++ ops to
+        // use bump allocation for internal temporaries instead of per-op malloc/cudaMalloc.
+        // Without this, C++ op temporary buffer overruns corrupt the regular malloc heap
+        // metadata, causing "double free or corruption (out)" crashes.
+        // The standard InferenceSession path always does this (see executeRegularOperation).
+        Pointer wsPtr = mmgr.getNativeWorkspacePointer();
+        if (wsPtr != null) {
+            ctx.attachWorkspace(wsPtr);
+        }
 
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
         if (slot.isCustomOp()) {
