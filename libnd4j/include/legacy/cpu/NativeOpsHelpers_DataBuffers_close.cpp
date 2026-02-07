@@ -145,3 +145,23 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
     }
   }
 }
+
+void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
+  // CPU implementation: uses freeGpuOnly() which on CPU just abandons the buffer.
+  // On CUDA, this frees GPU memory via deleteSpecial() and abandons host memory.
+  if (dataBuffer == nullptr) return;
+  if (dataBuffer->isConstant.load(std::memory_order_acquire)) return;
+  if (!dataBuffer->tryClose()) return;
+  if (!dataBuffer->hasValidDataBuffer()) return;
+  if (!dataBuffer->isOwner()) return;
+
+  size_t bytes = dataBuffer->_cachedLenInBytes;
+  g_dataBufferCount.fetch_sub(1, std::memory_order_relaxed);
+  g_dataBufferBytes.fetch_sub(bytes, std::memory_order_relaxed);
+
+  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
+  if (db == nullptr) return;
+
+  db->freeGpuOnly();
+  dataBuffer->invalidateDataBuffer();
+}

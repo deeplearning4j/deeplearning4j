@@ -518,6 +518,7 @@ SD_LIB_EXPORT void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) ;
 SD_LIB_EXPORT void dbClose(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbCloseGetDiagnostics(sd::LongType* outStats) ;
 SD_LIB_EXPORT void dbCloseResetDiagnostics() ;
 SD_LIB_EXPORT int dbDeviceId(OpaqueDataBuffer *dataBuffer) ;

@@ -21,6 +21,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/DataTypeUtils.h>
+#include <sys/mman.h>
 #include <exceptions/allocation_exception.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
@@ -684,6 +685,43 @@ void DataBuffer::deleteSpecial() {
   // This prevents stale pointers from causing allocateSpecial() to skip allocation
   _specialBuffer = nullptr;
   _isOwnerSpecial = false;
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::freeGpuOnly() {
+  // Free GPU (special) buffer only, release host physical pages without free().
+  //
+  // Why not call deletePrimary() / free()?
+  // CUDA op buffer overruns corrupt adjacent glibc malloc metadata on the host heap.
+  // Calling free() discovers this corruption and triggers SIGABRT ("double free or
+  // corruption (!prev)"). By using madvise(MADV_DONTNEED) instead, we release the
+  // physical RAM back to the OS without touching glibc's heap metadata.
+  //
+  // The virtual address space remains mapped (glibc thinks memory is still allocated),
+  // but physical pages are zeroed and returned to the OS, reducing RSS.
+  deleteSpecial();
+
+  // Release host physical pages via madvise(MADV_DONTNEED).
+  // This zeroes the pages and returns physical memory to the OS without calling free().
+  // We must page-align the range: skip the first partial page (which may contain
+  // glibc's chunk header at p-16) and the last partial page.
+  if (_isOwnerPrimary && _primaryBuffer != nullptr && _lenInBytes > 0) {
+    uintptr_t pageSize = 4096;
+    uintptr_t bufStart = reinterpret_cast<uintptr_t>(_primaryBuffer);
+    uintptr_t alignedStart = (bufStart + pageSize - 1) & ~(pageSize - 1);  // Round UP
+    uintptr_t bufEnd = bufStart + _lenInBytes;
+    uintptr_t alignedEnd = bufEnd & ~(pageSize - 1);  // Round DOWN
+
+    if (alignedEnd > alignedStart) {
+      madvise(reinterpret_cast<void*>(alignedStart), alignedEnd - alignedStart, MADV_DONTNEED);
+    }
+  }
+
+  // Abandon primary buffer: disown to prevent any future free() attempt.
+  _primaryBuffer = nullptr;
+  _isOwnerPrimary = false;
+
+  closed = true;
 }
 
 ////////////////////////////////////////////////////////////////////////

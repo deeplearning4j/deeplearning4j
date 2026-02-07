@@ -239,6 +239,15 @@ void DataBuffer::deleteSpecial() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+void DataBuffer::freeGpuOnly() {
+  // CPU: no GPU to free. Just abandon the primary buffer to match CUDA behavior.
+  deleteSpecial();
+  _primaryBuffer = nullptr;
+  _isOwnerPrimary = false;
+  closed = true;
+}
+
+////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {}
 
 ////////////////////////////////////////////////////////////////////////

@@ -537,6 +537,7 @@ public interface NativeOps {
  void dbTickDeviceWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, long elements);
  void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbFreeBuffersOnly(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbCloseGetDiagnostics(org.bytedeco.javacpp.LongPointer outStats);
  void dbCloseResetDiagnostics();
  int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);

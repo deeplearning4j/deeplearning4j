@@ -92,7 +92,6 @@ class SD_LIB_EXPORT DataBuffer {
   void copyCounters(const DataBuffer &other);
   void deleteSpecial();
   void deletePrimary();
-  void deleteBuffers();
   void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
   void allocateBuffers(const bool allocBoth = false);
 
@@ -102,6 +101,14 @@ class SD_LIB_EXPORT DataBuffer {
                           const LongType offsetHostBuffer = 0);
 
  public:
+
+  void deleteBuffers();
+
+  /**
+   * Free GPU (special) buffer only, abandon host (primary) buffer.
+   * Used by dbFreeBuffersOnly to avoid SIGABRT from host heap corruption.
+   */
+  void freeGpuOnly();
 
   bool _isOwnerPrimary;
   bool _isOwnerSpecial;
