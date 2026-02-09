@@ -225,21 +225,57 @@ public final class SamplerUtils {
 
     /**
      * Argmax - find the index of the maximum value.
+     *
+     * Uses host-side scan instead of Nd4j.argMax CUDA kernel because the
+     * IndexReduce kernel can return wrong indices after heavy DSP execution
+     * (observed in VLM decoder pipeline). The getFloat(i) path properly syncs
+     * CUDA device data to host via synchronizeHostData; the first call does
+     * the actual D2H transfer, subsequent calls find isPrimaryActual=true
+     * and skip the transfer (~5ms total for 49K vocab).
      */
     public static int argmax(INDArray logits) {
         INDArray flat = logits.rank() == 1 ? logits : logits.reshape(logits.length());
-        return Nd4j.argMax(flat).getInt(0);
+        Nd4j.getExecutioner().commit();
+        int len = (int) flat.length();
+        int maxIdx = 0;
+        float maxVal = flat.getFloat(0);
+        for (int i = 1; i < len; i++) {
+            float val = flat.getFloat(i);
+            if (val > maxVal) {
+                maxVal = val;
+                maxIdx = i;
+            }
+        }
+        return maxIdx;
     }
 
     /**
-     * Batch argmax using Nd4j.argMax along dimension.
+     * Batch argmax - find the index of the maximum value for each row.
+     *
+     * Uses host-side scan for reliability (see {@link #argmax} for rationale).
      */
     public static int[] argmaxBatch(INDArray logits) {
         if (logits.rank() == 1) {
             return new int[]{argmax(logits)};
         }
-        INDArray maxIndices = Nd4j.argMax(logits, 1);
-        return maxIndices.toIntVector();
+        Nd4j.getExecutioner().commit();
+        int batchSize = (int) logits.size(0);
+        int vocabSize = (int) logits.size(1);
+        int[] result = new int[batchSize];
+        for (int b = 0; b < batchSize; b++) {
+            INDArray row = logits.getRow(b);
+            int maxIdx = 0;
+            float maxVal = row.getFloat(0);
+            for (int v = 1; v < vocabSize; v++) {
+                float val = row.getFloat(v);
+                if (val > maxVal) {
+                    maxVal = val;
+                    maxIdx = v;
+                }
+            }
+            result[b] = maxIdx;
+        }
+        return result;
     }
 
     /**

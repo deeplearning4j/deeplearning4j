@@ -2875,13 +2875,15 @@ public class TestVLMModelImportPipeline {
             int[] nextTokenIds = SamplerUtils.argmaxBatch(lastLogits);
             if (lastLogits != logits) lastLogits.close();
 
-            // Record tokens, print as generated, and check for EOS
+            // Record tokens, print as generated with running text, and check for EOS
             boolean allFinished = true;
             for (int i = 0; i < batchSize; i++) {
                 if (!finished[i]) {
                     generatedTokens.get(i).add(nextTokenIds[i]);
+                    int[] allTokensSoFar = generatedTokens.get(i).stream().mapToInt(Integer::intValue).toArray();
+                    String textSoFar = tokenizer.decode(allTokensSoFar, false);
                     String tokenText = tokenizer.decode(new int[]{nextTokenIds[i]}, false);
-                    log.info("  Step {}, page {}: '{}' (id={})", step, i, tokenText, nextTokenIds[i]);
+                    log.info("  Step {}, page {}: '{}' (id={}) | text so far: {}", step, i, tokenText, nextTokenIds[i], textSoFar);
                     if (nextTokenIds[i] == eosTokenId ||
                             (endOfUtteranceTokenId != null && nextTokenIds[i] == endOfUtteranceTokenId)) {
                         finished[i] = true;

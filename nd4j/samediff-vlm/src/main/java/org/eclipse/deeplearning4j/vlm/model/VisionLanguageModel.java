@@ -388,13 +388,15 @@ public class VisionLanguageModel implements AutoCloseable {
             // Get next token (greedy or sampling)
             int nextTokenId;
             if (!doSample || temperature <= 0) {
-                nextTokenId = Nd4j.argMax(logits.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(logits.shape()[1] - 1)), 0).getInt(0);
+                INDArray lastLogits = logits.get(NDArrayIndex.point(0),
+                        NDArrayIndex.point(logits.shape()[1] - 1));
+                nextTokenId = SamplerUtils.argmax(lastLogits);
             } else {
                 INDArray scaledLogits = logits.div(temperature);
                 INDArray probs = Nd4j.nn().softmax(scaledLogits, 2);
-                nextTokenId = Nd4j.argMax(probs.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(probs.shape()[1] - 1)), 0).getInt(0);
+                INDArray lastProbs = probs.get(NDArrayIndex.point(0),
+                        NDArrayIndex.point(probs.shape()[1] - 1));
+                nextTokenId = SamplerUtils.argmax(lastProbs);
             }
 
             // Record first token latency
@@ -967,13 +969,15 @@ public class VisionLanguageModel implements AutoCloseable {
 
             int nextTokenId;
             if (!doSample || temperature <= 0) {
-                nextTokenId = Nd4j.argMax(logits.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(logits.shape()[1] - 1)), 0).getInt(0);
+                INDArray lastLogits = logits.get(NDArrayIndex.point(0),
+                        NDArrayIndex.point(logits.shape()[1] - 1));
+                nextTokenId = SamplerUtils.argmax(lastLogits);
             } else {
                 INDArray scaledLogits = logits.div(temperature);
                 INDArray probs = Nd4j.nn().softmax(scaledLogits, 2);
-                nextTokenId = Nd4j.argMax(probs.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(probs.shape()[1] - 1)), 0).getInt(0);
+                INDArray lastProbs = probs.get(NDArrayIndex.point(0),
+                        NDArrayIndex.point(probs.shape()[1] - 1));
+                nextTokenId = SamplerUtils.argmax(lastProbs);
             }
 
             if (generatedTokenCount == 0) {
@@ -1194,13 +1198,15 @@ public class VisionLanguageModel implements AutoCloseable {
 
             int nextTokenId;
             if (!doSample || temperature <= 0) {
-                nextTokenId = Nd4j.argMax(logits.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(logits.shape()[1] - 1)), 0).getInt(0);
+                INDArray lastLogits = logits.get(NDArrayIndex.point(0),
+                        NDArrayIndex.point(logits.shape()[1] - 1));
+                nextTokenId = SamplerUtils.argmax(lastLogits);
             } else {
                 INDArray scaledLogits = logits.div(temperature);
                 INDArray probs = Nd4j.nn().softmax(scaledLogits, 2);
-                nextTokenId = Nd4j.argMax(probs.get(NDArrayIndex.point(0),
-                        NDArrayIndex.point(probs.shape()[1] - 1)), 0).getInt(0);
+                INDArray lastProbs = probs.get(NDArrayIndex.point(0),
+                        NDArrayIndex.point(probs.shape()[1] - 1));
+                nextTokenId = SamplerUtils.argmax(lastProbs);
             }
 
             // Record first token latency
