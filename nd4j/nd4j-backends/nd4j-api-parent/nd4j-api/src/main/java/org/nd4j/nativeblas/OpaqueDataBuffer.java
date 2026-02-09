@@ -271,6 +271,7 @@ public class OpaqueDataBuffer extends Pointer {
             }
         } else {
             // Non-constant buffers use the regular path
+            long bytes = allocationBytes(numElements, dataType);
             ret = Nd4j.getNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
 
             if (ret != null && !ret.isNull()) {
@@ -281,7 +282,13 @@ public class OpaqueDataBuffer extends Pointer {
 
                 // Register with DeallocatorService
                 try {
-                    registerWithDeallocatorService(ret, false, 0L);
+                    registerWithDeallocatorService(ret, false, bytes);
+
+                    // Track externalized buffer allocation for accurate memory accounting
+                    DeviceDescriptor actualDevice = resolveAllocationDevice(ret);
+                    if (actualDevice != null) {
+                        DeviceMemoryManager.getInstance().recordAllocation(actualDevice, bytes);
+                    }
                 } catch (Exception e) {
                     // LEAK FIX: Clean up buffer if registration fails
                     Nd4j.getNativeOps().dbClose(ret);
@@ -392,21 +399,21 @@ public class OpaqueDataBuffer extends Pointer {
                     try {
                         registerWithDeallocatorService(buffer, false, bytes);
 
-                        if (routingEnabled || simulationEnabled) {
-                            DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
-                            if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
-                                    && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
-                                actualDevice = selectedDevice;
-                            }
-                            if (actualDevice != null) {
-                                memoryManager.recordAllocation(actualDevice, bytes);
-                            }
+                        // Always track allocation in DeviceMemoryManager so device selection
+                        // and failover have accurate memory accounting
+                        DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
+                        if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
+                                && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                            actualDevice = selectedDevice;
                         }
-                        
+                        if (actualDevice != null) {
+                            memoryManager.recordAllocation(actualDevice, bytes);
+                        }
+
                         // Capture trace if needed
                         if(Nd4j.getNativeOps().isFuncTrace())
                             buffer.captureTrace();
-                        
+
                         // Success - return the buffer
                         return buffer;
                     } catch (Exception regEx) {
@@ -498,7 +505,8 @@ public class OpaqueDataBuffer extends Pointer {
                     try {
                         registerWithDeallocatorService(buffer, isConstant, isConstant ? 0L : bytes);
 
-                        if (!isConstant && (routingEnabled || simulationEnabled)) {
+                        // Always track non-constant allocations in DeviceMemoryManager
+                        if (!isConstant) {
                             DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
                             if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
                                     && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
@@ -756,10 +764,23 @@ public class OpaqueDataBuffer extends Pointer {
     public void closeBuffer() {
         dbCloseCallCount.incrementAndGet();
 
-        // During JVM shutdown, skip native deallocation to avoid calling free()
-        // on potentially corrupted heap metadata. The OS reclaims all process memory on exit.
+        // During JVM shutdown, use GPU-only free (no host free) to avoid SIGABRT
+        // from corrupted heap metadata caused by C++ op buffer overruns.
+        // freeGpuOnly releases GPU memory via cudaFreeAsync and uses madvise(MADV_DONTNEED)
+        // to release host physical pages without calling free().
         if (DeallocatorService.getShutdownInProgress().get()) {
             dbCloseSkipShutdown.incrementAndGet();
+            if (!this.isNull() && tryMarkForDeallocation()) {
+                try {
+                    Nd4j.getNativeOps().dbFreeBuffersOnly(this);
+                    this.setNull();
+                    if (deallocator != null) {
+                        deallocator.markDeallocated();
+                    }
+                } catch (Throwable t) {
+                    // Ignore - JVM is shutting down, OS will reclaim all memory
+                }
+            }
             return;
         }
 
@@ -791,7 +812,13 @@ public class OpaqueDataBuffer extends Pointer {
                 if (Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
                     System.out.println("Java side deallocation current trace: \n " + currentTrace());
                 }
-                Nd4j.getNativeOps().dbClose(this);
+                // Second shutdown check: if shutdown started after the initial check,
+                // use GPU-only free to avoid host free() discovering corrupted metadata.
+                if (DeallocatorService.getShutdownInProgress().get()) {
+                    Nd4j.getNativeOps().dbFreeBuffersOnly(this);
+                } else {
+                    Nd4j.getNativeOps().dbClose(this);
+                }
                 dbCloseSuccess.incrementAndGet();
                 this.setNull();
 

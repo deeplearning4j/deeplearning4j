@@ -78,56 +78,60 @@ public class DataSetUtil {
             }
         }
 
-
-        if (data.ordering() != 'f' || data.isView() || !Shape.strideDescendingCAscendingF(data)) {
-            data = data.dup('f');
-        }
-        //F order: strides are like [1, miniBatch, minibatch*size] - i.e., each time step array is contiguous in memory
-        //This can be reshaped to 2d with a no-copy op
-        //Same approach as RnnToFeedForwardPreProcessor in DL4J
-        //I.e., we're effectively stacking time steps for all examples
-
         val shape = data.shape();
-        INDArray as2d;
-        if (shape[0] == 1) {
-            as2d = data.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        } else if (shape[2] == 1) {
-            as2d = data.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-        } else {
-            INDArray permuted = data.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-            as2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
-        }
+        int miniBatch = (int) shape[0];
+        int vectorSize = (int) shape[1];
+        int timeSeriesLength = (int) shape[2];
 
         if (mask == null) {
+            //No mask: convert all [minibatch, features, timeSteps] to [minibatch*timeSteps, features]
+            INDArray as2d = Nd4j.create(miniBatch * timeSeriesLength, vectorSize);
+            int row = 0;
+            for (int t = 0; t < timeSeriesLength; t++) {
+                for (int ex = 0; ex < miniBatch; ex++) {
+                    for (int f = 0; f < vectorSize; f++) {
+                        as2d.putScalar(row, f, data.getDouble(ex, f, t));
+                    }
+                    row++;
+                }
+            }
             return as2d;
         }
 
-        //With stride 1 along the examples (dimension 0), we are concatenating time series - same as the
-        if (mask.ordering() != 'f' || mask.isView() || !Shape.strideDescendingCAscendingF(mask)) {
-            mask = mask.dup('f');
-        }
-
-        INDArray mask1d = mask.reshape('f', new long[] {mask.length(), 1});
-
-        //Assume masks are 0s and 1s: then sum == number of elements
+        //Mask present: count unmasked elements and extract only those rows
+        //mask shape is [minibatch, timeSeriesLength]
         int numElements = mask.sumNumber().intValue();
         if (numElements == mask.length()) {
-            return as2d; //All are 1s
+            //All unmasked: return full 2d
+            INDArray as2d = Nd4j.create(miniBatch * timeSeriesLength, vectorSize);
+            int row = 0;
+            for (int t = 0; t < timeSeriesLength; t++) {
+                for (int ex = 0; ex < miniBatch; ex++) {
+                    for (int f = 0; f < vectorSize; f++) {
+                        as2d.putScalar(row, f, data.getDouble(ex, f, t));
+                    }
+                    row++;
+                }
+            }
+            return as2d;
         }
         if (numElements == 0) {
             return null;
         }
 
-        int[] rowsToPull = new int[numElements];
-        float[] floatMask1d = mask1d.data().asFloat();
-        int currCount = 0;
-        for (int i = 0; i < floatMask1d.length; i++) {
-            if (floatMask1d[i] != 0.0f) {
-                rowsToPull[currCount++] = i;
+        //Extract only unmasked rows, using same row ordering: time varies slowest, batch varies fastest
+        INDArray subset = Nd4j.create(numElements, vectorSize);
+        int outRow = 0;
+        for (int t = 0; t < timeSeriesLength; t++) {
+            for (int ex = 0; ex < miniBatch; ex++) {
+                if (mask.getDouble(ex, t) != 0.0) {
+                    for (int f = 0; f < vectorSize; f++) {
+                        subset.putScalar(outRow, f, data.getDouble(ex, f, t));
+                    }
+                    outRow++;
+                }
             }
         }
-
-        INDArray subset = Nd4j.pullRows(as2d, 1, rowsToPull); //Tensor along dimension 1 == rows
         return subset;
     }
 

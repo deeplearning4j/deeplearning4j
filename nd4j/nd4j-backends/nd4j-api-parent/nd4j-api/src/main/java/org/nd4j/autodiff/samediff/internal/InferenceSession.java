@@ -325,12 +325,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Close DynamicShapePlanExecutor (holds runtime state: output slots, live tracking)
         DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
         if (executor != null) {
+            log.info("Closing DynamicShapePlanExecutor - flushing LocalBufferPool...");
             try {
                 executor.close();
             } catch (Exception e) {
-                // Ignore
+                log.warn("Error closing DynamicShapePlanExecutor: {}", e.getMessage());
             }
             dynamicShapePlanExecutorTl.remove();
+        } else {
+            log.info("No DynamicShapePlanExecutor to close (not DSP path or already closed)");
         }
 
         if (pooledClosed > 0) {
@@ -565,10 +568,27 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // Commit pending async ops
                         Nd4j.getExecutioner().commit();
                         log.debug("DynamicShapePlan-based execution completed successfully");
+                        // Reset native workspace so C++ op temporaries are recycled for next call.
+                        // Without this, the workspace bump pointer grows monotonically across
+                        // decode steps, eventually spilling all allocations to the heap.
+                        if (mmgr != null) {
+                            try {
+                                mmgr.scopeOut();
+                            } catch (Exception e) {
+                                log.debug("Error in memory manager scope out (DSP path): {}", e.getMessage());
+                            }
+                        }
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
                     log.warn("DynamicShapePlan-based execution failed, falling back to standard path: {}", e.getMessage());
+                    // Invalidate the executor — a failed execution may corrupt cached state
+                    // (constant shape info, slot cache). Close and recreate on next attempt.
+                    DynamicShapePlanExecutor failedExecutor = dynamicShapePlanExecutorTl.get();
+                    if (failedExecutor != null) {
+                        try { failedExecutor.close(); } catch (Exception ignored) {}
+                        dynamicShapePlanExecutorTl.remove();
+                    }
                     // Fall through to standard execution
                 }
             }
@@ -835,6 +855,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     plan.close();
                     return null;
                 }
+                // Auto-distribute ops across GPUs if multiple are available
+                plan.assignDevices();
                 // Cache at SameDiff level so it survives session resets
                 sameDiff.cacheDynamicShapePlan(outputSet, plan);
                 log.info("DynamicShapePlan compiled: {}", plan.getSummary());

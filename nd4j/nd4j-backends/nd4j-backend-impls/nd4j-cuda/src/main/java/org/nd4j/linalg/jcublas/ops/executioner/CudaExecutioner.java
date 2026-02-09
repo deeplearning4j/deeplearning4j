@@ -646,6 +646,55 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Op op, OpContext oc) {
+        // Device-aware execution: ensure all arrays are on the same device
+        // This is critical for SameDiff execution which calls this method directly via Nd4j.exec(op, context)
+        // Without this, failover allocations on different GPUs will crash with SIGSEGV
+        if (oc != null) {
+            List<INDArray> inputs = oc.getInputArrays();
+            List<INDArray> outputs = oc.getOutputArrays();
+
+            // Determine target device: prefer output's device, fall back to first input's device
+            int targetDeviceId = -1;
+            if (outputs != null && !outputs.isEmpty()) {
+                INDArray firstOutput = outputs.get(0);
+                if (firstOutput != null && firstOutput.data() != null) {
+                    targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
+                }
+            }
+            if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
+                INDArray firstInput = inputs.get(0);
+                if (firstInput != null && firstInput.data() != null) {
+                    targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
+                }
+            }
+
+            if (targetDeviceId >= 0) {
+                int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+                // Switch to target device
+                if (targetDeviceId != currentDeviceId) {
+                    Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
+                }
+
+                // Always check for cross-device inputs and migrate if needed.
+                // Even with P2P, explicit migration ensures correct execution.
+                if (inputs != null) {
+                    for (int i = 0; i < inputs.size(); i++) {
+                        INDArray input = inputs.get(i);
+                        if (input != null && input.data() != null) {
+                            int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
+                            if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
+                                // Migrate this input to the target device
+                                INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
+                                // Update in context
+                                oc.setInputArray(i, migrated);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         checkForCompression(op);
 
         if (op instanceof TransformOp) {
@@ -1283,10 +1332,28 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (x.length() != z.length())
-            throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["
-                    + Arrays.toString(x.shapeInfoDataBuffer().asInt()) + "] != ["
-                    + Arrays.toString(z.shapeInfoDataBuffer().asInt()) + "]");
+        if (x.length() != z.length()) {
+            // Detailed diagnostic: compare Java-side shape (jvmShapeInfo) vs native shape info buffer
+            String xDiag = "x.length()=" + x.length() + " rank=" + x.rank()
+                    + " shape=" + java.util.Arrays.toString(x.shape())
+                    + " empty=" + x.isEmpty()
+                    + " nativeShapeInfo=" + java.util.Arrays.toString(x.shapeInfoDataBuffer().asInt())
+                    + " data.length=" + (x.data() != null ? x.data().length() : "null")
+                    + " class=" + x.getClass().getSimpleName();
+            String zDiag = "z.length()=" + z.length() + " rank=" + z.rank()
+                    + " shape=" + java.util.Arrays.toString(z.shape())
+                    + " empty=" + z.isEmpty()
+                    + " nativeShapeInfo=" + java.util.Arrays.toString(z.shapeInfoDataBuffer().asInt())
+                    + " data.length=" + (z.data() != null ? z.data().length() : "null")
+                    + " class=" + z.getClass().getSimpleName()
+                    + " z==oc.out0=" + (oc != null && oc.getOutputArray(0) == z)
+                    + " zFromOc=" + (oc != null ? (oc.getOutputArray(0) != null ? "rank=" + oc.getOutputArray(0).rank() + " len=" + oc.getOutputArray(0).length() : "null") : "no-oc");
+            throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: ["
+                    + java.util.Arrays.toString(x.shapeInfoDataBuffer().asInt()) + "] != ["
+                    + java.util.Arrays.toString(z.shapeInfoDataBuffer().asInt()) + "]\n"
+                    + "  X: " + xDiag + "\n"
+                    + "  Z: " + zDiag);
+        }
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -1768,8 +1835,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
             }
 
-            // Check if any input arrays need migration when P2P is not available
-            if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && inputs != null) {
+            // Migrate inputs that are on different devices to the target device
+            if (inputs != null) {
                 boolean migrationOccurred = false;
 
                 // Migrate all inputs that are on different devices
@@ -1860,6 +1927,52 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
+        // Device-aware execution: ensure all arrays are on the same device
+        // This is critical for SameDiff execution which calls this method directly via Nd4j.exec(op, context)
+        // Without this, failover allocations on different GPUs will crash with SIGSEGV
+        List<INDArray> inputs = context.getInputArrays();
+        List<INDArray> outputs = context.getOutputArrays();
+
+        // Determine target device: prefer output's device, fall back to first input's device
+        int targetDeviceId = -1;
+        if (outputs != null && !outputs.isEmpty()) {
+            INDArray firstOutput = outputs.get(0);
+            if (firstOutput != null && firstOutput.data() != null) {
+                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
+            }
+        }
+        if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
+            INDArray firstInput = inputs.get(0);
+            if (firstInput != null && firstInput.data() != null) {
+                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
+            }
+        }
+
+        if (targetDeviceId >= 0) {
+            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+            // Switch to target device
+            if (targetDeviceId != currentDeviceId) {
+                Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
+            }
+
+            // Migrate inputs that are on different devices to the target device
+            if (inputs != null) {
+                for (int i = 0; i < inputs.size(); i++) {
+                    INDArray input = inputs.get(i);
+                    if (input != null && input.data() != null) {
+                        int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
+                        if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
+                            // Migrate this input to the target device
+                            INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
+                            // Update in context
+                            context.setInputArray(i, migrated);
+                        }
+                    }
+                }
+            }
+        }
+
         Nd4j.getExecutioner().commit();
         long st = profilingConfigurableHookIn(op, context);
         if(op instanceof UserDefinedCustomOp) {

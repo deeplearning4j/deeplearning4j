@@ -52,6 +52,18 @@ public abstract class DeviceLocal<T extends Object> {
     }
 
     /**
+     * Ensure locksMap and updatesMap have entries for the given deviceId.
+     * Called when allocateFailover routes to a device beyond what getNumberOfDevices()
+     * reported (getNumberOfDevices() returns 1 when autoMultiGpuEnabled=false even on multi-GPU).
+     */
+    protected synchronized void ensureCapacity(int deviceId) {
+        while (locksMap.size() <= deviceId) {
+            locksMap.add(new ReentrantReadWriteLock());
+            updatesMap.add(new AtomicInteger(-1));
+        }
+    }
+
+    /**
      * This method returns object local to current deviceId
      *
      * @return
@@ -67,6 +79,9 @@ public abstract class DeviceLocal<T extends Object> {
      * @return
      */
     public T get(int deviceId) {
+        if (deviceId >= locksMap.size()) {
+            ensureCapacity(deviceId);
+        }
         try {
             locksMap.get(deviceId).readLock().lock();
             return backingMap.get(deviceId);

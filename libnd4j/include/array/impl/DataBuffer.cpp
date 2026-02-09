@@ -546,9 +546,15 @@ void DataBuffer::allocatePrimary() {
 
 
 
-    ALLOCATE(_primaryBuffer, _workspace, getLenInBytes(), int8_t);
+    // Add padding bytes after the buffer to protect glibc heap metadata from
+    // C++ op buffer overruns. Without padding, an overrun corrupts the adjacent
+    // malloc chunk header → SIGSEGV in free()/unlink_chunk.
+    // 128 bytes covers glibc's 16-byte chunk header plus typical overrun sizes.
+    static constexpr size_t HOST_ALLOC_PADDING = 128;
+    size_t allocSize = getLenInBytes() + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    ALLOCATE(_primaryBuffer, _workspace, allocSize, int8_t);
     _isOwnerPrimary = true;
-    _primaryAllocBytes = getLenInBytes();
+    _primaryAllocBytes = allocSize;
 
     // count in towards current deviceId if we're not in workspace mode
     if (_workspace == nullptr) {
@@ -580,14 +586,13 @@ void DataBuffer::deletePrimary() {
 
 #endif
   if (_isOwnerPrimary && _primaryBuffer != nullptr) {
-    auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
-
     if(Environment::getInstance().isDeletePrimary()) {
 #if defined(SD_GCC_FUNCTRACE)
       // Record deallocation before releasing memory
       array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
           _primaryBuffer, array::BufferType::PRIMARY);
 #endif
+      auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
       RELEASE(p, _workspace);
       _primaryBuffer = nullptr;
     }

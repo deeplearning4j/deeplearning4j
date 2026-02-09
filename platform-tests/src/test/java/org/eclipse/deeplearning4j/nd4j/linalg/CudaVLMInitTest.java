@@ -6,7 +6,6 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
-import org.eclipse.deeplearning4j.vlm.model.DecoderGraphFixer;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;

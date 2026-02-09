@@ -110,6 +110,14 @@ class SD_LIB_EXPORT DataBuffer {
    */
   void freeGpuOnly();
 
+  /**
+   * Free GPU (special) buffer on the specified CUDA stream.
+   * Used by DSP mid-execution flushing to free on the execution stream
+   * instead of stream 0, so the pool can reuse memory on the same stream.
+   * @param stream CUDA stream for cudaFreeAsync (nullptr = default stream)
+   */
+  void freeGpuOnStream(void* stream);
+
   bool _isOwnerPrimary;
   bool _isOwnerSpecial;
   bool isConstant = false;

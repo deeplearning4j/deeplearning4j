@@ -123,6 +123,9 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
     @Override
     public synchronized INDArray get() {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (deviceId >= locksMap.size()) {
+            ensureCapacity(deviceId);
+        }
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         val sourceId = updatesMap.get(deviceId).get();
         if (sourceId >= 0 && sourceId != deviceId) {

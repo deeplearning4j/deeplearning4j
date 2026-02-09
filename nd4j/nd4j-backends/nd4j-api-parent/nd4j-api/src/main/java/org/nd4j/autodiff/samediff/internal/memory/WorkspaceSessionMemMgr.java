@@ -115,17 +115,41 @@ public class WorkspaceSessionMemMgr implements SessionMemMgr {
     }
 
     /**
+     * Native workspace size: 8MB of pinned host memory for C++ op temporaries.
+     * With ~4400 ops per decoder step and each op allocating ~128 bytes of shape info,
+     * one full step needs ~2.2MB. 8MB provides comfortable headroom.
+     * Anything beyond this spills to cudaHostAlloc (CUDA) or aligned_alloc (CPU),
+     * which are still safe from glibc heap corruption.
+     */
+    private static final long NATIVE_WORKSPACE_BYTES = 8L * 1024 * 1024;
+
+    /**
      * Initialize the native C++ workspace for OpContext attachment.
-     * The native workspace provides bump-allocated memory for C++ op temporaries.
-     * Currently disabled: the C++ Workspace constructor's CUDA memory allocation
-     * (via CudaMemoryPool/cudaMallocAsync) conflicts with the Java MemoryWorkspace's
-     * CUDA allocations, causing heap corruption. This will be re-enabled once the
-     * C++ Workspace allocation is made compatible with the Java-side workspace.
+     * The native workspace provides bump-allocated memory for C++ op temporaries
+     * (shape calculations, index arrays, etc.) via the ALLOCATE macro.
+     *
+     * Without this workspace, all C++ temporaries are allocated via aligned_alloc/free
+     * on the glibc heap. Buffer overruns in C++ ops corrupt adjacent malloc metadata,
+     * causing cumulative heap corruption that manifests as SIGABRT during JVM shutdown
+     * after ~256 decode steps.
+     *
+     * The workspace is HOST-ONLY (no GPU memory) to avoid the CudaMemoryPool conflict
+     * that previously required disabling it. On CUDA, host memory uses cudaHostAlloc
+     * (pinned memory), which is separate from the glibc heap and CudaMemoryPool.
      */
     private void initNativeWorkspace() {
-        // Native workspace creation is deferred until the C++ CUDA memory pool
-        // interaction with Java workspaces is resolved.
-        nativeWorkspacePtr = null;
+        try {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeWorkspacePtr = nativeOps.createNativeWorkspace(NATIVE_WORKSPACE_BYTES);
+            if (nativeWorkspacePtr != null) {
+                // Initial scopeIn to prepare for first use
+                nativeOps.workspaceScopeIn(nativeWorkspacePtr);
+                log.debug("Created native workspace: {}MB host-only", NATIVE_WORKSPACE_BYTES / (1024 * 1024));
+            }
+        } catch (Exception e) {
+            log.warn("Failed to create native workspace, C++ ops will use heap allocation: {}", e.getMessage());
+            nativeWorkspacePtr = null;
+        }
     }
 
     /**
@@ -139,6 +163,17 @@ public class WorkspaceSessionMemMgr implements SessionMemMgr {
 
         workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfig, workspaceId);
         scopeActive = true;
+
+        // Reset native workspace: free spills from previous cycle, reinit for new cycle.
+        // This ensures C++ op temporaries from the previous forward pass are recycled.
+        if (nativeWorkspacePtr != null && !nativeWorkspaceDestroyed) {
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.workspaceScopeIn(nativeWorkspacePtr);
+            } catch (Exception e) {
+                log.debug("Native workspace scopeIn: {}", e.getMessage());
+            }
+        }
     }
 
     /**
@@ -148,6 +183,16 @@ public class WorkspaceSessionMemMgr implements SessionMemMgr {
     public void scopeOut() {
         if (!scopeActive || workspace == null) {
             return;
+        }
+
+        // Reset native workspace bump offset so memory is reusable for next forward pass.
+        if (nativeWorkspacePtr != null && !nativeWorkspaceDestroyed) {
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.workspaceScopeOut(nativeWorkspacePtr);
+            } catch (Exception e) {
+                log.debug("Native workspace scopeOut: {}", e.getMessage());
+            }
         }
 
         workspace.close();

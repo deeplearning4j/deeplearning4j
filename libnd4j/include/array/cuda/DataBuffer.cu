@@ -21,7 +21,6 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <array/DataTypeUtils.h>
-#include <sys/mman.h>
 #include <exceptions/allocation_exception.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
@@ -31,6 +30,7 @@
 #include <system/type_boilerplate.h>
 #include <helpers/TransferMetrics.h>
 #include <chrono>
+#include <sys/mman.h>
 
 #include "../DataBuffer.h"
 #include "helpers/DebugHelper.h"
@@ -40,6 +40,7 @@
 #endif
 
 namespace sd {
+
 void DataBuffer::expand(const uint64_t size) {
   if (size > _lenInBytes) {
     // allocate new buffer
@@ -725,6 +726,67 @@ void DataBuffer::freeGpuOnly() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+void DataBuffer::freeGpuOnStream(void* stream) {
+  // Free GPU (special) buffer on the specified CUDA stream.
+  // This is used by DSP mid-execution flushing to free on the execution stream
+  // instead of the default stream 0. When allocations and frees happen on the
+  // same stream, the pool can immediately reuse freed memory for new allocations
+  // on that stream without cross-stream synchronization.
+  if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
+    auto bufferDeviceId = _deviceId.load();
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    bool switchedDevice = false;
+
+    if (currentDeviceId != bufferDeviceId) {
+      cudaSetDevice(bufferDeviceId);
+      switchedDevice = true;
+    }
+
+    auto p = reinterpret_cast<void*>(_specialBuffer);
+    // The 'stream' parameter is a cudaStream_t* (pointer to stream handle), NOT the
+    // stream handle itself. Must dereference to get the actual cudaStream_t handle.
+    // If we switched devices, the caller's stream belongs to the wrong device.
+    // Use nullptr (default stream on this device) when cross-device.
+    cudaStream_t freeStream = nullptr;
+    if (!switchedDevice && stream != nullptr) {
+      freeStream = *reinterpret_cast<cudaStream_t*>(stream);
+    }
+    memory::CudaMemoryPool::getInstance().free(p, bufferDeviceId, freeStream);
+
+    // count out towards DataBuffer device, only if we're not in workspace
+    if (_workspace == nullptr) {
+      sd::memory::MemoryCounter::getInstance().countOut(bufferDeviceId, getLenInBytes());
+      sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
+    }
+
+    if (switchedDevice) {
+      cudaSetDevice(currentDeviceId);
+    }
+  }
+
+  _specialBuffer = nullptr;
+  _isOwnerSpecial = false;
+
+  // Release host physical pages via madvise — same approach as freeGpuOnly().
+  // Page-aligned to avoid touching glibc chunk headers.
+  if (_isOwnerPrimary && _primaryBuffer != nullptr && _lenInBytes > 0) {
+    uintptr_t pageSize = 4096;
+    uintptr_t bufStart = reinterpret_cast<uintptr_t>(_primaryBuffer);
+    uintptr_t alignedStart = (bufStart + pageSize - 1) & ~(pageSize - 1);
+    uintptr_t bufEnd = bufStart + _lenInBytes;
+    uintptr_t alignedEnd = bufEnd & ~(pageSize - 1);
+
+    if (alignedEnd > alignedStart) {
+      madvise(reinterpret_cast<void*>(alignedStart), alignedEnd - alignedStart, MADV_DONTNEED);
+    }
+  }
+
+  _primaryBuffer = nullptr;
+  _isOwnerPrimary = false;
+  closed = true;
+}
+
+////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
   _counter.store(0L);
   _writePrimary.store(0L);
@@ -1012,9 +1074,19 @@ void DataBuffer::migrate() {
     }
   }
 
+  // Use actual allocation device for all copy operations. CudaMemoryPool::allocate()
+  // may fail over to a different device than requested (e.g., device 1 full → device 0).
+  // Without this, we'd try cudaMemcpy H2D to a pointer on device 0 while cudaSetDevice(1)
+  // is active → "invalid argument" error.
+  int targetDevice = actualMigrateDevice;
+  if (targetDevice != currentDeviceId) {
+    sd_printf("DataBuffer::migrate: Allocation failed over from device %d to device %d for %zu bytes\n",
+              currentDeviceId, targetDevice, getLenInBytes());
+  }
+
   if (_specialBuffer != nullptr) {
     // Copy from old device to new device
-    if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+    if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
       // Cross-device copy - stage through host memory for reliability
       void* hostStaging = nullptr;
       auto allocRes = cudaMallocHost(&hostStaging, getLenInBytes());
@@ -1022,7 +1094,7 @@ void DataBuffer::migrate() {
         std::string err = "DataBuffer::migrate: cudaMallocHost for staging failed! Error: " +
                           std::string(cudaGetErrorString(allocRes)) +
                           ", bytes: " + std::to_string(getLenInBytes()) +
-                          ", from device " + std::to_string(oldDeviceId) + " to device " + std::to_string(currentDeviceId);
+                          ", from device " + std::to_string(oldDeviceId) + " to device " + std::to_string(targetDevice);
         THROW_EXCEPTION(err.c_str());
       }
 
@@ -1030,7 +1102,7 @@ void DataBuffer::migrate() {
       auto setRes = cudaSetDevice(oldDeviceId);
       if (setRes != cudaSuccess) {
         cudaFreeHost(hostStaging);
-        cudaSetDevice(currentDeviceId);
+        cudaSetDevice(targetDevice);
         std::string err = "DataBuffer::migrate: Failed to switch to source device " + std::to_string(oldDeviceId) +
                           ": " + std::string(cudaGetErrorString(setRes));
         THROW_EXCEPTION(err.c_str());
@@ -1044,17 +1116,17 @@ void DataBuffer::migrate() {
       auto d2hRes = cudaMemcpy(hostStaging, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
       if (d2hRes != cudaSuccess) {
         cudaFreeHost(hostStaging);
-        cudaSetDevice(currentDeviceId);
+        cudaSetDevice(targetDevice);
         std::string err = "DataBuffer::migrate: D2H copy failed! Error: " + std::string(cudaGetErrorString(d2hRes)) +
                           ", bytes: " + std::to_string(getLenInBytes()) + ", from device " + std::to_string(oldDeviceId);
         THROW_EXCEPTION(err.c_str());
       }
 
-      // Switch back to target device for H2D copy
-      setRes = cudaSetDevice(currentDeviceId);
+      // Switch to target device (where newBuffer was actually allocated) for H2D copy
+      setRes = cudaSetDevice(targetDevice);
       if (setRes != cudaSuccess) {
         cudaFreeHost(hostStaging);
-        std::string err = "DataBuffer::migrate: Failed to switch to target device " + std::to_string(currentDeviceId) +
+        std::string err = "DataBuffer::migrate: Failed to switch to target device " + std::to_string(targetDevice) +
                           ": " + std::string(cudaGetErrorString(setRes));
         THROW_EXCEPTION(err.c_str());
       }
@@ -1063,26 +1135,28 @@ void DataBuffer::migrate() {
       cudaFreeHost(hostStaging);
       if (h2dRes != cudaSuccess) {
         std::string err = "DataBuffer::migrate: H2D copy failed! Error: " + std::string(cudaGetErrorString(h2dRes)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(currentDeviceId);
+                          ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(targetDevice);
         THROW_EXCEPTION(err.c_str());
       }
 
       // cudaMemcpy is synchronous, no additional sync needed
     } else {
       // Same device copy or unknown source device
+      cudaSetDevice(targetDevice);
       auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
       if (res != cudaSuccess) {
         std::string err = "DataBuffer::migrate: cudaMemcpy D2D failed! Error: " + std::string(cudaGetErrorString(res)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) + ", device " + std::to_string(currentDeviceId);
+                          ", bytes: " + std::to_string(getLenInBytes()) + ", device " + std::to_string(targetDevice);
         THROW_EXCEPTION(err.c_str());
       }
     }
   } else if (_primaryBuffer != nullptr) {
     // Copy from host to device if no special buffer exists
+    cudaSetDevice(targetDevice);
     auto res = cudaMemcpy(newBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
     if (res != cudaSuccess) {
       std::string err = "DataBuffer::migrate: cudaMemcpy H2D failed! Error: " + std::string(cudaGetErrorString(res)) +
-                        ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(currentDeviceId);
+                        ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(targetDevice);
       THROW_EXCEPTION(err.c_str());
     }
   }
@@ -1093,28 +1167,28 @@ void DataBuffer::migrate() {
   // Record transfer metrics
   if (oldBuffer != nullptr) {
     // Device to device transfer (possibly peer-to-peer)
-    TransferType transferType = (oldDeviceId != currentDeviceId) ?
+    TransferType transferType = (oldDeviceId != targetDevice) ?
         TransferType::PEER_TO_PEER : TransferType::DEVICE_TO_DEVICE;
     TransferMetrics::getInstance().recordTransfer(transferType, getLenInBytes(), durationNs,
-                                                   oldDeviceId, currentDeviceId);
+                                                   oldDeviceId, targetDevice);
   } else if (_primaryBuffer != nullptr) {
     // Host to device transfer
     TransferMetrics::getInstance().recordTransfer(TransferType::HOST_TO_DEVICE, getLenInBytes(),
-                                                   durationNs, -1, currentDeviceId);
+                                                   durationNs, -1, targetDevice);
   }
 
   if (_isOwnerSpecial && oldBuffer != nullptr) {
     // Switch to old device to release memory
-    if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
+    if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
       cudaSetDevice(oldDeviceId);
     }
 
     auto p = reinterpret_cast<int8_t*>(oldBuffer);
     RELEASE_SPECIAL(p, _workspace);
 
-    // Switch back to current device
-    if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
-      cudaSetDevice(currentDeviceId);
+    // Switch back to target device (where new buffer lives)
+    if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
+      cudaSetDevice(targetDevice);
     }
   }
 
@@ -1123,6 +1197,15 @@ void DataBuffer::migrate() {
 
   // Store actual device where memory was allocated (may differ after failover)
   _deviceId.store(actualMigrateDevice);
+
+  // Restore caller's expected device context. The caller called migrate() expecting
+  // to remain on currentDeviceId. Even though the buffer may have ended up on a
+  // different device (failover), the caller's CUDA context should be preserved.
+  int restoreDev = -1;
+  cudaGetDevice(&restoreDev);
+  if (restoreDev != currentDeviceId) {
+    cudaSetDevice(currentDeviceId);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -1953,6 +1953,7 @@ public native int destroyEvent(@Cast("sd::Pointer") Pointer event);
 public native int streamSynchronize(@Cast("sd::Pointer") Pointer stream);
 public native int eventSynchronize(@Cast("sd::Pointer") Pointer event);
 public native int getAvailableDevices();
+public native @Cast("bool") boolean isPeerAccessSupported(int srcDevice, int dstDevice);
 public native void enableDebugMode(@Cast("bool") boolean reallyEnable);
 public native void setGridLimit(int gridSize);
 public native int ompGetMaxThreads();
@@ -2192,6 +2193,7 @@ public native void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuf
 public native void dbTickDeviceWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long elements);
 public native void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native @Cast("bool") boolean dbIsOwner(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbCloseGetDiagnostics(@Cast("sd::LongType*") org.bytedeco.javacpp.LongPointer outStats);
 public native void dbCloseResetDiagnostics();
 public native int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);

@@ -246,3 +246,52 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
     cudaSetDevice(currentDevice);
   }
 }
+
+void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {
+  // Same as dbFreeBuffersOnly but frees GPU memory on the specified CUDA stream.
+  // When the execution stream is passed, cudaFreeAsync frees on that stream,
+  // allowing the pool to reuse memory for subsequent allocations on the same stream
+  // without cross-stream synchronization. This prevents pool "used" from growing
+  // across DSP execute() calls within the same vision encoder chunked processing.
+  if (dataBuffer == nullptr) return;
+  if (dataBuffer->isConstant.load(std::memory_order_acquire)) return;
+  if (!dataBuffer->tryClose()) return;
+  if (!dataBuffer->hasValidDataBuffer()) return;
+  if (!dataBuffer->isOwner()) return;
+
+  sd::DataBuffer* db = dataBuffer->getDataBufferDirect();
+  if (db == nullptr) return;
+
+  int bufferDeviceId = dataBuffer->deviceId();
+  int currentDevice = 0;
+  cudaGetDevice(&currentDevice);
+  cudaError_t setDevErr = cudaSetDevice(bufferDeviceId);
+  if (setDevErr != cudaSuccess) {
+    cudaGetLastError();
+    return;
+  }
+
+  size_t bytes = dataBuffer->_cachedLenInBytes;
+
+  // Free GPU memory on the specified stream.
+  // If the buffer is on a different device than the caller's stream, the stream
+  // is invalid for that device. Use nullptr (default stream) for cross-device frees.
+  void* freeStream = (currentDevice != bufferDeviceId) ? nullptr : stream;
+  db->freeGpuOnStream(freeStream);
+
+  g_dataBufferCount.fetch_sub(1, std::memory_order_relaxed);
+  g_dataBufferBytes.fetch_sub(bytes, std::memory_order_relaxed);
+  g_dbClose_deleted.fetch_add(1, std::memory_order_relaxed);
+  g_dbClose_freedBytes.fetch_add(bytes, std::memory_order_relaxed);
+
+  dataBuffer->invalidateDataBuffer();
+
+  if (currentDevice != bufferDeviceId) {
+    cudaSetDevice(currentDevice);
+  }
+}
+
+bool dbIsOwner(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr) return false;
+  return dataBuffer->isOwner();
+}

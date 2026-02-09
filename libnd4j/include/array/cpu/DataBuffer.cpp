@@ -28,6 +28,7 @@
 
 
 namespace sd {
+
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
@@ -245,6 +246,12 @@ void DataBuffer::freeGpuOnly() {
   _primaryBuffer = nullptr;
   _isOwnerPrimary = false;
   closed = true;
+}
+
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::freeGpuOnStream(void* stream) {
+  // CPU: stream parameter is ignored, just delegates to freeGpuOnly
+  freeGpuOnly();
 }
 
 ////////////////////////////////////////////////////////////////////////

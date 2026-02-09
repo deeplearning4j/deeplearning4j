@@ -3278,6 +3278,27 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         // This additional clearing serves as a safety net for alternative execution paths.
         org.nd4j.linalg.factory.Nd4j.clearTADCache();
 
+        // Undo the setCloseable(false) poisoning applied to placeholders before execution.
+        // Without this, placeholder arrays (e.g., KV cache from previous decode step) become
+        // permanently non-closeable, causing ~66MB/step GPU memory leak in autoregressive decoding.
+        // The DSP path never closes placeholder arrays during execution, so this is safe.
+        if(placeholders != null)
+            placeholders.values().stream().forEach(arr -> arr.setCloseable(true));
+        if(otherPlaceholders != null)
+            otherPlaceholders.values().stream().forEach(value -> {
+                switch(value.getSdValueType()) {
+                    case TENSOR:
+                        value.getTensorValue().setCloseable(true);
+                        break;
+                    case LIST:
+                        value.getListValue().stream().forEach(arr -> arr.setCloseable(true));
+                        break;
+                    case DICT:
+                        value.getDictValue().values().stream().forEach(arr -> arr.setCloseable(true));
+                        break;
+                }
+            });
+
         // Output arrays should be closeable - users are responsible for closing them after use
         // Removed setCloseable(false) to prevent memory leaks
 

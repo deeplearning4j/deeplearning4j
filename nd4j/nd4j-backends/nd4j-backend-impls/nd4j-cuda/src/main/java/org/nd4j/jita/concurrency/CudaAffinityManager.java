@@ -37,6 +37,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,11 +92,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
     }
 
     /**
-     * This method returns deviceId for current thread.
+     * Returns deviceId for current thread.
      *
-     * If no device was assigned to this thread before this call, it'll be assinged here.
+     * First call selects the GPU with the most free memory via DeviceMemoryManager.
+     * Subsequent calls return the cached device. Device can be changed explicitly via
+     * {@link #unsafeSetDevice(Integer)} or {@link #refreshDeviceForCurrentThread()}.
      *
-     * @return
+     * @return device ID for current thread
      */
     @Override
     public Integer getDeviceForCurrentThread() {
@@ -123,6 +127,19 @@ public class CudaAffinityManager extends BasicAffinityManager {
         }
 
         throw new RuntimeException("No usable CUDA devices available for thread " + threadId, lastException);
+    }
+
+    /**
+     * Force re-evaluation of device assignment for the current thread.
+     * Selects the GPU with the most free memory. Call this at strategic points
+     * (e.g., between inference batches) to rebalance across GPUs.
+     *
+     * @return newly selected device ID
+     */
+    public Integer refreshDeviceForCurrentThread() {
+        long threadId = Thread.currentThread().getId();
+        affinityMap.remove(threadId);
+        return getDeviceForCurrentThread();
     }
 
     /**
@@ -198,6 +215,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
         return numberOfDevices.get();
     }
 
+    @Override
+    public List<Integer> getAvailableDeviceIds() {
+        CudaEnvironment.getInstance().notifyConfigurationApplied();
+        return Collections.unmodifiableList(
+                CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
+    }
+
     /**
      * Utility method, to associate INDArray with specific device (backend-specific)
      *
@@ -253,8 +277,21 @@ public class CudaAffinityManager extends BasicAffinityManager {
             }
         }
 
-        if (array.isView())
-            throw new UnsupportedOperationException("It's impossible to replicate View");
+        if (array.isView()) {
+            // Views can't be replicated directly (they reference parent buffer).
+            // Create a contiguous copy first, then replicate to target device.
+            // The contiguous copy must be explicitly closed after replication —
+            // GC cleanup is broken (PhantomRef strong reference cycle), so without
+            // this, every cross-device migration of a view leaks a contiguous copy
+            // on the source device (~30MB/step for VLM KV cache with 60 views).
+            INDArray contiguous;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                contiguous = array.dup(array.ordering());
+            }
+            INDArray result = replicateToDevice(deviceId, contiguous);
+            contiguous.close();
+            return result;
+        }
 
         val shape = array.shape();
         val stride = array.stride();

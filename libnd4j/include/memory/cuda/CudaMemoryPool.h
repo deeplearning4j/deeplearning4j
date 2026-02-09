@@ -55,6 +55,16 @@ class SD_LIB_EXPORT CudaMemoryPool {
   static CudaMemoryPool& getInstance();
 
   /**
+   * Check if peer-to-peer access is enabled between two devices.
+   * Returns true if srcDevice can directly access dstDevice memory.
+   */
+  bool isPeerAccessEnabled(int srcDevice, int dstDevice) const {
+    if (srcDevice < 0 || srcDevice >= MAX_DEVICES || dstDevice < 0 || dstDevice >= MAX_DEVICES)
+      return false;
+    return peerAccessEnabled_[srcDevice][dstDevice];
+  }
+
+  /**
    * Initialize the memory pool for a specific device
    * Called automatically on first allocation, but can be called explicitly
    */
@@ -100,10 +110,17 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void getStats(int deviceId, size_t& usedBytes, size_t& reservedBytes);
 
   /**
-   * Trim unused memory from the pool
+   * Trim unused memory from the pool (syncs default stream 0)
    * Call this to release cached memory back to the system
    */
   void trimPool(int deviceId);
+
+  /**
+   * Trim unused memory from the pool, syncing the specified stream.
+   * Use this when frees were issued on a specific execution stream
+   * rather than the default stream.
+   */
+  void trimPoolOnStream(int deviceId, cudaStream_t stream);
 
   /**
    * Get the current pinned host memory usage from failover allocations.

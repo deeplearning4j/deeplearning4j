@@ -79,7 +79,7 @@ public class Configuration implements Serializable {
     private boolean forceSingleGPU = false;
 
     @Getter
-    private boolean autoMultiGpuEnabled = false;
+    private boolean autoMultiGpuEnabled = true;
 
     @Getter
     private long noGcWindowMs = 100;
@@ -509,12 +509,12 @@ public class Configuration implements Serializable {
         if (detectedDevices.isEmpty())
             throw new RuntimeException("No usable CUDA devices were found in system");
 
-        // Use a single device unless multi-GPU is explicitly enabled
+        // Use a single device if forced
         if (forceSingleGPU || !autoMultiGpuEnabled) {
             int selected = detectedDevices.get(0);
             availableDevices.add(selected);
-            log.info("Selected CUDA device [{}] as default (multi-GPU disabled, detectedDevices={})",
-                    selected, detectedDevices.size());
+            log.info("Selected CUDA device [{}] as default (forceSingleGPU={}, detectedDevices={})",
+                    selected, forceSingleGPU, detectedDevices.size());
             return;
         }
 

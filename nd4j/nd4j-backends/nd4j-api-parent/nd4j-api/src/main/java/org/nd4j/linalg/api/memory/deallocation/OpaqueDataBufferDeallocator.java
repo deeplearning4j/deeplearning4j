@@ -137,7 +137,21 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                 return;
             }
 
+            // During JVM shutdown, use GPU-only free (no host free) to avoid SIGABRT
+            // from corrupted malloc metadata. C++ op buffer overruns corrupt adjacent
+            // heap chunk headers; calling free() discovers this and aborts.
             if (DeallocatorService.getShutdownInProgress().get()) {
+                try {
+                    if (buffer != null && !buffer.isNull() && buffer.tryMarkForDeallocation()) {
+                        Nd4j.getNativeOps().dbFreeBuffersOnly(buffer);
+                        buffer.setNull();
+                    }
+                } catch (Throwable t) {
+                    // Ignore - JVM is shutting down, OS will reclaim all memory
+                } finally {
+                    buffer = null;
+                    deallocated.set(true);
+                }
                 return;
             }
 
@@ -177,7 +191,14 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
 
                         try {
                             Nd4j.getExecutioner().commit();
-                            Nd4j.getNativeOps().dbClose(buffer);
+                            // Second shutdown check: narrows the race window between the
+                            // initial check above and the shutdown hook setting the flag.
+                            // If shutdown started while we were setting up, use safe path.
+                            if (DeallocatorService.getShutdownInProgress().get()) {
+                                Nd4j.getNativeOps().dbFreeBuffersOnly(buffer);
+                            } else {
+                                Nd4j.getNativeOps().dbClose(buffer);
+                            }
                             buffer.setNull();
 
                             if (allocationBytes > 0) {

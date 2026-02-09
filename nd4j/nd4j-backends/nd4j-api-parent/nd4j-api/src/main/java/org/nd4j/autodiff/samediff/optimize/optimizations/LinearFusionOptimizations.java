@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
@@ -113,6 +114,13 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             SDVariable biasSDVar = sd.getVariable(biasVar);
             if (biasSDVar == null) return false;
 
+            // Bias must be a model parameter (CONSTANT or VARIABLE), not a computed value.
+            // ARRAY variables are computed during execution (e.g., residual connections)
+            // and must not be fused as bias.
+            if (biasSDVar.getVariableType() == VariableType.ARRAY) {
+                return false;
+            }
+
             // Get bias shape - it should be 1D for xw_plus_b
             long[] biasShape = biasSDVar.getShape();
             if (biasShape != null && biasShape.length > 2) {
@@ -147,9 +155,16 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             }
 
             try {
-                // Create the fused op directly using the XwPlusB constructor
-                // Note: xw_plus_b expects (x, w, b) and computes x @ w + b
-                SDVariable fusedOutput = new XwPlusB(sd, xSDVar, wSDVar, biasSDVar).outputVariable();
+                // Extract transpose flags from the original Mmul
+                Mmul mmul = (Mmul) matmulOp.getOp();
+                long[] mmulIArgs = mmul.iArgs();
+                boolean transposeA = mmulIArgs != null && mmulIArgs.length > 0 && mmulIArgs[0] != 0;
+                boolean transposeB = mmulIArgs != null && mmulIArgs.length > 1 && mmulIArgs[1] != 0;
+                boolean transposeResult = mmulIArgs != null && mmulIArgs.length > 2 && mmulIArgs[2] != 0;
+
+                // Create the fused op preserving transpose flags
+                SDVariable fusedOutput = new XwPlusB(sd, xSDVar, wSDVar, biasSDVar,
+                        transposeA, transposeB, transposeResult).outputVariable();
 
                 // Replace all uses of the add output with the fused output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, addOutputVar, fusedOutput.name());
@@ -242,6 +257,11 @@ public class LinearFusionOptimizations extends BaseOptimizerSet {
             // Check bias is compatible
             SDVariable biasSDVar = sd.getVariable(biasVar);
             if (biasSDVar == null) return false;
+
+            // Bias must be a model parameter (CONSTANT or VARIABLE), not a computed value.
+            if (biasSDVar.getVariableType() == VariableType.ARRAY) {
+                return false;
+            }
 
             long[] biasShape = biasSDVar.getShape();
             if (biasShape != null && biasShape.length > 2) {

@@ -165,3 +165,13 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
   db->freeGpuOnly();
   dataBuffer->invalidateDataBuffer();
 }
+
+void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {
+  // CPU: stream parameter is ignored, just delegates to dbFreeBuffersOnly
+  dbFreeBuffersOnly(dataBuffer);
+}
+
+bool dbIsOwner(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr) return false;
+  return dataBuffer->isOwner();
+}

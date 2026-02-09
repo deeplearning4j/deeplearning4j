@@ -345,6 +345,14 @@ public class DeallocatorService {
 
         // Initialize time-series tracking if functrace is enabled
         initializeTimeSeriesTracking();
+
+        // Register shutdown hook to signal deallocator threads to use the safe
+        // deallocation path (GPU-only free, skip host free). Without this, the
+        // deallocator threads call dbClose() → free() during JVM shutdown, which
+        // hits corrupted glibc heap metadata from C++ op buffer overruns → SIGABRT.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            shutdownInProgress.set(true);
+        }, "DeallocatorService-ShutdownHook"));
     }
 
     /**

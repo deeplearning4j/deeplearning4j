@@ -511,6 +511,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentProd.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSum.class,
                 org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast.class,
+                org.nd4j.linalg.api.ops.impl.transforms.dtype.MinMaxDataType.class,
                 org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt.class,
                 org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative.class,

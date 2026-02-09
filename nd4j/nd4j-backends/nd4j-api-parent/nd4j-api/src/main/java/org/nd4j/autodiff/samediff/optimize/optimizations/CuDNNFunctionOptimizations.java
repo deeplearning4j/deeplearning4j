@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -56,8 +57,12 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
                 return false;
 
             Conv2D c2d = (Conv2D)op.getOp();
-            boolean weightsCorrect = false;
             boolean activationsCorrect = c2d.getConfig().isNHWC();
+
+            List<String> inputs = op.getInputsToOp();
+            String wArgName = inputs.get(1);
+            WeightsFormat wf = c2d.getConfig().getWeightsFormat();
+            boolean weightsCorrect = (wf == WeightsFormat.OYXI);
 
             if(activationsCorrect && weightsCorrect)
                 return false;   //Nothing to do here
@@ -65,9 +70,6 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
             //Now, we need to do 2 things
             //(a) replace NCHW to NHWC for input
             //(b) set weight format to OHWI (OYXI)
-
-            List<String> inputs = op.getInputsToOp();
-            String wArgName = inputs.get(1);
 
             //Step 1 - replace activations
             if(!activationsCorrect) {
@@ -87,18 +89,25 @@ public class CuDNNFunctionOptimizations extends BaseOptimizerSet {
                 c2d.getConfig().isNHWC(true);
             }
 
-            //Step 2 - replace YXIO weights (default) with OYXI weights
-            //We'll just add a permute here, and let other optimizer steps fix the (variable -> permute -> op ==> permutedVariable -> op) part
+            //Step 2 - convert weights to OYXI [oC, kH, kW, iC] for cuDNN
             if(!weightsCorrect) {
                 SDVariable w = sd.getVariable(wArgName);
-                String newWname = w.name() + "_cudnn_yxio_to_oyxi";
+                String newWname = w.name() + "_cudnn_to_oyxi";
                 OptimizationUtils.replaceOpInputsWith(sd, w.name(), newWname);
-                SDVariable wPermuted = w.permute(3, 0, 1, 2).rename(newWname);
 
+                if (wf == WeightsFormat.YXIO) {
+                    // YXIO [kH, kW, iC, oC] -> OYXI [oC, kH, kW, iC]: permute(3, 0, 1, 2)
+                    w.permute(3, 0, 1, 2).rename(newWname);
+                } else if (wf == WeightsFormat.OIYX) {
+                    // OIYX [oC, iC, kH, kW] -> OYXI [oC, kH, kW, iC]: permute(0, 2, 3, 1)
+                    w.permute(0, 2, 3, 1).rename(newWname);
+                }
 
-                //TODO once config supports weight layout, set it here
+                c2d.getConfig().setWeightsFormat(WeightsFormat.OYXI);
             }
 
+            // Force iArguments to reflect the updated config
+            c2d.refreshArgs();
 
             return true;
         }

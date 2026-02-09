@@ -208,6 +208,13 @@ public class GraphOptimizer {
         log.info("Variable type variables: {} before, {} after", varBefore, varAfter);
         log.info("Ops: {} before, {} after", graph.getOps().size(), sd.getOps().size());
 
+        // Preserve outputs: use requiredOutputs if provided, otherwise restore original graph's outputs
+        if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
+            sd.setOutputs(new ArrayList<>(requiredOutputs));
+        } else if (graph.outputs() != null && !graph.outputs().isEmpty()) {
+            sd.setOutputs(new ArrayList<>(graph.outputs()));
+        }
+
         return sd;
     }
 

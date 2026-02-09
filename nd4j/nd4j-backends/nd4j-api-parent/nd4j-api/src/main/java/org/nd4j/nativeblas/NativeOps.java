@@ -278,6 +278,14 @@ public interface NativeOps {
  void trimMemoryPool(int deviceId);
 
  /**
+  * Trim unused memory from the pool, syncing the specified stream.
+  * Use when frees were issued on a specific execution stream.
+  * @param deviceId The device whose pool to trim
+  * @param stream The CUDA stream to synchronize before trimming
+  */
+ void trimMemoryPoolOnStream(int deviceId, org.bytedeco.javacpp.Pointer stream);
+
+ /**
   * Get current pinned host memory usage from failover allocations.
   * @return bytes currently allocated in pinned host memory
   */
@@ -316,6 +324,7 @@ public interface NativeOps {
  int streamSynchronize(Pointer stream);
  int eventSynchronize(Pointer event);
  int getAvailableDevices();
+ boolean isPeerAccessSupported(int srcDevice, int dstDevice);
  void enableDebugMode(boolean reallyEnable);
  void setGridLimit(int gridSize);
  int ompGetMaxThreads();
@@ -538,6 +547,8 @@ public interface NativeOps {
  void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, long elements);
  void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbFreeBuffersOnly(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbFreeBuffersOnStream(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, org.bytedeco.javacpp.Pointer stream);
+ boolean dbIsOwner(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbCloseGetDiagnostics(org.bytedeco.javacpp.LongPointer outStats);
  void dbCloseResetDiagnostics();
  int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);

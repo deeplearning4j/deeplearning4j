@@ -542,6 +542,13 @@ void trimMemoryPool(int deviceId) {
   sd::memory::CudaMemoryPool::getInstance().trimPool(deviceId);
 }
 
+void trimMemoryPoolOnStream(int deviceId, void *stream) {
+  // stream is a cudaStream_t* (pointer to stream handle) from the Java bridge,
+  // NOT the stream handle itself. Must dereference to get the actual cudaStream_t.
+  cudaStream_t actualStream = (stream != nullptr) ? *reinterpret_cast<cudaStream_t*>(stream) : nullptr;
+  sd::memory::CudaMemoryPool::getInstance().trimPoolOnStream(deviceId, actualStream);
+}
+
 /**
  * Get current pinned host memory usage from failover allocations
  */
@@ -858,6 +865,11 @@ int getAvailableDevices() {
   int devCnt = 0;
   cudaGetDeviceCount(&devCnt);
   return devCnt;
+}
+
+bool isPeerAccessSupported(int srcDevice, int dstDevice) {
+  if (srcDevice == dstDevice) return true;
+  return sd::memory::CudaMemoryPool::getInstance().isPeerAccessEnabled(srcDevice, dstDevice);
 }
 
 void enableDebugMode(bool reallyEnable) { sd::Environment::getInstance().setDebug(reallyEnable); }
@@ -1224,8 +1236,15 @@ void clearLastError() {
 // ========================
 
 OpaqueWorkspace createNativeWorkspace(sd::LongType initialSize) {
-    // For CUDA, allocate both device and host (pinned) memory
-    return new sd::memory::Workspace(initialSize, initialSize);
+    // Host-only workspace: primarySize=0 (no GPU memory), secondarySize=initialSize (pinned host).
+    // The ALLOCATE macro in C++ ops defaults to HOST allocation (secondarySize), so this provides
+    // bump allocation for shape calculations and op temporaries without allocating GPU memory.
+    // This avoids the CudaMemoryPool conflict that previously required disabling the workspace
+    // (CudaMemoryPool's cudaMallocAsync conflicted with Java-side CUDA workspace allocations).
+    // Without workspace, C++ op temporaries use aligned_alloc/free on the glibc heap, and buffer
+    // overruns corrupt adjacent malloc metadata, causing cumulative heap corruption that manifests
+    // as SIGABRT during JVM shutdown after ~256 decode steps.
+    return new sd::memory::Workspace(0, initialSize);
 }
 
 void destroyNativeWorkspace(OpaqueWorkspace workspace) {

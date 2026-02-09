@@ -110,6 +110,16 @@ public class Conv2D extends DynamicCustomOp {
                     config.getWeightsFormat().ordinal());
     }
 
+    /**
+     * Re-populate iArguments from the current config.
+     * Must be called after modifying config (e.g., changing data format or weights format)
+     * to ensure the native op sees the updated parameters.
+     */
+    public void refreshArgs() {
+        iArguments.clear();
+        addArgs();
+    }
+
 
 
     @Override

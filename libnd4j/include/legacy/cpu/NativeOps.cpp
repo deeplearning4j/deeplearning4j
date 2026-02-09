@@ -351,6 +351,10 @@ void trimMemoryPool(int deviceId) {
   // no-op for CPU
 }
 
+void trimMemoryPoolOnStream(int deviceId, void *stream) {
+  // no-op for CPU
+}
+
 sd::LongType getPinnedHostBytesUsed() {
   return 0;  // no pinned memory on CPU
 }
@@ -463,6 +467,8 @@ int streamSynchronize(sd::Pointer stream) { return 0L; }
 int eventSynchronize(sd::Pointer event) { return 0L; }
 
 int getAvailableDevices() { return 0L; }
+
+bool isPeerAccessSupported(int srcDevice, int dstDevice) { return false; }
 
 void enableDebugMode(bool reallyEnable) { sd::Environment::getInstance().setDebug(reallyEnable); }
 

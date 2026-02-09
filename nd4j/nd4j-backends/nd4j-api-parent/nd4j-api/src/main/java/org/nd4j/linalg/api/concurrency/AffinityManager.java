@@ -25,6 +25,10 @@ import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public interface AffinityManager {
 
     /**
@@ -63,6 +67,24 @@ public interface AffinityManager {
      * @return
      */
     int getNumberOfDevices();
+
+    /**
+     * Returns the list of available device IDs.
+     *
+     * <p>For CUDA backend, this returns the actual GPU device IDs that passed
+     * hardware probing (e.g., [0, 1] for a 2-GPU system, or [1] if device 0
+     * was banned). For CPU backend, this returns [0].</p>
+     *
+     * @return unmodifiable list of available device IDs
+     */
+    default List<Integer> getAvailableDeviceIds() {
+        int n = getNumberOfDevices();
+        List<Integer> ids = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            ids.add(i);
+        }
+        return Collections.unmodifiableList(ids);
+    }
 
     /**
      * Utility method, to associate INDArray with specific device (backend-specific)

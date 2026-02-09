@@ -6461,7 +6461,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (isEmpty())
             return true;
 
-        if (isView())
+        // Only block closing for TRUE sub-views where the array uses a subset of
+        // the underlying buffer. C++ ops (concat, reshape, etc.) may set the IS_VIEW
+        // flag in shapeInfo even when the output OWNS its full buffer. Using isView()
+        // here would block close() on those arrays, causing GPU memory leaks
+        // (~30MB/step in autoregressive decoding). The precise check is: if the array's
+        // logical length is less than the buffer length, it's a sub-view of a larger
+        // allocation and closing it would free memory still used by the parent array.
+        if (data != null && length() < data.length())
             return false;
 
         return data.closeable();
@@ -6586,6 +6593,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             DataBuffer shapeBuffer = shapeInfoDataBuffer();
             if (shapeBuffer != null) {
                 shapeBuffer.setConstant(true);
+            }
+        } else {
+            // Restore closeable state: undo the constant marking set by setCloseable(false).
+            // Without this, data buffers remain marked as constant even after setCloseable(true),
+            // causing close() to silently skip deallocation (BaseDataBuffer.closeable() returns false
+            // for constant buffers). This leads to massive GPU memory leaks in decode loops where
+            // KV cache arrays are passed as SameDiff placeholders (which sets closeable=false)
+            // and then need to be freed when replaced by new values.
+            DataBuffer dataBuffer = data();
+            if (dataBuffer != null) {
+                dataBuffer.setConstant(false);
             }
         }
     }

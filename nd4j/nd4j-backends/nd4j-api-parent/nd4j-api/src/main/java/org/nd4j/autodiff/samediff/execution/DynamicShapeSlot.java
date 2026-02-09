@@ -116,6 +116,16 @@ public class DynamicShapeSlot {
     private final boolean needsZeroedOutput;
 
     /**
+     * Whether ALL INT/LONG inputs to this op come from external sources (constants, variables,
+     * placeholders) rather than from prior op outputs. When true, syncIntLongInputs() can skip
+     * the expensive commit() (cudaStreamSynchronize) because external inputs were either:
+     * (a) already on host (constants/variables loaded from CPU), or
+     * (b) synced before the plan started (placeholders).
+     * Only prior op outputs need commit() to ensure their GPU writes are visible for D2H transfer.
+     */
+    private final boolean allIntLongInputsExternal;
+
+    /**
      * Whether this op's output shape depends on input tensor VALUES (not just shapes).
      * Examples: reshape (shape from input tensor), strided_slice (begin/end/strides values),
      * tile (repeat counts), pad (padding values), fill (target shape values).
@@ -130,6 +140,15 @@ public class DynamicShapeSlot {
 
     /** Pre-computed hash of opName, avoiding String.hashCode() per step in shape key computation. */
     private final long opNameHash;
+
+    /**
+     * Target device for this op's execution and output allocation.
+     * -1 (default) means use the current thread's device (no override).
+     * >= 0 means switch to this CUDA device before allocating outputs and executing.
+     * Set during device placement optimization or explicitly via DynamicShapePlan.assignDevices().
+     */
+    @Builder.Default
+    private int targetDeviceId = -1;
 
     /** Pre-allocated input array buffer to avoid per-step allocation. */
     private final transient INDArray[] inputArraysBuffer;
@@ -147,5 +166,22 @@ public class DynamicShapeSlot {
      */
     public boolean isShapeCacheValid(long shapeKey) {
         return cachedShapeKey != 0 && cachedShapeKey == shapeKey;
+    }
+
+    /**
+     * Clear the per-slot shape cache.
+     *
+     * <p>This MUST be called when a session resets or when a new executor initializes with
+     * this slot's parent plan. The cached DataBuffer references in {@code cachedOutputShapes}
+     * may point to freed GPU memory from a previous session. Reusing these stale references
+     * causes memory corruption ("double free or corruption (out)").</p>
+     *
+     * <p>The plan itself is cached at the SameDiff level and survives session resets
+     * (intentional for performance — the graph wiring doesn't change). But the shape cache
+     * contains runtime DataBuffer allocations that are session-specific.</p>
+     */
+    public void clearShapeCache() {
+        this.cachedShapeKey = 0;
+        this.cachedOutputShapes = null;
     }
 }

@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
@@ -31,6 +32,7 @@ import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.shape.Reshape;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
@@ -44,6 +46,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.shape.Shape;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -92,11 +95,11 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
-            System.out.println("[ATTN] Checking matmul op: " + op.getName());
+            log.debug("Checking matmul op: {}", op.getName());
 
             List<String> mmulInputs = op.getInputsToOp();
             if (mmulInputs == null || mmulInputs.size() < 2) {
-                System.out.println("[ATTN] " + op.getName() + " has insufficient inputs");
+                log.debug("[ATTN] " + op.getName() + " has insufficient inputs");
                 return false;
             }
 
@@ -109,23 +112,23 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 firstInputVar = sd.getVariables().get(potentialSoftmaxOutput);
             }
             if (firstInputVar == null) {
-                System.out.println("[ATTN] " + op.getName() + " first input " + potentialSoftmaxOutput + " not found");
+                log.debug("[ATTN] " + op.getName() + " first input " + potentialSoftmaxOutput + " not found");
                 return false;
             }
 
             String producerOpName = firstInputVar.getOutputOfOp();
             if (producerOpName == null) {
-                System.out.println("[ATTN] " + op.getName() + " first input " + potentialSoftmaxOutput + " has no producer op");
+                log.debug("[ATTN] " + op.getName() + " first input " + potentialSoftmaxOutput + " has no producer op");
                 return false;
             }
 
             SameDiffOp producerOp = sd.getOps().get(producerOpName);
             if (producerOp == null) {
-                System.out.println("[ATTN] " + op.getName() + " producer op " + producerOpName + " not found");
+                log.debug("[ATTN] " + op.getName() + " producer op " + producerOpName + " not found");
                 return false;
             }
 
-            System.out.println("[ATTN] " + op.getName() + " first input " + potentialSoftmaxOutput + " comes from " + producerOpName + " (type: " + producerOp.getOp().getClass().getSimpleName() + ")");
+            log.debug("[ATTN] " + op.getName() + " first input " + potentialSoftmaxOutput + " comes from " + producerOpName + " (type: " + producerOp.getOp().getClass().getSimpleName() + ")");
 
             SameDiffOp softmaxOp = null;
             SameDiffOp reshapeAfterSoftmax = null;
@@ -133,7 +136,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             // Check if producer is directly softmax
             if (producerOp.getOp() instanceof SoftMax) {
                 softmaxOp = producerOp;
-                System.out.println("[ATTN] " + op.getName() + " - found direct softmax producer");
+                log.debug("[ATTN] " + op.getName() + " - found direct softmax producer");
             }
             // Check if producer is Reshape and Reshape's input is softmax
             else if (producerOp.getOp() instanceof Reshape) {
@@ -147,7 +150,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                             if (reshapeInputProducer != null && reshapeInputProducer.getOp() instanceof SoftMax) {
                                 softmaxOp = reshapeInputProducer;
                                 reshapeAfterSoftmax = producerOp;
-                                System.out.println("[ATTN] Found reshape " + producerOp.getName() + " between softmax and matmul");
+                                log.debug("[ATTN] Found reshape " + producerOp.getName() + " between softmax and matmul");
                             }
                         }
                     }
@@ -164,7 +167,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                             SameDiffOp permuteInputProducer = sd.getOps().get(permuteInputProducerName);
                             if (permuteInputProducer != null && permuteInputProducer.getOp() instanceof SoftMax) {
                                 softmaxOp = permuteInputProducer;
-                                System.out.println("[ATTN] Found permute " + producerOp.getName() + " between softmax and matmul");
+                                log.debug("[ATTN] Found permute " + producerOp.getName() + " between softmax and matmul");
                             }
                         }
                     }
@@ -172,15 +175,15 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             }
 
             if (softmaxOp == null) {
-                System.out.println("[ATTN] First input " + potentialSoftmaxOutput + " is NOT from softmax (producer: " + producerOp.getOp().getClass().getSimpleName() + ")");
+                log.debug("[ATTN] First input " + potentialSoftmaxOutput + " is NOT from softmax (producer: " + producerOp.getOp().getClass().getSimpleName() + ")");
                 return false;
             }
 
-            System.out.println("[ATTN] Found softmax " + softmaxOp.getName() + " before matmul " + op.getName());
+            log.debug("[ATTN] Found softmax " + softmaxOp.getName() + " before matmul " + op.getName());
             // Found softmax! Now trace back to find Q @ K^T pattern
             List<String> softmaxInputs = softmaxOp.getInputsToOp();
             if (softmaxInputs == null || softmaxInputs.isEmpty()) {
-                System.out.println("[ATTN] Softmax has no inputs");
+                log.debug("[ATTN] Softmax has no inputs");
                 return false;
             }
 
@@ -190,45 +193,61 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             // 3. Masked and/or scaled output
 
             String softmaxInput = softmaxInputs.get(0);
-            System.out.println("[ATTN] Tracing attention scores from softmax input: " + softmaxInput);
+            log.debug("[ATTN] Tracing attention scores from softmax input: " + softmaxInput);
             AttentionComponents components = traceAttentionScores(sd, helper, softmaxInput);
             if (components == null) {
-                System.out.println("[ATTN] Could not trace attention scores from softmax input: " + softmaxInput);
+                log.debug("[ATTN] Could not trace attention scores from softmax input: " + softmaxInput);
                 return false;
             }
-            System.out.println("[ATTN] Found Q=" + components.queryVar + ", K=" + components.keyVar + ", scale=" + components.scaleFactor);
+            log.debug("[ATTN] Found Q=" + components.queryVar + ", K=" + components.keyVar + ", scale=" + components.scaleFactor);
 
             // Get V from the final matmul
             String vVar = mmulInputs.get(1);
             SDVariable vSDVar = sd.getVariable(vVar);
             if (vSDVar == null) {
-                System.out.println("[ATTN] V variable " + vVar + " not found");
+                log.debug("[ATTN] V variable " + vVar + " not found");
                 return false;
             }
-            System.out.println("[ATTN] V=" + vVar);
+            log.debug("[ATTN] V=" + vVar);
 
             // Check that intermediate ops are only used once (safe to fuse)
             if (!canSafelyFuse(sd, helper, softmaxOp, components)) {
-                System.out.println("[ATTN] canSafelyFuse check FAILED for op: " + op.getName());
+                log.debug("[ATTN] canSafelyFuse check FAILED for op: " + op.getName());
                 return false;
             }
-            System.out.println("[ATTN] canSafelyFuse check PASSED for op: " + op.getName());
+            log.debug("[ATTN] canSafelyFuse check PASSED for op: " + op.getName());
 
             // Get the output of the attention (final matmul output)
             List<String> attentionOutputs = op.getOutputsOfOp();
             if (attentionOutputs == null || attentionOutputs.isEmpty()) {
-                System.out.println("[ATTN] No attention outputs");
+                log.debug("[ATTN] No attention outputs");
                 return false;
             }
             String attentionOutputVar = attentionOutputs.get(0);
 
-            System.out.println("[ATTN] *** FUSING *** Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " (causalMask=" + components.useCausalMask + ")");
+            log.debug("[ATTN] *** FUSING *** Q=" + components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " (causalMask=" + components.useCausalMask + ")");
 
             try {
                 SDVariable qSDVar = sd.getVariable(components.queryVar);
                 SDVariable kSDVar = sd.getVariable(components.keyVar);
 
                 if (qSDVar == null || kSDVar == null) {
+                    return false;
+                }
+
+                // dot_product_attention_v2 only supports rank 2 or 3 inputs.
+                // Multi-head attention patterns with rank 4 (batch, heads, seq, dim) cannot be fused.
+                // Check static shapes first, then try to infer rank from producer ops.
+                int qRank = inferVariableRank(sd, qSDVar);
+                int kRank = inferVariableRank(sd, kSDVar);
+                int vRank = inferVariableRank(sd, vSDVar);
+                log.debug("Attention fusion rank check: Q={} rank={}, K={} rank={}, V={} rank={}",
+                        components.queryVar, qRank, components.keyVar, kRank, vVar, vRank);
+                // dot_product_attention_v2 only supports rank 2 or 3.
+                // Reject unknown ranks (-1) and rank 4+ (multi-head with explicit head dim).
+                if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 3 || kRank > 3 || vRank > 3) {
+                    log.debug("Skipping attention fusion: ranks not supported (Q={}, K={}, V={}). " +
+                            "dot_product_attention_v2 requires rank 2 or 3.", qRank, kRank, vRank);
                     return false;
                 }
 
@@ -243,7 +262,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     if (valueMask == null) {
                         valueMask = sd.constant("attn_empty_vmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
                     }
-                    System.out.println("[ATTN-DEBUG] Using detected mask variable: " + components.maskVar);
+                    log.debug("[ATTN-DEBUG] Using detected mask variable: " + components.maskVar);
                 } else {
                     valueMask = sd.constant("attn_empty_vmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
                 }
@@ -321,7 +340,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
                 return true;
             } catch (Exception e) {
-                System.out.println("[ATTN-WARN] Failed to fuse attention pattern: " + e.getMessage());
+                log.debug("[ATTN-WARN] Failed to fuse attention pattern: " + e.getMessage());
                 return false;
             }
         }
@@ -341,29 +360,29 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 v = sd.getVariables().get(varName);
             }
             if (v == null) {
-                System.out.println("[ATTN-TRACE] Variable " + varName + " is null");
+                log.debug("[ATTN-TRACE] Variable " + varName + " is null");
                 return null;
             }
 
             String producerOpName = v.getOutputOfOp();
             if (producerOpName == null) {
-                System.out.println("[ATTN-TRACE] Variable " + varName + " has no producer op");
+                log.debug("[ATTN-TRACE] Variable " + varName + " has no producer op");
                 return null;
             }
 
             SameDiffOp producerOp = sd.getOps().get(producerOpName);
             if (producerOp == null) {
-                System.out.println("[ATTN-TRACE] Producer op " + producerOpName + " not found");
+                log.debug("[ATTN-TRACE] Producer op " + producerOpName + " not found");
                 return null;
             }
 
-            System.out.println("[ATTN-TRACE] " + varName + " produced by " + producerOpName + " (type: " + producerOp.getOp().getClass().getSimpleName() + ")");
+            log.debug("[ATTN-TRACE] " + varName + " produced by " + producerOpName + " (type: " + producerOp.getOp().getClass().getSimpleName() + ")");
 
             // Case 0: Reshape - trace through it
             if (producerOp.getOp() instanceof Reshape) {
                 List<String> reshapeInputs = producerOp.getInputsToOp();
                 if (reshapeInputs != null && !reshapeInputs.isEmpty()) {
-                    System.out.println("[ATTN-TRACE] Tracing through reshape " + producerOpName + " to " + reshapeInputs.get(0));
+                    log.debug("[ATTN-TRACE] Tracing through reshape " + producerOpName + " to " + reshapeInputs.get(0));
                     return traceAttentionScores(sd, helper, reshapeInputs.get(0));
                 }
                 return null;
@@ -371,28 +390,28 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             // Case 1: Direct matmul output (no scaling, no mask)
             if (producerOp.getOp() instanceof Mmul || producerOp.getOp() instanceof TensorMmul) {
-                System.out.println("[ATTN-TRACE] Found Q@K matmul: " + producerOpName);
+                log.debug("[ATTN-TRACE] Found Q@K matmul: " + producerOpName);
                 return extractQKFromMatmul(sd, helper, producerOp, varName, null, null, 1.0);
             }
 
             // Case 2: Scaled output - look for mul/div by scalar
             if (producerOp.getOp() instanceof MulOp || producerOp.getOp() instanceof ScalarMultiplication) {
-                System.out.println("[ATTN-TRACE] Found scale (mul): " + producerOpName);
+                log.debug("[ATTN-TRACE] Found scale (mul): " + producerOpName);
                 return traceScaledMatmul(sd, helper, producerOp, varName, true);
             }
 
             if (producerOp.getOp() instanceof DivOp || producerOp.getOp() instanceof ScalarDivision) {
-                System.out.println("[ATTN-TRACE] Found scale (div): " + producerOpName);
+                log.debug("[ATTN-TRACE] Found scale (div): " + producerOpName);
                 return traceScaledMatmul(sd, helper, producerOp, varName, false);
             }
 
             // Case 3: Add operation - could be mask addition before softmax
             if (producerOp.getOp() instanceof AddOp) {
-                System.out.println("[ATTN-TRACE] Found add (possible mask): " + producerOpName);
+                log.debug("[ATTN-TRACE] Found add (possible mask): " + producerOpName);
                 return traceAttentionWithMask(sd, helper, producerOp, varName);
             }
 
-            System.out.println("[ATTN-TRACE] Unhandled op type: " + producerOp.getOp().getClass().getSimpleName());
+            log.debug("[ATTN-TRACE] Unhandled op type: " + producerOp.getOp().getClass().getSimpleName());
             return null;
         }
 
@@ -401,15 +420,15 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
          * Pattern: matmul(Q, K^T) [-> scale] -> add(mask) -> softmax
          */
         private AttentionComponents traceAttentionWithMask(SameDiff sd, OptimizationHelper helper, SameDiffOp addOp, String addOutputVar) {
-            System.out.println("[ATTN-MASK] === Entering traceAttentionWithMask for " + addOp.getName() + " ===");
+            log.debug("[ATTN-MASK] === Entering traceAttentionWithMask for " + addOp.getName() + " ===");
 
             List<String> addInputs = addOp.getInputsToOp();
             if (addInputs == null || addInputs.size() != 2) {
-                System.out.println("[ATTN-MASK] Add op has wrong number of inputs: " + (addInputs != null ? addInputs.size() : 0));
+                log.debug("[ATTN-MASK] Add op has wrong number of inputs: " + (addInputs != null ? addInputs.size() : 0));
                 return null;
             }
 
-            System.out.println("[ATTN-MASK] Add inputs: " + addInputs.get(0) + ", " + addInputs.get(1));
+            log.debug("[ATTN-MASK] Add inputs: " + addInputs.get(0) + ", " + addInputs.get(1));
 
             // Find which input comes from matmul/scale (attention scores) and which is the mask
             String scoresVar = null;
@@ -419,35 +438,35 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             for (int i = 0; i < 2; i++) {
                 String input = addInputs.get(i);
-                System.out.println("[ATTN-MASK] Checking input " + i + ": " + input);
+                log.debug("[ATTN-MASK] Checking input " + i + ": " + input);
 
                 Variable inputVar = getVariableWithFallback(helper, sd, input);
                 if (inputVar == null) {
-                    System.out.println("[ATTN-MASK] Input " + i + " (" + input + ") variable is null");
+                    log.debug("[ATTN-MASK] Input " + i + " (" + input + ") variable is null");
                     continue;
                 }
 
                 String inputOpName = inputVar.getOutputOfOp();
-                System.out.println("[ATTN-MASK] Input " + i + " (" + input + ") produced by op: " + inputOpName);
+                log.debug("[ATTN-MASK] Input " + i + " (" + input + ") produced by op: " + inputOpName);
 
                 if (inputOpName == null) {
-                    System.out.println("[ATTN-MASK] Input " + i + " has no producer op (likely placeholder or constant)");
+                    log.debug("[ATTN-MASK] Input " + i + " has no producer op (likely placeholder or constant)");
                     // This might be the mask - check if the other input has a producer
                     SDVariable sdVar = sd.getVariable(input);
                     if (sdVar != null) {
-                        System.out.println("[ATTN-MASK] Input " + i + " is SDVariable type: " + sdVar.getVariableType());
+                        log.debug("[ATTN-MASK] Input " + i + " is SDVariable type: " + sdVar.getVariableType());
                     }
                     continue;
                 }
 
                 SameDiffOp inputOp = sd.getOps().get(inputOpName);
                 if (inputOp == null) {
-                    System.out.println("[ATTN-MASK] Input " + i + " producer op " + inputOpName + " not found in graph");
+                    log.debug("[ATTN-MASK] Input " + i + " producer op " + inputOpName + " not found in graph");
                     continue;
                 }
 
                 String opType = inputOp.getOp().getClass().getSimpleName();
-                System.out.println("[ATTN-MASK] Input " + i + " producer op type: " + opType);
+                log.debug("[ATTN-MASK] Input " + i + " producer op type: " + opType);
 
                 // Check if this is matmul, scale op, or another pattern
                 if (inputOp.getOp() instanceof Mmul || inputOp.getOp() instanceof TensorMmul ||
@@ -456,32 +475,32 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     scoresVar = input;
                     scoresProducerOp = inputOp;
                     maskVar = addInputs.get(1 - i);
-                    System.out.println("[ATTN-MASK] Found scores from " + opType + ": " + scoresVar);
+                    log.debug("[ATTN-MASK] Found scores from " + opType + ": " + scoresVar);
                     break;
                 }
                 // Check for Permute/Transpose - trace through it
                 else if (inputOp.getOp() instanceof Permute || inputOp.getOp() instanceof Transpose) {
-                    System.out.println("[ATTN-MASK] Input " + i + " is Permute/Transpose, tracing through...");
+                    log.debug("[ATTN-MASK] Input " + i + " is Permute/Transpose, tracing through...");
                     List<String> permuteInputs = inputOp.getInputsToOp();
                     if (permuteInputs != null && !permuteInputs.isEmpty()) {
                         String permuteInput = permuteInputs.get(0);
-                        System.out.println("[ATTN-MASK] Permute input: " + permuteInput);
+                        log.debug("[ATTN-MASK] Permute input: " + permuteInput);
                         Variable permuteInputVar = getVariableWithFallback(helper, sd, permuteInput);
                         if (permuteInputVar != null) {
                             String permuteProducerName = permuteInputVar.getOutputOfOp();
-                            System.out.println("[ATTN-MASK] Permute input produced by: " + permuteProducerName);
+                            log.debug("[ATTN-MASK] Permute input produced by: " + permuteProducerName);
                             if (permuteProducerName != null) {
                                 SameDiffOp permuteProducerOp = sd.getOps().get(permuteProducerName);
                                 if (permuteProducerOp != null) {
                                     String permuteProducerType = permuteProducerOp.getOp().getClass().getSimpleName();
-                                    System.out.println("[ATTN-MASK] Permute producer op type: " + permuteProducerType);
+                                    log.debug("[ATTN-MASK] Permute producer op type: " + permuteProducerType);
                                     if (permuteProducerOp.getOp() instanceof Mmul || permuteProducerOp.getOp() instanceof TensorMmul ||
                                         permuteProducerOp.getOp() instanceof MulOp || permuteProducerOp.getOp() instanceof ScalarMultiplication ||
                                         permuteProducerOp.getOp() instanceof DivOp || permuteProducerOp.getOp() instanceof ScalarDivision) {
                                         scoresVar = permuteInput;
                                         scoresProducerOp = permuteProducerOp;
                                         maskVar = addInputs.get(1 - i);
-                                        System.out.println("[ATTN-MASK] Found scores through permute: " + scoresVar);
+                                        log.debug("[ATTN-MASK] Found scores through permute: " + scoresVar);
                                         break;
                                     }
                                 }
@@ -491,20 +510,20 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 }
                 // Also check for Reshape - trace through it
                 else if (inputOp.getOp() instanceof Reshape) {
-                    System.out.println("[ATTN-MASK] Input " + i + " is Reshape, tracing through...");
+                    log.debug("[ATTN-MASK] Input " + i + " is Reshape, tracing through...");
                     List<String> reshapeInputs = inputOp.getInputsToOp();
                     if (reshapeInputs != null && !reshapeInputs.isEmpty()) {
                         String reshapeInput = reshapeInputs.get(0);
-                        System.out.println("[ATTN-MASK] Reshape input: " + reshapeInput);
+                        log.debug("[ATTN-MASK] Reshape input: " + reshapeInput);
                         Variable reshapeInputVar = getVariableWithFallback(helper, sd, reshapeInput);
                         if (reshapeInputVar != null) {
                             String reshapeProducerName = reshapeInputVar.getOutputOfOp();
-                            System.out.println("[ATTN-MASK] Reshape input produced by: " + reshapeProducerName);
+                            log.debug("[ATTN-MASK] Reshape input produced by: " + reshapeProducerName);
                             if (reshapeProducerName != null) {
                                 SameDiffOp reshapeProducerOp = sd.getOps().get(reshapeProducerName);
                                 if (reshapeProducerOp != null) {
                                     String reshapeProducerType = reshapeProducerOp.getOp().getClass().getSimpleName();
-                                    System.out.println("[ATTN-MASK] Reshape producer op type: " + reshapeProducerType);
+                                    log.debug("[ATTN-MASK] Reshape producer op type: " + reshapeProducerType);
                                     if (reshapeProducerOp.getOp() instanceof Mmul || reshapeProducerOp.getOp() instanceof TensorMmul ||
                                         reshapeProducerOp.getOp() instanceof MulOp || reshapeProducerOp.getOp() instanceof ScalarMultiplication ||
                                         reshapeProducerOp.getOp() instanceof DivOp || reshapeProducerOp.getOp() instanceof ScalarDivision) {
@@ -512,12 +531,12 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                         scoresVar = reshapeInput;
                                         scoresProducerOp = reshapeProducerOp;
                                         maskVar = addInputs.get(1 - i);
-                                        System.out.println("[ATTN-MASK] Found scores through reshape: " + scoresVar);
+                                        log.debug("[ATTN-MASK] Found scores through reshape: " + scoresVar);
                                         break;
                                     }
                                     // Also check if reshape producer is Permute/Transpose
                                     else if (reshapeProducerOp.getOp() instanceof Permute || reshapeProducerOp.getOp() instanceof Transpose) {
-                                        System.out.println("[ATTN-MASK] Reshape producer is Permute, tracing further...");
+                                        log.debug("[ATTN-MASK] Reshape producer is Permute, tracing further...");
                                         List<String> permuteInputs = reshapeProducerOp.getInputsToOp();
                                         if (permuteInputs != null && !permuteInputs.isEmpty()) {
                                             Variable permuteInputVar = getVariableWithFallback(helper, sd, permuteInputs.get(0));
@@ -527,14 +546,14 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                                     SameDiffOp deepProducerOp = sd.getOps().get(deepProducerName);
                                                     if (deepProducerOp != null) {
                                                         String deepProducerType = deepProducerOp.getOp().getClass().getSimpleName();
-                                                        System.out.println("[ATTN-MASK] Deep producer type: " + deepProducerType);
+                                                        log.debug("[ATTN-MASK] Deep producer type: " + deepProducerType);
                                                         if (deepProducerOp.getOp() instanceof Mmul || deepProducerOp.getOp() instanceof TensorMmul ||
                                                             deepProducerOp.getOp() instanceof MulOp || deepProducerOp.getOp() instanceof ScalarMultiplication ||
                                                             deepProducerOp.getOp() instanceof DivOp || deepProducerOp.getOp() instanceof ScalarDivision) {
                                                             scoresVar = permuteInputs.get(0);
                                                             scoresProducerOp = deepProducerOp;
                                                             maskVar = addInputs.get(1 - i);
-                                                            System.out.println("[ATTN-MASK] Found scores through reshape+permute: " + scoresVar);
+                                                            log.debug("[ATTN-MASK] Found scores through reshape+permute: " + scoresVar);
                                                             break;
                                                         }
                                                     }
@@ -556,25 +575,25 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         maskVar = input;
                         scoresVar = addInputs.get(1 - i);
                         isCausalMask = true;
-                        System.out.println("[ATTN-MASK] Found causal mask: " + maskVar);
+                        log.debug("[ATTN-MASK] Found causal mask: " + maskVar);
                     }
                 }
             }
 
             if (scoresVar == null) {
-                System.out.println("[ATTN-MASK] Could not find scores variable! Tried both inputs.");
-                System.out.println("[ATTN-MASK] === Exiting traceAttentionWithMask with NULL ===");
+                log.debug("[ATTN-MASK] Could not find scores variable! Tried both inputs.");
+                log.debug("[ATTN-MASK] === Exiting traceAttentionWithMask with NULL ===");
                 return null;
             }
 
-            System.out.println("[ATTN-MASK] Scores var: " + scoresVar + ", Mask var: " + maskVar);
+            log.debug("[ATTN-MASK] Scores var: " + scoresVar + ", Mask var: " + maskVar);
 
             // Now trace back from scoresVar to find the actual Q @ K^T pattern
-            System.out.println("[ATTN-MASK] Calling traceAttentionScoresWithoutMask for: " + scoresVar);
+            log.debug("[ATTN-MASK] Calling traceAttentionScoresWithoutMask for: " + scoresVar);
             AttentionComponents components = traceAttentionScoresWithoutMask(sd, helper, scoresVar);
             if (components == null) {
-                System.out.println("[ATTN-MASK] traceAttentionScoresWithoutMask returned null for " + scoresVar);
-                System.out.println("[ATTN-MASK] === Exiting traceAttentionWithMask with NULL ===");
+                log.debug("[ATTN-MASK] traceAttentionScoresWithoutMask returned null for " + scoresVar);
+                log.debug("[ATTN-MASK] === Exiting traceAttentionWithMask with NULL ===");
                 return null;
             }
 
@@ -585,7 +604,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             components.useCausalMask = isCausalMask;
             components.hasAdditiveMask = true;
 
-            System.out.println("[ATTN-MASK] === Exiting traceAttentionWithMask with components ===");
+            log.debug("[ATTN-MASK] === Exiting traceAttentionWithMask with components ===");
             return components;
         }
 
@@ -594,49 +613,49 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
          * Used after we've already identified and removed the mask add layer.
          */
         private AttentionComponents traceAttentionScoresWithoutMask(SameDiff sd, OptimizationHelper helper, String varName) {
-            System.out.println("[ATTN-TRACE-NOMASK] Tracing from: " + varName);
+            log.debug("[ATTN-TRACE-NOMASK] Tracing from: " + varName);
 
             Variable v = getVariableWithFallback(helper, sd, varName);
             if (v == null) {
-                System.out.println("[ATTN-TRACE-NOMASK] Variable " + varName + " is null");
+                log.debug("[ATTN-TRACE-NOMASK] Variable " + varName + " is null");
                 return null;
             }
 
             String producerOpName = v.getOutputOfOp();
             if (producerOpName == null) {
-                System.out.println("[ATTN-TRACE-NOMASK] Variable " + varName + " has no producer op");
+                log.debug("[ATTN-TRACE-NOMASK] Variable " + varName + " has no producer op");
                 return null;
             }
 
             SameDiffOp producerOp = sd.getOps().get(producerOpName);
             if (producerOp == null) {
-                System.out.println("[ATTN-TRACE-NOMASK] Producer op " + producerOpName + " not found");
+                log.debug("[ATTN-TRACE-NOMASK] Producer op " + producerOpName + " not found");
                 return null;
             }
 
             String opType = producerOp.getOp().getClass().getSimpleName();
-            System.out.println("[ATTN-TRACE-NOMASK] Producer op type: " + opType);
+            log.debug("[ATTN-TRACE-NOMASK] Producer op type: " + opType);
 
             // Direct matmul output
             if (producerOp.getOp() instanceof Mmul || producerOp.getOp() instanceof TensorMmul) {
-                System.out.println("[ATTN-TRACE-NOMASK] Found matmul: " + producerOpName);
+                log.debug("[ATTN-TRACE-NOMASK] Found matmul: " + producerOpName);
                 return extractQKFromMatmul(sd, helper, producerOp, varName, null, null, 1.0);
             }
 
             // Scaled output
             if (producerOp.getOp() instanceof MulOp || producerOp.getOp() instanceof ScalarMultiplication) {
-                System.out.println("[ATTN-TRACE-NOMASK] Found scale (mul): " + producerOpName);
+                log.debug("[ATTN-TRACE-NOMASK] Found scale (mul): " + producerOpName);
                 return traceScaledMatmul(sd, helper, producerOp, varName, true);
             }
 
             if (producerOp.getOp() instanceof DivOp || producerOp.getOp() instanceof ScalarDivision) {
-                System.out.println("[ATTN-TRACE-NOMASK] Found scale (div): " + producerOpName);
+                log.debug("[ATTN-TRACE-NOMASK] Found scale (div): " + producerOpName);
                 return traceScaledMatmul(sd, helper, producerOp, varName, false);
             }
 
             // Reshape - trace through it
             if (producerOp.getOp() instanceof Reshape) {
-                System.out.println("[ATTN-TRACE-NOMASK] Tracing through reshape: " + producerOpName);
+                log.debug("[ATTN-TRACE-NOMASK] Tracing through reshape: " + producerOpName);
                 List<String> reshapeInputs = producerOp.getInputsToOp();
                 if (reshapeInputs != null && !reshapeInputs.isEmpty()) {
                     return traceAttentionScoresWithoutMask(sd, helper, reshapeInputs.get(0));
@@ -645,14 +664,14 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
             // Permute/Transpose - trace through it
             if (producerOp.getOp() instanceof Permute || producerOp.getOp() instanceof Transpose) {
-                System.out.println("[ATTN-TRACE-NOMASK] Tracing through permute/transpose: " + producerOpName);
+                log.debug("[ATTN-TRACE-NOMASK] Tracing through permute/transpose: " + producerOpName);
                 List<String> permuteInputs = producerOp.getInputsToOp();
                 if (permuteInputs != null && !permuteInputs.isEmpty()) {
                     return traceAttentionScoresWithoutMask(sd, helper, permuteInputs.get(0));
                 }
             }
 
-            System.out.println("[ATTN-TRACE-NOMASK] Unhandled op type: " + opType);
+            log.debug("[ATTN-TRACE-NOMASK] Unhandled op type: " + opType);
             return null;
         }
 
@@ -686,15 +705,15 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
          */
         private AttentionComponents traceScaledMatmul(SameDiff sd, OptimizationHelper helper, SameDiffOp scaleOp,
                                                        String scaleOutputVar, boolean isMul) {
-            System.out.println("[ATTN-SCALE] Tracing scaled matmul from: " + scaleOp.getName() + " (isMul=" + isMul + ")");
+            log.debug("[ATTN-SCALE] Tracing scaled matmul from: " + scaleOp.getName() + " (isMul=" + isMul + ")");
 
             List<String> scaleInputs = scaleOp.getInputsToOp();
             if (scaleInputs == null || scaleInputs.size() < 2) {
-                System.out.println("[ATTN-SCALE] Scale op has insufficient inputs: " + (scaleInputs != null ? scaleInputs.size() : 0));
+                log.debug("[ATTN-SCALE] Scale op has insufficient inputs: " + (scaleInputs != null ? scaleInputs.size() : 0));
                 return null;
             }
 
-            System.out.println("[ATTN-SCALE] Scale inputs: " + scaleInputs);
+            log.debug("[ATTN-SCALE] Scale inputs: " + scaleInputs);
 
             // Find which input is the matmul output and which is the scale factor
             String matmulOutputVar = null;
@@ -704,30 +723,30 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             String reshapeOutputVar = null;
 
             for (String input : scaleInputs) {
-                System.out.println("[ATTN-SCALE] Checking scale input: " + input);
+                log.debug("[ATTN-SCALE] Checking scale input: " + input);
 
                 Variable inputVar = getVariableWithFallback(helper, sd, input);
                 if (inputVar == null) {
-                    System.out.println("[ATTN-SCALE] Input " + input + " variable is null");
+                    log.debug("[ATTN-SCALE] Input " + input + " variable is null");
                     continue;
                 }
 
                 String inputOpName = inputVar.getOutputOfOp();
-                System.out.println("[ATTN-SCALE] Input " + input + " produced by: " + inputOpName);
+                log.debug("[ATTN-SCALE] Input " + input + " produced by: " + inputOpName);
 
                 if (inputOpName != null) {
                     SameDiffOp inputOp = sd.getOps().get(inputOpName);
                     if (inputOp != null) {
                         String opType = inputOp.getOp().getClass().getSimpleName();
-                        System.out.println("[ATTN-SCALE] Input producer op type: " + opType);
+                        log.debug("[ATTN-SCALE] Input producer op type: " + opType);
 
                         if (inputOp.getOp() instanceof Mmul || inputOp.getOp() instanceof TensorMmul) {
                             matmulOutputVar = input;
-                            System.out.println("[ATTN-SCALE] Found matmul output: " + input);
+                            log.debug("[ATTN-SCALE] Found matmul output: " + input);
                         }
                         // Also trace through reshape/permute to find matmul
                         else if (inputOp.getOp() instanceof Reshape || inputOp.getOp() instanceof Permute || inputOp.getOp() instanceof Transpose) {
-                            System.out.println("[ATTN-SCALE] Tracing through " + opType + " to find matmul...");
+                            log.debug("[ATTN-SCALE] Tracing through " + opType + " to find matmul...");
                             List<String> innerInputs = inputOp.getInputsToOp();
                             if (innerInputs != null && !innerInputs.isEmpty()) {
                                 Variable innerVar = getVariableWithFallback(helper, sd, innerInputs.get(0));
@@ -740,8 +759,8 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                             // Track the reshape op and its output for removal later
                                             reshapeOpName = inputOp.getName();
                                             reshapeOutputVar = input;
-                                            System.out.println("[ATTN-SCALE] Found matmul through " + opType + ": " + matmulOutputVar);
-                                            System.out.println("[ATTN-SCALE] Tracking reshape for removal: " + reshapeOpName + " -> " + reshapeOutputVar);
+                                            log.debug("[ATTN-SCALE] Found matmul through " + opType + ": " + matmulOutputVar);
+                                            log.debug("[ATTN-SCALE] Tracking reshape for removal: " + reshapeOpName + " -> " + reshapeOutputVar);
                                         }
                                     }
                                 }
@@ -757,31 +776,31 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     if (arr.isScalar()) {
                         double val = arr.getDouble(0);
                         scaleFactor = isMul ? val : (1.0 / val);
-                        System.out.println("[ATTN-SCALE] Found scale factor: " + scaleFactor + " from " + input);
+                        log.debug("[ATTN-SCALE] Found scale factor: " + scaleFactor + " from " + input);
                     }
                 }
             }
 
             if (matmulOutputVar == null) {
-                System.out.println("[ATTN-SCALE] Could not find matmul output!");
+                log.debug("[ATTN-SCALE] Could not find matmul output!");
                 return null;
             }
 
             Variable mmOutVar = getVariableWithFallback(helper, sd, matmulOutputVar);
             if (mmOutVar == null) {
-                System.out.println("[ATTN-SCALE] Matmul output variable is null");
+                log.debug("[ATTN-SCALE] Matmul output variable is null");
                 return null;
             }
 
             String mmOpName = mmOutVar.getOutputOfOp();
             if (mmOpName == null) {
-                System.out.println("[ATTN-SCALE] Matmul output has no producer op");
+                log.debug("[ATTN-SCALE] Matmul output has no producer op");
                 return null;
             }
 
             SameDiffOp mmOp = sd.getOps().get(mmOpName);
             if (mmOp == null) {
-                System.out.println("[ATTN-SCALE] Matmul op not found: " + mmOpName);
+                log.debug("[ATTN-SCALE] Matmul op not found: " + mmOpName);
                 return null;
             }
 
@@ -801,20 +820,20 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                                                          String matmulOutputVar,
                                                          String scaleOpName, String scaleOutputVar,
                                                          double scaleFactor) {
-            System.out.println("[ATTN-EXTRACT] Extracting Q,K from matmul: " + matmulOp.getName());
+            log.debug("[ATTN-EXTRACT] Extracting Q,K from matmul: " + matmulOp.getName());
 
             List<String> mmInputs = matmulOp.getInputsToOp();
             if (mmInputs == null || mmInputs.size() < 2) {
-                System.out.println("[ATTN-EXTRACT] Matmul has insufficient inputs: " + (mmInputs != null ? mmInputs.size() : 0));
+                log.debug("[ATTN-EXTRACT] Matmul has insufficient inputs: " + (mmInputs != null ? mmInputs.size() : 0));
                 return null;
             }
 
-            System.out.println("[ATTN-EXTRACT] Matmul inputs: " + mmInputs);
+            log.debug("[ATTN-EXTRACT] Matmul inputs: " + mmInputs);
 
             String qVar = mmInputs.get(0);
             String kVar = mmInputs.get(1);
 
-            System.out.println("[ATTN-EXTRACT] Initial Q=" + qVar + ", K=" + kVar);
+            log.debug("[ATTN-EXTRACT] Initial Q=" + qVar + ", K=" + kVar);
 
             // Check if K is transposed (either via Mmul transpose flag or explicit Transpose op)
             boolean kTransposed = false;
@@ -824,7 +843,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 // Check transpose flags via iArguments (index 1 is transposeB)
                 if (mmul.numIArguments() > 1 && mmul.getIArgument(1) > 0) {
                     kTransposed = true;
-                    System.out.println("[ATTN-EXTRACT] K transposed via Mmul iArgs");
+                    log.debug("[ATTN-EXTRACT] K transposed via Mmul iArgs");
                 }
             }
 
@@ -832,12 +851,12 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             Variable kVariable = getVariableWithFallback(helper, sd, kVar);
             if (kVariable != null) {
                 String kProducerName = kVariable.getOutputOfOp();
-                System.out.println("[ATTN-EXTRACT] K produced by: " + kProducerName);
+                log.debug("[ATTN-EXTRACT] K produced by: " + kProducerName);
                 if (kProducerName != null) {
                     SameDiffOp kProducerOp = sd.getOps().get(kProducerName);
                     if (kProducerOp != null) {
                         String kProducerType = kProducerOp.getOp().getClass().getSimpleName();
-                        System.out.println("[ATTN-EXTRACT] K producer op type: " + kProducerType);
+                        log.debug("[ATTN-EXTRACT] K producer op type: " + kProducerType);
 
                         if (kProducerOp.getOp() instanceof Transpose) {
                             // K comes from a transpose - get the original K
@@ -845,7 +864,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                             if (transposeInputs != null && !transposeInputs.isEmpty()) {
                                 kVar = transposeInputs.get(0);
                                 kTransposed = true;
-                                System.out.println("[ATTN-EXTRACT] K traced through Transpose to: " + kVar);
+                                log.debug("[ATTN-EXTRACT] K traced through Transpose to: " + kVar);
                             }
                         }
                         // Also check for Permute
@@ -855,7 +874,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                             if (permuteInputs != null && !permuteInputs.isEmpty()) {
                                 kVar = permuteInputs.get(0);
                                 kTransposed = true; // Permute often serves as transpose for attention
-                                System.out.println("[ATTN-EXTRACT] K traced through Permute to: " + kVar);
+                                log.debug("[ATTN-EXTRACT] K traced through Permute to: " + kVar);
                             }
                         }
                     }
@@ -865,7 +884,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             // For attention, K should be transposed (Q @ K^T)
             if (!kTransposed) {
                 // This might not be an attention pattern, but continue anyway
-                System.out.println("[ATTN-EXTRACT] NOTE: K is not transposed - may not be attention pattern, but continuing");
+                log.debug("[ATTN-EXTRACT] NOTE: K is not transposed - may not be attention pattern, but continuing");
             }
 
             AttentionComponents components = new AttentionComponents();
@@ -877,7 +896,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             components.scaleOutputVar = scaleOutputVar;
             components.scaleFactor = scaleFactor;
 
-            System.out.println("[ATTN-EXTRACT] SUCCESS: Q=" + qVar + ", K=" + kVar + ", scale=" + scaleFactor);
+            log.debug("[ATTN-EXTRACT] SUCCESS: Q=" + qVar + ", K=" + kVar + ", scale=" + scaleFactor);
             return components;
         }
 
@@ -888,43 +907,208 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             // Check softmax output is only used by one op (the final matmul)
             List<String> softmaxOutputs = softmaxOp.getOutputsOfOp();
             if (softmaxOutputs == null || softmaxOutputs.isEmpty()) {
-                System.out.println("[ATTN-FUSE] softmax has no outputs");
+                log.debug("[ATTN-FUSE] softmax has no outputs");
                 return false;
             }
 
             Variable softmaxOutVar = getVariableWithFallback(helper, sd, softmaxOutputs.get(0));
             if (softmaxOutVar == null) {
-                System.out.println("[ATTN-FUSE] softmax output var " + softmaxOutputs.get(0) + " is null");
+                log.debug("[ATTN-FUSE] softmax output var " + softmaxOutputs.get(0) + " is null");
                 return false;
             }
 
             List<String> softmaxUsers = softmaxOutVar.getInputsForOp();
             // Allow 1 or 2 users - sometimes there's a reshape between softmax and matmul that counts as a user
             if (softmaxUsers == null || softmaxUsers.isEmpty() || softmaxUsers.size() > 2) {
-                System.out.println("[ATTN-FUSE] softmax output " + softmaxOutputs.get(0) + " has " +
+                log.debug("[ATTN-FUSE] softmax output " + softmaxOutputs.get(0) + " has " +
                     (softmaxUsers != null ? softmaxUsers.size() : 0) + " users (expected 1-2): " + softmaxUsers);
                 return false;
             }
-            System.out.println("[ATTN-FUSE] softmax output " + softmaxOutputs.get(0) + " has " + softmaxUsers.size() + " users: " + softmaxUsers);
+            log.debug("[ATTN-FUSE] softmax output " + softmaxOutputs.get(0) + " has " + softmaxUsers.size() + " users: " + softmaxUsers);
 
             // Check Q @ K^T output is only used once (or twice if there's a scale op)
             Variable qkOutVar = getVariableWithFallback(helper, sd, components.qkMatmulOutputVar);
             if (qkOutVar == null) {
-                System.out.println("[ATTN-FUSE] Q@K^T output var " + components.qkMatmulOutputVar + " is null");
+                log.debug("[ATTN-FUSE] Q@K^T output var " + components.qkMatmulOutputVar + " is null");
                 return false;
             }
 
             List<String> qkUsers = qkOutVar.getInputsForOp();
             if (qkUsers == null || qkUsers.isEmpty() || qkUsers.size() > 2) {
-                System.out.println("[ATTN-FUSE] Q@K^T output " + components.qkMatmulOutputVar + " has " +
+                log.debug("[ATTN-FUSE] Q@K^T output " + components.qkMatmulOutputVar + " has " +
                     (qkUsers != null ? qkUsers.size() : 0) + " users (expected 1-2): " + qkUsers);
                 return false;
             }
-            System.out.println("[ATTN-FUSE] Q@K^T output " + components.qkMatmulOutputVar + " has " + qkUsers.size() + " users: " + qkUsers);
+            log.debug("[ATTN-FUSE] Q@K^T output " + components.qkMatmulOutputVar + " has " + qkUsers.size() + " users: " + qkUsers);
 
-            System.out.println("[ATTN-FUSE] All checks passed!");
+            log.debug("[ATTN-FUSE] All checks passed!");
             return true;
         }
+    }
+
+    /**
+     * Infer the rank of a variable for fusion eligibility checks.
+     * Tries multiple strategies:
+     * 1. Static shape from SDVariable.getShape()
+     * 2. Shape from constant/variable arrays
+     * 3. Infer from producer op (Reshape shape input, Permute preserves rank)
+     * @return inferred rank, or -1 if unknown
+     */
+    private static int inferVariableRank(SameDiff sd, SDVariable var) {
+        return inferVariableRankImpl(sd, var, 0);
+    }
+
+    private static int inferVariableRankImpl(SameDiff sd, SDVariable var, int depth) {
+        if (var == null || depth > 15) return -1;
+        String indent = depth < 10 ? "                    ".substring(0, depth * 2) : "  ";
+
+        // Strategy 1: static shape
+        long[] shape = var.getShape();
+        if (shape != null && shape.length > 0) {
+            log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> static shape len=" + shape.length);
+            return shape.length;
+        }
+
+        // Strategy 2: check actual arrays for constants/variables
+        if (var.getVariableType() == VariableType.CONSTANT) {
+            INDArray arr = sd.getConstantArrays().getArray(var.name());
+            if (arr != null) {
+                log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> constant rank=" + arr.rank());
+                return arr.rank();
+            }
+        } else if (var.getVariableType() == VariableType.VARIABLE) {
+            INDArray arr = sd.getVariablesArrays().getArray(var.name());
+            if (arr != null) {
+                log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> variable rank=" + arr.rank());
+                return arr.rank();
+            }
+        }
+
+        // Strategy 3: infer from producer op
+        Variable v = sd.getVariables().get(var.name());
+        if (v == null || v.getOutputOfOp() == null) {
+            log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> type=" + var.getVariableType() + " no producer, FAIL");
+            return -1;
+        }
+
+        SameDiffOp producerOp = sd.getOps().get(v.getOutputOfOp());
+        if (producerOp == null || producerOp.getOp() == null) {
+            log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> producer op null, FAIL");
+            return -1;
+        }
+
+        DifferentialFunction opFunc = producerOp.getOp();
+        List<String> opInputs = producerOp.getInputsToOp();
+        log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> produced by " + opFunc.getClass().getSimpleName() + " inputs=" + opInputs);
+
+        // Permute/Transpose preserve rank — determine from permutation or recurse
+        if (opFunc instanceof Permute || opFunc instanceof Transpose) {
+            // Check iArgs: for Permute created with long[] dims, iArgs = permutation array
+            if (opFunc instanceof DynamicCustomOp) {
+                long[] iArgs = ((DynamicCustomOp) opFunc).iArgs();
+                if (iArgs != null && iArgs.length > 0) {
+                    log.debug("[ATTN-RANK-DBG] " + indent + "  Permute/Transpose iArgs length=" + iArgs.length + " -> rank=" + iArgs.length);
+                    return iArgs.length;
+                }
+            }
+            // Check second input: for Permute with SDVariable permutation dims
+            if (opInputs != null && opInputs.size() >= 2) {
+                SDVariable permVar = sd.getVariable(opInputs.get(1));
+                if (permVar != null && permVar.getVariableType() == VariableType.CONSTANT) {
+                    INDArray permArr = sd.getConstantArrays().getArray(permVar.name());
+                    if (permArr != null) {
+                        log.debug("[ATTN-RANK-DBG] " + indent + "  Permute/Transpose perm constant length=" + permArr.length() + " -> rank=" + permArr.length());
+                        return (int) permArr.length();
+                    }
+                }
+            }
+            // Fallback: recurse on data input
+            if (opInputs != null && !opInputs.isEmpty()) {
+                SDVariable input = sd.getVariable(opInputs.get(0));
+                return inferVariableRankImpl(sd, input, depth + 1);
+            }
+        }
+
+        // Reshape: output rank = length of shape input, or from iArguments
+        if (opFunc instanceof Reshape) {
+            log.debug("[ATTN-RANK-DBG] " + indent + "  Reshape: opInputs.size()=" + (opInputs != null ? opInputs.size() : "null"));
+            // Check second input variable (dynamic shape from ONNX)
+            if (opInputs != null && opInputs.size() >= 2) {
+                SDVariable shapeVar = sd.getVariable(opInputs.get(1));
+                log.debug("[ATTN-RANK-DBG] " + indent + "  Reshape shape var: " + (shapeVar != null ? shapeVar.name() + " type=" + shapeVar.getVariableType() : "NULL"));
+                if (shapeVar != null) {
+                    if (shapeVar.getVariableType() == VariableType.CONSTANT) {
+                        INDArray shapeArr = sd.getConstantArrays().getArray(shapeVar.name());
+                        log.debug("[ATTN-RANK-DBG] " + indent + "  Reshape shape constant array: " + (shapeArr != null ? "length=" + shapeArr.length() : "NULL"));
+                        if (shapeArr != null) {
+                            return (int) shapeArr.length();
+                        }
+                    }
+                    long[] shapeShape = shapeVar.getShape();
+                    log.debug("[ATTN-RANK-DBG] " + indent + "  Reshape shape var getShape(): " + java.util.Arrays.toString(shapeShape));
+                    if (shapeShape != null && shapeShape.length == 1 && shapeShape[0] > 0) {
+                        return (int) shapeShape[0];
+                    }
+                    // Trace: if shape variable is produced by Concat, count elements
+                    Variable shapeVarInfo = sd.getVariables().get(shapeVar.name());
+                    if (shapeVarInfo != null && shapeVarInfo.getOutputOfOp() != null) {
+                        SameDiffOp shapeProducer = sd.getOps().get(shapeVarInfo.getOutputOfOp());
+                        if (shapeProducer != null && shapeProducer.getOp() instanceof Concat) {
+                            List<String> concatInputs = shapeProducer.getInputsToOp();
+                            if (concatInputs != null && !concatInputs.isEmpty()) {
+                                // Each Concat input is typically a scalar/1-element for reshape shapes
+                                // Count total elements across all inputs
+                                int totalElements = 0;
+                                boolean allKnown = true;
+                                for (String ci : concatInputs) {
+                                    SDVariable ciVar = sd.getVariable(ci);
+                                    if (ciVar == null) { allKnown = false; break; }
+                                    if (ciVar.getVariableType() == VariableType.CONSTANT) {
+                                        INDArray ciArr = sd.getConstantArrays().getArray(ci);
+                                        if (ciArr != null) { totalElements += (int) ciArr.length(); continue; }
+                                    }
+                                    // Assume each non-constant input contributes 1 element (scalar)
+                                    totalElements += 1;
+                                }
+                                if (allKnown && totalElements > 0) {
+                                    log.debug("[ATTN-RANK-DBG] " + indent + "  Reshape shape from Concat: " + totalElements + " elements -> rank=" + totalElements);
+                                    return totalElements;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Fallback: static shape stored in iArguments [orderFlag, dim0, dim1, ...]
+            if (opFunc instanceof DynamicCustomOp) {
+                long[] iArgs = ((DynamicCustomOp) opFunc).iArgs();
+                log.debug("[ATTN-RANK-DBG] " + indent + "  Reshape iArgs: " + java.util.Arrays.toString(iArgs));
+                if (iArgs != null && iArgs.length > 1) {
+                    return iArgs.length - 1;
+                }
+            }
+            return -1;
+        }
+
+        // Mmul/TensorMmul: batched matmul preserves rank from first input
+        if (opFunc instanceof Mmul || opFunc instanceof TensorMmul) {
+            if (opInputs != null && !opInputs.isEmpty()) {
+                SDVariable input = sd.getVariable(opInputs.get(0));
+                return inferVariableRankImpl(sd, input, depth + 1);
+            }
+        }
+
+        // Generic fallback: recurse on first input for other ops
+        // Covers element-wise ops (Add, Mul, Div, Cast, etc.) which preserve rank
+        if (opInputs != null && !opInputs.isEmpty()) {
+            SDVariable firstInput = sd.getVariable(opInputs.get(0));
+            if (firstInput != null) {
+                return inferVariableRankImpl(sd, firstInput, depth + 1);
+            }
+        }
+
+        log.debug("[ATTN-RANK-DBG] " + indent + var.name() + " -> FAIL (no inputs)");
+        return -1;
     }
 
     /**
@@ -1008,7 +1192,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             // For now, just log that we found a potential fusion opportunity
             // Full implementation would fuse the projection into the attention op
             // or create a combined attention+projection op
-            System.out.println("[ATTN-DEBUG] Found potential attention+projection fusion opportunity at " + op.getName());
+            log.debug("[ATTN-DEBUG] Found potential attention+projection fusion opportunity at " + op.getName());
 
             // Return false for now - this is a placeholder for future optimization
             return false;
@@ -1151,7 +1335,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             }
             String attentionOutputVar = attentionOutputs.get(0);
 
-            System.out.println("[ATTN-DEBUG] Fusing causal masked attention: Q=" +
+            log.debug("[ATTN-DEBUG] Fusing causal masked attention: Q=" +
                     components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + " into dot_product_attention_v2");
 
             try {
@@ -1202,7 +1386,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
                 return true;
             } catch (Exception e) {
-                System.out.println("[ATTN-WARN] Failed to fuse causal masked attention: " + e.getMessage());
+                log.debug("[ATTN-WARN] Failed to fuse causal masked attention: " + e.getMessage());
                 return false;
             }
         }
@@ -1482,7 +1666,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             }
             String attentionOutputVar = attentionOutputs.get(0);
 
-            System.out.println("[ATTN-DEBUG] Fusing masked attention: Q=" +
+            log.debug("[ATTN-DEBUG] Fusing masked attention: Q=" +
                     components.queryVar + ", K=" + components.keyVar + ", V=" + vVar + ", mask=" + maskVar + " into dot_product_attention_v2");
 
             try {
@@ -1533,7 +1717,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
 
                 return true;
             } catch (Exception e) {
-                System.out.println("[ATTN-WARN] Failed to fuse masked attention: " + e.getMessage());
+                log.debug("[ATTN-WARN] Failed to fuse masked attention: " + e.getMessage());
                 return false;
             }
         }

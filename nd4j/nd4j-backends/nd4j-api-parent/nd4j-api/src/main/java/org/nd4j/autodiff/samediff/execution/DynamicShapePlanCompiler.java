@@ -79,59 +79,40 @@ public class DynamicShapePlanCompiler {
      * Ops known to fully write every element of their output buffer. These ops can
      * safely skip zeroing of reused buffers, saving a CUDA kernel launch per allocation.
      *
-     * <p>Conservative whitelist — any op NOT in this set will have its output zeroed.
-     * This is the safe default since stale buffer data in partially-written outputs
-     * can cascade into native heap corruption.</p>
+     * <p>Conservative whitelist — only ops with absolute write guarantees are included.
+     * View/shape ops (reshape, permute, transpose) are EXCLUDED because with
+     * shapeFunctionOverride=true, C++ may not copy data to the pre-allocated output
+     * buffer. Gather/concat/split/stack are EXCLUDED because they have complex memory
+     * access patterns with potential edge cases.</p>
      */
     private static final Set<String> FULLY_WRITING_OPS = Set.of(
-            // Elementwise arithmetic
+            // Matrix ops — BLAS contractually writes C[i,j] = sum(A[i,k]*B[k,j]) for all (i,j)
+            "matmul", "mmul", "batched_gemm", "tensormmul",
+            // Elementwise binary — output[i] = f(a[i], b[i]) for every i (with broadcasting)
             "add", "subtract", "multiply", "divide", "floormod", "floordiv",
             "reversedivide", "reversesubtract", "squaredsubtract",
             "add_scalar", "subtract_scalar", "multiply_scalar", "divide_scalar",
-            // Elementwise math
+            "pow", "min_pairwise", "max_pairwise", "atan2",
+            // Elementwise unary — output[i] = f(input[i]) for every i
             "abs", "neg", "exp", "log", "log1p", "sqrt", "rsqrt", "square", "reciprocal",
             "ceil", "floor", "round", "sign", "erf", "erfc",
-            "pow", "min_pairwise", "max_pairwise", "atan2",
-            // Activation functions
+            // Activation functions — elementwise, writes every element
             "relu", "relu6", "leakyrelu", "elu", "selu", "gelu", "sigmoid", "tanh",
             "softsign", "softplus", "swish", "mish", "hard_sigmoid", "hardtanh",
-            // Comparison ops
+            // Comparison ops — elementwise boolean output
             "equals", "not_equals", "less", "less_equal", "greater", "greater_equal",
             "boolean_and", "boolean_or", "boolean_not", "boolean_xor",
-            // Reduction ops
+            // Reduction ops — fully computes every output element from input
             "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
             "reduce_norm1", "reduce_norm2", "reduce_logsumexp", "reduce_variance", "reduce_stdev",
             "sum", "mean", "max", "min", "prod", "norm1", "norm2", "normmax",
             "argmax", "argmin",
-            // Matrix ops
-            "matmul", "mmul", "batched_gemm", "tensormmul",
-            // Normalization
-            "layer_norm", "layer_norm_bp",
-            // Softmax
+            // Softmax — normalizes every element across axis
             "softmax", "log_softmax",
-            // Type conversion
+            // Type conversion — converts every element
             "cast",
-            // Shape ops (zero-copy or fully write)
-            "reshape", "permute", "transpose", "expand_dims", "squeeze",
-            "shape_of", "size", "rank", "reshape_no_copy",
-            // Tensor creation (fully write)
-            "ones_as", "zeros_as", "fill", "range", "create", "linspace",
-            "eye", "ones_like", "zeros_like",
-            // Slice/gather/concat (fully write)
-            "concat", "stack", "unstack", "gather", "gather_nd", "split",
-            "strided_slice", "slice", "tile", "repeat",
-            // Embedding
-            "embedding_lookup",
-            // Broadcast
-            "broadcast_to",
-            // Assign
-            "assign",
-            // Where (select) - fully writes unlike Where (condition)
-            "select",
-            // Clip
-            "clipbyvalue",
-            // One-hot
-            "onehot"
+            // Clip — elementwise
+            "clipbyvalue"
     );
 
     private DynamicShapePlanCompiler() {}
@@ -331,6 +312,23 @@ public class DynamicShapePlanCompiler {
                 dArgs = dynOp.dArgs();
             }
 
+            // Determine if all INT/LONG inputs are from external sources (constants/vars/placeholders).
+            // When true, syncIntLongInputs() can skip commit() since external inputs don't need
+            // GPU stream synchronization — they were loaded from CPU or synced before plan start.
+            boolean allIntLongExternal = true;
+            for (int i = 0; i < numInputs; i++) {
+                if (inputSourceTypes[i] == DynamicShapeSlot.SOURCE_OP_OUTPUT) {
+                    org.nd4j.autodiff.samediff.SDVariable sdVar = sd.getVariable(inputVarNames[i]);
+                    if (sdVar != null) {
+                        DataType dt = sdVar.dataType();
+                        if (dt == DataType.INT || dt == DataType.LONG || dt == DataType.BOOL) {
+                            allIntLongExternal = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
             // Determine if this op needs dynamic shape inference
             boolean requiresDynamic = false;
             if (op instanceof org.nd4j.linalg.api.ops.impl.shape.tensorops.BaseTensorOp) {
@@ -363,6 +361,7 @@ public class DynamicShapePlanCompiler {
                     .bArgs(bArgs)
                     .dArgs(dArgs)
                     .needsIntLongSync(hasIntLongInputs || isDataDependent)
+                    .allIntLongInputsExternal(allIntLongExternal)
                     .isDataDependent(isDataDependent)
                     .requiresDynamicShapeInference(requiresDynamic)
                     .needsZeroedOutput(needsZeroedOutput)

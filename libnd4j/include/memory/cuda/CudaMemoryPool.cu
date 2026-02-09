@@ -25,6 +25,8 @@
 #include <execution/LaunchContext.h>
 #include <cstring>
 #include <cstdlib>
+#include <algorithm>
+#include <vector>
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <malloc.h>
 #endif
@@ -175,15 +177,36 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 
   if (actualDeviceId) *actualDeviceId = deviceId;
 
+  // Ensure we're on the requested device. cudaMallocAsync and cudaMalloc both
+  // allocate on the CURRENT device, not on the deviceId parameter. Without this
+  // check, callers that forgot to cudaSetDevice() before allocate() would silently
+  // allocate on the wrong GPU, causing "invalid argument" errors during cross-device
+  // copies when the pointer doesn't belong to the expected device.
+  // We save and restore the original device to avoid side effects on the caller.
+  int savedDev = -1;
+  cudaGetDevice(&savedDev);
+  bool needDeviceRestore = (savedDev != deviceId);
+  if (needDeviceRestore) {
+    cudaSetDevice(deviceId);
+  }
+
+  // Helper to restore device before returning
+  auto restoreDevice = [needDeviceRestore, savedDev]() {
+    if (needDeviceRestore) cudaSetDevice(savedDev);
+  };
+
   // If pools not enabled or not supported, fall back to regular cudaMalloc
   if (!enabled_.load() || !supported_) {
     void* ptr = nullptr;
     cudaError_t err = cudaMalloc(&ptr, size);
     if (err != cudaSuccess) {
       sd_debug("cudaMalloc failed: %s\n", cudaGetErrorString(err), "");
-      return allocateFailover(size, deviceId, actualDeviceId);
+      auto result = allocateFailover(size, deviceId, actualDeviceId);
+      restoreDevice();
+      return result;
     }
 
+    restoreDevice();
     return ptr;
   }
 
@@ -195,9 +218,12 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       cudaError_t err = cudaMalloc(&ptr, size);
       if (err != cudaSuccess) {
         sd_debug("cudaMalloc fallback failed: %s\n", cudaGetErrorString(err), "");
-        return allocateFailover(size, deviceId, actualDeviceId);
+        auto result = allocateFailover(size, deviceId, actualDeviceId);
+        restoreDevice();
+        return result;
       }
-  
+
+      restoreDevice();
       return ptr;
     }
   }
@@ -214,8 +240,8 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   cudaError_t err = cudaMallocAsync(&ptr, size, stream);
 
   if (err != cudaSuccess) {
-    sd_debug("cudaMallocAsync failed (size=%zu): %s, falling back to cudaMalloc\n",
-             size, cudaGetErrorString(err));
+    sd_printf("CudaMemoryPool::allocate: cudaMallocAsync failed on device %d (size=%zu): %s\n",
+              deviceId, size, cudaGetErrorString(err));
     // cudaMallocAsync failure places an error both on the host-side sticky state
     // AND on the stream.  We must clear both, otherwise subsequent operations
     // on the same stream (or cudaStreamSynchronize) will pick up this stale error.
@@ -226,37 +252,38 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     cudaGetLastError();  // clear any error surfaced by the sync
     err = cudaMalloc(&ptr, size);
     if (err != cudaSuccess) {
-      return allocateFailover(size, deviceId, actualDeviceId);
+      sd_printf("CudaMemoryPool::allocate: cudaMalloc also failed on device %d (size=%zu): %s\n",
+                deviceId, size, cudaGetErrorString(err));
+      auto result = allocateFailover(size, deviceId, actualDeviceId);
+      restoreDevice();
+      return result;
     }
 
+    restoreDevice();
     return ptr;
   }
 
   // Pool allocation succeeded - no tracking needed, will use cudaFreeAsync
+  restoreDevice();
   return ptr;
 }
 
 void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* actualDeviceId) {
   sd_debug("CudaMemoryPool::allocateFailover: Primary allocation failed on device %d for %zu bytes\n", currentDeviceId, size);
 
-  // Step 1: Sync current stream, trim pool, then retry.
-  // Sync BEFORE trim ensures pending cudaFreeAsync ops complete so the pool
-  // actually has memory to release.
+  // Step 1: Sync device, trim pool, then retry.
+  // Use cudaDeviceSynchronize instead of stream-based sync to avoid
+  // LaunchContext::defaultContext() which can trigger recursive ContextBuffers
+  // initialization that calls CudaMemoryPool::allocate() → infinite recursion.
   if (supported_ && poolInitialized_[currentDeviceId]) {
-    auto ctx = LaunchContext::defaultContext();
-    if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
-      cudaStreamSynchronize(*ctx->getCudaStream());
-    }
+    cudaDeviceSynchronize();
     cudaGetLastError();  // clear errors after sync
     trimPool(currentDeviceId);
 
     // Try cudaMallocAsync first (reuses pool memory directly)
+    // Use nullptr (default stream) to avoid LaunchContext recursion.
     void* ptr = nullptr;
-    cudaStream_t retryStream = nullptr;
-    if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
-      retryStream = *ctx->getCudaStream();
-    }
-    cudaError_t err = cudaMallocAsync(&ptr, size, retryStream);
+    cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
     if (err == cudaSuccess && ptr != nullptr) {
       sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId, "");
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
@@ -274,41 +301,66 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     cudaGetLastError();  // clear error
   }
 
-  // Step 2: Try other GPU devices that have peer access enabled.
-  // Only allocate on a device if the current device can access its memory via peer access.
-  // Without peer access, pointers from another device cause cudaErrorIllegalAddress (error 700).
+  // Step 2: Try other GPU devices. Prefer peer-accessible devices first (faster data
+  // sharing), then non-peer devices (requires device switch for ops, but CudaExecutioner
+  // already handles this by checking array deviceId and calling cudaSetDevice).
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
   int prevDev = -1;
   cudaGetDevice(&prevDev);
+
+  // Build sorted device list: peer devices first, then non-peer, each sorted by free memory
+  struct DeviceInfo { int id; size_t freeMem; bool isPeer; };
+  std::vector<DeviceInfo> candidates;
   for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
     if (d == currentDeviceId) continue;
-
-    // Only use this device if peer access is enabled FROM the current device TO device d
-    if (!peerAccessEnabled_[currentDeviceId][d]) {
-      sd_debug("CudaMemoryPool::allocateFailover: Skipping device %d (no peer access from device %d)\n", d, currentDeviceId);
-      continue;
-    }
-
-    // Check if device has enough free memory
-    size_t freeMem = 0, totalMem = 0;
     cudaSetDevice(d);
+    size_t freeMem = 0, totalMem = 0;
     cudaMemGetInfo(&freeMem, &totalMem);
-
     if (freeMem > size * 1.1) {  // 10% margin
-      sd_debug("CudaMemoryPool::allocateFailover: Trying peer device %d (free: %zu bytes)\n", d, freeMem);
-      void* ptr = nullptr;
-      cudaError_t err = cudaMalloc(&ptr, size);
-      if (err == cudaSuccess && ptr != nullptr) {
-        sd_printf("CudaMemoryPool::allocateFailover: Succeeded on peer device %d for %zu bytes\n", d, size);
+      bool isPeer = peerAccessEnabled_[currentDeviceId][d];
+      candidates.push_back({d, freeMem, isPeer});
+    }
+  }
+  cudaSetDevice(prevDev);
 
+  // Sort: peer devices first, then by free memory descending
+  std::sort(candidates.begin(), candidates.end(), [](const DeviceInfo& a, const DeviceInfo& b) {
+    if (a.isPeer != b.isPeer) return a.isPeer > b.isPeer;  // peer first
+    return a.freeMem > b.freeMem;  // then by free memory
+  });
+
+  for (const auto& candidate : candidates) {
+    int d = candidate.id;
+    sd_printf("CudaMemoryPool::allocateFailover: Trying %s device %d (free: %zu bytes) for %zu bytes\n",
+              candidate.isPeer ? "peer" : "non-peer", d, candidate.freeMem, size);
+    cudaSetDevice(d);
+
+    // Try pool allocation first on this device
+    void* ptr = nullptr;
+    if (supported_ && poolInitialized_[d]) {
+      cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
+      if (err == cudaSuccess && ptr != nullptr) {
+        sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool on %s device %d for %zu bytes\n",
+                  candidate.isPeer ? "peer" : "non-peer", d, size);
         if (actualDeviceId) *actualDeviceId = d;
-        // Restore calling thread's device context before returning
         cudaSetDevice(prevDev);
         return ptr;
       }
       cudaGetLastError();  // clear error
+      ptr = nullptr;
     }
+
+    // Fall back to cudaMalloc on this device
+    cudaError_t err = cudaMalloc(&ptr, size);
+    if (err == cudaSuccess && ptr != nullptr) {
+      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc on %s device %d for %zu bytes\n",
+                candidate.isPeer ? "peer" : "non-peer", d, size);
+      if (actualDeviceId) *actualDeviceId = d;
+      cudaSetDevice(prevDev);
+      return ptr;
+    }
+    cudaGetLastError();  // clear error
   }
   cudaSetDevice(prevDev);
 
@@ -365,17 +417,29 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     }
   }
 
+  // Ensure we're on the correct device for the free. cudaFreeAsync with a stream
+  // from a different device than the allocation can fail silently for non-P2P GPUs.
+  // This mirrors the save/restore pattern in allocate().
+  int savedDev = -1;
+  cudaGetDevice(&savedDev);
+  bool needDeviceRestore = (deviceId >= 0 && savedDev != deviceId);
+  if (needDeviceRestore) {
+    cudaSetDevice(deviceId);
+  }
+
   // Device memory: use cudaFreeAsync for stream-ordered deallocation.
   // Works for both pool and non-pool allocations since CUDA 11.2.
   if (enabled_.load() && supported_) {
     cudaError_t err = cudaFreeAsync(ptr, stream);
     if (err == cudaSuccess) {
+      if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
     cudaGetLastError();  // clear error
   }
   // Fallback for unsupported or error cases
   cudaFree(ptr);
+  if (needDeviceRestore) cudaSetDevice(savedDev);
 }
 
 void CudaMemoryPool::getStats(int deviceId, size_t& usedBytes, size_t& reservedBytes) {
@@ -420,6 +484,37 @@ void CudaMemoryPool::trimPool(int deviceId) {
   // unused pages so JavaCPP's maxPhysicalBytes check doesn't falsely OOM.
   malloc_trim(0);
 #endif
+}
+
+void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
+  if (!supported_ || deviceId < 0 || deviceId >= MAX_DEVICES || !poolInitialized_[deviceId]) {
+    return;
+  }
+
+  int prevDevice = 0;
+  cudaGetDevice(&prevDevice);
+
+  if (prevDevice != deviceId) {
+    cudaSetDevice(deviceId);
+  }
+
+  // Sync the actual execution stream where cudaFreeAsync calls were issued.
+  cudaStreamSynchronize(stream);
+
+  // Trim to release unused reserved memory back to the device
+  cudaMemPoolTrimTo(pools_[deviceId], 0);
+
+  if (prevDevice != deviceId) {
+    cudaSetDevice(prevDevice);
+  }
+
+  // NOTE: Do NOT call malloc_trim(0) here. malloc_trim walks the glibc heap
+  // metadata, and if any C++ op has overrun a host buffer (corrupting adjacent
+  // malloc chunk headers), malloc_trim discovers the corruption and triggers
+  // "double free or corruption" SIGABRT. Since this is called ~20 times per
+  // vision encoder execution, it amplifies the chance of hitting corruption.
+  // The madvise(MADV_DONTNEED) in freeGpuOnStream already releases physical
+  // pages without touching glibc metadata. RSS stays under control.
 }
 
 void CudaMemoryPool::releaseAll() {

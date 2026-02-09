@@ -24,7 +24,10 @@ import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Tracks state for batch text generation with multiple sequences.
@@ -50,6 +53,7 @@ public class BatchGenerationState {
     private final GenerationResult.FinishReason[] finishReasons;
     private final long[] firstTokenLatencyNanos;
     private final int eosTokenId;
+    private final Set<Integer> stopTokenIds;
 
     /**
      * Create a new batch generation state.
@@ -58,8 +62,33 @@ public class BatchGenerationState {
      * @param eosTokenId end-of-sequence token ID
      */
     public BatchGenerationState(int batchSize, int eosTokenId) {
+        this(batchSize, eosTokenId, new int[0]);
+    }
+
+    /**
+     * Create a new batch generation state with additional stop token IDs.
+     *
+     * <p>The EOS token is always included. Additional stop tokens (e.g.,
+     * {@code <end_of_utterance>}) can be provided to terminate generation
+     * on multiple conditions.</p>
+     *
+     * @param batchSize number of sequences in the batch
+     * @param eosTokenId end-of-sequence token ID
+     * @param additionalStopTokenIds extra token IDs that should also terminate generation
+     */
+    public BatchGenerationState(int batchSize, int eosTokenId, int... additionalStopTokenIds) {
         this.batchSize = batchSize;
         this.eosTokenId = eosTokenId;
+
+        Set<Integer> stops = new HashSet<>();
+        stops.add(eosTokenId);
+        if (additionalStopTokenIds != null) {
+            for (int id : additionalStopTokenIds) {
+                stops.add(id);
+            }
+        }
+        this.stopTokenIds = Collections.unmodifiableSet(stops);
+
         this.generatedTokens = new ArrayList<>(batchSize);
         this.finished = new boolean[batchSize];
         this.finishReasons = new GenerationResult.FinishReason[batchSize];
@@ -88,8 +117,8 @@ public class BatchGenerationState {
                     firstTokenLatencyNanos[i] = stepNanos;
                 }
 
-                // Check for EOS
-                if (tokenId == eosTokenId) {
+                // Check for EOS or any stop token
+                if (stopTokenIds.contains(tokenId)) {
                     finished[i] = true;
                     finishReasons[i] = GenerationResult.FinishReason.EOS;
                 }

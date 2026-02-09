@@ -336,6 +336,22 @@ public static final int
     }
 
 
+  public native void deleteBuffers();
+
+  /**
+   * Free GPU (special) buffer only, abandon host (primary) buffer.
+   * Used by dbFreeBuffersOnly to avoid SIGABRT from host heap corruption.
+   */
+  public native void freeGpuOnly();
+
+  /**
+   * Free GPU (special) buffer on the specified CUDA stream.
+   * Used by DSP mid-execution flushing to free on the execution stream
+   * instead of stream 0, so the pool can reuse memory on the same stream.
+   * @param stream CUDA stream for cudaFreeAsync (nullptr = default stream)
+   */
+  public native void freeGpuOnStream(Pointer stream);
+
   public native @Cast("bool") boolean _isOwnerPrimary(); public native DataBuffer _isOwnerPrimary(boolean setter);
   public native @Cast("bool") boolean _isOwnerSpecial(); public native DataBuffer _isOwnerSpecial(boolean setter);
   public native @Cast("bool") boolean isConstant(); public native DataBuffer isConstant(boolean setter);
@@ -1903,6 +1919,7 @@ public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") LongP
 public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") LongBuffer usedBytes, @Cast("sd::LongType*") LongBuffer reservedBytes);
 public native void getMemoryPoolStats(int deviceId, @Cast("sd::LongType*") long[] usedBytes, @Cast("sd::LongType*") long[] reservedBytes);
 public native void trimMemoryPool(int deviceId);
+public native void trimMemoryPoolOnStream(int deviceId, Pointer stream);
 public native @Cast("sd::LongType") long getPinnedHostBytesUsed();
 public native @Cast("sd::LongType") long getPinnedHostBytesLimit();
 public native void setPinnedHostBytesLimit(@Cast("sd::LongType") long maxBytes);
@@ -1926,6 +1943,7 @@ public native int destroyEvent(@Cast("sd::Pointer") Pointer event);
 public native int streamSynchronize(@Cast("sd::Pointer") Pointer stream);
 public native int eventSynchronize(@Cast("sd::Pointer") Pointer event);
 public native int getAvailableDevices();
+public native @Cast("bool") boolean isPeerAccessSupported(int srcDevice, int dstDevice);
 public native void enableDebugMode(@Cast("bool") boolean reallyEnable);
 public native void setGridLimit(int gridSize);
 public native int ompGetMaxThreads();
@@ -2165,6 +2183,9 @@ public native void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuf
 public native void dbTickDeviceWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, @Cast("sd::LongType") long elements);
 public native void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbFreeBuffersOnly(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+public native void dbFreeBuffersOnStream(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, Pointer stream);
+public native @Cast("bool") boolean dbIsOwner(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
 public native void dbCloseGetDiagnostics(@Cast("sd::LongType*") LongPointer outStats);
 public native void dbCloseGetDiagnostics(@Cast("sd::LongType*") LongBuffer outStats);
 public native void dbCloseGetDiagnostics(@Cast("sd::LongType*") long[] outStats);
