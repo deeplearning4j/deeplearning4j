@@ -31,9 +31,32 @@
 #include <atomic>
 #include <unordered_map>
 #include <unordered_set>
+#include <functional>
 
 namespace sd {
 namespace memory {
+
+/**
+ * Memory pressure event information
+ */
+struct SD_LIB_EXPORT MemoryPressureEvent {
+  int requestedDeviceId;           // Device where allocation was requested
+  size_t requestedSize;            // Size of allocation that failed
+  size_t availableMemory;          // Available memory on requested device
+  int alternativeDeviceId;         // Alternative device that has memory (-1 if none)
+  bool isPeerAccessible;           // Whether alternative device is peer-accessible
+  enum class Action {
+    FAIL,           // Fail the allocation
+    FAILOVER,       // Failover to alternative device (if peer)
+    USE_PINNED_HOST // Use pinned host memory
+  } recommendedAction;
+};
+
+/**
+ * Callback type for memory pressure events
+ * Return true to allow the allocation to proceed, false to fail
+ */
+using MemoryPressureCallback = std::function<bool(const MemoryPressureEvent& event)>;
 
 /**
  * CudaMemoryPool - Manages CUDA memory pools for efficient allocation
@@ -110,8 +133,10 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void getStats(int deviceId, size_t& usedBytes, size_t& reservedBytes);
 
   /**
-   * Trim unused memory from the pool (syncs default stream 0)
-   * Call this to release cached memory back to the system
+   * Trim unused memory from the pool.
+   * Syncs the default CUDA stream (stream 0 / nullptr) before trimming,
+   * because CudaMemoryPool::free() uses cudaFreeAsync on stream 0.
+   * This ensures all pending frees are visible before releasing memory.
    */
   void trimPool(int deviceId);
 
@@ -146,6 +171,38 @@ class SD_LIB_EXPORT CudaMemoryPool {
    * Release all pools (call on shutdown)
    */
   void releaseAll();
+
+  // =========================================================================
+  // Memory Pressure Callbacks
+  // =========================================================================
+
+  /**
+   * Register a callback to be invoked when memory pressure is detected.
+   * The callback receives detailed information about the allocation failure
+   * and can decide whether to allow failover or fail the allocation.
+   * 
+   * @param callback Function to call when memory pressure is detected.
+   *                 Return true to allow allocation to proceed with recommended action,
+   *                 false to fail the allocation.
+   */
+  void setMemoryPressureCallback(MemoryPressureCallback callback);
+
+  /**
+   * Check if memory pressure occurred during last allocation.
+   * This allows higher-level code to query if over-allocation happened.
+   */
+  bool wasMemoryPressureDetected() const { return memoryPressureDetected_.load(); }
+
+  /**
+   * Clear the memory pressure flag.
+   */
+  void clearMemoryPressureFlag() { memoryPressureDetected_.store(false); }
+
+  /**
+   * Get details of the last memory pressure event.
+   * Valid only if wasMemoryPressureDetected() returns true.
+   */
+  const MemoryPressureEvent& getLastMemoryPressureEvent() const { return lastPressureEvent_; }
 
   ~CudaMemoryPool();
 
@@ -188,6 +245,13 @@ class SD_LIB_EXPORT CudaMemoryPool {
 
   // Check if current CUDA version supports memory pools
   bool checkSupport();
+
+  // Memory pressure callback and tracking
+  MemoryPressureCallback memoryPressureCallback_;
+  std::mutex callbackMutex_;
+  std::atomic<bool> memoryPressureDetected_{false};
+  MemoryPressureEvent lastPressureEvent_;
+  std::mutex pressureEventMutex_;
 };
 
 }  // namespace memory

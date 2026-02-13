@@ -84,8 +84,13 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
       else
         memcpy(xCoords - diff, zCoords, zRank * sizeof(sd::LongType));
 
-      for (sd::LongType j = 0; j < yLastDim; ++j)
-        xCoords[j] = y[yOffset + j * indicesStride[yRank - 1]];  // last stride
+      for (sd::LongType j = 0; j < yLastDim; ++j) {
+        sd::LongType idx = y[yOffset + j * indicesStride[yRank - 1]];  // last stride
+        // Clamp to valid range [0, inputShape[j]-1] to prevent OOB
+        if (idx < 0) idx = 0;
+        if (idx >= inputShape[j]) idx = inputShape[j] - 1;
+        xCoords[j] = idx;
+      }
 
       sd::LongType xOffset;
       COORDS2INDEX(inputRank, inputStride, xCoords, xOffset);
@@ -115,11 +120,13 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
   const int numOfIntArgs = intArgs.size();
 
   if (indices != nullptr) {
-    for (sd::LongType i = 0; i < indices->lengthOf(); ++i)
-      if (indices->e<sd::LongType>(i) >= input->sizeAt(axis))
+    for (sd::LongType i = 0; i < indices->lengthOf(); ++i) {
+      auto idx = indices->e<sd::LongType>(i);
+      if (idx < 0 || idx >= input->sizeAt(axis))
         THROW_EXCEPTION(
-            "helpers::gather function: indices array contains wrong elements, each element must be smaller than "
-            "corresponding dimension of input array !");
+            "helpers::gather function: indices array contains wrong elements, each element must be in range [0, "
+            "corresponding dimension of input array) !");
+    }
 
     // first case: indices consist of only one scalar
     if (indices->isScalar()) {
@@ -167,9 +174,9 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
     }
   } else {
     for (int i = 1; i < numOfIntArgs; ++i)
-      if (intArgs[i] >= input->sizeAt(axis))
+      if (intArgs[i] < 0 || intArgs[i] >= input->sizeAt(axis))
         THROW_EXCEPTION(
-            "helpers::gather function: some of input indexes is larger than corresponding shape of input array !");
+            "helpers::gather function: some of input indexes is out of range [0, corresponding shape of input array) !");
 
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case

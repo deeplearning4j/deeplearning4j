@@ -195,19 +195,7 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
 }
 
 void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
-  // Free GPU (special) buffer only, skip host (primary) buffer free.
-  //
-  // Why skip primary free?
-  // CUDA op buffer overruns corrupt adjacent glibc malloc metadata on the host heap.
-  // Any call to free() can discover this corruption and trigger SIGABRT.
-  // By only freeing GPU memory (via cudaFreeAsync through RELEASE_SPECIAL),
-  // we avoid touching the corrupted host heap entirely.
-  //
-  // The host primary buffers leak, but:
-  // - Only owner buffers have primary allocations (~60% of intermediates)
-  // - Each vision encoder call leaks ~6-7GB of host memory
-  // - For typical batch sizes (2-3 chunks), total leak is within 32GB limit
-  // - GPU memory (the scarce 24GB resource) IS properly freed
+  // Free both GPU and host buffers via freeGpuOnly() → deleteSpecial() + deletePrimary().
   if (dataBuffer == nullptr) return;
   if (dataBuffer->isConstant.load(std::memory_order_acquire)) return;
   if (!dataBuffer->tryClose()) return;  // Another thread already claimed this
@@ -228,9 +216,6 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
 
   size_t bytes = dataBuffer->_cachedLenInBytes;
 
-  // Free GPU memory only, abandon host buffer to avoid SIGABRT from heap corruption.
-  // freeGpuOnly() calls deleteSpecial() (RELEASE_SPECIAL → cudaFreeAsync), then
-  // nulls out primary buffer and disowns it to prevent future free() attempts.
   db->freeGpuOnly();
 
   // Update tracking counters
@@ -241,6 +226,9 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
 
   // Invalidate the pointer to prevent future access
   dataBuffer->invalidateDataBuffer();
+
+  // freeGpuOnly() freed GPU + host and set closed=true. Delete the C++ object.
+  delete db;
 
   if (currentDevice != bufferDeviceId) {
     cudaSetDevice(currentDevice);
@@ -284,7 +272,12 @@ void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {
   g_dbClose_deleted.fetch_add(1, std::memory_order_relaxed);
   g_dbClose_freedBytes.fetch_add(bytes, std::memory_order_relaxed);
 
+  // Invalidate ODB pointer BEFORE deleting the DataBuffer to prevent concurrent access.
   dataBuffer->invalidateDataBuffer();
+
+  // freeGpuOnStream() freed GPU, didn't set closed=true.
+  // Destructor runs deletePrimary() → free() to release host buffer.
+  delete db;
 
   if (currentDevice != bufferDeviceId) {
     cudaSetDevice(currentDevice);

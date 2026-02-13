@@ -76,7 +76,7 @@ public class MultiGpuMigrationTest extends BaseNd4jTestWithBackends {
 
         // Ensure we start on device 0
         if (isCudaBackend() && getNumDevices() > 0) {
-            Nd4j.getAffinityManager().unsafeSetDevice(0);
+            DeviceMemoryManager.getInstance().switchDevice(0, "MultiGpuMigrationTest", "test-device-switch");
         }
     }
 
@@ -195,14 +195,14 @@ public class MultiGpuMigrationTest extends BaseNd4jTestWithBackends {
 
         try {
             // Create array on GPU 0
-            Nd4j.getAffinityManager().unsafeSetDevice(0);
+            DeviceMemoryManager.getInstance().switchDevice(0, "MultiGpuMigrationTest", "test-device-switch");
             INDArray a = Nd4j.ones(DataType.FLOAT, 100, 100);
             a.assign(2.0f);
             // Ensure operations complete before switching devices
             Nd4j.getExecutioner().commit();
 
             // Switch to GPU 1 and create another array
-            Nd4j.getAffinityManager().unsafeSetDevice(1);
+            DeviceMemoryManager.getInstance().switchDevice(1, "MultiGpuMigrationTest", "test-device-switch");
             INDArray b = Nd4j.ones(DataType.FLOAT, 100, 100);
             b.assign(3.0f);
             // Ensure operations complete before the cross-device operation
@@ -214,7 +214,7 @@ public class MultiGpuMigrationTest extends BaseNd4jTestWithBackends {
                     Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             // Explicitly migrate b to device 0 before the operation
-            Nd4j.getAffinityManager().unsafeSetDevice(0);
+            DeviceMemoryManager.getInstance().switchDevice(0, "MultiGpuMigrationTest", "test-device-switch");
             INDArray bMigrated = Nd4j.getAffinityManager().replicateToDevice(0, b);
 
             // Perform operation with both arrays on same device
@@ -239,13 +239,13 @@ public class MultiGpuMigrationTest extends BaseNd4jTestWithBackends {
         Nd4j.getAffinityManager().allowCrossDeviceAccess(true);
 
         // Create array on GPU 0
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "MultiGpuMigrationTest", "test-device-switch");
         INDArray a = Nd4j.ones(DataType.FLOAT, 100, 100);
         a.assign(2.0f);
         Nd4j.getExecutioner().commit();
 
         // Switch to GPU 1 and create another array
-        Nd4j.getAffinityManager().unsafeSetDevice(1);
+        DeviceMemoryManager.getInstance().switchDevice(1, "MultiGpuMigrationTest", "test-device-switch");
         INDArray b = Nd4j.ones(DataType.FLOAT, 100, 100);
         b.assign(3.0f);
         Nd4j.getExecutioner().commit();
@@ -272,12 +272,12 @@ public class MultiGpuMigrationTest extends BaseNd4jTestWithBackends {
         assumeTrue(getNumDevices() >= 2, "Test requires at least 2 CUDA devices");
 
         // Create matrix on GPU 0
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "MultiGpuMigrationTest", "test-device-switch");
         INDArray a = Nd4j.ones(DataType.FLOAT, 64, 128);
         Nd4j.getExecutioner().commit();
 
         // Create matrix on GPU 1
-        Nd4j.getAffinityManager().unsafeSetDevice(1);
+        DeviceMemoryManager.getInstance().switchDevice(1, "MultiGpuMigrationTest", "test-device-switch");
         INDArray b = Nd4j.ones(DataType.FLOAT, 128, 64);
         Nd4j.getExecutioner().commit();
 

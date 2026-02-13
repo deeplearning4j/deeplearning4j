@@ -33,6 +33,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -292,12 +293,12 @@ public class TestDSPDevicePlacement extends BaseNd4jTestWithBackends {
         // Switch to alternate device and allocate
         int altDevice = (currentDevice == 0) ? 1 : 0;
         try {
-            Nd4j.getAffinityManager().unsafeSetDevice(altDevice);
+            DeviceMemoryManager.getInstance().switchDevice(altDevice, "TestDSPDevicePlacement", "test-device-switch");
             INDArray arr1 = Nd4j.zeros(DataType.FLOAT, 100, 100);
             int arr1Device = Nd4j.getAffinityManager().getDeviceForArray(arr1);
             log.info("Array on alt device: {}", arr1Device);
             assertEquals(altDevice, arr1Device,
-                    "Array should be on alternate device after unsafeSetDevice");
+                    "Array should be on alternate device after switchDevice");
 
             // Both arrays should be valid
             assertFalse(arr0.wasClosed(), "Original array should still be valid");
@@ -307,7 +308,7 @@ public class TestDSPDevicePlacement extends BaseNd4jTestWithBackends {
             arr1.close();
         } finally {
             // Restore original device
-            Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+            DeviceMemoryManager.getInstance().switchDevice(currentDevice, "TestDSPDevicePlacement", "test-device-switch");
         }
         arr0.close();
     }

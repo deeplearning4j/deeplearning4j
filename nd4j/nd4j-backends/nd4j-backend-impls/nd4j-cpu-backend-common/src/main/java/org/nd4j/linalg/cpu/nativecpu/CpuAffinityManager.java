@@ -173,24 +173,7 @@ public class CpuAffinityManager extends BasicAffinityManager {
         // no-op - CPU has no device memory to sync
     }
 
-    /**
-     * Sets the device for the current thread.
-     * For CPU backend, accepts both CPU_DEVICE_ID (-1) and internal device 0.
-     * GPU device IDs (>= 1) are not valid for CPU backend.
-     *
-     * @param deviceId the device ID to set
-     */
-    @Override
-    public void unsafeSetDevice(Integer deviceId) {
-        // Accept both the interface CPU_DEVICE_ID (-1) and internal device 0
-        if (deviceId != null && !isCpuDevice(deviceId)) {
-            logger.warn("Attempting to set CPU device to {} - only CPU devices are valid for CPU backend. " +
-                    "Valid values: {} (interface) or {} (internal)",
-                    deviceId, CPU_DEVICE_ID, INTERNAL_CPU_DEVICE_ID);
-        }
-        long threadId = Thread.currentThread().getId();
-        affinityMap.put(threadId, INTERNAL_CPU_DEVICE_ID);
-    }
+
 
     /**
      * Returns the active location for the given array.

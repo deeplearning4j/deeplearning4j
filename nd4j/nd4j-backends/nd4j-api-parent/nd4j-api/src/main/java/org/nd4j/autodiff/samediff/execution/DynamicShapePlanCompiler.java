@@ -72,7 +72,9 @@ public class DynamicShapePlanCompiler {
             "onehot", "lin_space", "linspace", "range", "eye",
             "pad", "mirror_pad",
             "broadcast_to",
-            "unique"
+            "unique",
+            "split_v", "split",
+            "gather", "reduce_sum", "reduce_mean"
     );
 
     /**
@@ -403,6 +405,66 @@ public class DynamicShapePlanCompiler {
             }
         }
 
+        // Step 6b: Compute dependency graph for async parallel execution.
+        // For each step, determine which previous steps must complete before it can start
+        // (predecessors), and which future steps depend on it (successors).
+        // Also compute consumer counts per output slot for release tracking.
+        int numSteps = opNodes.size();
+        int[] predecessorCounts = new int[numSteps];
+        int[][] predecessorsArr = new int[numSteps][];
+        int[] consumerCounts = new int[totalOutputSlots];
+
+        // Build predecessor edges: for each step's inputs, find the producing step
+        @SuppressWarnings("unchecked")
+        Set<Integer>[] predSets = new Set[numSteps];
+        @SuppressWarnings("unchecked")
+        List<Integer>[] succLists = new List[numSteps];
+        for (int i = 0; i < numSteps; i++) {
+            predSets[i] = new HashSet<>();
+            succLists[i] = new ArrayList<>();
+        }
+
+        for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {
+            DynamicShapeSlot slot = slots[stepIdx];
+            int[] srcIndices = slot.getInputSourceIndices();
+            for (int srcIdx : srcIndices) {
+                if (srcIdx >= 0) {
+                    // This input comes from output slot srcIdx
+                    int producerStep = slotProducerStep[srcIdx];
+                    if (producerStep >= 0 && producerStep != stepIdx) {
+                        predSets[stepIdx].add(producerStep);
+                    }
+                    // Increment consumer count for this output slot
+                    consumerCounts[srcIdx]++;
+                }
+            }
+        }
+
+        // Build successor lists and predecessor arrays
+        List<Integer> rootSlotList = new ArrayList<>();
+        for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {
+            Set<Integer> preds = predSets[stepIdx];
+            predecessorCounts[stepIdx] = preds.size();
+            predecessorsArr[stepIdx] = preds.stream().mapToInt(Integer::intValue).toArray();
+            if (preds.isEmpty()) {
+                rootSlotList.add(stepIdx);
+            }
+            for (int pred : preds) {
+                succLists[pred].add(stepIdx);
+            }
+        }
+
+        int[][] successorsArr = new int[numSteps][];
+        for (int i = 0; i < numSteps; i++) {
+            successorsArr[i] = succLists[i].stream().mapToInt(Integer::intValue).toArray();
+        }
+        int[] rootSlots = rootSlotList.stream().mapToInt(Integer::intValue).toArray();
+
+        // Mark final output slots as having MAX consumer count so they're never freed by async path
+        for (int slotIdx : finalOutputSlots) {
+            consumerCounts[slotIdx] = Integer.MAX_VALUE;
+        }
+
         // Step 7: OpContext pool — executor uses a small rotating pool instead of
         // pre-allocating one per op (avoids native heap corruption from bulk close).
         OpContext[] opContextPool = new OpContext[0];
@@ -416,8 +478,8 @@ public class DynamicShapePlanCompiler {
             }
         }
 
-        log.info("DynamicShapePlan compiled: {} ops, {} output slots, {} external inputs, {} final outputs",
-                slots.length, totalOutputSlots, externalInputKeys.size(), requestedOutputs.size());
+        log.debug("DynamicShapePlan compiled: {} ops, {} output slots, {} external inputs, {} final outputs, {} root slots",
+                slots.length, totalOutputSlots, externalInputKeys.size(), requestedOutputs.size(), rootSlots.length);
 
         return new DynamicShapePlan(
                 slots,
@@ -427,7 +489,12 @@ public class DynamicShapePlanCompiler {
                 externalInputKeys.toArray(new String[0]),
                 requestedOutputs,
                 outputNameToSlotIndex,
-                false
+                false,
+                predecessorCounts,
+                predecessorsArr,
+                successorsArr,
+                consumerCounts,
+                rootSlots
         );
     }
 }

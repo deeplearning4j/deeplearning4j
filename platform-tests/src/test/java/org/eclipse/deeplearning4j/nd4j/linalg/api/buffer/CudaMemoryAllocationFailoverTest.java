@@ -133,7 +133,7 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         assumeTrue(numDevices > 0, "Test requires at least 1 CUDA device");
 
         // Set current device explicitly to device 0
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "CudaMemoryAllocationFailoverTest", "test-device-switch");
 
         // Simulate ALL devices (GPUs + CPU) with 8GB free memory
         for (int i = 0; i < numDevices; i++) {
@@ -211,7 +211,7 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         memoryManager.setMemorySimulationEnabled(true);
 
         // Set current thread to device 0
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "CudaMemoryAllocationFailoverTest", "test-device-switch");
 
         // Try to allocate 50MB (too big for device 0, should route to device 1)
         long allocationSize = 50 * 1024 * 1024 / 4; // 50MB / 4 bytes = 12.5M floats
@@ -242,7 +242,7 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         memoryManager.setMemorySimulationEnabled(true);
 
         // Set current thread to device 0
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "CudaMemoryAllocationFailoverTest", "test-device-switch");
 
         // Allocate 10MB - should stay on device 0 (current device has space)
         long allocationSize = 10 * 1024 * 1024 / 4;
@@ -278,7 +278,7 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         memoryManager.setSimulatedFreeMemory(2, 8L * 1024 * 1024 * 1024);
         memoryManager.setMemorySimulationEnabled(true);
 
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "CudaMemoryAllocationFailoverTest", "test-device-switch");
 
         // Allocate 50MB - device 0 doesn't have it, should pick device 2 (most memory)
         long allocationSize = 50 * 1024 * 1024 / 4;
@@ -352,7 +352,7 @@ public class CudaMemoryAllocationFailoverTest extends BaseNd4jTestWithBackends {
         memoryManager.setSimulatedFreeMemory(1, 500L * 1024 * 1024);
         memoryManager.setMemorySimulationEnabled(true);
 
-        Nd4j.getAffinityManager().unsafeSetDevice(0);
+        DeviceMemoryManager.getInstance().switchDevice(0, "CudaMemoryAllocationFailoverTest", "test-device-switch");
 
         // First allocation: 50MB - should fit on device 0
         long allocSize1 = 50 * 1024 * 1024 / 4;

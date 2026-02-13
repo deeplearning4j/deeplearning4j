@@ -33,7 +33,7 @@ ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary)
 #endif
 
 }
-ConstantShapeBuffer::ConstantShapeBuffer() : _magic(MAGIC_VALID), _refCount(1), _isOwner(true) {
+ConstantShapeBuffer::ConstantShapeBuffer() : _magic(MAGIC_VALID), _refCount(1), _isOwner(true), _neverDelete(false) {
   _primaryShapeInfo = nullptr;
   _specialShapeInfo = nullptr;
 }
@@ -74,13 +74,15 @@ ConstantShapeBuffer::ConstantShapeBuffer(ConstantShapeBuffer&& other) noexcept
       _primaryShapeInfo(other._primaryShapeInfo),
       _specialShapeInfo(other._specialShapeInfo),
       _refCount(other._refCount.load(std::memory_order_relaxed)),
-      _isOwner(other._isOwner) {
+      _isOwner(other._isOwner),
+      _neverDelete(other._neverDelete) {
   // Invalidate source to prevent double-delete
   other._magic = 0;
   other._primaryShapeInfo = nullptr;
   other._specialShapeInfo = nullptr;
   other._refCount.store(0, std::memory_order_relaxed);
   other._isOwner = false;
+  other._neverDelete = false;
 
 #if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
   st = std::move(other.st);
@@ -101,6 +103,7 @@ ConstantShapeBuffer& ConstantShapeBuffer::operator=(ConstantShapeBuffer&& other)
     _specialShapeInfo = other._specialShapeInfo;
     _refCount.store(other._refCount.load(std::memory_order_relaxed), std::memory_order_relaxed);
     _isOwner = other._isOwner;
+    _neverDelete = other._neverDelete;
 
     // Invalidate source to prevent double-delete
     other._magic = 0;
@@ -108,6 +111,7 @@ ConstantShapeBuffer& ConstantShapeBuffer::operator=(ConstantShapeBuffer&& other)
     other._specialShapeInfo = nullptr;
     other._refCount.store(0, std::memory_order_relaxed);
     other._isOwner = false;
+    other._neverDelete = false;
 
 #if defined(SD_GCC_FUNCTRACE) && !defined(__JAVACPP_HACK__)
     st = std::move(other.st);
@@ -117,7 +121,7 @@ ConstantShapeBuffer& ConstantShapeBuffer::operator=(ConstantShapeBuffer&& other)
 }
 
 ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
-                                          PointerWrapper* special) : _magic(MAGIC_VALID), _refCount(1), _isOwner(true) {
+                                          PointerWrapper* special) : _magic(MAGIC_VALID), _refCount(1), _isOwner(true), _neverDelete(false) {
   _primaryShapeInfo = primary;
   _specialShapeInfo = special;
 #if defined(SD_GCC_FUNCTRACE)
@@ -176,6 +180,13 @@ void ConstantShapeBuffer::addRef() {
 }
 
 void ConstantShapeBuffer::release() {
+  // If _neverDelete is set, never delete this buffer
+  // Used for view buffers that shouldn't be deleted by cache clear operations
+  if (_neverDelete) {
+    _refCount.fetch_sub(1, std::memory_order_relaxed);
+    return;
+  }
+
   int oldCount = _refCount.fetch_sub(1, std::memory_order_acq_rel);
 
   if (oldCount == 1) {
@@ -185,6 +196,10 @@ void ConstantShapeBuffer::release() {
     delete this;
   }
   // If oldCount > 1, other holders still exist, don't delete
+}
+
+void ConstantShapeBuffer::setNeverDelete(bool neverDelete) {
+  _neverDelete = neverDelete;
 }
 
 int ConstantShapeBuffer::getRefCount() const {

@@ -91,7 +91,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             boolean switched = false;
             if (currentDevice != deviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+                DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaOpContext.close", "device-cleanup");
                 switched = true;
             }
             try {
@@ -109,7 +109,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             } finally {
                 closed = true;
                 if (switched) {
-                    Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaOpContext.close", "restore-device");
                 }
             }
         }

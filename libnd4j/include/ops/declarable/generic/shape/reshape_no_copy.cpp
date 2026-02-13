@@ -114,7 +114,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       // Create a rank-0 (scalar) shape info
       sd::LongType len = shape::shapeInfoLength(static_cast<sd::LongType>(0));  // rank 0
       // Zero-initialize to prevent uninitialized memory errors in DirectShapeTrie comparisons
-      sd::LongType *newShapeInfo = new sd::LongType[len]();  // value-initialized to zero
+      sd::LongType *newShapeInfo = new sd::LongType[len + SD_SHAPE_ALLOC_PADDING]();  // value-initialized to zero
       newShapeInfo[0] = 0;  // rank = 0
       shape::setOrder(newShapeInfo, order);
       ArrayOptions::resetFlags(newShapeInfo);
@@ -227,7 +227,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   sd::LongType len = shape::shapeInfoLength(newShape.size());
   // Zero-initialize to prevent uninitialized memory errors in DirectShapeTrie comparisons
-  sd::LongType *newShapeInfo = new sd::LongType[len]();  // value-initialized to zero
+  sd::LongType *newShapeInfo = new sd::LongType[len + SD_SHAPE_ALLOC_PADDING]();  // value-initialized to zero
   newShapeInfo[0] = newShape.size();
   shape::setShape(newShapeInfo, newShape.data());
   shape::setOrder(newShapeInfo, order);

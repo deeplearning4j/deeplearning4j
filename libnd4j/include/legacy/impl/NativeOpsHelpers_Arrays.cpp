@@ -69,10 +69,10 @@ std::atomic<size_t> g_opaqueArrayCount{0};
 std::atomic<size_t> g_opaqueArrayBytes{0};
 std::mutex g_opaqueArrayMutex;
 
-// InteropDataBuffer/OpaqueDataBuffer allocation tracking
-static std::atomic<size_t> g_dataBufferCount{0};
-static std::atomic<size_t> g_dataBufferBytes{0};
-static std::mutex g_dataBufferMutex;
+// DataBuffer allocation tracking - defined here for all files to use
+std::atomic<size_t> g_dataBufferCount{0};
+std::atomic<size_t> g_dataBufferBytes{0};
+std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
@@ -249,7 +249,7 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
 
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
-  sd::DataBuffer::memcpy(target->dataBuffer(), from->dataBuffer(), targetOffset, fromOffset);
+  sd::DataBuffer::memcpy(target->dataBuffer(), from->dataBuffer(), fromOffset, targetOffset, n);
 }
 
 

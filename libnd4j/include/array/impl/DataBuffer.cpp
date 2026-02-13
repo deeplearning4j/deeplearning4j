@@ -308,6 +308,7 @@ DataBuffer::DataBuffer(DataBuffer&& other) {
   _isOwnerPrimary = other._isOwnerPrimary;
   _isOwnerSpecial = other._isOwnerSpecial;
   _deviceId.store(other._deviceId);
+  _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
 #if defined(SD_GCC_FUNCTRACE)
@@ -398,6 +399,8 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
   _workspace = other._workspace;
   _isOwnerPrimary = other._isOwnerPrimary;
   _isOwnerSpecial = other._isOwnerSpecial;
+  _deviceId.store(other._deviceId);
+  _specialDeviceId.store(other._specialDeviceId.load());  // Also copy special device ID for multi-GPU
 
   copyCounters(other);
 
@@ -482,6 +485,26 @@ void DataBuffer::validateIntegrity() const {
     ss << "  This indicates memory corruption\n";
     THROW_EXCEPTION(ss.str().c_str());
   }
+
+  // Validate canary values to detect buffer overruns
+  if (_workspace == nullptr && _primaryBuffer != nullptr && _primaryAllocBytes > _lenInBytes) {
+    const uint64_t* canary = reinterpret_cast<const uint64_t*>(
+        static_cast<const int8_t*>(_primaryBuffer) + _lenInBytes);
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
+    size_t numCanaries = (HOST_ALLOC_PADDING / sizeof(uint64_t));
+    for (size_t i = 0; i < numCanaries; i++) {
+      if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+        std::stringstream ss;
+        ss << "DataBuffer integrity check FAILED - BUFFER OVERRUN DETECTED!\n";
+        ss << "  Canary value at offset " << (i * sizeof(uint64_t)) << " is corrupted\n";
+        ss << "  Expected: 0xDEADBEEFCAFEBABE\n";
+        ss << "  Actual: 0x" << std::hex << canary[i] << "\n";
+        ss << "  Buffer size: " << _lenInBytes << " bytes\n";
+        ss << "  This indicates an operation wrote past the end of the buffer!\n";
+        THROW_EXCEPTION(ss.str().c_str());
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -546,15 +569,23 @@ void DataBuffer::allocatePrimary() {
 
 
 
-    // Add padding bytes after the buffer to protect glibc heap metadata from
-    // C++ op buffer overruns. Without padding, an overrun corrupts the adjacent
-    // malloc chunk header → SIGSEGV in free()/unlink_chunk.
-    // 128 bytes covers glibc's 16-byte chunk header plus typical overrun sizes.
-    static constexpr size_t HOST_ALLOC_PADDING = 128;
+    // Add padding for non-workspace heap allocations. C++ ops can overrun output
+    // buffers by a few bytes, corrupting adjacent glibc malloc chunk headers.
+    // Workspace allocations use bump allocation where overruns are harmless.
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
     size_t allocSize = getLenInBytes() + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
     ALLOCATE(_primaryBuffer, _workspace, allocSize, int8_t);
     _isOwnerPrimary = true;
     _primaryAllocBytes = allocSize;
+
+    // Write canary values at end of padding to detect overruns
+    if (_workspace == nullptr && _primaryBuffer != nullptr) {
+      uint64_t* canary = reinterpret_cast<uint64_t*>(
+          static_cast<int8_t*>(_primaryBuffer) + getLenInBytes());
+      for (size_t i = 0; i < (HOST_ALLOC_PADDING / sizeof(uint64_t)); i++) {
+        canary[i] = 0xDEADBEEFCAFEBABEULL;
+      }
+    }
 
     // count in towards current deviceId if we're not in workspace mode
     if (_workspace == nullptr) {
@@ -586,6 +617,33 @@ void DataBuffer::deletePrimary() {
 
 #endif
   if (_isOwnerPrimary && _primaryBuffer != nullptr) {
+    // Check canary values before freeing to detect buffer overruns.
+    // allocatePrimary() writes 0xDEADBEEFCAFEBABE in the HOST_ALLOC_PADDING region
+    // after the data. If any canary is corrupted, a C++ op wrote past this buffer.
+    if (_workspace == nullptr && _primaryAllocBytes > 0 && _primaryAllocBytes > _lenInBytes) {
+      auto canary = reinterpret_cast<uint64_t*>(
+          static_cast<int8_t*>(_primaryBuffer) + _lenInBytes);
+      size_t paddingBytes = _primaryAllocBytes - _lenInBytes;
+      size_t canaryCount = paddingBytes / sizeof(uint64_t);
+      size_t checkCount = (canaryCount > 16) ? 16 : canaryCount;  // check first 128 bytes
+      for (size_t i = 0; i < checkCount; i++) {
+        if (canary[i] != 0xDEADBEEFCAFEBABEULL) {
+          fprintf(stderr, "\n!!! CANARY CORRUPTED in deletePrimary !!!\n");
+          fprintf(stderr, "  buffer=%p, lenInBytes=%zu, allocBytes=%zu, dtype=%d\n",
+                  _primaryBuffer, _lenInBytes, _primaryAllocBytes, static_cast<int>(_dataType));
+          fprintf(stderr, "  First corrupted canary at offset %zu (byte offset %zu from data end)\n",
+                  i, i * sizeof(uint64_t));
+          fprintf(stderr, "  Canary values: ");
+          for (size_t j = 0; j < checkCount && j < 8; j++) {
+            fprintf(stderr, "%016lx ", static_cast<unsigned long>(canary[j]));
+          }
+          fprintf(stderr, "\n");
+          fflush(stderr);
+          break;
+        }
+      }
+    }
+
     if(Environment::getInstance().isDeletePrimary()) {
 #if defined(SD_GCC_FUNCTRACE)
       // Record deallocation before releasing memory
@@ -594,9 +652,9 @@ void DataBuffer::deletePrimary() {
 #endif
       auto p = reinterpret_cast<int8_t*>(_primaryBuffer);
       RELEASE(p, _workspace);
-      _primaryBuffer = nullptr;
     }
-
+    // Always nullify pointer and clear ownership flag, regardless of isDeletePrimary
+    _primaryBuffer = nullptr;
     _isOwnerPrimary = false;
 
     // count out towards DataBuffer device, only if we're not in workspace
@@ -667,7 +725,7 @@ void DataBuffer::setPrimaryBuffer(void* buffer, size_t length) {
   }
 #endif
   _primaryBuffer = buffer;
-  _isOwnerPrimary = false;
+  _isOwnerPrimary = false;  // External buffer - caller manages lifetime (JavaCPP Pointer, workspace, etc.)
   _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
   _primaryAllocBytes = _lenInBytes;
 }

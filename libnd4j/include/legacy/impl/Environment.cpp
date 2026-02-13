@@ -336,35 +336,94 @@ Environment::Environment() {
 #endif
 
 #ifdef SD_CUDA
- int devCnt = 0;
- cudaGetDeviceCount(&devCnt);
- _cudaDeviceCount.store(devCnt);
- printf("During environment initialization we found [%i] CUDA devices\n", devCnt);
- auto devProperties = new cudaDeviceProp[devCnt];
- for (int i = 0; i < devCnt; i++) {
-   cudaSetDevice(i);
-   cudaGetDeviceProperties(&devProperties[i], i);
+  // SAFETY: Initialize CUDA with extensive error checking
+  // This is the first CUDA operation - any heap corruption will manifest here
+  int devCnt = 0;
+  cudaError_t err = cudaGetDeviceCount(&devCnt);
+  
+  if (err != cudaSuccess) {
+    sd_printf("Environment::Environment: ERROR - cudaGetDeviceCount failed: %s\n", cudaGetErrorString(err));
+    devCnt = 0;
+  }
+  
+  // SAFETY: Validate device count before using it
+  if (devCnt < 0 || devCnt > 128) {
+    sd_printf("Environment::Environment: ERROR - Invalid device count %d, limiting to 0\n", devCnt);
+    devCnt = 0;
+  }
+  
+  _cudaDeviceCount.store(devCnt);
+  sd_printf("During environment initialization we found [%i] CUDA devices\n", devCnt);
+  
+  // SAFETY: Only proceed if we have valid devices
+  if (devCnt > 0) {
+    // SAFETY: Use try-catch around device property allocation
+    cudaDeviceProp* devProperties = nullptr;
+    try {
+      devProperties = new cudaDeviceProp[devCnt];
+    } catch (...) {
+      sd_printf("Environment::Environment: ERROR - Failed to allocate device properties array\n");
+      devCnt = 0;
+    }
+    
+    if (devProperties != nullptr) {
+      // SAFETY: Validate each device before accessing
+      for (int i = 0; i < devCnt; i++) {
+        err = cudaSetDevice(i);
+        if (err != cudaSuccess) {
+          sd_printf("Environment::Environment: WARNING - cudaSetDevice(%d) failed: %s\n", i, cudaGetErrorString(err));
+          continue;
+        }
+        
+        err = cudaGetDeviceProperties(&devProperties[i], i);
+        if (err != cudaSuccess) {
+          sd_printf("Environment::Environment: WARNING - cudaGetDeviceProperties(%d) failed: %s\n", i, cudaGetErrorString(err));
+          continue;
+        }
 
-   Pair p(devProperties[i].major, devProperties[i].minor);
-   _capabilities.emplace_back(p);
- }
+        // SAFETY: Validate compute capability before creating Pair
+        if (devProperties[i].major >= 0 && devProperties[i].minor >= 0) {
+          try {
+            Pair p(devProperties[i].major, devProperties[i].minor);
+            _capabilities.emplace_back(p);
+          } catch (...) {
+            sd_printf("Environment::Environment: WARNING - Failed to add capability for device %d\n", i);
+          }
+        }
+      }
 
- BlasVersionHelper ver;
- _blasMajorVersion = ver._blasMajorVersion;
- _blasMinorVersion = ver._blasMinorVersion;
- _blasPatchVersion = ver._blasPatchVersion;
+      delete[] devProperties;
+    }
+  }
 
- // Initialize CUDA environment settings
- initCudaEnvironment();
+  // SAFETY: Wrap BlasVersionHelper construction in try-catch
+  try {
+    BlasVersionHelper ver;
+    _blasMajorVersion = ver._blasMajorVersion;
+    _blasMinorVersion = ver._blasMinorVersion;
+    _blasPatchVersion = ver._blasPatchVersion;
+  } catch (...) {
+    sd_printf("Environment::Environment: WARNING - BlasVersionHelper initialization failed\n");
+    _blasMajorVersion = 0;
+    _blasMinorVersion = 0;
+    _blasPatchVersion = 0;
+  }
 
- // Initialize CUDA device limits
- initCudaDeviceLimits();
+  // Initialize CUDA environment settings
+  // SAFETY: These functions should handle their own errors
+  try {
+    initCudaEnvironment();
+    initCudaDeviceLimits();
+  } catch (...) {
+    sd_printf("Environment::Environment: WARNING - CUDA environment initialization failed\n");
+  }
 
- // Set initial device to 0
- cudaSetDevice(0);
- _cudaCurrentDevice.store(0);
-
- delete[] devProperties;
+  // Set initial device to 0
+  err = cudaSetDevice(0);
+  if (err != cudaSuccess) {
+    sd_printf("Environment::Environment: WARNING - cudaSetDevice(0) failed: %s\n", cudaGetErrorString(err));
+  }
+  _cudaCurrentDevice.store(0);
 #else
  // No CUDA environment to initialize
 #endif

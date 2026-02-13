@@ -22,6 +22,7 @@ package org.nd4j.linalg.dataset;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -390,7 +391,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         @Override
         public void run() {
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+            DeviceMemoryManager.getInstance().switchDevice(deviceId, "AsyncDataSetIterator", "prefetch-thread");
             externalCall();
             try {
                 if (useWorkspace)

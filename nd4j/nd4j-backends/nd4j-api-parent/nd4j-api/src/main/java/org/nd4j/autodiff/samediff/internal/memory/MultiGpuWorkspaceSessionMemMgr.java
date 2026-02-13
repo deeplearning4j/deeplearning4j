@@ -74,7 +74,7 @@ public class MultiGpuWorkspaceSessionMemMgr implements SessionMemMgr {
 
         // Set device affinity for this thread
         try {
-            Nd4j.getAffinityManager().unsafeSetDevice(assignedGpu);
+            DeviceMemoryManager.getInstance().switchDevice(assignedGpu, "MultiGpuWorkspaceSessionMemMgr.init", "workspace-init");
         } catch (Exception e) {
             log.warn("Failed to set device affinity to GPU {}: {}", assignedGpu, e.getMessage());
         }
@@ -95,7 +95,7 @@ public class MultiGpuWorkspaceSessionMemMgr implements SessionMemMgr {
     public void scopeIn() {
         // Ensure we're on the right device
         try {
-            Nd4j.getAffinityManager().unsafeSetDevice(assignedGpu);
+            DeviceMemoryManager.getInstance().switchDevice(assignedGpu, "MultiGpuWorkspaceSessionMemMgr.scopeIn", "scope-in");
         } catch (Exception e) {
             // ignore - best effort
         }

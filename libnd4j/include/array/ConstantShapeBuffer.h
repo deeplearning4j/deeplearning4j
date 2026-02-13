@@ -46,6 +46,7 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   PointerWrapper*  _specialShapeInfo;
   std::atomic<int> _refCount;
   bool _isOwner;
+  bool _neverDelete;  // If true, release() will never delete this buffer
 
 
  public:
@@ -53,6 +54,27 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   ConstantShapeBuffer( PointerWrapper* primary, PointerWrapper* special);
   ConstantShapeBuffer();
   ~ConstantShapeBuffer();
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns. ConstantShapeBuffer objects are small (~48 bytes) and
+  // heavily allocated during shape trie population — any adjacent
+  // overrun corrupts the next chunk metadata → SIGABRT on free().
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
 
   // =========================================================================
   // COPY PREVENTION
@@ -120,18 +142,25 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
    */
   void addRef();
 
-  /**
-   * Manual reference counting for safe cross-JNI ownership.
-   * Decrements reference count and deletes when reaching zero.
-   * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
-   */
-  void release();
+   /**
+    * Manual reference counting for safe cross-JNI ownership.
+    * Decrements reference count and deletes when reaching zero.
+    * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
+    */
+   void release();
 
-  /**
-   * Get current reference count (for debugging).
-   */
-  int getRefCount() const;
-};
+   /**
+    * Set whether this buffer should never be deleted.
+    * Used for view buffers that need to live as long as any NDArray references them,
+    * even if the shape cache is cleared.
+    */
+   void setNeverDelete(bool neverDelete);
+
+   /**
+    * Get current reference count (for debugging).
+    */
+   int getRefCount() const;
+ };
 
 
 }  // namespace sd

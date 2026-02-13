@@ -2603,15 +2603,24 @@
   } else {                                                                                                            \
     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;                                                            \
     VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE)); \
+   }
+
+#define RELEASE_SPECIAL_WITH_DEVICE(VARIABLE, DEVICE_ID, WORKSPACE)                                                      \
+  if (VARIABLE != nullptr) {                                                                                           \
+    if (WORKSPACE == nullptr) {                                                                                        \
+      int deviceIdToUse = (DEVICE_ID >= 0) ? DEVICE_ID : 0;                                                           \
+      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceIdToUse, nullptr);          \
+    }                                                                                                                   \
   }
 
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                                                          \
-  if (VARIABLE != nullptr) {                                                                                          \
-    if (WORKSPACE == nullptr) {                                                                                       \
-      int deviceId_##VARIABLE = 0;                                                                                    \
-      cudaGetDevice(&deviceId_##VARIABLE);                                                                            \
-      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceId_##VARIABLE, nullptr);\
-    }                                                                                                                 \
+// Original RELEASE_SPECIAL - uses cudaGetDevice() at free time (problematic for multi-GPU)
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                                                            \
+  if (VARIABLE != nullptr) {                                                                                           \
+    if (WORKSPACE == nullptr) {                                                                                        \
+      int deviceId_##VARIABLE = 0;                                                                                     \
+      cudaGetDevice(&deviceId_##VARIABLE);                                                                             \
+      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceId_##VARIABLE, nullptr);  \
+    }                                                                                                                   \
   }
 
 #else
@@ -2629,14 +2638,20 @@ template <typename TT, typename WW>
 SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   TT* var;
   if (workSpace == nullptr) {
+    // Add 256 bytes of padding for non-workspace heap allocations.
+    // C++ ops can overrun temporary buffers by a few bytes, corrupting
+    // adjacent glibc malloc chunk metadata → SIGABRT on free().
+    // Workspace allocations use bump allocation where overruns are harmless.
+    size_t requestedBytes = len * sizeof(TT);
+    size_t allocBytes = requestedBytes + SD_ALLOC_PADDING;
 #if defined(SD_ALIGNED_ALLOC)
     // Allocate aligned memory, ensuring the size is a multiple of the alignment
     var = static_cast<TT*>(
         aligned_alloc(SD_DESIRED_ALIGNMENT,
-                      (len * sizeof(TT) + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
+                      (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
 #else
-    // Fallback to standard array allocation
-    var = new TT[len];
+    // Fallback to standard array allocation — add padding elements
+    var = new TT[len + (SD_ALLOC_PADDING / sizeof(TT)) + 1];
 #endif
   } else {
     // Allocate memory from a provided workspace

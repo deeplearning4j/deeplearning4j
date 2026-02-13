@@ -37,6 +37,10 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   const int rank = x->rankOf();
   const sd::LongType* xShape = shape::shapeOf(x->shapeInfo());
 
+  // Guard: output buffer must be large enough for input rank
+  REQUIRE_TRUE(z->lengthOf() >= rank, 0,
+      "shape_of: output length (%lld) < input rank (%d)", z->lengthOf(), rank);
+
   // Ensure host buffer is allocated before writing
   if (z->getDataBuffer() != nullptr) {
     z->getDataBuffer()->allocatePrimary();

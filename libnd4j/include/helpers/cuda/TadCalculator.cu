@@ -63,8 +63,8 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));
     auto scalarShapeBuffer = CudaShapeBufferCreator::getInstance().create(scalarShapeInfo, 0);
     
-    LongType* offsetsBuf = new LongType[totalElements];
-    
+    LongType* offsetsBuf = new LongType[totalElements + SD_SHAPE_ALLOC_PADDING]();
+
     for (LongType i = 0; i < totalElements; ++i) {
       offsetsBuf[i] = i;
     }
@@ -87,8 +87,8 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   if (numOfSubArrs > 0) {
     const LongType subArrRank = (static_cast<size_t>(rank) == dimsToExclude->size() || false) ? rank : rank - dimsToExclude->size();
 
-    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank)];
-    LongType* offsetsBuf = new LongType[numOfSubArrs];
+    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank) + SD_SHAPE_ALLOC_PADDING];
+    LongType* offsetsBuf = new LongType[numOfSubArrs + SD_SHAPE_ALLOC_PADDING]();
 
     shape::calcSubArrsShapeInfoAndOffsets(
         shapeInfo,
@@ -114,14 +114,14 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   } else {
     const LongType subArrRank = rank;
 
-    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank)];
+    LongType* shapeInfoBuf = new LongType[shape::shapeInfoLength(subArrRank) + SD_SHAPE_ALLOC_PADDING];
 
     auto nonConstant = const_cast<LongType*>(shapeInfo);
     shape::copyTo<LongType>(shape::shapeInfoLength(subArrRank), nonConstant, shapeInfoBuf);
 
     ConstantShapeBuffer* shapesBuffer = CudaShapeBufferCreator::getInstance().create(shapeInfoBuf, subArrRank);
 
-    LongType* baseOffset = new LongType[1];
+    LongType* baseOffset = new LongType[1 + SD_SHAPE_ALLOC_PADDING]();
     baseOffset[0] = 0;
     auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
     auto offDPtr = std::make_shared<PointerWrapper>(

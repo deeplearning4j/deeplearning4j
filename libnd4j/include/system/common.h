@@ -234,6 +234,15 @@ struct ErrorResult {
 #define SD_MAX_NUM_THREADS 1024
 #define SD_MAX_RANK 32
 #define SD_MAX_SHAPEINFOLENGTH 2 * SD_MAX_RANK + 4
+// Extra padding (in LongType elements) for shape buffer heap allocations.
+// C++ ops can write a few elements past shape info buffers, corrupting
+// adjacent glibc malloc metadata. 32 extra elements (256 bytes) absorbs
+// any reasonable overrun.
+#define SD_SHAPE_ALLOC_PADDING 4096
+// Extra byte padding for general temporary heap allocations via the
+// ALLOCATE macro.  Same purpose as SD_SHAPE_ALLOC_PADDING but sized
+// in bytes rather than LongType elements.
+#define SD_ALLOC_PADDING 4096
 #define SD_MAX_COORD 3
 #define SD_PREALLOC_SIZE 33554432
 

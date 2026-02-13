@@ -412,5 +412,13 @@ public interface OpExecutioner {
      */
     int useCount(DataBuffer buffer);
 
+    /**
+     * Set per-thread flag to skip device coherency checks in exec() calls.
+     * Used by DSP parallel workers that handle device placement themselves.
+     * No-op on CPU backend.
+     */
+    default void setSkipDeviceCoherency(boolean skip) {
+        // No-op by default (CPU backend)
+    }
 
 }

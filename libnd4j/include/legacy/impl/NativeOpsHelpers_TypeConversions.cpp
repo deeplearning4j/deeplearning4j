@@ -55,15 +55,14 @@
 
 extern bool experimentalSupport; // Defined in NativeOpsHelpers_Arrays.cpp
 
-// OpaqueNDArray allocation tracking
-static std::atomic<size_t> g_opaqueArrayCount{0};
-static std::atomic<size_t> g_opaqueArrayBytes{0};
-static std::mutex g_opaqueArrayMutex;
+// External references to allocation tracking variables (defined in NativeOpsHelpers_Arrays.cpp and NativeOpsHelpers_DataBuffers.cpp)
+extern std::atomic<size_t> g_opaqueArrayCount;
+extern std::atomic<size_t> g_opaqueArrayBytes;
+extern std::mutex g_opaqueArrayMutex;
 
-// InteropDataBuffer/OpaqueDataBuffer allocation tracking
-static std::atomic<size_t> g_dataBufferCount{0};
-static std::atomic<size_t> g_dataBufferBytes{0};
-static std::mutex g_dataBufferMutex;
+extern std::atomic<size_t> g_dataBufferCount;
+extern std::atomic<size_t> g_dataBufferBytes;
+extern std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>

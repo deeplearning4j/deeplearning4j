@@ -293,7 +293,13 @@ class SD_LIB_EXPORT InteropDataBuffer {
 
   void markConstant(bool reallyConstant) {
     isConstant.store(reallyConstant, std::memory_order_release);
-    dataBuffer()->markConstant(reallyConstant);
+    DataBuffer* db = dataBuffer();
+    if (db != nullptr) {
+      // Validate DataBuffer integrity before marking constant
+      // This catches heap corruption that would cause SIGABRT in validateIntegrity
+      db->validateIntegrity();
+      db->markConstant(reallyConstant);
+    }
   }
 
   void setPrimary(void *ptr, size_t length);
@@ -357,6 +363,28 @@ class SD_LIB_EXPORT InteropDataBuffer {
   static void preparePrimaryUse(const std::vector<const InteropDataBuffer *> &writeList,
                                 const std::vector<const InteropDataBuffer *> &readList,
                                 bool synchronizeWritables = false);
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns. InteropDataBuffer objects are ~120 bytes on the heap with
+  // zero padding — any adjacent overrun corrupts the next chunk metadata
+  // → SIGABRT on free(). Adding 4KB padding keeps the next chunk's header
+  // safely out of reach.
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
 };
 }  // namespace sd
 

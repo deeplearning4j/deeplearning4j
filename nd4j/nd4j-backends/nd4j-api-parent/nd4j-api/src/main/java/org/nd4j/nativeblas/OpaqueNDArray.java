@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueNDArrayDeallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -133,7 +134,7 @@ public class OpaqueNDArray extends Pointer {
 
         boolean switchedDevice = false;
         if (currentDevice != targetDevice && deviceCount > 1) {
-            Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueNDArray.create", "target-device");
             switchedDevice = true;
         }
 
@@ -144,7 +145,7 @@ public class OpaqueNDArray extends Pointer {
         } finally {
             // Restore original device context
             if (switchedDevice) {
-                Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueNDArray.create", "restore-device");
             }
         }
 

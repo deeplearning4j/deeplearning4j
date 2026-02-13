@@ -27,6 +27,7 @@ import org.eclipse.deeplearning4j.llm.config.ModelConfig;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.eclipse.deeplearning4j.vlm.pipeline.VLMPipelineExecutor;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -109,6 +110,9 @@ public class ModelParallelVLM implements AutoCloseable {
     private final boolean enablePrefetch;
     private final boolean enableAsyncTransfer;
 
+    // Pipeline executor for multi-GPU encode/decode parallelism
+    private final VLMPipelineExecutor pipelineExecutor;
+
     private volatile boolean closed = false;
 
     @Builder
@@ -185,6 +189,16 @@ public class ModelParallelVLM implements AutoCloseable {
             t.setDaemon(true);
             return t;
         });
+
+        // Create pipeline executor for multi-GPU encode/decode parallelism
+        int encoderDevIdx = this.visionEncoderDevice.getDeviceType() == DeviceType.CUDA_GPU
+                ? this.visionEncoderDevice.getDeviceIndex() : 0;
+        int decoderDevIdx = this.decoderDevice.getDeviceType() == DeviceType.CUDA_GPU
+                ? this.decoderDevice.getDeviceIndex() : 0;
+        this.pipelineExecutor = new VLMPipelineExecutor(
+                this.visionEncoder, encoderDevIdx,
+                this.decoder, decoderDevIdx,
+                this.embedTokens);
 
         log.info("ModelParallelVLM initialized with devices: vision={}, embed={}, decoder={}",
                 this.visionEncoderDevice, this.embedTokensDevice, this.decoderDevice);
@@ -332,35 +346,42 @@ public class ModelParallelVLM implements AutoCloseable {
                                                          double temperature, boolean doSample) {
         checkNotClosed();
 
-        // Ensure image is on vision encoder device
-        ensureOnDevice(image, visionEncoderDevice);
-
-        // Step 1: Encode image on vision encoder device
-        log.debug("Encoding image on device: {}", visionEncoderDevice);
-        INDArray imageEmbeddings = encodeImageOnDevice(image);
-
-        // Step 2: Transfer to decoder device if different
-        if (!decoderDevice.equals(visionEncoderDevice)) {
-            log.debug("Transferring embeddings from {} to {}", visionEncoderDevice, decoderDevice);
-            transferToDevice(imageEmbeddings, decoderDevice);
+        // Step 1: Encode image via pipeline executor (runs on encoder GPU,
+        // result transferred to decoder GPU automatically)
+        log.debug("Encoding image via pipeline on device: {}", visionEncoderDevice);
+        Map<String, INDArray> visionInputs = new HashMap<>();
+        visionInputs.put("pixel_values", image);
+        INDArray imageEmbeddings;
+        try {
+            Future<INDArray> encodeFuture = pipelineExecutor.encodeAsync(
+                    visionInputs, new String[]{"image_embeds", "last_hidden_state"});
+            imageEmbeddings = encodeFuture.get(5, java.util.concurrent.TimeUnit.MINUTES);
+        } catch (java.util.concurrent.ExecutionException e) {
+            throw new RuntimeException("Vision encoding failed", e.getCause());
+        } catch (java.util.concurrent.TimeoutException e) {
+            throw new RuntimeException("Vision encoding timed out", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Vision encoding interrupted", e);
         }
+        // imageEmbeddings is already on decoder device
 
-        // Step 3: Encode prompt on embed tokens device
+        // Step 2: Encode prompt on embed tokens device
         Encoding promptEncoding = tokenizer.encode(prompt, true);
         int[] promptIds = promptEncoding.getIds();
         int promptTokenCount = promptIds.length;
         INDArray textEmbeddings = embedTextOnDevice(promptIds);
 
-        // Step 4: Transfer text embeddings to decoder device if different
+        // Step 3: Transfer text embeddings to decoder device if different
         if (!decoderDevice.equals(embedTokensDevice)) {
             transferToDevice(textEmbeddings, decoderDevice);
         }
 
-        // Step 5: Combine embeddings (both now on decoder device)
+        // Step 4: Combine embeddings (both now on decoder device)
         INDArray combinedEmbeddings = Nd4j.concat(1, imageEmbeddings, textEmbeddings);
         ensureOnDevice(combinedEmbeddings, decoderDevice);
 
-        // Step 6: Autoregressive generation on decoder device with timing
+        // Step 5: Autoregressive generation on decoder device with timing
         StringBuilder generated = new StringBuilder();
         List<Integer> generatedTokenIds = new ArrayList<>();
         long startNanos = System.nanoTime();
@@ -587,6 +608,15 @@ public class ModelParallelVLM implements AutoCloseable {
     public void close() {
         if (!closed) {
             closed = true;
+
+            // Close pipeline executor first (frees encoder if not already freed)
+            if (pipelineExecutor != null) {
+                try {
+                    pipelineExecutor.close();
+                } catch (Exception e) {
+                    log.warn("Error closing pipeline executor", e);
+                }
+            }
 
             // Shutdown executor
             if (transferExecutor != null) {

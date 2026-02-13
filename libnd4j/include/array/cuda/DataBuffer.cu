@@ -30,7 +30,6 @@
 #include <system/type_boilerplate.h>
 #include <helpers/TransferMetrics.h>
 #include <chrono>
-#include <sys/mman.h>
 
 #include "../DataBuffer.h"
 #include "helpers/DebugHelper.h"
@@ -47,7 +46,12 @@ void DataBuffer::expand(const uint64_t size) {
     int8_t* newBuffer = nullptr;
     int8_t* newSpecialBuffer = nullptr;
     auto currentDeviceId = AffinityManager::currentDeviceId();
-    auto oldDeviceId = _deviceId.load();  // Save old device ID for releasing old buffer
+    // Use _specialDeviceId for the old buffer since we're freeing the special buffer
+    // This may differ from _deviceId due to failover during OOM
+    auto oldDeviceId = _specialDeviceId.load();
+    if (oldDeviceId < 0) {
+      oldDeviceId = _deviceId.load();  // Fallback for legacy code
+    }
 
     // Allocate new buffer, tracking actual device in case of failover
     int actualExpandDevice = currentDeviceId;
@@ -105,7 +109,8 @@ void DataBuffer::expand(const uint64_t size) {
           _specialBuffer,array::BufferType::SPECIAL);
 #endif
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
-      RELEASE_SPECIAL(isb, _workspace);
+      // Use device-aware free - critical for multi-GPU correctness
+      RELEASE_SPECIAL_WITH_DEVICE(isb, oldDeviceId, _workspace);
 
       // Switch back to current device
       if (oldDeviceId != currentDeviceId && oldDeviceId >= 0) {
@@ -435,8 +440,10 @@ void DataBuffer::allocateSpecial() {
     _isOwnerSpecial = true;
     _specialAllocBytes = getLenInBytes();
 
-    // Store the ACTUAL device where memory was allocated, not the requested device
+    // Store the ACTUAL device where special buffer was allocated, not the requested device
+    // This is critical for multi-GPU: failover may allocate on a different GPU
     _deviceId.store(actualDevice);
+    _specialDeviceId.store(actualDevice);
 
 #if defined(SD_GCC_FUNCTRACE)
     // Record SPECIAL (device) buffer allocation
@@ -487,17 +494,46 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     allocatePrimary();
   }
 
-  auto bufferDeviceId = _deviceId.load();
+  // Use _specialDeviceId for operations on the special buffer
+  auto bufferDeviceId = _specialDeviceId.load();
+  if (bufferDeviceId < 0) {
+    bufferDeviceId = _deviceId.load();  // Fallback for legacy code
+  }
   auto currentDeviceId = AffinityManager::currentDeviceId();
-  bool switchedDevice = false;
 
+  // Verify actual device of the GPU pointer. _deviceId metadata can get out of sync
+  // with the actual pointer location during cross-device DSP execution (e.g., when
+  // allocateFailover places data on a different device, or when Java-side device
+  // routing overrides the expected allocation device). Using the wrong device causes
+  // cudaMemcpyAsync to fail with cudaErrorInvalidValue.
+  cudaPointerAttributes ptrAttrs;
+  auto attrRes = cudaPointerGetAttributes(&ptrAttrs, _specialBuffer);
+  if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+    if (ptrAttrs.device != bufferDeviceId) {
+      bufferDeviceId = ptrAttrs.device;
+    }
+  } else {
+    cudaGetLastError(); // clear any error from the query
+  }
+
+  bool switchedDevice = false;
   if (currentDeviceId != bufferDeviceId) {
     cudaSetDevice(bufferDeviceId);
     switchedDevice = true;
   }
 
-  // Get the stream for async transfer
-  cudaStream_t stream = context != nullptr ? *context->getCudaStream() : 0;
+  // Always use stream 0 (default stream) for D2H transfers.
+  // Rationale: context->getCudaStream() accesses thread-local ContextBuffers, which
+  // reinitializes when it detects a device change (release old streams + create new
+  // ones on the current device). The freshly created stream has NO ordering relationship
+  // with prior cudaMallocAsync pool allocations or kernel writes, causing
+  // cudaMemcpyAsync to fail with cudaErrorInvalidValue on pool-allocated buffers.
+  // This happens during cross-device DSP execution where ops run on device 1 but the
+  // thread was originally on device 0. Stream 0 avoids this because it implicitly
+  // orders after all prior operations on the device.
+  // Performance impact is minimal since syncToPrimary always calls cudaStreamSynchronize
+  // after the memcpy, making it a blocking call regardless of which stream is used.
+  cudaStream_t stream = 0;
 
   // Use event-based synchronization for cross-thread correctness.
   // The problem: if kernel K runs on Thread A's stream and syncToPrimary() is called
@@ -528,6 +564,8 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     if (switchedDevice) {
       cudaSetDevice(currentDeviceId);
     }
+    int actualDev = -1;
+    cudaGetDevice(&actualDev);
     std::string errorMessage;
     errorMessage += "DataBuffer::syncToPrimary: cudaMemcpyAsync failed: ";
     errorMessage += std::to_string(getLenInBytes());
@@ -535,6 +573,30 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     errorMessage += cudaGetErrorString(res);
     errorMessage += " (buffer device: ";
     errorMessage += std::to_string(bufferDeviceId);
+    errorMessage += ", actual cuda device: ";
+    errorMessage += std::to_string(actualDev);
+    errorMessage += ", primary=";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(_primaryBuffer));
+    errorMessage += ", special=";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(_specialBuffer));
+    errorMessage += ", forceSync=";
+    errorMessage += std::to_string(forceSync);
+    errorMessage += ", stream=";
+    errorMessage += std::to_string(reinterpret_cast<uintptr_t>(stream));
+    // Query actual device ownership of the special buffer pointer
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, _specialBuffer);
+    if (attrRes == cudaSuccess) {
+      errorMessage += ", ptrDevice=";
+      errorMessage += std::to_string(ptrAttrs.device);
+      errorMessage += ", ptrType=";
+      errorMessage += std::to_string(static_cast<int>(ptrAttrs.type));
+    } else {
+      errorMessage += ", ptrQuery=FAILED(";
+      errorMessage += cudaGetErrorString(attrRes);
+      errorMessage += ")";
+      cudaGetLastError(); // clear error
+    }
     errorMessage += ")";
     THROW_EXCEPTION(errorMessage.c_str());
   }
@@ -579,18 +641,47 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // If special buffer exists but is undersized, reallocate to prevent overrun
   if (_specialBuffer != nullptr && _specialAllocBytes > 0 && _specialAllocBytes < getLenInBytes()) {
     if (_isOwnerSpecial) {
+      // CRITICAL: Get device ID BEFORE releasing - buffer may be on different device due to failover
+      auto bufferDeviceId = _specialDeviceId.load();
+      if (bufferDeviceId < 0) {
+        bufferDeviceId = _deviceId.load();
+      }
+      auto currentDeviceId = AffinityManager::currentDeviceId();
+      bool switchedDevice = false;
+      if (currentDeviceId != bufferDeviceId && bufferDeviceId >= 0) {
+        cudaSetDevice(bufferDeviceId);
+        switchedDevice = true;
+      }
       auto isb = reinterpret_cast<int8_t*>(_specialBuffer);
-      RELEASE_SPECIAL(isb, _workspace);
+      RELEASE_SPECIAL_WITH_DEVICE(isb, bufferDeviceId, _workspace);
+      if (switchedDevice) {
+        cudaSetDevice(currentDeviceId);
+      }
     }
     _specialBuffer = nullptr;
     _specialAllocBytes = 0;
     allocateSpecial();
   }
 
-  auto bufferDeviceId = _deviceId.load();
+  // Use _specialDeviceId for operations on the special buffer
+  auto bufferDeviceId = _specialDeviceId.load();
+  if (bufferDeviceId < 0) {
+    bufferDeviceId = _deviceId.load();  // Fallback for legacy code
+  }
   auto currentDeviceId = AffinityManager::currentDeviceId();
-  bool switchedDevice = false;
 
+  // Verify actual device of the GPU pointer (same as syncToPrimary — see comment there)
+  cudaPointerAttributes ptrAttrsSync;
+  auto attrResSync = cudaPointerGetAttributes(&ptrAttrsSync, _specialBuffer);
+  if (attrResSync == cudaSuccess && ptrAttrsSync.type == cudaMemoryTypeDevice) {
+    if (ptrAttrsSync.device != bufferDeviceId) {
+      bufferDeviceId = ptrAttrsSync.device;
+    }
+  } else {
+    cudaGetLastError();
+  }
+
+  bool switchedDevice = false;
   if (currentDeviceId != bufferDeviceId) {
     cudaSetDevice(bufferDeviceId);
     switchedDevice = true;
@@ -599,14 +690,11 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // Track H2D transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  // Use the compute stream from LaunchContext for proper stream ordering.
-  // Using stream 0 would create unnecessary serialization with all other streams
-  // in legacy default stream mode, and would be incorrect under per-thread default streams.
+  // Always use stream 0 (default stream) for H2D transfers.
+  // Same rationale as syncToPrimary: accessing LaunchContext::defaultContext()->getCudaStream()
+  // triggers thread-local ContextBuffers reinitialization during cross-device DSP execution,
+  // creating a new stream with no ordering relationship with prior pool allocations.
   cudaStream_t stream = 0;
-  auto ctx = LaunchContext::defaultContext();
-  if (ctx != nullptr && ctx->getCudaStream() != nullptr) {
-    stream = *ctx->getCudaStream();
-  }
   auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
   if (res != cudaSuccess) {
     // Restore device before throwing
@@ -653,11 +741,19 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
-    auto bufferDeviceId = _deviceId.load();
+    // Use the tracked device ID where special buffer was actually allocated
+    // This is critical for multi-GPU: buffer may have been allocated on a different device
+    // due to failover during OOM, and we must free from the correct device context
+    auto bufferDeviceId = _specialDeviceId.load();
+    if (bufferDeviceId < 0) {
+      // Fallback to _deviceId if _specialDeviceId not set (legacy code path)
+      bufferDeviceId = _deviceId.load();
+    }
+    
     auto currentDeviceId = AffinityManager::currentDeviceId();
     bool switchedDevice = false;
 
-    if (currentDeviceId != bufferDeviceId) {
+    if (currentDeviceId != bufferDeviceId && bufferDeviceId >= 0) {
       cudaSetDevice(bufferDeviceId);
       switchedDevice = true;
     }
@@ -668,7 +764,8 @@ void DataBuffer::deleteSpecial() {
     array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
         _specialBuffer,array::BufferType::SPECIAL);
 #endif
-    RELEASE_SPECIAL(p, _workspace);
+    // Use device-aware free - critical for multi-GPU correctness
+    RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
@@ -685,43 +782,14 @@ void DataBuffer::deleteSpecial() {
   // Always reset pointer and ownership flag after delete, regardless of whether we owned it
   // This prevents stale pointers from causing allocateSpecial() to skip allocation
   _specialBuffer = nullptr;
+  _specialDeviceId.store(-1);
   _isOwnerSpecial = false;
 }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::freeGpuOnly() {
-  // Free GPU (special) buffer only, release host physical pages without free().
-  //
-  // Why not call deletePrimary() / free()?
-  // CUDA op buffer overruns corrupt adjacent glibc malloc metadata on the host heap.
-  // Calling free() discovers this corruption and triggers SIGABRT ("double free or
-  // corruption (!prev)"). By using madvise(MADV_DONTNEED) instead, we release the
-  // physical RAM back to the OS without touching glibc's heap metadata.
-  //
-  // The virtual address space remains mapped (glibc thinks memory is still allocated),
-  // but physical pages are zeroed and returned to the OS, reducing RSS.
   deleteSpecial();
-
-  // Release host physical pages via madvise(MADV_DONTNEED).
-  // This zeroes the pages and returns physical memory to the OS without calling free().
-  // We must page-align the range: skip the first partial page (which may contain
-  // glibc's chunk header at p-16) and the last partial page.
-  if (_isOwnerPrimary && _primaryBuffer != nullptr && _lenInBytes > 0) {
-    uintptr_t pageSize = 4096;
-    uintptr_t bufStart = reinterpret_cast<uintptr_t>(_primaryBuffer);
-    uintptr_t alignedStart = (bufStart + pageSize - 1) & ~(pageSize - 1);  // Round UP
-    uintptr_t bufEnd = bufStart + _lenInBytes;
-    uintptr_t alignedEnd = bufEnd & ~(pageSize - 1);  // Round DOWN
-
-    if (alignedEnd > alignedStart) {
-      madvise(reinterpret_cast<void*>(alignedStart), alignedEnd - alignedStart, MADV_DONTNEED);
-    }
-  }
-
-  // Abandon primary buffer: disown to prevent any future free() attempt.
-  _primaryBuffer = nullptr;
-  _isOwnerPrimary = false;
-
+  deletePrimary();
   closed = true;
 }
 
@@ -733,7 +801,13 @@ void DataBuffer::freeGpuOnStream(void* stream) {
   // same stream, the pool can immediately reuse freed memory for new allocations
   // on that stream without cross-stream synchronization.
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
-    auto bufferDeviceId = _deviceId.load();
+    // CRITICAL: Use _specialDeviceId to get the device where buffer was actually allocated
+    // This may differ from _deviceId due to failover during OOM
+    auto bufferDeviceId = _specialDeviceId.load();
+    if (bufferDeviceId < 0) {
+      // Fallback to _deviceId if _specialDeviceId not set (legacy code path)
+      bufferDeviceId = _deviceId.load();
+    }
     auto currentDeviceId = AffinityManager::currentDeviceId();
     bool switchedDevice = false;
 
@@ -767,22 +841,8 @@ void DataBuffer::freeGpuOnStream(void* stream) {
   _specialBuffer = nullptr;
   _isOwnerSpecial = false;
 
-  // Release host physical pages via madvise — same approach as freeGpuOnly().
-  // Page-aligned to avoid touching glibc chunk headers.
-  if (_isOwnerPrimary && _primaryBuffer != nullptr && _lenInBytes > 0) {
-    uintptr_t pageSize = 4096;
-    uintptr_t bufStart = reinterpret_cast<uintptr_t>(_primaryBuffer);
-    uintptr_t alignedStart = (bufStart + pageSize - 1) & ~(pageSize - 1);
-    uintptr_t bufEnd = bufStart + _lenInBytes;
-    uintptr_t alignedEnd = bufEnd & ~(pageSize - 1);
-
-    if (alignedEnd > alignedStart) {
-      madvise(reinterpret_cast<void*>(alignedStart), alignedEnd - alignedStart, MADV_DONTNEED);
-    }
-  }
-
-  _primaryBuffer = nullptr;
-  _isOwnerPrimary = false;
+  // Free host buffer and set closed=true so the destructor's deleteBuffers() is a no-op.
+  deletePrimary();
   closed = true;
 }
 
@@ -834,7 +894,11 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
     return;
   }
 
-  auto bufferDeviceId = _deviceId.load();
+  // Use _specialDeviceId for operations on the special buffer
+  auto bufferDeviceId = _specialDeviceId.load();
+  if (bufferDeviceId < 0) {
+    bufferDeviceId = _deviceId.load();  // Fallback for legacy code
+  }
   auto currentDeviceId = AffinityManager::currentDeviceId();
   bool switchedDevice = false;
 
@@ -883,7 +947,11 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
   if (sizeToCopyinBytes == 0) sizeToCopyinBytes = getLenInBytes();
   if (sizeToCopyinBytes == 0) return;
 
-  auto bufferDeviceId = _deviceId.load();
+  // Use _specialDeviceId for operations on the special buffer
+  auto bufferDeviceId = _specialDeviceId.load();
+  if (bufferDeviceId < 0) {
+    bufferDeviceId = _deviceId.load();  // Fallback for legacy code
+  }
   auto currentDeviceId = AffinityManager::currentDeviceId();
   bool switchedDevice = false;
 
@@ -927,11 +995,15 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::setToZeroBuffers(const bool both) {
+  void DataBuffer::setToZeroBuffers(const bool both) {
   if(getLenInBytes() < 1 || special() == nullptr)
     return;
 
-  auto bufferDeviceId = _deviceId.load();
+  // Use _specialDeviceId for operations on the special buffer
+  auto bufferDeviceId = _specialDeviceId.load();
+  if (bufferDeviceId < 0) {
+    bufferDeviceId = _deviceId.load();  // Fallback for legacy code
+  }
   auto currentDeviceId = AffinityManager::currentDeviceId();
   bool switchedDevice = false;
 
@@ -979,9 +1051,22 @@ void DataBuffer::setToZeroBuffers(const bool both) {
 
 
 template <typename T>
-void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset) {
-  if (src->getLenInBytes() > dst->getLenInBytes())
-    THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
+void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
+  auto sizeOfElement = DataTypeUtils::sizeOfElement(src->getDataType());
+  // Calculate copy size in bytes, accounting for offsets
+  sd::LongType srcAvailable = src->getLenInBytes() - startingOffset * sizeOfElement;
+  sd::LongType dstAvailable = dst->getLenInBytes() - dstOffset * sizeOfElement;
+  sd::LongType copyBytes;
+  if (n > 0) {
+    copyBytes = n * sizeOfElement;
+  } else {
+    // When n=0, copy as much as fits (min of available src and dst)
+    copyBytes = srcAvailable < dstAvailable ? srcAvailable : dstAvailable;
+  }
+  // Clamp to available space to prevent overruns
+  if (copyBytes > srcAvailable) copyBytes = srcAvailable;
+  if (copyBytes > dstAvailable) copyBytes = dstAvailable;
+  if (copyBytes <= 0) return;
 
   auto dstDeviceId = dst->deviceId();
   auto currentDeviceId = AffinityManager::currentDeviceId();
@@ -997,10 +1082,10 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
 
   cudaError_t res = cudaSuccess;
   if (src->isSpecialActual()) {
-    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyDeviceToDevice,
+    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), copyBytes, cudaMemcpyDeviceToDevice,
                           *stream);
   } else if (src->isPrimaryActual()) {
-    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyHostToDevice,
+    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), copyBytes, cudaMemcpyHostToDevice,
                           *stream);
   }
 
@@ -1022,11 +1107,11 @@ void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, 
 
   dst->writeSpecial();
 }
-BUILD_SINGLE_TEMPLATE(void memcpyWithT, (DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(void memcpyWithT, (DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n), SD_COMMON_TYPES);
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
-                        sd::LongType startingOffset, sd::LongType dstOffset) {
-  BUILD_SINGLE_SELECTOR(src->getDataType(), memcpyWithT, (dst, src, startingOffset, dstOffset), SD_COMMON_TYPES);
+                        sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
+  BUILD_SINGLE_SELECTOR(src->getDataType(), memcpyWithT, (dst, src, startingOffset, dstOffset, n), SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1036,11 +1121,65 @@ void DataBuffer::migrate() {
   }
 
   auto currentDeviceId = AffinityManager::currentDeviceId();
-  auto oldDeviceId = _deviceId.load();
+  // Use _specialDeviceId for the old buffer since we're migrating the special buffer
+  // This may differ from _deviceId due to failover during OOM
+  auto oldDeviceId = _specialDeviceId.load();
+  if (oldDeviceId < 0) {
+    oldDeviceId = _deviceId.load();  // Fallback for legacy code
+  }
 
   // Don't migrate if already on the target device
   if (oldDeviceId == currentDeviceId && _specialBuffer != nullptr) {
     return;
+  }
+
+  // Guard against zero-length buffers — cudaMemcpy with 0 bytes returns
+  // "invalid argument" on some CUDA versions (e.g. zero-dim arrays like [1,3,0,64])
+  if (_lenInBytes == 0) {
+    return;
+  }
+
+  // Validate metadata hasn't been corrupted by heap overruns.
+  // Without jemalloc, C++ buffer overruns can stomp on adjacent DataBuffer objects,
+  // corrupting _specialDeviceId, _lenInBytes, or _specialBuffer pointer.
+  int numDevices = 0;
+  cudaGetDeviceCount(&numDevices);
+  if (oldDeviceId >= numDevices || currentDeviceId >= numDevices) {
+    sd_printf("DataBuffer::migrate: CORRUPTED device IDs detected! oldDeviceId=%d, currentDeviceId=%d, numDevices=%d. Skipping migration.\n",
+              oldDeviceId, currentDeviceId, numDevices);
+    return;
+  }
+
+  // Validate _lenInBytes is reasonable (max 16GB per buffer)
+  constexpr size_t MAX_MIGRATE_BYTES = 16ULL * 1024 * 1024 * 1024;
+  if (_lenInBytes > MAX_MIGRATE_BYTES) {
+    sd_printf("DataBuffer::migrate: CORRUPTED _lenInBytes=%zu (>16GB). Skipping migration.\n", _lenInBytes);
+    return;
+  }
+
+  // Validate _specialBuffer pointer using cudaPointerGetAttributes.
+  // If the pointer is invalid or on a different device than expected,
+  // use the actual device from CUDA rather than our potentially-corrupted metadata.
+  if (_specialBuffer != nullptr) {
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, _specialBuffer);
+    if (attrRes != cudaSuccess) {
+      // Pointer is not recognized by CUDA — corrupted or already freed.
+      cudaGetLastError();  // Clear the error
+      sd_printf("DataBuffer::migrate: INVALID _specialBuffer=%p (cudaPointerGetAttributes failed: %s). Skipping migration.\n",
+                _specialBuffer, cudaGetErrorString(attrRes));
+      return;
+    }
+    // Check if CUDA reports a different device than our metadata
+    if (ptrAttrs.type == cudaMemoryTypeDevice && ptrAttrs.device != oldDeviceId) {
+      sd_printf("DataBuffer::migrate: Device mismatch! metadata says device %d, CUDA says device %d for ptr=%p. Using CUDA device.\n",
+                oldDeviceId, ptrAttrs.device, _specialBuffer);
+      oldDeviceId = ptrAttrs.device;
+      // If corrected device matches target, no migration needed
+      if (oldDeviceId == currentDeviceId) {
+        return;
+      }
+    }
   }
 
   // Clear any previous CUDA errors to ensure clean state
@@ -1116,9 +1255,19 @@ void DataBuffer::migrate() {
       auto d2hRes = cudaMemcpy(hostStaging, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
       if (d2hRes != cudaSuccess) {
         cudaFreeHost(hostStaging);
+        // D2H failed — try to recover by querying actual pointer attributes
+        cudaPointerAttributes retryAttrs;
+        auto retryRes = cudaPointerGetAttributes(&retryAttrs, _specialBuffer);
+        cudaGetLastError();  // Clear any error from the query
         cudaSetDevice(targetDevice);
         std::string err = "DataBuffer::migrate: D2H copy failed! Error: " + std::string(cudaGetErrorString(d2hRes)) +
                           ", bytes: " + std::to_string(getLenInBytes()) + ", from device " + std::to_string(oldDeviceId);
+        if (retryRes == cudaSuccess) {
+          err += ", ptrAttrs: type=" + std::to_string(retryAttrs.type) +
+                 " device=" + std::to_string(retryAttrs.device);
+        } else {
+          err += ", ptr validation FAILED (pointer likely corrupted or freed)";
+        }
         THROW_EXCEPTION(err.c_str());
       }
 
@@ -1184,7 +1333,8 @@ void DataBuffer::migrate() {
     }
 
     auto p = reinterpret_cast<int8_t*>(oldBuffer);
-    RELEASE_SPECIAL(p, _workspace);
+    // Use device-aware free - critical for multi-GPU correctness
+    RELEASE_SPECIAL_WITH_DEVICE(p, oldDeviceId, _workspace);
 
     // Switch back to target device (where new buffer lives)
     if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
@@ -1192,11 +1342,12 @@ void DataBuffer::migrate() {
     }
   }
 
-  _isOwnerSpecial = true;
-  _specialBuffer = newBuffer;
+   _isOwnerSpecial = true;
+   _specialBuffer = newBuffer;
 
-  // Store actual device where memory was allocated (may differ after failover)
-  _deviceId.store(actualMigrateDevice);
+   // Store actual device where memory was allocated (may differ after failover)
+   _deviceId.store(actualMigrateDevice);
+   _specialDeviceId.store(actualMigrateDevice);  // Also update _specialDeviceId for consistency
 
   // Restore caller's expected device context. The caller called migrate() expecting
   // to remain on currentDeviceId. Even though the buffer may have ended up on a

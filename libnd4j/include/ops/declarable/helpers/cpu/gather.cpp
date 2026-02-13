@@ -68,9 +68,14 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
 
     // Pre-fetch all indices to avoid virtual function calls in hot loop
     const sd::LongType numIndices = indices->lengthOf();
+    const sd::LongType inputLen = input->lengthOf();
     std::vector<sd::LongType> indicesVec(numIndices);
     for (sd::LongType i = 0; i < numIndices; i++) {
-      indicesVec[i] = indices->e<sd::LongType>(i);
+      sd::LongType idx = indices->e<sd::LongType>(i);
+      // Clamp to valid range [0, inputLen-1] to prevent OOB
+      if (idx < 0) idx = 0;
+      if (idx >= inputLen) idx = inputLen - 1;
+      indicesVec[i] = idx;
     }
 
     if (is1DFlatGather) {
@@ -278,8 +283,12 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
     } else {
       if (is1DFlatGather) {
         // Multiple indices for 1D flat gather
+        const sd::LongType inputLen2 = input->lengthOf();
         for (int i = 1; i < numOfIntArgs; ++i) {
           auto idx = intArgs[i];
+          // Clamp to valid range to prevent OOB
+          if (idx < 0) idx = 0;
+          if (idx >= inputLen2) idx = inputLen2 - 1;
           auto value = input->e<double>(idx);
           output->p(i - 1, value);
         }

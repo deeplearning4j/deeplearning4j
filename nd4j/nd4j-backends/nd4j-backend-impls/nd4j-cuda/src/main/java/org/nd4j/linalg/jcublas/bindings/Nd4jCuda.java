@@ -491,6 +491,7 @@ public static final int
    */
   public native @StdString BytePointer getCreationTraceAsString();
   public native void printHostDevice(long offset);
+  public static native void memcpy(DataBuffer dst, DataBuffer src, @Cast("sd::LongType") long startingOffset, @Cast("sd::LongType") long dstOffset, @Cast("sd::LongType") long n/*=0*/);
   public static native void memcpy(DataBuffer dst, DataBuffer src, @Cast("sd::LongType") long startingOffset, @Cast("sd::LongType") long dstOffset);
   /**
    * Print detailed buffer information including host and device content if available
@@ -498,6 +499,18 @@ public static final int
    * @param offset - Starting offset for printing buffer contents
    * @param limit - Maximum number of elements to print
    */
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns on nearby allocations. DataBuffer objects are ~200 bytes on
+  // the heap with zero padding — any adjacent overrun corrupts the next
+  // chunk metadata → SIGABRT on free(). Adding 4KB padding keeps the
+  // next chunk's header safely out of reach.
+  public static native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public static native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
 // #ifndef __JAVACPP_HACK__
 // #endif
 }
@@ -792,6 +805,17 @@ public static final int
   public ConstantShapeBuffer() { super((Pointer)null); allocate(); }
   private native void allocate();
 
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns. ConstantShapeBuffer objects are small (~48 bytes) and
+  // heavily allocated during shape trie population — any adjacent
+  // overrun corrupts the next chunk metadata → SIGABRT on free().
+  public static native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public static native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
+
   // =========================================================================
   // COPY PREVENTION
   // =========================================================================
@@ -856,18 +880,25 @@ public static final int
    */
   public native void addRef();
 
-  /**
-   * Manual reference counting for safe cross-JNI ownership.
-   * Decrements reference count and deletes when reaching zero.
-   * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
-   */
-  public native void release();
+   /**
+    * Manual reference counting for safe cross-JNI ownership.
+    * Decrements reference count and deletes when reaching zero.
+    * Call when done with a pointer (e.g., in deleteConstantShapeBuffer).
+    */
+   public native void release();
 
-  /**
-   * Get current reference count (for debugging).
-   */
-  public native int getRefCount();
-}
+   /**
+    * Set whether this buffer should never be deleted.
+    * Used for view buffers that need to live as long as any NDArray references them,
+    * even if the shape cache is cleared.
+    */
+   public native void setNeverDelete(@Cast("bool") boolean neverDelete);
+
+   /**
+    * Get current reference count (for debugging).
+    */
+   public native int getRefCount();
+ }
 
 
   // namespace sd
@@ -3270,6 +3301,11 @@ public native @Cast("sd::LongType") long nativeMbwGetTotalAllocatedSize(@ByVal @
         return new Workspace((Pointer)this).offsetAddress(i);
     }
 
+  // Size of canary region appended after workspace host buffer (debug mode only)
+  @MemberGetter public static native @Cast("const sd::LongType") long CANARY_SIZE();
+  public static final long CANARY_SIZE = CANARY_SIZE();
+  @MemberGetter public static native @Cast("const unsigned char") byte CANARY_BYTE();
+  public static final byte CANARY_BYTE = CANARY_BYTE();
   public Workspace(ExternalWorkspace external) { super((Pointer)null); allocate(external); }
   private native void allocate(ExternalWorkspace external);
   public Workspace(@Cast("sd::LongType") long initialSize/*=0L*/, @Cast("sd::LongType") long secondaryBytes/*=0L*/) { super((Pointer)null); allocate(initialSize, secondaryBytes); }
@@ -3301,6 +3337,20 @@ public native @Cast("sd::LongType") long nativeMbwGetTotalAllocatedSize(@ByVal @
 
   public native void scopeIn();
   public native void scopeOut();
+
+  /**
+   * Enable canary region after the host buffer. Only call once after construction.
+   * Fills CANARY_SIZE bytes after the host buffer with CANARY_BYTE pattern.
+   * Only active in debug/verbose mode.
+   */
+  public native void enableCanary();
+
+  /**
+   * Check if the canary region has been corrupted.
+   * Returns the byte offset of the first corrupted byte, or -1 if canary is intact.
+   * Only checks if canary was previously enabled.
+   */
+  public native @Cast("sd::LongType") long checkCanary();
 
   /**
    * Get the raw host (secondary) memory pointer for this workspace.
@@ -5374,6 +5424,14 @@ public static final int
 
 // #ifndef __JAVACPP_HACK__
 // #endif
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  public native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
 }
   // namespace graph
   // namespace sd
@@ -6550,6 +6608,14 @@ public static final int
   public native @Cast("bool") boolean isInference();
 
   public native NDArray outputArray(int idx);
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  public native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
 }
   // namespace graph
   // namespace sd
@@ -7952,6 +8018,16 @@ public static final int
 */
 
 /**
+ * Validate shape info buffer integrity by checking guard bytes.
+ * Returns true if buffer is valid, false if corruption detected.
+ * Uses the SD_SHAPE_ALLOC_PADDING guard zone at the end of allocations.
+ * Only performs validation when debug mode is enabled to avoid performance impact.
+ */
+@Namespace("shape") public native @Cast("bool") boolean validateShapeInfoGuardBytes(@Cast("const sd::LongType*") LongPointer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean validateShapeInfoGuardBytes(@Cast("const sd::LongType*") LongBuffer shapeInfo);
+@Namespace("shape") public native @Cast("bool") boolean validateShapeInfoGuardBytes(@Cast("const sd::LongType*") long[] shapeInfo);
+
+/**
 * Returns the rank portion of
 * an information buffer
 */
@@ -8300,6 +8376,14 @@ public static final int
    * leak
    */
   public native void detach();
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  public native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
 }
   // namespace sd
 
@@ -10895,8 +10979,17 @@ public static final int SD_ALL_OPS_ACTIVATED = 1;
 //   } else {
 //     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;
 //     VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE));
+//    }
+
+// #define RELEASE_SPECIAL_WITH_DEVICE(VARIABLE, DEVICE_ID, WORKSPACE)
+//   if (VARIABLE != nullptr) {
+//     if (WORKSPACE == nullptr) {
+//       int deviceIdToUse = (DEVICE_ID >= 0) ? DEVICE_ID : 0;
+//       sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(VARIABLE), deviceIdToUse, nullptr);
+//     }
 //   }
 
+// Original RELEASE_SPECIAL - uses cudaGetDevice() at free time (problematic for multi-GPU)
 // #define RELEASE_SPECIAL(VARIABLE, WORKSPACE)
 //   if (VARIABLE != nullptr) {
 //     if (WORKSPACE == nullptr) {
@@ -11196,6 +11289,14 @@ public static final int
   public OpExecTrace() { super((Pointer)null); allocate(); }
   private native void allocate();
 
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  public native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
+
   public native @Cast("const sd::LongType**") @StdVector PointerPointer getInputShapeBuffers();
   public native void setInputShapeBuffers(@Cast("const sd::LongType**") @StdVector PointerPointer inputShapeBuffersIn);
   public native void setInputShapeBuffers(@Cast("const sd::LongType**") @StdVector @ByPtrPtr LongPointer inputShapeBuffersIn);
@@ -11349,6 +11450,14 @@ public static final int
   public native @Cast("bool") boolean isSameMode();
 
   public native @Cast("bool") boolean isInherit(int index);
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  public native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
 }
   // namespace ops
   // namespace sd
@@ -13041,7 +13150,6 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
   // we use default copy assignment operator
   // Modify assignment operator to reset hash cache:
   public native @ByRef @Name("operator =") ShapeDescriptor put(@Const @ByRef ShapeDescriptor other);
-  // we use default move assignment operator
 
   // equal to operator
   public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef ShapeDescriptor other);
@@ -13069,6 +13177,14 @@ public static final int SHAPE_DESC_INVALID_EMPTY = 5;     // rank > 32 or shape 
 
   public native @Cast("char*") String messageForShapeDescriptorError(int errorCode);
   public native @Cast("bool") boolean isScalar();
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  public native @Name("operator new") Pointer _new(@Cast("size_t") long size);
+// #ifndef __JAVACPP_HACK__
+// #endif
+  public native @Name("operator delete") @NoException(true) void _delete(Pointer ptr);
+// #ifndef __JAVACPP_HACK__
+// #endif
 
   public native void fillStrides();
 

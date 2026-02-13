@@ -42,6 +42,8 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
   if (dim < 0) dim += input->rankOf() + 1;
 
+  REQUIRE_TRUE(dim >= 0, 0,
+               "STACK op: the input dimension parameter must be non-negative after normalization, but got %i!", dim);
   REQUIRE_TRUE(
       dim <= input->rankOf(), 0,
       "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !",
@@ -102,6 +104,8 @@ DECLARE_SHAPE_FN(stack) {
   int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
   if (dim < 0) dim += rank + 1;
 
+  REQUIRE_TRUE(dim >= 0, 0,
+               "STACK op: the input dimension parameter must be non-negative after normalization, but got %i!", dim);
   REQUIRE_TRUE(
       dim <= inShapeInfo[0], 0,
       "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !",

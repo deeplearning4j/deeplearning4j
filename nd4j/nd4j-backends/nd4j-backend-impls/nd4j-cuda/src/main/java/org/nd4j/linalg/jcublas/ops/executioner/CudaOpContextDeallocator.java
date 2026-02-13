@@ -69,11 +69,11 @@ public class CudaOpContextDeallocator implements Deallocator {
                 boolean switchedDevice = false;
 
                 if (currentDevice != deviceId) {
-                    // Use unsafeSetDevice which properly updates both native device
+                    // Use switchDevice which properly updates both native device
                     // AND resets the cached CUDA context (ThreadLocal) for this thread.
                     // Just calling nativeOps.setDevice() doesn't update the ThreadLocal context,
                     // so commit() would sync the wrong device's streams.
-                    Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+                    DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaOpContextDeallocator.deallocate", "dealloc");
                     switchedDevice = true;
                 }
 
@@ -95,7 +95,7 @@ public class CudaOpContextDeallocator implements Deallocator {
                 } finally {
                     // Restore original device context
                     if (switchedDevice) {
-                        Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                        DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaOpContextDeallocator.deallocate", "restore-device");
                     }
                 }
 

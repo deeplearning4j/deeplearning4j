@@ -79,6 +79,29 @@ class SD_LIB_EXPORT ShapeDescriptor {
                            const LongType *strides, const LongType rank, LongType extras);
 
   ShapeDescriptor() = default;
+  ShapeDescriptor(ShapeDescriptor&& other) noexcept {
+    _rank = other._rank;
+    _order = other._order;
+    _dataType = other._dataType;
+    _extraProperties = other._extraProperties;
+    _paddedAllocSize = other._paddedAllocSize;
+    _offset = other._offset;
+    _cached_hash = other._cached_hash;
+    _hash_computed = other._hash_computed;
+
+    if (other.ownsShapeStrides) {
+      // Source owned the buffer - transfer ownership
+      _shape_strides = other._shape_strides;
+      ownsShapeStrides = true;
+      other._shape_strides = nullptr;
+      other.ownsShapeStrides = false;
+    } else {
+      // Source was a view (copy constructor) - don't transfer ownership
+      _shape_strides = other._shape_strides;
+      ownsShapeStrides = false;
+      // Don't null out source - it still points to valid buffer owned by someone else
+    }
+  }
   ~ShapeDescriptor();
 #endif
   int rank() const;
@@ -115,13 +138,10 @@ class SD_LIB_EXPORT ShapeDescriptor {
   // Modify assignment operator to reset hash cache:
   ShapeDescriptor& operator=(const ShapeDescriptor& other) {
     if (this != &other) {
-      // Existing cleanup code
       if (_shape_strides != nullptr && ownsShapeStrides) {
         delete[] _shape_strides;
-        _shape_strides = nullptr;
       }
 
-      // Copy all basic members
       _rank = other._rank;
       _extraProperties = other._extraProperties;
       _dataType = other._dataType;
@@ -129,14 +149,12 @@ class SD_LIB_EXPORT ShapeDescriptor {
       _paddedAllocSize = other._paddedAllocSize;
       _offset = other._offset;
 
-      // Reset hash cache
       _cached_hash = 0;
       _hash_computed = false;
 
-      // Handle shape_strides - make a deep copy if source has data
       if (other._shape_strides != nullptr) {
         const int size = (_rank < 1 ? 1 : _rank) * 2;
-        _shape_strides = new LongType[size];
+        _shape_strides = new LongType[size + SD_SHAPE_ALLOC_PADDING];
         std::memcpy(_shape_strides, other._shape_strides, size * sizeof(LongType));
         ownsShapeStrides = true;
       } else {
@@ -146,8 +164,37 @@ class SD_LIB_EXPORT ShapeDescriptor {
     }
     return *this;
   }
-  // we use default move assignment operator
-  ShapeDescriptor &operator=(ShapeDescriptor &&other) noexcept = default;
+
+  ShapeDescriptor& operator=(ShapeDescriptor&& other) noexcept {
+    if (this != &other) {
+      if (_shape_strides != nullptr && ownsShapeStrides) {
+        delete[] _shape_strides;
+      }
+
+      _rank = other._rank;
+      _order = other._order;
+      _dataType = other._dataType;
+      _extraProperties = other._extraProperties;
+      _paddedAllocSize = other._paddedAllocSize;
+      _offset = other._offset;
+      _cached_hash = other._cached_hash;
+      _hash_computed = other._hash_computed;
+
+      if (other.ownsShapeStrides) {
+        // Source owned the buffer - transfer ownership
+        _shape_strides = other._shape_strides;
+        ownsShapeStrides = true;
+        other._shape_strides = nullptr;
+        other.ownsShapeStrides = false;
+      } else {
+        // Source was a view (copy constructor) - don't transfer ownership
+        _shape_strides = other._shape_strides;
+        ownsShapeStrides = false;
+        // Don't null out source - it still points to valid buffer owned by someone else
+      }
+    }
+    return *this;
+  }
 
   // equal to operator
   bool operator==(const ShapeDescriptor &other) const;
@@ -211,6 +258,24 @@ class SD_LIB_EXPORT ShapeDescriptor {
     }
   }
   bool isScalar() const;
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
 
   SD_INLINE void fillStrides() {
     if(_rank == 0) {

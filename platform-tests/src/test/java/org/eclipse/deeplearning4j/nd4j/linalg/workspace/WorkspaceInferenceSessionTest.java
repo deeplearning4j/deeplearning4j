@@ -36,6 +36,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -692,7 +693,7 @@ public class WorkspaceInferenceSessionTest extends BaseNd4jTestWithBackends {
             new Thread(() -> {
                 try {
                     // Pin thread to specific device
-                    Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+                    DeviceMemoryManager.getInstance().switchDevice(deviceId, "WorkspaceInferenceSessionTest", "test-device-switch");
 
                     for (int i = 0; i < 10; i++) {
                         Map<String, INDArray> ph = new HashMap<>();

@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.tokenizer.Encoding;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -446,6 +447,158 @@ public class TextGenerator {
             }
         }
         return false;
+    }
+
+    /**
+     * Generate text for multiple prompts in a batch.
+     *
+     * <p>All prompts are processed together through the model at each decode step,
+     * providing better GPU utilization than sequential generation. Prompts are
+     * right-padded to equal length for batching.</p>
+     *
+     * <p>Each sequence independently tracks its finish condition (EOS, max tokens,
+     * stop sequence). Finished sequences contribute padding tokens to the batch
+     * but their outputs are ignored.</p>
+     *
+     * @param prompts array of input prompts
+     * @param maxNewTokens maximum tokens to generate per sequence
+     * @return array of generation results, one per prompt
+     */
+    public GenerationResult[] generateBatch(String[] prompts, int maxNewTokens) {
+        int batchSize = prompts.length;
+        if (batchSize == 0) {
+            return new GenerationResult[0];
+        }
+        if (batchSize == 1) {
+            return new GenerationResult[]{generateWithMetrics(prompts[0], maxNewTokens)};
+        }
+
+        int eosToken = config.getEosTokenId() >= 0 ? config.getEosTokenId() : tokenizer.getEosTokenId();
+        int padToken = config.getPadTokenId() >= 0 ? config.getPadTokenId() : eosToken;
+
+        // Encode all prompts
+        int[][] promptIds = new int[batchSize][];
+        int maxPromptLen = 0;
+        for (int i = 0; i < batchSize; i++) {
+            promptIds[i] = tokenizer.encode(prompts[i], true).getIds();
+            maxPromptLen = Math.max(maxPromptLen, promptIds[i].length);
+        }
+
+        // Right-pad to max prompt length
+        int[][] paddedIds = new int[batchSize][maxPromptLen];
+        for (int i = 0; i < batchSize; i++) {
+            int padLen = maxPromptLen - promptIds[i].length;
+            for (int j = 0; j < padLen; j++) {
+                paddedIds[i][j] = padToken;
+            }
+            System.arraycopy(promptIds[i], 0, paddedIds[i], padLen, promptIds[i].length);
+        }
+
+        // Build batch state with stop tokens
+        int[] additionalStops = stopSequences.isEmpty() ? new int[0] :
+                new int[]{stopSequences.get(0).length == 1 ? stopSequences.get(0)[0] : -1};
+        BatchGenerationState state = new BatchGenerationState(batchSize, eosToken, additionalStops);
+
+        // Track all tokens per sequence for repetition penalty
+        List<List<Integer>> allTokens = new ArrayList<>(batchSize);
+        for (int i = 0; i < batchSize; i++) {
+            List<Integer> tokens = new ArrayList<>();
+            for (int id : promptIds[i]) tokens.add(id);
+            allTokens.add(tokens);
+        }
+
+        // Create batched input: [batchSize, seqLen]
+        INDArray batchInputIds = Nd4j.createFromArray(paddedIds).castTo(DataType.LONG);
+
+        long startNanos = System.nanoTime();
+
+        for (int step = 0; step < maxNewTokens; step++) {
+            // Get logits for all sequences: [batchSize, seqLen, vocabSize]
+            INDArray batchLogits = getBatchLogits(batchInputIds);
+
+            // Extract last-position logits: [batchSize, vocabSize]
+            INDArray lastLogits;
+            if (batchLogits.rank() == 3) {
+                lastLogits = batchLogits.get(
+                        NDArrayIndex.all(),
+                        NDArrayIndex.point(batchLogits.size(1) - 1),
+                        NDArrayIndex.all()).dup();
+            } else {
+                lastLogits = batchLogits;
+            }
+
+            // Sample batch
+            int[] nextTokenIds = sampler.sampleBatch(lastLogits);
+
+            // Record and check stop conditions
+            long stepNanos = System.nanoTime() - startNanos;
+            state.recordTokens(nextTokenIds, stepNanos);
+
+            // Track tokens for repetition penalty
+            for (int i = 0; i < batchSize; i++) {
+                if (!state.isFinished(i)) {
+                    allTokens.get(i).add(nextTokenIds[i]);
+                }
+            }
+
+            if (state.allFinished()) {
+                break;
+            }
+
+            // Append tokens for next step
+            int[] batchNextTokens = new int[batchSize];
+            for (int i = 0; i < batchSize; i++) {
+                batchNextTokens[i] = state.isFinished(i) ? padToken : nextTokenIds[i];
+            }
+            INDArray nextTokenTensor = Nd4j.createFromArray(batchNextTokens)
+                    .reshape(batchSize, 1).castTo(DataType.LONG);
+            batchInputIds = Nd4j.concat(1, batchInputIds, nextTokenTensor);
+        }
+
+        long totalNanos = System.nanoTime() - startNanos;
+
+        // Decode results
+        String[] texts = new String[batchSize];
+        int[] promptTokenCounts = new int[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            int[] genTokens = state.getTokenArrayForSequence(i);
+            texts[i] = tokenizer.decode(genTokens, true);
+            promptTokenCounts[i] = promptIds[i].length;
+        }
+
+        return state.buildResults(texts, promptTokenCounts, totalNanos);
+    }
+
+    /**
+     * Generate text for multiple prompts using default max tokens.
+     *
+     * @param prompts array of input prompts
+     * @return array of generation results
+     */
+    public GenerationResult[] generateBatch(String[] prompts) {
+        return generateBatch(prompts, config.getMaxNewTokens());
+    }
+
+    /**
+     * Get batched logits from the model.
+     *
+     * @param batchInputIds input token IDs, shape [batchSize, seqLen]
+     * @return logits, shape [batchSize, seqLen, vocabSize] or [batchSize, vocabSize]
+     */
+    private INDArray getBatchLogits(INDArray batchInputIds) {
+        Map<String, INDArray> inputs = new HashMap<>();
+
+        if (embeddings != null) {
+            Map<String, INDArray> embInputs = new HashMap<>();
+            embInputs.put(embeddingsInputName, batchInputIds);
+            Map<String, INDArray> embOutputs = embeddings.output(embInputs, embeddingsOutputName);
+            inputs.put("inputs_embeds", embOutputs.get(embeddingsOutputName));
+        } else {
+            inputs.put(inputIdsName, batchInputIds);
+        }
+
+        Map<String, INDArray> outputs = model.output(inputs, logitsOutputName);
+        return outputs.get(logitsOutputName);
     }
 
     /**

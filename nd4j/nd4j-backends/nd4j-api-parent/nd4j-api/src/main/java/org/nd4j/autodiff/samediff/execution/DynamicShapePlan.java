@@ -21,7 +21,9 @@
 package org.nd4j.autodiff.samediff.execution;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
@@ -31,6 +33,7 @@ import org.bytedeco.javacpp.LongPointer;
 
 import java.io.Closeable;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A compiled execution plan for autoregressive inference with dynamic shapes.
@@ -53,7 +56,7 @@ import java.util.*;
  * @see DynamicShapePlanExecutor
  */
 @Slf4j
-@Data
+@Getter
 public class DynamicShapePlan implements Closeable {
 
     /** Pre-compiled per-op descriptors in execution order. */
@@ -89,6 +92,62 @@ public class DynamicShapePlan implements Closeable {
 
     /** Whether any slot has control flow ops (plan is invalid if true — should not be created). */
     private final boolean hasControlFlowOps;
+
+    // --- Dependency graph for async parallel execution ---
+
+    /** Initial predecessor count per step. A step is ready when its count reaches 0. */
+    @Getter private final int[] predecessorCounts;
+
+    /** Predecessor step indices per step (for building predecessor sets for parallel group detection). */
+    @Getter private final int[][] predecessors;
+
+    /** Successor step indices per step. When step i completes, decrement predecessorCounts for each successor. */
+    @Getter private final int[][] successors;
+
+    /** Consumer count per output slot. A slot is freeable when its consumer count reaches 0. */
+    @Getter private final int[] consumerCounts;
+
+    /** Steps with 0 predecessors — execution entry points for async mode. */
+    @Getter private final int[] rootSlots;
+
+    /** Number of distinct devices in slot assignments. Computed by assignDevices(). */
+    @Getter private int numDistinctDevices = 0;
+
+    /**
+     * Full constructor with dependency graph.
+     */
+    public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
+                            OpContext[] opContextPool, String[] externalInputKeys,
+                            Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
+                            boolean hasControlFlowOps,
+                            int[] predecessorCounts, int[][] predecessors, int[][] successors,
+                            int[] consumerCounts, int[] rootSlots) {
+        this.slots = slots;
+        this.totalOutputSlots = totalOutputSlots;
+        this.releaseAtStep = releaseAtStep;
+        this.opContextPool = opContextPool;
+        this.externalInputKeys = externalInputKeys;
+        this.requestedOutputs = requestedOutputs;
+        this.outputNameToSlotIndex = outputNameToSlotIndex;
+        this.hasControlFlowOps = hasControlFlowOps;
+        this.predecessorCounts = predecessorCounts;
+        this.predecessors = predecessors;
+        this.successors = successors;
+        this.consumerCounts = consumerCounts;
+        this.rootSlots = rootSlots;
+    }
+
+    /**
+     * Backward-compatible constructor without dependency graph.
+     */
+    public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
+                            OpContext[] opContextPool, String[] externalInputKeys,
+                            Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
+                            boolean hasControlFlowOps) {
+        this(slots, totalOutputSlots, releaseAtStep, opContextPool, externalInputKeys,
+                requestedOutputs, outputNameToSlotIndex, hasControlFlowOps,
+                null, null, null, null, null);
+    }
 
     /**
      * Get a human-readable summary of this plan.
@@ -143,7 +202,7 @@ public class DynamicShapePlan implements Closeable {
         }
         if (numDevices <= 1 || slots == null || slots.length == 0) return;
         if (Boolean.getBoolean("nd4j.dsp.singleGpu")) {
-            log.info("DSP single-GPU mode forced via nd4j.dsp.singleGpu=true");
+            log.debug("DSP single-GPU mode forced via nd4j.dsp.singleGpu=true");
             return;
         }
 
@@ -180,19 +239,22 @@ public class DynamicShapePlan implements Closeable {
             long available = cudaFree + poolReusable;
             // All devices participate in op assignment. Non-P2P secondary devices use
             // host-staged transfers (D2H + H2D) via replicateToDevice() which auto-dups
-            // views before replication. The intermediate contiguous copy leak that caused
-            // ~30MB/step growth has been fixed (contiguous.close() in replicateToDevice).
-            // Use a smaller fraction for non-P2P secondary devices since host-staged
-            // transfers are slower than P2P and the small GPU has limited memory.
-            long budget = (d == 0 || p2p) ? available : (long)(available * 0.15);
+            // views before replication. Use available memory directly as budget —
+            // host-staged transfers work correctly and the conservative 15% factor
+            // was unnecessarily limiting device utilization (e.g., 7GB GPU only got 1GB budget).
+            // Configurable via nd4j.dsp.nonP2pBudgetFraction (default 1.0 = use full memory).
+            double nonP2pFraction = Double.parseDouble(System.getProperty("nd4j.dsp.nonP2pBudgetFraction", "1.0"));
+            long budget = (d == 0 || p2p) ? available : (long)(available * nonP2pFraction);
             freeMemory.put(d, budget);
-            log.info("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB available / {}MB total (P2P: {}){}",
+            log.debug("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB available / {}MB total (P2P: {}){}",
                     d, cudaFree / (1024 * 1024), poolReusable / (1024 * 1024),
                     available / (1024 * 1024), total / (1024 * 1024),
                     d == 0 ? "self" : p2p ? "yes" : "no (host-staged transfers)",
-                    (!p2p && d != 0) ? " [budget: " + (budget / (1024 * 1024)) + "MB @ 15%]" : "");
+                    (!p2p && d != 0 && nonP2pFraction < 1.0) ? " [budget: " + (budget / (1024 * 1024)) + "MB @ " + (int)(nonP2pFraction * 100) + "%]" : "");
         }
         if (freeMemory.size() <= 1) return; // Only one usable device
+        MultiGpuTracer.traceParallelExec("device-discovery",
+                "found " + numDevices + " devices, " + freeMemory.size() + " usable");
         assignDevices(freeMemory);
     }
 
@@ -201,6 +263,9 @@ public class DynamicShapePlan implements Closeable {
      * Devices with more memory get proportionally more ops. Ops are assigned
      * in execution order, so early ops (typically early layers) go to the
      * device with most memory.
+     *
+     * After proportional assignment, parallel groups (ops sharing the same
+     * predecessor set) are split across devices so both GPUs have concurrent work.
      *
      * @param deviceMemoryBudgets map of deviceId to available bytes for computation
      */
@@ -214,9 +279,12 @@ public class DynamicShapePlan implements Closeable {
         }
         if (totalMem <= 0) return;
 
-        // Sort devices largest-first so the primary GPU gets the first (most) slots
+        // Sort devices smallest-first so secondary GPUs get early slots (layers).
+        // Early layers (embeddings, projections) use less memory than later layers
+        // (attention with large intermediate tensors). This prevents OOM on smaller
+        // GPUs which would get the memory-intensive attention layers if assigned last.
         List<Map.Entry<Integer, Long>> sorted = new ArrayList<>(deviceMemoryBudgets.entrySet());
-        sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+        sorted.sort((a, b) -> Long.compare(a.getValue(), b.getValue()));
 
         int assigned = 0;
         for (int i = 0; i < sorted.size(); i++) {
@@ -233,10 +301,76 @@ public class DynamicShapePlan implements Closeable {
             for (int s = 0; s < slotsForDevice && assigned < slots.length; s++, assigned++) {
                 slots[assigned].setTargetDeviceId(deviceId);
             }
+            MultiGpuTracer.traceDeviceAssignment(deviceId, slotsForDevice, slots.length,
+                    deviceMem / (1024 * 1024), totalMem / (1024 * 1024),
+                    true /* P2P status not tracked here, logged in assignDevices() */);
         }
 
-        log.info("Device placement: {} slots across {} devices — {}",
-                slots.length, deviceMemoryBudgets.size(), getDeviceAssignmentSummary());
+        // Split parallel groups across devices. Ops sharing the same predecessor set
+        // can execute concurrently — assign alternate members to different devices.
+        // This ensures both GPUs have work within each transformer layer's parallel
+        // operations (Q/K/V projections, gate/up projections).
+        if (predecessors != null && deviceMemoryBudgets.size() > 1) {
+            int[] deviceIds = deviceMemoryBudgets.keySet().stream().mapToInt(Integer::intValue).toArray();
+            splitParallelGroups(deviceIds);
+        }
+
+        // Compute numDistinctDevices from actual assignments
+        computeNumDistinctDevices();
+
+        log.debug("Device placement: {} slots across {} devices — {}",
+                slots.length, numDistinctDevices, getDeviceAssignmentSummary());
+    }
+
+    /**
+     * Split parallel groups across devices. Ops with identical predecessor sets
+     * form a parallel group and are distributed round-robin across available devices.
+     */
+    private void splitParallelGroups(int[] deviceIds) {
+        if (deviceIds.length <= 1 || predecessors == null) return;
+
+        // Group steps by their predecessor set
+        Map<List<Integer>, List<Integer>> parallelGroups = new HashMap<>();
+        for (int i = 0; i < slots.length; i++) {
+            int[] preds = predecessors[i];
+            if (preds == null || preds.length == 0) continue;
+            List<Integer> predKey = Arrays.stream(preds).sorted().boxed().collect(Collectors.toList());
+            parallelGroups.computeIfAbsent(predKey, k -> new ArrayList<>()).add(i);
+        }
+
+        int reassigned = 0;
+        for (List<Integer> group : parallelGroups.values()) {
+            if (group.size() > 1) {
+                for (int j = 0; j < group.size(); j++) {
+                    int slotIdx = group.get(j);
+                    int newDevice = deviceIds[j % deviceIds.length];
+                    if (slots[slotIdx].getTargetDeviceId() != newDevice) {
+                        slots[slotIdx].setTargetDeviceId(newDevice);
+                        reassigned++;
+                    }
+                }
+            }
+        }
+        if (reassigned > 0) {
+            log.debug("Parallel group splitting: reassigned {} ops across {} devices",
+                    reassigned, deviceIds.length);
+        }
+    }
+
+    /**
+     * Compute numDistinctDevices from actual slot assignments.
+     */
+    private void computeNumDistinctDevices() {
+        if (slots == null || slots.length == 0) {
+            numDistinctDevices = 0;
+            return;
+        }
+        Set<Integer> devices = new HashSet<>();
+        for (DynamicShapeSlot slot : slots) {
+            int dev = slot.getTargetDeviceId();
+            devices.add(dev >= 0 ? dev : 0);
+        }
+        numDistinctDevices = devices.size();
     }
 
     /**

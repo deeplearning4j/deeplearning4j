@@ -122,7 +122,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
   // allocate memory for new shape
-  LongType *newShape = new LongType[4];
+  LongType *newShape = new LongType[4 + SD_SHAPE_ALLOC_PADDING];
   if (isNCHW) {
     newShape[0] = bS;
     newShape[1] = iD;

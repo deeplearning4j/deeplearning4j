@@ -55,7 +55,7 @@ namespace {
             if (env_val != nullptr) {
                 enabled = (strcmp(env_val, "0") != 0 && strcasecmp(env_val, "false") != 0) ? 1 : 0;
             } else {
-                enabled = 1;  // Enabled by default
+                enabled = 0;  // DISABLED by default - cache clearing during operation causes use-after-free
             }
         }
         return enabled == 1;

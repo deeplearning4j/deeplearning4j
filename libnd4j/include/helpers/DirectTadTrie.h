@@ -62,7 +62,7 @@ struct TadPackSignature {
 
     // Allocate and copy shape only (strides removed)
     if (shape) delete[] shape;
-    shape = new LongType[rank];
+    shape = new LongType[rank + SD_SHAPE_ALLOC_PADDING];
     LongType* srcShape = shape::shapeOf(shapeInfo);
     for (int i = 0; i < rank; i++) {
       shape[i] = srcShape[i];
@@ -103,6 +103,27 @@ class SD_LIB_EXPORT TadTrieNode {
   TadTrieNode(LongType value = 0, int level = 0, bool isDimension = true, int shapeRank = 0)
       : _value(value), _level(level), _isDimension(isDimension), _tadPack(nullptr),
         _shapeRank(shapeRank), _nodeHash(0), _packSignature(nullptr) {}
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns. TadTrieNode objects are small (~120 bytes) and heavily
+  // allocated during TAD trie population — any adjacent overrun
+  // corrupts the next chunk metadata → SIGABRT on free().
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
 
   // Delete copy operations to prevent issues with unique_ptr
   TadTrieNode(const TadTrieNode&) = delete;

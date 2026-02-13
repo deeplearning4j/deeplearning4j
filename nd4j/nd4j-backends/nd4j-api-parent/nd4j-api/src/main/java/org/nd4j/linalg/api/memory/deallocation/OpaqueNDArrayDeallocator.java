@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -123,7 +124,7 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
 
                     if (currentDevice != arrayDevice) {
                         // Switch to the actual array device and reset cached context
-                        Nd4j.getAffinityManager().unsafeSetDevice(arrayDevice);
+                        DeviceMemoryManager.getInstance().switchDevice(arrayDevice, "OpaqueNDArrayDeallocator.deallocate", "dealloc");
                         switchedDevice = true;
                     }
 
@@ -140,7 +141,7 @@ public class OpaqueNDArrayDeallocator implements Deallocatable, Deallocator {
                     } finally {
                         // Restore original device context
                         if (switchedDevice) {
-                            Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                            DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueNDArrayDeallocator.deallocate", "restore-device");
                         }
                     }
                 }

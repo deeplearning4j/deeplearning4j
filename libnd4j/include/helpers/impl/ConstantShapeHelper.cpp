@@ -153,7 +153,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo( sd::LongType* i
                                                                  sd::LongType dimsSize) {
  sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, nullptr);
  auto ret = bufferForShapeInfo(newShapeInfo);
- delete[] newShapeInfo;
+ RELEASE(newShapeInfo, nullptr);
  return ret;
 }
 
@@ -245,23 +245,51 @@ LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descriptor) {
 
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithView(LongType* shapeInfo) {
- if (shapeInfo == nullptr) {
-   THROW_EXCEPTION("shapeInfo is nullptr");
- }
+  if (shapeInfo == nullptr) {
+    THROW_EXCEPTION("shapeInfo is nullptr");
+  }
 
- // BUGFIX: Must pass true to preserve strides (e.g., for transposed/permuted views)
- // Previously passed false which caused strides to be reset to contiguous
- LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, true, nullptr);
+  // BUGFIX: Must pass true to preserve strides (e.g., for transposed/permuted views)
+  // Previously passed false which caused strides to be reset to contiguous
+  LongType* newShapeInfo = ShapeBuilders::copyShapeInfo(shapeInfo, true, nullptr);
 
+  ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
 
+  auto buffer = bufferForShapeInfo(newShapeInfo);
 
- ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_IS_VIEW);
+  // Check guard bytes before freeing — detect if anything wrote past the shape info
+  if (sd::Environment::getInstance().isDebug()) {
+    LongType rank = newShapeInfo[0];
+    if (rank >= 0 && rank <= SD_MAX_RANK) {
+      LongType shapeLen = shape::shapeInfoLength(rank);
+      auto guardBytes = reinterpret_cast<uint8_t*>(newShapeInfo) + (shapeLen * sizeof(LongType));
+      bool guardCorrupted = false;
+      size_t firstCorruptedOffset = 0;
+      for (size_t i = 0; i < 64; i++) {  // check first 64 guard bytes
+        if (guardBytes[i] != 0xAB) {
+          guardCorrupted = true;
+          firstCorruptedOffset = i;
+          break;
+        }
+      }
+      if (guardCorrupted) {
+        fprintf(stderr, "\n!!! SHAPE INFO GUARD BYTES CORRUPTED in bufferForShapeInfoWithView !!!\n");
+        fprintf(stderr, "  shapeInfo=%p, rank=%lld, shapeLen=%lld\n",
+                newShapeInfo, static_cast<long long>(rank), static_cast<long long>(shapeLen));
+        fprintf(stderr, "  First corrupted guard byte at offset %zu from shape info end\n", firstCorruptedOffset);
+        fprintf(stderr, "  Guard bytes: ");
+        for (size_t j = 0; j < 16; j++) {
+          fprintf(stderr, "%02x ", guardBytes[j]);
+        }
+        fprintf(stderr, "\n");
+        fflush(stderr);
+      }
+    }
+  }
 
- auto buffer = bufferForShapeInfo(newShapeInfo);
+  delete[] newShapeInfo;
 
- delete[] newShapeInfo;
-
- return buffer;
+  return buffer;
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfoWithoutView(LongType* shapeInfo) {

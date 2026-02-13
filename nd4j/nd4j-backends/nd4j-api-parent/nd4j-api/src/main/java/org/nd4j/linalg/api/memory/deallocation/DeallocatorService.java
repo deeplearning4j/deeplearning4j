@@ -26,6 +26,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -498,7 +499,7 @@ public class DeallocatorService {
         @SneakyThrows
         @Override
         public void run() {
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+            DeviceMemoryManager.getInstance().switchDevice(deviceId, "DeallocatorService", "worker-init");
             boolean canRun = true;
             while (canRun) {
                 while(blockDeallocator.get()) {

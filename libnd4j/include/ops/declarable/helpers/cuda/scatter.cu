@@ -74,7 +74,7 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
     const LongType currentInd = x[xOffset];
 
     const LongType limit = shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis);
-    if (currentInd >= limit) {
+    if (currentInd < 0 || currentInd >= limit) {
       sd::math::atomics::sd_atomicAdd<LongType>(&numOfBadIndxPerBlock, 1);
     }
   }

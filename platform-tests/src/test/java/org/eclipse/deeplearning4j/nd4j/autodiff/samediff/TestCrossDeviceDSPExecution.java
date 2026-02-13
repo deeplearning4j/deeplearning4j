@@ -34,6 +34,7 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -456,7 +457,7 @@ public class TestCrossDeviceDSPExecution extends BaseNd4jTestWithBackends {
 
         try {
             // Allocate on device 0
-            Nd4j.getAffinityManager().unsafeSetDevice(device0);
+            DeviceMemoryManager.getInstance().switchDevice(device0, "TestCrossDeviceDSPExecution", "test-device-switch");
             INDArray a = Nd4j.rand(DataType.FLOAT, 32, 64);
             INDArray b = Nd4j.rand(DataType.FLOAT, 64, 16);
             assertEquals(device0, Nd4j.getAffinityManager().getDeviceForArray(a));
@@ -466,7 +467,7 @@ public class TestCrossDeviceDSPExecution extends BaseNd4jTestWithBackends {
             INDArray bOnDev1 = Nd4j.getAffinityManager().replicateToDevice(device1, b);
 
             // Compute on device 1
-            Nd4j.getAffinityManager().unsafeSetDevice(device1);
+            DeviceMemoryManager.getInstance().switchDevice(device1, "TestCrossDeviceDSPExecution", "test-device-switch");
             INDArray resultOnDev1 = aOnDev1.mmul(bOnDev1);
             assertEquals(device1, Nd4j.getAffinityManager().getDeviceForArray(resultOnDev1));
 
@@ -474,7 +475,7 @@ public class TestCrossDeviceDSPExecution extends BaseNd4jTestWithBackends {
             INDArray resultOnDev0 = Nd4j.getAffinityManager().replicateToDevice(device0, resultOnDev1);
 
             // Compute reference on device 0
-            Nd4j.getAffinityManager().unsafeSetDevice(device0);
+            DeviceMemoryManager.getInstance().switchDevice(device0, "TestCrossDeviceDSPExecution", "test-device-switch");
             INDArray reference = a.mmul(b);
 
             // Compare
@@ -492,7 +493,7 @@ public class TestCrossDeviceDSPExecution extends BaseNd4jTestWithBackends {
             a.close();
             b.close();
         } finally {
-            Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+            DeviceMemoryManager.getInstance().switchDevice(originalDevice, "TestCrossDeviceDSPExecution", "test-device-switch");
         }
     }
 

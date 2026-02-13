@@ -98,8 +98,15 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
                 ? outputDtypes.get(0)
                 : Shape.pickPairwiseDataType(x.dataType(), y.dataType());
 
-        // Compute broadcast shape (safe now since ranks are equal)
-        long[] outputShape = Shape.broadcastOutputShape(xShape, yShape);
+        // Compute broadcast shape (safe now since ranks are equal).
+        // broadcastOutputShape throws on non-broadcastable shapes — catch and
+        // fall back to C++ shape function which may handle the case differently.
+        long[] outputShape;
+        try {
+            outputShape = Shape.broadcastOutputShape(xShape, yShape);
+        } catch (Exception e) {
+            return null; // Shapes not broadcastable - fall back to C++
+        }
         if (outputShape == null) {
             return null; // Shapes not broadcastable - fall back to C++
         }

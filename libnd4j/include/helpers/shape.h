@@ -569,7 +569,7 @@ SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::Lon
 * @return
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, const sd::LongType *index, int indexLength, int dataLength) {
-  sd::LongType *ret = new sd::LongType[indexLength];
+  sd::LongType *ret = new sd::LongType[indexLength + SD_SHAPE_ALLOC_PADDING];
   int count = 0;
   for (int i = 0; i < dataLength; i++) {
     int contains = 0;
@@ -1062,7 +1062,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideEquals(sd::LongType const *sha
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum) {
   sd::LongType dimensions = rank;
 
-  sd::LongType *stride = new sd::LongType[dimensions];
+  sd::LongType *stride = new sd::LongType[dimensions + SD_SHAPE_ALLOC_PADDING];
   sd::LongType st = startNum;
   for (sd::LongType j = 0; j < rank; j++) {
     stride[j] = st;
@@ -1118,7 +1118,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void excludeUnitiesFromShapeInfo(const sd
 * for the shape information metadata.
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *toShapeBuffer(ShapeInformation *info) {
-  auto ret = new sd::LongType[shapeInfoLength(info->rank)];
+  auto ret = new sd::LongType[shapeInfoLength(info->rank) + SD_SHAPE_ALLOC_PADDING];
   int count = 1;
   int rank = info->rank;
 
@@ -1322,7 +1322,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *shapeBufferOfNpy(sd::LongTy
     sd::LongType *shapeBufferRet = shapeBufferFortran(rank, sd::FLOAT32, (sd::LongType *)shape);
     return shapeBufferRet;
   } else {
-    sd::LongType *newShape = new sd::LongType[rank];
+    sd::LongType *newShape = new sd::LongType[rank + SD_SHAPE_ALLOC_PADDING];
     for (int i = 0; i < rank; i++) {
       newShape[i] = shape[i];
     }
@@ -1348,7 +1348,7 @@ SD_INLINE SD_HOST sd::LongType *shapeBufferOfNpy(cnpy::NpyArray arr) {
 * @return the strides for a matrix of n dimensions
 */
 SD_LIB_EXPORT SD_HOST_DEVICE  SD_INLINE sd::LongType *calcStrides(sd::LongType const *shape, sd::LongType rank, sd::LongType startNum) {
-  sd::LongType *stride = new sd::LongType[rank];
+  sd::LongType *stride = new sd::LongType[rank + SD_SHAPE_ALLOC_PADDING];
 
   if (rank <= 1) {
     if (rank < 0) {
@@ -1679,7 +1679,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isCommonVector(const sd::LongType *s
 
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *detachShape(sd::LongType *originalShape) {
-  sd::LongType *newShape = new sd::LongType[shapeInfoLength(originalShape)];
+  sd::LongType *newShape = new sd::LongType[shapeInfoLength(originalShape) + SD_SHAPE_ALLOC_PADDING];
   memcpy(newShape, originalShape, shapeInfoByteLength(originalShape));
 
   return newShape;
@@ -1841,6 +1841,44 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType shapeInfoByteLength(sd::Long
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::LongType *shapeInfo) {
   // FIXME magic numbers
   return shapeInfoByteLength(shapeInfo[0]);
+}
+
+/**
+ * Validate shape info buffer integrity by checking guard bytes.
+ * Returns true if buffer is valid, false if corruption detected.
+ * Uses the SD_SHAPE_ALLOC_PADDING guard zone at the end of allocations.
+ * Only performs validation when debug mode is enabled to avoid performance impact.
+ */
+SD_LIB_EXPORT SD_INLINE bool validateShapeInfoGuardBytes(const sd::LongType *shapeInfo) {
+#ifndef __CUDACC__
+  // Only validate in debug mode to avoid performance overhead in production
+  if (!sd::Environment::getInstance().isDebug()) {
+    return true;
+  }
+
+  if (shapeInfo == nullptr) return true;
+
+  sd::LongType r = shapeInfo[0];
+  if (r < 0 || r > SD_MAX_RANK) {
+    return false;  // Invalid rank
+  }
+
+  // Calculate where guard bytes should start (right after the actual shape info)
+  sd::LongType len = shapeInfoLength(r);
+  const uint8_t *guardStart = reinterpret_cast<const uint8_t*>(shapeInfo) + (len * sizeof(sd::LongType));
+
+  // Check guard bytes (should be 0xAB repeated)
+  static const uint8_t GUARD_BYTE = 0xAB;
+  for (sd::LongType i = 0; i < SD_SHAPE_ALLOC_PADDING; i++) {
+    if (guardStart[i] != GUARD_BYTE) {
+      fprintf(stderr, "SHAPE INFO GUARD BYTE CORRUPTION DETECTED at offset %lld from shapeInfo %p!\n",
+              (long long)(len * sizeof(sd::LongType) + i), (const void*)shapeInfo);
+      fflush(stderr);
+      return false;
+    }
+  }
+#endif
+  return true;
 }
 
 /**
@@ -2071,7 +2109,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int tadOffset(ShapeInformation *xInfo, int offse
 * @return the new shape
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *ensureVectorShape(sd::LongType *shape, int dimension) {
-  sd::LongType *ret = new sd::LongType[2];
+  sd::LongType *ret = new sd::LongType[2 + SD_SHAPE_ALLOC_PADDING];
 
   if (dimension == 0) {
     ret[0] = 1;
@@ -2260,9 +2298,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int tadOffset(sd::LongType *xInfo, int offset) {
 
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *createScalarShapeInfo() {
-  auto shape = new sd::LongType[1];
+  auto shape = new sd::LongType[1 + SD_SHAPE_ALLOC_PADDING];
   shape[0] = 1;
-  auto stride = new sd::LongType[1];
+  auto stride = new sd::LongType[1 + SD_SHAPE_ALLOC_PADDING];
   stride[0] = 1;
   auto shapeInformation2 = new ShapeInformation();
   shapeInformation2->rank = 1;
@@ -2358,7 +2396,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void shapeOldScalar(sd::DataType dataType
   buffer[2] = 1;
   buffer[3] = 1;
   buffer[4] = 1;
-  buffer[6] = 1;
+  buffer[5] = 0;  // extra/flags - must be initialized before setDataType reads it
+  buffer[6] = 1;  // EWS
   buffer[7] = order;
 
   sd::ArrayOptions::setDataType(buffer, dataType);
@@ -2407,7 +2446,7 @@ SD_LIB_EXPORT SD_INLINE  SD_HOST void doPermuteSwap(sd::LongType length, sd::Lon
     return;
   }
 
-  auto temp = new sd::LongType[length];
+  auto temp = new sd::LongType[length + SD_SHAPE_ALLOC_PADDING];
   memcpy(temp, shape, sizeof(sd::LongType) * length);
   for (sd::LongType i = 0; i < length; i++) {
     shape[i] = temp[rearrange[i]];
@@ -2648,12 +2687,13 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrsShapeInfoAndOffsets(const sd::Lo
   const sd::LongType subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
 
   subArrShapeInfo[0] = subArrRank;                                     // rank
-  subArrShapeInfo[2 * subArrRank + 1] = 0;                             // clear (to avoid uninitialized)
+  subArrShapeInfo[2 * subArrRank + 1] = 0;                             // clear extra (to avoid uninitialized)
+  subArrShapeInfo[2 * subArrRank + 2] = -1;                            // EWS unknown for sub-arrays
   sd::ArrayOptions::copyDataType(subArrShapeInfo, wholeShapeInfo);     // type
   subArrShapeInfo[2 * subArrRank + 3] = order(wholeShapeInfo);  // order
 
-  sd::LongType *shape = new sd::LongType[dimsSize];
-  sd::LongType *strides = new sd::LongType[dimsSize];
+  sd::LongType *shape = new sd::LongType[dimsSize + SD_SHAPE_ALLOC_PADDING];
+  sd::LongType *strides = new sd::LongType[dimsSize + SD_SHAPE_ALLOC_PADDING];
 
   for (sd::LongType k = subArrRank - 1, j = dimsSize - 1, i = rank - 1; i >= 0; --i) {
     if (j >= 0 && i == dimsToExclude[j]) {
@@ -2721,7 +2761,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo,
   }
   // if everything is ok then perform permute
   sd::LongType len2 = shapeInfoLength(rank);
-  auto temp = new sd::LongType[len2];
+  auto temp = new sd::LongType[len2 + SD_SHAPE_ALLOC_PADDING];
   // note: it's obvious to do simd or something fancy
   // here it actually seems to cause segfaults. Better to be careful.
   for (int i = 0; i < len2; i++) {
@@ -3067,10 +3107,18 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
     }
   }
 
+  // Set the EWS field to -1 (unknown/not computed) before setting extra/order/datatype.
+  // Without this, the EWS field contains uninitialized garbage from ALLOCATE,
+  // causing trie cache misses (shapeInfoEqual uses memcmp on all fields)
+  // and potentially contributing to heap corruption.
+  sd::LongType minRank = minShapeInfo[0];
+  if (minRank > 0) {
+    minShapeInfo[2 * minRank + 2] = -1;
+  }
+
   setExtra(minShapeInfo, extra(maxShapeInfo));
   setOrder(minShapeInfo, 'c');                                                     // order
   sd::ArrayOptions::setDataType(minShapeInfo, sd::ArrayOptions::dataType(maxShapeInfo));  // type
-  // Note: checkStridesEwsAndOrder removed - EWS is deprecated
 
   if (sd::Environment::getInstance().isDebug()) {
     sd_printf("  Final minOffset: %lld\n", minOffset);
@@ -3164,11 +3212,11 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void updateStrides(const sd::LongType rank, cons
 SD_LIB_EXPORT SD_INLINE SD_HOST ShapeInformation *shapeCopy(ShapeInformation *toCopy) {
   auto copy = new ShapeInformation;
 
-  copy->shape = new sd::LongType[toCopy->rank];
+  copy->shape = new sd::LongType[toCopy->rank + SD_SHAPE_ALLOC_PADDING];
 
   memcpy(copy->shape, toCopy->shape, toCopy->rank * sizeof(sd::LongType));
 
-  copy->stride = new sd::LongType[toCopy->rank];
+  copy->stride = new sd::LongType[toCopy->rank + SD_SHAPE_ALLOC_PADDING];
   for (sd::LongType i = 0; i < toCopy->rank; i++) {
     copy->stride[i] = toCopy->stride[i];
   }

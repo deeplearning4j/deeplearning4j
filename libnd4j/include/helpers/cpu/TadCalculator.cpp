@@ -48,7 +48,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     auto scalarShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(shapeInfo));
     auto scalarShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(scalarShapeInfo);
     
-    auto oPtr = std::make_shared<PointerWrapper>(new LongType[totalElements]);
+    auto oPtr = std::make_shared<PointerWrapper>(new LongType[totalElements + SD_SHAPE_ALLOC_PADDING]());
     LongType* offsets = oPtr->pointerAsT<LongType>();
     
     for (LongType i = 0; i < totalElements; ++i) {
@@ -68,8 +68,8 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   if (numOfSubArrs > 0) {
     const LongType subArrRank = (static_cast<size_t>(rank) == dimsToExclude->size() || false) ? rank : rank - dimsToExclude->size();
 
-    auto sPtr = std::make_shared<PointerWrapper>(new LongType[shape::shapeInfoLength(subArrRank)]);
-    auto oPtr = std::make_shared<PointerWrapper>(new LongType[numOfSubArrs]);
+    auto sPtr = std::make_shared<PointerWrapper>(new LongType[shape::shapeInfoLength(subArrRank) + SD_SHAPE_ALLOC_PADDING]);
+    auto oPtr = std::make_shared<PointerWrapper>(new LongType[numOfSubArrs + SD_SHAPE_ALLOC_PADDING]());
 
     shape::calcSubArrsShapeInfoAndOffsets(
         shapeInfo,
@@ -88,14 +88,14 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   } else {
     const LongType subArrRank = rank;
 
-    auto sPtr = std::make_shared<PointerWrapper>(new LongType[shape::shapeInfoLength(subArrRank)]);
+    auto sPtr = std::make_shared<PointerWrapper>(new LongType[shape::shapeInfoLength(subArrRank) + SD_SHAPE_ALLOC_PADDING]);
     LongType* shapeInfo2 = sPtr->pointerAsT<LongType>();
 
     auto nonConstant = const_cast<LongType*>(shapeInfo);
     auto nonConst2 = const_cast<LongType*>(shapeInfo2);
     shape::copyTo<LongType>(shape::shapeInfoLength(subArrRank), nonConstant, nonConst2);
 
-    LongType* baseOffset = new LongType[1];
+    LongType* baseOffset = new LongType[1 + SD_SHAPE_ALLOC_PADDING]();
     baseOffset[0] = 0;
     auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
 

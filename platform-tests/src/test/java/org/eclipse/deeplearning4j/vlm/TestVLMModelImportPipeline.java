@@ -28,6 +28,7 @@ import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.output.DocTagsParser;
 import org.eclipse.deeplearning4j.vlm.output.DocumentStructure;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
+import org.eclipse.deeplearning4j.vlm.model.PipelinedVisionEncoder;
 import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
@@ -500,6 +501,12 @@ public class TestVLMModelImportPipeline {
         List<String> visionInputNames = visionEncoder.inputs();
         String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
         List<INDArray> frameEmbeddings = new java.util.ArrayList<>();
+
+        // Enable debug+verbose BEFORE frame 1 so workspace canary checks
+        // and "Executing op" messages run during the frame where corruption accumulates
+        log.info("Enabling debug+verbose mode before vision encoder frames");
+        Nd4j.getEnvironment().setDebug(true);
+        Nd4j.getEnvironment().setVerbose(true);
 
         for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
             long frameStart = System.currentTimeMillis();
@@ -2515,106 +2522,180 @@ public class TestVLMModelImportPipeline {
         log.info("STEP 5: Tiling {} pages (targetSize={}, maxTiles={})...", batchSize, targetSize, effectiveMaxTiles);
 
         // Per-page data: tiling results (CPU-only, no GPU arrays yet)
+        // Use parallel tiling: each page's tile extraction and resize runs concurrently
+        int tilingThreads = Math.min(batchSize, Runtime.getRuntime().availableProcessors());
         List<ImageTiler.SplitImageResult> pageSplitResults = new java.util.ArrayList<>();
 
         for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
             BufferedImage page = pages.get(pageIdx);
             log.info("  Page {}: raw {}x{}", pageIdx, page.getWidth(), page.getHeight());
 
-            // Resize and tile (same as single-page pipeline)
             BufferedImage resizedForTiling = ImageTiler.resizeLongestEdge(page, 2048);
-            ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLM(resizedForTiling, targetSize, effectiveMaxTiles);
+            ImageTiler.SplitImageResult splitResult = ImageTiler.splitImageForVLMParallel(
+                    resizedForTiling, targetSize, effectiveMaxTiles, tilingThreads);
             pageSplitResults.add(splitResult);
 
             int numFrames = splitResult.getTotalFrames();
             log.info("  Page {}: {} frames ({} tiles + 1 global)", pageIdx, numFrames, splitResult.getTileCount());
         }
-        log.info("STEP 5 DONE: [{}ms]", System.currentTimeMillis() - step5Start);
+        log.info("STEP 5 DONE: [{}ms] (parallel tiling, {} threads)", System.currentTimeMillis() - step5Start, tilingThreads);
 
-        // ==================== STEP 6: Run Vision Encoder Per Page ====================
+        // ==================== STEP 6: Batched Vision Encoding ====================
+        // Process K frames per vision encoder forward pass instead of 1 at a time.
+        // This reduces per-frame overhead (session reset, kernel launches, alloc/dealloc).
+        int visionChunkSize = 1; // frames per forward pass (model expects batch=1)
+        String vcsStr = System.getProperty("vlm.test.visionBatchSize");
+        if (vcsStr != null && !vcsStr.isEmpty()) {
+            visionChunkSize = Integer.parseInt(vcsStr);
+        }
+
         long step6Start = System.currentTimeMillis();
         int totalFrames = 0;
         for (ImageTiler.SplitImageResult split : pageSplitResults) {
             totalFrames += split.getTotalFrames();
         }
-        log.info("STEP 6: Running vision encoder ({} pages, {} total frames)...", batchSize, totalFrames);
+        log.info("STEP 6: Batched vision encoding ({} pages, {} total frames, chunk size {})...",
+                batchSize, totalFrames, visionChunkSize);
 
         String[] encOutputNames = visionEncoder.outputs().toArray(new String[0]);
-        List<INDArray> pageVisionEmbeddings = new java.util.ArrayList<>();
+        boolean hasMaskInput = visionEncoder.getVariable("pixel_attention_mask") != null;
+
+        // Preprocess ALL frames across all pages in parallel, then batch-encode
+        // Step 6a: Parallel CPU preprocessing
+        int preprocessThreads = Math.min(totalFrames, Runtime.getRuntime().availableProcessors());
+        List<INDArray> allFrameTensors = new java.util.ArrayList<>();
+        List<INDArray> allFrameMasks = new java.util.ArrayList<>();
+        int[] pageFrameOffsets = new int[batchSize + 1];
+        int frameCount = 0;
 
         for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
-            long pageStart = System.currentTimeMillis();
-            ImageTiler.SplitImageResult splitResult = pageSplitResults.get(pageIdx);
-            int numFrames = splitResult.getTotalFrames();
+            pageFrameOffsets[pageIdx] = frameCount;
+            ImageTiler.SplitImageResult split = pageSplitResults.get(pageIdx);
 
-            // Preprocess frames for this page
-            VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
-            INDArray frameTensor = VisionEncoderUtils.preprocessFrames(splitResult.frames, preprocessor, targetSize);
-            preprocessor.shutdown();
+            // Use parallel preprocessing for this page's frames
+            final int fTargetSize = targetSize;
+            INDArray frameTensor = VisionEncoderUtils.preprocessFramesParallel(
+                    split.frames,
+                    () -> createSmolDoclingPreprocessor(fTargetSize, true),
+                    targetSize, preprocessThreads);
 
-            log.info("  Page {}: {} frames, tensor shape={}", pageIdx, numFrames,
-                    java.util.Arrays.toString(frameTensor.shape()));
+            // Extract individual frames and create masks
+            for (int f = 0; f < split.getTotalFrames(); f++) {
+                INDArray frame = frameTensor.get(
+                        NDArrayIndex.point(0), NDArrayIndex.point(f),
+                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()
+                ).reshape(1, 1, 3, targetSize, targetSize).dup();
+                allFrameTensors.add(frame);
 
-            List<INDArray> frameEmbeddings = new java.util.ArrayList<>();
-            for (int frameIdx = 0; frameIdx < numFrames; frameIdx++) {
-                long frameStart = System.currentTimeMillis();
-                INDArray frameSlice = frameTensor.get(
-                        NDArrayIndex.point(0), NDArrayIndex.point(frameIdx),
-                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
-
-                ImageTiler.ContentRegion region = splitResult.contentRegions.get(frameIdx);
-                INDArray mask = ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize);
-
-                Map<String, INDArray> visionInputMap = new java.util.HashMap<>();
-                visionInputMap.put("pixel_values", singleFrame);
-                visionInputMap.put("pixel_attention_mask", mask);
-
-                Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, encOutputNames);
-                VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
-                if (selected == null) {
-                    throw new RuntimeException("Vision encoder produced no output for page " + pageIdx + " frame " + frameIdx);
-                }
-                INDArray out = selected.tensor.dup();
-                frameEmbeddings.add(out);
-
-                log.info("    Frame {}/{}: shape={} [{}ms]", frameIdx + 1, numFrames,
-                        java.util.Arrays.toString(out.shape()), System.currentTimeMillis() - frameStart);
-
-                // Cleanup frame resources
-                for (var entry : visionOutputs.entrySet()) {
-                    INDArray arr = entry.getValue();
-                    if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
-                }
-                singleFrame.close();
-                mask.close();
-                visionEncoder.clearPlaceholders(false);
-                visionEncoder.clearOpInputs();
-                visionEncoder.resetSession();
-                Nd4j.getExecutioner().commit();
-            }
-
-            // Concatenate frame embeddings for this page: [1, totalTokens, hidden]
-            INDArray pageEmbedding;
-            if (frameEmbeddings.size() == 1) {
-                pageEmbedding = frameEmbeddings.get(0).dup();
-            } else {
-                pageEmbedding = Nd4j.concat(1, frameEmbeddings.toArray(new INDArray[0])).dup();
-            }
-            for (INDArray fe : frameEmbeddings) {
-                if (fe != null && fe.closeable() && !fe.wasClosed()) fe.close();
+                ImageTiler.ContentRegion region = split.contentRegions.get(f);
+                allFrameMasks.add(ImageTiler.createPixelAttentionMask(region.width, region.height, targetSize));
+                frameCount++;
             }
             frameTensor.close();
+        }
+        pageFrameOffsets[batchSize] = frameCount;
+        log.info("  Preprocessed {} frames in parallel ({} threads)", frameCount, preprocessThreads);
 
-            pageVisionEmbeddings.add(pageEmbedding);
-            long pageTime = System.currentTimeMillis() - pageStart;
-            log.info("  Page {}: embedding shape={} [{}ms, {}ms/frame]",
-                    pageIdx, java.util.Arrays.toString(pageEmbedding.shape()),
-                    pageTime, pageTime / numFrames);
+        // Step 6b: Batched vision encoder - K frames per forward pass
+        INDArray[] frameEmbeddings = new INDArray[totalFrames];
+        int chunksProcessed = 0;
+
+        for (int chunkStart = 0; chunkStart < totalFrames; chunkStart += visionChunkSize) {
+            int chunkEnd = Math.min(chunkStart + visionChunkSize, totalFrames);
+            int chunkSize = chunkEnd - chunkStart;
+            long chunkStartMs = System.currentTimeMillis();
+
+            // Stack frames for this chunk: [chunkSize, 1, 3, H, W]
+            INDArray[] chunkFrames = new INDArray[chunkSize];
+            INDArray[] chunkMasks = new INDArray[chunkSize];
+            for (int i = 0; i < chunkSize; i++) {
+                chunkFrames[i] = allFrameTensors.get(chunkStart + i);
+                chunkMasks[i] = allFrameMasks.get(chunkStart + i);
+            }
+            INDArray batchedPixelValues = Nd4j.vstack(chunkFrames);
+            INDArray batchedMasks = Nd4j.vstack(chunkMasks);
+
+            Map<String, INDArray> visionInputMap = new java.util.HashMap<>();
+            visionInputMap.put("pixel_values", batchedPixelValues);
+            if (hasMaskInput) {
+                visionInputMap.put("pixel_attention_mask", batchedMasks);
+            }
+
+            Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, encOutputNames);
+            VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(visionOutputs);
+            if (selected == null) {
+                throw new RuntimeException("Vision encoder produced no output for chunk " + chunksProcessed);
+            }
+
+            // Split chunk output back into individual frame embeddings
+            INDArray chunkOutput = selected.tensor;
+            for (int i = 0; i < chunkSize; i++) {
+                frameEmbeddings[chunkStart + i] = chunkOutput.get(
+                        NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()
+                ).reshape(1, chunkOutput.size(1), chunkOutput.size(2)).dup();
+            }
+
+            log.info("  Chunk {}: frames [{}-{}), output shape={} [{}ms]",
+                    chunksProcessed, chunkStart, chunkEnd,
+                    java.util.Arrays.toString(chunkOutput.shape()),
+                    System.currentTimeMillis() - chunkStartMs);
+
+            // Cleanup chunk intermediates
+            for (var entry : visionOutputs.entrySet()) {
+                INDArray arr = entry.getValue();
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+            // directExecHelper poisons placeholders via setCloseable(false) → setConstant(true).
+            // Must undo poisoning before close, otherwise close() is a no-op and the arrays
+            // leak to GC → heap corruption → SIGABRT during constant cleanup.
+            batchedPixelValues.setCloseable(true);
+            batchedPixelValues.close();
+            batchedMasks.setCloseable(true);
+            batchedMasks.close();
+            visionEncoder.clearPlaceholders(false);
+            visionEncoder.clearOpInputs();
+            visionEncoder.resetSession();
+            Nd4j.getExecutioner().commit();
+            chunksProcessed++;
         }
 
-        log.info("STEP 6 DONE: [{}ms, {}ms/frame avg]", System.currentTimeMillis() - step6Start,
-                (System.currentTimeMillis() - step6Start) / totalFrames);
+        // Close individual preprocessed frames (no longer needed)
+        for (INDArray ft : allFrameTensors) {
+            if (ft != null && !ft.wasClosed()) { ft.setCloseable(true); ft.close(); }
+        }
+        for (INDArray fm : allFrameMasks) {
+            if (fm != null && !fm.wasClosed()) { fm.setCloseable(true); fm.close(); }
+        }
+
+        // Concatenate frame embeddings per page: [1, pageSeqLen, hidden]
+        List<INDArray> pageVisionEmbeddings = new java.util.ArrayList<>();
+        for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
+            int start = pageFrameOffsets[pageIdx];
+            int end = pageFrameOffsets[pageIdx + 1];
+            int numPageFrames = end - start;
+
+            INDArray pageEmbedding;
+            if (numPageFrames == 1) {
+                pageEmbedding = frameEmbeddings[start];
+            } else {
+                INDArray[] pageFrameEmbs = new INDArray[numPageFrames];
+                System.arraycopy(frameEmbeddings, start, pageFrameEmbs, 0, numPageFrames);
+                pageEmbedding = Nd4j.concat(1, pageFrameEmbs).dup();
+                for (INDArray fe : pageFrameEmbs) { if (fe != null && !fe.wasClosed()) fe.close(); }
+            }
+            pageVisionEmbeddings.add(pageEmbedding);
+            log.info("  Page {}: {} frames -> embedding shape={}",
+                    pageIdx, numPageFrames, java.util.Arrays.toString(pageEmbedding.shape()));
+        }
+
+        long step6Time = System.currentTimeMillis() - step6Start;
+        log.info("STEP 6 DONE: {} chunks, {} frames [{}ms total, {}ms/frame avg, {}ms/chunk avg]",
+                chunksProcessed, totalFrames, step6Time,
+                step6Time / Math.max(1, totalFrames),
+                step6Time / Math.max(1, chunksProcessed));
 
         // Free vision encoder model constants to reclaim GPU memory for decode
         log.info("  Freeing vision encoder model constants...");
@@ -2735,6 +2816,12 @@ public class TestVLMModelImportPipeline {
         }
 
         Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        // Helper thread for overlapping embed tokens computation with KV cache cleanup
+        java.util.concurrent.ExecutorService embedExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "EmbedTokens-Async");
+            t.setDaemon(true);
+            return t;
+        });
         INDArray currentEmbeddings = batchedEmbeddings;
         long pastSeqLen = 0;
 
@@ -2871,8 +2958,8 @@ public class TestVLMModelImportPipeline {
                 lastLogits = logits;
             }
 
-            // Batch sampling (greedy argmax for each sequence)
-            int[] nextTokenIds = SamplerUtils.argmaxBatch(lastLogits);
+            // Batch sampling via sampler (uses bulk host transfer for greedy argmax)
+            int[] nextTokenIds = sampler.sampleBatch(lastLogits);
             if (lastLogits != logits) lastLogits.close();
 
             // Record tokens, print as generated with running text, and check for EOS
@@ -2900,7 +2987,23 @@ public class TestVLMModelImportPipeline {
 
             logits.close();
 
-            // Close per-step decoder inputs that we created (not KV cache, not embeddings)
+            // Overlap: start embed tokens computation on helper thread while main thread
+            // cleans up decoder inputs and old KV cache entries. embedTokens and decoder are
+            // separate SameDiff instances so they can safely run on different threads.
+            int[] batchTokenIds = new int[batchSize];
+            for (int i = 0; i < batchSize; i++) {
+                batchTokenIds[i] = finished[i] ? eosTokenId : nextTokenIds[i];
+            }
+            INDArray tokenTensor = Nd4j.createFromArray(batchTokenIds).reshape(batchSize, 1).castTo(DataType.LONG);
+
+            // Submit embed tokens to helper thread (GPU work on helper's CUDA context)
+            final INDArray tokenTensorFinal = tokenTensor;
+            java.util.concurrent.Future<INDArray> embedFuture = embedExecutor.submit(() -> {
+                Map<String, INDArray> newEmbedOutputs = embedTokens.output(Map.of(embedInputName, tokenTensorFinal), embedOutputNames);
+                return newEmbedOutputs.values().iterator().next().dup();
+            });
+
+            // Main thread: cleanup decoder inputs while embed tokens computes
             for (var entry : decoderInputMap.entrySet()) {
                 String name = entry.getKey();
                 INDArray arr = entry.getValue();
@@ -2913,20 +3016,18 @@ public class TestVLMModelImportPipeline {
             }
             decoder.clearPlaceholders(false);
 
-            // Get embeddings for next tokens — single batched call instead of N serial calls
-            int[] batchTokenIds = new int[batchSize];
-            for (int i = 0; i < batchSize; i++) {
-                batchTokenIds[i] = finished[i] ? eosTokenId : nextTokenIds[i];
-            }
-            INDArray tokenTensor = Nd4j.createFromArray(batchTokenIds).reshape(batchSize, 1).castTo(DataType.LONG);
-            Map<String, INDArray> newEmbedOutputs = embedTokens.output(Map.of(embedInputName, tokenTensor), embedOutputNames);
+            // Close prev embeddings (poisoned by decoder's directExecHelper)
             INDArray prevEmbeddings = currentEmbeddings;
-            currentEmbeddings = newEmbedOutputs.values().iterator().next().dup();
-            // prevEmbeddings was poisoned by decoder's directExecHelper() (setCloseable(false))
-            // when passed as placeholder — must restore before closing, just like sequential test
             if (prevEmbeddings != batchedEmbeddings && prevEmbeddings != null && !prevEmbeddings.wasClosed()) {
                 prevEmbeddings.setCloseable(true);
                 prevEmbeddings.close();
+            }
+
+            // Wait for embed tokens result
+            try {
+                currentEmbeddings = embedFuture.get();
+            } catch (Exception e) {
+                throw new RuntimeException("Embed tokens failed", e);
             }
             // tokenTensor was poisoned by embedTokens.output() directExecHelper()
             if (tokenTensor != null && !tokenTensor.wasClosed()) {
@@ -2938,6 +3039,7 @@ public class TestVLMModelImportPipeline {
             stepsCompleted = step + 1;
         }
 
+        embedExecutor.shutdown();
         long step8End = System.currentTimeMillis();
         long step8Total = step8End - step8Start;
 
@@ -3218,8 +3320,10 @@ public class TestVLMModelImportPipeline {
         log.info("  Freeing vision encoder...");
         int freedArrays = SameDiffMemoryUtils.freeModelArrays(visionEncoder);
         Nd4j.getExecutioner().commit();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPool(
-                Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        // Sync stream 0 (where RELEASE_SPECIAL frees land) + trim pool.
+        // Without this, pool-reserved memory starves cudaStreamCreate() on new threads.
+        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
         log.info("  Freed {} arrays.", freedArrays);
         visionEncoder = null;
 
@@ -3503,5 +3607,553 @@ public class TestVLMModelImportPipeline {
 
         org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
         log.info("Batched vision encoder pipeline test complete.");
+    }
+
+    /**
+     * Optimized VLM pipeline using all new parallelization components:
+     *
+     * 1. PipelinedVisionEncoder: overlaps CPU preprocessing of page N+1 with GPU encoding of page N
+     * 2. Parallel tiling: splitImageForVLMParallel uses thread pool for tile extraction
+     * 3. BatchCompactor: removes finished sequences from batch to reduce computation
+     * 4. SpeculativeDecodeLoop: n-gram based speculative decoding for structured outputs (DocTags)
+     * 5. Embed/KV cleanup overlap: embedTokens runs on helper thread while main thread cleans KV cache
+     * 6. Bulk host transfer: argmaxBatch uses toFloatVector() instead of per-element getFloat()
+     *
+     * Run with:
+     *   -Dtest=TestVLMModelImportPipeline#testOptimizedPipeline
+     *   -Dvlm.test.pdf.path=/path/to/book.pdf
+     *   -Dvlm.test.pdf.startPage=0
+     *   -Dvlm.test.pdf.maxPages=2
+     *   -Dvlm.test.maxTokens=200
+     *   -Dvlm.test.maxTiles=9
+     *   -Dvlm.test.visionBatchSize=2   (frames per vision encoder call, default 2)
+     */
+    @Test
+    @DisplayName("Optimized pipeline: pipelined vision, speculative decode, batch compaction")
+    public void testOptimizedPipeline() throws Exception {
+        if (pdfPath == null || !new File(pdfPath).exists()) {
+            log.info("Skipping test - no PDF provided. Use -Dvlm.test.pdf.path=/path/to/book.pdf");
+            return;
+        }
+
+
+        Nd4j.getEnvironment().setDebug(false);
+        Nd4j.getEnvironment().setVerbose(false);
+        Nd4j.getEnvironment().setLogNativeNDArrayCreation(false);
+        int visionChunkSize = 2;
+        String vcsStr = System.getProperty("vlm.test.visionBatchSize");
+        if (vcsStr != null && !vcsStr.isEmpty()) {
+            visionChunkSize = Integer.parseInt(vcsStr);
+        }
+
+        // ==================== STEP 1: Download Models ====================
+        log.info("=== OPTIMIZED PIPELINE (pipelined vision + speculative decode + batch compaction) ===");
+        log.info("STEP 1: Downloading models...");
+        var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+        var embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+        var tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+        log.info("STEP 1 DONE.");
+
+        // ==================== STEP 2: Load Tokenizer ====================
+        log.info("STEP 2: Loading tokenizer...");
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
+        int eosTokenId = tokenizer.getEosTokenId();
+        Integer endOfUtteranceId = tokenizer.getTokenId("<end_of_utterance>");
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+        log.info("STEP 2 DONE: vocab={}, eos={}, endOfUtterance={}, imageToken={}",
+                tokenizer.getVocabSize(), eosTokenId,
+                endOfUtteranceId != null ? endOfUtteranceId : "N/A", imageTokenId);
+
+        // ==================== STEP 3: Import ONNX Models ====================
+        log.info("STEP 3: Importing ONNX models...");
+        OnnxFrameworkImporter importer = new OnnxFrameworkImporter();
+        SameDiff visionEncoder = importer.runImport(visionResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        SameDiff decoder = importer.runImport(decoderResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+        SameDiff embedTokens = importer.runImport(embedTokensResult.getModelFile().getAbsolutePath(), Map.of(), false, false);
+
+        // Enable native workspace so C++ op temporaries use bump allocation instead of
+        // glibc malloc. This prevents heap metadata corruption from C++ op buffer overruns.
+        visionEncoder.enableWorkspaceMode(8 * 1024 * 1024);
+        decoder.enableWorkspaceMode(8 * 1024 * 1024);
+        log.info("STEP 3 DONE.");
+
+        // ==================== STEP 4: Load & Tile Pages (Parallel) ====================
+        if (maxPages <= 0) maxPages = 1;
+        log.info("STEP 4: Loading and tiling pages (startPage={}, maxPages={})...", startPage, maxPages);
+        List<BufferedImage> pages = loadPagesToProcess();
+        int batchSize = pages.size();
+        if (batchSize < 1) {
+            log.error("No pages loaded.");
+            return;
+        }
+
+        int targetSize = 512;
+        int effectiveMaxTiles = maxTiles > 0 ? maxTiles : 9;
+        int tilingThreads = Math.min(batchSize, Runtime.getRuntime().availableProcessors());
+
+        long step4Start = System.currentTimeMillis();
+        List<ImageTiler.SplitImageResult> pageSplitResults = new ArrayList<>();
+        for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
+            BufferedImage resized = ImageTiler.resizeLongestEdge(pages.get(pageIdx), 2048);
+            ImageTiler.SplitImageResult split = ImageTiler.splitImageForVLMParallel(
+                    resized, targetSize, effectiveMaxTiles, tilingThreads);
+            pageSplitResults.add(split);
+            log.info("  Page {}: {}x{} -> {} frames ({}x{} grid + global)",
+                    pageIdx, pages.get(pageIdx).getWidth(), pages.get(pageIdx).getHeight(),
+                    split.getTotalFrames(), split.numRows, split.numCols);
+        }
+        log.info("STEP 4 DONE: [{}ms] (parallel tiling, {} threads)",
+                System.currentTimeMillis() - step4Start, tilingThreads);
+
+        // ==================== STEP 5: Pipelined Vision Encoding ====================
+        long step5Start = System.currentTimeMillis();
+        int totalFrames = 0;
+        for (ImageTiler.SplitImageResult split : pageSplitResults) {
+            totalFrames += split.getTotalFrames();
+        }
+        log.info("STEP 5: Pipelined vision encoding ({} pages, {} total frames, chunk size {})...",
+                batchSize, totalFrames, visionChunkSize);
+
+        // Use PipelinedVisionEncoder: overlaps CPU preprocessing of page N+1
+        // with GPU encoding of page N
+        int preprocessThreads = Math.min(4, Runtime.getRuntime().availableProcessors());
+        final int fTargetSize = targetSize;
+        PipelinedVisionEncoder pipelinedEncoder = new PipelinedVisionEncoder(
+                visionEncoder, visionChunkSize, preprocessThreads);
+
+        // Debug/verbose disabled for performance - enable for canary checks
+        // Nd4j.getEnvironment().setDebug(true);
+        // Nd4j.getEnvironment().setVerbose(true);
+
+        List<INDArray> pageVisionEmbeddings = pipelinedEncoder.encodePipelined(
+                pageSplitResults,
+                () -> createSmolDoclingPreprocessor(fTargetSize, true),
+                targetSize);
+        pipelinedEncoder.shutdown();
+
+        long step5Time = System.currentTimeMillis() - step5Start;
+        log.info("STEP 5 DONE: {} pages encoded [{}ms total, {}ms/frame avg]",
+                batchSize, step5Time, step5Time / Math.max(1, totalFrames));
+
+        // Free vision encoder to reclaim GPU memory
+        log.info("  Freeing vision encoder...");
+        int freedArrays = SameDiffMemoryUtils.freeModelArrays(visionEncoder);
+        Nd4j.getExecutioner().commit();
+        // Sync stream 0 (where RELEASE_SPECIAL frees land) + trim pool.
+        // Without this, pool-reserved memory starves cudaStreamCreate() on new threads.
+        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+        log.info("  Freed {} arrays.", freedArrays);
+        visionEncoder = null;
+
+        // ==================== STEP 6: Build Prompt & Merge Embeddings ====================
+        long step6Start = System.currentTimeMillis();
+        log.info("STEP 6: Building prompt and merging embeddings...");
+
+        // All pages must have same tiling for batched decode
+        ImageTiler.SplitImageResult refSplit = pageSplitResults.get(0);
+        int refNumRows = refSplit.numRows;
+        int refNumCols = refSplit.numCols;
+        int refNumFrames = refSplit.getTotalFrames();
+        long refVisionSeqLen = pageVisionEmbeddings.get(0).size(1);
+        int imageSeqLenPerFrame = (int) (refVisionSeqLen / refNumFrames);
+
+        String imagePrompt = ImagePromptBuilder.buildImagePromptString(refNumRows, refNumCols, imageSeqLenPerFrame);
+        String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+        int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
+        log.info("  Prompt: {} tokens, {} <image> tokens (grid {}x{} + global, {} tokens/frame)",
+                promptTokenIds.length,
+                ImagePromptBuilder.countOccurrences(promptTokenIds, imageTokenId),
+                refNumRows, refNumCols, imageSeqLenPerFrame);
+
+        // Get text embeddings (shared across all pages)
+        String embedInputName = embedTokens.inputs().isEmpty() ? "input_ids" : embedTokens.inputs().get(0);
+        String[] embedOutputNames = embedTokens.outputs().toArray(new String[0]);
+        INDArray promptTokenIdsTensor = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, promptTokenIds.length).castTo(DataType.LONG);
+        Map<String, INDArray> embedOutputs = embedTokens.output(
+                Map.of(embedInputName, promptTokenIdsTensor), embedOutputNames);
+        INDArray textEmbeddings = embedOutputs.values().iterator().next().dup();
+
+        // Merge vision + text per page
+        List<INDArray> batchedInputsEmbeds = new ArrayList<>();
+        for (int pageIdx = 0; pageIdx < batchSize; pageIdx++) {
+            ImageTiler.SplitImageResult pageSplit = pageSplitResults.get(pageIdx);
+            if (pageSplit.numRows != refNumRows || pageSplit.numCols != refNumCols) {
+                log.warn("Page {} has different tiling ({}x{}) vs page 0 ({}x{}), skipping",
+                        pageIdx, pageSplit.numRows, pageSplit.numCols, refNumRows, refNumCols);
+                continue;
+            }
+            INDArray merged = EmbeddingMerger.mergeEmbeddings(
+                    textEmbeddings.dup(), pageVisionEmbeddings.get(pageIdx),
+                    promptTokenIds, imageTokenId);
+            batchedInputsEmbeds.add(merged);
+            log.info("  Page {}: merged shape={}", pageIdx, java.util.Arrays.toString(merged.shape()));
+        }
+
+        batchSize = batchedInputsEmbeds.size();
+        if (batchSize < 1) {
+            log.error("No pages with compatible tiling.");
+            tokenizer.close();
+            return;
+        }
+        log.info("STEP 6 DONE: {} pages ready [{}ms]", batchSize, System.currentTimeMillis() - step6Start);
+
+        // ==================== STEP 7: Batched Decode with Speculative Decoding + Batch Compaction ====================
+        long step7Start = System.currentTimeMillis();
+        log.info("STEP 7: Optimized batched decoding ({} pages, max {} tokens)...", batchSize, maxTokensConfig);
+        log.info("  Features: speculative decoding (n-gram), batch compaction, embed/KV overlap");
+
+        INDArray batchedEmbeddings = Nd4j.vstack(batchedInputsEmbeds.toArray(new INDArray[0]));
+        log.info("  Batched embeddings: {}", java.util.Arrays.toString(batchedEmbeddings.shape()));
+
+        // Decoder metadata
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        List<String> presentKeyNames = kvNames.keyNames;
+        List<String> presentValueNames = kvNames.valueNames;
+        List<String> decoderInputNames = decoder.inputs();
+        long hiddenSize = batchedEmbeddings.shape()[2];
+
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(logitsOutputName);
+        allOutputNames.addAll(presentKeyNames);
+        allOutputNames.addAll(presentValueNames);
+
+        // Initialize components
+        java.util.Set<Integer> eosTokenIds = new java.util.HashSet<>();
+        eosTokenIds.add(eosTokenId);
+        if (endOfUtteranceId != null) eosTokenIds.add(endOfUtteranceId);
+
+        NgramSpeculator speculator = new NgramSpeculator(3, 5);
+        SpeculativeDecodeLoop specLoop = new SpeculativeDecodeLoop(speculator);
+        BatchCompactor compactor = new BatchCompactor(batchSize, 0.25);
+        Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
+                .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokensConfig).doSample(false).build());
+
+        // Per-sequence state
+        List<List<Integer>> generatedTokens = new ArrayList<>();
+        boolean[] finished = new boolean[batchSize];
+        for (int i = 0; i < batchSize; i++) {
+            generatedTokens.add(new ArrayList<>());
+        }
+
+        // Helper thread for overlapping embed tokens with KV cache cleanup
+        java.util.concurrent.ExecutorService embedExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "EmbedTokens-Async");
+            t.setDaemon(true);
+            return t;
+        });
+
+        Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        INDArray currentEmbeddings = batchedEmbeddings;
+        long pastSeqLen = 0;
+        int activeBatchSize = batchSize;
+        int stepsCompleted = 0;
+        int totalTokensGenerated = 0;
+
+        for (int step = 0; step < maxTokensConfig; step++) {
+            long stepStart = System.currentTimeMillis();
+            long currentSeqLen = currentEmbeddings.shape()[1];
+            long totalSeqLen = currentSeqLen + pastSeqLen;
+
+            // --- Try speculative decoding for single-sequence case ---
+            // SpeculativeDecodeLoop auto-disables if the model can't handle multi-token
+            // KV-cache decode (e.g. ONNX Expand broadcast failure).
+            if (activeBatchSize == 1 && step > 10) {
+                // Find the active sequence
+                int activeIdx = -1;
+                for (int i = 0; i < batchSize; i++) {
+                    if (!finished[i]) { activeIdx = i; break; }
+                }
+
+                if (activeIdx >= 0) {
+                    int lastTokenId = generatedTokens.get(activeIdx).get(
+                            generatedTokens.get(activeIdx).size() - 1);
+
+                    SpeculativeDecodeLoop.SpeculativeStepResult specResult = specLoop.step(
+                            generatedTokens.get(activeIdx), lastTokenId,
+                            embedTokens, embedInputName, embedOutputNames,
+                            decoder, decoderInputNames, logitsOutputName, kvNames,
+                            kvCache, pastSeqLen, 1, hiddenSize, eosTokenIds);
+
+                    if (specResult != null) {
+                        // Speculative step succeeded — accepted multiple tokens
+                        for (int tok : specResult.getAcceptedTokens()) {
+                            generatedTokens.get(activeIdx).add(tok);
+                            totalTokensGenerated++;
+                            if (eosTokenIds.contains(tok)) {
+                                finished[activeIdx] = true;
+                            }
+                        }
+
+                        // Update KV cache
+                        for (var entry : specResult.getUpdatedKvCache().entrySet()) {
+                            INDArray old = kvCache.put(entry.getKey(), entry.getValue());
+                            SameDiffMemoryUtils.safeClose(old);
+                        }
+                        pastSeqLen += specResult.getNewPositions();
+
+                        // Log
+                        int[] accepted = specResult.getAcceptedTokens();
+                        String tokenTexts = tokenizer.decode(accepted, false);
+                        log.info("  Step {}: SPECULATIVE {} tokens: '{}' [{}ms]",
+                                step, accepted.length, tokenTexts,
+                                System.currentTimeMillis() - stepStart);
+
+                        stepsCompleted = step + 1;
+
+                        if (specResult.hitEos() || finished[activeIdx]) {
+                            log.info("  Sequence finished via speculation at step {}", step);
+                            break;
+                        }
+
+                        // Embed the last accepted token for next step
+                        int lastAccepted = accepted[accepted.length - 1];
+                        INDArray tokenTensor = Nd4j.createFromArray(new int[]{lastAccepted})
+                                .reshape(1, 1).castTo(DataType.LONG);
+                        Map<String, INDArray> newEmbedOutputs = embedTokens.output(
+                                Map.of(embedInputName, tokenTensor), embedOutputNames);
+                        INDArray prevEmb = currentEmbeddings;
+                        currentEmbeddings = newEmbedOutputs.values().iterator().next().dup();
+                        if (prevEmb != batchedEmbeddings) SameDiffMemoryUtils.safeClose(prevEmb);
+                        SameDiffMemoryUtils.safeClose(tokenTensor);
+                        embedTokens.clearPlaceholders(false);
+                        continue;
+                    }
+                    // specResult == null means no n-gram match — fall through to normal decode
+                }
+            }
+
+            // --- Normal decode step ---
+            Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
+            for (String inputName : decoderInputNames) {
+                if (inputName.equals("inputs_embeds")) {
+                    decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (inputName.equals("attention_mask")) {
+                    INDArray attentionMask = Nd4j.ones(DataType.LONG, activeBatchSize, totalSeqLen);
+                    int maskIdx = 0;
+                    for (int i = 0; i < batchSize; i++) {
+                        if (compactor.isCompacted()) {
+                            // After compaction, all active entries map via compactor
+                            if (maskIdx < activeBatchSize && finished[compactor.getOriginalIndex(maskIdx)]) {
+                                attentionMask.putRow(maskIdx, Nd4j.zeros(DataType.LONG, totalSeqLen));
+                            }
+                            maskIdx++;
+                        } else {
+                            if (finished[i]) {
+                                attentionMask.putRow(i, Nd4j.zeros(DataType.LONG, totalSeqLen));
+                            }
+                        }
+                    }
+                    decoderInputMap.put(inputName, attentionMask);
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName,
+                            DecoderUtils.buildCausalMask(activeBatchSize, currentSeqLen, totalSeqLen));
+                } else if (inputName.equals("position_ids")) {
+                    INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                    decoderInputMap.put(inputName, Nd4j.tile(posIds, activeBatchSize, 1));
+                } else if (inputName.startsWith("past_key_values.")) {
+                    String presentName = inputName.replace("past_key_values", "present");
+                    if (kvCache.containsKey(presentName)) {
+                        decoderInputMap.put(inputName, kvCache.get(presentName));
+                    } else {
+                        decoderInputMap.put(inputName,
+                                DecoderUtils.createEmptyKvCache(decoder, inputName, activeBatchSize, hiddenSize));
+                    }
+                }
+            }
+            if (!decoderInputMap.containsKey("inputs_embeds")) {
+                decoderInputMap.put("inputs_embeds", currentEmbeddings);
+            }
+
+            // Run decoder
+            Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap,
+                    allOutputNames.toArray(new String[0]));
+
+            INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
+            if (logitsRaw == null) {
+                log.error("No logits at step {}", step);
+                break;
+            }
+            INDArray logits = logitsRaw.dup();
+            SameDiffMemoryUtils.safeClose(logitsRaw);
+
+            // Update KV cache
+            for (String presentName : presentKeyNames) {
+                INDArray pv = decoderOutputs.get(presentName);
+                if (pv != null) {
+                    INDArray old = kvCache.put(presentName, pv);
+                    SameDiffMemoryUtils.safeClose(old);
+                }
+            }
+            for (String presentName : presentValueNames) {
+                INDArray pv = decoderOutputs.get(presentName);
+                if (pv != null) {
+                    INDArray old = kvCache.put(presentName, pv);
+                    SameDiffMemoryUtils.safeClose(old);
+                }
+            }
+
+            // Sample from last position
+            INDArray lastLogits;
+            if (logits.rank() == 3) {
+                lastLogits = logits.get(NDArrayIndex.all(),
+                        NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all()).dup();
+            } else {
+                lastLogits = logits;
+            }
+
+            int[] nextTokenIds = sampler.sampleBatch(lastLogits);
+            if (lastLogits != logits) SameDiffMemoryUtils.safeClose(lastLogits);
+
+            // Record tokens and check EOS — map through compactor if compacted
+            boolean allFinished = true;
+            for (int ci = 0; ci < activeBatchSize; ci++) {
+                int origIdx = compactor.getOriginalIndex(ci);
+                if (!finished[origIdx]) {
+                    generatedTokens.get(origIdx).add(nextTokenIds[ci]);
+                    totalTokensGenerated++;
+
+                    if (eosTokenIds.contains(nextTokenIds[ci])) {
+                        finished[origIdx] = true;
+                        log.info("  Page {} finished at step {} ({} tokens)",
+                                origIdx, step, generatedTokens.get(origIdx).size());
+                    }
+                }
+                if (!finished[origIdx]) allFinished = false;
+            }
+
+            // Log progress
+            if (step < 5 || step % 25 == 0) {
+                StringBuilder sb = new StringBuilder();
+                for (int ci = 0; ci < activeBatchSize; ci++) {
+                    int origIdx = compactor.getOriginalIndex(ci);
+                    String tokenText = tokenizer.decode(new int[]{nextTokenIds[ci]}, false);
+                    if (ci > 0) sb.append(" | ");
+                    sb.append(String.format("p%d:'%s'(%d)", origIdx, tokenText, nextTokenIds[ci]));
+                }
+                log.info("  Step {} [{}ms]: {}", step, System.currentTimeMillis() - stepStart, sb);
+            }
+
+            if (allFinished) {
+                log.info("  All sequences finished at step {}", step);
+                stepsCompleted = step + 1;
+                break;
+            }
+
+            SameDiffMemoryUtils.safeClose(logits);
+
+            // --- Batch compaction: remove finished sequences ---
+            // Build finished array for current compact indices
+            boolean[] compactFinished = new boolean[activeBatchSize];
+            for (int ci = 0; ci < activeBatchSize; ci++) {
+                compactFinished[ci] = finished[compactor.getOriginalIndex(ci)];
+            }
+
+            if (compactor.shouldCompact(compactFinished)) {
+                log.info("  Compacting batch: {} -> removing finished sequences", activeBatchSize);
+
+                // Compact KV cache
+                kvCache = compactor.compactKvCache(kvCache, compactFinished);
+
+                // Update compactor mapping
+                activeBatchSize = compactor.compact(compactFinished);
+                log.info("  Compacted to {} active sequences", activeBatchSize);
+            }
+
+            // --- Embed next tokens with async overlap ---
+            int[] batchTokenIds = new int[activeBatchSize];
+            for (int ci = 0; ci < activeBatchSize; ci++) {
+                int origIdx = compactor.getOriginalIndex(ci);
+                batchTokenIds[ci] = finished[origIdx] ? eosTokenId : nextTokenIds[ci];
+            }
+            INDArray tokenTensor = Nd4j.createFromArray(batchTokenIds)
+                    .reshape(activeBatchSize, 1).castTo(DataType.LONG);
+
+            // Submit embed to helper thread
+            final INDArray tokenTensorFinal = tokenTensor;
+            java.util.concurrent.Future<INDArray> embedFuture = embedExecutor.submit(() -> {
+                Map<String, INDArray> newEmbedOutputs = embedTokens.output(
+                        Map.of(embedInputName, tokenTensorFinal), embedOutputNames);
+                return newEmbedOutputs.values().iterator().next().dup();
+            });
+
+            // Main thread: cleanup decoder inputs while embed computes
+            for (var entry : decoderInputMap.entrySet()) {
+                String name = entry.getKey();
+                if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
+                SameDiffMemoryUtils.safeClose(entry.getValue());
+            }
+            decoder.clearPlaceholders(false);
+
+            INDArray prevEmbeddings = currentEmbeddings;
+            if (prevEmbeddings != batchedEmbeddings) {
+                SameDiffMemoryUtils.safeClose(prevEmbeddings);
+            }
+
+            // Wait for embed result
+            try {
+                currentEmbeddings = embedFuture.get();
+            } catch (Exception e) {
+                throw new RuntimeException("Embed tokens failed at step " + step, e);
+            }
+            SameDiffMemoryUtils.safeClose(tokenTensor);
+            embedTokens.clearPlaceholders(false);
+            pastSeqLen += currentSeqLen;
+            stepsCompleted = step + 1;
+        }
+
+        embedExecutor.shutdown();
+        long step7Time = System.currentTimeMillis() - step7Start;
+
+        // ==================== STEP 8: Output Results ====================
+        log.info("========================================");
+        log.info("OPTIMIZED PIPELINE RESULTS ({} pages, starting at page {}):", batchSize, startPage);
+        log.info("========================================");
+
+        DocTagsParser docTagsParser = new DocTagsParser();
+        for (int i = 0; i < batchSize; i++) {
+            int[] tokenIds = generatedTokens.get(i).stream().mapToInt(Integer::intValue).toArray();
+            String rawText = tokenizer.decode(tokenIds, false);
+            log.info("PAGE {} (actual page {}, {} tokens):", i, startPage + i, tokenIds.length);
+            log.info("  RAW: {}", rawText);
+            DocumentStructure doc = docTagsParser.parse(rawText);
+            String markdown = docTagsParser.toMarkdown(doc);
+            log.info("  PARSED ({} elements):", doc.getElements().size());
+            log.info("{}", markdown);
+            log.info("---");
+        }
+
+        log.info("========================================");
+        log.info("TIMING SUMMARY:");
+        log.info("  Vision encoding (pipelined): {}ms ({} frames, {}ms/frame)",
+                step5Time, totalFrames, step5Time / Math.max(1, totalFrames));
+        log.info("  Decode time: {}ms", step7Time);
+        log.info("  Steps completed: {}", stepsCompleted);
+        log.info("  Total tokens generated: {}", totalTokensGenerated);
+        log.info("  Effective ms/token: {} (batch amortized)",
+                step7Time * batchSize / Math.max(1, totalTokensGenerated));
+        log.info("  Throughput: {} tokens/sec",
+                String.format("%.1f", totalTokensGenerated * 1000.0 / Math.max(1, step7Time)));
+        log.info("  Speculation stats: {}", specLoop.getStats());
+        log.info("  Batch compaction: {} -> {} (compacted={})",
+                compactor.getOriginalBatchSize(), compactor.getCurrentBatchSize(), compactor.isCompacted());
+        log.info("========================================");
+
+        // ==================== Cleanup ====================
+        for (INDArray arr : pageVisionEmbeddings) SameDiffMemoryUtils.safeClose(arr);
+        for (INDArray arr : batchedInputsEmbeds) SameDiffMemoryUtils.safeClose(arr);
+        for (INDArray arr : kvCache.values()) SameDiffMemoryUtils.safeClose(arr);
+        if (currentEmbeddings != batchedEmbeddings) SameDiffMemoryUtils.safeClose(currentEmbeddings);
+        SameDiffMemoryUtils.safeClose(textEmbeddings);
+        SameDiffMemoryUtils.safeClose(batchedEmbeddings);
+        tokenizer.close();
+
+        org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
+        log.info("Optimized pipeline test complete.");
     }
 }

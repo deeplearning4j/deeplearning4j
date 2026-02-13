@@ -30,6 +30,7 @@ import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -80,18 +81,18 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
             // Reset to device 0 for main thread
             int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (currentDevice != 0) {
-                Nd4j.getAffinityManager().unsafeSetDevice(0);
+                DeviceMemoryManager.getInstance().switchDevice(0, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
 
             // Force synchronization on all devices
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int d = 0; d < numDevices; d++) {
-                Nd4j.getAffinityManager().unsafeSetDevice(d);
+                DeviceMemoryManager.getInstance().switchDevice(d, "MultiDeviceSynchronizationTests", "test-device-switch");
                 Nd4j.getExecutioner().commit();
             }
 
             // Return to device 0
-            Nd4j.getAffinityManager().unsafeSetDevice(0);
+            DeviceMemoryManager.getInstance().switchDevice(0, "MultiDeviceSynchronizationTests", "test-device-switch");
             Nd4j.getExecutioner().commit();
         } catch (Exception e) {
             log.warn("Failed to reset device state: {}", e.getMessage());
@@ -133,7 +134,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
 
             // Switch to the target device to operate on the replica
             // CUDA requires operations to be executed on the device where data resides
-            Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             try {
                 // Verify data integrity after replication
                 double replicaSum = replica.sumNumber().doubleValue();
@@ -145,7 +146,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                 assertEquals(expectedSum * 2, doubled.sumNumber().doubleValue(), 1e-6);
             } finally {
                 // Switch back to original device
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
         }
     }
@@ -172,7 +173,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
 
             // Switch to target device to operate on the data
             // CUDA requires operations to execute on the device where data resides
-            Nd4j.getAffinityManager().unsafeSetDevice(d);
+            DeviceMemoryManager.getInstance().switchDevice(d, "MultiDeviceSynchronizationTests", "test-device-switch");
             try {
                 // Chain of operations on the moved data
                 INDArray result = onDevice.add(1.0)   // all 2s
@@ -187,7 +188,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                         "Operations on device " + d + " should produce correct result");
             } finally {
                 // Switch back to original device
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
         }
     }
@@ -214,7 +215,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                     INDArray onFrom = Nd4j.getAffinityManager().replicateToDevice(fromDevice, original);
 
                     // Switch to fromDevice to modify the array
-                    Nd4j.getAffinityManager().unsafeSetDevice(fromDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(fromDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
                     onFrom.addi(10.0);
                     Nd4j.getExecutioner().commit();
 
@@ -222,7 +223,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                     INDArray onTo = Nd4j.getAffinityManager().replicateToDevice(toDevice, onFrom);
 
                     // Switch to toDevice to verify data
-                    Nd4j.getAffinityManager().unsafeSetDevice(toDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(toDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
                     double[] actualData = onTo.toDoubleVector();
                     for (int i = 0; i < expectedData.length; i++) {
                         assertEquals(expectedData[i] + 10.0, actualData[i], 1e-6,
@@ -231,7 +232,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                     }
                 } finally {
                     // Always switch back to original device
-                    Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
                 }
             }
         }
@@ -411,7 +412,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
 
         // Replicate to device 1 and verify data
         INDArray arr1 = Nd4j.getAffinityManager().replicateToDevice(1, arr0);
-        Nd4j.getAffinityManager().unsafeSetDevice(1);
+        DeviceMemoryManager.getInstance().switchDevice(1, "MultiDeviceSynchronizationTests", "test-device-switch");
         try {
             double sum1 = arr1.sumNumber().doubleValue();
             assertEquals(100.0, sum1, 1e-6, "Replicated array on device 1 should have sum of 100");
@@ -421,7 +422,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
             Nd4j.getExecutioner().commit();
             assertEquals(200.0, arr1.sumNumber().doubleValue(), 1e-6, "Modified array should have sum of 200");
         } finally {
-            Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+            DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
         }
 
         // Replicate modified array back to device 0 and verify
@@ -453,7 +454,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
             INDArray bOnDevice1 = Nd4j.getAffinityManager().replicateToDevice(1, b);
 
             // Switch to device 1 for the operation
-            Nd4j.getAffinityManager().unsafeSetDevice(1);
+            DeviceMemoryManager.getInstance().switchDevice(1, "MultiDeviceSynchronizationTests", "test-device-switch");
             try {
                 // Perform matmul on device 1
                 INDArray result = aOnDevice1.mmul(bOnDevice1);
@@ -465,10 +466,10 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                 assertEquals(20.0, result.getDouble(0, 0), 1e-6);
                 assertEquals(20.0 * 10 * 15, result.sumNumber().doubleValue(), 1e-6);
             } finally {
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
         } finally {
-            Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+            DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
         }
     }
 
@@ -601,13 +602,13 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
 
         // Also test: device 0 -> device 1 -> device 0 -> device 1
         INDArray round2 = Nd4j.getAffinityManager().replicateToDevice(1, onDevice0);
-        Nd4j.getAffinityManager().unsafeSetDevice(1);
+        DeviceMemoryManager.getInstance().switchDevice(1, "MultiDeviceSynchronizationTests", "test-device-switch");
         try {
             double[] round2Data = round2.toDoubleVector();
             assertArrayEquals(originalData, round2Data, 1e-6,
                     "Data should be identical after multiple round trips");
         } finally {
-            Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+            DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
         }
     }
 
@@ -630,7 +631,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
             INDArray onDevice = Nd4j.getAffinityManager().replicateToDevice(d, arr);
 
             // Switch to target device to operate on the data
-            Nd4j.getAffinityManager().unsafeSetDevice(d);
+            DeviceMemoryManager.getInstance().switchDevice(d, "MultiDeviceSynchronizationTests", "test-device-switch");
             try {
                 // Chain of in-place operations
                 onDevice.addi(1.0);  // all 2s
@@ -641,7 +642,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                 assertEquals(300.0, onDevice.sumNumber().doubleValue(), 1e-6,
                         "In-place ops on device " + d + " should produce correct result");
             } finally {
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
         }
     }
@@ -671,13 +672,13 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
                 for (int d = 0; d < numDevices; d++) {
                     INDArray onDevice = Nd4j.getAffinityManager().replicateToDevice(d, arr);
                     // Switch to target device to read data
-                    Nd4j.getAffinityManager().unsafeSetDevice(d);
+                    DeviceMemoryManager.getInstance().switchDevice(d, "MultiDeviceSynchronizationTests", "test-device-switch");
                     try {
                         double sum = onDevice.sumNumber().doubleValue();
                         assertEquals(expectedSum, sum, 1.0, // loose tolerance for integer types
                                 "Type " + type + " on device " + d + " should have correct sum");
                     } finally {
-                        Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                        DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
                     }
                 }
             } catch (Exception e) {
@@ -719,11 +720,11 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
 
         for (int d = 0; d < numDevices; d++) {
             INDArray onDevice = Nd4j.getAffinityManager().replicateToDevice(d, scalar);
-            Nd4j.getAffinityManager().unsafeSetDevice(d);
+            DeviceMemoryManager.getInstance().switchDevice(d, "MultiDeviceSynchronizationTests", "test-device-switch");
             try {
                 assertEquals(42.0, onDevice.getDouble(0), 1e-6);
             } finally {
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
         }
     }
@@ -751,7 +752,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
             long elapsed = System.nanoTime() - startTime;
 
             // Switch to target device to verify data
-            Nd4j.getAffinityManager().unsafeSetDevice(d);
+            DeviceMemoryManager.getInstance().switchDevice(d, "MultiDeviceSynchronizationTests", "test-device-switch");
             try {
                 double transferredSum = onDevice.sumNumber().doubleValue();
                 assertEquals(originalSum, transferredSum, 1e-3,
@@ -759,7 +760,7 @@ public class MultiDeviceSynchronizationTests extends BaseNd4jTestWithBackends {
 
                 log.info("Transferred 1M doubles to device {} in {} ms", d, elapsed / 1_000_000.0);
             } finally {
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "MultiDeviceSynchronizationTests", "test-device-switch");
             }
         }
     }

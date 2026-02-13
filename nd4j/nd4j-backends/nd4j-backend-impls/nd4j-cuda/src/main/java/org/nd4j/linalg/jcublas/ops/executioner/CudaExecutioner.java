@@ -35,6 +35,8 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -94,12 +96,180 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     protected ThreadLocal<String> lastOp = new ThreadLocal<>();
 
+    /** Per-thread flag to skip device coherency in exec() calls.
+     * Set by DSP parallel workers that handle device placement themselves. */
+    private static final ThreadLocal<Boolean> skipDeviceCoherency = ThreadLocal.withInitial(() -> false);
+
+    @Override
+    public void setSkipDeviceCoherency(boolean skip) {
+        skipDeviceCoherency.set(skip);
+    }
+
     protected Map<String, CustomOpDescriptor> customOps = null;
 
     protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
+    /** Cached device count — queried once, never changes during JVM lifetime. */
+    private volatile int cachedDeviceCount = -1;
+
     public CudaExecutioner() {
         experimentalMode.set(Nd4j.getNativeOps().isExperimentalEnabled());
+    }
+
+    /**
+     * Select the optimal device for op execution, minimizing cross-device data copies.
+     *
+     * Strategy (in priority order):
+     * 1. Output device: if outputs exist and are already allocated on a device, execute there.
+     *    Outputs cannot be safely migrated (DSP tracks output buffer addresses for lifecycle
+     *    management — replacing them orphans the originals).
+     * 2. Input majority by data size: if no outputs have a device, pick the device where the
+     *    most input data (by bytes) already resides. This minimizes total bytes copied.
+     * 3. Capacity tiebreaker: if no arrays have valid device IDs (rare — usually means all
+     *    arrays are freshly created), pick the device with the most free memory.
+     *
+     * @param inputs  input arrays from OpContext (may be null)
+     * @param outputs output arrays from OpContext (may be null)
+     * @return target device ID (>= 0), or -1 if single-GPU or no arrays
+     */
+    private int selectTargetDevice(List<INDArray> inputs, List<INDArray> outputs) {
+        int numDevices = getDeviceCount();
+        if (numDevices <= 1) return 0;
+
+        // Priority 1: Output device — outputs can't be migrated
+        if (outputs != null) {
+            // Use byte-weighted majority if multiple outputs exist on different devices
+            long[] outputDeviceBytes = new long[numDevices];
+            boolean anyOutput = false;
+            for (INDArray output : outputs) {
+                if (output != null && output.data() != null) {
+                    int devId = AtomicAllocator.getInstance().getDeviceId(output);
+                    if (devId >= 0 && devId < numDevices) {
+                        outputDeviceBytes[devId] += output.length() * output.data().getElementSize();
+                        anyOutput = true;
+                    }
+                }
+            }
+            if (anyOutput) {
+                int bestDevice = 0;
+                long bestBytes = outputDeviceBytes[0];
+                for (int d = 1; d < numDevices; d++) {
+                    if (outputDeviceBytes[d] > bestBytes) {
+                        bestDevice = d;
+                        bestBytes = outputDeviceBytes[d];
+                    }
+                }
+                return bestDevice;
+            }
+        }
+
+        // Priority 2: Input majority weighted by data size
+        if (inputs != null && !inputs.isEmpty()) {
+            long[] inputDeviceBytes = new long[numDevices];
+            boolean anyInput = false;
+            for (INDArray input : inputs) {
+                if (input != null && input.data() != null) {
+                    int devId = AtomicAllocator.getInstance().getDeviceId(input);
+                    if (devId >= 0 && devId < numDevices) {
+                        inputDeviceBytes[devId] += input.length() * input.data().getElementSize();
+                        anyInput = true;
+                    }
+                }
+            }
+            if (anyInput) {
+                int bestDevice = 0;
+                long bestBytes = inputDeviceBytes[0];
+                for (int d = 1; d < numDevices; d++) {
+                    if (inputDeviceBytes[d] > bestBytes) {
+                        bestDevice = d;
+                        bestBytes = inputDeviceBytes[d];
+                    }
+                }
+                return bestDevice;
+            }
+        }
+
+        // Priority 3: Device with most free memory (capacity tiebreaker)
+        long bestFree = -1;
+        int bestDevice = 0;
+        for (int d = 0; d < numDevices; d++) {
+            long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(d);
+            if (freeMem > bestFree) {
+                bestFree = freeMem;
+                bestDevice = d;
+            }
+        }
+        return bestDevice;
+    }
+
+    /** Get the number of CUDA devices (cached after first query). */
+    private int getDeviceCount() {
+        if (cachedDeviceCount < 0) {
+            cachedDeviceCount = Nd4j.getNativeOps().getAvailableDevices();
+        }
+        return cachedDeviceCount;
+    }
+
+    /**
+     * Ensure all OpContext arrays are coherent on a single device.
+     * Sets the CUDA context to the target device and migrates any inputs
+     * that are not on the target device.
+     *
+     * @return the target device ID, or -1 if no device change was needed
+     */
+    private int ensureDeviceCoherency(List<INDArray> inputs, List<INDArray> outputs, OpContext oc) {
+        int numDevices = getDeviceCount();
+        if (numDevices <= 1) return 0;
+
+        int targetDeviceId = selectTargetDevice(inputs, outputs);
+        if (targetDeviceId < 0) return -1;
+
+        int previousDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+        // Fast path: if already on the target device, check if any inputs need migration
+        if (previousDevice == targetDeviceId) {
+            boolean needsMigration = false;
+            if (inputs != null) {
+                for (INDArray input : inputs) {
+                    if (input != null && input.data() != null) {
+                        int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
+                        if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
+                            needsMigration = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!needsMigration) return targetDeviceId;
+        }
+
+        // Set CUDA context to the target device
+        DeviceMemoryManager.getInstance().switchDevice(targetDeviceId, "CudaExecutioner.ensureDeviceCoherency", "coherency");
+        if (previousDevice != targetDeviceId) {
+            MultiGpuTracer.traceDeviceSwitch("CudaExecutioner.ensureDeviceCoherency",
+                    previousDevice, targetDeviceId, "target-device-selected");
+        }
+
+        // Migrate any inputs not on the target device
+        if (inputs != null) {
+            for (int i = 0; i < inputs.size(); i++) {
+                INDArray input = inputs.get(i);
+                if (input != null && input.data() != null) {
+                    int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
+                    if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
+                        MultiGpuTracer.traceDataTransfer(inputDeviceId, targetDeviceId,
+                                input.shape(), input.dataType(),
+                                input.length() * input.data().getElementSize(),
+                                input.isView(),
+                                input.data().isConstant());
+                        INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
+                        oc.setInputArray(i, migrated);
+                    }
+                }
+            }
+        }
+
+        return targetDeviceId;
     }
 
 
@@ -114,7 +284,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
         }
 
         long st = profilingConfigurableHookIn(op);
@@ -246,7 +416,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
             // Automatically switch to the array's device for seamless multi-device support
-            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
         }
 
         val context = AtomicAllocator.getInstance().getDeviceContext();
@@ -438,7 +608,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
         }
 
         checkForCompression(op);
@@ -545,7 +715,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(op.x());
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-            Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+            DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
         }
 
         // Check for null dimensions or null data buffer before calling toLongVector()
@@ -646,53 +816,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray exec(Op op, OpContext oc) {
-        // Device-aware execution: ensure all arrays are on the same device
-        // This is critical for SameDiff execution which calls this method directly via Nd4j.exec(op, context)
-        // Without this, failover allocations on different GPUs will crash with SIGSEGV
-        if (oc != null) {
-            List<INDArray> inputs = oc.getInputArrays();
-            List<INDArray> outputs = oc.getOutputArrays();
+        // Device coherency: ensure all arrays are on the same device
+        // and the CUDA context is set to the target device for op execution.
+        // Skipped when DSP parallel workers handle device placement themselves.
+        if (oc != null && !skipDeviceCoherency.get()) {
+            ensureDeviceCoherency(oc.getInputArrays(), oc.getOutputArrays(), oc);
+        }
 
-            // Determine target device: prefer output's device, fall back to first input's device
-            int targetDeviceId = -1;
-            if (outputs != null && !outputs.isEmpty()) {
-                INDArray firstOutput = outputs.get(0);
-                if (firstOutput != null && firstOutput.data() != null) {
-                    targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
-                }
-            }
-            if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
-                INDArray firstInput = inputs.get(0);
-                if (firstInput != null && firstInput.data() != null) {
-                    targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
-                }
-            }
-
-            if (targetDeviceId >= 0) {
-                int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-                // Switch to target device
-                if (targetDeviceId != currentDeviceId) {
-                    Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
-                }
-
-                // Always check for cross-device inputs and migrate if needed.
-                // Even with P2P, explicit migration ensures correct execution.
-                if (inputs != null) {
-                    for (int i = 0; i < inputs.size(); i++) {
-                        INDArray input = inputs.get(i);
-                        if (input != null && input.data() != null) {
-                            int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
-                            if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
-                                // Migrate this input to the target device
-                                INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
-                                // Update in context
-                                oc.setInputArray(i, migrated);
-                            }
-                        }
-                    }
-                }
-            }
+        if (MultiGpuTracer.ENABLED) {
+            int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            MultiGpuTracer.verifyDeviceContext(op.opName(), currentDev, currentDev);
         }
 
         checkForCompression(op);
@@ -1305,7 +1438,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(x);
             int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+                DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
             }
         }
 
@@ -1426,7 +1559,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(x);
             int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+                DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
             }
         }
 
@@ -1613,7 +1746,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             int arrayDeviceId = AtomicAllocator.getInstance().getDeviceId(targetArray);
             int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (arrayDeviceId >= 0 && arrayDeviceId != currentDeviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(arrayDeviceId);
+                DeviceMemoryManager.getInstance().switchDevice(arrayDeviceId, "CudaExecutioner.exec", "input-device-align");
             }
         }
 
@@ -1832,7 +1965,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // Switch to target device
             if (targetDeviceId != currentDeviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
+                DeviceMemoryManager.getInstance().switchDevice(targetDeviceId, "CudaExecutioner.exec", "input-device-align");
             }
 
             // Migrate inputs that are on different devices to the target device
@@ -1927,50 +2060,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
-        // Device-aware execution: ensure all arrays are on the same device
-        // This is critical for SameDiff execution which calls this method directly via Nd4j.exec(op, context)
-        // Without this, failover allocations on different GPUs will crash with SIGSEGV
-        List<INDArray> inputs = context.getInputArrays();
-        List<INDArray> outputs = context.getOutputArrays();
-
-        // Determine target device: prefer output's device, fall back to first input's device
-        int targetDeviceId = -1;
-        if (outputs != null && !outputs.isEmpty()) {
-            INDArray firstOutput = outputs.get(0);
-            if (firstOutput != null && firstOutput.data() != null) {
-                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstOutput);
-            }
-        }
-        if (targetDeviceId < 0 && inputs != null && !inputs.isEmpty()) {
-            INDArray firstInput = inputs.get(0);
-            if (firstInput != null && firstInput.data() != null) {
-                targetDeviceId = AtomicAllocator.getInstance().getDeviceId(firstInput);
-            }
+        // Device coherency: ensure all arrays are on the same device
+        // and the CUDA context is set to the target device for op execution.
+        // Skipped when DSP parallel workers handle device placement themselves.
+        if (!skipDeviceCoherency.get()) {
+            ensureDeviceCoherency(context.getInputArrays(), context.getOutputArrays(), context);
         }
 
-        if (targetDeviceId >= 0) {
-            int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-            // Switch to target device
-            if (targetDeviceId != currentDeviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceId);
-            }
-
-            // Migrate inputs that are on different devices to the target device
-            if (inputs != null) {
-                for (int i = 0; i < inputs.size(); i++) {
-                    INDArray input = inputs.get(i);
-                    if (input != null && input.data() != null) {
-                        int inputDeviceId = AtomicAllocator.getInstance().getDeviceId(input);
-                        if (inputDeviceId >= 0 && inputDeviceId != targetDeviceId) {
-                            // Migrate this input to the target device
-                            INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(targetDeviceId, input);
-                            // Update in context
-                            context.setInputArray(i, migrated);
-                        }
-                    }
-                }
-            }
+        if (MultiGpuTracer.ENABLED) {
+            int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            MultiGpuTracer.verifyDeviceContext(op.opName(), currentDev, currentDev);
         }
 
         Nd4j.getExecutioner().commit();

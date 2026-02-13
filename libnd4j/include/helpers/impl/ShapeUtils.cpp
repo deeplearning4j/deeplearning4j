@@ -37,7 +37,7 @@ LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* wo
 
   // note we do this because of stack allocation crashes
   //  if the stack is used a vector's data can cause crashes when it goes out of scope
-  LongType* dims = new LongType[rank];
+  LongType* dims = new LongType[rank + SD_SHAPE_ALLOC_PADDING];
   for (LongType i = 0; i < rank; i++) {
     dims[i] = rank - 1 - i;
   }
@@ -168,6 +168,7 @@ LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<Lon
   if (dimsToExclude->size() == 0) {  // return copy of input shape
     LongType* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo)->primary();
+    delete[] outShapeInfo;
     return ret;
   }
 
@@ -296,7 +297,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
 
   if (dimsToExclude->size() == 0) {  // return scalar or array with len=1 in this case
     if (keepDims && rank > 1) {
-      newShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+      newShapeInfo = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
       newShapeInfo[0] = rank;
       for (LongType i = 0; i < rank; ++i) newShapeInfo[i + 1] = 1;
       updateStridesAndType(newShapeInfo, shapeInfo, order);
@@ -305,7 +306,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
       delete[] newShapeInfo;
       return ret;
     } else if (supportOldShapes) {
-      newShapeInfo = new LongType[shape::shapeInfoLength(2)];
+      newShapeInfo = new LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
@@ -323,7 +324,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   LongType dimSize = dimsToExclude->size();
 
   if (keepDims) {
-    newShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+    newShapeInfo = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
     newShapeInfo[0] = rank;
 
     for (LongType i = 0; i < rank; ++i) {
@@ -347,7 +348,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
        dimsToExclude->at(0) == INT_MAX || dimsToExclude->at(0) == -1)) {  // check whether given dimension is meant for the whole dimension
 
     if (supportOldShapes) {
-      newShapeInfo = new LongType[shape::shapeInfoLength(2)];
+      newShapeInfo = new LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
       // Use the requested dataType, not the input's data type
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
@@ -362,7 +363,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
     }
   }
 
-  newShapeInfo = new LongType[shape::shapeInfoLength(newRank)];
+  newShapeInfo = new LongType[shape::shapeInfoLength(newRank) + SD_SHAPE_ALLOC_PADDING];
   newShapeInfo[0] = newRank;  // set rank
   LongType j = 1;
   for (LongType i = 0; i < rank; ++i)
@@ -373,7 +374,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   // ensure whether vector has proper shape for old shape type
   if (newRank == 1 && supportOldShapes) {
     LongType oldValue = newShapeInfo[1];
-    newShapeInfo = new LongType[shape::shapeInfoLength(2)];
+    delete[] newShapeInfo;
+    newShapeInfo = new LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
     newShapeInfo[0] = 2;
     if (dimsToExclude->at(0) == 0) {
       newShapeInfo[1] = 1;
@@ -407,7 +409,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
 
   if (dimsToExclude->size() == 0) {  // return scalar or array with len=1 in this case
     if (keepDims && rank > 1) {
-      newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
       newShapeInfo[0] = rank;
       for (LongType i = 0; i < rank; ++i) newShapeInfo[i + 1] = 1;
       updateStridesAndType(newShapeInfo, shapeInfo, order);
@@ -416,7 +418,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
       delete[] newShapeInfo;
       return ret;
     } else if (supportOldShapes) {
-      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
@@ -433,7 +435,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   LongType dimSize = dimsToExclude->size();
 
   if (keepDims) {
-    newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
+    newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
     newShapeInfo[0] = rank;
 
     for (LongType i = 0; i < rank; ++i) {
@@ -457,7 +459,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
        dimsToExclude->at(0) == INT_MAX || dimsToExclude->at(0) == -1)) {  // check whether given dimension is meant for the whole dimension
 
     if (supportOldShapes) {
-      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
       // Use the requested dataType, not the input's data type
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
@@ -474,7 +476,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
     }
   }
 
-  newShapeInfo = new sd::LongType[shape::shapeInfoLength(newRank)];
+  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(newRank), sd::LongType);
   newShapeInfo[0] = newRank;  // set rank
   LongType j = 1;
   for (LongType i = 0; i < rank; ++i)
@@ -485,9 +487,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   // ensure whether vector has proper shape for old shape type
   if (newRank == 1 && supportOldShapes) {
     LongType oldValue = newShapeInfo[1];
-    delete[] newShapeInfo;
     RELEASE(newShapeInfo, workspace);
-    newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
     ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);  // set newRank = 2
     newShapeInfo[0] = 2;
     if (dimsToExclude->at(0) == 0) {
@@ -523,7 +523,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
 
   if (dimsToExclude->size() == 0) {  // return scalar or array with len=1 in this case
     if (keepDims && rank > 1) {
-      newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
       newShapeInfo[0] = rank;
       for (LongType i = 0; i < rank; ++i) newShapeInfo[i + 1] = 1;
       updateStridesAndType(newShapeInfo, shapeInfo, order);
@@ -532,7 +532,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
       delete[] newShapeInfo;
       return ret;
     } else if (supportOldShapes) {
-      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
@@ -550,7 +550,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
   LongType dimSize = dimsToExclude->size();
 
   if (keepDims) {
-    newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
+    newShapeInfo = new sd::LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
     newShapeInfo[0] = rank;
 
     for (LongType i = 0; i < rank; ++i) {
@@ -572,7 +572,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
        dimsToExclude->at(0) == INT_MAX || dimsToExclude->at(0) == -1)) {  // check whether given dimension is meant for the whole dimension
 
     if (supportOldShapes) {
-      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
+      newShapeInfo = new sd::LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
       shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
       delete[] newShapeInfo;
@@ -586,7 +586,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
     }
   }
 
-  newShapeInfo = new sd::LongType[shape::shapeInfoLength(newRank)];
+  newShapeInfo = new sd::LongType[shape::shapeInfoLength(newRank) + SD_SHAPE_ALLOC_PADDING];
   newShapeInfo[0] = newRank;  // set rank
   LongType j = 1;
   for (LongType i = 0; i < rank; ++i)
@@ -598,7 +598,7 @@ LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dim
   if (newRank == 1 && supportOldShapes) {
     LongType oldValue = newShapeInfo[1];
     delete[] newShapeInfo;
-    newShapeInfo = new sd::LongType[shape::shapeInfoLength(2)];
+    newShapeInfo = new sd::LongType[shape::shapeInfoLength(2) + SD_SHAPE_ALLOC_PADDING];
     newShapeInfo[0] = 2;
     if (dimsToExclude->at(0) == 0) {
       newShapeInfo[1] = 1;
@@ -752,13 +752,13 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
 
   if (shape::shapeEquals(max, min)) {
     const int len = shape::shapeInfoLength(shape::rank(max));
-    resultShapeInfo = new LongType[len];
-    const auto constCast = const_cast<LongType*>(resultShapeInfo);
+    auto tmpShapeInfo = new LongType[len + SD_SHAPE_ALLOC_PADDING];
 
     for (int i = 0; i < len; i++) {
-      constCast[i] = max[i];
+      tmpShapeInfo[i] = max[i];
     }
-    resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(resultShapeInfo)->primary());
+    resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(tmpShapeInfo)->primary());
+    delete[] tmpShapeInfo;
     return true;
   }
 
@@ -834,7 +834,7 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
   }
 
   resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(tmpShapeInfo)->primary());
-  delete[] tmpShapeInfo;
+  RELEASE(tmpShapeInfo, workspace);
   return true;
 }
 
@@ -1041,11 +1041,11 @@ LongType* ShapeUtils::matrixProductShape(LongType* theFirstShape, LongType* theS
     // special case here
     shape[0] = 1;
     shape[1] = tmpB[2];
-    LongType* newShape = ShapeBuilders::createShapeInfo(dtype, 'f', 2, shape, workspace, false);
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'f', 2, shape, -1);
 
     RELEASE(shape, workspace);
-    RELEASE(tmpA, workspace);
-    RELEASE(tmpB, workspace);
+    delete[] tmpA;
+    delete[] tmpB;
 
     return newShape;
   } else if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
@@ -1059,11 +1059,12 @@ LongType* ShapeUtils::matrixProductShape(LongType* theFirstShape, LongType* theS
       shape[1] = tmpB[2];
     } else {
       // we have new 1D shape here
-      auto newShape = ShapeBuilders::createVectorShapeInfo(dtype, tmpA[1], workspace);
+      LongType vecLen = tmpA[1];
+      auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', 1, &vecLen, -1);
 
       RELEASE(shape, workspace);
-      RELEASE(tmpA, workspace);
-      RELEASE(tmpB, workspace);
+      delete[] tmpA;
+      delete[] tmpB;
 
       return newShape;
     }
@@ -1090,8 +1091,8 @@ LongType* ShapeUtils::matrixProductShape(LongType* theFirstShape, LongType* theS
 
   RELEASE(shape, workspace);
 
-  RELEASE(tmpA, workspace);
-  RELEASE(tmpB, workspace);
+  delete[] tmpA;
+  delete[] tmpB;
   return newShape;
 }
 
@@ -1309,6 +1310,7 @@ void ShapeUtils::updateStridesAndType(LongType* dest, const LongType* source, co
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(LongType* dest, const DataType dtype, const char order) {
   shape::updateStrides(dest, order, true);
+  dest[2 * dest[0] + 1] = 0;  // zero extra flags before setDataType reads them
   ArrayOptions::setDataType(dest, dtype);
 }
 

@@ -152,8 +152,14 @@ DECLARE_SHAPE_FN(xw_plus_b) {
 
   int nWeightsFormat = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-  auto weightsShape =
-      (1 == nWeightsFormat) ? ShapeUtils::evalTransposeShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
+  const LongType* weightsShape;
+  if (1 == nWeightsFormat) {
+    auto temp = ShapeUtils::evalTransposeShapeInfo(*weights, nullptr);
+    weightsShape = ConstantShapeHelper::getInstance().createFromExisting(temp);
+    RELEASE(temp, nullptr);
+  } else {
+    weightsShape = inputShape->at(1);
+  }
 
   // Handle higher rank inputs
   if (shape::rank(xShape) > 2) {

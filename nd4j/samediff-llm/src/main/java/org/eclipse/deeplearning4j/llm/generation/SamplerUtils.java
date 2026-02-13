@@ -140,18 +140,17 @@ public final class SamplerUtils {
                 }
             }
 
-            double threshold = sortedProbs.getDouble(cutoffIdx);
+            float threshold = sortedProbs.toFloatVector()[cutoffIdx];
 
-            // Set values with prob < threshold to -inf using BooleanIndexing
-            // Create mask: where probs < threshold, replace logits with -inf
-            INDArray mask = probs.lt(threshold);
-            BooleanIndexing.replaceWhere(row, NEG_INF, Conditions.equals(1.0));
-            // Re-do with proper approach: use the mask
-            for (long i = 0; i < row.length(); i++) {
-                if (mask.getDouble(i) > 0) {
-                    row.putScalar(i, NEG_INF);
+            // Bulk transfer probs and row to host, apply mask, write back
+            float[] probArr = probs.toFloatVector();
+            float[] rowArr = row.toFloatVector();
+            for (int i = 0; i < rowArr.length; i++) {
+                if (probArr[i] < threshold) {
+                    rowArr[i] = (float) NEG_INF;
                 }
             }
+            row.assign(Nd4j.createFromArray(rowArr));
         }
 
         return was1D ? result.reshape(result.length()) : result;
@@ -226,23 +225,20 @@ public final class SamplerUtils {
     /**
      * Argmax - find the index of the maximum value.
      *
-     * Uses host-side scan instead of Nd4j.argMax CUDA kernel because the
-     * IndexReduce kernel can return wrong indices after heavy DSP execution
-     * (observed in VLM decoder pipeline). The getFloat(i) path properly syncs
-     * CUDA device data to host via synchronizeHostData; the first call does
-     * the actual D2H transfer, subsequent calls find isPrimaryActual=true
-     * and skip the transfer (~5ms total for 49K vocab).
+     * Uses bulk host transfer (toFloatVector) instead of per-element getFloat()
+     * to avoid O(vocabSize) JNI round-trips. The commit() ensures CUDA kernels
+     * complete before the D2H transfer, and toFloatVector() does a single bulk
+     * copy of the entire array to host memory.
      */
     public static int argmax(INDArray logits) {
         INDArray flat = logits.rank() == 1 ? logits : logits.reshape(logits.length());
         Nd4j.getExecutioner().commit();
-        int len = (int) flat.length();
+        float[] data = flat.toFloatVector();
         int maxIdx = 0;
-        float maxVal = flat.getFloat(0);
-        for (int i = 1; i < len; i++) {
-            float val = flat.getFloat(i);
-            if (val > maxVal) {
-                maxVal = val;
+        float maxVal = data[0];
+        for (int i = 1; i < data.length; i++) {
+            if (data[i] > maxVal) {
+                maxVal = data[i];
                 maxIdx = i;
             }
         }
@@ -252,7 +248,8 @@ public final class SamplerUtils {
     /**
      * Batch argmax - find the index of the maximum value for each row.
      *
-     * Uses host-side scan for reliability (see {@link #argmax} for rationale).
+     * Uses bulk host transfer (toFloatVector per row) to avoid O(batchSize * vocabSize)
+     * individual getFloat() JNI calls. Each row is transferred in a single bulk copy.
      */
     public static int[] argmaxBatch(INDArray logits) {
         if (logits.rank() == 1) {
@@ -260,16 +257,14 @@ public final class SamplerUtils {
         }
         Nd4j.getExecutioner().commit();
         int batchSize = (int) logits.size(0);
-        int vocabSize = (int) logits.size(1);
         int[] result = new int[batchSize];
         for (int b = 0; b < batchSize; b++) {
-            INDArray row = logits.getRow(b);
+            float[] row = logits.getRow(b).toFloatVector();
             int maxIdx = 0;
-            float maxVal = row.getFloat(0);
-            for (int v = 1; v < vocabSize; v++) {
-                float val = row.getFloat(v);
-                if (val > maxVal) {
-                    maxVal = val;
+            float maxVal = row[0];
+            for (int v = 1; v < row.length; v++) {
+                if (row[v] > maxVal) {
+                    maxVal = row[v];
                     maxIdx = v;
                 }
             }

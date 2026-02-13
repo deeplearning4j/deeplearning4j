@@ -38,7 +38,7 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
     }
 
     const int shapeInfoLength = shape::shapeInfoLength(rank);
-    LongType* shapeCopy = new LongType[shapeInfoLength];
+    LongType* shapeCopy = new LongType[shapeInfoLength + SD_SHAPE_ALLOC_PADDING];
     if (shapeCopy == nullptr) {
         THROW_EXCEPTION("CpuShapeBufferCreator::create: failed to allocate memory for shapeCopy");
     }

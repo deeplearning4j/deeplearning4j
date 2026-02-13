@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.DeviceRoutingConfiguration;
 import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -455,7 +456,7 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
                     log.debug("Switching CUDA device from {} to {} for op execution",
                               currentDevice, targetDeviceIndex);
                 }
-                affinityManager.unsafeSetDevice(targetDeviceIndex);
+                DeviceMemoryManager.getInstance().switchDevice(targetDeviceIndex, "DeviceAwareOpExecutioner.exec", "target-device");
             }
         } catch (Exception e) {
             // Log but don't fail - device may already be correct or single-GPU system
@@ -479,14 +480,14 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
             this.switched = (originalDevice != targetDevice);
 
             if (switched) {
-                affinityManager.unsafeSetDevice(targetDevice);
+                DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DeviceAwareOpExecutioner.exec", "target-device");
             }
         }
 
         @Override
         public void close() {
             if (switched) {
-                Nd4j.getAffinityManager().unsafeSetDevice(originalDevice);
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "DeviceAwareOpExecutioner.exec", "restore-device");
             }
         }
     }

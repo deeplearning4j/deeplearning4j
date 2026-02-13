@@ -449,7 +449,7 @@ NDArray* NDArrayFactory::empty_(LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -463,7 +463,7 @@ NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }
@@ -482,7 +482,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::empty(DataType dataType, LaunchContext* c
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
   NDArray *result= new NDArray(nullptr, shapeInfo, context, false, 0);
 
-  RELEASE(shapeInfo, context->getWorkspace());
+  delete[] shapeInfo;
 
   return result;
 }

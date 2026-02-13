@@ -154,6 +154,11 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
     axis += rank;
   }
 
+  // Validate axis bounds immediately after normalization
+  REQUIRE_TRUE(axis >= 0 && axis < rank, 0,
+               "CONCAT op: input axis must be in range [0, %i], but got %i after normalization!",
+               rank - 1, axis);
+
   // ******** input validation ******** //
   if (!allOfSameType) {
     for (auto arr : arrsToDelete) delete arr;
@@ -254,6 +259,11 @@ DECLARE_SHAPE_FN(concat) {
     axis += rank;
   }
 
+  // Validate axis bounds immediately after normalization, before any shape indexing
+  REQUIRE_TRUE(axis >= 0 && axis < rank, 0,
+               "CONCAT op: input axis must be in range [0, %i], but got %i after normalization!",
+               rank - 1, axis);
+
   for (LongType i = 0; i < numOfInArrs; i++) {
     // Cache inputShape->at(i) to avoid repeated lookups
     const sd::LongType* currentShapeInfo = inputShape->at(i);
@@ -332,11 +342,7 @@ DECLARE_SHAPE_FN(concat) {
   }
 
   // ******** input validation ******** //
-  //axis needs to be flexible between 0 and 1
-  if (axis > 1)
-    REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!",
-                 rank - 1, axis);
-
+  // axis already validated after normalization above
   // ******** end of input validation ******** //
 
   if (shape::isScalar(arrShapes.at(firstNonEmptyShapeIdx))) {

@@ -56,8 +56,11 @@ DECLARE_SHAPE_FN(unstack) {
   auto inShapeInfo = inputShape->at(0);
 
   auto dim = INT_ARG(0);
-  const LongType numTads = block.numI() > 1 ? I_ARG(1) : shape::shapeOf(inShapeInfo)[dim];
   if (dim < 0) dim += shape::rank(inShapeInfo);
+  REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension must be non-negative after normalization, but got %i!", dim);
+  REQUIRE_TRUE(dim < shape::rank(inShapeInfo), 0,
+               "UNSTACK op: dimension must be < rank (%i), but got %i!", shape::rank(inShapeInfo), dim);
+  const LongType numTads = block.numI() > 1 ? I_ARG(1) : shape::shapeOf(inShapeInfo)[dim];
   if(!shape::isEmptyConst(inShapeInfo)) {
     REQUIRE_TRUE(dim < inShapeInfo[0], 0,
                  "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShapeInfo[0],

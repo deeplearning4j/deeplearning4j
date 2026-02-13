@@ -56,7 +56,7 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
 
       const sd::LongType currentInd = x[xOffset];
 
-      if (currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis)) {
+      if (currentInd < 0 || currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis)) {
         ++numOfBadIndx;
       }
     }

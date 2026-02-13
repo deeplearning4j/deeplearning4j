@@ -23,6 +23,10 @@
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 
+#ifdef SD_CUDA
+#include <cuda_runtime_api.h>
+#endif
+
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
@@ -61,15 +65,15 @@
 
 extern bool experimentalSupport; // Defined in NativeOpsHelpers_Arrays.cpp
 
-// OpaqueNDArray allocation tracking
-static std::atomic<size_t> g_opaqueArrayCount{0};
-static std::atomic<size_t> g_opaqueArrayBytes{0};
-static std::mutex g_opaqueArrayMutex;
+// External references to allocation tracking variables (defined in NativeOpsHelpers_Arrays.cpp)
+extern std::atomic<size_t> g_opaqueArrayCount;
+extern std::atomic<size_t> g_opaqueArrayBytes;
+extern std::mutex g_opaqueArrayMutex;
 
-// DataBuffer allocation tracking - non-static so platform-specific dbClose can access
-std::atomic<size_t> g_dataBufferCount{0};
-std::atomic<size_t> g_dataBufferBytes{0};
-static std::mutex g_dataBufferMutex;
+// External references to DataBuffer allocation tracking (defined in NativeOpsHelpers_Arrays.cpp)
+extern std::atomic<size_t> g_dataBufferCount;
+extern std::atomic<size_t> g_dataBufferBytes;
+extern std::mutex g_dataBufferMutex;
 
 // TadPack lifetime registry moved to NativeOpsHelpers_DataBuffers_tad.cpp
 // extern reference if needed:
@@ -393,11 +397,22 @@ bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant) {
     return false;
   }
 
+  // Check if already constant - this could indicate buffer reuse
+  bool alreadyConstant = dataBuffer->isConstant.load(std::memory_order_acquire);
+  if (alreadyConstant && isConstant) {
+    if (sd::Environment::getInstance().isVerbose()) {
+      sd_printf("dbSetConstant: WARNING - buffer %p is ALREADY constant, marking again (possible buffer reuse)\n", dataBuffer);
+    }
+  }
+
   dataBuffer->isConstant.store(isConstant, std::memory_order_release);
 
   // Also propagate to the underlying DataBuffer if it exists
   auto db = dataBuffer->dataBuffer();
   if (db != nullptr) {
+    // Validate DataBuffer integrity before marking constant
+    // This catches heap corruption early before it causes SIGABRT
+    db->validateIntegrity();
     db->markConstant(isConstant);
   }
 
@@ -582,6 +597,22 @@ void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
+#ifdef SD_CUDA
+  // Verify actual device of the GPU pointer. The DataBuffer._deviceId metadata can
+  // get out of sync with the real pointer location during cross-device execution
+  // (e.g., Java-side DeviceMemoryManager routing allocates on a different device than
+  // expected, or allocateFailover moves data across GPUs). Using _deviceId alone causes
+  // DSP to skip necessary input migrations, leading to illegal memory access on non-P2P GPUs.
+  auto db = dataBuffer->dataBuffer();
+  if (db != nullptr && db->special() != nullptr) {
+    cudaPointerAttributes ptrAttrs;
+    auto res = cudaPointerGetAttributes(&ptrAttrs, db->special());
+    if (res == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      return ptrAttrs.device;
+    }
+    cudaGetLastError(); // clear any error from the query
+  }
+#endif
   return dataBuffer->deviceId();
 }
 

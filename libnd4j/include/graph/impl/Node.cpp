@@ -553,13 +553,25 @@ sd::DataType Node::dataType() { return _dataType; }
 ContextPrototype* Node::protoContext() { return _protoContext; }
 
 sd::graph::Node::~Node() {
-  if (_extraParams != nullptr) delete[] _extraParams;
+  // SAFETY: Wrap each cleanup in try-catch to handle heap corruption
+  try {
+    if (_extraParams != nullptr) delete[] _extraParams;
+  } catch (...) {
+    sd_debug("Node::~Node: Exception deleting _extraParams\n", "");
+  }
 
-  if (_dim != nullptr) delete[] _dim;
+  try {
+    if (_dim != nullptr) delete[] _dim;
+  } catch (...) {
+    sd_debug("Node::~Node: Exception deleting _dim\n", "");
+  }
 
-
-  if (_isDeductable && _customOp != nullptr) {
-    Node::deleteOpByType(_opType, _customOp);
+  try {
+    if (_isDeductable && _customOp != nullptr) {
+      Node::deleteOpByType(_opType, _customOp);
+    }
+  } catch (...) {
+    sd_debug("Node::~Node: Exception deleting custom op\n", "");
   }
 }
 
@@ -581,66 +593,76 @@ bool sd::graph::Node::equals(Node* other) {
 }
 
 void sd::graph::Node::deleteOpByType(::graph::OpType opType, void* op) {
-  switch (opType) {
-    case ::graph::OpType_PAIRWISE:
-      delete reinterpret_cast<sd::ops::LegacyPairwiseTransformOp*>(op);
-      break;
-    case ::graph::OpType_PAIRWISE_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyPairwiseTransformBoolOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_STRICT:
-      delete reinterpret_cast<sd::ops::LegacyTransformStrictOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_SAME:
-      delete reinterpret_cast<sd::ops::LegacyTransformSameOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_FLOAT:
-      delete reinterpret_cast<sd::ops::LegacyTransformFloatOp*>(op);
-      break;
-    case ::graph::OpType_TRANSFORM_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
-      break;
-    case ::graph::OpType_SCALAR:
-      delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
-      break;
-    case ::graph::OpType_SCALAR_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyScalarBoolOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_3:
-      delete reinterpret_cast<sd::ops::LegacyReduce3Op*>(op);
-      break;
-    case ::graph::OpType_REDUCE_SAME:
-      delete reinterpret_cast<sd::ops::LegacyReduceSameOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_FLOAT:
-      delete reinterpret_cast<sd::ops::LegacyReduceFloatOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_LONG:
-      delete reinterpret_cast<sd::ops::LegacyReduceLongOp*>(op);
-      break;
-    case ::graph::OpType_REDUCE_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyReduceBoolOp*>(op);
-      break;
-    case ::graph::OpType_INDEX_REDUCE:
-      delete reinterpret_cast<sd::ops::LegacyIndexReduceOp*>(op);
-      break;
-    case ::graph::OpType_SUMMARYSTATS:
-      delete reinterpret_cast<sd::ops::LegacyStatsOp*>(op);
-      break;
-    case ::graph::OpType_RANDOM:
-      delete reinterpret_cast<sd::ops::LegacyRandomOp*>(op);
-      break;
-    case ::graph::OpType_BROADCAST:
-      delete reinterpret_cast<sd::ops::LegacyBroadcastOp*>(op);
-      break;
-    case ::graph::OpType_BROADCAST_BOOL:
-      delete reinterpret_cast<sd::ops::LegacyBroadcastBoolOp*>(op);
-      break;
-    case ::graph::OpType_CUSTOM:
-      delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
-      break;
-    default:
-      THROW_EXCEPTION("Bad opType passed in");
+  // SAFETY: Check for null pointer before casting and deleting
+  if (op == nullptr) {
+    return;
+  }
+
+  // SAFETY: Wrap each delete in try-catch to handle heap corruption
+  try {
+    switch (opType) {
+      case ::graph::OpType_PAIRWISE:
+        delete reinterpret_cast<sd::ops::LegacyPairwiseTransformOp*>(op);
+        break;
+      case ::graph::OpType_PAIRWISE_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyPairwiseTransformBoolOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_STRICT:
+        delete reinterpret_cast<sd::ops::LegacyTransformStrictOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_SAME:
+        delete reinterpret_cast<sd::ops::LegacyTransformSameOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_FLOAT:
+        delete reinterpret_cast<sd::ops::LegacyTransformFloatOp*>(op);
+        break;
+      case ::graph::OpType_TRANSFORM_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
+        break;
+      case ::graph::OpType_SCALAR:
+        delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
+        break;
+      case ::graph::OpType_SCALAR_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyScalarBoolOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_3:
+        delete reinterpret_cast<sd::ops::LegacyReduce3Op*>(op);
+        break;
+      case ::graph::OpType_REDUCE_SAME:
+        delete reinterpret_cast<sd::ops::LegacyReduceSameOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_FLOAT:
+        delete reinterpret_cast<sd::ops::LegacyReduceFloatOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_LONG:
+        delete reinterpret_cast<sd::ops::LegacyReduceLongOp*>(op);
+        break;
+      case ::graph::OpType_REDUCE_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyReduceBoolOp*>(op);
+        break;
+      case ::graph::OpType_INDEX_REDUCE:
+        delete reinterpret_cast<sd::ops::LegacyIndexReduceOp*>(op);
+        break;
+      case ::graph::OpType_SUMMARYSTATS:
+        delete reinterpret_cast<sd::ops::LegacyStatsOp*>(op);
+        break;
+      case ::graph::OpType_RANDOM:
+        delete reinterpret_cast<sd::ops::LegacyRandomOp*>(op);
+        break;
+      case ::graph::OpType_BROADCAST:
+        delete reinterpret_cast<sd::ops::LegacyBroadcastOp*>(op);
+        break;
+      case ::graph::OpType_BROADCAST_BOOL:
+        delete reinterpret_cast<sd::ops::LegacyBroadcastBoolOp*>(op);
+        break;
+      case ::graph::OpType_CUSTOM:
+        delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
+        break;
+      default:
+        THROW_EXCEPTION("Bad opType passed in");
+    }
+  } catch (...) {
+    sd_debug("Node::deleteOpByType: Exception deleting op of type %d - possible heap corruption\n", opType);
   }
 }
 

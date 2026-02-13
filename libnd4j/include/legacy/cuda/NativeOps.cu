@@ -745,11 +745,54 @@ int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, s
     }
   }
 
+  // For cross-device safety: detect the device of the device pointer and switch to it.
+  // cudaMemcpy(H2D) fails on non-P2P GPUs if current device != destination pointer's device.
+  int savedDevice = -1;
+  bool switchedDevice = false;
+
+  if (kind == cudaMemcpyHostToDevice || kind == cudaMemcpyDeviceToDevice) {
+    // Destination is a device pointer — ensure we're on the correct device
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, reinterpret_cast<void *>(dst));
+    if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      int currentDevice = -1;
+      cudaGetDevice(&currentDevice);
+      if (currentDevice != ptrAttrs.device) {
+        savedDevice = currentDevice;
+        cudaSetDevice(ptrAttrs.device);
+        switchedDevice = true;
+      }
+    } else {
+      cudaGetLastError(); // clear any error from the query
+    }
+  } else if (kind == cudaMemcpyDeviceToHost) {
+    // Source is a device pointer — ensure we're on the correct device
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, const_cast<const void *>(reinterpret_cast<void *>(src)));
+    if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      int currentDevice = -1;
+      cudaGetDevice(&currentDevice);
+      if (currentDevice != ptrAttrs.device) {
+        savedDevice = currentDevice;
+        cudaSetDevice(ptrAttrs.device);
+        switchedDevice = true;
+      }
+    } else {
+      cudaGetLastError(); // clear any error from the query
+    }
+  }
+
   auto dZ = cudaMemcpy(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
                        static_cast<size_t>(size), kind);
+
+  // Restore original device if we switched
+  if (switchedDevice) {
+    cudaSetDevice(savedDevice);
+  }
+
   if (dZ != 0) {
-    printf("Failed on [%p] -> [%p], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags,
-           static_cast<int>(dZ));
+    printf("Failed on [%p] -> [%p], size: [%lld], direction: [%i], dZ: [%i]\n", src, dst,
+           static_cast<long long>(size), flags, static_cast<int>(dZ));
     fflush(stdout);
     fflush(stderr);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
@@ -764,7 +807,6 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
   auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
   cudaMemcpyKind kind;
-
 
   switch (flags) {
     case 0: {
@@ -786,12 +828,48 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
     }
   }
 
-  auto dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
-                            static_cast<size_t>(size), kind, *pStream);
+  // Cross-device safety: detect the device of the device pointer.
+  // If it's on a different device than current, the caller's stream is invalid for the target device.
+  // Fall back to synchronous cudaMemcpy on the correct device instead.
+  int targetDevice = -1;
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
+
+  if (kind == cudaMemcpyHostToDevice || kind == cudaMemcpyDeviceToDevice) {
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, reinterpret_cast<void *>(dst));
+    if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      targetDevice = ptrAttrs.device;
+    } else {
+      cudaGetLastError();
+    }
+  } else if (kind == cudaMemcpyDeviceToHost) {
+    cudaPointerAttributes ptrAttrs;
+    auto attrRes = cudaPointerGetAttributes(&ptrAttrs, const_cast<const void *>(reinterpret_cast<void *>(src)));
+    if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+      targetDevice = ptrAttrs.device;
+    } else {
+      cudaGetLastError();
+    }
+  }
+
+  cudaError_t dZ;
+  if (targetDevice >= 0 && targetDevice != currentDevice) {
+    // Cross-device: caller's stream belongs to wrong device.
+    // Switch to correct device and use synchronous copy.
+    cudaSetDevice(targetDevice);
+    dZ = cudaMemcpy(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
+                    static_cast<size_t>(size), kind);
+    cudaSetDevice(currentDevice);
+  } else {
+    // Same device: use async copy with caller's stream
+    dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)),
+                         static_cast<size_t>(size), kind, *pStream);
+  }
 
   if (dZ != 0) {
-    printf("Failed on [%p] -> [%p], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags,
-           static_cast<int>(dZ));
+    printf("Failed on [%p] -> [%p], size: [%lld], direction: [%i], dZ: [%i]\n", src, dst,
+           static_cast<long long>(size), flags, static_cast<int>(dZ));
 
     fflush(stdout);
     fflush(stderr);
@@ -800,12 +878,33 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
     return 0;
   }
 
-
   return 1;
 }
 
 int memsetSync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Pointer reserved) {
+  // Cross-device safety: switch to the device that owns the pointer
+  int savedDevice = -1;
+  bool switchedDevice = false;
+  cudaPointerAttributes ptrAttrs;
+  auto attrRes = cudaPointerGetAttributes(&ptrAttrs, reinterpret_cast<void *>(dst));
+  if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+    int currentDevice = -1;
+    cudaGetDevice(&currentDevice);
+    if (currentDevice != ptrAttrs.device) {
+      savedDevice = currentDevice;
+      cudaSetDevice(ptrAttrs.device);
+      switchedDevice = true;
+    }
+  } else {
+    cudaGetLastError();
+  }
+
   auto dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
+
+  if (switchedDevice) {
+    cudaSetDevice(savedDevice);
+  }
+
   if (dZ != 0) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemset failed");
@@ -817,7 +916,29 @@ int memsetSync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Poi
 int memsetAsync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Pointer reserved) {
   auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
-  auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);
+  // Cross-device safety: detect the device of the pointer
+  int targetDevice = -1;
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
+  cudaPointerAttributes ptrAttrs;
+  auto attrRes = cudaPointerGetAttributes(&ptrAttrs, reinterpret_cast<void *>(dst));
+  if (attrRes == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
+    targetDevice = ptrAttrs.device;
+  } else {
+    cudaGetLastError();
+  }
+
+  cudaError_t dZ;
+  if (targetDevice >= 0 && targetDevice != currentDevice) {
+    // Cross-device: caller's stream belongs to wrong device.
+    // Switch to correct device and use synchronous memset.
+    cudaSetDevice(targetDevice);
+    dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
+    cudaSetDevice(currentDevice);
+  } else {
+    dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);
+  }
+
   if (dZ != 0) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemsetAsync failed");

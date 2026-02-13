@@ -36,8 +36,10 @@ void CudaPointerDeallocator::release(void *ptr) {
   if (result == cudaSuccess) {
     // Only free if it's a device pointer (regular or managed)
     if (attributes.type == cudaMemoryTypeDevice || attributes.type == cudaMemoryTypeManaged) {
-      int deviceId = 0;
-      cudaGetDevice(&deviceId);
+      // CRITICAL FIX: Use the device ID from attributes, not the current device!
+      // The pointer was allocated on attributes.device, not necessarily the current device.
+      // Using the wrong device ID can cause heap corruption when freeing cross-device pointers.
+      int deviceId = attributes.device;
       memory::CudaMemoryPool::getInstance().free(ptr, deviceId, nullptr);
     }
     // Don't free other types (host memory, constant memory, etc.)

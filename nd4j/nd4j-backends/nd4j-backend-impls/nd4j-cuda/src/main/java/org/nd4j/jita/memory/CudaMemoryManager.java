@@ -255,7 +255,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
         }
 
         // All GPUs exhausted - restore original device
-        Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+        DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaMemoryManager", "failover-restore");
         log.warn("GPU failover failed: no alternate GPU could allocate {} bytes", bytes);
         return null;
     }
@@ -266,7 +266,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     private Pointer tryAllocateOnDevice(int deviceId, long bytes, boolean initialize) {
         try {
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+            DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaMemoryManager.tryAllocateOnDevice", "failover-attempt");
             Pointer ptr = tryAllocateDevice(bytes);
             if (ptr != null) {
                 if (initialize) {

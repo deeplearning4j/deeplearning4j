@@ -325,15 +325,28 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Close DynamicShapePlanExecutor (holds runtime state: output slots, live tracking)
         DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
         if (executor != null) {
-            log.info("Closing DynamicShapePlanExecutor - flushing LocalBufferPool...");
+            log.debug("Closing DynamicShapePlanExecutor - flushing LocalBufferPool...");
             try {
                 executor.close();
             } catch (Exception e) {
                 log.warn("Error closing DynamicShapePlanExecutor: {}", e.getMessage());
             }
             dynamicShapePlanExecutorTl.remove();
+            // DSP close() freed slot arrays via RELEASE_SPECIAL (cudaFreeAsync on stream 0).
+            // Sync stream 0 + trim pool so the freed memory is returned to the driver.
+            // Without this, pool-reserved memory starves cudaStreamCreate() on new threads.
+            try {
+                Nd4j.getExecutioner().commit();
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+                for (int d = 0; d < numDevices; d++) {
+                    nativeOps.trimMemoryPoolOnStream(d, null);
+                }
+            } catch (Exception e) {
+                log.debug("Failed to trim memory pool after DSP close: {}", e.getMessage());
+            }
         } else {
-            log.info("No DynamicShapePlanExecutor to close (not DSP path or already closed)");
+            log.debug("No DynamicShapePlanExecutor to close (not DSP path or already closed)");
         }
 
         if (pooledClosed > 0) {
@@ -565,19 +578,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     if (dynamicPlanResults != null) {
                         filteredResults = dynamicPlanResults;
                         dspHandledExecution = true;
-                        // Commit pending async ops
+                        // Commit pending async ops — this syncs the execution stream.
                         Nd4j.getExecutioner().commit();
+                        // Trim pool to release reserved-but-freed memory back to the driver.
+                        // RELEASE_SPECIAL frees go via cudaFreeAsync on stream 0 (nullptr),
+                        // so we must sync stream 0 before trimming. trimMemoryPoolOnStream(d, null)
+                        // syncs stream 0 + trims in one call.
+                        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
                         log.debug("DynamicShapePlan-based execution completed successfully");
-                        // Reset native workspace so C++ op temporaries are recycled for next call.
-                        // Without this, the workspace bump pointer grows monotonically across
-                        // decode steps, eventually spilling all allocations to the heap.
-                        if (mmgr != null) {
-                            try {
-                                mmgr.scopeOut();
-                            } catch (Exception e) {
-                                log.debug("Error in memory manager scope out (DSP path): {}", e.getMessage());
-                            }
-                        }
+                        // Do NOT call mmgr.scopeOut() here. The finally block handles both
+                        // detaching workspace-backed arrays and closing the workspace scope
+                        // in the correct order. Closing the workspace here causes the finally
+                        // block's detach() to fail with "leaked workspace pointer" because
+                        // the workspace is no longer active when detach checks isScopeActive().
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
@@ -589,6 +603,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         try { failedExecutor.close(); } catch (Exception ignored) {}
                         dynamicShapePlanExecutorTl.remove();
                     }
+                    // Clear stale C++ error state so fallback execution doesn't see it.
+                    // lastErrorCode/lastErrorMessage are thread-local in C++ and persist
+                    // across JNI calls until explicitly cleared.
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().clearLastError();
                     // Fall through to standard execution
                 }
             }
@@ -607,13 +625,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             dag, processedPlaceholders, allRequired, variables);
                     if (planResults != null) {
                         filteredResults = planResults;
-                        // Commit pending async ops
+                        // Commit pending async ops — syncs execution stream
                         Nd4j.getExecutioner().commit();
+                        // Sync stream 0 (where RELEASE_SPECIAL frees land) + trim pool
+                        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
                         log.debug("Plan-based execution completed successfully");
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
                     log.warn("Plan-based execution failed, falling back to standard path: {}", e.getMessage());
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().clearLastError();
                     // Fall through to standard execution
                 }
             }
@@ -844,7 +866,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // Check SameDiff-level cache first (survives session resets)
             plan = sameDiff.getCachedDynamicShapePlan(outputSet);
             if (plan == null) {
-                log.info("Compiling DynamicShapePlan for {} outputs", allRequired.size());
+                log.debug("Compiling DynamicShapePlan for {} outputs", allRequired.size());
                 plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
                 if (plan == null) {
                     log.debug("DynamicShapePlan compilation returned null (control flow detected), using standard path");
@@ -859,7 +881,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 plan.assignDevices();
                 // Cache at SameDiff level so it survives session resets
                 sameDiff.cacheDynamicShapePlan(outputSet, plan);
-                log.info("DynamicShapePlan compiled: {}", plan.getSummary());
+                log.debug("DynamicShapePlan compiled: {}", plan.getSummary());
             } else {
                 log.debug("DynamicShapePlan reused from SameDiff cache for {} outputs", outputSet.size());
             }
@@ -916,8 +938,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 System.getProperty("org.nd4j.inference.block.deallocator", "false"));
         if (blockDeallocDuringExec) {
             Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
-            System.out.println("DIAG: DeallocatorService BLOCKED during execution (" + executionOrder.size() + " ops)");
-            System.out.flush();
         }
 
         for (ExecutionNode node : executionOrder) {
@@ -988,11 +1008,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (TIMING_ENABLED) timingArrayReleaseNs += System.nanoTime() - tRelease0;
         }
 
-        // DIAGNOSTIC: Unblock the DeallocatorService after execution
         if (blockDeallocDuringExec) {
             Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
-            System.out.println("DIAG: DeallocatorService UNBLOCKED after execution");
-            System.out.flush();
         }
 
         // Collect output arrays and detach them (create independent copies).
@@ -1170,10 +1187,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 log.info("Close errors: {}", closeErrors);
             }
             if (releasedCount > 0 || uniqueBuffers.size() > 0) {
+                // commit() syncs the current thread's execution stream
                 Nd4j.getExecutioner().commit();
                 try {
+                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    // All frees go via RELEASE_SPECIAL on stream 0 — sync stream 0 + trim
+                    nativeOps.trimMemoryPoolOnStream(currentDevice, null);
+                    // Other devices: cross-device frees also use stream 0 on target device
                     for (int d = 0; d < numDevices; d++) {
-                        nativeOps.trimMemoryPool(d);
+                        if (d != currentDevice) {
+                            nativeOps.trimMemoryPoolOnStream(d, null);
+                        }
                     }
                 } catch (Exception e) {
                     log.debug("Failed to trim memory pool: {}", e.getMessage());
@@ -1681,15 +1705,31 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                     sb.append("│       shape: ").append(formatShape(arr.shape())).append("\n");
                                     sb.append("│       dtype: ").append(arr.dataType()).append("\n");
                                     // Show values for small arrays or scalars
+                                    // All value access is wrapped in try-catch because arrays may be
+                                    // on a different GPU device in multi-GPU DSP execution, and
+                                    // accessing values triggers CUDA ops that can fail across devices.
                                     if (arr.isScalar()) {
-                                        sb.append("│       value: ").append(arr.getDouble(0)).append("\n");
+                                        try {
+                                            sb.append("│       value: ").append(arr.getDouble(0)).append("\n");
+                                        } catch (Exception e) {
+                                            sb.append("│       value: (unavailable)\n");
+                                        }
                                     } else if (arr.length() <= 6) {
-                                        sb.append("│       values: ").append(arr.toStringFull()).append("\n");
+                                        try {
+                                            sb.append("│       values: ").append(arr.toStringFull()).append("\n");
+                                        } catch (Exception e) {
+                                            sb.append("│       values: (unavailable)\n");
+                                        }
                                     } else {
                                         // Show summary for larger arrays (skip min/max for non-numeric types)
                                         DataType dt = arr.dataType();
                                         if (dt != DataType.BOOL && dt != DataType.UTF8 && dt != DataType.UTF16 && dt != DataType.UTF32) {
-                                            sb.append("│       min: ").append(arr.minNumber()).append(", max: ").append(arr.maxNumber()).append("\n");
+                                            try {
+                                                sb.append("│       min: ").append(arr.minNumber()).append(", max: ").append(arr.maxNumber()).append("\n");
+                                            } catch (Exception e) {
+                                                // min/max may fail for cross-device arrays (CUDA error 700)
+                                                sb.append("│       (").append(arr.length()).append(" elements, stats unavailable)\n");
+                                            }
                                         } else {
                                             sb.append("│       (non-numeric type, ").append(arr.length()).append(" elements)\n");
                                         }

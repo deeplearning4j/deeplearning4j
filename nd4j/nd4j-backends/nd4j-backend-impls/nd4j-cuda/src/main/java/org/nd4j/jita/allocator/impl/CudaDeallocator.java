@@ -20,6 +20,7 @@ package org.nd4j.jita.allocator.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.api.memory.Deallocator;
@@ -93,7 +94,7 @@ public class CudaDeallocator implements Deallocator {
         boolean switchedDevice = false;
 
         if (currentDevice != targetDevice) {
-            Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "CudaDeallocator.deallocate", "dealloc");
             switchedDevice = true;
         }
 
@@ -103,7 +104,7 @@ public class CudaDeallocator implements Deallocator {
             opaqueDataBuffer.setNull();
         } finally {
             if (switchedDevice) {
-                Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaDeallocator.deallocate", "restore-device");
             }
         }
     }

@@ -1226,10 +1226,22 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array, bool remove) {
   if (block.isFastPath()) {
-    if (remove && block.fastpath_out()[outputIdx] != nullptr) {
-      // delete reference/call destructor if remove is true
+    auto existing = block.fastpath_out()[outputIdx];
+    if (block.shapeFunctionOverride() && existing != nullptr && existing != array) {
+      // DSP mode: Java pre-allocated the output and owns its DataBuffer.
+      // We must NOT delete it (Java still has a reference).
+      // Copy data from the new array if shapes match.
+      if (existing->isSameShape(array) && existing->dataType() == array->dataType()) {
+        existing->assign(array);
+        delete array;
+        return;
+      }
+      // Shapes differ — fall through but NEVER delete the Java-managed output
+      remove = false;
+    }
+    if (remove && existing != nullptr) {
       sd_debug("Deleting extra reference in fast path at idx %d\n",outputIdx);
-      delete block.fastpath_out()[outputIdx];
+      delete existing;
     }
     sd_debug("In fast path, setting variable\n", 0);
     block.fastpath_out()[outputIdx] = array;
@@ -1262,6 +1274,29 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
 
 void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array) {
   if (block.isFastPath()) {
+    auto existing = block.fastpath_out()[outputIdx];
+    if (block.shapeFunctionOverride() && existing != nullptr && existing != array) {
+      // DSP mode: Java pre-allocated the output and owns its DataBuffer.
+      // Replacing the pointer orphans the Java-managed NDArray and leaks the
+      // C++-created temporary (tZ) since Java never sees the replacement.
+      // Instead, copy data from tZ into the existing output if shapes match.
+      if (existing->isSameShape(array) && existing->dataType() == array->dataType()) {
+        existing->assign(array);
+        delete array;  // Free the C++-created temporary
+        return;
+      }
+      // Shapes differ — DSP shape computation didn't match the op's actual output.
+      // Log once and fall through to replacement (will leak, but avoids data corruption).
+      static bool warnedOnce = false;
+      if (!warnedOnce) {
+        auto existingShape = ShapeUtils::shapeAsString(existing);
+        auto newShape = ShapeUtils::shapeAsString(array);
+        sd_printf("WARNING: OVERWRITE_RESULT in DSP mode with shape mismatch: existing=%s new=%s (op output idx %d). "
+                  "This leaks the C++ temporary array. Fix DSP shape computation for this op.\n",
+                  existingShape.c_str(), newShape.c_str(), outputIdx);
+        warnedOnce = true;
+      }
+    }
     block.fastpath_out()[outputIdx] = array;
   } else {
     auto varSpace = block.getVariableSpace();

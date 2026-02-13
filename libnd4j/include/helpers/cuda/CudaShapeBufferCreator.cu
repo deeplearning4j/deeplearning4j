@@ -50,7 +50,7 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
     }
 
     const int shapeInfoLength = shape::shapeInfoLength(rank);
-    LongType* shapeCopy = new LongType[shapeInfoLength];
+    LongType* shapeCopy = new LongType[shapeInfoLength + SD_SHAPE_ALLOC_PADDING];
     for(int i = 0; i < shapeInfoLength; i++) {
         shapeCopy[i] = shapeInfo[i];
     }

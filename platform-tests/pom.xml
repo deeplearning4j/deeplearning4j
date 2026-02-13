@@ -1624,10 +1624,11 @@
                         <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
-                        <LD_PRELOAD>${preload}</LD_PRELOAD>
+                        <!-- LD_PRELOAD and ASAN_OPTIONS removed: they override external env settings.
+                             Use -Dtest.prefix=asan to enable ASan via bin/java wrapper.
+                             Use LD_PRELOAD=libjemalloc.so on command line for jemalloc. -->
                         <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
-                        <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
@@ -1643,6 +1644,7 @@
                         <!-- VLM test configuration -->
                         <vlm.test.pdf.path>${vlm.test.pdf.path}</vlm.test.pdf.path>
                         <vlm.test.pdf.page>${vlm.test.pdf.page}</vlm.test.pdf.page>
+                        <vlm.test.pdf.startPage>${vlm.test.pdf.startPage}</vlm.test.pdf.startPage>
                         <vlm.test.pdf.maxPages>${vlm.test.pdf.maxPages}</vlm.test.pdf.maxPages>
                         <vlm.test.pdf.dpi>${vlm.test.pdf.dpi}</vlm.test.pdf.dpi>
                         <vlm.test.maxTiles>${vlm.test.maxTiles}</vlm.test.maxTiles>

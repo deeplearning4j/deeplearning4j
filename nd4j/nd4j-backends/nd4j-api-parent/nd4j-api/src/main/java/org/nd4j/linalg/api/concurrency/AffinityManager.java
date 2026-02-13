@@ -149,16 +149,6 @@ public interface AffinityManager {
     Location getActiveLocation(INDArray array);
 
     /**
-     * This method forces specific device for current thread.
-     *
-     * PLEASE NOTE: This method is UNSAFE and should NOT be used with 100% clearance about it.
-     *
-     * @param deviceId
-     */
-    void unsafeSetDevice(Integer deviceId);
-
-
-    /**
      * This method returns TRUE if cross-device access is allowed on this system
      */
     boolean isCrossDeviceAccessSupported();

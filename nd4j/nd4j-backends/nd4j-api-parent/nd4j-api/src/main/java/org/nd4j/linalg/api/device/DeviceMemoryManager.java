@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.device;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.factory.BackendRegistry;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -101,6 +102,67 @@ public class DeviceMemoryManager {
     // Callbacks for memory pressure
     private final List<MemoryPressureCallback> pressureCallbacks = new ArrayList<>();
     private final ReentrantReadWriteLock callbackLock = new ReentrantReadWriteLock();
+
+    // Device context provider (SPI — set by backend at init time)
+    private volatile DeviceContextProvider contextProvider = new CpuDeviceContextProvider();
+
+    // =========================================================================
+    // Device Context Provider (SPI)
+    // =========================================================================
+
+    /**
+     * Set the device context provider. Called by backends (CUDA, CPU) at initialization.
+     *
+     * @param provider the backend-specific provider
+     */
+    public void setContextProvider(DeviceContextProvider provider) {
+        this.contextProvider = provider;
+    }
+
+    /**
+     * Get the current device context provider.
+     */
+    public DeviceContextProvider getContextProvider() {
+        return contextProvider;
+    }
+
+    /**
+     * Switch to the specified device and return a fresh DeviceContext with valid
+     * stream pointers. This is the SINGLE entry point for all device switching.
+     *
+     * Replaces all usages of {@code Nd4j.getAffinityManager().unsafeSetDevice()}.
+     *
+     * @param deviceId target device ID
+     * @param caller   class/method performing the switch (for tracing)
+     * @param reason   why the switch is happening (for tracing)
+     * @return fresh DeviceContext snapshot (do NOT cache across switches)
+     */
+    public DeviceContext switchDevice(int deviceId, String caller, String reason) {
+        return contextProvider.switchDevice(deviceId, caller, reason);
+    }
+
+    /**
+     * Get a fresh DeviceContext for the current thread's device.
+     * Returns valid stream pointers from the thread-local C++ ContextBuffers.
+     */
+    public DeviceContext getCurrentDeviceContext() {
+        return contextProvider.getCurrentContext();
+    }
+
+    /**
+     * Get a fresh execution stream pointer for the current device.
+     * Use this instead of caching stream pointers across device switches.
+     */
+    public Pointer getFreshExecutionStream() {
+        return contextProvider.getFreshExecutionStream();
+    }
+
+    /**
+     * Get the current thread's device ID.
+     */
+    public int getCurrentDeviceId() {
+        return contextProvider.getCurrentDeviceId();
+    }
 
     // =========================================================================
     // Memory Simulation for Testing

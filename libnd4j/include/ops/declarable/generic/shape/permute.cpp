@@ -104,7 +104,9 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
     // No permutation needed - direct assign
     z->assign(x);
   } else {
-    z->assign(x->permute(permutationVector, false, false));
+    auto permuted = x->permute(permutationVector, false, false);
+    z->assign(permuted);
+    delete permuted;
   }
 
   return Status::OK;
@@ -130,7 +132,9 @@ DECLARE_SHAPE_FN(permute) {
   }
 
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
-    auto ret = ShapeUtils::evalTransposeShapeInfo(*x, block.workspace(), true);
+    auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
+    auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp);
+    RELEASE(temp, nullptr);
     return SHAPELIST(ret);
   }
   std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
@@ -167,8 +171,10 @@ DECLARE_SHAPE_FN(permute) {
     }
   }
 
-  auto outputShapeInfo =
-      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, block.workspace(), true);
+  auto temp =
+      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
+  auto outputShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(temp);
+  RELEASE(temp, nullptr);
   return SHAPELIST(outputShapeInfo);
 }
 

@@ -28,6 +28,8 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
+import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -53,6 +55,9 @@ import org.bytedeco.javacpp.Pointer;
 
 import java.io.Closeable;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Executes a compiled {@link DynamicShapePlan} with pre-wired index-based slot access.
@@ -80,6 +85,11 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
             System.getProperty("org.nd4j.inference.timing", "false"));
+
+    // Temporary: serialize parallel worker op execution to test if concurrent C++ calls cause heap corruption.
+    // When nd4j.dsp.serialExec=true, only one worker thread executes at a time.
+    private static final boolean SERIAL_EXEC = Boolean.getBoolean("nd4j.dsp.serialExec");
+    private static final Object EXEC_LOCK = new Object();
 
     private static final boolean SHAPE_OVERRIDE = Boolean.parseBoolean(
             System.getProperty("org.nd4j.inference.dynamicShapePlan.shapeOverride", "true"));
@@ -126,6 +136,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Persistent buffer pool for cross-execution array reuse (avoids mmgr round-trip each step). */
     private LocalBufferPool localPool;
 
+    /** Devices that hit unrecoverable CUDA errors (e.g., error 700 from OOM cascades).
+     *  Once a device is marked failed, all remaining ops redirect to device 0. Reset per execute(). */
+    private Set<Integer> failedDevices;
+
     /** Slot-indexed array cache: persists across execute() calls for O(1) array reuse.
      *  Same slot always produces the same shape in autoregressive decoding, so we cache
      *  by slot index instead of using TreeMap lookup. Non-view arrays are stored here
@@ -163,6 +177,23 @@ public class DynamicShapePlanExecutor implements Closeable {
     private int replicaToDev0Count, replicaToDev1Count;
     private long replicaToDev0Bytes, replicaToDev1Bytes;
     private int wrongDeviceCacheEjections;
+    private int replicaCacheHits;
+
+    /** Cache of constant external inputs replicated to non-primary devices.
+     *  Key: (extIdx << 16) | targetDevice. Value: replicated INDArray on target device.
+     *  Only populated for arrays with isConstant() data buffers (model weights).
+     *  Persists across execute() calls — constants don't change between decode steps. */
+    private Map<Integer, INDArray> constantReplicaCache;
+
+    /** Self-managed native workspace for C++ op temporaries. Created lazily when the
+     *  SessionMemMgr doesn't provide one (e.g., ArrayCacheMemoryMgr). On CUDA this uses
+     *  cudaHostAlloc (pinned host memory) so overruns from C++ ALLOCATE macro stay within
+     *  the workspace buffer instead of corrupting the glibc heap.
+     *
+     *  CRITICAL: Must be large enough for 2x growth factor allocations. With 2.3M elements
+     *  and 2x growth, we need 4.6M elements = ~18MB for FLOAT32. 32MB provides headroom. */
+    private Pointer ownNativeWorkspace;
+    private static final long DSP_NATIVE_WORKSPACE_BYTES = 32L * 1024 * 1024;
 
     public DynamicShapePlanExecutor(SameDiff sd, SessionMemMgr mmgr) {
         this.sd = sd;
@@ -212,6 +243,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             initialize(plan);
         }
 
+        // Always clear per-slot shape caches between executions.
+        // During autoregressive decoding, KV cache dimensions grow by 1 each step,
+        // so shapes computed in the previous step are stale. Without this, the attention
+        // mask reshape produces [1,1,1,N] while the freshly-computed input is [1,1,1,N+1],
+        // causing a broadcast mismatch at /model/attn_mask_reformat/Add (slot 591).
+        plan.clearAllShapeCaches();
+
         if (TIMING_ENABLED) {
             timingWireInputsNs = timingSyncNs = timingShapeNs = timingAllocNs = timingExecNs = timingReleaseNs = 0;
             timingShapeHits = timingShapeMisses = 0;
@@ -243,6 +281,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         replicaToDev0Count = replicaToDev1Count = 0;
         replicaToDev0Bytes = replicaToDev1Bytes = 0;
         wrongDeviceCacheEjections = 0;
+        replicaCacheHits = 0;
 
         // Resolve external inputs (constants, variables, placeholders)
         resolveExternalInputs(plan, placeholderArrays);
@@ -266,8 +305,33 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Build set of output slot indices — these slots must always have real allocations
         // even if they're view producers, because the caller needs the data.
         outputSlotSet = new BitSet();
+        failedDevices = new HashSet<>();
         for (int si : plan.getOutputNameToSlotIndex().values()) {
             if (si >= 0) outputSlotSet.set(si);
+        }
+
+        // FIXME: Parallel execution (DeviceWorker threads) causes latent heap corruption
+        // ("double free or corruption (out)") that manifests on the second chunk. The corruption
+        // occurs even with serialized execution (nd4j.dsp.serialExec=true), ruling out
+        // concurrency as the root cause. Likely a C++ thread-local state or ContextBuffers
+        // lifecycle issue with worker threads. Sequential mode handles multi-device execution
+        // correctly via CudaExecutioner.ensureDeviceCoherency() which migrates buffers between
+        // devices transparently. Enable parallel mode explicitly with nd4j.dsp.forceParallel=true.
+        if (plan.getNumDistinctDevices() > 1 && plan.getSuccessors() != null
+                && Boolean.getBoolean("nd4j.dsp.forceParallel")) {
+            log.debug("DSP executing in PARALLEL mode ({} devices, {} ops)",
+                    plan.getNumDistinctDevices(), slots.length);
+            return executeParallel(plan, placeholderArrays, nativeOps, execStream);
+        }
+
+        // Log unique op types
+        {
+            java.util.Map<String, Integer> opCounts = new java.util.LinkedHashMap<>();
+            for (DynamicShapeSlot s : slots) {
+                String name = s.getOp().opName();
+                opCounts.merge(name, 1, Integer::sum);
+            }
+            log.debug("DSP unique ops ({}): {}", opCounts.size(), opCounts);
         }
 
         Map<String, INDArray> results = new LinkedHashMap<>();
@@ -282,11 +346,38 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                 try {
                     if (stepIdx % 500 == 0 || stepIdx == slots.length - 1) {
-                        log.info("DSP step {}/{}: op={}", stepIdx, slots.length, slot.getOpName());
+                        log.debug("DSP step {}/{}: op={}", stepIdx, slots.length, slot.getOpName());
                     }
                     executeSlot(slot, ctx, nativeOps, localPool, execStream);
                 } catch (Exception e) {
                     log.error("Error executing slot {} ({}): {}", stepIdx, slot.getOpName(), e.getMessage());
+                    // Log input details for diagnosis
+                    String[] inVarNames = slot.getInputVarNames();
+                    int[] inSrcIdx = slot.getInputSourceIndices();
+                    byte[] inSrcTypes = slot.getInputSourceTypes();
+                    if (inVarNames != null) {
+                        for (int ii = 0; ii < inVarNames.length; ii++) {
+                            String srcDesc;
+                            if (inSrcTypes != null && ii < inSrcTypes.length) {
+                                switch (inSrcTypes[ii]) {
+                                    case DynamicShapeSlot.SOURCE_CONSTANT: srcDesc = "CONST"; break;
+                                    case DynamicShapeSlot.SOURCE_VARIABLE: srcDesc = "VAR"; break;
+                                    case DynamicShapeSlot.SOURCE_PLACEHOLDER: srcDesc = "PH"; break;
+                                    case DynamicShapeSlot.SOURCE_OP_OUTPUT: srcDesc = "OP[" + inSrcIdx[ii] + "]"; break;
+                                    default: srcDesc = "?"; break;
+                                }
+                            } else {
+                                srcDesc = "idx=" + (inSrcIdx != null ? inSrcIdx[ii] : "?");
+                            }
+                            INDArray inArr = (inSrcIdx != null && inSrcIdx[ii] >= 0)
+                                    ? outputSlots[inSrcIdx[ii]]
+                                    : (inSrcIdx != null ? externalInputs[-(inSrcIdx[ii] + 1)] : null);
+                            String shapeStr = inArr != null
+                                    ? java.util.Arrays.toString(inArr.shape()) + " " + inArr.dataType()
+                                    : "null";
+                            log.error("  Input[{}] '{}' src={} shape={}", ii, inVarNames[ii], srcDesc, shapeStr);
+                        }
+                    }
                     // Clear the slot cache on failure — a failed execution may leave
                     // cached arrays with corrupted shape info or stale GPU pointers.
                     // Without this, every subsequent execute() hits the same stale cache.
@@ -297,6 +388,23 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                 ctx.purgeForReuse();
                 ctxPool.offerFirst(ctx);
+
+                // Reset native workspace offset between ops. Each op's C++ temporaries
+                // (ALLOCATE calls) are only needed during the op's execution. Without
+                // this reset, the workspace offset accumulates across all ops. Once the
+                // buffer is exhausted, subsequent ALLOCATE calls spill to separate
+                // heap allocations where C++ buffer overruns corrupt adjacent glibc
+                // malloc metadata -> SIGABRT "double free or corruption (!prev)".
+                // Resetting per-op ensures each op gets the full workspace buffer and
+                // all overruns stay within the harmless bump-allocator region.
+                Pointer wsPtr = ownNativeWorkspace;
+                if (wsPtr == null) {
+                    wsPtr = mmgr.getNativeWorkspacePointer();
+                }
+                if (wsPtr != null) {
+                    nativeOps.workspaceScopeOut(wsPtr);
+                    nativeOps.workspaceScopeIn(wsPtr);
+                }
 
                 // Mark dead slots for deferred close. Don't close now because:
                 // (1) GPU kernels may still be using the buffer on the execution stream
@@ -433,6 +541,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             // No new allocations happen between closes, so address reuse is impossible.
             closePendingBuffers(nativeOps, execStream);
 
+            // Evict oversized slot cache after prefill steps. During autoregressive decoding,
+            // step 0 (prefill) allocates intermediates for full sequence length (e.g., seq=679),
+            // while subsequent decode steps use seq=1. Cached arrays from prefill hold GBs of
+            // GPU memory that won't be reused. Clear the cache if total cached bytes > 512MB
+            // so subsequent threads can create CUDA contexts/streams.
+            evictOversizedSlotCache(nativeOps, execStream);
+
             if (TIMING_ENABLED) {
                 printTimingSummary(slots.length, localPool);
             }
@@ -466,7 +581,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Re-fetch a fresh stream pointer. The cached execStream may be stale — C++
         // ContextBuffers::release() can free the underlying cudaStream_t during device
         // context switches in executeSlot(). Dereferencing a freed stream → SIGSEGV.
-        Pointer freshStream = getFreshExecStream(nativeOps);
+        Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
         if (freshStream == null) freshStream = execStream; // fallback to cached
 
         // Sync execution stream so all GPU kernels using these buffers have completed.
@@ -483,22 +598,23 @@ public class DynamicShapePlanExecutor implements Closeable {
             int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             nativeOps.trimMemoryPoolOnStream(currentDevice, freshStream);
             // Also trim device 1 if multi-GPU. Cross-device frees go to device 1's
-            // default stream (see dbFreeBuffersOnStream cross-device path). Without
-            // trimming device 1, these frees accumulate as "used" in pool stats.
+            // default stream (see dbFreeBuffersOnStream cross-device path).
+            // Use trimMemoryPoolOnStream with null stream to sync stream 0 on the
+            // target device before trimming — that's where the cross-device frees land.
             int numDevices = nativeOps.getAvailableDevices();
             if (numDevices > 1) {
                 for (int d = 0; d < numDevices; d++) {
                     if (d != currentDevice) {
-                        nativeOps.trimMemoryPool(d);
+                        nativeOps.trimMemoryPoolOnStream(d, null);
                     }
                 }
             }
         }
         if (!deferredClose.isEmpty()) {
-            log.info("  Mid-exec flush: freed {}/{} buffers ({}MB), deferred {} (live views), total freed: {}MB",
+            log.debug("  Mid-exec flush: freed {}/{} buffers ({}MB), deferred {} (live views), total freed: {}MB",
                     stats[0], stats[1], stats[2], deferredClose.size(), totalFlushedBytes / (1024 * 1024));
         } else {
-            log.info("  Mid-exec flush: freed {}/{} buffers ({}MB), total freed so far: {}MB",
+            log.debug("  Mid-exec flush: freed {}/{} buffers ({}MB), total freed so far: {}MB",
                     stats[0], stats[1], stats[2], totalFlushedBytes / (1024 * 1024));
         }
         pendingClose.clear();
@@ -520,7 +636,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (pendingClose.isEmpty() && totalFlushedCount == 0) return;
 
         // Re-fetch a fresh stream pointer (same reason as flushPendingClose).
-        Pointer freshStream = getFreshExecStream(nativeOps);
+        Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
         if (freshStream == null) freshStream = execStream;
 
         if (!pendingClose.isEmpty()) {
@@ -534,18 +650,19 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (freshStream != null) {
             int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             nativeOps.trimMemoryPoolOnStream(currentDevice, freshStream);
-            // Trim all other devices — cross-device frees went to their default streams
+            // Trim all other devices — cross-device frees went to their default streams.
+            // Use trimMemoryPoolOnStream with null to sync stream 0 on target device.
             int numDevices = nativeOps.getAvailableDevices();
             if (numDevices > 1) {
                 for (int d = 0; d < numDevices; d++) {
                     if (d != currentDevice) {
-                        nativeOps.trimMemoryPool(d);
+                        nativeOps.trimMemoryPoolOnStream(d, null);
                     }
                 }
             }
         }
 
-        log.info("  Deferred close: {}/{} buffers ({}MB)",
+        log.debug("  Deferred close: {}/{} buffers ({}MB)",
                 totalFlushedCount, totalFlushedCount, totalFlushedBytes / (1024 * 1024));
         pendingClose.clear();
     }
@@ -618,8 +735,12 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (isOwner && gpuAddr != 0 && !batchGpuAddresses.add(gpuAddr)) continue;
 
             try {
-                freedBytes += buf.length() * buf.getElementSize();
+                long bufBytes = buf.length() * buf.getElementSize();
+                freedBytes += bufBytes;
                 freedCount++;
+                MultiGpuTracer.traceBufferFree(-1,
+                        Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                        bufBytes, execStream != null ? "dbFreeBuffersOnStream" : "dbFreeBuffersOnly");
                 // Free on the execution stream so the pool can reuse this memory
                 // for the next cudaMallocAsync on the same stream.
                 if (execStream != null) {
@@ -727,24 +848,28 @@ public class DynamicShapePlanExecutor implements Closeable {
         // switches us to an unexpected device.
         int previousDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         int targetDevice = slot.getTargetDeviceId();
+        // If the planned device hit an unrecoverable CUDA error (e.g., OOM cascade),
+        // redirect to the first non-failed device. When device 0 fails, we redirect
+        // to device 1 (or the next available). When device 1+ fails, redirect to 0.
+        if (targetDevice >= 0 && failedDevices != null && failedDevices.contains(targetDevice)) {
+            int numDevices = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
+            int redirectDevice = 0;
+            for (int d = 0; d < numDevices; d++) {
+                if (!failedDevices.contains(d)) {
+                    redirectDevice = d;
+                    break;
+                }
+            }
+            targetDevice = redirectDevice;
+        }
         if (targetDevice >= 0) {
             if (previousDeviceId != targetDevice) {
-                Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+                DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "slot-device-placement");
                 // Re-fetch execution stream for the target device. The execStream passed
                 // in was cached from the original device's launch context — using it for
                 // cudaMemsetAsync on a different device's memory fails for non-P2P GPUs.
-                try {
-                    OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                    if (lc != null) {
-                        Pointer deviceStream = nativeOps.lcExecutionStream(lc);
-                        if (deviceStream != null) {
-                            deviceStream.retainReference();
-                            execStream = deviceStream;
-                        }
-                    }
-                } catch (Exception e) {
-                    // fall through with original stream
-                }
+                Pointer deviceStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                if (deviceStream != null) execStream = deviceStream;
             }
         }
 
@@ -795,14 +920,57 @@ public class DynamicShapePlanExecutor implements Closeable {
                         inputDevice = nativeOps.dbDeviceId(inputOdb);
                     }
                     if (inputDevice >= 0 && inputDevice != targetDevice) {
+                        // Check constant replica cache first. Model weights (constants) don't
+                        // change between decode steps — cache their replicas to avoid re-copying
+                        // 194MB of weights from device 0 to device 1 on every single token.
+                        // CRITICAL: Do NOT cache PLACEHOLDER arrays. setCloseable(false) poisons
+                        // the DataBuffer.isConstant() flag (via setConstant(true)), causing
+                        // placeholders like attention_mask to appear constant. If cached, stale
+                        // replicas from the previous step are reused, causing shape mismatches
+                        // (e.g., attention_mask [1,680] cached from step N used at step N+1
+                        // where the correct shape is [1,681]).
+                        boolean isConstant = input.data() != null && input.data().isConstant();
+                        int srcIdx2 = inputSourceIndices[i];
+                        boolean isExternal = srcIdx2 < 0;
+                        // Check slot's inputSourceTypes — placeholders are NEVER truly constant
+                        byte[] srcTypes = slot.getInputSourceTypes();
+                        boolean isPlaceholder = (srcTypes != null && i < srcTypes.length &&
+                                srcTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER);
+                        boolean isTrulyConstant = isConstant && !isPlaceholder;
+                        int cacheKey = isExternal ? ((-(srcIdx2 + 1)) << 16) | targetDevice : -1;
+
+                        INDArray cachedReplica = null;
+                        if (isTrulyConstant && isExternal && constantReplicaCache != null) {
+                            cachedReplica = constantReplicaCache.get(cacheKey);
+                            if (cachedReplica != null && !cachedReplica.wasClosed()) {
+                                inputArrays[i] = cachedReplica;
+                                if (TIMING_ENABLED) replicaCacheHits++;
+                                migrated = true;
+                                MultiGpuTracer.traceInputMigration(-1, i, inputDevice, targetDevice,
+                                        input.length() * input.data().getElementSize(),
+                                        input.isView(), true, true);
+                                continue;
+                            }
+                        }
+
+                        MultiGpuTracer.traceInputMigration(-1, i, inputDevice, targetDevice,
+                                input.length() * input.data().getElementSize(),
+                                input.isView(), isConstant, false);
+
                         // Pre-dup views to contiguous on the source device. This avoids
                         // replicateToDevice's internal dup() which frees the intermediate
                         // on the default stream (not trimmed by DSP's execution stream trim).
+                        // CRITICAL: dup() must run on the SOURCE device — if the current
+                        // thread is on a different device (e.g., DeviceWorker[1] on device 1,
+                        // but input data on device 0), dup() would try a direct GPU copy
+                        // between non-P2P devices → error 700 (illegal memory access).
                         INDArray inputToReplicate = input;
                         if (input.isView()) {
+                            DeviceMemoryManager.getInstance().switchDevice(inputDevice, "DSP.executeSlot", "view-dup-source");
                             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                 inputToReplicate = input.dup(input.ordering());
                             }
+                            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "view-dup-restore");
                             // Track contiguous intermediate for freeing on execution stream
                             DataBuffer dupBuf = inputToReplicate.data();
                             if (dupBuf != null && !dupBuf.isConstant()) {
@@ -812,11 +980,21 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                         INDArray replica = Nd4j.getAffinityManager().replicateToDevice(targetDevice, inputToReplicate);
                         inputArrays[i] = replica;
-                        // Track replica for explicit close after execution
-                        DataBuffer replicaBuf = replica.data();
-                        if (replicaBuf != null && !replicaBuf.isConstant()) {
-                            if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
-                            replicatedInputBuffers.add(replicaBuf);
+
+                        // Cache constant replicas for reuse across decode steps
+                        // Only cache truly constant arrays (not placeholders poisoned by setCloseable)
+                        if (isTrulyConstant && isExternal) {
+                            if (constantReplicaCache == null) constantReplicaCache = new HashMap<>();
+                            constantReplicaCache.put(cacheKey, replica);
+                            // Don't track in replicatedInputBuffers — cached replicas
+                            // persist across execute() calls, freed when executor closes
+                        } else {
+                            // Track non-constant replica for explicit close after execution
+                            DataBuffer replicaBuf = replica.data();
+                            if (replicaBuf != null && !replicaBuf.isConstant()) {
+                                if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
+                                replicatedInputBuffers.add(replicaBuf);
+                            }
                         }
                         replicaCount++;
                         long rBytes = replica.length() * replica.data().getElementSize();
@@ -879,6 +1057,16 @@ public class DynamicShapePlanExecutor implements Closeable {
                 outputArrays[i] = out;
                 outputSlots[slotIdx] = out;
                 liveSlots.set(slotIdx);
+                // Clear any stale cached array for view producer slots to prevent
+                // use-after-free when the slot is reused in future executions.
+                if (slotArrayCache != null && slotArrayCache[slotIdx] != null) {
+                    INDArray stale = slotArrayCache[slotIdx];
+                    DataBuffer sbuf = stale.data();
+                    if (sbuf != null && !sbuf.wasClosed() && sbuf.closeable() && !sbuf.isConstant()) {
+                        pendingClose.add(sbuf);
+                    }
+                    slotArrayCache[slotIdx] = null;
+                }
                 continue;
             }
 
@@ -1064,7 +1252,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
 
                     // Switch back to original device
-                    Nd4j.getAffinityManager().unsafeSetDevice(originalTarget);
+                    DeviceMemoryManager.getInstance().switchDevice(originalTarget, "DSP.executeSlot", "retry-restore");
                     nativeOps.clearLastError();
                     Nd4j.getExecutioner().commit();
 
@@ -1074,7 +1262,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
 
                     // Re-fetch fresh stream after device switch + flush
-                    Pointer freshStream = getFreshExecStream(nativeOps);
+                    Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
                     if (freshStream != null) execStream = freshStream;
                     nativeOps.clearLastError();
 
@@ -1093,20 +1281,61 @@ public class DynamicShapePlanExecutor implements Closeable {
                             } else {
                                 newOut = Nd4j.create(retryDtypes[i], retryShapes[i]);
                             }
-                            // Verify it landed on the correct device
+                            // Check which device the allocation landed on
                             OpaqueDataBuffer retryOdb = newOut.data().opaqueBuffer();
                             if (retryOdb != null && !retryOdb.isNull()) {
                                 int retryDevice = nativeOps.dbDeviceId(retryOdb);
                                 if (retryDevice >= 0 && retryDevice != originalTarget) {
-                                    log.error("Emergency reclaim insufficient — retry output for {} also landed on device {}",
-                                            slot.getOpName(), retryDevice);
-                                    retryOk = false;
-                                    try {
-                                        nativeOps.dbFreeBuffersOnly(retryOdb);
-                                        retryOdb.tryMarkForDeallocation();
-                                        retryOdb.setNull();
-                                    } catch (Exception ignored) {}
-                                    break;
+                                    // Allocation landed on different device — accept it and
+                                    // switch execution there with full input migration.
+                                    // Mark the original device as failed — CUDA error 700
+                                    // from OOM cascades is sticky and unrecoverable.
+                                    // All remaining ops planned for this device will redirect to device 0.
+                                    log.warn("Emergency reclaim insufficient on device {} — output for {} allocated on device {}, switching execution. Device {} marked failed for remaining ops.",
+                                            originalTarget, slot.getOpName(), retryDevice, originalTarget);
+                                    if (failedDevices != null) failedDevices.add(originalTarget);
+                                    targetDevice = retryDevice;
+                                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "oom-failover");
+                                    nativeOps.clearLastError();
+                                    Nd4j.getExecutioner().commit();
+                                    Pointer freshStream2 = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                                    if (freshStream2 != null) execStream = freshStream2;
+                                    // Migrate inputs to the new device (non-P2P can't cross-access)
+                                    for (int j = 0; j < inputArrays.length; j++) {
+                                        INDArray input = inputArrays[j];
+                                        if (input != null && !input.isEmpty() && input.data() != null) {
+                                            int inputDevice = -1;
+                                            OpaqueDataBuffer inputOdb = input.data().opaqueBuffer();
+                                            if (inputOdb != null && !inputOdb.isNull()) {
+                                                inputDevice = nativeOps.dbDeviceId(inputOdb);
+                                            }
+                                            if (inputDevice >= 0 && inputDevice != targetDevice) {
+                                                INDArray inputToReplicate = input;
+                                                if (input.isView()) {
+                                                    // Switch to source device for dup() — non-P2P devices can't cross-access
+                                                    DeviceMemoryManager.getInstance().switchDevice(inputDevice, "DSP.executeSlot", "failover-view-dup-source");
+                                                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                                        inputToReplicate = input.dup(input.ordering());
+                                                    }
+                                                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "failover-view-dup-restore");
+                                                    DataBuffer dupBuf = inputToReplicate.data();
+                                                    if (dupBuf != null && !dupBuf.isConstant()) {
+                                                        if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
+                                                        replicatedInputBuffers.add(dupBuf);
+                                                    }
+                                                }
+                                                INDArray replica = Nd4j.getAffinityManager().replicateToDevice(targetDevice, inputToReplicate);
+                                                inputArrays[j] = replica;
+                                                DataBuffer replicaBuf = replica.data();
+                                                if (replicaBuf != null && !replicaBuf.isConstant()) {
+                                                    if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
+                                                    replicatedInputBuffers.add(replicaBuf);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    ctx.setInputArrays(inputArrays);
+                                    nativeOps.clearLastError();
                                 }
                             }
                             outputArrays[i] = newOut;
@@ -1139,7 +1368,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                     ctx.setOutputArrays(outputArrays);
                     nativeOps.clearLastError();
-                    log.info("  Emergency reclaim succeeded — continuing on device {}", originalTarget);
+                    log.info("  Emergency reclaim succeeded — continuing on device {}", targetDevice);
 
                 } else {
                     // P2P failover: transparently switch execution to failover device.
@@ -1151,22 +1380,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                         flushPendingClose(nativeOps, execStream);
                     }
                     targetDevice = failoverDevice;
-                    Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "p2p-failover");
                     nativeOps.clearLastError();
                     Nd4j.getExecutioner().commit();
                     nativeOps.clearLastError();
-                    try {
-                        OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                        if (lc != null) {
-                            Pointer deviceStream = nativeOps.lcExecutionStream(lc);
-                            if (deviceStream != null) {
-                                deviceStream.retainReference();
-                                execStream = deviceStream;
-                            }
-                        }
-                    } catch (Exception e) {
-                        // fall through with current stream
-                    }
+                    Pointer deviceStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                    if (deviceStream != null) execStream = deviceStream;
                     // Re-migrate inputs to the failover device
                     for (int i = 0; i < inputArrays.length; i++) {
                         INDArray input = inputArrays[i];
@@ -1178,11 +1397,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                             }
                             if (inputDevice >= 0 && inputDevice != targetDevice) {
                                 // Pre-dup views (same reason as Step 1b)
+                                // Switch to source device for dup() — non-P2P devices can't cross-access
                                 INDArray inputToReplicate = input;
                                 if (input.isView()) {
+                                    DeviceMemoryManager.getInstance().switchDevice(inputDevice, "DSP.executeSlot", "failover2-view-dup-source");
                                     try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                         inputToReplicate = input.dup(input.ordering());
                                     }
+                                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "failover2-view-dup-restore");
                                     DataBuffer dupBuf = inputToReplicate.data();
                                     if (dupBuf != null && !dupBuf.isConstant()) {
                                         if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
@@ -1221,34 +1443,60 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (targetDevice >= 0) {
             nativeOps.clearLastError();
         }
-        ctx.shapeFunctionOverride(SHAPE_OVERRIDE);
+        // For data-dependent shapes (reshape with dynamic shape input, etc.), Java shape
+        // calculation may read stale GPU values before they're synced to host. This causes
+        // shape mismatch → buffer overflow → heap corruption. Disable shape override for
+        // these ops to let C++ calculate shapes after host sync.
+        boolean enableShapeOverride = SHAPE_OVERRIDE && !slot.isDataDependent();
+        ctx.shapeFunctionOverride(enableShapeOverride);
 
-        // Attach native workspace to OpContext if available — this allows C++ ops to
-        // use bump allocation for internal temporaries instead of per-op malloc/cudaMalloc.
-        // Without this, C++ op temporary buffer overruns corrupt the regular malloc heap
-        // metadata, causing "double free or corruption (out)" crashes.
-        // The standard InferenceSession path always does this (see executeRegularOperation).
+        // Attach native workspace to OpContext — this allows C++ ops to use bump allocation
+        // for internal temporaries instead of per-op malloc/cudaMalloc. Without this, C++ op
+        // temporary buffer overruns corrupt the regular malloc heap metadata, causing
+        // "double free or corruption (out)" SIGABRT crashes.
         Pointer wsPtr = mmgr.getNativeWorkspacePointer();
+        if (wsPtr == null && ownNativeWorkspace == null) {
+            log.debug("DSP: mmgr ({}) returned null workspace, creating own", mmgr.getClass().getSimpleName());
+        }
+        if (wsPtr == null) {
+            // mmgr doesn't provide a workspace (e.g., ArrayCacheMemoryMgr). Create our own.
+            if (ownNativeWorkspace == null) {
+                try {
+                    NativeOps ws_nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    ownNativeWorkspace = ws_nativeOps.createNativeWorkspace(DSP_NATIVE_WORKSPACE_BYTES);
+                    if (ownNativeWorkspace != null) {
+                        ws_nativeOps.workspaceScopeIn(ownNativeWorkspace);
+                        log.debug("DSP: created native workspace ({}MB) for C++ op temporaries",
+                                DSP_NATIVE_WORKSPACE_BYTES / (1024 * 1024));
+                    } else {
+                        log.warn("DSP: createNativeWorkspace returned null");
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to create DSP native workspace: {}", e.getMessage());
+                }
+            }
+            wsPtr = ownNativeWorkspace;
+        }
         if (wsPtr != null) {
             ctx.attachWorkspace(wsPtr);
         }
 
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        // Pre-exec shape diagnostic for non-CustomOp (scalar ops)
-        if (!slot.isCustomOp()) {
-            for (int i = 0; i < outputArrays.length; i++) {
-                INDArray outArr = outputArrays[i];
-                if (outArr != null) {
-                    long javaLen = outArr.length();
-                    long[] javaShape = outArr.shape();
-                    int[] nativeShape = outArr.shapeInfoDataBuffer().asInt();
-                    long nativeRank = nativeShape.length > 0 ? nativeShape[0] : -1;
-                    if (nativeRank != javaShape.length) {
-                        log.warn("PRE-EXEC shape mismatch for {} output[{}]: javaShape={} javaLen={} nativeShapeInfo={} data.len={}",
-                                slot.getOpName(), i, Arrays.toString(javaShape), javaLen,
-                                Arrays.toString(nativeShape),
-                                outArr.data() != null ? outArr.data().length() : "null");
-                    }
+        // Pre-exec shape validation: ensure allocated buffers can hold the data C++ will write.
+        // With shapeFunctionOverride=true, C++ skips shape calc and uses our pre-allocated buffers.
+        // If Java calculated wrong shapes, C++ will overflow → heap corruption.
+        for (int i = 0; i < outputArrays.length; i++) {
+            INDArray outArr = outputArrays[i];
+            if (outArr != null && !outArr.isEmpty()) {
+                long javaLen = outArr.length();
+                long bufLen = outArr.data() != null ? outArr.data().length() : 0;
+                // Buffer must be at least as large as the declared shape
+                if (bufLen < javaLen) {
+                    log.error("CRITICAL: Buffer too small for {} output[{}]: shape declares {} elements but buffer only has {}. Disabling shape override to prevent heap corruption.",
+                            slot.getOpName(), i, javaLen, bufLen);
+                    // Disable shape override for this op - let C++ calculate correct shapes
+                    ctx.shapeFunctionOverride(false);
+                    break;
                 }
             }
         }
@@ -1261,6 +1509,22 @@ public class DynamicShapePlanExecutor implements Closeable {
             Nd4j.exec((CustomOp) fn, ctx);
         } else {
             Nd4j.exec((Op) fn, ctx);
+        }
+
+        // Detach workspace after execution to prevent shape computation from
+        // allocating shape buffers in workspace on ctx reuse (ShapeList::destroy
+        // calls delete[] on them → SIGSEGV).
+        if (wsPtr != null) {
+            ctx.detachWorkspace();
+            // Reset workspace offset for next op. RELEASE is a no-op for workspace
+            // allocations, so temp memory accumulates. ScopeOut+ScopeIn resets the
+            // bump pointer so the workspace can be reused by the next op.
+            // This MUST happen for ALL workspaces (mmgr-provided or self-managed),
+            // otherwise the workspace fills after ~30 ops and all subsequent ops
+            // spill to cudaHostAlloc, accumulating thousands of spill entries whose
+            // tracking vector grows via glibc realloc.
+            nativeOps.workspaceScopeOut(wsPtr);
+            nativeOps.workspaceScopeIn(wsPtr);
         }
 
         // After execution, C++ may have replaced output arrays or modified them in-place
@@ -1350,7 +1614,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Always restore the caller's device context, even after transparent failover.
             int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (currentDev != previousDeviceId) {
-                Nd4j.getAffinityManager().unsafeSetDevice(previousDeviceId);
+                DeviceMemoryManager.getInstance().switchDevice(previousDeviceId, "DSP.executeSlot", "restore-caller-device");
             }
         }
     }
@@ -1573,26 +1837,6 @@ public class DynamicShapePlanExecutor implements Closeable {
      *
      * Falls back to synchronous memset if async fails or no valid stream is available.
      */
-    /**
-     * Re-fetch a fresh execution stream pointer from the current device's launch context.
-     * The cached execStream from execute() may be stale — C++ ContextBuffers::release()
-     * can free the underlying cudaStream_t during device context switches in executeSlot().
-     */
-    private static Pointer getFreshExecStream(NativeOps nativeOps) {
-        try {
-            OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-            if (lc != null) {
-                Pointer stream = nativeOps.lcExecutionStream(lc);
-                if (stream != null && stream.address() != 0) {
-                    return stream;
-                }
-            }
-        } catch (Exception e) {
-            // CPU backend or unavailable
-        }
-        return null;
-    }
-
     private static void fastZero(INDArray arr, NativeOps nativeOps, Pointer execStream) {
         DataBuffer buf = arr.data();
         if (buf == null || buf.wasClosed()) return;
@@ -1762,7 +2006,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             pools.clear();
             pooledRefs.clear();
             currentPoolBytes = 0;
-            log.info("  LocalBufferPool flushTo: {} buffers ({}MB), closed={}, pooled={}, rejected={}",
+            log.debug("  LocalBufferPool flushTo: {} buffers ({}MB), closed={}, pooled={}, rejected={}",
                     pooledCount, pooledBytes / (1024 * 1024), closedCount,
                     releaseAccepted, releaseRejected);
             releaseAccepted = 0;
@@ -1796,11 +2040,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         log.info("  Pending close: {} buffers ({}MB), viewProducerSlots={}",
                 pendingCloseCount, pendingCloseBytes / (1024 * 1024), viewProducerCount);
-        if (replicaCount > 0) {
-            log.info("  Cross-device replicas: {} arrays, {}MB (toDev0: {} arrays {}MB, toDev1: {} arrays {}MB)",
+        if (replicaCount > 0 || replicaCacheHits > 0) {
+            log.info("  Cross-device replicas: {} new, {}MB (toDev0: {} {}MB, toDev1: {} {}MB) | {} cached hits",
                     replicaCount, replicaBytes / (1024 * 1024),
                     replicaToDev0Count, replicaToDev0Bytes / (1024 * 1024),
-                    replicaToDev1Count, replicaToDev1Bytes / (1024 * 1024));
+                    replicaToDev1Count, replicaToDev1Bytes / (1024 * 1024),
+                    replicaCacheHits);
         }
         if (wrongDeviceCacheEjections > 0) {
             log.info("  Wrong-device cache ejections: {}", wrongDeviceCacheEjections);
@@ -1830,48 +2075,928 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
-    /** Close all arrays in the slot cache and null out the cache. */
+    // =====================================================================================
+    // PARALLEL EXECUTION
+    // =====================================================================================
+
+    /**
+     * Execute the plan in parallel across multiple devices using dependency-driven scheduling.
+     * Each device has a dedicated worker thread. Steps become ready when all predecessors complete.
+     * Output slots are freed when all consumers have executed.
+     */
+    private Map<String, INDArray> executeParallel(DynamicShapePlan plan,
+                                                    Map<String, INDArray> placeholderArrays,
+                                                    NativeOps nativeOps, Pointer cachedExecStream) {
+        DynamicShapeSlot[] slots = plan.getSlots();
+        int numSteps = slots.length;
+        int[] predCounts = plan.getPredecessorCounts();
+        int[][] successors = plan.getSuccessors();
+        int[] consumerCounts = plan.getConsumerCounts();
+        int[] rootSlots = plan.getRootSlots();
+
+        // Shared state
+        AtomicIntegerArray predecessorRemaining = new AtomicIntegerArray(numSteps);
+        for (int i = 0; i < numSteps; i++) {
+            predecessorRemaining.set(i, predCounts[i]);
+        }
+        AtomicIntegerArray consumerRemaining = new AtomicIntegerArray(plan.getTotalOutputSlots());
+        for (int i = 0; i < consumerCounts.length; i++) {
+            consumerRemaining.set(i, consumerCounts[i]);
+        }
+
+        // outputSlots[] and externalInputs[] are initialized by execute() caller
+        // liveSlots is not thread-safe (BitSet); use AtomicIntegerArray as flags instead
+        AtomicIntegerArray liveFlags = new AtomicIntegerArray(plan.getTotalOutputSlots());
+
+        // Group slots by target device
+        Map<Integer, List<Integer>> deviceSlotMap = new LinkedHashMap<>();
+        for (int i = 0; i < numSteps; i++) {
+            int dev = slots[i].getTargetDeviceId();
+            if (dev < 0) dev = 0;
+            deviceSlotMap.computeIfAbsent(dev, k -> new ArrayList<>());
+        }
+        int numDevices = deviceSlotMap.size();
+
+        // Per-device ready queues
+        Map<Integer, BlockingQueue<Integer>> readyQueues = new LinkedHashMap<>();
+        for (int dev : deviceSlotMap.keySet()) {
+            readyQueues.put(dev, new LinkedBlockingQueue<>());
+        }
+
+        // Completion tracking
+        CountDownLatch completionLatch = new CountDownLatch(numSteps);
+        AtomicReference<Throwable> workerError = new AtomicReference<>();
+
+        // Poison pill for shutdown
+        int POISON = -1;
+
+        // Seed root slots into their device queues
+        for (int root : rootSlots) {
+            int dev = slots[root].getTargetDeviceId();
+            if (dev < 0) dev = 0;
+            BlockingQueue<Integer> q = readyQueues.get(dev);
+            if (q != null) q.offer(root);
+        }
+
+        // Create and start device worker threads.
+        // Each worker creates its own C++ workspace ON its thread after setting device affinity.
+        // The workspace provides bump allocation for C++ op temporaries, preventing glibc
+        // heap corruption from buffer overruns in native ops.
+        List<DeviceWorker> workers = new ArrayList<>();
+        List<Thread> workerThreads = new ArrayList<>();
+        for (Map.Entry<Integer, BlockingQueue<Integer>> entry : readyQueues.entrySet()) {
+            int deviceId = entry.getKey();
+            BlockingQueue<Integer> readyQueue = entry.getValue();
+            DeviceWorker worker = new DeviceWorker(
+                    deviceId, readyQueue, plan, nativeOps,
+                    predecessorRemaining, consumerRemaining, liveFlags,
+                    successors, readyQueues, slots,
+                    completionLatch, workerError, POISON);
+            workers.add(worker);
+            Thread t = new Thread(worker, "DSP-DeviceWorker-" + deviceId);
+            t.setDaemon(true);
+            workerThreads.add(t);
+        }
+
+        // Start all workers
+        MultiGpuTracer.traceParallelExec("parallel-begin",
+                "workers=" + workers.size() + " steps=" + numSteps);
+        for (Thread t : workerThreads) {
+            t.start();
+        }
+
+        // Wait for all steps to complete
+        try {
+            boolean completed = completionLatch.await(10, TimeUnit.MINUTES);
+            if (!completed) {
+                throw new RuntimeException("DSP parallel execution timed out after 10 minutes. " +
+                        completionLatch.getCount() + " steps remaining.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("DSP parallel execution interrupted", e);
+        }
+
+        // Poison all queues to stop workers
+        for (BlockingQueue<Integer> q : readyQueues.values()) {
+            q.offer(POISON);
+        }
+
+        // Wait for workers to finish cleanup
+        for (Thread t : workerThreads) {
+            try { t.join(5000); } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        // Check for errors
+        MultiGpuTracer.traceParallelExec("parallel-end",
+                "workers=" + workers.size() + " error=" + (workerError.get() != null));
+        Throwable err = workerError.get();
+        if (err != null) {
+            if (err instanceof RuntimeException) throw (RuntimeException) err;
+            throw new RuntimeException("DSP parallel execution failed", err);
+        }
+
+        // Flush per-device pending buffers
+        for (DeviceWorker worker : workers) {
+            int prevDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            try {
+                MultiGpuTracer.traceParallelExec("flush-device",
+                        "device=" + worker.deviceId + " pending=" + worker.devicePendingClose.size());
+                DeviceMemoryManager.getInstance().switchDevice(worker.deviceId, "DSP.execute", "worker-flush");
+                Nd4j.getExecutioner().commit();
+                Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                if (!worker.devicePendingClose.isEmpty()) {
+                    pendingClose.addAll(worker.devicePendingClose);
+                    if (freshStream != null) {
+                        freePendingBuffers(nativeOps, freshStream, null);
+                        nativeOps.trimMemoryPoolOnStream(worker.deviceId, freshStream);
+                    }
+                    pendingClose.clear();
+                }
+            } finally {
+                DeviceMemoryManager.getInstance().switchDevice(prevDev, "DSP.execute", "restore-after-flush");
+            }
+        }
+
+        // Per-worker workspaces are created/destroyed on the worker threads themselves
+        // (in DeviceWorker.run() / finally block), so no cleanup needed here.
+
+        // Collect results — same logic as sequential path
+        Nd4j.getExecutioner().commit();
+        Map<String, INDArray> results = new LinkedHashMap<>();
+        Map<String, Integer> outputMap = plan.getOutputNameToSlotIndex();
+        int viewFlagFixCount = 0;
+        for (Map.Entry<String, Integer> entry : outputMap.entrySet()) {
+            int slotIdx = entry.getValue();
+            INDArray arr = outputSlots[slotIdx];
+            if (arr != null) {
+                // Fix IS_VIEW flag (same as sequential path)
+                if (arr.isView() && arr.data() != null && !arr.data().wasClosed()) {
+                    boolean isViewProducer = slotIsViewProducer != null && slotIsViewProducer[slotIdx];
+                    long arrLen = arr.length();
+                    long dataLen = arr.data().length();
+                    boolean lengthView = arrLen < dataLen;
+                    boolean flagView = ArrayOptionsHelper.isView(arr.shapeInfoJava());
+                    if (!isViewProducer && !lengthView && flagView) {
+                        long[] shapeInfo = arr.shapeInfoJava();
+                        long options = shapeInfo[shapeInfo.length - 3];
+                        options &= ~ArrayOptionsHelper.IS_VIEW;
+                        shapeInfo[shapeInfo.length - 3] = options;
+                        viewFlagFixCount++;
+                    }
+                }
+                results.put(entry.getKey(), arr);
+                outputSlots[slotIdx] = null;
+            }
+        }
+        if (viewFlagFixCount > 0) {
+            log.info("  Output view fix (parallel): {} flag-only views fixed", viewFlagFixCount);
+        }
+
+        // Clean remaining live slots — group by device for proper per-device cleanup.
+        // In multi-GPU execution, slots may hold buffers on different devices.
+        // Freeing all on device 0's stream could cause issues with cross-device cleanup.
+        int availDevices = nativeOps.getAvailableDevices();
+        if (availDevices <= 1) {
+            // Single-GPU: simple path
+            for (int i = 0; i < outputSlots.length; i++) {
+                INDArray arr = outputSlots[i];
+                if (arr != null && liveFlags.get(i) == 1) {
+                    boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[i];
+                    if (!isViewSlot) {
+                        DataBuffer buf = arr.data();
+                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                            pendingClose.add(buf);
+                        }
+                    }
+                    outputSlots[i] = null;
+                }
+            }
+            closePendingBuffers(nativeOps, cachedExecStream);
+        } else {
+            // Multi-GPU: group remaining buffers by their planned target device
+            DynamicShapeSlot[] planSlots = plan.getSlots();
+            Map<Integer, List<DataBuffer>> perDeviceBuffers = new HashMap<>();
+            for (int i = 0; i < outputSlots.length; i++) {
+                INDArray arr = outputSlots[i];
+                if (arr != null && liveFlags.get(i) == 1) {
+                    boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[i];
+                    if (!isViewSlot) {
+                        DataBuffer buf = arr.data();
+                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                            int devId = (i < planSlots.length) ? planSlots[i].getTargetDeviceId() : 0;
+                            if (devId < 0) devId = 0;
+                            perDeviceBuffers.computeIfAbsent(devId, k -> new ArrayList<>()).add(buf);
+                        }
+                    }
+                    outputSlots[i] = null;
+                }
+            }
+            // Free per-device with proper device context and stream
+            int mainDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            for (Map.Entry<Integer, List<DataBuffer>> entry : perDeviceBuffers.entrySet()) {
+                int devId = entry.getKey();
+                DeviceMemoryManager.getInstance().switchDevice(devId, "DSP.close", "per-device-cleanup");
+                Nd4j.getExecutioner().commit();
+                Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                pendingClose.addAll(entry.getValue());
+                freePendingBuffers(nativeOps, freshStream, null);
+                nativeOps.trimMemoryPoolOnStream(devId, freshStream);
+                pendingClose.clear();
+            }
+            DeviceMemoryManager.getInstance().switchDevice(mainDevice, "DSP.close", "restore-after-cleanup");
+            // Final close for any deferred buffers
+            closePendingBuffers(nativeOps, cachedExecStream);
+        }
+
+        if (TIMING_ENABLED) {
+            printTimingSummary(numSteps, localPool);
+        }
+
+        return results;
+    }
+
+    /**
+     * Per-device worker for async DSP execution. Each worker runs on a dedicated thread
+     * with GPU device affinity. Workers poll a ready queue for steps whose predecessors
+     * have all completed, execute them, and notify successors.
+     */
+    private class DeviceWorker implements Runnable {
+        final int deviceId;
+        final BlockingQueue<Integer> readyQueue;
+        final DynamicShapePlan plan;
+        final NativeOps nativeOps;
+        final AtomicIntegerArray predecessorRemaining;
+        final AtomicIntegerArray consumerRemaining;
+        final AtomicIntegerArray liveFlags;
+        final int[][] successors;
+        final Map<Integer, BlockingQueue<Integer>> allReadyQueues;
+        final DynamicShapeSlot[] slots;
+        final CountDownLatch completionLatch;
+        final AtomicReference<Throwable> workerError;
+        final int POISON;
+
+        // Per-device state (no cross-thread contention)
+        final ArrayList<DataBuffer> devicePendingClose = new ArrayList<>();
+        final Set<DataBuffer> deviceSeenIdentity = Collections.newSetFromMap(new IdentityHashMap<>());
+        final HashSet<Long> deviceClosedOdbAddresses = new HashSet<>();
+        final ArrayDeque<OpContext> deviceCtxPool = new ArrayDeque<>();
+        final Map<Integer, INDArray> deviceConstantReplicaCache = new HashMap<>();
+        Pointer workerWorkspace;  // Created on worker thread in run()
+
+        DeviceWorker(int deviceId, BlockingQueue<Integer> readyQueue, DynamicShapePlan plan,
+                     NativeOps nativeOps, AtomicIntegerArray predecessorRemaining,
+                     AtomicIntegerArray consumerRemaining, AtomicIntegerArray liveFlags,
+                     int[][] successors, Map<Integer, BlockingQueue<Integer>> allReadyQueues,
+                     DynamicShapeSlot[] slots, CountDownLatch completionLatch,
+                     AtomicReference<Throwable> workerError, int POISON) {
+            this.deviceId = deviceId;
+            this.readyQueue = readyQueue;
+            this.plan = plan;
+            this.nativeOps = nativeOps;
+            this.predecessorRemaining = predecessorRemaining;
+            this.consumerRemaining = consumerRemaining;
+            this.liveFlags = liveFlags;
+            this.successors = successors;
+            this.allReadyQueues = allReadyQueues;
+            this.slots = slots;
+            this.completionLatch = completionLatch;
+            this.workerError = workerError;
+            this.POISON = POISON;
+        }
+
+        @Override
+        public void run() {
+            try {
+                // Set device affinity for this thread
+                MultiGpuTracer.traceDeviceSwitch("DSP.DeviceWorker.run",
+                        -1, deviceId, "worker-init");
+                DeviceMemoryManager.getInstance().switchDevice(deviceId, "DSP.DeviceWorker", "worker-init");
+
+                // Skip CudaExecutioner's device coherency — workers handle placement themselves.
+                Nd4j.getExecutioner().setSkipDeviceCoherency(true);
+
+                // Create per-worker workspace ON this thread (after device affinity set).
+                // Must be created here, not on main thread, so cudaHostAlloc happens
+                // in the correct CUDA device context. HOST-ONLY (0 GPU, 8MB host).
+                try {
+                    this.workerWorkspace = nativeOps.createNativeWorkspace(8 * 1024 * 1024);
+                    log.info("DeviceWorker[{}] created workspace: {}", deviceId,
+                            workerWorkspace != null ? workerWorkspace.address() : "null");
+                } catch (Exception e) {
+                    log.warn("DeviceWorker[{}] failed to create workspace: {}", deviceId, e.getMessage());
+                    this.workerWorkspace = null;
+                }
+
+                // Get execution stream for this device
+                Pointer execStream = null;
+                try {
+                    OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                    if (lc != null) {
+                        execStream = nativeOps.lcExecutionStream(lc);
+                        if (execStream != null) {
+                            execStream.retainReference();
+                            MultiGpuTracer.traceStreamOp("retain", Thread.currentThread().getName(),
+                                    deviceId, execStream.address());
+                        }
+                    }
+                } catch (Exception e) { /* CPU backend */ }
+                while (workerError.get() == null) {
+                    Integer stepIdx;
+                    try {
+                        stepIdx = readyQueue.poll(100, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                    if (stepIdx == null) continue;
+                    if (stepIdx == POISON) break;
+
+                    DynamicShapeSlot slot = slots[stepIdx];
+
+                    // Get or create OpContext
+                    OpContext ctx = deviceCtxPool.pollFirst();
+                    if (ctx == null) {
+                        ctx = Nd4j.getExecutioner().buildContext();
+                    }
+                    ctx.purge();
+
+                    try {
+                        MultiGpuTracer.traceOpExec(stepIdx, deviceId, slot.getOpName(), null, null);
+                        if (SERIAL_EXEC) {
+                            synchronized (EXEC_LOCK) {
+                                executeSlotForWorker(slot, ctx, nativeOps, execStream, stepIdx, this.workerWorkspace);
+                            }
+                        } else {
+                            executeSlotForWorker(slot, ctx, nativeOps, execStream, stepIdx, this.workerWorkspace);
+                        }
+                    } catch (Exception e) {
+                        log.error("DeviceWorker[{}] error at step {} ({}): {}",
+                                deviceId, stepIdx, slot.getOpName(), e.getMessage(), e);
+                        workerError.compareAndSet(null, e);
+                        // Count down remaining steps to unblock the latch
+                        completionLatch.countDown();
+                        // Poison all queues
+                        for (BlockingQueue<Integer> q : allReadyQueues.values()) {
+                            q.offer(POISON);
+                        }
+                        break;
+                    }
+
+                    ctx.purgeForReuse();
+                    deviceCtxPool.offerFirst(ctx);
+
+                    // Notify successors
+                    int[] succs = successors[stepIdx];
+                    for (int succ : succs) {
+                        if (predecessorRemaining.decrementAndGet(succ) == 0) {
+                            // Successor is ready — route to its device's queue
+                            int succDev = slots[succ].getTargetDeviceId();
+                            if (succDev < 0) succDev = 0;
+                            BlockingQueue<Integer> succQueue = allReadyQueues.get(succDev);
+                            if (succQueue != null) {
+                                succQueue.offer(succ);
+                            }
+                        }
+                    }
+
+                    // Decrement consumer counts for consumed output slots, release when done
+                    int[] inputSrcIndices = slot.getInputSourceIndices();
+                    for (int srcIdx : inputSrcIndices) {
+                        if (srcIdx >= 0) {
+                            if (consumerRemaining.decrementAndGet(srcIdx) == 0) {
+                                // Slot is dead — release it
+                                INDArray arr = outputSlots[srcIdx];
+                                if (arr != null && liveFlags.compareAndSet(srcIdx, 1, 0)) {
+                                    DataBuffer buf = arr.data();
+                                    if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
+                                        boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[srcIdx];
+                                        if (!isViewSlot && buf.closeable()) {
+                                            // Cache for reuse or pending close
+                                            if (slotArrayCache != null) {
+                                                INDArray prev = slotArrayCache[srcIdx];
+                                                if (prev != null && !prev.wasClosed()) {
+                                                    DataBuffer pbuf = prev.data();
+                                                    if (pbuf != null && !pbuf.wasClosed() && pbuf.closeable() && !pbuf.isConstant()) {
+                                                        devicePendingClose.add(pbuf);
+                                                    }
+                                                }
+                                                slotArrayCache[srcIdx] = arr;
+                                            } else {
+                                                devicePendingClose.add(buf);
+                                            }
+                                        }
+                                    }
+                                    outputSlots[srcIdx] = null;
+                                }
+                            }
+                        }
+                    }
+
+                    // Periodic flush
+                    if (devicePendingClose.size() >= RELEASE_FLUSH_INTERVAL) {
+                        Nd4j.getExecutioner().commit();
+                        Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                        if (freshStream != null) {
+                            for (DataBuffer buf : devicePendingClose) {
+                                if (buf == null || buf.wasClosed() || !buf.closeable() || buf.isConstant()) continue;
+                                OpaqueDataBuffer odb = buf.opaqueBuffer();
+                                if (odb == null || odb.isNull()) continue;
+                                if (!deviceSeenIdentity.add(buf)) continue;
+                                long odbAddr = odb.address();
+                                if (odbAddr != 0 && !deviceClosedOdbAddresses.add(odbAddr)) continue;
+                                try {
+                                    nativeOps.dbFreeBuffersOnStream(odb, freshStream);
+                                    odb.tryMarkForDeallocation();
+                                    odb.setNull();
+                                    OpaqueDataBufferDeallocator deallocator = odb.getDeallocator();
+                                    if (deallocator != null) deallocator.markDeallocated();
+                                } catch (Exception e) {
+                                    log.warn("DeviceWorker[{}] flush failed: {}", deviceId, e.getMessage());
+                                }
+                            }
+                            devicePendingClose.clear();
+                            nativeOps.trimMemoryPoolOnStream(deviceId, freshStream);
+                        }
+                    }
+
+                    completionLatch.countDown();
+                }
+            } catch (Throwable t) {
+                workerError.compareAndSet(null, t);
+                // Unblock latch
+                while (completionLatch.getCount() > 0) completionLatch.countDown();
+            } finally {
+                // Destroy workspace created on this thread
+                if (this.workerWorkspace != null) {
+                    try {
+                        nativeOps.destroyNativeWorkspace(this.workerWorkspace);
+                    } catch (Exception e) {
+                        log.debug("DeviceWorker[{}] workspace cleanup failed: {}", deviceId, e.getMessage());
+                    }
+                    this.workerWorkspace = null;
+                }
+            }
+        }
+
+        /**
+         * Execute a single slot on this worker's device. Reuses the core executeSlot logic
+         * but without device save/restore (worker is already on the correct device).
+         */
+        private void executeSlotForWorker(DynamicShapeSlot slot, OpContext ctx, NativeOps nativeOps,
+                                           Pointer execStream, int stepIdx, Pointer workerWorkspace) {
+            DifferentialFunction fn = slot.getOp();
+            int targetDevice = deviceId;
+            List<DataBuffer> replicatedInputBuffers = null;
+
+            // Step 1: Wire inputs
+            int[] inputSourceIndices = slot.getInputSourceIndices();
+            INDArray[] inputArrays = new INDArray[inputSourceIndices.length];
+
+            for (int i = 0; i < inputSourceIndices.length; i++) {
+                int srcIdx = inputSourceIndices[i];
+                if (srcIdx >= 0) {
+                    inputArrays[i] = outputSlots[srcIdx];
+                } else {
+                    int extIdx = -(srcIdx + 1);
+                    inputArrays[i] = externalInputs[extIdx];
+                }
+                if (inputArrays[i] == null) {
+                    throw new IllegalStateException("Null input at index " + i + " for op " + slot.getOpName() +
+                            ", input var: " + slot.getInputVarNames()[i] + " (step " + stepIdx + ")");
+                }
+            }
+
+            // Step 1b: Migrate inputs to target device if cross-device
+            for (int i = 0; i < inputArrays.length; i++) {
+                INDArray input = inputArrays[i];
+                if (input != null && !input.isEmpty() && input.data() != null) {
+                    int inputDevice = -1;
+                    OpaqueDataBuffer inputOdb = input.data().opaqueBuffer();
+                    if (inputOdb != null && !inputOdb.isNull()) {
+                        inputDevice = nativeOps.dbDeviceId(inputOdb);
+                    }
+                    if (inputDevice >= 0 && inputDevice != targetDevice) {
+                        boolean isConstant = input.data() != null && input.data().isConstant();
+                        int srcIdx2 = inputSourceIndices[i];
+                        boolean isExternal = srcIdx2 < 0;
+                        int cacheKey = isExternal ? ((-(srcIdx2 + 1)) << 16) | targetDevice : -1;
+
+                        // Check constant replica cache
+                        INDArray cachedReplica = null;
+                        if (isConstant && isExternal) {
+                            cachedReplica = deviceConstantReplicaCache.get(cacheKey);
+                            if (cachedReplica != null && !cachedReplica.wasClosed()) {
+                                inputArrays[i] = cachedReplica;
+                                MultiGpuTracer.traceInputMigration(stepIdx, i, inputDevice, targetDevice,
+                                        input.length() * input.data().getElementSize(),
+                                        input.isView(), true, true);
+                                continue;
+                            }
+                        }
+
+                        long inputBytes = input.length() * input.data().getElementSize();
+                        MultiGpuTracer.traceInputMigration(stepIdx, i, inputDevice, targetDevice,
+                                inputBytes, input.isView(), isConstant, false);
+
+                        // CRITICAL: dup() must run on the SOURCE device — non-P2P devices
+                        // can't cross-access GPU memory. Switch to source device for dup(),
+                        // then restore to target device for replication.
+                        INDArray inputToReplicate = input;
+                        if (input.isView()) {
+                            DeviceMemoryManager.getInstance().switchDevice(inputDevice, "DSP.DeviceWorker", "worker-view-dup-source");
+                            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                inputToReplicate = input.dup(input.ordering());
+                            }
+                            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.DeviceWorker", "worker-view-dup-restore");
+                            DataBuffer dupBuf = inputToReplicate.data();
+                            if (dupBuf != null && !dupBuf.isConstant()) {
+                                if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
+                                replicatedInputBuffers.add(dupBuf);
+                            }
+                        }
+                        INDArray replica = Nd4j.getAffinityManager().replicateToDevice(targetDevice, inputToReplicate);
+                        inputArrays[i] = replica;
+
+                        if (isConstant && isExternal) {
+                            deviceConstantReplicaCache.put(cacheKey, replica);
+                        } else {
+                            DataBuffer replicaBuf = replica.data();
+                            if (replicaBuf != null && !replicaBuf.isConstant()) {
+                                if (replicatedInputBuffers == null) replicatedInputBuffers = new ArrayList<>();
+                                replicatedInputBuffers.add(replicaBuf);
+                            }
+                        }
+                    }
+                }
+            }
+            ctx.setInputArrays(inputArrays);
+
+            // Step 2: Sync INT/LONG inputs if needed
+            if (slot.isNeedsIntLongSync()) {
+                syncIntLongInputs(inputArrays, slot.isDataDependent(), nativeOps);
+            }
+
+            // Step 3: Compute output shapes
+            List<DataBuffer> outShapes = getOrComputeShapes(slot, ctx, fn, inputArrays, nativeOps);
+            if (outShapes == null || outShapes.isEmpty()) {
+                throw new IllegalStateException("No output shapes for op " + slot.getOpName());
+            }
+
+            // Step 4: Allocate outputs
+            int[] outputSlotIndices = slot.getOutputSlotIndices();
+            INDArray[] outputArrays = new INDArray[outShapes.size()];
+
+            for (int i = 0; i < outShapes.size(); i++) {
+                DataBuffer shapeBuffer = outShapes.get(i);
+                long[] shapeInfo = shapeBuffer.asLong();
+                DataType dt = Shape.dataType(shapeInfo);
+                long[] actualShape = Shape.shape(shapeInfo);
+
+                INDArray out = null;
+                int slotIdx = (i < outputSlotIndices.length) ? outputSlotIndices[i] : -1;
+
+                // View-producer optimization (same as sequential)
+                if (slotIdx >= 0 && slotIsViewProducer != null && slotIsViewProducer[slotIdx]
+                        && !outputSlotSet.get(slotIdx) && slot.isCustomOp()) {
+                    out = Nd4j.empty(dt);
+                    outputArrays[i] = out;
+                    outputSlots[slotIdx] = out;
+                    liveFlags.set(slotIdx, 1);
+                    continue;
+                }
+
+                if (Shape.isEmpty(shapeInfo) || numElements(actualShape) == 0) {
+                    out = Nd4j.emptyWithShape(actualShape, dt);
+                } else {
+                    // Try slot cache
+                    if (slotIdx >= 0 && slotArrayCache != null) {
+                        INDArray cached = slotArrayCache[slotIdx];
+                        if (cached != null && !cached.wasClosed()) {
+                            DataBuffer cbuf = cached.data();
+                            if (cbuf != null && !cbuf.wasClosed() && cbuf.closeable()
+                                    && cached.dataType() == dt
+                                    && cbuf.length() >= numElements(actualShape)) {
+                                boolean wrongDevice = false;
+                                if (targetDevice >= 0) {
+                                    OpaqueDataBuffer cachedOdb = cbuf.opaqueBuffer();
+                                    if (cachedOdb != null && !cachedOdb.isNull()) {
+                                        int cachedDevice = nativeOps.dbDeviceId(cachedOdb);
+                                        if (cachedDevice >= 0 && cachedDevice != targetDevice) {
+                                            wrongDevice = true;
+                                        }
+                                    }
+                                }
+                                if (wrongDevice) {
+                                    devicePendingClose.add(cbuf);
+                                    slotArrayCache[slotIdx] = null;
+                                } else {
+                                    reshapeBuffer(cached, actualShape);
+                                    cached.clearOpaqueNDArray();
+                                    fastZero(cached, nativeOps, execStream);
+                                    out = cached;
+                                    slotArrayCache[slotIdx] = null;
+                                }
+                            }
+                        }
+                        if (out == null && cached != null && !cached.wasClosed()) {
+                            DataBuffer cbuf = cached.data();
+                            if (cbuf != null && !cbuf.wasClosed() && cbuf.closeable() && !cbuf.isConstant()) {
+                                devicePendingClose.add(cbuf);
+                            }
+                            slotArrayCache[slotIdx] = null;
+                        }
+                    }
+                    if (out == null) {
+                        if (slotIdx >= 0 && outputSlotSet.get(slotIdx)) {
+                            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                out = Nd4j.create(dt, actualShape);
+                            }
+                        } else if (slotIdx >= 0 && slotArrayCache != null) {
+                            out = allocateForSlotCache(dt, actualShape);
+                        } else {
+                            out = allocateWithHeadroom(dt, actualShape);
+                        }
+                    }
+                }
+                outputArrays[i] = out;
+                if (slotIdx >= 0) {
+                    outputSlots[slotIdx] = outputArrays[i];
+                    liveFlags.set(slotIdx, 1);
+                }
+            }
+            ctx.setOutputArrays(outputArrays);
+
+            // Save GPU addresses for view detection
+            long[] preExecGpuAddrs = new long[outputArrays.length];
+            for (int i = 0; i < outputArrays.length; i++) {
+                INDArray arr = outputArrays[i];
+                if (arr != null && !arr.isEmpty()) {
+                    DataBuffer buf = arr.data();
+                    if (buf != null && !buf.wasClosed()) {
+                        OpaqueDataBuffer odb = buf.opaqueBuffer();
+                        if (odb != null && !odb.isNull()) {
+                            Pointer special = nativeOps.dbSpecialBuffer(odb);
+                            if (special != null) preExecGpuAddrs[i] = special.address();
+                        }
+                    }
+                }
+            }
+
+            // Step 5: Execute
+            nativeOps.clearLastError();
+            ctx.shapeFunctionOverride(SHAPE_OVERRIDE);
+
+            // Attach per-worker workspace for C++ op temporaries.
+            // Each DeviceWorker creates its own workspace on its thread (in run()),
+            // so there's no cross-thread contention on the bump allocator offset.
+            // Without workspace, C++ ops use aligned_alloc on the glibc heap, and
+            // buffer overruns corrupt adjacent heap metadata → "double free or corruption" crash.
+            //
+            // scopeIn() resets the bump offset so each op reuses the same workspace memory.
+            // Workspace is detached immediately after execution to prevent shape computation
+            // from allocating shape buffers in the workspace (ShapeList::destroy() would
+            // call delete[] on workspace pointers → SIGSEGV).
+            if (workerWorkspace != null) {
+                nativeOps.workspaceScopeIn(workerWorkspace);
+                ctx.attachWorkspace(workerWorkspace);
+            }
+
+            if (slot.isCustomOp()) {
+                ctx.setIArguments(slot.getIArgs());
+                ctx.setTArguments(slot.getTArgs());
+                ctx.setBArguments(slot.getBArgs());
+                ctx.setDArguments(slot.getDArgs());
+                Nd4j.exec((CustomOp) fn, ctx);
+            } else {
+                Nd4j.exec((Op) fn, ctx);
+            }
+
+            // Detach workspace + scopeOut immediately after execution.
+            // purge()/purgeForReuse() do NOT clear workspace attachment.
+            if (workerWorkspace != null) {
+                ctx.detachWorkspace();
+                nativeOps.workspaceScopeOut(workerWorkspace);
+            }
+
+            // View-producer detection
+            List<INDArray> ctxOutputs = ctx.getOutputArrays();
+            int maxTracked = Math.min(ctxOutputs != null ? ctxOutputs.size() : 0, outputSlotIndices.length);
+            if (ctxOutputs != null) {
+                for (int i = 0; i < maxTracked; i++) {
+                    INDArray ctxOut = ctxOutputs.get(i);
+                    int si = outputSlotIndices[i];
+                    if (ctxOut == null || si < 0) continue;
+
+                    if (ctxOut != outputArrays[i]) {
+                        if (slotIsViewProducer != null) slotIsViewProducer[si] = true;
+                        if (!outputArrays[i].isEmpty()) {
+                            DataBuffer buf = outputArrays[i].data();
+                            if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                                devicePendingClose.add(buf);
+                            }
+                        }
+                        outputSlots[si] = ctxOut;
+                    } else if (slotIsViewProducer != null && !slotIsViewProducer[si]) {
+                        long preAddr = (i < preExecGpuAddrs.length) ? preExecGpuAddrs[i] : 0;
+                        if (preAddr != 0) {
+                            DataBuffer currentBuf = ctxOut.data();
+                            OpaqueDataBuffer currentOdb = (currentBuf != null) ? currentBuf.opaqueBuffer() : null;
+                            long currentAddr = 0;
+                            if (currentOdb != null && !currentOdb.isNull()) {
+                                Pointer special = nativeOps.dbSpecialBuffer(currentOdb);
+                                if (special != null) currentAddr = special.address();
+                            }
+                            if (currentAddr != 0 && preAddr != currentAddr) {
+                                slotIsViewProducer[si] = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Release untracked outputs
+            for (int i = 0; i < outputArrays.length; i++) {
+                boolean tracked = (i < outputSlotIndices.length && outputSlotIndices[i] >= 0);
+                if (!tracked) {
+                    INDArray arr = outputArrays[i];
+                    if (ctxOutputs != null && i < ctxOutputs.size()) {
+                        INDArray ctxOut = ctxOutputs.get(i);
+                        if (ctxOut != null && ctxOut != arr) arr = ctxOut;
+                    }
+                    if (arr != null) {
+                        DataBuffer buf = arr.data();
+                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                            devicePendingClose.add(buf);
+                        }
+                    }
+                }
+            }
+
+            // Release replicated input copies
+            if (replicatedInputBuffers != null) {
+                for (DataBuffer buf : replicatedInputBuffers) {
+                    if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                        devicePendingClose.add(buf);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Evict slot cache if total cached memory exceeds threshold. After a prefill step
+     * (large seq_len), cached arrays hold GBs of GPU memory that won't be reused by
+     * decode steps (seq_len=1). Without eviction, CUDA stream creation on new threads
+     * fails with cudaErrorMemoryAllocation because the pool reservation is too large.
+     *
+     * Threshold: 512MB. Decode step caches are typically < 10MB, so this only fires
+     * after prefill steps.
+     */
+    private void evictOversizedSlotCache(NativeOps nativeOps, Pointer execStream) {
+        if (slotArrayCache == null) return;
+
+        // Estimate total cached bytes
+        long totalCachedBytes = 0;
+        int cachedCount = 0;
+        for (INDArray arr : slotArrayCache) {
+            if (arr != null && !arr.wasClosed()) {
+                DataBuffer buf = arr.data();
+                if (buf != null && !buf.wasClosed()) {
+                    totalCachedBytes += buf.length() * buf.getElementSize();
+                    cachedCount++;
+                }
+            }
+        }
+
+        long thresholdBytes = 512L * 1024 * 1024; // 512MB
+        if (totalCachedBytes <= thresholdBytes) {
+            return;
+        }
+
+        log.debug("Evicting oversized slot cache: {} arrays, {}MB (threshold {}MB)",
+                cachedCount, totalCachedBytes / (1024 * 1024), thresholdBytes / (1024 * 1024));
+
+        // Use closeSlotArrayCache logic: route through freePendingBuffers for dedup
+        closeSlotArrayCache();
+    }
+
+    /**
+     * Free GPU memory held by cached arrays in the slot cache. Routes buffers through
+     * freePendingBuffers() to get full dedup protection (identity, ODB address, GPU address
+     * owner-only). Without dedup, views sharing GPU memory with their parent cause double-free
+     * heap corruption. Called during close() to prevent GPU memory leaks between
+     * execute() calls (e.g., between vision encoder chunks).
+     */
     private void closeSlotArrayCache() {
         if (slotArrayCache == null) return;
+
+        // Merge any remaining deferred buffers from mid-execution flushes.
+        if (!deferredClose.isEmpty()) {
+            pendingClose.addAll(deferredClose);
+            deferredClose.clear();
+        }
+
+        // Collect eligible buffers from the cache into pendingClose.
+        // The persistent dedup sets (seenIdentity, closedOdbAddresses) from the previous
+        // execute() call will correctly skip buffers already freed during execution.
+        int collected = 0;
         for (int i = 0; i < slotArrayCache.length; i++) {
             INDArray arr = slotArrayCache[i];
             if (arr != null && !arr.wasClosed()) {
                 DataBuffer buf = arr.data();
                 if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
-                    try { buf.close(); } catch (Exception ignored) {}
+                    pendingClose.add(buf);
+                    collected++;
                 }
             }
             slotArrayCache[i] = null;
         }
+
+        if (collected == 0) return;
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        Pointer stream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+
+        // Sync execution stream so all GPU kernels using these buffers have completed.
+        Nd4j.getExecutioner().commit();
+
+        // Free with full dedup. liveGpuAddresses=null because no slots are live during close().
+        int[] stats = freePendingBuffers(nativeOps, stream, null);
+        pendingClose.clear();
+
+        // Trim memory pool so freed memory is immediately available
+        if (stream != null) {
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            nativeOps.trimMemoryPoolOnStream(currentDevice, stream);
+            // Cross-device frees use stream 0 on target device — sync that stream
+            int numDevices = nativeOps.getAvailableDevices();
+            for (int d = 0; d < numDevices; d++) {
+                if (d != currentDevice) {
+                    nativeOps.trimMemoryPoolOnStream(d, null);
+                }
+            }
+        }
+        log.debug("  closeSlotArrayCache: freed {}/{} buffers ({}MB)", stats[0], stats[1], stats[2]);
     }
 
     @Override
     public void close() {
+        log.debug("  DSP close() step 1: flushTo");
         if (localPool != null) {
             localPool.flushTo(mmgr);
             localPool = null;
         }
+        log.debug("  DSP close() step 2: closeSlotArrayCache");
         closeSlotArrayCache();
-        for (OpContext ctx : ctxPool) {
-            try { ctx.close(); } catch (Exception ignored) {}
+        log.debug("  DSP close() step 3: constant replicas ({})", constantReplicaCache != null ? constantReplicaCache.size() : 0);
+        if (constantReplicaCache != null) {
+            constantReplicaCache.clear();
+            constantReplicaCache = null;
         }
+        log.debug("  DSP close() step 4: ctxPool ({})", ctxPool.size());
         ctxPool.clear();
 
+        log.debug("  DSP close() step 5: outputSlots");
         if (outputSlots != null) {
-            for (int i = 0; i < outputSlots.length; i++) {
-                INDArray arr = outputSlots[i];
-                if (arr != null && !arr.wasClosed()) {
-                    try {
-                        arr.setCloseable(true);
-                        arr.close();
-                    } catch (Exception ignored) {}
-                }
-                outputSlots[i] = null;
-            }
+            Arrays.fill(outputSlots, null);
         }
         if (externalInputs != null) {
             Arrays.fill(externalInputs, null);
         }
+        // Destroy self-managed native workspace if we created one
+        if (ownNativeWorkspace != null) {
+            try {
+                NativeOps wsOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                wsOps.workspaceScopeOut(ownNativeWorkspace);
+                wsOps.destroyNativeWorkspace(ownNativeWorkspace);
+            } catch (Exception ignored) {}
+            ownNativeWorkspace = null;
+        }
+
         currentPlan = null;
+        log.debug("  DSP close() complete");
+    }
+
+    /**
+     * Safely close a DataBuffer using dbFreeBuffersOnStream to avoid calling glibc free()
+     * on potentially corrupted heap metadata. Falls back to buf.close() if stream unavailable.
+     */
+    private void safeCloseBuffer(DataBuffer buf, NativeOps nativeOps, Pointer stream) {
+        if (buf == null || buf.wasClosed() || !buf.closeable() || buf.isConstant()) return;
+        OpaqueDataBuffer odb = buf.opaqueBuffer();
+        if (odb != null && !odb.isNull() && stream != null) {
+            try {
+                nativeOps.dbFreeBuffersOnStream(odb, stream);
+                odb.tryMarkForDeallocation();
+                odb.setNull();
+                OpaqueDataBufferDeallocator deallocator = odb.getDeallocator();
+                if (deallocator != null) deallocator.markDeallocated();
+            } catch (Exception ignored) {}
+        } else {
+            try { buf.close(); } catch (Exception ignored) {}
+        }
     }
 }

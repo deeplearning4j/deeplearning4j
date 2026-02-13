@@ -100,6 +100,24 @@ class SD_LIB_EXPORT OpExecTrace {
     }
   }
 
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
+
   std::vector<const LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
   void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffersIn) {
     OpExecTrace::inputShapeBuffers = inputShapeBuffersIn;
@@ -272,6 +290,24 @@ class SD_LIB_EXPORT OpDescriptor {
   bool isSameMode();
 
   bool isInherit(int index);
+
+  // Padded operator new/delete to protect adjacent glibc chunks from overruns.
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
 };
 }  // namespace ops
 }  // namespace sd

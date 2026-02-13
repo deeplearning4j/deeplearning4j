@@ -209,6 +209,14 @@ void ContextBuffers::initialize() {
   if (nullptr == _execStream || nullptr == _specialStream)
     THROW_EXCEPTION("Failed to allocate memory for new CUDA stream");
 
+  // Trim the memory pool before creating streams. cudaStreamCreate() uses driver-level
+  // memory allocation for internal stream structures. The CudaMemoryPool may have reserved
+  // large amounts of GPU memory (via cudaMallocAsync) that the driver cannot use for stream
+  // creation. trimPool() releases pool-reserved memory whose async frees have already
+  // completed (no stream sync — callers that performed frees must have synced their own
+  // execution streams before we reach here, e.g. via Nd4j.getExecutioner().commit()).
+  memory::CudaMemoryPool::getInstance().trimPool(_deviceId);
+
   res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
   if (res != 0) throw cuda_exception::build("Failed to create default CUDA stream with launch context", res);
 

@@ -349,11 +349,9 @@ NDArray::NDArray(NDArray &other) {
       THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - other shapeInfo is nullptr");
     }
 
-    // Cache owns all shape buffers - share the pointer WITH proper reference counting
+    // Cache owns all shape buffers - share the pointer WITHOUT reference counting
+    // The cache manages lifetime, not individual NDArrays
     _shapeInfoBuffer = other._shapeInfoBuffer;
-    if (_shapeInfoBuffer != nullptr) {
-      _shapeInfoBuffer->addRef();
-    }
     _shapeInfo = other._shapeInfo;
     _shapeInfoD = other._shapeInfoD;
   }
@@ -686,6 +684,12 @@ NDArray::NDArray(NDArray &&other) noexcept {
   _buffer = other._buffer;  // Transfer buffer pointer
   _ownsBuffer = other._ownsBuffer;  // Transfer ownership flag
   _shapeInfoBuffer = other._shapeInfoBuffer;
+  // DON'T call addRef() - ConstantShapeHelper cache manages lifetime
+  // The cache stores buffers and handles cleanup via clearCache()
+  // If we addRef, we'll have unbalanced release() calls because:
+  // 1. Cache stores pointer without addRef()
+  // 2. NDArray destructor calls release()
+  // 3. After all NDArrays released, refCount != 0 → buffer leaked
 
   if (other._shapeInfo == nullptr && _shapeInfoBuffer != nullptr) {
     // Try to recover shape info from buffer
@@ -828,7 +832,7 @@ NDArray::~NDArray() {
   _buffer = nullptr;
   _ownsBuffer = false;
 
-  ConstantShapeBuffer* bufferToRelease = this->_shapeInfoBuffer;
+  ConstantShapeBuffer* bufferToRelease = nullptr;  // DON'T release - cache manages lifetime
 
   // Clear all shape-related pointers immediately
   this->_shapeInfo = nullptr;
@@ -838,18 +842,9 @@ NDArray::~NDArray() {
   // Clear context pointer
   _context = nullptr;
 
-  // NOW safe to release the buffer (might delete it)
-  // This decrements the reference count that was incremented by addRef() in constructors
-  if (bufferToRelease != nullptr) {
-    // Validate pointer before calling release
-    uintptr_t releaseAddr = reinterpret_cast<uintptr_t>(bufferToRelease);
-    if (releaseAddr > 0x10000) {
-      bufferToRelease->release();
-    } else {
-      fprintf(stderr, "WARNING: NDArray destructor found corrupt _shapeInfoBuffer pointer: %p\n", bufferToRelease);
-      fflush(stderr);
-    }
-  }
+  // DON'T release the buffer - ConstantShapeHelper cache manages lifetime
+  // The cache stores buffers and handles cleanup via clearCache()
+  // Calling release() here would decrement refCount incorrectly
 
 
 
@@ -944,6 +939,21 @@ NDArray::NDArray(DataBuffer *buffer,
 
   _length = shape::length(shapeInfo);
   _offset = offset;
+
+  // Validate buffer is large enough for declared shape to prevent heap corruption
+  if (buffer != nullptr && _length > 0) {
+    size_t bufferElements = buffer->getNumElements();
+    if (bufferElements < static_cast<size_t>(_length)) {
+      std::string errorMessage = "NDArray constructor 13: BUFFER TOO SMALL for declared shape! ";
+      errorMessage += "Shape declares " + std::to_string(_length) + " elements but buffer only has ";
+      errorMessage += std::to_string(bufferElements) + " elements. ";
+      errorMessage += "This indicates a shape miscalculation that would cause heap corruption. ";
+      errorMessage += "Buffer ptr: " + std::to_string(reinterpret_cast<uintptr_t>(buffer));
+      errorMessage += ", Shape ptr: " + std::to_string(reinterpret_cast<uintptr_t>(shapeInfo));
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+  }
+
   auto constShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
 
   if (constShapeInfo == nullptr) {
@@ -2279,6 +2289,14 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
   }
   if (this == &other) return *this;
 
+  // Release our old shapeInfoBuffer reference - cache handles lifetime
+  // DON'T call release() - ConstantShapeHelper cache manages lifetime
+  // See comment in move constructor for explanation
+  if (_shapeInfoBuffer != nullptr) {
+    // Just clear the pointer, don't release
+    _shapeInfoBuffer = nullptr;
+  }
+
   // Move ownership of DataBuffer - manually delete old buffer first if we own it
   if (_ownsBuffer) {
     delete _buffer;
@@ -2290,6 +2308,7 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
 
   // Shape info is managed by cache - just update pointers
   _shapeInfoBuffer = other._shapeInfoBuffer;
+  // DON'T call addRef() - ConstantShapeHelper cache manages lifetime
   _shapeInfo = other._shapeInfo;
   _shapeInfoD = other._shapeInfoD;
 
@@ -3325,7 +3344,7 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
   //nothing to do for scalar shape info
   if(array->isScalar()) {
     //no need for strides with scalar just set shape
-    sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(newShape.size())];
+    sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(newShape.size()) + SD_SHAPE_ALLOC_PADDING];
     // Initialize memory to prevent garbage values
     memset(ret, 0, sizeof(sd::LongType) * shape::shapeInfoLength(newShape.size()));
     ret[0] = newShape.size();
@@ -3375,7 +3394,7 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
   sd::LongType shapeInfoLength = shape::shapeInfoLength(shape_vector.size());
-  sd::LongType* shapeInfoNew = new sd::LongType[shapeInfoLength];
+  sd::LongType* shapeInfoNew = new sd::LongType[shapeInfoLength + SD_SHAPE_ALLOC_PADDING];
   // Initialize to prevent garbage values
   memset(shapeInfoNew, 0, sizeof(sd::LongType) * shapeInfoLength);
   shapeInfoNew[0] = static_cast<sd::LongType>(shape_vector.size());
@@ -4528,7 +4547,10 @@ void *NDArray::operator new(size_t i) {
     sd::memory::Workspace *ws = sd::memory::MemoryRegistrator::getInstance().getWorkspace();
     return ws->allocateBytes((sd::LongType)i);
   } else {
-    auto p = malloc(i);
+    // Add 4KB padding to protect adjacent glibc chunks from overruns.
+    // NDArray objects are ~160 bytes — any adjacent overrun corrupts the
+    // next chunk metadata → SIGABRT on free().
+    auto p = malloc(i + 4096);
     CHECK_ALLOC(p, "Failed to allocate new NDArray", i);
     return p;
   }
@@ -4618,9 +4640,12 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
   int numberNegativesOnes = 0;
 
   sd::LongType *shape_ = shape.data();
+  sd::LongType *allocatedShape = nullptr;  // Track heap allocation for cleanup
   for (size_t i = 0; i < shape.size(); i++) {
     if (shape[i] < 0) {
       if (numberNegativesOnes >= 1) {
+        // Clean up before throwing
+        delete[] allocatedShape;
         std::string errorMessage;
         errorMessage += "NDArray::reshapei: only one dimension can be negative at once !\n";
         errorMessage += "Shape: ";
@@ -4642,7 +4667,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
         if (i != j) shapeLength *= shape_[j];
 
       sd::LongType realShape = sd::math::sd_abs<sd::LongType,sd::LongType>(lengthOf() / shapeLength);
-      auto thisNewShape = new sd::LongType[shape.size()];
+      auto thisNewShape = new sd::LongType[shape.size() + SD_SHAPE_ALLOC_PADDING];
 
       for (size_t j = 0; j < shape.size(); j++)
         if (i != j)
@@ -4650,11 +4675,17 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
         else
           thisNewShape[j] = realShape;
 
+      // Free previous allocation if any (only possible with multiple negatives, but be safe)
+      delete[] allocatedShape;
+      allocatedShape = thisNewShape;
       shape_ = thisNewShape;
     }
   }
 
   for (size_t e = 0; e < shape.size(); e++) shape[e] = shape_[e];
+
+  // Free the temporary shape array now that we've copied back to the vector
+  delete[] allocatedShape;
 
 
   sd::LongType arrLength = 1;
@@ -6835,6 +6866,10 @@ NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
   ALLOCATE(subArrShapeInfo, getContext()->getWorkspace(), shape::shapeInfoLength(rankOf() - numOfUntiesInSubArrShape),
            sd::LongType);
 
+  // Zero-initialize to prevent uninitialized data (e.g. EWS field) from causing
+  // trie cache misses and potential heap corruption via stale comparisons
+  memset(subArrShapeInfo, 0, shape::shapeInfoLength(rankOf() - numOfUntiesInSubArrShape) * sizeof(sd::LongType));
+
   sd::LongType offset = -1;
   auto inOrder = shape::order(shapeInfo());
   if(inOrder != 'c' && inOrder != 'f')
@@ -6863,8 +6898,6 @@ NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
 
   // Share the same DataBuffer with the parent to ensure CUDA views work correctly
   NDArray *result = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShapeInfo->primary()), getContext(), offset + this->offset());
-  ShapeDescriptor descriptor(newShapeInfo->primary(), false);
-  descriptor.validate();
 
   return result;
 }
@@ -6915,6 +6948,9 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclud
   // allocate memory
   ALLOCATE(subArrShapeInfo, getContext()->getWorkspace(), shape::shapeInfoLength(subArrRank), sd::LongType);
   ALLOCATE(subArrOffsets, getContext()->getWorkspace(), numOfSubArrs, sd::LongType);
+
+  // Zero-initialize to prevent uninitialized data (e.g. EWS field) from causing issues
+  memset(subArrShapeInfo, 0, shape::shapeInfoLength(subArrRank) * sizeof(sd::LongType));
 
   shape::calcSubArrsShapeInfoAndOffsets(_shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(),
                                         subArrShapeInfo, subArrOffsets, keepUnitiesInShape);

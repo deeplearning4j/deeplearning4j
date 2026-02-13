@@ -278,7 +278,7 @@ SD_HOST SD_INLINE sd::DataType ArrayOptions::dataTypeValue(sd::LongType property
 
 
 SD_HOST  SD_INLINE void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
-  LongType *flagIndices = new LongType[numFlags];
+  LongType *flagIndices = new LongType[numFlags + SD_SHAPE_ALLOC_PADDING];
   int numFlagsSet = 0;
   for (size_t i = 0; i < numFlags; ++i) {
     if (hasPropertyBitSetForFlags(property, flags[i])) {

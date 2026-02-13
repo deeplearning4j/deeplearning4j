@@ -30,6 +30,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Image tiling utilities for Vision-Language Models.
@@ -236,6 +239,177 @@ public class ImageTiler {
         log.debug("  Added global resized image ({}x{}, squished)", maxSize, maxSize);
 
         log.info("Total frames: {} ({} tiles + 1 global)", frames.size(), frames.size() - 1);
+
+        return new SplitImageResult(frames, contentRegions, numSplitsH, numSplitsW);
+    }
+
+    /**
+     * Split an image into tiles using parallel tile extraction and resizing.
+     * Each tile crop + resize runs concurrently on a thread pool.
+     *
+     * @param image The input image
+     * @param maxSize The maximum tile size (e.g. 512 for SmolDocling)
+     * @param maxTiles Maximum number of content tiles (-1 for no limit)
+     * @param numThreads Number of threads for parallel tile extraction
+     * @return SplitImageResult containing the frames and metadata
+     */
+    public static SplitImageResult splitImageForVLMParallel(BufferedImage image, int maxSize, int maxTiles, int numThreads) {
+        // Step 1: resize_for_vision_encoder - round dimensions to multiples of maxSize
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (height > maxSize || width > maxSize) {
+            double aspectRatio = (double) width / height;
+            int newWidth, newHeight;
+            if (width >= height) {
+                newWidth = (int) Math.ceil((double) width / maxSize) * maxSize;
+                newHeight = (int) (newWidth / aspectRatio);
+                newHeight = (int) Math.ceil((double) newHeight / maxSize) * maxSize;
+            } else {
+                newHeight = (int) Math.ceil((double) height / maxSize) * maxSize;
+                newWidth = (int) (newHeight * aspectRatio);
+                newWidth = (int) Math.ceil((double) newWidth / maxSize) * maxSize;
+            }
+            log.info("resize_for_vision_encoder: {}x{} -> {}x{} (multiples of {})",
+                    width, height, newWidth, newHeight, maxSize);
+            image = resizeImage(image, newWidth, newHeight);
+            width = newWidth;
+            height = newHeight;
+        }
+
+        int numSplitsH = 0;
+        int numSplitsW = 0;
+
+        if (maxTiles == 1 || (height <= maxSize && width <= maxSize)) {
+            // No tiling needed
+        } else {
+            numSplitsH = (int) Math.ceil((double) height / maxSize);
+            numSplitsW = (int) Math.ceil((double) width / maxSize);
+
+            if (maxTiles > 0 && numSplitsH * numSplitsW > maxTiles) {
+                double imageAspect = (double) height / width;
+                int bestH = 1, bestW = 1;
+                int bestCount = 1;
+                double bestAspectMatch = Double.MAX_VALUE;
+                for (int h = 1; h <= Math.min(numSplitsH, maxTiles); h++) {
+                    int maxW = maxTiles / h;
+                    for (int w = 1; w <= Math.min(numSplitsW, maxW); w++) {
+                        int count = h * w;
+                        if (count <= maxTiles) {
+                            double gridAspect = (double) h / w;
+                            double aspectMatch = Math.abs(Math.log(gridAspect) - Math.log(imageAspect));
+                            if (count > bestCount || (count == bestCount && aspectMatch < bestAspectMatch)) {
+                                bestH = h;
+                                bestW = w;
+                                bestCount = count;
+                                bestAspectMatch = aspectMatch;
+                            }
+                        }
+                    }
+                }
+                numSplitsH = bestH;
+                numSplitsW = bestW;
+            }
+
+            int maxGrid = 6;
+            if (numSplitsH > maxGrid || numSplitsW > maxGrid) {
+                double scale = Math.min((double) maxGrid / numSplitsH, (double) maxGrid / numSplitsW);
+                numSplitsH = Math.min(maxGrid, Math.max(1, (int) Math.floor(numSplitsH * scale)));
+                numSplitsW = Math.min(maxGrid, Math.max(1, (int) Math.floor(numSplitsW * scale)));
+            }
+        }
+
+        int totalTiles = numSplitsH * numSplitsW;
+        int totalFrames = totalTiles + 1; // tiles + global
+
+        List<BufferedImage> frames = new ArrayList<>(totalFrames);
+        List<ContentRegion> contentRegions = new ArrayList<>(totalFrames);
+
+        if (totalTiles == 0) {
+            // No tiles, just global
+            BufferedImage globalImage = resizeImage(image, maxSize, maxSize);
+            frames.add(globalImage);
+            contentRegions.add(new ContentRegion(maxSize, maxSize));
+            return new SplitImageResult(frames, contentRegions, 0, 0);
+        }
+
+        int optimalHeight = (int) Math.ceil((double) height / numSplitsH);
+        int optimalWidth = (int) Math.ceil((double) width / numSplitsW);
+
+        // Pre-size lists
+        for (int i = 0; i < totalFrames; i++) {
+            frames.add(null);
+            contentRegions.add(null);
+        }
+
+        int effectiveThreads = Math.min(numThreads, totalFrames);
+        final BufferedImage sourceImage = image;
+        final int srcWidth = width;
+        final int srcHeight = height;
+        final int nH = numSplitsH;
+        final int nW = numSplitsW;
+
+        if (effectiveThreads <= 1) {
+            // Sequential fallback
+            for (int r = 0; r < nH; r++) {
+                for (int c = 0; c < nW; c++) {
+                    int idx = r * nW + c;
+                    int startX = c * optimalWidth;
+                    int startY = r * optimalHeight;
+                    int endX = Math.min(startX + optimalWidth, srcWidth);
+                    int endY = Math.min(startY + optimalHeight, srcHeight);
+                    BufferedImage tile = sourceImage.getSubimage(startX, startY, endX - startX, endY - startY);
+                    if ((endX - startX) != maxSize || (endY - startY) != maxSize) {
+                        tile = resizeImage(tile, maxSize, maxSize);
+                    }
+                    frames.set(idx, tile);
+                    contentRegions.set(idx, new ContentRegion(maxSize, maxSize));
+                }
+            }
+            frames.set(totalTiles, resizeImage(sourceImage, maxSize, maxSize));
+            contentRegions.set(totalTiles, new ContentRegion(maxSize, maxSize));
+        } else {
+            ExecutorService pool = Executors.newFixedThreadPool(effectiveThreads, r -> {
+                Thread t = new Thread(r, "ImageTiler");
+                t.setDaemon(true);
+                return t;
+            });
+            try {
+                List<Future<?>> futures = new ArrayList<>(totalFrames);
+                for (int r = 0; r < nH; r++) {
+                    for (int c = 0; c < nW; c++) {
+                        final int row = r, col = c;
+                        final int idx = r * nW + c;
+                        futures.add(pool.submit(() -> {
+                            int startX = col * optimalWidth;
+                            int startY = row * optimalHeight;
+                            int endX = Math.min(startX + optimalWidth, srcWidth);
+                            int endY = Math.min(startY + optimalHeight, srcHeight);
+                            BufferedImage tile = sourceImage.getSubimage(startX, startY, endX - startX, endY - startY);
+                            if ((endX - startX) != maxSize || (endY - startY) != maxSize) {
+                                tile = resizeImage(tile, maxSize, maxSize);
+                            }
+                            frames.set(idx, tile);
+                            contentRegions.set(idx, new ContentRegion(maxSize, maxSize));
+                        }));
+                    }
+                }
+                // Global image as last frame
+                futures.add(pool.submit(() -> {
+                    frames.set(totalTiles, resizeImage(sourceImage, maxSize, maxSize));
+                    contentRegions.set(totalTiles, new ContentRegion(maxSize, maxSize));
+                }));
+                for (Future<?> future : futures) {
+                    future.get();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Parallel tile extraction failed", e);
+            } finally {
+                pool.shutdown();
+            }
+        }
+
+        log.info("Parallel tiling: {}x{} grid ({} tiles + 1 global), {} threads",
+                nH, nW, totalTiles, effectiveThreads);
 
         return new SplitImageResult(frames, contentRegions, numSplitsH, numSplitsW);
     }

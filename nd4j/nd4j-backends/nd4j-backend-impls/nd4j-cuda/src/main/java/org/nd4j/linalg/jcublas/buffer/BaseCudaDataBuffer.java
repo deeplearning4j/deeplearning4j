@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.HybridDataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
@@ -1501,7 +1502,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             int bufferDevice = allocationPoint.getDeviceId();
             int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             if (bufferDevice >= 0 && bufferDevice != currentDevice) {
-                Nd4j.getAffinityManager().unsafeSetDevice(bufferDevice);
+                DeviceMemoryManager.getInstance().switchDevice(bufferDevice, "BaseCudaDataBuffer.ensureCorrectDevice", "buffer-device-align");
             }
         }
     }
@@ -2363,7 +2364,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             if (currentNativeDevice != -1 && currentNativeDevice != targetDeviceIndex) {
                 // Check if we need to migrate or if P2P is enough
                 if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
-                    Nd4j.getAffinityManager().unsafeSetDevice(targetDeviceIndex);
+                    DeviceMemoryManager.getInstance().switchDevice(targetDeviceIndex, "BaseCudaDataBuffer.ensureAvailableOn", "migrate-to-target");
                     // 2. Call native migrate to move buffer to target device
                     ptrDataBuffer.migrate();
                     gpuValid = true;

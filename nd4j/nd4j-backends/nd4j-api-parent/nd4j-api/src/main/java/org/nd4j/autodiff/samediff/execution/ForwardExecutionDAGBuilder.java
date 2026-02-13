@@ -219,25 +219,15 @@ public class ForwardExecutionDAGBuilder {
                 }
             }
 
-            // Handle placeholder multi-use: find ALL operations that consume this variable
-            if (isPlaceholder(currentVariable)) {
-                Set<String> consumerOps = findAllConsumerOperations(currentVariable);
-                for (String consumerOp : consumerOps) {
-                    if (!requiredOperations.contains(consumerOp)) {
-                        requiredOperations.add(consumerOp);
-
-                        // Add outputs of consumer operations to ensure they're processed
-                        SameDiffOp op = sameDiff.getOps().get(consumerOp);
-                        if (op != null && op.getOutputsOfOp() != null) {
-                            for (String output : op.getOutputsOfOp()) {
-                                if (!processedVariables.contains(output)) {
-                                    variablesToProcess.offer(output);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            // NOTE: Previously, this block expanded forward from every placeholder,
+            // adding ALL consumer operations and their transitive dependents. This
+            // over-included subgraphs whose outputs aren't needed for the requested
+            // outputs, causing shape mismatches in the DSP executor. For example, the
+            // attn_mask_reformat subgraph consumes past_key_values.0.key but produces
+            // intermediates with past_seq_len vs total_seq_len shapes that fail at Add.
+            // The backward traversal from requested outputs (lines 183-220) already
+            // includes all ops that contribute to those outputs, so the forward
+            // expansion from placeholders is unnecessary and harmful.
         }
     }
 
@@ -285,14 +275,20 @@ public class ForwardExecutionDAGBuilder {
             }
         }
 
+        // Check that used placeholders are in the graph. Unused placeholders (not
+        // consumed by any op that contributes to the outputs) are expected — they may
+        // exist in the ONNX model but aren't needed for the requested outputs.
+        int usedPlaceholders = 0;
         for (String placeholder : allPlaceholders) {
-            if (!requiredVariables.contains(placeholder)) {
-                throw new IllegalStateException("Placeholder not in graph: " + placeholder);
+            if (requiredVariables.contains(placeholder)) {
+                usedPlaceholders++;
+            } else {
+                log.debug("Placeholder '{}' not needed for requested outputs — skipping", placeholder);
             }
         }
 
-        log.debug("Validation passed: {} outputs, {} placeholders included",
-                requestedOutputs.size(), allPlaceholders.size());
+        log.debug("Validation passed: {} outputs, {}/{} placeholders included",
+                requestedOutputs.size(), usedPlaceholders, allPlaceholders.size());
     }
 
     /**

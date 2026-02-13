@@ -209,18 +209,30 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 /////////////////////////
 
 template <typename T>
-void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset) {
-  if(src->getLenInBytes() != dst->getLenInBytes()) {
-    THROW_EXCEPTION("DataBuffer::memcpy: source and destination buffers have different length in bytes");
+void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
+  auto sizeOfElement = DataTypeUtils::sizeOfElement(src->getDataType());
+  // Calculate copy size in bytes, accounting for offsets
+  sd::LongType srcAvailable = src->getLenInBytes() - startingOffset * sizeOfElement;
+  sd::LongType dstAvailable = dst->getLenInBytes() - dstOffset * sizeOfElement;
+  sd::LongType copyBytes;
+  if (n > 0) {
+    copyBytes = n * sizeOfElement;
+  } else {
+    // When n=0, copy as much as fits (min of available src and dst)
+    copyBytes = srcAvailable < dstAvailable ? srcAvailable : dstAvailable;
   }
+  // Clamp to available space to prevent overruns
+  if (copyBytes > srcAvailable) copyBytes = srcAvailable;
+  if (copyBytes > dstAvailable) copyBytes = dstAvailable;
+  if (copyBytes <= 0) return;
 
-  std::memcpy(dst->primaryAtOffset<T>(dstOffset), src->primaryAtOffset<T>(startingOffset), src->getLenInBytes());
+  std::memcpy(dst->primaryAtOffset<T>(dstOffset), src->primaryAtOffset<T>(startingOffset), copyBytes);
   dst->readPrimary();
 }
 
 void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
-                        sd::LongType startingOffset, sd::LongType dstOffset) {
-  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset),
+                        sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n) {
+  BUILD_SINGLE_SELECTOR(dst->_dataType, memcpyWithT,(dst, src, startingOffset, dstOffset, n),
                         SD_COMMON_TYPES);
 
   dst->readPrimary();
@@ -241,10 +253,9 @@ void DataBuffer::deleteSpecial() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::freeGpuOnly() {
-  // CPU: no GPU to free. Just abandon the primary buffer to match CUDA behavior.
+  // CPU: no GPU to free. Free both buffers properly.
   deleteSpecial();
-  _primaryBuffer = nullptr;
-  _isOwnerPrimary = false;
+  deletePrimary();
   closed = true;
 }
 

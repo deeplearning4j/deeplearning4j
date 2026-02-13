@@ -164,6 +164,7 @@ void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) {
 
   db->freeGpuOnly();
   dataBuffer->invalidateDataBuffer();
+  delete db;
 }
 
 void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) {

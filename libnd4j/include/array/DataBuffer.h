@@ -44,6 +44,7 @@ class SD_LIB_EXPORT DataBuffer {
 
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
+  std::atomic<int> _specialDeviceId{-1};  // Device ID where _specialBuffer was allocated (for multi-GPU)
   LongType _lenInBytes = 0;
   // Track actual allocated sizes independently to prevent overrun when
   // setPrimaryBuffer/setSpecialBuffer are called with different sizes.
@@ -244,7 +245,7 @@ class SD_LIB_EXPORT DataBuffer {
    */
   std::string getCreationTraceAsString() const;
   void printHostDevice(long offset);
-  static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset);
+  static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n = 0);
   /**
    * Print detailed buffer information including host and device content if available
    * @param msg - Optional message to display
@@ -253,6 +254,28 @@ class SD_LIB_EXPORT DataBuffer {
    */
 #ifndef __JAVACPP_HACK__
   void printBufferDebug(const char* msg = nullptr, sd::LongType offset = 0, sd::LongType limit = 10);
+#endif
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns on nearby allocations. DataBuffer objects are ~200 bytes on
+  // the heap with zero padding — any adjacent overrun corrupts the next
+  // chunk metadata → SIGABRT on free(). Adding 4KB padding keeps the
+  // next chunk's header safely out of reach.
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
 #endif
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////

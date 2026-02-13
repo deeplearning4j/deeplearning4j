@@ -125,10 +125,14 @@ void *Workspace::allocateBytes(sd::LongType numBytes) {
   if (_offset.load() + numBytes > _currentSize) {
     sd_debug("Allocating %lld bytes in spills\n", numBytes);
     this->_mutexAllocation.unlock();
+    // Add padding to spill allocations — C++ ops can overrun temporary buffers
+    // by a few bytes, corrupting adjacent glibc heap metadata → SIGABRT on free().
+    // Within the workspace buffer, overruns are harmless (bump allocator).
+    LongType allocBytes = numBytes + SD_ALLOC_PADDING;
 #if defined(SD_ALIGNED_ALLOC)
-    void *p = aligned_alloc(SD_DESIRED_ALIGNMENT, (numBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT));
+    void *p = aligned_alloc(SD_DESIRED_ALIGNMENT, (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT));
 #else
-    void *p = malloc(numBytes);
+    void *p = malloc(allocBytes);
 #endif
     CHECK_ALLOC(p, "Failed to allocate new workspace", numBytes);
 

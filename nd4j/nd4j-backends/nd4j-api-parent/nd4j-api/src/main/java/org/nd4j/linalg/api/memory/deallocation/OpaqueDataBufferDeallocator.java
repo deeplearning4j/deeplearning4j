@@ -185,7 +185,7 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                         boolean switchedDevice = false;
 
                         if (currentDevice != bufferDevice) {
-                            Nd4j.getAffinityManager().unsafeSetDevice(bufferDevice);
+                            DeviceMemoryManager.getInstance().switchDevice(bufferDevice, "OpaqueDataBufferDeallocator.deallocate", "dealloc");
                             switchedDevice = true;
                         }
 
@@ -209,7 +209,7 @@ public class OpaqueDataBufferDeallocator implements Deallocatable {
                             }
                         } finally {
                             if (switchedDevice) {
-                                Nd4j.getAffinityManager().unsafeSetDevice(currentDevice);
+                                DeviceMemoryManager.getInstance().switchDevice(currentDevice, "OpaqueDataBufferDeallocator.deallocate", "restore-device");
                             }
                         }
                     }

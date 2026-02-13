@@ -28,8 +28,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Utilities for working with vision encoder outputs and preprocessing frames.
@@ -125,6 +129,90 @@ public class VisionEncoderUtils {
         long totalTime = System.currentTimeMillis() - totalStartTime;
         log.info("Preprocessed {} frames in {} ms ({} ms/frame avg)",
                 numFrames, totalTime, numFrames > 0 ? totalTime / numFrames : 0);
+
+        return result;
+    }
+
+    /**
+     * Preprocess multiple image frames in parallel using a thread pool.
+     * Each frame's CPU preprocessing (resize, normalize, convert) runs concurrently.
+     * The results are assembled into a 5D tensor after all threads complete.
+     *
+     * @param frames list of BufferedImage frames
+     * @param preprocessorFactory creates a VLMImagePreprocessor per thread (not shared — they are not thread-safe)
+     * @param targetSize the target size for each frame (e.g. 512)
+     * @param numThreads number of parallel preprocessing threads
+     * @return INDArray with shape [1, numFrames, 3, targetSize, targetSize]
+     */
+    public static INDArray preprocessFramesParallel(List<BufferedImage> frames,
+                                                    java.util.function.Supplier<VLMImagePreprocessor> preprocessorFactory,
+                                                    int targetSize, int numThreads) {
+        int numFrames = frames.size();
+        if (numFrames == 0) {
+            return Nd4j.create(DataType.FLOAT, 1, 0, 3, targetSize, targetSize);
+        }
+
+        int threads = Math.min(numThreads, numFrames);
+        INDArray[] frameTensors = new INDArray[numFrames];
+
+        long totalStartTime = System.currentTimeMillis();
+
+        if (threads <= 1) {
+            // Fall back to sequential for single thread
+            VLMImagePreprocessor preprocessor = preprocessorFactory.get();
+            for (int f = 0; f < numFrames; f++) {
+                frameTensors[f] = preprocessor.preprocess(frames.get(f));
+            }
+            preprocessor.shutdown();
+        } else {
+            ExecutorService pool = Executors.newFixedThreadPool(threads, r -> {
+                Thread t = new Thread(r, "VisionPreprocess");
+                t.setDaemon(true);
+                return t;
+            });
+            try {
+                List<Future<?>> futures = new ArrayList<>(numFrames);
+                // Each thread gets its own preprocessor (not thread-safe)
+                ThreadLocal<VLMImagePreprocessor> threadPreprocessor = ThreadLocal.withInitial(preprocessorFactory::get);
+                for (int f = 0; f < numFrames; f++) {
+                    final int idx = f;
+                    futures.add(pool.submit(() -> {
+                        frameTensors[idx] = threadPreprocessor.get().preprocess(frames.get(idx));
+                    }));
+                }
+                for (Future<?> future : futures) {
+                    future.get();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Parallel frame preprocessing failed", e);
+            } finally {
+                pool.shutdown();
+            }
+        }
+
+        // Assemble into 5D tensor
+        INDArray result = Nd4j.create(DataType.FLOAT, 1, numFrames, 3, targetSize, targetSize);
+        for (int f = 0; f < numFrames; f++) {
+            INDArray targetSlice = result.get(
+                    NDArrayIndex.point(0),
+                    NDArrayIndex.point(f),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all()
+            );
+            INDArray sourceSlice = frameTensors[f].get(
+                    NDArrayIndex.point(0),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all(),
+                    NDArrayIndex.all()
+            );
+            targetSlice.assign(sourceSlice);
+            frameTensors[f].close();
+        }
+
+        long totalTime = System.currentTimeMillis() - totalStartTime;
+        log.info("Parallel-preprocessed {} frames in {} ms ({} ms/frame avg, {} threads)",
+                numFrames, totalTime, numFrames > 0 ? totalTime / numFrames : 0, threads);
 
         return result;
     }

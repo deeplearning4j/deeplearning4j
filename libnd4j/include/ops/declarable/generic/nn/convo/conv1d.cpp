@@ -146,6 +146,8 @@ DECLARE_SHAPE_FN(conv1d) {
 
   sd::LongType * second = shape::calcStridesFortran(outputShapeInfo,shape::rank(outputShapeInfo));
   shape::setStride(outputShapeInfo,second);
+  outputShapeInfo[2 * rank + 1] = 0;  // zero extra flags before setDataType reads it
+  outputShapeInfo[2 * rank + 2] = -1; // EWS unknown
   shape::setOrder(outputShapeInfo, 'f');
   ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
   delete[] second;

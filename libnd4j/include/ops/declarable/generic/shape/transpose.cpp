@@ -123,13 +123,15 @@ DECLARE_SHAPE_FN(transpose) {
     auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, false);
     ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(permEvalShapeInfo)->primary();
-    delete[] permEvalShapeInfo;
+    RELEASE(permEvalShapeInfo, nullptr);
     return SHAPELIST(ret);
   }
 
   // Non-empty case: use cached shape directly
   auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
-  return SHAPELIST(CONSTANT(permEvalShapeInfo));
+  auto ret = ConstantShapeHelper::getInstance().createFromExisting(permEvalShapeInfo);
+  RELEASE(permEvalShapeInfo, nullptr);
+  return SHAPELIST(ret);
 }
 
 }  // namespace ops

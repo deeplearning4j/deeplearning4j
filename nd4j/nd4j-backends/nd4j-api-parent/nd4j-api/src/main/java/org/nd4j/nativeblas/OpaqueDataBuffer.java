@@ -373,7 +373,7 @@ public class OpaqueDataBuffer extends Pointer {
                 int targetDevice = selectedDevice.getDeviceIndex();
                 int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
                 if (targetDevice >= 0 && currentDevice != targetDevice) {
-                    Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueDataBuffer", "allocate");
                 }
             }
         }
@@ -483,7 +483,7 @@ public class OpaqueDataBuffer extends Pointer {
                 int targetDevice = selectedDevice.getDeviceIndex();
                 int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
                 if (targetDevice >= 0 && currentDevice != targetDevice) {
-                    Nd4j.getAffinityManager().unsafeSetDevice(targetDevice);
+                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueDataBuffer", "allocate");
                 }
             }
         }

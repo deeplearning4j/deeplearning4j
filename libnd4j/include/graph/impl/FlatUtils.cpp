@@ -36,7 +36,7 @@ std::pair<LongType, LongType> FlatUtils::fromLongPair(::graph::LongPair *pair) {
 
 NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
   auto rank = static_cast<int>(flatArray->shape()->Get(0));
-  auto newShape = new LongType[shape::shapeInfoLength(rank)];
+  auto newShape = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
   memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
   auto length = shape::length(newShape);
@@ -57,7 +57,7 @@ NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
     auto rawPtr = (void *)flatArray->buffer()->data();
     auto longPtr = reinterpret_cast<LongType *>(rawPtr);
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
-    auto offsets = new LongType[length + 1];
+    auto offsets = new LongType[length + 1 + SD_SHAPE_ALLOC_PADDING]();
 
     for (LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];

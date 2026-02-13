@@ -133,7 +133,8 @@ DECLARE_SHAPE_FN(conv2d) {
 
   }
 
-  LongType* outputShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+  LongType* outputShapeInfo = new LongType[shape::shapeInfoLength(rank) + SD_SHAPE_ALLOC_PADDING];
+  memset(outputShapeInfo, 0, shape::shapeInfoLength(rank) * sizeof(LongType));
 
   outputShapeInfo[0] = 4;
   LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
@@ -150,7 +151,7 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
-  sd::LongType *permute = new sd::LongType[4];
+  sd::LongType *permute = new sd::LongType[4 + SD_SHAPE_ALLOC_PADDING];
   permute[0] = 2;
   permute[1] = 3;
   permute[2] = 1;
@@ -193,6 +194,7 @@ DECLARE_SHAPE_FN(conv2d) {
   delete[] second;
   delete[] permute;
   auto ret = ConstantShapeHelper::getInstance().createFromExisting(outputShapeInfo);
+  delete[] outputShapeInfo;
   return SHAPELIST(ret);
 }
 
@@ -316,14 +318,14 @@ DECLARE_SHAPE_FN(conv2d_bp) {
 
   }
 
-  sd::LongType * strideCalcShapeGradI = new sd::LongType[shape::rank(inputShapeInfo)];
+  sd::LongType * strideCalcShapeGradI = new sd::LongType[shape::rank(inputShapeInfo) + SD_SHAPE_ALLOC_PADDING];
   strideCalcShapeGradI[0] = iC;
   strideCalcShapeGradI[1] = bS;
   strideCalcShapeGradI[2] = iH;
   strideCalcShapeGradI[3] = iW;
 
-  sd::LongType *strides = new sd::LongType[4];
-  sd::LongType *permute = new sd::LongType[4];
+  sd::LongType *strides = new sd::LongType[4 + SD_SHAPE_ALLOC_PADDING];
+  sd::LongType *permute = new sd::LongType[4 + SD_SHAPE_ALLOC_PADDING];
   permute[0] = 1;
   permute[1] = isNCHW ? 0 : 2;
   permute[2] = isNCHW ? 2 : 3;
@@ -339,9 +341,9 @@ DECLARE_SHAPE_FN(conv2d_bp) {
                                                   false);
   shape::setStride(shapeDesc,strides);
   auto gradIshapeInfo = ConstantShapeHelper::getInstance().createFromExisting(shapeDesc);
-  RELEASE(strides,block.getWorkspace());
-  RELEASE(strideCalcShapeGradI,block.getWorkspace());
-  RELEASE(permute,block.getWorkspace());
+  delete[] strides;
+  delete[] strideCalcShapeGradI;
+  delete[] permute;
   auto gradWshapeInfo =
       ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, gradOShapeInfo, false, block.getWorkspace());
   if (biasShapeInfo) {

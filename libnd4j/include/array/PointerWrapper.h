@@ -40,6 +40,27 @@ class SD_LIB_EXPORT PointerWrapper {
   PointerWrapper() = default;
   ~PointerWrapper();
 
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns. PointerWrapper objects are small (~32 bytes) and heavily
+  // allocated during shape trie population — any adjacent overrun
+  // corrupts the next chunk metadata → SIGABRT on free().
+  static void* operator new(size_t size) {
+    return ::operator new(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
+    return ::operator new(size + 4096, tag);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    ::operator delete(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
+    ::operator delete(ptr, tag);
+  }
+#endif
+
   void *pointer() const;
 
   template <typename T>

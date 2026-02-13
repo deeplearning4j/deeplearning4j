@@ -70,6 +70,8 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
   if (intArgs[0] < 0) intArgs[0] += inputRank;
 
   // input validation
+  REQUIRE_TRUE(intArgs[0] >= 0, 0,
+               "GATHER op: input axis must be non-negative after normalization, but got %i!", intArgs[0]);
   REQUIRE_TRUE(intArgs[0] < inputRank, 0,
                "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!",
                intArgs[0], inputRank);
@@ -127,6 +129,8 @@ DECLARE_SHAPE_FN(gather) {
   sd::LongType inputRank = shape::rank(inputShapeInfo);
   if (axis < 0) axis += inputRank;
 
+  REQUIRE_TRUE(axis >= 0, 0,
+               "GATHER op: input axis must be non-negative after normalization, but got %i!", axis);
   REQUIRE_TRUE(axis < inputRank, 0,
                "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis,
                inputRank);

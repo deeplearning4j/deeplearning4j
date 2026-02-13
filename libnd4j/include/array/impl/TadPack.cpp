@@ -38,7 +38,7 @@ TadPack::TadPack( ConstantShapeBuffer *shapes,
   _numTads = numTads;
   _dimensionsLength = dimLength;
   if(dimensions != nullptr) {
-    _dimensions = new LongType[dimLength];
+    _dimensions = new LongType[dimLength + SD_SHAPE_ALLOC_PADDING];
     for(int i = 0; i < dimLength; i++) {
       _dimensions[i] = dimensions[i];
     }

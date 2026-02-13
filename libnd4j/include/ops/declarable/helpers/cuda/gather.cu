@@ -103,7 +103,7 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const LongType* xSh
 
 //////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const LongType* xShapeInfo,
+SD_KERNEL static void gatherCuda(const int numOfSubArrs, const int numInputTads, const void* vx, const LongType* xShapeInfo,
                                  const LongType* xOffsets, const void* vy, const LongType* yShapeInfo, void* vz,
                                  const LongType* zShapeInfo, const LongType* zOffsets) {
   const Y* y = reinterpret_cast<const Y*>(vy);
@@ -139,6 +139,10 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
 
       // Get the gather index directly from y - this is the TAD index to gather from input
       LongType gatherIdx = y[yIndex];
+
+      // Bounds-clamp to prevent OOB access on xOffsets array
+      if (gatherIdx < 0) gatherIdx = 0;
+      if (gatherIdx >= numInputTads) gatherIdx = numInputTads - 1;
 
       // Use gather index directly to look up input TAD offset
       // Use i directly for output TAD offset (output TADs are in order)
@@ -181,12 +185,13 @@ SD_HOST static void gatherCudaLinear(const cudaStream_t* stream, const void* vx,
 
 //////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int numOfSubArrs, const void* vx,
+SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int numOfSubArrs, const int numInputTads,
+                                       const void* vx,
                                        const LongType* xShapeInfo, const LongType* xOffsets, const void* vy,
                                        const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                                        const LongType* zOffsets) {
   dim3 gatherLinear = getGatherLinear(numOfSubArrs);
-  gatherCuda<X, Y><<<gatherLinear.y, gatherLinear.x, gatherLinear.z, *stream>>>(numOfSubArrs, vx, xShapeInfo, xOffsets, vy,
+  gatherCuda<X, Y><<<gatherLinear.y, gatherLinear.x, gatherLinear.z, *stream>>>(numOfSubArrs, numInputTads, vx, xShapeInfo, xOffsets, vy,
                                                                         yShapeInfo, vz, zShapeInfo, zOffsets);
   DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream),"gatherCudaLauncher failed");
 
@@ -251,6 +256,8 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
         *inSubArrOffsets(nullptr);
     input->getSubArrShapeAndOffsets({axis}, inSubArrShapeInfo, inSubArrOffsets);
     output->getSubArrShapeAndOffsets(dimsOut, outSubArrShapeInfo, outSubArrOffsets);
+    // Number of input TADs along the gather axis — used for bounds checking in the kernel
+    const int numInputTads = static_cast<int>(input->sizeAt(axis));
     if (output->rankOf() > 1) {
       PointersManager manager(context, "gather");
       auto xShapeInfo = reinterpret_cast<LongType*>(
@@ -265,7 +272,7 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
       NDArray::prepareSpecialUse({output}, {input, pIndices});
       BUILD_DOUBLE_SELECTOR(
           input->dataType(), pIndices->dataType(), gatherCudaLauncher,
-          (context->getCudaStream(), numOfSubArrs, input->specialBuffer(), xShapeInfo, xOffsets,
+          (context->getCudaStream(), numOfSubArrs, numInputTads, input->specialBuffer(), xShapeInfo, xOffsets,
            pIndices->specialBuffer(), pIndices->specialShapeInfo(), output->specialBuffer(), zShapeInfo, zOffsets),
           SD_COMMON_TYPES, SD_INDEXING_TYPES);
       NDArray::registerSpecialUse({output}, {input, pIndices});
