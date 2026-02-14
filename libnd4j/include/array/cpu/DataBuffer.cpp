@@ -29,11 +29,17 @@
 
 namespace sd {
 
+// Definition of thread-local graph execution flag (declared in DataBuffer.h)
+// Set during graph segment execution (oneDNN Graph, ACL Dynamic Fusion).
+thread_local bool tl_graphExecutionActive = false;
+
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
-    ALLOCATE(newBuffer, _workspace, size, int8_t);
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
+    size_t allocSize = size + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
+    ALLOCATE(newBuffer, _workspace, allocSize, int8_t);
 #if defined(SD_GCC_FUNCTRACE)
     // Track the new allocation before swapping pointers
     sd::array::DataBufferLifecycleTracker::getInstance().recordAllocation(
@@ -54,7 +60,7 @@ void DataBuffer::expand(const uint64_t size) {
 
     _primaryBuffer = newBuffer;
     _lenInBytes = size;
-    _primaryAllocBytes = size;
+    _primaryAllocBytes = allocSize;
     _isOwnerPrimary = true;
   }
 }

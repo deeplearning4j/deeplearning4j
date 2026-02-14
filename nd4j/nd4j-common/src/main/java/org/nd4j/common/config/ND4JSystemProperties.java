@@ -412,6 +412,193 @@ public class ND4JSystemProperties {
      */
     public final static String SAMEDIFF_WORKSPACE_SIZE = "nd4j.samediff.workspace.size";
 
+    // ---- DynamicShapePlan (DSP) execution properties ----
+
+    /**
+     * Applicability: DynamicShapePlan-based inference (autoregressive decoding)<br>
+     * Description: Controls how often the CUDA memory pool is trimmed during DSP execution.
+     * During steady-state decode, the pool reuses freed memory without trimming. Trimming every
+     * step wastes time on cudaStreamSynchronize + cudaMemPoolTrimTo. Set to N to trim every
+     * N steps. Step 0/1 always trims (prefill-to-decode transition).
+     * <p>
+     * Default: 10
+     */
+    public static final String DSP_TRIM_INTERVAL = "nd4j.dsp.trimInterval";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Per-slot byte threshold for selective cache eviction. When total cached
+     * slot memory exceeds 512MB (after prefill), only arrays larger than this threshold are
+     * evicted. Small utility arrays (scalars, shapes, small intermediates) survive and serve
+     * decode step 1 with O(1) cache hits.
+     * <p>
+     * Default: 65536 (64KB)
+     */
+    public static final String DSP_PER_SLOT_EVICTION_THRESHOLD = "nd4j.dsp.perSlotEvictionThreshold";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Byte threshold below which freePendingBuffers uses a fast path that skips
+     * the expensive GPU address dedup and live view range check. For decode steps with tiny
+     * intermediates (seq_len=1), aliasing is extremely unlikely and the full dedup overhead
+     * is unnecessary.
+     * <p>
+     * Default: 10485760 (10MB)
+     */
+    public static final String DSP_FAST_CLOSE_THRESHOLD = "nd4j.dsp.fastCloseThreshold";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Flush interval for pending buffer close during execution. Every N ops,
+     * dead intermediates are freed to reduce peak GPU memory.
+     * <p>
+     * Default: 100
+     */
+    public static final String DSP_FLUSH_INTERVAL = "nd4j.dsp.flushInterval";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Byte threshold for memory-pressure flush during DSP execution.
+     * When accumulated dead intermediate bytes exceed this threshold, flush immediately
+     * instead of waiting for the op-count interval. Prevents multi-GB intermediate
+     * accumulation between flush intervals.
+     * <p>
+     * Default: 256MB (268435456)
+     */
+    public static final String DSP_FLUSH_BYTE_THRESHOLD = "nd4j.dsp.flushByteThreshold";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, force single-GPU mode for DSP execution even when multiple
+     * CUDA devices are available.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_SINGLE_GPU = "nd4j.dsp.singleGpu";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference with non-P2P multi-GPU<br>
+     * Description: Fraction of available memory to use as budget for non-P2P secondary GPUs.
+     * Non-P2P devices use host-staged transfers which may need extra headroom.
+     * <p>
+     * Default: 1.0 (use full available memory)
+     */
+    public static final String DSP_NON_P2P_BUDGET_FRACTION = "nd4j.dsp.nonP2pBudgetFraction";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, serialize parallel worker op execution (only one worker thread
+     * executes at a time). For debugging concurrent CUDA issues.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_SERIAL_EXEC = "nd4j.dsp.serialExec";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, enable parallel worker execution across multiple devices
+     * even when latent heap corruption is suspected.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_FORCE_PARALLEL = "nd4j.dsp.forceParallel";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Growth factor for intermediate slot cache allocation. When a slot cache miss
+     * occurs, the allocated array is this factor times the required size, so it can serve future
+     * steps without reallocation (e.g., growing KV cache).
+     * <p>
+     * Default: 2.0
+     */
+    public static final String DSP_SLOT_CACHE_GROWTH_FACTOR = "org.nd4j.dsp.slotCacheGrowthFactor";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Maximum size in bytes for the local buffer pool that persists across
+     * execute() calls for array reuse.
+     * <p>
+     * Default: 2147483648 (2GB)
+     */
+    public static final String DSP_POOL_MAX_BYTES = "org.nd4j.dsp.pool.maxBytes";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Enable detailed per-op timing breakdown for DSP execution.
+     * <p>
+     * Default: false
+     */
+    public static final String INFERENCE_TIMING = "org.nd4j.inference.timing";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, tells C++ to skip redundant output shape calculation
+     * (Java pre-computes shapes and passes them to C++ via OpContext).
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_SHAPE_OVERRIDE = "org.nd4j.inference.dynamicShapePlan.shapeOverride";
+
+    /**
+     * Applicability: SameDiff inference<br>
+     * Description: Enable or disable DynamicShapePlan-based execution for autoregressive
+     * inference with dynamic shapes (e.g., growing KV cache).
+     * <p>
+     * Default: true
+     */
+    public static final String DYNAMIC_SHAPE_PLAN_ENABLED = "org.nd4j.inference.dynamicShapePlan";
+
+    /**
+     * Applicability: SameDiff inference<br>
+     * Description: Enable native C++ graph executor for DynamicShapePlan execution.
+     * When enabled, the entire pre-compiled plan is sent to C++ via a single JNI call
+     * instead of dispatching each op individually from Java. Falls back to Java executor
+     * on any failure.
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_NATIVE_EXECUTOR_ENABLED = "nd4j.dsp.nativeExecutor.enabled";
+
+    /**
+     * Applicability: CUDA native executor<br>
+     * Description: Enable or disable CUDA Graphs for the native C++ plan executor.
+     * When enabled, capturable segments of the execution plan are recorded as CUDA graphs
+     * and replayed on subsequent calls, reducing kernel launch overhead.
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_CUDA_GRAPHS_ENABLED = "nd4j.dsp.cudaGraphs.enabled";
+
+    // ---- VLM speculative decoding properties ----
+
+    /**
+     * Applicability: VLM batch generation<br>
+     * Description: Enable or disable n-gram speculative decoding in VLM batch generation.
+     * When enabled, attempts to predict multiple future tokens from n-gram patterns in the
+     * generated sequence, then verifies them in a single forward pass.
+     * <p>
+     * Default: true
+     */
+    public static final String VLM_SPECULATIVE = "nd4j.vlm.speculative";
+
+    /**
+     * Applicability: VLM batch generation (when speculative decoding is enabled)<br>
+     * Description: Size of the n-gram to match when predicting future tokens.
+     * Larger n-grams are more specific but require more context before matching.
+     * <p>
+     * Default: 3
+     */
+    public static final String VLM_SPECULATIVE_NGRAM_SIZE = "nd4j.vlm.speculative.ngramSize";
+
+    /**
+     * Applicability: VLM batch generation (when speculative decoding is enabled)<br>
+     * Description: Maximum number of tokens to speculate in a single attempt.
+     * More tokens can be accepted per step but the verification forward pass is larger.
+     * <p>
+     * Default: 5
+     */
+    public static final String VLM_SPECULATIVE_MAX_TOKENS = "nd4j.vlm.speculative.maxTokens";
+
     private ND4JSystemProperties() {
     }
 }

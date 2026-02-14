@@ -279,7 +279,9 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_BUFFERCHUNKS = 12,
     VT_TOTALBUFFERSIZE = 14,
     VT_EXTERNALDATAFILENAME = 16,
-    VT_ISEXTERNAL = 18
+    VT_ISEXTERNAL = 18,
+    VT_APPENDEDDATAOFFSET = 20,
+    VT_APPENDEDDATALENGTH = 22
   };
   const ::flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const ::flatbuffers::Vector<int64_t> *>(VT_SHAPE);
@@ -305,6 +307,12 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   bool isExternal() const {
     return GetField<uint8_t>(VT_ISEXTERNAL, 0) != 0;
   }
+  int64_t appendedDataOffset() const {
+    return GetField<int64_t>(VT_APPENDEDDATAOFFSET, 0);
+  }
+  int64_t appendedDataLength() const {
+    return GetField<int64_t>(VT_APPENDEDDATALENGTH, 0);
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_SHAPE) &&
@@ -321,6 +329,8 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            verifier.VerifyVector(externalDataFilename()) &&
            verifier.VerifyVectorOfStrings(externalDataFilename()) &&
            VerifyField<uint8_t>(verifier, VT_ISEXTERNAL, 1) &&
+           VerifyField<int64_t>(verifier, VT_APPENDEDDATAOFFSET, 8) &&
+           VerifyField<int64_t>(verifier, VT_APPENDEDDATALENGTH, 8) &&
            verifier.EndTable();
   }
 };
@@ -353,6 +363,12 @@ struct FlatArrayBuilder {
   void add_isExternal(bool isExternal) {
     fbb_.AddElement<uint8_t>(FlatArray::VT_ISEXTERNAL, static_cast<uint8_t>(isExternal), 0);
   }
+  void add_appendedDataOffset(int64_t appendedDataOffset) {
+    fbb_.AddElement<int64_t>(FlatArray::VT_APPENDEDDATAOFFSET, appendedDataOffset, 0);
+  }
+  void add_appendedDataLength(int64_t appendedDataLength) {
+    fbb_.AddElement<int64_t>(FlatArray::VT_APPENDEDDATALENGTH, appendedDataLength, 0);
+  }
   explicit FlatArrayBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -373,8 +389,12 @@ inline ::flatbuffers::Offset<FlatArray> CreateFlatArray(
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<graph::BufferChunk>>> bufferChunks = 0,
     int64_t totalBufferSize = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> externalDataFilename = 0,
-    bool isExternal = false) {
+    bool isExternal = false,
+    int64_t appendedDataOffset = 0,
+    int64_t appendedDataLength = 0) {
   FlatArrayBuilder builder_(_fbb);
+  builder_.add_appendedDataLength(appendedDataLength);
+  builder_.add_appendedDataOffset(appendedDataOffset);
   builder_.add_totalBufferSize(totalBufferSize);
   builder_.add_externalDataFilename(externalDataFilename);
   builder_.add_bufferChunks(bufferChunks);
@@ -395,7 +415,9 @@ inline ::flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
     const std::vector<::flatbuffers::Offset<graph::BufferChunk>> *bufferChunks = nullptr,
     int64_t totalBufferSize = 0,
     const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *externalDataFilename = nullptr,
-    bool isExternal = false) {
+    bool isExternal = false,
+    int64_t appendedDataOffset = 0,
+    int64_t appendedDataLength = 0) {
   auto shape__ = shape ? _fbb.CreateVector<int64_t>(*shape) : 0;
   auto buffer__ = buffer ? _fbb.CreateVector<int8_t>(*buffer) : 0;
   auto bufferChunks__ = bufferChunks ? _fbb.CreateVector<::flatbuffers::Offset<graph::BufferChunk>>(*bufferChunks) : 0;
@@ -409,7 +431,9 @@ inline ::flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
       bufferChunks__,
       totalBufferSize,
       externalDataFilename__,
-      isExternal);
+      isExternal,
+      appendedDataOffset,
+      appendedDataLength);
 }
 
 inline const graph::FlatArray *GetFlatArray(const void *buf) {

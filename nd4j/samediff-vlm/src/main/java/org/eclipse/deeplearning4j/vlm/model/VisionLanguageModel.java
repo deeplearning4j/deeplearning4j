@@ -36,8 +36,11 @@ import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
@@ -164,6 +167,82 @@ public class VisionLanguageModel implements AutoCloseable {
     public static VisionLanguageModel loadSmolDocling(File modelDir) throws IOException {
         MultiPartModelLoader.LoadedModel loaded = MultiPartModelLoader.loadSmolDocling(modelDir);
         return loaded.toVisionLanguageModel();
+    }
+
+    /**
+     * Load a VLM from ONNX model files with automatic SDZ caching.
+     *
+     * <p>On the first call, imports all ONNX models in parallel and caches
+     * the results as SDZ files alongside the ONNX files. On subsequent calls,
+     * loads directly from the cached SDZ files, reducing load time from
+     * ~5 minutes to ~30 seconds.</p>
+     *
+     * @param visionEncoderOnnx path to the vision encoder ONNX file
+     * @param decoderOnnx path to the decoder ONNX file
+     * @param embedTokensOnnx path to the embed tokens ONNX file
+     * @param tokenizerFile path to the tokenizer.json file
+     * @return the loaded model with workspace mode enabled
+     * @throws IOException if loading fails
+     */
+    public static VisionLanguageModel fromOnnx(
+            File visionEncoderOnnx,
+            File decoderOnnx,
+            File embedTokensOnnx,
+            File tokenizerFile) throws IOException {
+        return fromOnnx(visionEncoderOnnx, decoderOnnx, embedTokensOnnx, tokenizerFile,
+                8 * 1024 * 1024);
+    }
+
+    /**
+     * Load a VLM from ONNX model files with automatic SDZ caching and configurable workspace.
+     *
+     * @param visionEncoderOnnx path to the vision encoder ONNX file
+     * @param decoderOnnx path to the decoder ONNX file
+     * @param embedTokensOnnx path to the embed tokens ONNX file
+     * @param tokenizerFile path to the tokenizer.json file
+     * @param workspaceSize native workspace size in bytes (0 to disable)
+     * @return the loaded model
+     * @throws IOException if loading fails
+     */
+    public static VisionLanguageModel fromOnnx(
+            File visionEncoderOnnx,
+            File decoderOnnx,
+            File embedTokensOnnx,
+            File tokenizerFile,
+            long workspaceSize) throws IOException {
+        long start = System.currentTimeMillis();
+
+        // Load all 3 models in parallel with SDZ caching
+        SameDiff[] models = OnnxModelCache.importAllWithCache(
+                visionEncoderOnnx.getAbsolutePath(),
+                decoderOnnx.getAbsolutePath(),
+                embedTokensOnnx.getAbsolutePath()
+        );
+
+        SameDiff visionEncoder = models[0];
+        SameDiff decoder = models[1];
+        SameDiff embedTokens = models[2];
+
+        // Enable native workspace for C++ op buffer safety
+        if (workspaceSize > 0) {
+            visionEncoder.enableWorkspaceMode(workspaceSize);
+            decoder.enableWorkspaceMode(workspaceSize);
+            embedTokens.enableWorkspaceMode(workspaceSize);
+        }
+
+        // Load tokenizer
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile);
+
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("VLM loaded from ONNX in {}ms (with caching)", elapsed);
+
+        return VisionLanguageModel.builder()
+                .visionEncoder(visionEncoder)
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .imagePreprocessor(VLMImagePreprocessor.defaultPreprocessor())
+                .build();
     }
 
     /**
@@ -560,6 +639,16 @@ public class VisionLanguageModel implements AutoCloseable {
         Map<String, INDArray> kvCache = useKvCache ? new HashMap<>() : null;
         long pastSeqLen = 0;
 
+        // N-gram speculative decoding: predict future tokens from patterns in generated sequence.
+        // SmolDocling outputs repetitive DocTags — ideal for n-gram speculation.
+        boolean speculativeEnabled = Boolean.parseBoolean(
+                System.getProperty(ND4JSystemProperties.VLM_SPECULATIVE, "true")) && useKvCache;
+        int ngramSize = Integer.getInteger(ND4JSystemProperties.VLM_SPECULATIVE_NGRAM_SIZE, 3);
+        int maxSpecTokens = Integer.getInteger(ND4JSystemProperties.VLM_SPECULATIVE_MAX_TOKENS, 5);
+        NgramSpeculator speculator = speculativeEnabled ? new NgramSpeculator(ngramSize, maxSpecTokens) : null;
+        int totalSpeculativeAccepted = 0;
+        int totalSpeculativeAttempts = 0;
+
         // Autoregressive generation loop
         for (int step = 0; step < maxNewTokens; step++) {
             // Build decoder inputs
@@ -597,11 +686,14 @@ public class VisionLanguageModel implements AutoCloseable {
             }
 
             // Run decoder
+            long t0 = System.nanoTime();
             Map<String, INDArray> outputs = decoder.output(decoderInputMap,
                     allOutputNames.toArray(new String[0]));
             INDArray logits = outputs.get(allOutputNames.get(0));
+            long tDecodeNs = System.nanoTime() - t0;
 
             // Update KV cache
+            long t1 = System.nanoTime();
             if (useKvCache) {
                 for (String presentName : kvNames.keyNames) {
                     INDArray pv = outputs.get(presentName);
@@ -618,6 +710,7 @@ public class VisionLanguageModel implements AutoCloseable {
                     }
                 }
             }
+            long tKvCacheNs = System.nanoTime() - t1;
 
             // Get logits for last position: [batchSize, seqLen, vocab] -> [batchSize, vocab]
             INDArray lastLogits;
@@ -629,6 +722,7 @@ public class VisionLanguageModel implements AutoCloseable {
             }
 
             // Sample next tokens for all sequences
+            long t2 = System.nanoTime();
             int[] nextTokenIds;
             if (!doSample || temperature <= 0) {
                 nextTokenIds = SamplerUtils.argmaxBatch(lastLogits);
@@ -637,25 +731,160 @@ public class VisionLanguageModel implements AutoCloseable {
                 INDArray probs = SamplerUtils.softmax(scaledLogits);
                 nextTokenIds = SamplerUtils.multinomialSampleBatch(probs, new java.util.Random());
             }
+            long tSampleNs = System.nanoTime() - t2;
 
             // Record tokens
             long stepNanos = System.nanoTime() - startNanos;
             state.recordTokens(nextTokenIds, stepNanos);
 
+            // N-gram speculative decoding: after sufficient context, attempt to predict
+            // and verify multiple future tokens in a single forward pass.
+            int speculativeAccepted = 0;
+            if (speculator != null && step >= ngramSize && useKvCache && !state.allFinished()) {
+                NgramSpeculator.SpeculationResult specResult = speculator.speculateBatch(
+                        state.getGeneratedTokens(), state.getFinished());
+                if (specResult.hasSpeculation()) {
+                    totalSpeculativeAttempts++;
+                    int K = specResult.getCommonLength();
+                    int[][] specTokens = specResult.getPerSequenceTokens();
+
+                    // Build multi-token embeddings: [batchSize, K, hidden]
+                    // Each sequence gets its K speculative tokens embedded.
+                    // Advance pastSeqLen past the greedy step's tokens (will be used
+                    // for position_ids in the verification pass).
+                    long specPastSeqLen = pastSeqLen + currentSeqLen;
+                    List<INDArray> specEmbedList = new ArrayList<>();
+                    for (int k = 0; k < K; k++) {
+                        int[] tokensAtK = new int[batchSize];
+                        for (int b = 0; b < batchSize; b++) {
+                            if (state.isFinished(b) || specTokens[b].length <= k) {
+                                tokensAtK[b] = tokenizer.getEosTokenId();
+                            } else {
+                                tokensAtK[b] = specTokens[b][k];
+                            }
+                        }
+                        specEmbedList.add(embedTextBatch(tokensAtK, batchSize));
+                    }
+                    // Concat along seq dim: [batchSize, K, hidden]
+                    INDArray specEmbeddings = Nd4j.concat(1, specEmbedList.toArray(new INDArray[0]));
+                    for (INDArray emb : specEmbedList) {
+                        if (emb != specEmbeddings) SameDiffMemoryUtils.safeClose(emb);
+                    }
+
+                    // Run verification forward pass with K tokens
+                    long currentSpecSeqLen = specEmbeddings.shape()[1];
+                    long totalSpecSeqLen = currentSpecSeqLen + specPastSeqLen;
+                    Map<String, INDArray> specDecoderInputMap = new HashMap<>();
+                    for (String inputName : decoderInputMap.keySet()) {
+                        if (inputName.equals("inputs_embeds")) {
+                            specDecoderInputMap.put(inputName, specEmbeddings);
+                        } else if (inputName.equals("attention_mask")) {
+                            specDecoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, batchSize, totalSpecSeqLen));
+                        } else if (inputName.equals("_causal_mask")) {
+                            specDecoderInputMap.put(inputName, DecoderUtils.buildCausalMask(batchSize, currentSpecSeqLen, totalSpecSeqLen));
+                        } else if (inputName.equals("position_ids")) {
+                            INDArray posIds = Nd4j.arange(specPastSeqLen, specPastSeqLen + currentSpecSeqLen)
+                                    .reshape(1, currentSpecSeqLen).castTo(DataType.LONG);
+                            specDecoderInputMap.put(inputName, Nd4j.tile(posIds, batchSize, 1));
+                        } else if (inputName.startsWith("past_key_values.")) {
+                            // Reuse KV cache from the greedy step
+                            String presentName = inputName.replace("past_key_values", "present");
+                            if (kvCache.containsKey(presentName)) {
+                                specDecoderInputMap.put(inputName, kvCache.get(presentName));
+                            }
+                        }
+                    }
+
+                    Map<String, INDArray> specOutputs = decoder.output(specDecoderInputMap,
+                            allOutputNames.toArray(new String[0]));
+                    INDArray specLogits = specOutputs.get(allOutputNames.get(0));
+
+                    // Verify speculation for sequence 0 (representative for greedy decoding)
+                    // specLogits shape: [batchSize, K, vocabSize]
+                    if (specLogits.rank() == 3 && specLogits.size(1) == K) {
+                        // Extract logits for first batch element: [K, vocab]
+                        float[][] logitsPerPos = new float[K][];
+                        for (int k = 0; k < K; k++) {
+                            INDArray posLogits = specLogits.get(NDArrayIndex.point(0),
+                                    NDArrayIndex.point(k), NDArrayIndex.all());
+                            logitsPerPos[k] = posLogits.toFloatVector();
+                        }
+
+                        int accepted = NgramSpeculator.verifySpeculation(specTokens[0], logitsPerPos);
+                        if (accepted > 0) {
+                            // Accept verified tokens for all sequences
+                            for (int a = 0; a < accepted; a++) {
+                                int[] acceptedTokenIds = new int[batchSize];
+                                for (int b = 0; b < batchSize; b++) {
+                                    if (state.isFinished(b) || specTokens[b].length <= a) {
+                                        acceptedTokenIds[b] = tokenizer.getEosTokenId();
+                                    } else {
+                                        acceptedTokenIds[b] = specTokens[b][a];
+                                    }
+                                }
+                                state.recordTokens(acceptedTokenIds, System.nanoTime() - startNanos);
+                                step++; // Count each accepted speculative token as a step
+                            }
+                            speculativeAccepted = accepted;
+                            totalSpeculativeAccepted += accepted;
+                        }
+
+                        // Update KV cache from speculative pass
+                        if (useKvCache) {
+                            for (String presentName : kvNames.keyNames) {
+                                INDArray pv = specOutputs.get(presentName);
+                                if (pv != null) {
+                                    INDArray old = kvCache.put(presentName, pv);
+                                    SameDiffMemoryUtils.safeClose(old);
+                                }
+                            }
+                            for (String presentName : kvNames.valueNames) {
+                                INDArray pv = specOutputs.get(presentName);
+                                if (pv != null) {
+                                    INDArray old = kvCache.put(presentName, pv);
+                                    SameDiffMemoryUtils.safeClose(old);
+                                }
+                            }
+                            // Advance pastSeqLen past both the greedy token and speculative tokens
+                            pastSeqLen = specPastSeqLen + currentSpecSeqLen;
+                        }
+                    }
+                    SameDiffMemoryUtils.safeClose(specEmbeddings);
+                    decoder.clearPlaceholders(false);
+
+                    if (speculativeAccepted > 0) {
+                        log.debug("Step {}: speculation accepted {}/{} tokens", step, speculativeAccepted, K);
+                    }
+                }
+            }
+
             // Check if all sequences are done
             if (state.allFinished()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Step {}: decode={}ms, kvCache={}ms, sample={}ms (finished)",
+                            step, tDecodeNs / 1_000_000, tKvCacheNs / 1_000_000, tSampleNs / 1_000_000);
+                }
                 break;
             }
 
             // Prepare embeddings for next step
+            long t3 = System.nanoTime();
             if (useKvCache) {
-                pastSeqLen += currentSeqLen;
+                if (speculativeAccepted == 0) {
+                    pastSeqLen += currentSeqLen;
+                }
 
                 // Embed next tokens for all sequences in one batch call: [batchSize, 1, hidden]
                 INDArray prevEmbeddings = currentEmbeddings;
                 int[] batchTokenIds = new int[batchSize];
                 for (int i = 0; i < batchSize; i++) {
-                    batchTokenIds[i] = state.isFinished(i) ? tokenizer.getEosTokenId() : nextTokenIds[i];
+                    if (state.isFinished(i)) {
+                        batchTokenIds[i] = tokenizer.getEosTokenId();
+                    } else {
+                        // Use last accepted token (either greedy or last speculative)
+                        List<Integer> seqTokens = state.getTokensForSequence(i);
+                        batchTokenIds[i] = seqTokens.get(seqTokens.size() - 1);
+                    }
                 }
                 currentEmbeddings = embedTextBatch(batchTokenIds, batchSize);
                 if (prevEmbeddings != batchedImageEmbeddings) {
@@ -671,6 +900,27 @@ public class VisionLanguageModel implements AutoCloseable {
                 INDArray batchedNewTokenEmbeds = embedTextBatch(batchTokenIds, batchSize);
                 currentEmbeddings = Nd4j.concat(1, currentEmbeddings, batchedNewTokenEmbeds);
             }
+            long tEmbedNs = System.nanoTime() - t3;
+
+            // After prefill (step 0), reassign devices with fresh memory budgets.
+            // Vision encoder may have been freed, making secondary devices available.
+            if (step == 0 && useKvCache) {
+                decoder.reassignDynamicShapePlanDevices();
+            }
+
+            // Per-step profiling (every 10 steps or on step 0)
+            if (step % 10 == 0 && log.isInfoEnabled()) {
+                log.info("Step {}: decode={}ms, kvCache={}ms, sample={}ms, embed={}ms",
+                        step, tDecodeNs / 1_000_000, tKvCacheNs / 1_000_000,
+                        tSampleNs / 1_000_000, tEmbedNs / 1_000_000);
+            }
+        }
+
+        // Log speculative decoding summary
+        if (speculator != null && totalSpeculativeAttempts > 0) {
+            log.info("Speculative decoding: {}/{} attempts accepted {} total tokens (avg {}/attempt)",
+                    totalSpeculativeAttempts, totalSpeculativeAttempts, totalSpeculativeAccepted,
+                    totalSpeculativeAttempts > 0 ? String.format("%.1f", (double) totalSpeculativeAccepted / totalSpeculativeAttempts) : "0");
         }
 
         // Mark any remaining sequences as max tokens

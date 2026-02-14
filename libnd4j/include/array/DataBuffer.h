@@ -34,6 +34,16 @@
 #include <mutex>
 namespace sd {
 
+/**
+ * Thread-local flag indicating graph execution/capture is in progress.
+ * When true, syncToPrimary() skips D2H transfers — data must stay
+ * on the compute device during graph execution. Applies to all graph
+ * backends: CUDA Graphs (capture/replay), oneDNN Graph, and ACL
+ * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
+ * execution, cleared when execution completes or is aborted.
+ */
+SD_LIB_EXPORT extern thread_local bool tl_graphExecutionActive;
+
 class SD_LIB_EXPORT DataBuffer {
  private:
   // Magic number for validity checking (pattern from DirectShapeTrie validation)
@@ -262,19 +272,19 @@ class SD_LIB_EXPORT DataBuffer {
   // chunk metadata → SIGABRT on free(). Adding 4KB padding keeps the
   // next chunk's header safely out of reach.
   static void* operator new(size_t size) {
-    return ::operator new(size + 4096);
+    return std::malloc(size + 4096);
   }
 #ifndef __JAVACPP_HACK__
-  static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return ::operator new(size + 4096, tag);
+  static void* operator new(size_t size, const std::nothrow_t&) noexcept {
+    return std::malloc(size + 4096);
   }
 #endif
   static void operator delete(void* ptr) noexcept {
-    ::operator delete(ptr);
+    std::free(ptr);
   }
 #ifndef __JAVACPP_HACK__
-  static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    ::operator delete(ptr, tag);
+  static void operator delete(void* ptr, const std::nothrow_t&) noexcept {
+    std::free(ptr);
   }
 #endif
 };

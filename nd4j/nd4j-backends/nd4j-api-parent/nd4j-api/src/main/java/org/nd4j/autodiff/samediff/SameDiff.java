@@ -132,6 +132,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     private final Map<Set<String>, DynamicShapePlan> dynamicShapePlanCache = new ConcurrentHashMap<>();
 
+
     @Getter
     private Map<String, SameDiff> sameDiffFunctionInstances;
 
@@ -4114,6 +4115,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public void cacheDynamicShapePlan(Set<String> outputSet, DynamicShapePlan plan) {
         dynamicShapePlanCache.put(outputSet, plan);
+    }
+
+
+    /**
+     * Re-run device assignment on all cached DynamicShapePlans with fresh memory budgets.
+     * Call after memory-intensive phases (e.g., vision encoder) complete to redistribute
+     * ops to secondary devices that now have more free memory.
+     */
+    public void reassignDynamicShapePlanDevices() {
+        for (DynamicShapePlan plan : dynamicShapePlanCache.values()) {
+            plan.reassignDevices();
+        }
     }
 
     /**

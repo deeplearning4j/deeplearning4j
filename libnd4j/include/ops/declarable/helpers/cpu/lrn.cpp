@@ -51,8 +51,12 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
   const sd::LongType* inTadOffsets = inTadPack->primaryOffsets();
   const sd::LongType* outTadOffsets = outTadPack->primaryOffsets();
 
-  const sd::LongType inTadEws = shape::elementWiseStride(inTadPack->primaryShapeInfo());
-  const sd::LongType outTadEws = shape::elementWiseStride(outTadPack->primaryShapeInfo());
+  const sd::LongType inTadRank = shape::rank(inTadPack->primaryShapeInfo());
+  const sd::LongType outTadRank = shape::rank(outTadPack->primaryShapeInfo());
+  const sd::LongType* inTadShape = shape::shapeOf(inTadPack->primaryShapeInfo());
+  const sd::LongType* outTadShape = shape::shapeOf(outTadPack->primaryShapeInfo());
+  const sd::LongType* inTadStride = shape::stride(inTadPack->primaryShapeInfo());
+  const sd::LongType* outTadStride = shape::stride(outTadPack->primaryShapeInfo());
 
   const T* inBuff = reinterpret_cast<T*>(input->buffer());
   T* outBuff = reinterpret_cast<T*>(output->buffer());
@@ -60,78 +64,67 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
   const T tbias = static_cast<T>(bias);
   const T tbeta = static_cast<T>(beta);
 
-  if (inTadEws == 1 && outTadEws == 1) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        const T* x = inBuff + inTadOffsets[i];
-        T* y = outBuff + outTadOffsets[i];
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) {
+      const T* x = inBuff + inTadOffsets[i];
+      T* y = outBuff + outTadOffsets[i];
 
-        T prev = static_cast<T>(0);
+      T prev = static_cast<T>(0);
 
-        // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
-        // we store each squared sum in corresponding element of y array
-        for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::LongType last = depth + j + 1;
-          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
+      // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+      // we store each squared sum in corresponding element of y array
+      for (sd::LongType j = 0; j < tadLen; ++j) {
+        const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+        const sd::LongType last = depth + j + 1;
+        const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
-          if (j == 0) {
-            for (sd::LongType s = begin; s < end; ++s) prev = prev + x[s] * x[s];
-            y[j] = prev;
-          } else if (begin == 0 && last <= tadLen)
-            y[j] = prev + x[end - 1] * x[end - 1];
-          else if (begin > 0 && last <= tadLen)
-            y[j] = prev + x[end - 1] * x[end - 1] - x[begin - 1] * x[begin - 1];
-          else if (begin > 0 && last > tadLen)
-            y[j] = prev - x[begin - 1] * x[begin - 1];
-          else
-            y[j] = prev;
+        sd::LongType coords[SD_MAX_RANK];
+        sd::LongType inOff, outOff;
+        INDEX2COORDS(j, inTadRank, inTadShape, coords);
+        COORDS2INDEX(inTadRank, inTadStride, coords, inOff);
+        COORDS2INDEX(outTadRank, outTadStride, coords, outOff);
 
-          if (j != 0) prev = y[j];
-
-          y[j] = x[j] / sd::math::sd_pow<T, T, T>(tbias + alpha * prev, tbeta);
+        if (j == 0) {
+          for (sd::LongType s = begin; s < end; ++s) {
+            sd::LongType sCoords[SD_MAX_RANK];
+            sd::LongType sOff;
+            INDEX2COORDS(s, inTadRank, inTadShape, sCoords);
+            COORDS2INDEX(inTadRank, inTadStride, sCoords, sOff);
+            prev = prev + x[sOff] * x[sOff];
+          }
+          y[outOff] = prev;
+        } else if (begin == 0 && last <= tadLen) {
+          sd::LongType eCoords[SD_MAX_RANK];
+          sd::LongType eOff;
+          INDEX2COORDS(end - 1, inTadRank, inTadShape, eCoords);
+          COORDS2INDEX(inTadRank, inTadStride, eCoords, eOff);
+          y[outOff] = prev + x[eOff] * x[eOff];
+        } else if (begin > 0 && last <= tadLen) {
+          sd::LongType eCoords[SD_MAX_RANK], bCoords[SD_MAX_RANK];
+          sd::LongType eOff, bOff;
+          INDEX2COORDS(end - 1, inTadRank, inTadShape, eCoords);
+          COORDS2INDEX(inTadRank, inTadStride, eCoords, eOff);
+          INDEX2COORDS(begin - 1, inTadRank, inTadShape, bCoords);
+          COORDS2INDEX(inTadRank, inTadStride, bCoords, bOff);
+          y[outOff] = prev + x[eOff] * x[eOff] - x[bOff] * x[bOff];
+        } else if (begin > 0 && last > tadLen) {
+          sd::LongType bCoords[SD_MAX_RANK];
+          sd::LongType bOff;
+          INDEX2COORDS(begin - 1, inTadRank, inTadShape, bCoords);
+          COORDS2INDEX(inTadRank, inTadStride, bCoords, bOff);
+          y[outOff] = prev - x[bOff] * x[bOff];
+        } else {
+          y[outOff] = prev;
         }
+
+        if (j != 0) prev = y[outOff];
+
+        y[outOff] = x[inOff] / sd::math::sd_pow<T, T, T>(tbias + alpha * prev, tbeta);
       }
-    };
+    }
+  };
 
-    samediff::Threads::parallel_tad(func, 0, numOfTads);
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      for (sd::LongType i = 0; i < numOfTads; ++i) {
-        const T* x = inBuff + inTadOffsets[i];
-        T* y = outBuff + outTadOffsets[i];
-
-        T prev = static_cast<T>(0);
-
-        // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
-        // we store each squared sum in corresponding element of y array
-        for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::LongType last = depth + j + 1;
-          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
-
-          if (j == 0) {
-            for (sd::LongType s = begin; s < end; ++s) prev = prev + x[s * inTadEws] * x[s * inTadEws];
-            y[j * outTadEws] = prev;
-          } else if (begin == 0 && last <= tadLen)
-            y[j * outTadEws] = prev + x[(end - 1) * inTadEws] * x[(end - 1) * inTadEws];
-          else if (begin > 0 && last <= tadLen)
-            y[j * outTadEws] = prev + x[(end - 1) * inTadEws] * x[(end - 1) * inTadEws] -
-                               x[(begin - 1) * inTadEws] * x[(begin - 1) * inTadEws];
-          else if (begin > 0 && last > tadLen)
-            y[j * outTadEws] = prev - x[(begin - 1) * inTadEws] * x[(begin - 1) * inTadEws];
-          else
-            y[j * outTadEws] = prev;
-
-          if (j != 0) prev = y[j * outTadEws];
-
-          y[j * outTadEws] = x[j * inTadEws] / sd::math::sd_pow<T, T, T>(tbias + alpha * prev, tbeta);
-        }
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, numOfTads);
-  }
+  samediff::Threads::parallel_tad(func, 0, numOfTads);
   return sd::Status::OK;
 }
 
@@ -168,8 +161,12 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
   const sd::LongType* inTadOffsets = inTadPack->primaryOffsets();
   const sd::LongType* gradITadOffsets = gradITadPack->primaryOffsets();
 
-  const sd::LongType inTadEws = shape::elementWiseStride(inTadPack->primaryShapeInfo());
-  const sd::LongType gradITadEws = shape::elementWiseStride(gradITadPack->primaryShapeInfo());
+  const sd::LongType inTadRank = shape::rank(inTadPack->primaryShapeInfo());
+  const sd::LongType gradITadRank = shape::rank(gradITadPack->primaryShapeInfo());
+  const sd::LongType* inTadShape = shape::shapeOf(inTadPack->primaryShapeInfo());
+  const sd::LongType* gradITadShape = shape::shapeOf(gradITadPack->primaryShapeInfo());
+  const sd::LongType* inTadStride = shape::stride(inTadPack->primaryShapeInfo());
+  const sd::LongType* gradITadStride = shape::stride(gradITadPack->primaryShapeInfo());
 
   const X* inBuff = reinterpret_cast<X const*>(input.buffer());
   Y* gradIBuff = reinterpret_cast<Y*>(gradI.buffer());
@@ -179,137 +176,139 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
   const Y talpha = static_cast<Y>(alpha);
   const Y coeff = talpha * tbeta;
 
-  if (inTadEws == 1 && gradITadEws == 1) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        const X* x = inBuff + inTadOffsets[i];
-        Y* y = gradIBuff + gradITadOffsets[i];
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) {
+      const X* x = inBuff + inTadOffsets[i];
+      Y* y = gradIBuff + gradITadOffsets[i];
 
-        // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
-        // we store each squared sum in corresponding element of y array
-        for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::LongType last = depth + j + 1;
-          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
+      // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
+      // we store each squared sum in corresponding element of y array
+      for (sd::LongType j = 0; j < tadLen; ++j) {
+        const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+        const sd::LongType last = depth + j + 1;
+        const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
-          if (j == 0) {
-            y[0] = 0;
-            for (sd::LongType s = begin; s < end; ++s) y[0] = y[0] + x[s] * x[s];
-          } else if (begin == 0 && last <= tadLen)
-            y[j] = y[j - 1] + x[end - 1] * x[end - 1];
-          else if (begin > 0 && last <= tadLen)
-            y[j] = y[j - 1] + x[end - 1] * x[end - 1] - x[begin - 1] * x[begin - 1];
-          else if (begin > 0 && last > tadLen)
-            y[j] = y[j - 1] - x[begin - 1] * x[begin - 1];
-          else
-            y[j] = y[j - 1];
-        }
+        sd::LongType jInCoords[SD_MAX_RANK], jGradCoords[SD_MAX_RANK];
+        sd::LongType jInOff, jGradOff;
+        INDEX2COORDS(j, inTadRank, inTadShape, jInCoords);
+        COORDS2INDEX(inTadRank, inTadStride, jInCoords, jInOff);
+        INDEX2COORDS(j, gradITadRank, gradITadShape, jGradCoords);
+        COORDS2INDEX(gradITadRank, gradITadStride, jGradCoords, jGradOff);
 
-        Y* factor = new Y[tadLen];
+        if (j == 0) {
+          y[jGradOff] = 0;
+          for (sd::LongType s = begin; s < end; ++s) {
+            sd::LongType sCoords[SD_MAX_RANK];
+            sd::LongType sOff;
+            INDEX2COORDS(s, inTadRank, inTadShape, sCoords);
+            COORDS2INDEX(inTadRank, inTadStride, sCoords, sOff);
+            y[jGradOff] = y[jGradOff] + x[sOff] * x[sOff];
+          }
+        } else {
+          sd::LongType jm1GradCoords[SD_MAX_RANK];
+          sd::LongType jm1GradOff;
+          INDEX2COORDS(j - 1, gradITadRank, gradITadShape, jm1GradCoords);
+          COORDS2INDEX(gradITadRank, gradITadStride, jm1GradCoords, jm1GradOff);
 
-        Y prev = static_cast<Y>(0);
-        // second loop calculates derivatives using information gained in first loop above
-        for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::LongType last = depth + j + 1;
-          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
-
-          Y init = tbias + talpha * y[j];
-
-          if (j == 0) {
-            for (sd::LongType s = begin; s < end; ++s) {
-              factor[s] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[s], -tbeta - 1);
-              prev = prev + x[s] * factor[s];
-            }
-            y[0] = prev;
-          } else if (begin == 0 && last <= tadLen) {
-            factor[end - 1] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
-            y[j] = prev + x[end - 1] * factor[end - 1];
+          if (begin == 0 && last <= tadLen) {
+            sd::LongType eCoords[SD_MAX_RANK];
+            sd::LongType eOff;
+            INDEX2COORDS(end - 1, inTadRank, inTadShape, eCoords);
+            COORDS2INDEX(inTadRank, inTadStride, eCoords, eOff);
+            y[jGradOff] = y[jm1GradOff] + x[eOff] * x[eOff];
           } else if (begin > 0 && last <= tadLen) {
-            factor[end - 1] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
-            y[j] = prev + x[end - 1] * factor[end - 1] - x[begin - 1] * factor[begin - 1];
-          } else if (begin > 0 && last > tadLen)
-            y[j] = prev - x[begin - 1] * factor[begin - 1];
-          else
-            y[j] = prev;
-
-          if (j != 0) prev = y[j];
-
-          y[j] = factor[j] * init - 2 * x[j] * coeff * prev;
+            sd::LongType eCoords[SD_MAX_RANK], bCoords[SD_MAX_RANK];
+            sd::LongType eOff, bOff;
+            INDEX2COORDS(end - 1, inTadRank, inTadShape, eCoords);
+            COORDS2INDEX(inTadRank, inTadStride, eCoords, eOff);
+            INDEX2COORDS(begin - 1, inTadRank, inTadShape, bCoords);
+            COORDS2INDEX(inTadRank, inTadStride, bCoords, bOff);
+            y[jGradOff] = y[jm1GradOff] + x[eOff] * x[eOff] - x[bOff] * x[bOff];
+          } else if (begin > 0 && last > tadLen) {
+            sd::LongType bCoords[SD_MAX_RANK];
+            sd::LongType bOff;
+            INDEX2COORDS(begin - 1, inTadRank, inTadShape, bCoords);
+            COORDS2INDEX(inTadRank, inTadStride, bCoords, bOff);
+            y[jGradOff] = y[jm1GradOff] - x[bOff] * x[bOff];
+          } else {
+            y[jGradOff] = y[jm1GradOff];
+          }
         }
-
-        delete[] factor;
       }
-    };
 
-    samediff::Threads::parallel_tad(func, 0, numOfTads);
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        const X* x = inBuff + inTadOffsets[i];
-        Y* y = gradIBuff + gradITadOffsets[i];
+      Y* factor = nullptr;
+      ALLOCATE(factor, nullptr, tadLen, Y);
 
-        // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
-        // we store each squared sum in corresponding element of y array
-        for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::LongType last = depth + j + 1;
-          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
+      Y prev = static_cast<Y>(0);
+      // second loop calculates derivatives using information gained in first loop above
+      for (sd::LongType j = 0; j < tadLen; ++j) {
+        const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+        const sd::LongType last = depth + j + 1;
+        const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
 
-          if (j == 0) {
-            y[0] = 0;
-            for (sd::LongType s = begin; s < end; ++s) y[0] = y[0] + x[s * inTadEws] * x[s * inTadEws];
-          } else if (begin == 0 && last <= tadLen)
-            y[j * gradITadEws] = y[(j - 1) * gradITadEws] + x[(end - 1) * inTadEws] * x[(end - 1) * inTadEws];
-          else if (begin > 0 && last <= tadLen)
-            y[j * gradITadEws] = y[(j - 1) * gradITadEws] + x[(end - 1) * inTadEws] * x[(end - 1) * inTadEws] -
-                                 x[(begin - 1) * inTadEws] * x[(begin - 1) * inTadEws];
-          else if (begin > 0 && last > tadLen)
-            y[j * gradITadEws] = y[(j - 1) * gradITadEws] - x[(begin - 1) * inTadEws] * x[(begin - 1) * inTadEws];
-          else
-            y[j * gradITadEws] = y[(j - 1) * gradITadEws];
+        sd::LongType jInCoords[SD_MAX_RANK], jGradCoords[SD_MAX_RANK];
+        sd::LongType jInOff, jGradOff;
+        INDEX2COORDS(j, inTadRank, inTadShape, jInCoords);
+        COORDS2INDEX(inTadRank, inTadStride, jInCoords, jInOff);
+        INDEX2COORDS(j, gradITadRank, gradITadShape, jGradCoords);
+        COORDS2INDEX(gradITadRank, gradITadStride, jGradCoords, jGradOff);
+
+        Y init = tbias + talpha * y[jGradOff];
+
+        if (j == 0) {
+          for (sd::LongType s = begin; s < end; ++s) {
+            sd::LongType sInCoords[SD_MAX_RANK], sGradCoords[SD_MAX_RANK];
+            sd::LongType sInOff, sGradOff;
+            INDEX2COORDS(s, inTadRank, inTadShape, sInCoords);
+            COORDS2INDEX(inTadRank, inTadStride, sInCoords, sInOff);
+            INDEX2COORDS(s, gradITadRank, gradITadShape, sGradCoords);
+            COORDS2INDEX(gradITadRank, gradITadStride, sGradCoords, sGradOff);
+            factor[s] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[sGradOff], -tbeta - 1);
+            prev = prev + x[sInOff] * factor[s];
+          }
+          y[jGradOff] = prev;
+        } else if (begin == 0 && last <= tadLen) {
+          sd::LongType eInCoords[SD_MAX_RANK], eGradCoords[SD_MAX_RANK];
+          sd::LongType eInOff, eGradOff;
+          INDEX2COORDS(end - 1, inTadRank, inTadShape, eInCoords);
+          COORDS2INDEX(inTadRank, inTadStride, eInCoords, eInOff);
+          INDEX2COORDS(end - 1, gradITadRank, gradITadShape, eGradCoords);
+          COORDS2INDEX(gradITadRank, gradITadStride, eGradCoords, eGradOff);
+          factor[end - 1] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[eGradOff], -tbeta - 1);
+          y[jGradOff] = prev + x[eInOff] * factor[end - 1];
+        } else if (begin > 0 && last <= tadLen) {
+          sd::LongType eInCoords[SD_MAX_RANK], eGradCoords[SD_MAX_RANK];
+          sd::LongType eInOff, eGradOff;
+          INDEX2COORDS(end - 1, inTadRank, inTadShape, eInCoords);
+          COORDS2INDEX(inTadRank, inTadStride, eInCoords, eInOff);
+          INDEX2COORDS(end - 1, gradITadRank, gradITadShape, eGradCoords);
+          COORDS2INDEX(gradITadRank, gradITadStride, eGradCoords, eGradOff);
+          sd::LongType bInCoords[SD_MAX_RANK];
+          sd::LongType bInOff;
+          INDEX2COORDS(begin - 1, inTadRank, inTadShape, bInCoords);
+          COORDS2INDEX(inTadRank, inTadStride, bInCoords, bInOff);
+          factor[end - 1] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[eGradOff], -tbeta - 1);
+          y[jGradOff] = prev + x[eInOff] * factor[end - 1] - x[bInOff] * factor[begin - 1];
+        } else if (begin > 0 && last > tadLen) {
+          sd::LongType bInCoords[SD_MAX_RANK];
+          sd::LongType bInOff;
+          INDEX2COORDS(begin - 1, inTadRank, inTadShape, bInCoords);
+          COORDS2INDEX(inTadRank, inTadStride, bInCoords, bInOff);
+          y[jGradOff] = prev - x[bInOff] * factor[begin - 1];
+        } else {
+          y[jGradOff] = prev;
         }
 
-        Y* factor = new Y[tadLen];
+        if (j != 0) prev = y[jGradOff];
 
-        Y prev = static_cast<Y>(0);
-        // second loop calculates derivatives using information gained in first loop above
-        for (sd::LongType j = 0; j < tadLen; ++j) {
-          const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
-          const sd::LongType last = depth + j + 1;
-          const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
-
-          Y init = tbias + talpha * y[j * gradITadEws];
-
-          if (j == 0) {
-            for (sd::LongType s = begin; s < end; ++s) {
-              factor[s] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[s * gradITadEws], -tbeta - 1);
-              prev = prev + x[s * inTadEws] * factor[s];
-            }
-            y[0] = prev;
-          } else if (begin == 0 && last <= tadLen) {
-            factor[end - 1] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[(end - 1) * gradITadEws], -tbeta - 1);
-            y[j * gradITadEws] = prev + x[(end - 1) * inTadEws] * factor[end - 1];
-          } else if (begin > 0 && last <= tadLen) {
-            factor[end - 1] = sd::math::sd_pow<Y, Y, Y>(tbias + talpha * y[(end - 1) * gradITadEws], -tbeta - 1);
-            y[j * gradITadEws] =
-                prev + x[(end - 1) * inTadEws] * factor[end - 1] - x[(begin - 1) * inTadEws] * factor[begin - 1];
-          } else if (begin > 0 && last > tadLen)
-            y[j * gradITadEws] = prev - x[(begin - 1) * inTadEws] * factor[begin - 1];
-          else
-            y[j * gradITadEws] = prev;
-
-          if (j != 0) prev = y[j * gradITadEws];
-
-          y[j * gradITadEws] = factor[j] * init - 2 * x[j * inTadEws] * coeff * prev;
-        }
-
-        delete[] factor;
+        y[jGradOff] = factor[j] * init - 2 * x[jInOff] * coeff * prev;
       }
-    };
 
-    samediff::Threads::parallel_tad(func, 0, numOfTads);
-  }
+      RELEASE(factor, nullptr);
+    }
+  };
+
+  samediff::Threads::parallel_tad(func, 0, numOfTads);
   gradI *= gradO;
 }
 

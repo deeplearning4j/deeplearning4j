@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.autodiff.samediff.serde.SameDiffSerializer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
@@ -3474,18 +3475,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.size(0) > Integer.MAX_VALUE || this.size(1) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        double[][] ret = new double[rows()][columns()];
-        for(int i = 0; i < ret.length; i++) {
-            INDArray row = getRow(i);
-            INDArray duplicated = row.dup();
-            try {
-                ret[i] = duplicated.data().asDouble();
-            } finally {
-                try {
-                        duplicated.close();
-                } catch (Exception e) {
-                    // Ignore close errors
-                }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int nRows = (int) rows();
+        int nCols = (int) columns();
+        double[][] ret = new double[nRows][nCols];
+        for(int i = 0; i < nRows; i++) {
+            for(int j = 0; j < nCols; j++) {
+                ret[i][j] = getDouble(i, j);
             }
         }
 
@@ -3501,16 +3498,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        INDArray duplicated = dup();
-        try {
-            return duplicated.data().asDouble();
-        } finally {
-            try {
-                    duplicated.close();
-            } catch (Exception e) {
-                // Ignore close errors
-            }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int len = (int) length();
+        double[] result = new double[len];
+        for (int i = 0; i < len; i++) {
+            result[i] = getDouble(i);
         }
+        return result;
     }
 
     @Override
@@ -3522,16 +3517,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        INDArray duplicated = dup();
-        try {
-            return duplicated.data().asFloat();
-        } finally {
-            try {
-                    duplicated.close();
-            } catch (Exception e) {
-                // Ignore close errors
-            }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int len = (int) length();
+        float[] result = new float[len];
+        for (int i = 0; i < len; i++) {
+            result[i] = getFloat(i);
         }
+        return result;
     }
 
     @Override
@@ -3543,18 +3536,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        float[][] ret = new float[(int) rows()][ (int) columns()];
-        for(int i = 0; i < ret.length; i++) {
-            INDArray row = getRow(i);
-            INDArray duplicated = row.dup();
-            try {
-                ret[i] = duplicated.data().asFloat();
-            } finally {
-                try {
-                        duplicated.close();
-                } catch (Exception e) {
-                    // Ignore close errors
-                }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int nRows = (int) rows();
+        int nCols = (int) columns();
+        float[][] ret = new float[nRows][nCols];
+        for(int i = 0; i < nRows; i++) {
+            for(int j = 0; j < nCols; j++) {
+                ret[i][j] = getFloat(i, j);
             }
         }
 
@@ -3571,56 +3560,34 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        if(isView() || elementWiseStride() != 1) {
-            INDArray duplicated = dup();
-            try {
-                return duplicated.data().asInt();
-            } finally {
-                try {
-                        duplicated.close();
-                } catch (Exception e) {
-                    // Ignore close errors
-                }
-            }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int len = (int) length();
+        int[] result = new int[len];
+        for (int i = 0; i < len; i++) {
+            result[i] = getInt(i);
         }
-        return localData.asInt();
+        return result;
     }
 
     @Override
     public long[] toLongVector() {
         DataBuffer localData = this.data;
-        if (localData == null) {
+        if (localData == null || isEmpty()) {
             return new long[0];
         }
 
-        if(isEmpty())
-            return new long[0];
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        if(isView() || elementWiseStride() != 1) {
-            INDArray duplicated = dup();
-            boolean shouldCleanup = (duplicated != this);
-            try {
-                // dup() for empty arrays returns 'this', and we already checked isEmpty() above,
-                // but there's a race condition. Double-check here.
-                if (duplicated.data() == null) {
-                    return new long[0];
-                }
-                return duplicated.data().asLong();
-            } finally {
-                // Only clean up if we actually created a new array (not if dup returned 'this')
-                if (shouldCleanup) {
-                    try {
-                            duplicated.close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
-                }
-            }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int len = (int) length();
+        long[] result = new long[len];
+        for (int i = 0; i < len; i++) {
+            result[i] = getLong(i);
         }
-
-        return localData.asLong();
+        return result;
     }
 
     @Override
@@ -3632,25 +3599,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        long[][] ret = new long[(int) rows()][(int) columns()];
-        for(int i = 0; i < ret.length; i++) {
-            INDArray row = getRow(i);
-            INDArray duplicated = row.dup();
-            boolean shouldCleanup = (duplicated != row);
-            try {
-                if (duplicated.data() == null) {
-                    ret[i] = new long[0];
-                    continue;
-                }
-                ret[i] = duplicated.data().asLong();
-            } finally {
-                if (shouldCleanup) {
-                    try {
-                            duplicated.close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
-                }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int nRows = (int) rows();
+        int nCols = (int) columns();
+        long[][] ret = new long[nRows][nCols];
+        for(int i = 0; i < nRows; i++) {
+            for(int j = 0; j < nCols; j++) {
+                ret[i][j] = getLong(i, j);
             }
         }
 
@@ -3666,25 +3622,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.rows() > Integer.MAX_VALUE || this.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        int[][] ret = new int[(int) rows()][(int) columns()];
-        for(int i = 0; i < ret.length; i++) {
-            INDArray row = getRow(i);
-            INDArray duplicated = row.dup();
-            boolean shouldCleanup = (duplicated != row);
-            try {
-                if (duplicated.data() == null) {
-                    ret[i] = new int[0];
-                    continue;
-                }
-                ret[i] = duplicated.data().asInt();
-            } finally {
-                if (shouldCleanup) {
-                    try {
-                            duplicated.close();
-                    } catch (Exception e) {
-                        // Ignore close errors
-                    }
-                }
+        // Sync GPU → host to avoid cross-device kernel issues on non-peer GPUs
+        Nd4j.getAffinityManager().ensureLocation(this, AffinityManager.Location.HOST);
+        int nRows = (int) rows();
+        int nCols = (int) columns();
+        int[][] ret = new int[nRows][nCols];
+        for(int i = 0; i < nRows; i++) {
+            for(int j = 0; j < nCols; j++) {
+                ret[i][j] = getInt(i, j);
             }
         }
 
@@ -6310,7 +6255,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
         int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
         val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(this.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
-        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE,0,0,0,false);
+        byte order = (byte)(this.ordering() == 'c' ? 0 : 1);
+        int array = FlatArray.createFlatArray(builder, shape, buffer, type, order, 0, 0L, 0, false, 0L, 0L);
 
         return array;
     }
@@ -6522,15 +6468,63 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (shapeInfo.length() > 0) {
                 long rank = shapeInfo.getLong(0);
                 if (rank < 0 || rank > 32) {
-                    throw new IllegalStateException(
-                        "Shape info corruption detected for INDArray (id=" + getId() +
-                        "): rank=" + rank + " (expected 0-32). " +
-                        "ShapeInfo constant=" + shapeInfo.isConstant() +
-                        ", length=" + shapeInfo.length() +
-                        ", dataType=" + shapeInfo.dataType() +
-                        ", released=" + (shapeInfo instanceof BaseDataBuffer ?
-                            ((BaseDataBuffer)shapeInfo).wasClosed() : "unknown") +
-                        ". This indicates memory corruption or use-after-free.");
+                    // Native shape info buffer is corrupt. Check if Java-side copy is valid.
+                    // This happens when a C++ op buffer overrun corrupts a nearby constant
+                    // shape info allocation on the host heap. The jvmShapeInfo (Java long[])
+                    // is immune since it lives in JVM-managed memory.
+                    if (jvmShapeInfo != null && jvmShapeInfo.javaShapeInformation != null) {
+                        long javaRank = jvmShapeInfo.javaShapeInformation[0];
+                        if (javaRank >= 0 && javaRank <= 32) {
+                            log.warn("Shape info native buffer corruption detected for INDArray (id={}): " +
+                                    "native rank={} (0x{}) but Java rank={}. " +
+                                    "Rebuilding shape info from Java copy. " +
+                                    "ShapeInfo constant={}, length={}, nativeAddr=0x{}. " +
+                                    "Java shapeInfo={}. " +
+                                    "This indicates a C++ op buffer overrun corrupting constant shape info on the host heap.",
+                                    getId(), rank, Long.toHexString(rank), javaRank,
+                                    shapeInfo.isConstant(), shapeInfo.length(),
+                                    Long.toHexString(shapeInfo.pointer().address()),
+                                    java.util.Arrays.toString(jvmShapeInfo.javaShapeInformation));
+                            // Rebuild: create a NEW non-constant shape info buffer from the Java copy.
+                            // We can't use Nd4j.getShapeInfoProvider().createShapeInformation() because
+                            // it returns the same corrupt constant cache entry. Instead, create a fresh
+                            // DataBuffer with the correct values from the Java copy.
+                            DataBuffer freshShapeInfo = Nd4j.createBuffer(DataType.LONG, jvmShapeInfo.javaShapeInformation.length, false);
+                            for (int si = 0; si < jvmShapeInfo.javaShapeInformation.length; si++) {
+                                freshShapeInfo.put(si, jvmShapeInfo.javaShapeInformation[si]);
+                            }
+                            this.shapeInfoDataBuffer = freshShapeInfo;
+                            shapeInfo = freshShapeInfo;
+                            shapeOpaqueBuffer = shapeInfo.opaqueBuffer();
+                            // Verify the rebuilt buffer
+                            rank = shapeInfo.getLong(0);
+                            if (rank < 0 || rank > 32) {
+                                throw new IllegalStateException(
+                                    "Shape info corruption NOT recoverable for INDArray (id=" + getId() +
+                                    "): rebuilt rank=" + rank + ". Both native and Java copies are corrupt.");
+                            }
+                            log.warn("Shape info recovery successful for INDArray (id={}). Continuing with rebuilt shape info.", getId());
+                        } else {
+                            throw new IllegalStateException(
+                                "Shape info corruption detected for INDArray (id=" + getId() +
+                                "): native rank=" + rank + ", Java rank=" + javaRank +
+                                " — BOTH copies corrupt. " +
+                                "ShapeInfo constant=" + shapeInfo.isConstant() +
+                                ", length=" + shapeInfo.length() +
+                                ", dataType=" + shapeInfo.dataType() +
+                                ". This indicates memory corruption or use-after-free.");
+                        }
+                    } else {
+                        throw new IllegalStateException(
+                            "Shape info corruption detected for INDArray (id=" + getId() +
+                            "): rank=" + rank + " (expected 0-32). " +
+                            "ShapeInfo constant=" + shapeInfo.isConstant() +
+                            ", length=" + shapeInfo.length() +
+                            ", dataType=" + shapeInfo.dataType() +
+                            ", released=" + (shapeInfo instanceof BaseDataBuffer ?
+                                ((BaseDataBuffer)shapeInfo).wasClosed() : "unknown") +
+                            ". No Java copy available for recovery.");
+                    }
                 }
             }
 

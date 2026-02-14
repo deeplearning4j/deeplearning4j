@@ -277,12 +277,18 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
   NDArray *argSeqNdArray = nullptr;
   NDArray seqArrIntData;
   if (seqLengthArray) {
-    if (seqLengthArray->ews() == 1 && seqLengthArray->dataType() == INT32) {
+    auto isCContiguous = [](const NDArray& a) {
+      auto r = a.rankOf(); auto s = a.shapeOf(); auto st = a.stridesOf();
+      sd::LongType exp = 1;
+      for (int i = r - 1; i >= 0; --i) { if (s[i] == 1) continue; if (st[i] != exp) return false; exp *= s[i]; }
+      return true;
+    };
+    if (isCContiguous(*seqLengthArray) && seqLengthArray->dataType() == INT32) {
       argSeqNdArray = seqLengthArray;
     } else {
       if (seqLengthArray->dataType() != INT32) {
         seqArrIntData = seqLengthArray->cast(INT32);
-        if (seqArrIntData.ews() != 1) seqArrIntData = seqArrIntData->dup('c');
+        if (!isCContiguous(seqArrIntData)) seqArrIntData = seqArrIntData->dup('c');
       } else {
         seqArrIntData = seqLengthArray->dup('c');
       }

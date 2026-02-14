@@ -38,9 +38,6 @@ static sd::LongType hamming_distance(unsigned long long x, unsigned long long y)
 
 template <typename X, typename Z>
 static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z) {
-  auto xEws = x.ews();
-  auto yEws = y.ews();
-
   auto xBuffer = x.bufferAsT<X>();
   auto yBuffer = y.bufferAsT<X>();
 
@@ -52,40 +49,29 @@ static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z)
   // nullify temp values
   for (int e = 0; e < maxThreads; e++) intermediate[e] = 0;
 
-  if (xEws == 1 && yEws == 1 && x.ordering() == y.ordering()) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        auto _x = static_cast<unsigned long long>(xBuffer[e]);
-        auto _y = static_cast<unsigned long long>(yBuffer[e]);
+  auto xRank = x.rankOf();
+  auto yRank = y.rankOf();
+  auto xShape = x.shapeOf();
+  auto yShape = y.shapeOf();
+  auto xStride = x.stridesOf();
+  auto yStride = y.stridesOf();
 
-        intermediate[thread_id] += hamming_distance(_x, _y);
-      }
-    };
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto e = start; e < stop; e++) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(e, xRank, xShape, coords);
+      sd::LongType xOffset, yOffset;
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+      COORDS2INDEX(yRank, yStride, coords, yOffset);
 
-    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
-  } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
-        auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
+      auto _x = static_cast<unsigned long long>(xBuffer[xOffset]);
+      auto _y = static_cast<unsigned long long>(yBuffer[yOffset]);
 
-        intermediate[thread_id] += hamming_distance(_x, _y);
-      }
-    };
+      intermediate[thread_id] += hamming_distance(_x, _y);
+    }
+  };
 
-    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        auto _x = static_cast<unsigned long long>(x.e<sd::LongType>(e));
-        auto _y = static_cast<unsigned long long>(y.e<sd::LongType>(e));
-
-        intermediate[thread_id] += hamming_distance(_x, _y);
-      }
-    };
-
-    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
-  }
+  maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
 
   // accumulate intermediate variables into output array
   for (int e = 0; e < maxThreads; e++) distance += intermediate[e];

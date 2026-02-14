@@ -249,7 +249,8 @@ sd::graph::Node::Node(sd::ops::DeclarableOp* customOp, int id, std::initializer_
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new sd::LongType[dimensions.size()];
+    _dim = new sd::LongType[dimensions.size() + SD_SHAPE_ALLOC_PADDING];
+    memset(_dim, 0, (dimensions.size() + SD_SHAPE_ALLOC_PADDING) * sizeof(sd::LongType));
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -291,7 +292,8 @@ sd::graph::Node::Node(::graph::OpType opType, int opNum, int id, std::initialize
   for (auto o : output) pickOutput(o);
 
   if (dimensions.size() > 0) {
-    _dim = new sd::LongType[dimensions.size()];
+    _dim = new sd::LongType[dimensions.size() + SD_SHAPE_ALLOC_PADDING];
+    memset(_dim, 0, (dimensions.size() + SD_SHAPE_ALLOC_PADDING) * sizeof(sd::LongType));
     int cnt = 0;
     for (auto d : dimensions) {
       _dimensions.push_back(d);
@@ -399,7 +401,8 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
     }
 
     if (node->dimensions() != nullptr && node->dimensions()->size() > 0) {
-      _dim = new sd::LongType [node->dimensions()->size()];
+      _dim = new sd::LongType [node->dimensions()->size() + SD_SHAPE_ALLOC_PADDING];
+      memset(_dim, 0, (node->dimensions()->size() + SD_SHAPE_ALLOC_PADDING) * sizeof(sd::LongType));
       for (int e = 0; e < (int)node->dimensions()->size(); e++) {
         _dimensions.emplace_back(node->dimensions()->Get(e));
         _dim[e] = node->dimensions()->Get(e);

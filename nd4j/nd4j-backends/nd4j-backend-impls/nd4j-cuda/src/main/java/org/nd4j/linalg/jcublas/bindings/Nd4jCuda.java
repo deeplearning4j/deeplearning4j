@@ -321,6 +321,16 @@ public static final int
 // #include <cstring>
 // #include <mutex>
 
+/**
+ * Thread-local flag indicating graph execution/capture is in progress.
+ * When true, syncToPrimary() skips D2H transfers — data must stay
+ * on the compute device during graph execution. Applies to all graph
+ * backends: CUDA Graphs (capture/replay), oneDNN Graph, and ACL
+ * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
+ * execution, cleared when execution completes or is aborted.
+ */
+@Namespace("sd") public static native @Cast("bool") boolean tl_graphExecutionActive(); public static native void tl_graphExecutionActive(boolean setter);
+
 @Namespace("sd") @NoOffset public static class DataBuffer extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -594,6 +604,7 @@ public static final int
 
 // #include <array/PointerDeallocator.h>
 
+// #include <cstdlib>
 // #include <memory>
   // namespace sd
 
@@ -3187,6 +3198,134 @@ public native int nativeMbwGetCoherenceState(@ByVal @Cast("OpaqueMultiBackendWor
  */
 public native @Cast("sd::LongType") long nativeMbwGetTotalAllocatedSize(@ByVal @Cast("OpaqueMultiBackendWorkspace*") Pointer handle);
 
+// ========================
+// Native Graph Executor API
+// ========================
+
+/**
+ * Compile a serialized DynamicShapePlan into a native C++ executor.
+ * The serialized plan is a binary format produced by DynamicShapePlan.serialize() in Java.
+ *
+ * @param serializedPlan  Pointer to the serialized plan bytes
+ * @param planSize  Size of the serialized plan in bytes
+ * @return Opaque handle to the compiled plan, or nullptr on failure
+ */
+public native @Cast("sd::Pointer") Pointer compileDynamicShapePlan(@Cast("sd::Pointer") Pointer serializedPlan, @Cast("sd::LongType") long planSize);
+
+/**
+ * Execute a compiled native plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param opContext  OpaqueContext with inputs set via setGraphContextInputArray(), outputs pre-allocated via setGraphContextOutputArray()
+ * @param stream  CUDA stream pointer (nullptr for CPU)
+ * @return 0 on success, non-zero on failure
+ */
+public native int executeDynamicShapePlan(
+    @Cast("sd::Pointer") Pointer planHandle,
+    org.nd4j.nativeblas.OpaqueContext opContext,
+    @Cast("sd::Pointer") Pointer stream);
+
+/**
+ * Free a compiled native plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+public native void freeDynamicShapePlan(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Clear shape caches in a compiled plan.
+ * Must be called when a session resets to avoid stale GPU memory references.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+public native void clearDynamicShapePlanCaches(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
+ *
+ * @param filePath  Path to the .sdz or .sdnb file
+ * @return Opaque handle to the loaded model, or nullptr on failure
+ */
+public native @Cast("sd::Pointer") Pointer loadModelFromFile(@Cast("char*") String filePath);
+public native @Cast("sd::Pointer") Pointer loadModelFromFile(@Cast("char*") BytePointer filePath);
+
+/**
+ * Compile a loaded model into a native execution plan.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ * @param requestedOutputNames  Array of output variable name strings
+ * @param numOutputs  Number of requested outputs
+ * @return Opaque plan handle, or nullptr on failure
+ */
+public native @Cast("sd::Pointer") Pointer compileModelPlan(
+    @Cast("sd::Pointer") Pointer modelHandle,
+    @Cast("sd::Pointer") Pointer requestedOutputNames, int numOutputs);
+
+/**
+ * Free a loaded model.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ */
+public native void freeLoadedModel(@Cast("sd::Pointer") Pointer modelHandle);
+
+/**
+ * Get the number of external inputs required by a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of external inputs
+ */
+public native int getPlanNumExternalInputs(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Get the number of requested outputs in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of requested outputs
+ */
+public native int getPlanNumRequestedOutputs(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Get the number of slots (ops) in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of slots
+ */
+public native int getPlanNumSlots(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Enable or disable CUDA Graphs for a compiled plan.
+ * When enabled, capturable segments are captured as CUDA graphs on the
+ * second execution and replayed on subsequent calls with matching shapes.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled  true to enable, false to disable
+ */
+public native void setPlanCudaGraphsEnabled(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean enabled);
+
+/**
+ * Get the number of graph segments in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of segments, or -1 if handle is null
+ */
+public native int getPlanNumSegments(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Get the number of segments that have been captured as CUDA graphs.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of captured graph segments
+ */
+public native int getPlanNumCapturedGraphSegments(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Get the total number of CUDA graph replays across all segments.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Total graph replay count
+ */
+public native int getPlanTotalGraphReplays(@Cast("sd::Pointer") Pointer planHandle);
+
 // #endif // NATIVEOPS_H
 
 // Parsed from memory/ExternalWorkspace.h
@@ -5345,7 +5484,7 @@ public static final int
 // #include <array/NDArrayList.h>
 // #include <graph/VariableType.h>
 
-
+// #include <cstdlib>
 // #include <string>
 
 // #ifndef __JAVACPP_HACK__
@@ -6359,7 +6498,7 @@ public static final int
 // #include <graph/VariableSpace.h>
 // #include <memory/Workspace.h>
 
-
+// #include <cstdlib>
 // #include <vector>
 /**
  * This class defines input desired for any given node/operation within graph
@@ -8330,6 +8469,7 @@ public static final int
 // #include <helpers/shape.h>
 // #include <system/common.h>
 
+// #include <cstdlib>
 // #include <vector>
 @Namespace("sd") @NoOffset public static class ShapeList extends Pointer {
     static { Loader.load(); }
@@ -10970,14 +11110,14 @@ public static final int SD_ALL_OPS_ACTIVATED = 1;
 //   if (WORKSPACE == nullptr) {
 //     int deviceId_##VARIABLE = 0;
 //     cudaGetDevice(&deviceId_##VARIABLE);
-//     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;
+//     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + SD_ALLOC_PADDING;
 //     VARIABLE = reinterpret_cast<TT*>(sd::memory::CudaMemoryPool::getInstance().aocate(
 //         allocSize_##VARIABLE, deviceId_##VARIABLE, nullptr));
 //     if (VARIABLE == nullptr) {
 //       THROW_EXCEPTION("[DEVICE] allocation failed");
 //     }
 //   } else {
-//     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;
+//     size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + SD_ALLOC_PADDING;
 //     VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE));
 //    }
 
@@ -11255,6 +11395,7 @@ public static final int
 // #include <helpers/helper_hash.h>
 // #include <ops/InputType.h>
 
+// #include <cstdlib>
 // #include <initializer_list>
 // #include <string>
 // #include <vector>
@@ -13091,6 +13232,7 @@ public static final long
 // #include <helpers/shape.h>
 // #include <system/common.h>
 
+// #include <cstdlib>
 // #include <initializer_list>
 // #include <unordered_map>
 // #include <vector>

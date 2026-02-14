@@ -25,6 +25,12 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
+import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
+import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
@@ -214,6 +220,30 @@ public class DynamicShapePlanCompiler {
             DifferentialFunction op = sdOp.getOp();
             boolean isCustomOp = op instanceof CustomOp;
 
+            // Detect legacy op type and opNum for ops not registered as
+            // DeclarableOp in C++ (legacy transform, scalar, pairwise ops).
+            // These will be constructed as LegacyOp wrappers in C++.
+            int legacyOpType = DynamicShapeSlot.LEGACY_NONE;
+            int legacyOpNum = -1;
+            if (!isCustomOp) {
+                if (op instanceof BaseTransformStrictOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_STRICT;
+                    legacyOpNum = ((BaseTransformStrictOp) op).opNum();
+                } else if (op instanceof BaseTransformSameOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_SAME;
+                    legacyOpNum = ((BaseTransformSameOp) op).opNum();
+                } else if (op instanceof BaseTransformFloatOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_FLOAT;
+                    legacyOpNum = ((BaseTransformFloatOp) op).opNum();
+                } else if (op instanceof BaseTransformBoolOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_BOOL;
+                    legacyOpNum = ((BaseTransformBoolOp) op).opNum();
+                } else if (op instanceof BaseScalarOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_SCALAR;
+                    legacyOpNum = ((BaseScalarOp) op).opNum();
+                }
+            }
+
             // Build input wiring
             List<String> inputVars = node.getInputVariables();
             int numInputs = inputVars.size();
@@ -312,6 +342,25 @@ public class DynamicShapePlanCompiler {
                 tArgs = dynOp.tArgs();
                 bArgs = dynOp.bArgs();
                 dArgs = dynOp.dArgs();
+            } else if (op instanceof BaseScalarOp) {
+                // Scalar ops store their scalar value separately (not as tArgs).
+                // The C++ custom op equivalents (e.g., relu) expect it as tArg[0].
+                BaseScalarOp scalarOp = (BaseScalarOp) op;
+                if (scalarOp.scalar() != null) {
+                    tArgs = new double[]{scalarOp.scalar().getDouble(0)};
+                }
+            }
+
+            // Reduce ops store dimensions and keepDims separately from iArgs/bArgs.
+            // The C++ custom op equivalents (e.g., reduce_sum) expect dimensions as
+            // iArgs and keepDims as bArgs[0].
+            if (op instanceof BaseReduceOp) {
+                BaseReduceOp reduceOp = (BaseReduceOp) op;
+                long[] dims = reduceOp.dimensionsArr();
+                if (dims != null && dims.length > 0) {
+                    iArgs = dims;
+                }
+                bArgs = new boolean[]{reduceOp.isKeepDims()};
             }
 
             // Determine if all INT/LONG inputs are from external sources (constants/vars/placeholders).
@@ -347,12 +396,14 @@ public class DynamicShapePlanCompiler {
             boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(op.opName()) || isDataDependent;
 
             // Pre-compute opName hash for shape key computation (avoids String.hashCode per step)
-            long opNameHash = node.getOperationName().hashCode() * 0x9E3779B97F4A7C15L;
+            long opNameHash = op.opName().hashCode() * 0x9E3779B97F4A7C15L;
 
             slots[stepIdx] = DynamicShapeSlot.builder()
-                    .opName(node.getOperationName())
+                    .opName(op.opName())
                     .op(op)
                     .customOp(isCustomOp)
+                    .legacyOpType(legacyOpType)
+                    .legacyOpNum(legacyOpNum)
                     .inputSourceIndices(inputSourceIndices)
                     .inputSourceTypes(inputSourceTypes)
                     .inputVarNames(inputVarNames)
@@ -469,8 +520,10 @@ public class DynamicShapePlanCompiler {
         // pre-allocating one per op (avoids native heap corruption from bulk close).
         OpContext[] opContextPool = new OpContext[0];
 
-        // Step 8: Build output name → slot index map for O(1) output collection
-        Map<String, Integer> outputNameToSlotIndex = new HashMap<>();
+        // Step 8: Build output name → slot index map for O(1) output collection.
+        // LinkedHashMap preserves insertion order (= requestedOutputs iteration order)
+        // so serialize() writes indices in the same order as getRequestedOutputs().
+        Map<String, Integer> outputNameToSlotIndex = new java.util.LinkedHashMap<>();
         for (String outputName : requestedOutputs) {
             Integer slot = varToOutputSlot.get(outputName);
             if (slot != null) {

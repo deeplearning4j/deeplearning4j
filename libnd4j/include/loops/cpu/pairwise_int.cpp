@@ -62,9 +62,6 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
   sd::LongType *zStride = shape::stride(zShapeInfo);
 
   auto n = shape::length(xShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto yEws = shape::elementWiseStride(yShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
 
   if (shape::isScalar(yShapeInfo)) {
     if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {

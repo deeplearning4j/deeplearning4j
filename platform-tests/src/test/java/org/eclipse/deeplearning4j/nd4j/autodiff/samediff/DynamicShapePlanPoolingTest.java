@@ -29,6 +29,7 @@ import org.nd4j.autodiff.samediff.InferenceFactory;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -51,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @Tag(TagNames.SAMEDIFF)
 public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
 
-    private static final String DYNAMIC_SHAPE_PROP = "org.nd4j.inference.dynamicShapePlan";
+    private static final String DYNAMIC_SHAPE_PROP = ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED;
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -259,7 +260,7 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
         boolean prevCache = ArrayCacheMemoryMgr.isCacheEnabled();
         double prevGrowth = ArrayCacheMemoryMgr.getGrowthFactor().get();
         boolean prevDynamicEnabled = InferenceSession.isDynamicShapePlanEnabled();
-        String prevMaxBytes = System.getProperty("org.nd4j.dsp.pool.maxBytes");
+        String prevMaxBytes = System.getProperty(ND4JSystemProperties.DSP_POOL_MAX_BYTES);
 
         try {
             System.setProperty(DYNAMIC_SHAPE_PROP, "true");
@@ -267,7 +268,7 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             ArrayCacheMemoryMgr.setEnableCache(true);
             ArrayCacheMemoryMgr.setGrowthFactor(1.1);
             // Set a small pool cap (1MB) to trigger eviction
-            System.setProperty("org.nd4j.dsp.pool.maxBytes", String.valueOf(1024 * 1024));
+            System.setProperty(ND4JSystemProperties.DSP_POOL_MAX_BYTES, String.valueOf(1024 * 1024));
 
             // Build a graph: y = x * 2 + 1
             // Use dynamic shape (no fixed dims) so different shapes can be passed
@@ -291,7 +292,7 @@ public class DynamicShapePlanPoolingTest extends BaseNd4jTestWithBackends {
             sd.resetSession();
         } finally {
             restoreProperty(DYNAMIC_SHAPE_PROP, prevDynamicProp);
-            restoreProperty("org.nd4j.dsp.pool.maxBytes", prevMaxBytes);
+            restoreProperty(ND4JSystemProperties.DSP_POOL_MAX_BYTES, prevMaxBytes);
             ArrayCacheMemoryMgr.setEnableCache(prevCache);
             ArrayCacheMemoryMgr.setGrowthFactor(prevGrowth);
             InferenceSession.setDynamicShapePlanEnabled(prevDynamicEnabled);

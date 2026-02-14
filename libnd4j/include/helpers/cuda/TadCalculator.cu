@@ -71,7 +71,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     
     auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
     auto offDPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), totalElements * sizeof(LongType)),
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (totalElements + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
     _tadShape = scalarShapeBuffer;
@@ -103,7 +103,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
 
     auto oPtr = std::make_shared<PointerWrapper>(offsetsBuf);
     auto offDPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), numOfSubArrs * sizeof(LongType)),
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (numOfSubArrs + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
     _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
@@ -125,7 +125,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     baseOffset[0] = 0;
     auto oPtr = std::make_shared<PointerWrapper>(baseOffset);
     auto offDPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), 1 * sizeof(LongType)),
+        ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), (1 + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
     _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);

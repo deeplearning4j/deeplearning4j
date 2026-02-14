@@ -42,9 +42,16 @@ bool isAccelerateSupported(sd::DataType dtype) {
 }
 
 bool isContiguous(const NDArray& arr) {
-    // Check if the array has element-wise stride of 1
-    // and is stored contiguously in memory
-    return arr.ews() == 1;
+    auto rank = arr.rankOf();
+    auto shape = arr.shapeOf();
+    auto strides = arr.stridesOf();
+    sd::LongType expected = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shape[i] == 1) continue;
+      if (strides[i] != expected) return false;
+      expected *= shape[i];
+    }
+    return true;
 }
 
 bool isAccelerateFriendly(const NDArray& arr) {

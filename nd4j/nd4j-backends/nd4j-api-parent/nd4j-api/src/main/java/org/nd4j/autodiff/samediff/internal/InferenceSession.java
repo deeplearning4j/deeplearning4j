@@ -44,6 +44,7 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
@@ -139,12 +140,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private final ThreadLocal<Map<String, INDArray>> outputArrayCacheTl =
             ThreadLocal.withInitial(HashMap::new);
 
+    // The current DAG being executed. Set at the start of executeOperations() so that
+    // sub-methods (executeNode, executeRegularOperation, etc.) can look up variable consumers
+    // for proper last-consumer-based liveness tracking without passing the DAG through every call.
+    private ForwardExecutionDAG currentExecutionDAG;
+
 
     // ---- Java-side execution timing ----
     // Enable with -Dorg.nd4j.inference.timing=true
     // Tracks where wall-clock time goes during graph execution (shape calc, alloc, exec, etc.)
     private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
-            System.getProperty("org.nd4j.inference.timing", "false"));
+            System.getProperty(ND4JSystemProperties.INFERENCE_TIMING, "false"));
     // Per-call accumulators (reset each output() call)
     private long timingDagLookupNs, timingInitValuesNs, timingExecLoopNs, timingOutputDupNs, timingCleanupNs;
     // Per-op phase accumulators within executeOperations
@@ -213,7 +219,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // Unlike static ExecutionPlan, this handles shapes that change every step (e.g., growing KV cache).
     // Enabled by default for 57% faster inference. Disable with -Dorg.nd4j.inference.dynamicShapePlan=false
     private static volatile boolean DYNAMIC_SHAPE_PLAN_ENABLED = Boolean.parseBoolean(
-            System.getProperty("org.nd4j.inference.dynamicShapePlan", "true"));
+            System.getProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true"));
 
     /**
      * Enable or disable DynamicShapePlan execution at runtime (primarily for tests).
@@ -231,6 +237,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     private volatile DynamicShapePlan dynamicShapePlan;
     private final ThreadLocal<DynamicShapePlanExecutor> dynamicShapePlanExecutorTl = new ThreadLocal<>();
+
+    // ---- Conditional pool trim ----
+    // During steady-state decode, the CUDA memory pool reuses freed memory without trimming.
+    // Trimming every step wastes time on cudaStreamSynchronize + cudaMemPoolTrimTo when there's
+    // nothing meaningful to return. Only trim periodically and always on step 0/1
+    // (prefill→decode transition where large buffers are freed).
+    private int dspStepCount = 0;
+    private static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
 
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
@@ -317,36 +331,36 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
 
+        // Reset DSP step counter so the next session starts with immediate trim
+        dspStepCount = 0;
+
         // Keep DynamicShapePlan across session resets: the plan is compiled graph
         // structure (index maps, liveness schedule) with no mutable runtime state.
         // Recompiling on every resetSession() costs ~500ms for a 4441-op model.
         // The plan's opContextPool is empty (executor uses its own rotating pool).
 
-        // Close DynamicShapePlanExecutor (holds runtime state: output slots, live tracking)
+        // Close the DynamicShapePlanExecutor (slot cache, native workspace, dedup sets).
+        // The executor holds GPU-allocated arrays in its slot cache; closing it frees them
+        // and trims the pool, making memory available for subsequent model phases (e.g.,
+        // decoder after vision encoder). A new executor is created on the next output() call.
         DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
         if (executor != null) {
-            log.debug("Closing DynamicShapePlanExecutor - flushing LocalBufferPool...");
             try {
                 executor.close();
             } catch (Exception e) {
-                log.warn("Error closing DynamicShapePlanExecutor: {}", e.getMessage());
+                log.warn("Error closing DynamicShapePlanExecutor during session cleanup: {}", e.getMessage());
             }
             dynamicShapePlanExecutorTl.remove();
-            // DSP close() freed slot arrays via RELEASE_SPECIAL (cudaFreeAsync on stream 0).
-            // Sync stream 0 + trim pool so the freed memory is returned to the driver.
-            // Without this, pool-reserved memory starves cudaStreamCreate() on new threads.
-            try {
-                Nd4j.getExecutioner().commit();
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-                for (int d = 0; d < numDevices; d++) {
-                    nativeOps.trimMemoryPoolOnStream(d, null);
-                }
-            } catch (Exception e) {
-                log.debug("Failed to trim memory pool after DSP close: {}", e.getMessage());
-            }
-        } else {
-            log.debug("No DynamicShapePlanExecutor to close (not DSP path or already closed)");
+        }
+
+        // Sync streams and trim pool to release freed memory back to the driver.
+        try {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            Nd4j.getExecutioner().commit();
+            nativeOps.trimMemoryPoolOnStream(currentDevice, null);
+        } catch (Exception e) {
+            log.debug("Pool trim during closePooledResources failed: {}", e.getMessage());
         }
 
         if (pooledClosed > 0) {
@@ -579,13 +593,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         filteredResults = dynamicPlanResults;
                         dspHandledExecution = true;
                         // Commit pending async ops — this syncs the execution stream.
+                        long commitStart = System.nanoTime();
                         Nd4j.getExecutioner().commit();
+                        long commitNs = System.nanoTime() - commitStart;
                         // Trim pool to release reserved-but-freed memory back to the driver.
                         // RELEASE_SPECIAL frees go via cudaFreeAsync on stream 0 (nullptr),
                         // so we must sync stream 0 before trimming. trimMemoryPoolOnStream(d, null)
                         // syncs stream 0 + trims in one call.
+                        long trimStart = System.nanoTime();
                         NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
                                 Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                        long trimNs = System.nanoTime() - trimStart;
+                        if (commitNs > 5_000_000 || trimNs > 5_000_000) { // > 5ms
+                            log.info("DSP post-exec overhead: commit={}ms trim={}ms",
+                                    commitNs / 1_000_000, trimNs / 1_000_000);
+                        }
                         log.debug("DynamicShapePlan-based execution completed successfully");
                         // Do NOT call mmgr.scopeOut() here. The finally block handles both
                         // detaching workspace-backed arrays and closing the workspace scope
@@ -600,7 +622,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     // (constant shape info, slot cache). Close and recreate on next attempt.
                     DynamicShapePlanExecutor failedExecutor = dynamicShapePlanExecutorTl.get();
                     if (failedExecutor != null) {
-                        try { failedExecutor.close(); } catch (Exception ignored) {}
+                        try { failedExecutor.close(); } catch (Exception ex) { /* ignore */ }
                         dynamicShapePlanExecutorTl.remove();
                     }
                     // Clear stale C++ error state so fallback execution doesn't see it.
@@ -888,7 +910,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             dynamicShapePlan = plan;
         }
 
-        // Get or create thread-local DynamicShapePlanExecutor
+        // Get or create DynamicShapePlanExecutor (ThreadLocal per InferenceSession).
+        // The executor persists between output() calls on the same session, so the slot
+        // array cache enables O(1) array reuse in autoregressive decode steps.
         DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
         if (executor == null) {
             executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
@@ -922,6 +946,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         Map<String, SDValue> results = new LinkedHashMap<>();
         Set<String> completedOps = new LinkedHashSet<>();
 
+        // Store DAG reference so sub-methods can look up variable consumers
+        // for last-consumer-based liveness tracking without passing DAG through every call.
+        currentExecutionDAG = dag;
+
         // Initialize constants, variables, and placeholders
         long tInit0 = TIMING_ENABLED ? System.nanoTime() : 0;
         initializeValues(variableValues, dag, placeholderValues, otherPlaceholderValues);
@@ -929,6 +957,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Execute operations in corrected topological order
         List<ExecutionNode> executionOrder = dag.getFrameAwareExecutionOrder();
+
+        // Suppress autoGc during InferenceSession execution. InferenceSession now manages
+        // its own intermediate array lifecycle via consumer-based OpDep dependencies:
+        // arrays are freed when their last consumer op completes. The DeallocatorService's
+        // autoGcWindow (default 100ms) calls System.gc() periodically, causing Full GC pauses
+        // that waste time since intermediates are freed explicitly.
+        // Use Integer.MAX_VALUE instead of 0 since CudaConfiguration.setNoGcWindowMs rejects < 1.
+        int savedAutoGcWindow = Nd4j.getMemoryManager().getAutoGcWindow();
+        Nd4j.getMemoryManager().setAutoGcWindow(Integer.MAX_VALUE);
 
         // DIAGNOSTIC: Block the DeallocatorService during op execution to prevent
         // GC-triggered native buffer frees from racing with active ops.
@@ -940,6 +977,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
         }
 
+        try {
         for (ExecutionNode node : executionOrder) {
             if (node.getNodeType() == ExecutionNode.ExecutionNodeType.VARIABLE_INIT ||
                     node.getNodeType() == ExecutionNode.ExecutionNodeType.PLACEHOLDER_SET) {
@@ -1010,6 +1048,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         if (blockDeallocDuringExec) {
             Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
+        }
+        } finally {
+            // Restore autoGc window to its previous value
+            Nd4j.getMemoryManager().setAutoGcWindow(savedAutoGcWindow);
+            currentExecutionDAG = null;
         }
 
         // Collect output arrays and detach them (create independent copies).
@@ -1522,6 +1565,44 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return sb.toString();
     }
 
+    /**
+     * Add consumer-based dependencies for an output variable's SDValue.
+     * Instead of using ExecDoneDep (which defers all frees to end-of-execution),
+     * this registers an OpDep for each consuming operation. When the last consumer
+     * op completes and calls markSatisfied(OpDep), the array becomes releasable
+     * immediately, freeing GPU memory mid-execution.
+     *
+     * Falls back to ExecDoneDep only when no consumer information is available
+     * (e.g., when currentExecutionDAG is null or the variable has no consumers).
+     *
+     * @param outputValue The SDValue wrapping the output array
+     * @param varName     The variable name (output of the producing op)
+     * @param allRequired Set of required output variable names
+     */
+    private void addConsumerDependencies(SDValue outputValue, String varName, Set<String> allRequired) {
+        if (allRequired.contains(varName)) {
+            // This is a final output: protect from deallocation until explicitly released
+            arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
+            return;
+        }
+
+        // Look up consuming ops from the DAG
+        ForwardExecutionDAG dag = currentExecutionDAG;
+        if (dag != null) {
+            Set<ExecutionNode> consumerNodes = dag.getConsumerNodes(varName);
+            if (consumerNodes != null && !consumerNodes.isEmpty()) {
+                for (ExecutionNode consumerNode : consumerNodes) {
+                    Dep d = new OpDep(consumerNode.getOperationName(), OUTER_FRAME, 0, null);
+                    arrayUseTracker().addDependency(outputValue, d);
+                }
+                return;
+            }
+        }
+
+        // Fallback: no consumer info available, use ExecDoneDep (freed at end of execution)
+        arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
+    }
+
     private void executeNode(ExecutionNode node,
                              Map<String, SDValue> variableValues,
                              Set<String> allRequired,
@@ -1890,12 +1971,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 // This is crucial: the Merge shares the SDValue with its input,
                 // so we need to add a dependency to prevent the array from being
                 // freed when the input's dependency is satisfied
-                if (allRequired.contains(outputVar)) {
-                    // This is a final output, don't deallocate
-                    arrayUseTracker().addDependency(inputValue, new ReqOutputDep(outputVar));
-                } else {
-                    arrayUseTracker().addDependency(inputValue, new ExecDoneDep());
-                }
+                addConsumerDependencies(inputValue, outputVar, allRequired);
                 return;
             }
         }
@@ -1953,12 +2029,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     String varName = entry.getKey();
                     SDValue outputValue = entry.getValue();
                     variableValues.put(varName, outputValue);
-
-                    if (allRequired.contains(varName)) {
-                        arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
-                    } else {
-                        arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
-                    }
+                    addConsumerDependencies(outputValue, varName, allRequired);
                 }
             } else if (result.hasSingle()) {
                 List<String> outputNames = node.getOutputVariables();
@@ -1968,12 +2039,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         String varName = outputNames.get(i);
                         SDValue outputValue = SDValue.create(resultArray);
                         variableValues.put(varName, outputValue);
-
-                        if (allRequired.contains(varName)) {
-                            arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
-                        } else {
-                            arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
-                        }
+                        addConsumerDependencies(outputValue, varName, allRequired);
                     }
                 }
             }
@@ -2466,12 +2532,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             // Add to arrayUseTracker so it can be released when no longer needed
             String varName = outputNames.get(i);
-            if (allRequired.contains(varName)) {
-                // This is a final output, don't deallocate
-                arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
-            } else {
-                arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
-            }
+            addConsumerDependencies(outputValue, varName, allRequired);
         }
         if (TIMING_ENABLED) timingResultStoreNs += System.nanoTime() - tStore0;
     }
@@ -2522,12 +2583,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             SDValue outputValue = SDValue.create(outputArray);
             String varName = outputNames.get(0);
             variableValues.put(varName, outputValue);
-
-            if (allRequired.contains(varName)) {
-                arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
-            } else {
-                arrayUseTracker().addDependency(outputValue, new ExecDoneDep());
-            }
+            addConsumerDependencies(outputValue, varName, allRequired);
         }
         if (TIMING_ENABLED) timingResultStoreNs += System.nanoTime() - tStore0;
     }

@@ -1377,4 +1377,136 @@ public interface NativeOps {
  default long nativeMbwGetCurrentOffset(Pointer handle) {
      throw new UnsupportedOperationException("nativeMbwGetCurrentOffset not implemented in this backend");
  }
+
+ // ─── Native Graph Executor (DynamicShapePlan) ────────────────────────────
+
+ /**
+  * Compile a serialized DynamicShapePlan into a native C++ executor.
+  * @param serializedPlan pointer to the serialized plan bytes
+  * @param planSize size of the serialized plan in bytes
+  * @return opaque handle to the compiled plan, or null on failure
+  */
+ default Pointer compileDynamicShapePlan(Pointer serializedPlan, long planSize) {
+     throw new UnsupportedOperationException("compileDynamicShapePlan not implemented in this backend");
+ }
+
+ /**
+  * Execute a compiled native plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param opContext OpaqueContext with inputs/outputs set via setGraphContextInputArray/setGraphContextOutputArray
+  * @param stream CUDA stream pointer (null for CPU)
+  * @return 0 on success, non-zero on failure
+  */
+ default int executeDynamicShapePlan(Pointer planHandle,
+                                     OpaqueContext opContext,
+                                     Pointer stream) {
+     throw new UnsupportedOperationException("executeDynamicShapePlan not implemented in this backend");
+ }
+
+ /**
+  * Free a compiled native plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void freeDynamicShapePlan(Pointer planHandle) {
+     throw new UnsupportedOperationException("freeDynamicShapePlan not implemented in this backend");
+ }
+
+ /**
+  * Clear shape caches in a compiled plan. Must be called on session reset.
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void clearDynamicShapePlanCaches(Pointer planHandle) {
+     throw new UnsupportedOperationException("clearDynamicShapePlanCaches not implemented in this backend");
+ }
+
+ /**
+  * Load a model from an SDZ or SDNB file entirely in C++.
+  * @param filePath path to the .sdz or .sdnb file
+  * @return opaque handle to the loaded model, or null on failure
+  */
+ default Pointer loadModelFromFile(String filePath) {
+     throw new UnsupportedOperationException("loadModelFromFile not implemented in this backend");
+ }
+
+ /**
+  * Compile a loaded model into a native execution plan.
+  * @param modelHandle handle from loadModelFromFile()
+  * @param requestedOutputNames array of output variable name strings
+  * @param numOutputs number of requested outputs
+  * @return opaque plan handle, or null on failure
+  */
+ default Pointer compileModelPlan(Pointer modelHandle, String[] requestedOutputNames, int numOutputs) {
+     throw new UnsupportedOperationException("compileModelPlan not implemented in this backend");
+ }
+
+ /**
+  * Free a loaded model.
+  * @param modelHandle handle from loadModelFromFile()
+  */
+ default void freeLoadedModel(Pointer modelHandle) {
+     throw new UnsupportedOperationException("freeLoadedModel not implemented in this backend");
+ }
+
+ /**
+  * Get the number of external inputs required by a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of external inputs, or -1 on error
+  */
+ default int getPlanNumExternalInputs(Pointer planHandle) {
+     throw new UnsupportedOperationException("getPlanNumExternalInputs not implemented in this backend");
+ }
+
+ /**
+  * Get the number of requested outputs in a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of requested outputs, or -1 on error
+  */
+ default int getPlanNumRequestedOutputs(Pointer planHandle) {
+     throw new UnsupportedOperationException("getPlanNumRequestedOutputs not implemented in this backend");
+ }
+
+ /**
+  * Get the number of slots (ops) in a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of slots, or -1 on error
+  */
+ default int getPlanNumSlots(Pointer planHandle) {
+     throw new UnsupportedOperationException("getPlanNumSlots not implemented in this backend");
+ }
+
+ /**
+  * Enable or disable CUDA Graphs for a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param enabled true to enable CUDA Graph capture/replay
+  */
+ default void setPlanCudaGraphsEnabled(Pointer planHandle, boolean enabled) {
+     // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
+  * Get the number of graph segments in a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of segments, or -1 on error
+  */
+ default int getPlanNumSegments(Pointer planHandle) {
+     return -1;
+ }
+
+ /**
+  * Get the number of segments captured as CUDA graphs.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of captured segments
+  */
+ default int getPlanNumCapturedGraphSegments(Pointer planHandle) {
+     return 0;
+ }
+
+ /**
+  * Get the total number of CUDA graph replays across all segments.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return total replay count
+  */
+ default int getPlanTotalGraphReplays(Pointer planHandle) {
+     return 0;
+ }
 }

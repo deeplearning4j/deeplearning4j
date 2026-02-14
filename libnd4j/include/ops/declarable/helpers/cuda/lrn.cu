@@ -37,11 +37,12 @@ static SD_KERNEL void lrnKernel(void* vx, LongType const* xTadShapeInfo, LongTyp
   extern __shared__ char sharedChar[];
   T* shared = reinterpret_cast<T*>(sharedChar);
 
-  auto xEws = shape::elementWiseStride(xTadShapeInfo);
-  auto zEws = shape::elementWiseStride(zTadShapeInfo);
-
-  auto xOrder = shape::order(xTadShapeInfo);
-  auto zOrder = shape::order(zTadShapeInfo);
+  auto xTadRank = shape::rank(xTadShapeInfo);
+  auto zTadRank = shape::rank(zTadShapeInfo);
+  auto xTadShape = shape::shapeOf(xTadShapeInfo);
+  auto zTadShape = shape::shapeOf(zTadShapeInfo);
+  auto xTadStride = shape::stride(xTadShapeInfo);
+  auto zTadStride = shape::stride(zTadShapeInfo);
 
   const T tbias = static_cast<T>(bias);
   const T tbeta = static_cast<T>(beta);
@@ -52,8 +53,12 @@ static SD_KERNEL void lrnKernel(void* vx, LongType const* xTadShapeInfo, LongTyp
     auto x = reinterpret_cast<T*>(vx) + xTadOffsets[i];
     auto z = reinterpret_cast<T*>(vz) + zTadOffsets[i];
 
-    // load everything into shared memory, so we'll operate on shared memory from now on
-    shared[threadIdx.x] = x[threadIdx.x * xEws];
+    // load everything into shared memory using INDEX2COORDS/COORDS2INDEX
+    LongType xCoords[SD_MAX_RANK];
+    LongType xOff;
+    INDEX2COORDS(threadIdx.x, xTadRank, xTadShape, xCoords);
+    COORDS2INDEX(xTadRank, xTadStride, xCoords, xOff);
+    shared[threadIdx.x] = x[xOff];
     __syncthreads();
 
     const LongType begin = sd::math::sd_max<int>(0, threadIdx.x - depth);
@@ -63,7 +68,11 @@ static SD_KERNEL void lrnKernel(void* vx, LongType const* xTadShapeInfo, LongTyp
     T prev = static_cast<T>(0.);
     for (int s = begin; s < end; s++) prev = prev + shared[s] * shared[s];
 
-    z[threadIdx.x * zEws] = shared[threadIdx.x] / math::sd_pow<T, T, T>(tbias + alpha * prev, tbeta);
+    LongType zCoords[SD_MAX_RANK];
+    LongType zOff;
+    INDEX2COORDS(threadIdx.x, zTadRank, zTadShape, zCoords);
+    COORDS2INDEX(zTadRank, zTadStride, zCoords, zOff);
+    z[zOff] = shared[threadIdx.x] / math::sd_pow<T, T, T>(tbias + alpha * prev, tbeta);
   }
 }
 
@@ -77,11 +86,12 @@ static SD_KERNEL void lrnBPKernel(void const* vx, LongType const* xTadShapeInfo,
   X* sharedX = reinterpret_cast<X*>(sharedChar);
   Z* sharedY = reinterpret_cast<Z*>(sharedX + blockDim.x);
 
-  auto xEws = shape::elementWiseStride(xTadShapeInfo);
-  auto zEws = shape::elementWiseStride(zTadShapeInfo);
-
-  auto xOrder = shape::order(xTadShapeInfo);
-  auto zOrder = shape::order(zTadShapeInfo);
+  auto xTadRank = shape::rank(xTadShapeInfo);
+  auto zTadRank = shape::rank(zTadShapeInfo);
+  auto xTadShape = shape::shapeOf(xTadShapeInfo);
+  auto zTadShape = shape::shapeOf(zTadShapeInfo);
+  auto xTadStride = shape::stride(xTadShapeInfo);
+  auto zTadStride = shape::stride(zTadShapeInfo);
 
   const Z tbias = static_cast<Z>(bias);
   const Z tbeta = static_cast<Z>(beta);
@@ -96,8 +106,12 @@ static SD_KERNEL void lrnBPKernel(void const* vx, LongType const* xTadShapeInfo,
     const LongType last = depth + threadIdx.x + 1;
     const LongType end = sd::math::sd_min<int>(last, tadLength);
 
-    // load everything into shared memory
-    sharedX[threadIdx.x] = x[threadIdx.x * xEws];
+    // load everything into shared memory using INDEX2COORDS/COORDS2INDEX
+    LongType xCoords[SD_MAX_RANK];
+    LongType xOff;
+    INDEX2COORDS(threadIdx.x, xTadRank, xTadShape, xCoords);
+    COORDS2INDEX(xTadRank, xTadStride, xCoords, xOff);
+    sharedX[threadIdx.x] = x[xOff];
     sharedY[threadIdx.x] = static_cast<Z>(0.f);
     __syncthreads();
 
@@ -114,7 +128,11 @@ static SD_KERNEL void lrnBPKernel(void const* vx, LongType const* xTadShapeInfo,
       prev = prev + sharedX[s] * factor[s];
     }
 
-    z[threadIdx.x * zEws] = factor[threadIdx.x] * init - 2 * sharedX[threadIdx.x] * coeff * prev;
+    LongType zCoords[SD_MAX_RANK];
+    LongType zOff;
+    INDEX2COORDS(threadIdx.x, zTadRank, zTadShape, zCoords);
+    COORDS2INDEX(zTadRank, zTadStride, zCoords, zOff);
+    z[zOff] = factor[threadIdx.x] * init - 2 * sharedX[threadIdx.x] * coeff * prev;
   }
 }
 

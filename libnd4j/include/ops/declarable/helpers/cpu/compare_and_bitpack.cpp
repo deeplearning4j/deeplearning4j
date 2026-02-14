@@ -100,7 +100,19 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
   X threshold = thresholdScalar.e<X>(0);
   auto buff = input.bufferAsT<X>();
   uint8_t* outBuff = output.bufferAsT<uint8_t>();
-  if (input.ordering() == 'c' && output.ordering() == 'c' && input.ews() == 1 && output.ews() == 1) {
+  auto isContiguous = [](const NDArray& arr) {
+    auto rank = arr.rankOf();
+    auto shape = arr.shapeOf();
+    auto strides = arr.stridesOf();
+    sd::LongType expected = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shape[i] == 1) continue;
+      if (strides[i] != expected) return false;
+      expected *= shape[i];
+    }
+    return true;
+  };
+  if (input.ordering() == 'c' && output.ordering() == 'c' && isContiguous(input) && isContiguous(output)) {
     FUNC_1D func = [buff, outBuff, threshold](uint64_t thread_id, int64_t start, int64_t stop,
                                               int64_t increment) -> void {
       auto outBuffPart = outBuff + start;

@@ -27,6 +27,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.bytedeco.javacpp.LongPointer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,6 +139,16 @@ public class PipelinedVisionEncoder {
             // Close preprocessed frame tensors
             currentPage.close();
 
+            // Trim GPU memory pools on all devices to release reserved-but-unused memory
+            // back to the driver before the next page starts encoding. Without this,
+            // the pool retains all reserved memory from this page's encoding, and the
+            // next page's allocations fail with OOM despite the memory being logically free.
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+
             pageEmbeddings.add(pageEmbedding);
             long pageTime = System.currentTimeMillis() - pageStart;
             log.info("  Page {}: {} frames -> embedding shape={} [{}ms]",
@@ -177,11 +189,68 @@ public class PipelinedVisionEncoder {
 
     private List<INDArray> encodeFrames(PreprocessedPage page) {
         List<INDArray> embeddings = new ArrayList<>();
+        var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        // Track per-device pool stats across frames to detect memory growth
+        long[] prevPoolUsed = new long[numDevices];
+        long[] prevPoolReserved = new long[numDevices];
 
         // Process frames one at a time through the vision encoder. ONNX vision
         // encoder models (SigLIP etc.) only support batch_size=1 — internal reshape
         // and attention ops break with batch_size>1 (CUDA error 700).
         for (int f = 0; f < page.numFrames; f++) {
+            // Pre-flight memory check: trim pools and verify sufficient memory BEFORE
+            // starting a frame that takes ~30s. Without this, OOM occurs at the end of
+            // a frame after wasting the entire encode time.
+            if (f > 0) {
+                for (int d = 0; d < numDevices; d++) {
+                    nativeOps.trimMemoryPool(d);
+                }
+            }
+
+            // Log memory state before each frame so OOM can be diagnosed from logs
+            for (int d = 0; d < numDevices; d++) {
+                long freeMem = nativeOps.getDeviceFreeMemory(d);
+                long totalMem = nativeOps.getDeviceTotalMemory(d);
+                long usedMem = totalMem - freeMem;
+                double pctUsed = 100.0 * usedMem / totalMem;
+                log.info("  Frame {}/{}: GPU {} memory: {}/{} MB ({}% used)",
+                        f, page.numFrames, d, usedMem / (1024 * 1024),
+                        totalMem / (1024 * 1024), String.format("%.1f", pctUsed));
+
+                // Pool stats: poolUsed = live allocations, poolReserved = total held by pool
+                // If poolUsed grows between frames, memory is leaking (not just pool-reserved)
+                try {
+                    LongPointer usedPtr = new LongPointer(1);
+                    LongPointer reservedPtr = new LongPointer(1);
+                    nativeOps.getMemoryPoolStats(d, usedPtr, reservedPtr);
+                    long poolUsedMB = usedPtr.get() / (1024 * 1024);
+                    long poolReservedMB = reservedPtr.get() / (1024 * 1024);
+                    long deltaUsedMB = (f > 0) ? (usedPtr.get() - prevPoolUsed[d]) / (1024 * 1024) : 0;
+                    long deltaReservedMB = (f > 0) ? (reservedPtr.get() - prevPoolReserved[d]) / (1024 * 1024) : 0;
+                    if (f > 0) {
+                        log.info("  Frame {}/{}: GPU {} pool: used={}MB ({}{}MB), reserved={}MB ({}{}MB)",
+                                f, page.numFrames, d,
+                                poolUsedMB, deltaUsedMB >= 0 ? "+" : "", deltaUsedMB,
+                                poolReservedMB, deltaReservedMB >= 0 ? "+" : "", deltaReservedMB);
+                    } else {
+                        log.info("  Frame {}/{}: GPU {} pool: used={}MB, reserved={}MB",
+                                f, page.numFrames, d, poolUsedMB, poolReservedMB);
+                    }
+                    prevPoolUsed[d] = usedPtr.get();
+                    prevPoolReserved[d] = reservedPtr.get();
+                } catch (Exception e) {
+                    // CPU backend — pool stats not available
+                }
+
+                // Fail fast if GPU is critically low (< 5% free = likely OOM during frame)
+                if (pctUsed > 95.0) {
+                    log.warn("  GPU {} is critically low on memory ({}% used). "
+                            + "Frame {} may OOM.", d, String.format("%.1f", pctUsed), f);
+                }
+            }
+
             INDArray pixelValues = page.frameTensors[f];
             INDArray mask = page.masks[f];
 

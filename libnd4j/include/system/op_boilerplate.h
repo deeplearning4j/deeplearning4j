@@ -2594,14 +2594,14 @@
   if (WORKSPACE == nullptr) {                                                                                         \
     int deviceId_##VARIABLE = 0;                                                                                      \
     cudaGetDevice(&deviceId_##VARIABLE);                                                                              \
-    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;                                                            \
+    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + SD_ALLOC_PADDING;                                                            \
     VARIABLE = reinterpret_cast<TT*>(sd::memory::CudaMemoryPool::getInstance().allocate(                              \
         allocSize_##VARIABLE, deviceId_##VARIABLE, nullptr));                                                         \
     if (VARIABLE == nullptr) {                                                                                        \
       THROW_EXCEPTION("[DEVICE] allocation failed");                                                                  \
     }                                                                                                                 \
   } else {                                                                                                            \
-    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + 8;                                                            \
+    size_t allocSize_##VARIABLE = LENGTH * sizeof(TT) + SD_ALLOC_PADDING;                                                            \
     VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize_##VARIABLE)); \
    }
 

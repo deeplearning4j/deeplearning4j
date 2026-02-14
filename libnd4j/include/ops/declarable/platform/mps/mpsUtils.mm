@@ -151,7 +151,16 @@ bool isMPSSupported(sd::DataType dtype) {
 }
 
 bool isContiguous(const NDArray& arr) {
-    return arr.ews() == 1;
+    auto rank = arr.rankOf();
+    auto shape = arr.shapeOf();
+    auto strides = arr.stridesOf();
+    sd::LongType expected = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (shape[i] == 1) continue;
+      if (strides[i] != expected) return false;
+      expected *= shape[i];
+    }
+    return true;
 }
 
 bool isMPSFriendly(const NDArray& arr) {

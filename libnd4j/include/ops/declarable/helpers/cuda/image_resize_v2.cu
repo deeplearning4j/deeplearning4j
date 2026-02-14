@@ -154,7 +154,6 @@ static SD_KERNEL void batchedGatherSpan(LongType outputWidth, LongType outputHei
   auto inputHeight = shape::sizeAt(imageSpecialShapeInfo, 1);
   auto inputWidth = shape::sizeAt(imageSpecialShapeInfo, 2);
   auto channels = shape::sizeAt(imageSpecialShapeInfo, 3);
-  bool inputEws1 = shape::elementWiseStride(imageSpecialShapeInfo) == 1;
   auto inputPixPerBatch = shape::strideAt(imageSpecialShapeInfo, 0);
   auto inRowStride = shape::strideAt(imageSpecialShapeInfo, 1);
   auto wStride = shape::strideAt(imageSpecialShapeInfo, 2);
@@ -168,7 +167,7 @@ static SD_KERNEL void batchedGatherSpan(LongType outputWidth, LongType outputHei
     auto intermediatePtr = pIntermediate + b * intermediatePixPerBatch;
     auto outputPtr = pOutput + b * outputPixPerBatch;
     gatherRows<X, Z>(rowSpanSize, rowStartsBuf, rowWeightBuf, imagePtr, inputHeight, inputWidth, outputHeight,
-                     inputWidth, channels, intermediatePtr, inputEws1, inRowStride, wStride, cStride);
+                     inputWidth, channels, intermediatePtr, inRowStride, wStride, cStride);
     gatherColumns<Z>(columnSpanSize, columnStartsBuf, columnWeightBuf, intermediatePtr, outputHeight, inputWidth,
                      outputHeight, outputWidth, channels, outputPtr);
   }

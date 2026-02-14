@@ -20,6 +20,7 @@
 //
 
 #include <memory/cuda/CudaMemoryPool.h>
+#include <memory/MemoryCounter.h>
 #include <system/Environment.h>
 #include <helpers/DebugHelper.h>
 #include <execution/LaunchContext.h>
@@ -163,16 +164,21 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
     return false;
   }
 
-  // Configure the pool release threshold.
-  // Use 0 so the pool returns freed memory to the driver immediately when not in use.
-  // This prevents the pool from holding onto all GPU memory indefinitely,
-  // which would starve cudaMalloc fallback paths and other devices.
-  // cudaMallocAsync still reuses pool memory for same-stream allocations
-  // even with threshold=0, so the fast path is unaffected.
-  uint64_t threshold = 0;
+  // Configure the pool release threshold based on device memory ratio.
+  // The pool holds reserved memory for reuse. Setting this to a fraction of total
+  // GPU memory ensures the pool returns excess memory to the driver, leaving headroom
+  // for CUDA contexts, streams, cuDNN workspaces, and other non-pool allocations.
+  // Ratio-based: 75% of total GPU memory. The remaining 25% stays available for
+  // non-pool uses (stream creation, cuDNN, display, etc.).
+  size_t devFree = 0, devTotal = 0;
+  cudaMemGetInfo(&devFree, &devTotal);
+  uint64_t threshold = static_cast<uint64_t>(devTotal * 0.75);
   err = cudaMemPoolSetAttribute(pools_[deviceId], cudaMemPoolAttrReleaseThreshold, &threshold);
   if (err != cudaSuccess) {
     sd_debug("Warning: Could not set pool release threshold: %s\n", cudaGetErrorString(err), "");
+  } else {
+    sd_printf("CudaMemoryPool: Device %d pool release threshold set to %zu MB (75%% of %zu MB total)\n",
+              deviceId, threshold / (1024*1024), devTotal / (1024*1024));
   }
 
   poolInitialized_[deviceId] = true;
@@ -255,27 +261,57 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   cudaError_t err = cudaMallocAsync(&ptr, size, stream);
 
   if (err != cudaSuccess) {
-    sd_printf("CudaMemoryPool::allocate: cudaMallocAsync failed on device %d (size=%zu): %s\n",
-              deviceId, size, cudaGetErrorString(err));
     // cudaMallocAsync failure places an error both on the host-side sticky state
-    // AND on the stream.  We must clear both, otherwise subsequent operations
-    // on the same stream (or cudaStreamSynchronize) will pick up this stale error.
+    // AND on the stream.  We must clear both before retrying.
     cudaGetLastError();  // clear host-side sticky error
     if (stream != nullptr) {
       cudaStreamSynchronize(stream);
     }
     cudaGetLastError();  // clear any error surfaced by the sync
-    err = cudaMalloc(&ptr, size);
-    if (err != cudaSuccess) {
-      sd_printf("CudaMemoryPool::allocate: cudaMalloc also failed on device %d (size=%zu): %s\n",
-                deviceId, size, cudaGetErrorString(err));
-      auto result = allocateFailover(size, deviceId, actualDeviceId);
-      restoreDevice();
-      return result;
+
+    // STREAM MISMATCH FIX: The most common cause of cudaMallocAsync failure is
+    // that memory was freed on a different stream (e.g., execStream) than the
+    // allocation stream (nullptr/stream 0). The pool can't reuse freed memory
+    // across streams without synchronization. Sync dirty free streams and retry
+    // BEFORE going to the heavyweight allocateFailover path.
+    {
+      bool syncedAny = false;
+      std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[deviceId]);
+      for (auto s : dirtyFreeStreams_[deviceId]) {
+        if (s != stream) {  // only sync OTHER streams (our stream already synced above)
+          cudaStreamSynchronize(s);
+          syncedAny = true;
+        }
+      }
+      if (syncedAny) {
+        dirtyFreeStreams_[deviceId].clear();
+        cudaGetLastError();  // clear any error from syncs
+        ptr = nullptr;
+        err = cudaMallocAsync(&ptr, size, stream);
+        if (err == cudaSuccess && ptr != nullptr) {
+          restoreDevice();
+          return ptr;  // Success after stream sync — no failover needed
+        }
+        cudaGetLastError();
+      }
     }
 
+    // Still failed after stream sync. Log and go to full failover.
+    size_t poolUsed = 0, poolReserved = 0;
+    getStats(deviceId, poolUsed, poolReserved);
+    sd_printf("CudaMemoryPool::allocate: cudaMallocAsync failed on device %d (size=%zu): %s\n"
+              "  Pool: used=%zu MB, reserved=%zu MB (reclaimable=%zu MB)\n",
+              deviceId, size, cudaGetErrorString(err),
+              poolUsed / (1024*1024), poolReserved / (1024*1024),
+              (poolReserved > poolUsed ? (poolReserved - poolUsed) : 0) / (1024*1024));
+
+    // CRITICAL: Do NOT fall back to cudaMalloc here. Direct cudaMalloc allocations
+    // bypass pool stats (cudaMemPoolAttrUsedMemCurrent won't track them), causing
+    // getStats() to underreport memory usage. Go straight to allocateFailover()
+    // which does trimPool + retry in a controlled way.
+    auto result = allocateFailover(size, deviceId, actualDeviceId);
     restoreDevice();
-    return ptr;
+    return result;
   }
 
   // Pool allocation succeeded - no tracking needed, will use cudaFreeAsync
@@ -294,22 +330,65 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     cudaSetDevice(currentDeviceId);
   }
   cudaMemGetInfo(&currentFreeMem, &currentTotalMem);
+
+  // Diagnostic: show pool stats alongside cudaMemGetInfo so we can distinguish
+  // "pool holds reserved memory" from "GPU genuinely full"
+  size_t poolUsed = 0, poolReserved = 0;
+  getStats(currentDeviceId, poolUsed, poolReserved);
+
+  // Also check MemoryCounter (C++ side tracking) and host memory
+  size_t mcDevice = MemoryCounter::getInstance().allocatedDevice(currentDeviceId);
+  size_t mcHost = MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST);
+  size_t mcDeviceGroup = MemoryCounter::getInstance().allocatedGroup(MemoryType::DEVICE);
+  size_t pinnedUsed = pinnedHostBytesUsed_.load();
+
+  sd_printf("CudaMemoryPool::allocateFailover: MEMORY DIAGNOSTIC on device %d:\n"
+            "  cudaMemGetInfo: free=%zu MB, total=%zu MB\n"
+            "  Pool: used=%zu MB, reserved=%zu MB (reclaimable=%zu MB)\n"
+            "  MemoryCounter: device[%d]=%zu MB, deviceGroup=%zu MB, hostGroup=%zu MB\n"
+            "  Pinned host fallback: %zu MB\n"
+            "  Requested: %zu bytes (%.2f MB)\n",
+            currentDeviceId,
+            currentFreeMem / (1024*1024), currentTotalMem / (1024*1024),
+            poolUsed / (1024*1024), poolReserved / (1024*1024), (poolReserved - poolUsed) / (1024*1024),
+            currentDeviceId, mcDevice / (1024*1024), mcDeviceGroup / (1024*1024), mcHost / (1024*1024),
+            pinnedUsed / (1024*1024),
+            size, size / (1024.0*1024.0));
+
   if (prevDev != currentDeviceId) {
     cudaSetDevice(prevDev);
   }
 
   // Step 1: Trim pool and retry.
-  // trimPool() releases pool-reserved memory whose async frees have already completed
-  // (no stream sync needed — callers should have synced their streams before reaching here).
+  // trimPool() syncs only streams with pending cudaFreeAsync (tracked in dirtyFreeStreams_),
+  // then releases pool-reserved memory back to the driver.
   if (supported_ && poolInitialized_[currentDeviceId]) {
     trimPool(currentDeviceId);
+
+    // Log post-trim state to see how much memory was actually recovered
+    size_t postTrimFree = 0, postTrimTotal = 0;
+    size_t postTrimPoolUsed = 0, postTrimPoolReserved = 0;
+    {
+      int prevDev2 = -1;
+      cudaGetDevice(&prevDev2);
+      if (prevDev2 != currentDeviceId) cudaSetDevice(currentDeviceId);
+      cudaMemGetInfo(&postTrimFree, &postTrimTotal);
+      if (prevDev2 != currentDeviceId) cudaSetDevice(prevDev2);
+    }
+    getStats(currentDeviceId, postTrimPoolUsed, postTrimPoolReserved);
+    sd_printf("CudaMemoryPool::allocateFailover: After trim on device %d: "
+              "cudaFree=%zu MB (was %zu MB, recovered %zu MB), pool used=%zu MB, reserved=%zu MB\n",
+              currentDeviceId,
+              postTrimFree / (1024*1024), currentFreeMem / (1024*1024),
+              (postTrimFree > currentFreeMem ? (postTrimFree - currentFreeMem) : 0) / (1024*1024),
+              postTrimPoolUsed / (1024*1024), postTrimPoolReserved / (1024*1024));
 
     // Try cudaMallocAsync first (reuses pool memory directly)
     // Use nullptr (default stream) to avoid LaunchContext recursion.
     void* ptr = nullptr;
     cudaError_t err = cudaMallocAsync(&ptr, size, nullptr);
     if (err == cudaSuccess && ptr != nullptr) {
-      sd_debug("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId, "");
+      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via pool after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
       return ptr;
     }
@@ -318,49 +397,48 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
     // Also try cudaMalloc (uses driver-level free memory released by trim)
     err = cudaMalloc(&ptr, size);
     if (err == cudaSuccess && ptr != nullptr) {
-      sd_debug("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId, "");
+      sd_printf("CudaMemoryPool::allocateFailover: Succeeded via cudaMalloc after trim on device %d\n", currentDeviceId);
       if (actualDeviceId) *actualDeviceId = currentDeviceId;
       return ptr;
     }
     cudaGetLastError();  // clear error
   }
 
-  // Step 2: Try peer-accessible GPU devices ONLY.
-  // CRITICAL: We only failover to peer devices because:
-  // 1. Non-peer device memory cannot be accessed from the current device
-  // 2. Kernels run on the current device but would try to access non-peer memory
-  // 3. This causes CUDA error 700 (illegal memory access) and heap corruption
-  // If no peer devices have space, we fall back to pinned host memory instead.
+  // Step 2: Try other GPU devices (peer first, then non-peer).
+  // Non-peer devices work because the caller gets actualDeviceId and higher-level code
+  // (DataBuffer::migrate, replicateToDevice) handles cross-device transfers via D2H+H2D.
+  // Peer devices are preferred (direct GPU-GPU access), non-peer next, pinned host last.
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
-  // prevDev was already declared earlier in this function
 
-  // Build sorted device list: peer devices only, sorted by free memory
   struct DeviceInfo { int id; size_t freeMem; bool isPeer; };
   std::vector<DeviceInfo> candidates;
   for (int d = 0; d < deviceCount && d < MAX_DEVICES; d++) {
     if (d == currentDeviceId) continue;
-    
-    // CRITICAL FIX: Only consider peer-accessible devices
-    // Non-peer devices would cause illegal memory access when kernels try to use the memory
+
     bool isPeer = peerAccessEnabled_[currentDeviceId][d];
-    if (!isPeer) {
-      sd_debug("CudaMemoryPool::allocateFailover: Skipping non-peer device %d - would cause illegal memory access\n", d, "");
-      continue;
-    }
-    
     cudaSetDevice(d);
+
+    // Trim this device's pool before checking free memory. Without trimming,
+    // cudaMemGetInfo reports free memory MINUS pool reserved, which can be
+    // much lower than actual available memory. This ensures candidates are
+    // accurately evaluated rather than incorrectly excluded.
+    if (supported_ && poolInitialized_[d]) {
+      trimPool(d);
+    }
+
     size_t freeMem = 0, totalMem = 0;
     cudaMemGetInfo(&freeMem, &totalMem);
     if (freeMem > size * 1.1) {  // 10% margin
-      candidates.push_back({d, freeMem, true});  // isPeer is always true here
+      candidates.push_back({d, freeMem, isPeer});
     }
   }
   cudaSetDevice(prevDev);
 
-  // Sort by free memory descending (all are peer devices now)
+  // Sort: peer devices first (direct access), then by free memory descending
   std::sort(candidates.begin(), candidates.end(), [](const DeviceInfo& a, const DeviceInfo& b) {
-    return a.freeMem > b.freeMem;  // by free memory only
+    if (a.isPeer != b.isPeer) return a.isPeer;  // peer first
+    return a.freeMem > b.freeMem;
   });
 
   // MEMORY PRESSURE EVENT: Build and report to callback
@@ -369,9 +447,9 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   event.requestedSize = size;
   event.availableMemory = currentFreeMem;
   event.alternativeDeviceId = candidates.empty() ? -1 : candidates[0].id;
-  event.isPeerAccessible = !candidates.empty();
-  event.recommendedAction = candidates.empty() ? 
-    MemoryPressureEvent::Action::USE_PINNED_HOST : 
+  event.isPeerAccessible = !candidates.empty() && candidates[0].isPeer;
+  event.recommendedAction = candidates.empty() ?
+    MemoryPressureEvent::Action::USE_PINNED_HOST :
     MemoryPressureEvent::Action::FAILOVER;
 
   // Store the event and set flag
@@ -397,8 +475,8 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
 
   for (const auto& candidate : candidates) {
     int d = candidate.id;
-    sd_printf("CudaMemoryPool::allocateFailover: Trying peer device %d (free: %zu bytes) for %zu bytes\n",
-              d, candidate.freeMem, size);
+    sd_printf("CudaMemoryPool::allocateFailover: Trying %s device %d (free: %zu bytes) for %zu bytes\n",
+              candidate.isPeer ? "peer" : "non-peer", d, candidate.freeMem, size);
     cudaSetDevice(d);
 
     // Try pool allocation first on this device
@@ -438,6 +516,25 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   // Check pinned host memory budget before allocating
   size_t limit = pinnedHostBytesLimit_.load();
   size_t currentUsage = pinnedHostBytesUsed_.load();
+
+  // Also check host-side memory: MemoryCounter HOST group tracks primary buffer allocations.
+  // Pinned host memory from cudaMallocHost is ADDITIONAL host consumption on top of those
+  // primary buffers. JavaCPP's maxPhysicalBytes caps total physical memory — if primary
+  // buffers already use most of that budget, adding pinned host memory will cause OOM.
+  size_t hostGroupUsed = MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST);
+  int64_t hostGroupLimit = MemoryCounter::getInstance().groupLimit(MemoryType::HOST);
+  size_t totalHostUsage = hostGroupUsed + currentUsage + size;
+
+  if (hostGroupLimit > 0 && totalHostUsage > static_cast<size_t>(hostGroupLimit)) {
+    sd_printf("CudaMemoryPool::allocateFailover: HOST memory limit would be exceeded: "
+              "primary=%zu MB + pinned=%zu MB + new=%zu MB = %zu MB > limit=%lld MB\n",
+              hostGroupUsed / (1024*1024), currentUsage / (1024*1024), size / (1024*1024),
+              totalHostUsage / (1024*1024), hostGroupLimit / (1024LL*1024LL));
+    THROW_EXCEPTION("CUDA out of memory: all GPU devices exhausted and total host memory "
+                    "(primary buffers + pinned fallback) would exceed host memory limit. "
+                    "Set SD_MAX_PRIMARY_BYTES to increase the host limit.");
+  }
+
   if (limit > 0 && (currentUsage + size) > limit) {
     sd_printf("CudaMemoryPool::allocateFailover: Pinned host memory limit exceeded (%zu + %zu > %zu bytes, limit=%.1f GB). "
               "Increase via SD_CUDA_PINNED_HOST_LIMIT env var (in MB) or Environment::setCudaPinnedHostLimit().\n",
@@ -446,7 +543,10 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
                     "Set SD_CUDA_PINNED_HOST_LIMIT (in MB) to increase the limit.");
   }
 
-  sd_printf("CudaMemoryPool::allocateFailover: WARNING - All GPUs exhausted, falling back to pinned host memory for %zu bytes on device %d (pinned used: %zu)\n", size, currentDeviceId, currentUsage);
+  sd_printf("CudaMemoryPool::allocateFailover: WARNING - All GPUs exhausted, falling back to pinned host memory "
+            "for %zu bytes on device %d (pinned used: %zu MB, host primary: %zu MB, total host: %zu MB)\n",
+            size, currentDeviceId, currentUsage / (1024*1024), hostGroupUsed / (1024*1024),
+            (currentUsage + hostGroupUsed) / (1024*1024));
   cudaGetLastError();  // clear error state
   void* ptr = nullptr;
   cudaError_t err = cudaMallocHost(&ptr, size);
@@ -486,12 +586,13 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
       return;
     }
   } catch (...) {
-    if (sd::Environment::getInstance().isDebug() || sd::Environment::getInstance().isVerbose()) {
-      sd_debug("CudaMemoryPool::free: Exception accessing hostAllocations_ - possible corruption\n", "");
-    }
-    // Still attempt to free the pointer
-    cudaFreeHost(ptr);
-    return;
+    // DO NOT call cudaFreeHost(ptr) here — if the map lookup threw, we don't know
+    // whether ptr is pinned (cudaMallocHost) or GPU (cudaMallocAsync) or regular heap (malloc).
+    // Calling cudaFreeHost on a malloc'd pointer would munmap the pages, corrupting the
+    // glibc heap and causing SIGSEGV on the next malloc/free. Just log and fall through
+    // to the GPU free path below, which handles non-pinned pointers correctly.
+    sd_printf("CudaMemoryPool::free: WARNING - Exception accessing hostAllocations_ for ptr=%p. "
+              "Treating as GPU memory (NOT calling cudaFreeHost).\n", ptr);
   }
 
   // Ensure we're on the correct device for the free. cudaFreeAsync with a stream
@@ -509,6 +610,13 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   if (enabled_.load() && supported_) {
     cudaError_t err = cudaFreeAsync(ptr, stream);
     if (err == cudaSuccess) {
+      // Track which stream this free was issued on so trimPool() can sync
+      // only the relevant streams instead of blocking the entire device.
+      int trackDevice = (deviceId >= 0 && deviceId < MAX_DEVICES) ? deviceId : 0;
+      {
+        std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[trackDevice]);
+        dirtyFreeStreams_[trackDevice].insert(stream);  // nullptr (stream 0) is valid
+      }
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;
     }
@@ -517,6 +625,13 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // Fallback for unsupported or error cases
   cudaFree(ptr);
   if (needDeviceRestore) cudaSetDevice(savedDev);
+}
+
+void CudaMemoryPool::removeDirtyStream(int deviceId, cudaStream_t stream) {
+  if (deviceId >= 0 && deviceId < MAX_DEVICES) {
+    std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[deviceId]);
+    dirtyFreeStreams_[deviceId].erase(stream);
+  }
 }
 
 void CudaMemoryPool::getStats(int deviceId, size_t& usedBytes, size_t& reservedBytes) {
@@ -542,12 +657,32 @@ void CudaMemoryPool::trimPool(int deviceId) {
     cudaSetDevice(deviceId);
   }
 
-  // Sync the default stream (stream 0 / nullptr) before trimming.
-  // CudaMemoryPool::free() uses cudaFreeAsync(ptr, nullptr) — the default stream.
-  // Without syncing stream 0, cudaMemPoolTrimTo() won't see those frees as complete
-  // and won't release the memory, causing stream creation failures on new threads.
-  cudaStreamSynchronize(nullptr);
-  cudaMemPoolTrimTo(pools_[deviceId], 0);
+  // Sync only the streams that have had cudaFreeAsync issued on them.
+  // free() records each stream into dirtyFreeStreams_[deviceId].
+  // We drain that set here so only streams with pending frees are synced,
+  // leaving unrelated compute work on other streams unblocked.
+  {
+    std::vector<cudaStream_t> streamsToSync;
+    {
+      std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[deviceId]);
+      streamsToSync.assign(dirtyFreeStreams_[deviceId].begin(),
+                           dirtyFreeStreams_[deviceId].end());
+      dirtyFreeStreams_[deviceId].clear();
+    }
+    for (auto s : streamsToSync) {
+      cudaError_t err = cudaStreamSynchronize(s);
+      if (err != cudaSuccess) {
+        // Stream may have been destroyed — CUDA guarantees all ops on a
+        // destroyed stream complete before destroy returns, so this is safe.
+        cudaGetLastError();  // clear error
+      }
+    }
+  }
+  cudaError_t trimErr = cudaMemPoolTrimTo(pools_[deviceId], 0);
+  if (trimErr != cudaSuccess) {
+    // Clear the sticky error so callers (e.g. cudaStreamCreate) don't pick it up.
+    cudaGetLastError();
+  }
 
   if (prevDevice != deviceId) {
     cudaSetDevice(prevDevice);
@@ -566,11 +701,42 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
     cudaSetDevice(deviceId);
   }
 
-  // Sync the actual execution stream where cudaFreeAsync calls were issued.
-  cudaStreamSynchronize(stream);
+  // Sync the provided stream first (caller expects this stream's work to complete).
+  if (stream != nullptr) {
+    cudaError_t err = cudaStreamSynchronize(stream);
+    if (err != cudaSuccess) {
+      cudaGetLastError();  // clear error from stale/destroyed stream
+    }
+  }
+
+  // CRITICAL: Also drain ALL dirty streams tracked by free(). Without this,
+  // cudaFreeAsync calls from previous execution streams (which change each chunk
+  // when ContextBuffers reinitializes) remain unsynced. The pool can't reuse their
+  // memory for new allocations on stream 0, causing OOM despite having enough total
+  // memory. This matches trimPool()'s behavior but is called more frequently
+  // (every periodic flush vs only on allocation failure).
+  {
+    std::vector<cudaStream_t> streamsToSync;
+    {
+      std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[deviceId]);
+      streamsToSync.assign(dirtyFreeStreams_[deviceId].begin(),
+                           dirtyFreeStreams_[deviceId].end());
+      dirtyFreeStreams_[deviceId].clear();
+    }
+    for (auto s : streamsToSync) {
+      if (s == stream) continue;  // already synced above
+      cudaError_t err = cudaStreamSynchronize(s);
+      if (err != cudaSuccess) {
+        cudaGetLastError();  // clear error from stale/destroyed stream
+      }
+    }
+  }
 
   // Trim to release unused reserved memory back to the device
-  cudaMemPoolTrimTo(pools_[deviceId], 0);
+  cudaError_t trimErr = cudaMemPoolTrimTo(pools_[deviceId], 0);
+  if (trimErr != cudaSuccess) {
+    cudaGetLastError();  // clear sticky error
+  }
 
   if (prevDevice != deviceId) {
     cudaSetDevice(prevDevice);

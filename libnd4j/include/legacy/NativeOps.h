@@ -1467,4 +1467,131 @@ SD_LIB_EXPORT int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
  */
 SD_LIB_EXPORT sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle);
 
+// ========================
+// Native Graph Executor API
+// ========================
+
+/**
+ * Compile a serialized DynamicShapePlan into a native C++ executor.
+ * The serialized plan is a binary format produced by DynamicShapePlan.serialize() in Java.
+ *
+ * @param serializedPlan  Pointer to the serialized plan bytes
+ * @param planSize  Size of the serialized plan in bytes
+ * @return Opaque handle to the compiled plan, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType planSize);
+
+/**
+ * Execute a compiled native plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param opContext  OpaqueContext with inputs set via setGraphContextInputArray(), outputs pre-allocated via setGraphContextOutputArray()
+ * @param stream  CUDA stream pointer (nullptr for CPU)
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int executeDynamicShapePlan(
+    sd::Pointer planHandle,
+    OpaqueContext* opContext,
+    sd::Pointer stream);
+
+/**
+ * Free a compiled native plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void freeDynamicShapePlan(sd::Pointer planHandle);
+
+/**
+ * Clear shape caches in a compiled plan.
+ * Must be called when a session resets to avoid stale GPU memory references.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void clearDynamicShapePlanCaches(sd::Pointer planHandle);
+
+/**
+ * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
+ *
+ * @param filePath  Path to the .sdz or .sdnb file
+ * @return Opaque handle to the loaded model, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer loadModelFromFile(const char* filePath);
+
+/**
+ * Compile a loaded model into a native execution plan.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ * @param requestedOutputNames  Array of output variable name strings
+ * @param numOutputs  Number of requested outputs
+ * @return Opaque plan handle, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer compileModelPlan(
+    sd::Pointer modelHandle,
+    sd::Pointer requestedOutputNames, int numOutputs);
+
+/**
+ * Free a loaded model.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ */
+SD_LIB_EXPORT void freeLoadedModel(sd::Pointer modelHandle);
+
+/**
+ * Get the number of external inputs required by a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of external inputs
+ */
+SD_LIB_EXPORT int getPlanNumExternalInputs(sd::Pointer planHandle);
+
+/**
+ * Get the number of requested outputs in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of requested outputs
+ */
+SD_LIB_EXPORT int getPlanNumRequestedOutputs(sd::Pointer planHandle);
+
+/**
+ * Get the number of slots (ops) in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of slots
+ */
+SD_LIB_EXPORT int getPlanNumSlots(sd::Pointer planHandle);
+
+/**
+ * Enable or disable CUDA Graphs for a compiled plan.
+ * When enabled, capturable segments are captured as CUDA graphs on the
+ * second execution and replayed on subsequent calls with matching shapes.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled  true to enable, false to disable
+ */
+SD_LIB_EXPORT void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled);
+
+/**
+ * Get the number of graph segments in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of segments, or -1 if handle is null
+ */
+SD_LIB_EXPORT int getPlanNumSegments(sd::Pointer planHandle);
+
+/**
+ * Get the number of segments that have been captured as CUDA graphs.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of captured graph segments
+ */
+SD_LIB_EXPORT int getPlanNumCapturedGraphSegments(sd::Pointer planHandle);
+
+/**
+ * Get the total number of CUDA graph replays across all segments.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Total graph replay count
+ */
+SD_LIB_EXPORT int getPlanTotalGraphReplays(sd::Pointer planHandle);
+
 #endif // NATIVEOPS_H

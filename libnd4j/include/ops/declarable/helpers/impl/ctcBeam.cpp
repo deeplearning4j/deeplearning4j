@@ -571,10 +571,10 @@ void beamSearch_(NDArray& logit, NDArray& sequence_length, NDArray& result_seque
 
 #if defined(ASSERT_INNER)
   // result_probs should be [batch_len, nbest_len]
-  assert(result_probs.ews() == 1 && result_probs.rankOf() == 2 && result_probs.shapeOf()[0] == batch_len &&
+  assert(result_probs.ordering() == 'c' && result_probs.rankOf() == 2 && result_probs.shapeOf()[0] == batch_len &&
          result_probs.shapeOf()[1] == nbest_len);
   // result sequence should be [batch_len, nbest_len,  max_len_t]
-  assert(result_sequences.ews() == 1 && result_sequences.rankOf() == 3 && result_sequences.shapeOf()[0] == batch_len &&
+  assert(result_sequences.ordering() == 'c' && result_sequences.rankOf() == 3 && result_sequences.shapeOf()[0] == batch_len &&
          result_sequences.shapeOf()[1] == nbest_len && result_sequences.shapeOf()[2] == max_len_t);
 #endif
   // as ctcBeam search runs on Cpu we should make NdArray buffers available on the host side as well

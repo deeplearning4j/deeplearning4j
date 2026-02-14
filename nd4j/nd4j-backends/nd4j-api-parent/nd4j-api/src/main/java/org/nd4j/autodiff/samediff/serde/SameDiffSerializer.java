@@ -752,9 +752,27 @@ public class SameDiffSerializer {
         log.info("File {}: Metadata serialization: {} large names (expect appended), {} small names (expect inline).",
                 file.getName(), largeArrayNamesForMetadata.size(), smallInlineArrayNamesForMetadata.size());
 
+        // Pre-compute relative offsets for appended arrays. These are relative to the
+        // start of the data section (after header + metadata). C++ reader computes
+        // absolute offset as: HEADER_SIZE + metadataLength + relativeOffset.
+        // The order must match the iteration order used during the actual append phase.
+        Map<String, Pair<Long, Long>> appendedDataOffsets = new LinkedHashMap<>();
+        if (externalArraysToAppend != null && !externalArraysToAppend.isEmpty()) {
+            long relativeOffset = 0;
+            for (Map.Entry<String, INDArray> entry : externalArraysToAppend.entrySet()) {
+                INDArray arr = entry.getValue();
+                long lengthBytes = 0;
+                if (arr != null && !arr.isEmpty()) {
+                    lengthBytes = arr.length() * arr.data().getElementSize();
+                }
+                appendedDataOffsets.put(entry.getKey(), Pair.of(relativeOffset, lengthBytes));
+                relativeOffset += lengthBytes;
+            }
+        }
+
         // 2. Serialize Metadata FlatBuffer
         ByteBuffer metadataBuffer = serializeMetadataFlatBuffer(sameDiff, saveUpdaterState, metadata,
-                largeArrayNamesForMetadata, smallInlineArrayNamesForMetadata);
+                largeArrayNamesForMetadata, smallInlineArrayNamesForMetadata, appendedDataOffsets);
         int metadataLength = metadataBuffer.remaining();
         if (metadataLength <= 0 && (sameDiff.variables().size() > 0 || sameDiff.getOps().size() > 0)) {
             log.warn("Serialization produced empty metadata buffer for non-empty SameDiff instance {}. File may be invalid.", file.getName());
@@ -1864,7 +1882,7 @@ public class SameDiffSerializer {
 
                 // Serialize sub-instance metadata to a nested FlatBuffer
                 ByteBuffer subInstanceBuffer = serializeMetadataFlatBuffer(subInstance, false, null,
-                        subLargeArrayNames, subSmallArrayNames);
+                        subLargeArrayNames, subSmallArrayNames, Collections.emptyMap());
 
                 if (subInstanceBuffer == null || subInstanceBuffer.remaining() == 0) {
                     log.warn("Failed to serialize sub-instance '{}' metadata. Skipping.", subInstanceName);
@@ -2352,7 +2370,8 @@ public class SameDiffSerializer {
             boolean saveUpdaterState,
             Map<String, String> metadata,
             @NonNull Set<String> largeArrayNamesToExcludeData,
-            @NonNull Set<String> smallArrayNamesToIncludeData) throws IOException {
+            @NonNull Set<String> smallArrayNamesToIncludeData,
+            @NonNull Map<String, Pair<Long, Long>> appendedDataOffsets) throws IOException {
 
         ExecutorConfiguration configuration = ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE)
                 .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
@@ -2490,8 +2509,27 @@ public class SameDiffSerializer {
                 } else {
                     arrayOffset = 0;
                 }
+            } else if (largeArrayNamesToExcludeData.contains(varName) && appendedDataOffsets.containsKey(varName)) {
+                // Large array: create a FlatArray stub with the appended data offset/length
+                // so C++ can locate the raw data in the SDNB file without parsing the Java manifest.
+                Pair<Long, Long> offsetAndLen = appendedDataOffsets.get(varName);
+                long appendOffset = offsetAndLen.getFirst();
+                long appendLength = offsetAndLen.getSecond();
+                INDArray arr = variable.getArr();
+                if (arr != null && shape != null) {
+                    int faShapeOffset = FlatArray.createShapeVector(bufferBuilder, shape);
+                    byte faDtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
+                    byte faOrder = (byte)(arr.ordering() == 'c' ? 0 : 1);
+                    arrayOffset = FlatArray.createFlatArray(bufferBuilder,
+                            faShapeOffset, 0, faDtype, faOrder,
+                            0, appendLength, 0, false,
+                            appendOffset, appendLength);
+                    log.debug("Created FlatArray stub for appended '{}': relativeOffset={}, length={}", varName, appendOffset, appendLength);
+                } else {
+                    arrayOffset = 0;
+                }
             } else {
-                arrayOffset = 0; // No inline data for large arrays or non-included variables
+                arrayOffset = 0; // No inline data for non-included variables
             }
 
             int controlDepsOffset = 0,
@@ -2735,7 +2773,7 @@ public class SameDiffSerializer {
             int shapeOffset = FlatArray.createShapeVector(builder, shape);
             byte dtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
             byte order = (byte)(arr.ordering() == 'c' ? 0 : 1);
-            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, 0, dtype, order, 0, 0, 0, false);
+            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, 0, dtype, order, 0, 0, 0, false, 0L, 0L);
             log.debug("SERIALIZE_INLINE: SUCCESS (Empty) for Var='{}'. Returning offset {}.", varNameForLog, finalOffset);
             return finalOffset;
         }
@@ -2814,7 +2852,7 @@ public class SameDiffSerializer {
             byte dtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
             byte order = (byte)(arr.ordering() == 'c' ? 0 : 1);
 
-            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, bufferOffset, dtype, order, 0, 0, 0, false);
+            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, bufferOffset, dtype, order, 0, 0, 0, false, 0L, 0L);
             log.debug("SERIALIZE_INLINE: SUCCESS (Scalar) for Var='{}'. Returning offset {}.", varNameForLog, finalOffset);
             return finalOffset;
         }
@@ -2928,7 +2966,7 @@ public class SameDiffSerializer {
             }
 
             // Create the final FlatArray object
-            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, bufferOffset, dtype, order, 0, 0, 0, false);
+            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, bufferOffset, dtype, order, 0, 0, 0, false, 0L, 0L);
 
             // Log success/failure based on whether data was actually embedded
             if (bufferOffset > 0) {

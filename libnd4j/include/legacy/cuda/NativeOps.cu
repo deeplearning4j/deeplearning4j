@@ -1330,25 +1330,30 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
 
 ////////////////////////////////////////////////////////////////////////
 // CUDA-specific clearLastError implementation
-// Clears both the ErrorReference and the CUDA runtime error state
+// Clears both the ErrorReference and the CUDA runtime error state.
+// IMPORTANT: This must NOT trigger ContextBuffers initialization (which
+// creates CUDA streams via cudaStreamCreate). When GPU memory is tight,
+// cudaStreamCreate fails with error 2 (cudaErrorMemoryAllocation),
+// turning a recoverable clear-error call into a fatal exception.
 void clearLastError() {
-  // Clear the ErrorReference
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+  // Clear any pending CUDA errors first (lightweight, no context needed)
+  cudaGetLastError();
 
-  // Clear any pending CUDA errors first
-  cudaError_t err = cudaGetLastError();
-
-  // If there was a serious error, synchronize the stream to flush bad state
-  if (err != cudaSuccess) {
+  // Clear the ErrorReference if contexts are already initialized.
+  // contexts() returns the static vector; if it's empty, no LaunchContext
+  // has been created yet and we skip to avoid triggering initialization.
+  try {
     auto ctx = sd::LaunchContext::defaultContext();
     if (ctx != nullptr) {
-      auto stream = ctx->getCudaStream();
-      if (stream != nullptr) {
-        cudaStreamSynchronize(*stream);
-        cudaGetLastError();  // Clear any error from synchronize
-      }
+      ctx->errorReference()->setErrorCode(0);
+      ctx->errorReference()->setErrorMessage("");
     }
+  } catch (...) {
+    // If defaultContext() fails (e.g., cudaStreamCreate error 2 during
+    // ContextBuffers initialization under memory pressure), just clear
+    // the CUDA error it produced and continue. The ErrorReference clearing
+    // is best-effort — the critical part (cudaGetLastError above) already ran.
+    cudaGetLastError();
   }
 }
 

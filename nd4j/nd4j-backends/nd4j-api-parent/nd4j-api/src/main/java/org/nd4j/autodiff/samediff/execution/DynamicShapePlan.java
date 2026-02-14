@@ -23,6 +23,8 @@ package org.nd4j.autodiff.samediff.execution;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,6 +34,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.bytedeco.javacpp.LongPointer;
 
 import java.io.Closeable;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -201,8 +205,8 @@ public class DynamicShapePlan implements Closeable {
             return; // CPU backend or no devices
         }
         if (numDevices <= 1 || slots == null || slots.length == 0) return;
-        if (Boolean.getBoolean("nd4j.dsp.singleGpu")) {
-            log.debug("DSP single-GPU mode forced via nd4j.dsp.singleGpu=true");
+        if (Boolean.getBoolean(ND4JSystemProperties.DSP_SINGLE_GPU)) {
+            log.debug("DSP single-GPU mode forced via {}=true", ND4JSystemProperties.DSP_SINGLE_GPU);
             return;
         }
 
@@ -237,20 +241,24 @@ public class DynamicShapePlan implements Closeable {
             } catch (Exception ignored) {}
 
             long available = cudaFree + poolReusable;
-            // All devices participate in op assignment. Non-P2P secondary devices use
-            // host-staged transfers (D2H + H2D) via replicateToDevice() which auto-dups
-            // views before replication. Use available memory directly as budget —
-            // host-staged transfers work correctly and the conservative 15% factor
-            // was unnecessarily limiting device utilization (e.g., 7GB GPU only got 1GB budget).
-            // Configurable via nd4j.dsp.nonP2pBudgetFraction (default 1.0 = use full memory).
-            double nonP2pFraction = Double.parseDouble(System.getProperty("nd4j.dsp.nonP2pBudgetFraction", "1.0"));
+            // Non-P2P secondary devices: do NOT assign ops here (budget=0). Cross-device
+            // execution on non-P2P GPUs requires expensive D2H+H2D transfers for every input,
+            // and if the secondary GPU is memory-pressured (from model constants placed there by
+            // allocateFailover), output allocation triggers emergency reclaim cycles that cause
+            // 100x slowdowns. Non-P2P GPUs are still used for memory spillover (constants stored
+            // there by allocateFailover), just not for compute. Set nd4j.dsp.nonP2pBudgetFraction
+            // to a positive value (e.g., 0.3) to re-enable if both GPUs have ample free memory.
+            double nonP2pFraction = Double.parseDouble(System.getProperty(ND4JSystemProperties.DSP_NON_P2P_BUDGET_FRACTION, "0.0"));
             long budget = (d == 0 || p2p) ? available : (long)(available * nonP2pFraction);
-            freeMemory.put(d, budget);
+            if (budget > 0) {
+                freeMemory.put(d, budget);
+            }
             log.debug("  Device {}: {}MB cudaFree + {}MB poolReusable = {}MB available / {}MB total (P2P: {}){}",
                     d, cudaFree / (1024 * 1024), poolReusable / (1024 * 1024),
                     available / (1024 * 1024), total / (1024 * 1024),
                     d == 0 ? "self" : p2p ? "yes" : "no (host-staged transfers)",
-                    (!p2p && d != 0 && nonP2pFraction < 1.0) ? " [budget: " + (budget / (1024 * 1024)) + "MB @ " + (int)(nonP2pFraction * 100) + "%]" : "");
+                    budget <= 0 ? " [excluded from compute]" :
+                    ((!p2p && d != 0 && nonP2pFraction < 1.0) ? " [budget: " + (budget / (1024 * 1024)) + "MB @ " + (int)(nonP2pFraction * 100) + "%]" : ""));
         }
         if (freeMemory.size() <= 1) return; // Only one usable device
         MultiGpuTracer.traceParallelExec("device-discovery",
@@ -279,12 +287,13 @@ public class DynamicShapePlan implements Closeable {
         }
         if (totalMem <= 0) return;
 
-        // Sort devices smallest-first so secondary GPUs get early slots (layers).
-        // Early layers (embeddings, projections) use less memory than later layers
-        // (attention with large intermediate tensors). This prevents OOM on smaller
-        // GPUs which would get the memory-intensive attention layers if assigned last.
+        // Sort devices largest-first so the primary GPU gets the bulk of ops.
+        // With a 24GB RTX 4090 + 8GB RTX 3070 Ti (30% budget = 2.4GB), device 0 gets
+        // ~91% of ops. The secondary GPU only gets overflow ops at the end of the graph.
+        // This minimizes cross-device data transfers and ensures the primary GPU (which
+        // holds all model constants) runs most ops without needing constant replication.
         List<Map.Entry<Integer, Long>> sorted = new ArrayList<>(deviceMemoryBudgets.entrySet());
-        sorted.sort((a, b) -> Long.compare(a.getValue(), b.getValue()));
+        sorted.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
 
         int assigned = 0;
         for (int i = 0; i < sorted.size(); i++) {
@@ -374,6 +383,20 @@ public class DynamicShapePlan implements Closeable {
     }
 
     /**
+     * Re-run device assignment with fresh memory budgets. Called after memory-intensive
+     * phases (e.g., vision encoder) complete and free GPU memory on secondary devices.
+     * Resets all slot assignments to default (-1) before re-running assignDevices().
+     */
+    public void reassignDevices() {
+        if (slots == null || slots.length == 0) return;
+        // Reset all slots to default device
+        for (DynamicShapeSlot slot : slots) {
+            slot.setTargetDeviceId(-1);
+        }
+        assignDevices(); // Re-runs with fresh memory budgets
+    }
+
+    /**
      * Assign a specific device to a range of slots [startSlot, endSlot).
      * Useful for manual pipeline parallelism where layer boundaries are known.
      *
@@ -408,6 +431,162 @@ public class DynamicShapePlan implements Closeable {
         }
         sb.append("}");
         return sb.toString();
+    }
+
+    // ─── Binary Serialization for Native C++ Executor ─────────────────────────
+
+    /** Magic bytes identifying a serialized DSP plan. */
+    private static final int DSP_MAGIC = 0x44535031;  // "DSP1" in big-endian
+    /** Serialization format version. V2 adds legacyOpType + legacyOpNum per slot. */
+    private static final int DSP_VERSION = 2;
+
+    /**
+     * Serialize this plan into a compact binary format for the native C++ executor.
+     *
+     * <p>Binary format:</p>
+     * <pre>
+     *   Header: magic("DSP1") + version(int32) + numSlots(int32) + totalOutputSlots(int32)
+     *           + numExternalInputs(int32) + numRequestedOutputs(int32)
+     *   Per-slot: opNameHash(int64), opName(int32 len + UTF-8), numInputs(int32), numOutputs(int32),
+     *             inputSourceIndices[numInputs](int32),
+     *             inputSourceTypes[numInputs](int8),
+     *             outputSlotIndices[numOutputs](int32),
+     *             numIArgs(int32), iArgs[](int64),
+     *             numTArgs(int32), tArgs[](double),
+     *             numBArgs(int32), bArgs[](byte),
+     *             numDArgs(int32), dArgs[](int32),
+     *             flags: needsZeroedOutput(byte), isDataDependent(byte),
+     *                    outputShapeDependsOnInputValues(byte), needsIntLongSync(byte),
+     *                    isCustomOp(byte), targetDeviceId(int32)
+     *   Release schedule: for each step: count(int32) + slotIndices[count](int32)
+     *   Requested outputs: for each output: slotIndex(int32)
+     * </pre>
+     *
+     * @return serialized plan bytes, or null if serialization fails
+     */
+    public byte[] serialize() {
+        if (slots == null || slots.length == 0) return null;
+
+        // Validate release schedule matches slot count
+        if (releaseAtStep.length != slots.length) {
+            throw new IllegalStateException(
+                "Release schedule length (" + releaseAtStep.length +
+                ") does not match slot count (" + slots.length +
+                "). The release schedule must have exactly one entry per execution step.");
+        }
+
+        // Calculate buffer size
+        int size = 24; // Header: magic + version + numSlots + totalOutputSlots + numExternalInputs + numRequestedOutputs
+        for (DynamicShapeSlot slot : slots) {
+            size += 8;  // opNameHash (long)
+            // opName string: 4-byte length + UTF-8 bytes
+            byte[] opNameBytes = slot.getOpName() != null ? slot.getOpName().getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
+            size += 4 + opNameBytes.length;
+            size += 8;  // numInputs + numOutputs (2 ints)
+            size += slot.getInputSourceIndices().length * 4;  // inputSourceIndices
+            size += slot.getInputSourceTypes().length;          // inputSourceTypes (bytes)
+            size += slot.getOutputSlotIndices().length * 4;     // outputSlotIndices
+            size += 16; // 4 arg counts (int each)
+            size += (slot.getIArgs() != null ? slot.getIArgs().length : 0) * 8;  // iArgs (long)
+            size += (slot.getTArgs() != null ? slot.getTArgs().length : 0) * 8;  // tArgs (double)
+            size += (slot.getBArgs() != null ? slot.getBArgs().length : 0);       // bArgs (byte)
+            size += (slot.getDArgs() != null ? slot.getDArgs().length : 0) * 4;  // dArgs (int ordinal)
+            size += 5 + 4; // 5 flag bytes + targetDeviceId int
+            size += 8; // legacyOpType (int32) + legacyOpNum (int32)
+        }
+        // Release schedule
+        for (int[] releases : releaseAtStep) {
+            size += 4 + releases.length * 4; // count + indices
+        }
+        // Requested outputs
+        size += outputNameToSlotIndex.size() * 4;
+
+        ByteBuffer buf = ByteBuffer.allocate(size);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+
+        // Header
+        buf.putInt(DSP_MAGIC);
+        buf.putInt(DSP_VERSION);
+        buf.putInt(slots.length);
+        buf.putInt(totalOutputSlots);
+        buf.putInt(externalInputKeys.length);
+        buf.putInt(outputNameToSlotIndex.size());
+
+        // Per-slot
+        for (DynamicShapeSlot slot : slots) {
+            buf.putLong(slot.getOpNameHash());
+            // Write opName string: int32 length + UTF-8 bytes
+            byte[] opNameBytes = slot.getOpName() != null ? slot.getOpName().getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
+            buf.putInt(opNameBytes.length);
+            buf.put(opNameBytes);
+            buf.putInt(slot.getInputSourceIndices().length);
+            buf.putInt(slot.getOutputSlotIndices().length);
+
+            for (int idx : slot.getInputSourceIndices()) buf.putInt(idx);
+            for (byte type : slot.getInputSourceTypes()) buf.put(type);
+            for (int idx : slot.getOutputSlotIndices()) buf.putInt(idx);
+
+            long[] iArgs = slot.getIArgs();
+            double[] tArgs = slot.getTArgs();
+            boolean[] bArgs = slot.getBArgs();
+            DataType[] dArgs = slot.getDArgs();
+
+            // Write args interleaved: count then data for each arg type
+            // C++ reader expects: numIArgs, iArgs[], numTArgs, tArgs[], numBArgs, bArgs[], numDArgs, dArgs[]
+            buf.putInt(iArgs != null ? iArgs.length : 0);
+            if (iArgs != null) for (long a : iArgs) buf.putLong(a);
+
+            buf.putInt(tArgs != null ? tArgs.length : 0);
+            if (tArgs != null) for (double a : tArgs) buf.putDouble(a);
+
+            buf.putInt(bArgs != null ? bArgs.length : 0);
+            if (bArgs != null) for (boolean a : bArgs) buf.put(a ? (byte) 1 : (byte) 0);
+
+            buf.putInt(dArgs != null ? dArgs.length : 0);
+            if (dArgs != null) for (DataType a : dArgs) buf.putInt(a.ordinal());
+
+            buf.put(slot.isNeedsZeroedOutput() ? (byte) 1 : (byte) 0);
+            buf.put(slot.isDataDependent() ? (byte) 1 : (byte) 0);
+            buf.put(slot.isOutputShapeDependsOnInputValues() ? (byte) 1 : (byte) 0);
+            buf.put(slot.isNeedsIntLongSync() ? (byte) 1 : (byte) 0);
+            buf.put(slot.isCustomOp() ? (byte) 1 : (byte) 0);
+            buf.putInt(slot.getTargetDeviceId());
+            buf.putInt(slot.getLegacyOpType());
+            buf.putInt(slot.getLegacyOpNum());
+        }
+
+        // Release schedule
+        for (int[] releases : releaseAtStep) {
+            buf.putInt(releases.length);
+            for (int idx : releases) buf.putInt(idx);
+        }
+
+        // Requested output slot indices — MUST match the order of requestedOutputs iteration,
+        // because Java executeNative() maps results using new ArrayList<>(getRequestedOutputs()).
+        for (String outputName : requestedOutputs) {
+            Integer slotIdx = outputNameToSlotIndex.get(outputName);
+            buf.putInt(slotIdx != null ? slotIdx : -1);
+        }
+
+        buf.flip();
+        byte[] result = new byte[buf.remaining()];
+        buf.get(result);
+        return result;
+    }
+
+    /**
+     * Deserialize a plan from binary bytes (for testing/validation).
+     * This is the inverse of {@link #serialize()}.
+     *
+     * @param data serialized plan bytes
+     * @return true if the data has a valid DSP1 header
+     */
+    public static boolean isValidSerializedPlan(byte[] data) {
+        if (data == null || data.length < 24) return false;
+        ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        int magic = buf.getInt();
+        int version = buf.getInt();
+        return magic == DSP_MAGIC && (version == 1 || version == 2);
     }
 
     @Override

@@ -226,10 +226,13 @@ if [ -d "./include/graph/generated" ]; then
     generated_count=$(find ./include/graph/generated -name "*.h" -o -name "*.java" | wc -l)
     echo "✅ Found $generated_count generated files in ./include/graph/generated"
 
-    # List some example files
-    find ./include/graph/generated -name "*.h" -o -name "*.java" | head -5 | while read -r file; do
+    # List some example files (use -quit-based approach to avoid SIGPIPE with set -o pipefail)
+    count=0
+    while IFS= read -r file; do
         echo "   - $file"
-    done
+        count=$((count + 1))
+        [ $count -ge 5 ] && break
+    done < <(find ./include/graph/generated -name "*.h" -o -name "*.java" 2>/dev/null)
 else
     echo "⚠️  Warning: Generated directory not found"
 fi

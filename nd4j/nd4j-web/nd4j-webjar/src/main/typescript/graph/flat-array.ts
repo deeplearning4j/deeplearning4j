@@ -94,8 +94,18 @@ isExternal():boolean {
   return offset ? !!this.bb!.readInt8(this.bb_pos + offset) : false;
 }
 
+appendedDataOffset():bigint {
+  const offset = this.bb!.__offset(this.bb_pos, 20);
+  return offset ? this.bb!.readInt64(this.bb_pos + offset) : BigInt('0');
+}
+
+appendedDataLength():bigint {
+  const offset = this.bb!.__offset(this.bb_pos, 22);
+  return offset ? this.bb!.readInt64(this.bb_pos + offset) : BigInt('0');
+}
+
 static startFlatArray(builder:flatbuffers.Builder) {
-  builder.startObject(8);
+  builder.startObject(10);
 }
 
 static addShape(builder:flatbuffers.Builder, shapeOffset:flatbuffers.Offset) {
@@ -183,12 +193,20 @@ static addIsExternal(builder:flatbuffers.Builder, isExternal:boolean) {
   builder.addFieldInt8(7, +isExternal, +false);
 }
 
+static addAppendedDataOffset(builder:flatbuffers.Builder, appendedDataOffset:bigint) {
+  builder.addFieldInt64(8, appendedDataOffset, BigInt('0'));
+}
+
+static addAppendedDataLength(builder:flatbuffers.Builder, appendedDataLength:bigint) {
+  builder.addFieldInt64(9, appendedDataLength, BigInt('0'));
+}
+
 static endFlatArray(builder:flatbuffers.Builder):flatbuffers.Offset {
   const offset = builder.endObject();
   return offset;
 }
 
-static createFlatArray(builder:flatbuffers.Builder, shapeOffset:flatbuffers.Offset, bufferOffset:flatbuffers.Offset, dtype:DType, byteOrder:ByteOrder, bufferChunksOffset:flatbuffers.Offset, totalBufferSize:bigint, externalDataFilenameOffset:flatbuffers.Offset, isExternal:boolean):flatbuffers.Offset {
+static createFlatArray(builder:flatbuffers.Builder, shapeOffset:flatbuffers.Offset, bufferOffset:flatbuffers.Offset, dtype:DType, byteOrder:ByteOrder, bufferChunksOffset:flatbuffers.Offset, totalBufferSize:bigint, externalDataFilenameOffset:flatbuffers.Offset, isExternal:boolean, appendedDataOffset:bigint, appendedDataLength:bigint):flatbuffers.Offset {
   FlatArray.startFlatArray(builder);
   FlatArray.addShape(builder, shapeOffset);
   FlatArray.addBuffer(builder, bufferOffset);
@@ -198,6 +216,8 @@ static createFlatArray(builder:flatbuffers.Builder, shapeOffset:flatbuffers.Offs
   FlatArray.addTotalBufferSize(builder, totalBufferSize);
   FlatArray.addExternalDataFilename(builder, externalDataFilenameOffset);
   FlatArray.addIsExternal(builder, isExternal);
+  FlatArray.addAppendedDataOffset(builder, appendedDataOffset);
+  FlatArray.addAppendedDataLength(builder, appendedDataLength);
   return FlatArray.endFlatArray(builder);
 }
 }

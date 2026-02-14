@@ -88,7 +88,8 @@
         <log4j2.version>2.17.2</log4j2.version>
         <netty.version>4.1.74.Final</netty.version>
         <test.heap.size>48g</test.heap.size>
-        <test.offheap.size>48g</test.offheap.size>
+        <!-- maxPhysicalBytes must be larger than heap to accommodate CUDA driver overhead (~1-2GB) -->
+        <test.offheap.size>56g</test.offheap.size>
         <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
@@ -1624,9 +1625,8 @@
                         <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
-                        <!-- LD_PRELOAD and ASAN_OPTIONS removed: they override external env settings.
-                             Use -Dtest.prefix=asan to enable ASan via bin/java wrapper.
-                             Use LD_PRELOAD=libjemalloc.so on command line for jemalloc. -->
+                        <LD_PRELOAD>${preload}</LD_PRELOAD>
+                        <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
                         <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->

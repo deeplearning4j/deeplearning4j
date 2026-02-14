@@ -23,6 +23,7 @@
 #include <array/PrimaryPointerDeallocator.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <cstring>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <execution/LaunchContext.h>
@@ -134,17 +135,58 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
   }
 
   int8_t *ptr = nullptr;
-  ALLOCATE_SPECIAL(ptr, workspace, numBytes, int8_t);
-  auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
-  if (res != 0) {
-    std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
-    auto lastError = cudaGetLastError(); // get last error
-    if (lastError != cudaSuccess) {
-      errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+  bool usedPinnedHost = false;
+  if (workspace == nullptr) {
+    // Constant shape buffers MUST be on the correct device or GPU-accessible from all devices.
+    // If allocateFailover places a shape buffer on a different device, non-P2P GPUs can't
+    // access it → CUDA error 700 (illegal memory access). Fix: trim + retry, then fall back
+    // to pinned host memory which is accessible from ALL GPUs.
+    int actualDevice = deviceId;
+    size_t allocSize = numBytes + SD_ALLOC_PADDING;
+    ptr = reinterpret_cast<int8_t*>(
+        memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, nullptr, &actualDevice));
+    if (ptr == nullptr) {
+      THROW_EXCEPTION("[DEVICE] replicatePointer allocation failed");
     }
+    if (actualDevice != deviceId) {
+      // Wrong device: free and fall back to pinned host memory immediately.
+      // Shape/constant buffers are tiny (~200 bytes). Using pinned host memory
+      // (cudaMallocHost) is safe because it's GPU-accessible from ALL devices,
+      // including non-P2P GPUs. This avoids expensive cudaDeviceSynchronize()
+      // calls that would block all GPU compute for a tiny allocation.
+      memory::CudaMemoryPool::getInstance().free(ptr, actualDevice, nullptr);
+      ptr = nullptr;
 
-    THROW_EXCEPTION(errorMessage.c_str());
+      auto hostRes = cudaMallocHost(reinterpret_cast<void**>(&ptr), allocSize);
+      if (hostRes != cudaSuccess || ptr == nullptr) {
+        cudaGetLastError();
+        THROW_EXCEPTION("[DEVICE] replicatePointer: pinned host fallback allocation failed");
+      }
+      usedPinnedHost = true;
+      sd_debug("replicatePointer: device %d OOM, using pinned host for constant (%zu bytes)\n",
+               deviceId, numBytes);
+    }
+  } else {
+    size_t allocSize = numBytes + SD_ALLOC_PADDING;
+    ptr = reinterpret_cast<int8_t*>(workspace->allocateBytes(memory::MemoryType::DEVICE, allocSize));
+    if (ptr == nullptr) {
+      THROW_EXCEPTION("[DEVICE] replicatePointer workspace allocation failed");
+    }
+  }
 
+  if (usedPinnedHost) {
+    // Host-to-host copy for pinned memory (no CUDA context needed)
+    memcpy(ptr, src, numBytes);
+  } else {
+    auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
+    if (res != 0) {
+      std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
+      auto lastError = cudaGetLastError();
+      if (lastError != cudaSuccess) {
+        errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+      }
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 
   constantPtr = ptr;

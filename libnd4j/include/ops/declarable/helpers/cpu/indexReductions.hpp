@@ -779,7 +779,28 @@ static void argIndexCaseNonScalar(const int& first_rank, const int& output_rank,
 template <typename X, typename Z, typename ReductionOp>
 SD_LIB_HIDDEN void argIndex_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   char input_order = input.ordering();
-  bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
+  auto isContiguousInOrder = [](const NDArray& arr) {
+    auto rank = arr.rankOf();
+    auto shp = arr.shapeOf();
+    auto strides = arr.stridesOf();
+    if (arr.ordering() == 'c') {
+      sd::LongType expected = 1;
+      for (int i = rank - 1; i >= 0; --i) {
+        if (shp[i] == 1) continue;
+        if (strides[i] != expected) return false;
+        expected *= shp[i];
+      }
+    } else {
+      sd::LongType expected = 1;
+      for (int i = 0; i < rank; ++i) {
+        if (shp[i] == 1) continue;
+        if (strides[i] != expected) return false;
+        expected *= shp[i];
+      }
+    }
+    return true;
+  };
+  bool try_squash_outer = (input_order == output.ordering()) && isContiguousInOrder(output);
   const sd::LongType* input_shapeInfo = input.shapeInfo();
   const sd::LongType* output_shapeInfo = output.shapeInfo();
   const sd::LongType rank = input_shapeInfo[0];

@@ -43,7 +43,7 @@ SD_KERNEL SD_INLINE void adaGradUpdaterCuda(const void* vx, const LongType* xSha
   auto up = reinterpret_cast<T*>(vz);
   auto st = reinterpret_cast<T*>(vst);
 
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInSame, bXStSame;
+  __shared__ bool bXZsame, bXInSame, bXStSame;
   __shared__ LongType xLen;
   __shared__ LongType xRank, zRank, inRank, stRank;
   __shared__ LongType *xShape, *zShape, *inShape, *stShape;
@@ -70,12 +70,6 @@ SD_KERNEL SD_INLINE void adaGradUpdaterCuda(const void* vx, const LongType* xSha
     inStride = shape::stride(inShapeInfo);
     stStride = shape::stride(stShapeInfo);
 
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stShapeInfo) && 1 == shape::elementWiseStride(inShapeInfo);
-    bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
-                shape::order(xShapeInfo) == shape::order(stShapeInfo) &&
-                shape::order(xShapeInfo) == shape::order(inShapeInfo);
-
     bXZsame = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     bXInSame = shape::haveSameShapeAndStrides(xShapeInfo, inShapeInfo);
     bXStSame = shape::haveSameShapeAndStrides(xShapeInfo, stShapeInfo);
@@ -87,29 +81,25 @@ SD_KERNEL SD_INLINE void adaGradUpdaterCuda(const void* vx, const LongType* xSha
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initOffset, stOffset;
 
-    if (!bEWS || !bOrdering) {
-      INDEX2COORDS(i, xRank, xShape, coords);
-      COORDS2INDEX(xRank, xStride, coords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
 
-      if (bXZsame) {
-        zOffset = xOffset;
-      } else {
-        COORDS2INDEX(zRank, zStride, coords, zOffset);
-      }
-
-      if (bXInSame) {
-        initOffset = xOffset;
-      } else {
-        COORDS2INDEX(inRank, inStride, coords, initOffset);
-      }
-
-      if (bXStSame) {
-        stOffset = xOffset;
-      } else {
-        COORDS2INDEX(stRank, stStride, coords, stOffset);
-      }
+    if (bXZsame) {
+      zOffset = xOffset;
     } else {
-      xOffset = zOffset = initOffset = stOffset = i;
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
+    }
+
+    if (bXInSame) {
+      initOffset = xOffset;
+    } else {
+      COORDS2INDEX(inRank, inStride, coords, initOffset);
+    }
+
+    if (bXStSame) {
+      stOffset = xOffset;
+    } else {
+      COORDS2INDEX(stRank, stStride, coords, stOffset);
     }
 
     st[stOffset] = init[initOffset] + x[xOffset] * x[xOffset];

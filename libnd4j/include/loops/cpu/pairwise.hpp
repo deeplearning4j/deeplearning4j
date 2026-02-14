@@ -61,17 +61,9 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEw
 
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-
-  if (xEws == 1 && yEws == 1 && zEws == 1) {
-    for (sd::LongType i = start; i < stop; i++) {
-      z[i] = OpType::op(x[i], y[i], extraParams);
-    }
-
-  } else {
-    for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
+  for (sd::LongType i = start; i < stop; i++) {
+    z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
   }
-
-
 }
 
 template <typename X, typename Y, typename Z>

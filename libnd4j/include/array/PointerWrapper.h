@@ -27,6 +27,7 @@
 
 #include <array/PointerDeallocator.h>
 
+#include <cstdlib>
 #include <memory>
 
 namespace sd {
@@ -45,19 +46,19 @@ class SD_LIB_EXPORT PointerWrapper {
   // allocated during shape trie population — any adjacent overrun
   // corrupts the next chunk metadata → SIGABRT on free().
   static void* operator new(size_t size) {
-    return ::operator new(size + 4096);
+    return std::malloc(size + 4096);
   }
 #ifndef __JAVACPP_HACK__
   static void* operator new(size_t size, const std::nothrow_t& tag) noexcept {
-    return ::operator new(size + 4096, tag);
+    return std::malloc(size + 4096);
   }
 #endif
   static void operator delete(void* ptr) noexcept {
-    ::operator delete(ptr);
+    std::free(ptr);
   }
 #ifndef __JAVACPP_HACK__
   static void operator delete(void* ptr, const std::nothrow_t& tag) noexcept {
-    ::operator delete(ptr, tag);
+    std::free(ptr);
   }
 #endif
 

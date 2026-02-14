@@ -157,9 +157,7 @@ void ScalarIntTransform<X>::transform(const void *vx, sd::LongType xEws, void *v
   if (scalar < static_cast<X>((sizeof(X) * 8))) {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
-      auto xi = i * xEws;
-      auto zi = i * zEws;
-      z[zi] = OpType::op(x[xi], scalar, extraParams);
+      z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
     }
   }
 }

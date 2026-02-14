@@ -50,7 +50,7 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
     }
 
     const int shapeInfoLength = shape::shapeInfoLength(rank);
-    LongType* shapeCopy = new LongType[shapeInfoLength + SD_SHAPE_ALLOC_PADDING];
+    LongType* shapeCopy = new LongType[shapeInfoLength + SD_SHAPE_ALLOC_PADDING]();
     for(int i = 0; i < shapeInfoLength; i++) {
         shapeCopy[i] = shapeInfo[i];
     }
@@ -76,9 +76,14 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
     PointerWrapper* hPtr = new PointerWrapper(shapeCopy, hostDeallocator);
 
     // Create device pointer for CUDA
+    // Allocate GPU shape info with the same padding as host side. Without this,
+    // GPU shape info gets only +8 bytes padding from ALLOCATE_SPECIAL while host
+    // gets 32KB. CUDA kernel buffer overruns from neighboring allocations corrupt
+    // the tiny GPU shape info → rank reads as garbage → kernel accesses wildly
+    // out-of-bounds memory → CUDA error 700 (illegal memory access).
     PointerWrapper* dPtr = new PointerWrapper(
         ConstantHelper::getInstance().replicatePointer(shapeCopy,
-                                                   shapeInfoLength * sizeof(LongType)),
+                                                   (shapeInfoLength + SD_SHAPE_ALLOC_PADDING) * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
 
     if(dPtr->pointer() == nullptr) {

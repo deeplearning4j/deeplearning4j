@@ -339,24 +339,13 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, sd::LongType xEw
   }
 
   auto func = PRAGMA_THREADS_FOR {
-    if (xEws == 1) {
-      for (auto i = start; i < stop; i++) {
-        auto opResult = OpType::op(x[i], compatibleExtraParams);
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            SafeTypeUtils::safeCast<decltype(opResult), InterType>(opResult),
-            compatibleExtraParams
-        );
-      }
-    } else {
-      for (auto i = start; i < stop; i++) {
-        auto opResult = OpType::op(x[i * xEws], compatibleExtraParams);
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            SafeTypeUtils::safeCast<decltype(opResult), InterType>(opResult),
-            compatibleExtraParams
-        );
-      }
+    for (auto i = start; i < stop; i++) {
+      auto opResult = OpType::op(x[i * xEws], compatibleExtraParams);
+      intermediate[thread_id] = OpType::update(
+          intermediate[thread_id],
+          SafeTypeUtils::safeCast<decltype(opResult), InterType>(opResult),
+          compatibleExtraParams
+      );
     }
   };
 

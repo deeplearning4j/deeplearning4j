@@ -135,6 +135,32 @@ public class DynamicShapeSlot {
      */
     private final boolean outputShapeDependsOnInputValues;
 
+    /**
+     * Legacy op type for ops not registered as DeclarableOp in C++.
+     * 0 = not a legacy op (use CustomOp from OpRegistrator)
+     * 1 = LegacyTransformSameOp
+     * 2 = LegacyTransformStrictOp
+     * 3 = LegacyTransformFloatOp
+     * 4 = LegacyTransformBoolOp
+     * 5 = LegacyScalarOp
+     * 6 = LegacyPairwiseTransformOp
+     */
+    @Builder.Default
+    private int legacyOpType = 0;
+
+    /** Legacy op num (e.g., 23 for Exp). Only used when legacyOpType > 0. */
+    @Builder.Default
+    private int legacyOpNum = -1;
+
+    /** Legacy op type constants. */
+    public static final int LEGACY_NONE = 0;
+    public static final int LEGACY_TRANSFORM_SAME = 1;
+    public static final int LEGACY_TRANSFORM_STRICT = 2;
+    public static final int LEGACY_TRANSFORM_FLOAT = 3;
+    public static final int LEGACY_TRANSFORM_BOOL = 4;
+    public static final int LEGACY_SCALAR = 5;
+    public static final int LEGACY_PAIRWISE_TRANSFORM = 6;
+
     /** Index of this slot in the plan (for diagnostics). */
     private final int stepIndex;
 

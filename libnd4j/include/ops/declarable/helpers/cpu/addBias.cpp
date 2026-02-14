@@ -743,7 +743,25 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
   }
 
   if (same_order && same_stride) {
-    isContinuous = shape::elementWiseStride(x_shapeInfo) == 1 && shape::elementWiseStride(z_shapeInfo) == 1;
+    // Check contiguity by verifying strides match C-order pattern
+    bool xContiguous = true;
+    bool zContiguous = true;
+    sd::LongType expectedStride = 1;
+    for (int i = rank - 1; i >= 0; --i) {
+      if (bases[i] == 1) continue;
+      if (x_strides[i] != expectedStride) { xContiguous = false; break; }
+      expectedStride *= bases[i];
+    }
+    if (xContiguous) {
+      expectedStride = 1;
+      for (int i = rank - 1; i >= 0; --i) {
+        if (z_strides[i] == 0 && bases[i] > 1) { zContiguous = false; break; }
+        if (bases[i] == 1) continue;
+        if (z_strides[i] != expectedStride) { zContiguous = false; break; }
+        expectedStride *= bases[i];
+      }
+    }
+    isContinuous = xContiguous && zContiguous;
   }
 
   bool treat_as_lastC = false;

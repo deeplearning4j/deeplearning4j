@@ -133,8 +133,16 @@ void ContextBuffers::release() {
     if (_execStream != nullptr) {
       auto _cudaStream = reinterpret_cast<cudaStream_t*>(_execStream);
       if (*_cudaStream != nullptr) {
-        cudaStreamSynchronize(*_cudaStream);
-        cudaStreamDestroy(*_cudaStream);
+        // Remove from CudaMemoryPool dirty set so trimPool won't try to sync it.
+        memory::CudaMemoryPool::getInstance().removeDirtyStream(_deviceId, *_cudaStream);
+        // INTENTIONALLY skip cudaStreamDestroy:
+        // cudaStreamDestroy on blocking streams internally calls cudaStreamSynchronize,
+        // which crashes with SIGSEGV if the stream handle has been corrupted by a
+        // buffer overrun from a native op (known issue pattern — see MEMORY.md).
+        // The stream resources are leaked at the driver level but cleaned up at
+        // process exit. This leak is bounded (one per device switch per thread)
+        // and each CUDA stream is lightweight. The pending work on the stream
+        // continues to execute and complete normally.
       }
       delete _cudaStream;
     }
@@ -142,8 +150,8 @@ void ContextBuffers::release() {
     if (_specialStream != nullptr) {
       auto _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(_specialStream);
       if (*_cudaSpecialStream != nullptr) {
-        cudaStreamSynchronize(*_cudaSpecialStream);
-        cudaStreamDestroy(*_cudaSpecialStream);
+        memory::CudaMemoryPool::getInstance().removeDirtyStream(_deviceId, *_cudaSpecialStream);
+        // Same as above — skip cudaStreamDestroy to avoid SIGSEGV.
       }
       delete _cudaSpecialStream;
     }
@@ -195,27 +203,90 @@ void ContextBuffers::initialize() {
              cudaGetErrorString(prevErr), _deviceId);
   }
 
-  _reductionPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr);
+  // Trim pool FIRST to reclaim any freed-but-reserved memory on this device.
+  // Without this, the pool may be holding reserved memory (from prior execution
+  // cycles) that cudaMallocAsync can't reuse because the frees are on different
+  // streams. trimPool syncs dirty streams and releases reserved-but-unused memory
+  // back to the driver, maximizing available memory for the allocations below.
+  memory::CudaMemoryPool::getInstance().trimPool(_deviceId);
+  cudaGetLastError();  // clear any error from trim
+
+  int actualReductionDevice = -1;
+  _reductionPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr, &actualReductionDevice);
   if (_reductionPointer == nullptr) throw cuda_exception::build("_reductionPointer allocation failed", cudaErrorMemoryAllocation);
+
+  // Workspace buffers MUST be on the target device. If allocateFailover placed it
+  // on a different device (due to OOM on target), accessing it from target device
+  // kernels causes CUDA error 700 (illegal memory access) for non-peer GPUs.
+  if (actualReductionDevice >= 0 && actualReductionDevice != _deviceId) {
+    sd_debug("ContextBuffers::initialize: _reductionPointer allocated on device %d instead of %d - freeing and retrying\n",
+             actualReductionDevice, _deviceId);
+    memory::CudaMemoryPool::getInstance().free(_reductionPointer, actualReductionDevice, nullptr);
+    _reductionPointer = nullptr;
+
+    // Aggressive reclaim: sync ALL work on target device and trim again
+    cudaSetDevice(_deviceId);
+    cudaDeviceSynchronize();
+    memory::CudaMemoryPool::getInstance().trimPool(_deviceId);
+    cudaGetLastError();
+
+    int retryReductionDevice = -1;
+    _reductionPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr, &retryReductionDevice);
+    if (_reductionPointer == nullptr || (retryReductionDevice >= 0 && retryReductionDevice != _deviceId)) {
+      if (_reductionPointer != nullptr) {
+        memory::CudaMemoryPool::getInstance().free(_reductionPointer, retryReductionDevice, nullptr);
+        _reductionPointer = nullptr;
+      }
+      throw cuda_exception::build("ContextBuffers: Cannot allocate 8MB _reductionPointer on target device after OOM recovery", cudaErrorMemoryAllocation);
+    }
+    sd_debug("ContextBuffers::initialize: _reductionPointer retry on device %d succeeded\n", _deviceId);
+  }
 
   auto res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
   if (res != 0) throw cuda_exception::build("_scalarPointer allocation failed", res);
 
-  _allocationPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr);
+  int actualAllocDevice = -1;
+  _allocationPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr, &actualAllocDevice);
   if (_allocationPointer == nullptr) throw cuda_exception::build("_allocationPointer allocation failed", cudaErrorMemoryAllocation);
+
+  if (actualAllocDevice >= 0 && actualAllocDevice != _deviceId) {
+    sd_debug("ContextBuffers::initialize: _allocationPointer allocated on device %d instead of %d - freeing and retrying\n",
+             actualAllocDevice, _deviceId);
+    memory::CudaMemoryPool::getInstance().free(_allocationPointer, actualAllocDevice, nullptr);
+    _allocationPointer = nullptr;
+
+    cudaSetDevice(_deviceId);
+    cudaDeviceSynchronize();
+    memory::CudaMemoryPool::getInstance().trimPool(_deviceId);
+    cudaGetLastError();
+
+    int retryAllocDevice = -1;
+    _allocationPointer = memory::CudaMemoryPool::getInstance().allocate(1024 * 1024 * 8, _deviceId, nullptr, &retryAllocDevice);
+    if (_allocationPointer == nullptr || (retryAllocDevice >= 0 && retryAllocDevice != _deviceId)) {
+      if (_allocationPointer != nullptr) {
+        memory::CudaMemoryPool::getInstance().free(_allocationPointer, retryAllocDevice, nullptr);
+        _allocationPointer = nullptr;
+      }
+      // Clean up already-allocated reduction pointer before throwing
+      if (_reductionPointer != nullptr) {
+        memory::CudaMemoryPool::getInstance().free(_reductionPointer, _deviceId, nullptr);
+        _reductionPointer = nullptr;
+      }
+      throw cuda_exception::build("ContextBuffers: Cannot allocate 8MB _allocationPointer on target device after OOM recovery", cudaErrorMemoryAllocation);
+    }
+    sd_debug("ContextBuffers::initialize: _allocationPointer retry on device %d succeeded\n", _deviceId);
+  }
 
   _execStream = new cudaStream_t();
   _specialStream = new cudaStream_t();
   if (nullptr == _execStream || nullptr == _specialStream)
     THROW_EXCEPTION("Failed to allocate memory for new CUDA stream");
 
-  // Trim the memory pool before creating streams. cudaStreamCreate() uses driver-level
-  // memory allocation for internal stream structures. The CudaMemoryPool may have reserved
-  // large amounts of GPU memory (via cudaMallocAsync) that the driver cannot use for stream
-  // creation. trimPool() releases pool-reserved memory whose async frees have already
-  // completed (no stream sync — callers that performed frees must have synced their own
-  // execution streams before we reach here, e.g. via Nd4j.getExecutioner().commit()).
-  memory::CudaMemoryPool::getInstance().trimPool(_deviceId);
+  // Clear any sticky CUDA error that accumulated during allocation failovers
+  // and pool operations above. Without this, cudaStreamCreate picks up the
+  // stale error and fails with cudaErrorMemoryAllocation (error 2) even though
+  // there's enough free memory for a stream handle (a few KB).
+  cudaGetLastError();
 
   res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
   if (res != 0) throw cuda_exception::build("Failed to create default CUDA stream with launch context", res);

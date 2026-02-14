@@ -45,7 +45,6 @@ void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) {
     const sd::LongType *xShapeInfo = x->shapeInfo();
     const sd::LongType *dXShapeInfo = x->specialShapeInfo();
     auto xLength = shape::length(xShapeInfo);
-    auto xEWS = shape::elementWiseStride(xShapeInfo);
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
@@ -103,7 +102,6 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, boo
 
     auto xLength = shape::length(xShapeInfo);
     auto yLength = shape::length(yShapeInfo);
-    auto xEWS = shape::elementWiseStride(xShapeInfo);
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
     auto yType = sd::ArrayOptions::dataType(yShapeInfo);
 
@@ -168,7 +166,6 @@ void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, b
 
     auto xLength = shape::length(xShapeInfo);
     auto yLength = shape::length(yShapeInfo);
-    auto xEWS = shape::elementWiseStride(xShapeInfo);
     auto xType = sd::ArrayOptions::dataType(yShapeInfo);
     auto yType = sd::ArrayOptions::dataType(xShapeInfo);
 

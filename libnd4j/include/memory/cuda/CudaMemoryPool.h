@@ -117,6 +117,13 @@ class SD_LIB_EXPORT CudaMemoryPool {
   void free(void* ptr, int deviceId, cudaStream_t stream = nullptr);
 
   /**
+   * Remove a stream from the dirty free tracking set for a device.
+   * MUST be called before cudaStreamDestroy() to prevent trimPool()
+   * from syncing a destroyed stream handle (which causes SIGSEGV).
+   */
+  void removeDirtyStream(int deviceId, cudaStream_t stream);
+
+  /**
    * Check if memory pools are enabled and supported
    */
   bool isEnabled() const { return enabled_.load(); }
@@ -134,9 +141,9 @@ class SD_LIB_EXPORT CudaMemoryPool {
 
   /**
    * Trim unused memory from the pool.
-   * Syncs the default CUDA stream (stream 0 / nullptr) before trimming,
-   * because CudaMemoryPool::free() uses cudaFreeAsync on stream 0.
-   * This ensures all pending frees are visible before releasing memory.
+   * Syncs only the streams that have had cudaFreeAsync issued on them
+   * (tracked via dirtyFreeStreams_), then trims pool reserved memory.
+   * This avoids blocking unrelated compute work on other streams.
    */
   void trimPool(int deviceId);
 
@@ -231,6 +238,12 @@ class SD_LIB_EXPORT CudaMemoryPool {
   std::mutex fallbackAllocMutex_;
   std::atomic<size_t> pinnedHostBytesUsed_{0};   // cumulative pinned host bytes currently allocated
   std::atomic<size_t> pinnedHostBytesLimit_{0};   // max allowed pinned host bytes (0 = unlimited)
+
+  // Track streams that have had cudaFreeAsync issued on them, per device.
+  // trimPool() syncs only these streams instead of the entire device, so
+  // unrelated GPU work on other streams is never blocked.
+  std::unordered_set<cudaStream_t> dirtyFreeStreams_[MAX_DEVICES];
+  std::mutex dirtyStreamsMutex_[MAX_DEVICES];
 
   // Peer access tracking: peerAccessEnabled_[i][j] means device i can access device j's memory
   bool peerAccessEnabled_[MAX_DEVICES][MAX_DEVICES]{};

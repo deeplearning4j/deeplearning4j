@@ -679,18 +679,28 @@ public class DeviceMemoryManager {
                 return 0;
             }
 
+            // Use TOTAL memory as the primary metric, with free memory as tiebreaker.
+            // Free memory is misleading because:
+            // - Pool reservations reduce reported free memory (but pool memory IS reusable)
+            // - Display driver and CUDA context consume some memory on all devices
+            // - Early startup has high free memory on all devices, masking capacity differences
+            // The GPU with the most total memory (e.g., 24GB RTX 4090 vs 8GB RTX 3070 Ti)
+            // is the best choice for loading model constants and running compute-intensive ops.
+            long bestTotal = -1;
             long bestFree = -1;
             int bestDevice = 0;
             for (int i = 0; i < numDevices; i++) {
+                long totalMem = nativeOps.getDeviceTotalMemory(i);
                 long freeMem = nativeOps.getDeviceFreeMemory(i);
-                if (freeMem > bestFree) {
+                if (totalMem > bestTotal || (totalMem == bestTotal && freeMem > bestFree)) {
+                    bestTotal = totalMem;
                     bestFree = freeMem;
                     bestDevice = i;
                 }
             }
 
-            log.debug("selectBestGpu: device [{}] selected with {} MB free out of {} devices",
-                    bestDevice, bestFree / (1024 * 1024), numDevices);
+            log.debug("selectBestGpu: device [{}] selected with {} MB total, {} MB free out of {} devices",
+                    bestDevice, bestTotal / (1024 * 1024), bestFree / (1024 * 1024), numDevices);
             return bestDevice;
         } catch (Exception e) {
             log.warn("Failed to query GPU free memory, defaulting to device 0: {}", e.getMessage());

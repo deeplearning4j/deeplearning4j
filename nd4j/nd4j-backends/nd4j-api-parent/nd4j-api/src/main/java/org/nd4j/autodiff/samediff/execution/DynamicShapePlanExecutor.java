@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.device.MultiGpuTracer;
@@ -48,8 +49,12 @@ import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueDataBufferDeallocator;
+import org.nd4j.nativeblas.OpaqueContext;
+import org.nd4j.nativeblas.OpaqueNDArray;
+import org.nd4j.nativeblas.OpaqueNDArrayArr;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 
@@ -84,15 +89,46 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DynamicShapePlanExecutor implements Closeable {
 
     private static final boolean TIMING_ENABLED = Boolean.parseBoolean(
-            System.getProperty("org.nd4j.inference.timing", "false"));
+            System.getProperty(ND4JSystemProperties.INFERENCE_TIMING, "false"));
 
     // Temporary: serialize parallel worker op execution to test if concurrent C++ calls cause heap corruption.
     // When nd4j.dsp.serialExec=true, only one worker thread executes at a time.
-    private static final boolean SERIAL_EXEC = Boolean.getBoolean("nd4j.dsp.serialExec");
+    private static final boolean SERIAL_EXEC = Boolean.getBoolean(ND4JSystemProperties.DSP_SERIAL_EXEC);
     private static final Object EXEC_LOCK = new Object();
 
     private static final boolean SHAPE_OVERRIDE = Boolean.parseBoolean(
-            System.getProperty("org.nd4j.inference.dynamicShapePlan.shapeOverride", "true"));
+            System.getProperty(ND4JSystemProperties.DSP_SHAPE_OVERRIDE, "true"));
+
+    /** Whether native C++ graph executor is enabled. When true, the entire plan is executed
+     *  in C++ via a single JNI call instead of per-op Java dispatch. Falls back to Java
+     *  executor on any failure. Default: true. */
+    private static final boolean NATIVE_EXECUTOR_ENABLED = !"false".equalsIgnoreCase(
+            System.getProperty(ND4JSystemProperties.DSP_NATIVE_EXECUTOR_ENABLED, "true"));
+
+    /** Cache the nd4j.dsp.trace property check at class init time instead of calling
+     *  System.getProperty() on every slot (1962 per frame * 20 frames = 39,240 calls).
+     *  System.getProperty() acquires a lock on System.properties each invocation.
+     *  When enabled, System.err.println + flush() is synchronous and unbuffered. */
+    private static final boolean DSP_TRACE_ENABLED = System.getProperty("nd4j.dsp.trace") != null;
+
+    /** Post-slot CUDA error check interval. Checking lastErrorCode() after every op is
+     *  a JNI call that adds ~2us * 1962 ops = ~4ms per frame. In non-debug mode, check
+     *  only every N ops. Set nd4j.dsp.errorCheckInterval=1 to check every op (for debugging).
+     *  Default: 50 (check every 50 ops, ~39x fewer JNI calls). */
+    private static final int ERROR_CHECK_INTERVAL = Integer.getInteger("nd4j.dsp.errorCheckInterval", 50);
+
+    /** Whether view-producer detection has been completed (first execution establishes
+     *  the slotIsViewProducer[] array; subsequent executions can skip pre/post GPU address
+     *  comparison for known non-view-producer slots). */
+    private boolean viewProducerDetectionDone;
+
+    /** Number of execute() calls on this executor. Used to skip cache validity probe
+     *  on the first execution (no cached entries yet). */
+    private int executionCount;
+
+    /** Whether op type logging has been done for the current plan. Only log once per plan
+     *  instead of on every execute() call. With 1962 slots, building the map takes ~0.5ms. */
+    private boolean opTypesLogged;
 
 
     private final SameDiff sd;
@@ -131,7 +167,26 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Flush pendingClose every RELEASE_FLUSH_INTERVAL ops during execution to reduce
      *  peak GPU memory. Vision encoder with 1962 ops accumulates ~10GB of dead intermediates
      *  if we only flush at the end. Periodic flushing reduces peak by ~50%. */
-    private static final int RELEASE_FLUSH_INTERVAL = Integer.getInteger("nd4j.dsp.flushInterval", 100);
+    private static final int RELEASE_FLUSH_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_FLUSH_INTERVAL, 100);
+
+    /** Per-slot eviction threshold for selective cache eviction. Arrays smaller than this
+     *  survive eviction (scalars, shapes, small intermediates reused in decode). Only arrays
+     *  larger than this threshold are evicted when total cache exceeds 512MB.
+     *  Default 64KB — covers typical scalar/shape utility arrays. */
+    private static final long PER_SLOT_EVICTION_THRESHOLD = Long.getLong(
+            ND4JSystemProperties.DSP_PER_SLOT_EVICTION_THRESHOLD, 64L * 1024);
+
+    /** Byte threshold below which freePendingBuffers uses a fast path that skips
+     *  GPU address dedup and live view range check. For decode steps with tiny
+     *  intermediates (seq_len=1), aliasing is extremely unlikely. */
+    private static final long FAST_CLOSE_THRESHOLD = Long.getLong(
+            ND4JSystemProperties.DSP_FAST_CLOSE_THRESHOLD, 10L * 1024 * 1024);
+
+    /** Byte threshold for memory-pressure flush. When accumulated pendingClose bytes exceed
+     *  this, flush immediately instead of waiting for the op-count interval. Prevents
+     *  multi-GB intermediate accumulation between flush intervals (e.g., 95 ops × 48MB = 4.5GB). */
+    private static final long FLUSH_BYTE_THRESHOLD = Long.getLong(
+            ND4JSystemProperties.DSP_FLUSH_BYTE_THRESHOLD, 256L * 1024 * 1024);
 
     /** Persistent buffer pool for cross-execution array reuse (avoids mmgr round-trip each step). */
     private LocalBufferPool localPool;
@@ -139,6 +194,28 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Devices that hit unrecoverable CUDA errors (e.g., error 700 from OOM cascades).
      *  Once a device is marked failed, all remaining ops redirect to device 0. Reset per execute(). */
     private Set<Integer> failedDevices;
+
+    /** Per-device P2P accessibility from device 0. Computed once during initialize().
+     *  isPeerAccessible[d] is true if device d is device 0 or has P2P access from device 0.
+     *  Used to gate shape buffer correction (ensureShapeOnDevice) — only needed for non-P2P devices. */
+    private boolean[] isPeerAccessible;
+
+    /** Cached device count from nativeOps.getAvailableDevices(). Computed once during
+     *  initialize() to avoid repeated JNI calls (~2us each × 7+ call sites per execute()).
+     *  Device count doesn't change at runtime. Defaults to 1 for CPU backend. */
+    private int cachedNumDevices = 1;
+
+    /** Per-slot device ID cache. Tracks the device each output slot was allocated on.
+     *  Parallel to outputSlots[]. -1 means unknown (requires JNI dbDeviceId() fallback).
+     *  Updated when outputs are allocated (Step 4) and when failover changes the device.
+     *  Used in Step 1b to avoid dbDeviceId() JNI calls for op-output inputs (~7000 calls
+     *  per vision frame at ~2us each = ~14ms saved). */
+    private int[] outputSlotDeviceIds;
+
+    /** Per-external-input device ID cache. Parallel to externalInputs[].
+     *  -1 means unresolved (will be queried via JNI and cached on first access).
+     *  External inputs (constants, variables) don't change device between slots. */
+    private int[] externalInputDeviceIds;
 
     /** Slot-indexed array cache: persists across execute() calls for O(1) array reuse.
      *  Same slot always produces the same shape in autoregressive decoding, so we cache
@@ -166,6 +243,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     private Map<String, Integer> timingCacheMissReasons = new HashMap<>();
     private int timingCacheLeakedConstant;
     private long timingCacheLeakedConstantBytes;
+    // Per-op-type timing: opName -> [totalNs, count, maxNs]
+    private Map<String, long[]> perOpTimingNs;
+    // Time bucket counters: <1ms, 1-10ms, 10-100ms, >100ms
+    private int timingBucketSub1ms, timingBucket1to10ms, timingBucket10to100ms, timingBucketOver100ms;
     // Release diagnostics
     private int pendingCloseCount, pendingCloseViewCount;
     private long pendingCloseBytes;
@@ -178,6 +259,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     private long replicaToDev0Bytes, replicaToDev1Bytes;
     private int wrongDeviceCacheEjections;
     private int replicaCacheHits;
+    private int shapeBufferCorrections;
 
     /** Cache of constant external inputs replicated to non-primary devices.
      *  Key: (extIdx << 16) | targetDevice. Value: replicated INDArray on target device.
@@ -194,6 +276,30 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  and 2x growth, we need 4.6M elements = ~18MB for FLOAT32. 32MB provides headroom. */
     private Pointer ownNativeWorkspace;
     private static final long DSP_NATIVE_WORKSPACE_BYTES = 32L * 1024 * 1024;
+
+    /** Counter for workspace scope reset throttling. Tracks how many ops have executed
+     *  since the last workspace ScopeOut/ScopeIn reset. The workspace fills after ~30 ops
+     *  (32MB / ~1MB avg temp per op), so resetting every WORKSPACE_RESET_INTERVAL ops
+     *  prevents spill while saving ~96% of JNI calls (2 JNI calls × 1962 ops = ~3924 saved
+     *  per vision frame). Set nd4j.dsp.workspaceResetInterval=1 to reset every op. */
+    private int workspaceOpsSinceReset;
+    private static final int WORKSPACE_RESET_INTERVAL = Integer.getInteger(
+            "nd4j.dsp.workspaceResetInterval", 25);
+
+    /** Native C++ plan handle. Compiled once from the serialized plan on first native
+     *  execution attempt. Freed on close(). null means not yet compiled or compilation failed. */
+    private Pointer nativePlanHandle;
+
+    /** Track which plan the native handle was compiled from. If the plan changes,
+     *  the native handle must be recompiled. */
+    private DynamicShapePlan nativePlanSource;
+
+    /** If native compilation fails, disable native execution for this executor instance
+     *  to avoid repeated failure overhead. */
+    private boolean nativeExecutorFailed;
+
+    /** If CUDA graph capture fails, disable CUDA graphs but keep using slot-by-slot native execution. */
+    private boolean cudaGraphsFailed;
 
     public DynamicShapePlanExecutor(SameDiff sd, SessionMemMgr mmgr) {
         this.sd = sd;
@@ -223,12 +329,39 @@ public class DynamicShapePlanExecutor implements Closeable {
         currentPlan = plan;
         int totalSlots = plan.getTotalOutputSlots();
         outputSlots = new INDArray[totalSlots];
+        outputSlotDeviceIds = new int[totalSlots];
+        Arrays.fill(outputSlotDeviceIds, -1);
         externalInputs = new INDArray[plan.getExternalInputKeys().length];
+        externalInputDeviceIds = new int[plan.getExternalInputKeys().length];
+        Arrays.fill(externalInputDeviceIds, -1);
         liveSlots = new BitSet(totalSlots);
         pendingClose = new ArrayList<>();
         localPool = new LocalBufferPool();
         slotArrayCache = new INDArray[totalSlots];
         slotIsViewProducer = new boolean[totalSlots];
+        // Reset per-plan state for new plan
+        viewProducerDetectionDone = false;
+        opTypesLogged = false;
+        // Reset native executor state for new plan
+        freeNativePlanHandle();
+        nativeExecutorFailed = false;
+
+        // Cache device count and compute per-device P2P accessibility once.
+        // Used by ensureShapeOnDevice() and all multi-GPU paths to avoid repeated
+        // getAvailableDevices() JNI calls (~2us each × 7+ sites per execute()).
+        try {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            cachedNumDevices = nativeOps.getAvailableDevices();
+            isPeerAccessible = new boolean[cachedNumDevices];
+            isPeerAccessible[0] = true; // device 0 is always accessible from itself
+            for (int d = 1; d < cachedNumDevices; d++) {
+                isPeerAccessible[d] = nativeOps.isPeerAccessSupported(0, d);
+            }
+        } catch (Exception e) {
+            // CPU backend or unavailable — no multi-GPU, no shape correction needed
+            cachedNumDevices = 1;
+            isPeerAccessible = null;
+        }
     }
 
     /**
@@ -243,6 +376,44 @@ public class DynamicShapePlanExecutor implements Closeable {
             initialize(plan);
         }
 
+        // Try native C++ graph executor if enabled and not previously failed.
+        // This executes the entire plan in C++ via a single JNI call, avoiding
+        // per-op Java→JNI→C++ round-trips (~15-20μs each × 1962 ops = ~30ms overhead).
+        if (NATIVE_EXECUTOR_ENABLED && !nativeExecutorFailed) {
+            try {
+                Map<String, INDArray> nativeResult = executeNative(plan, placeholderArrays);
+                if (nativeResult != null) {
+                    return nativeResult;
+                }
+                // null means native execution not available, fall through to Java
+            } catch (Exception e) {
+                if (!cudaGraphsFailed && nativePlanHandle != null) {
+                    // CUDA graph capture may have failed — disable graphs and retry slot-by-slot
+                    log.info("Native executor failed (likely CUDA graph capture), retrying with graphs disabled: {}", e.getMessage());
+                    cudaGraphsFailed = true;
+                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                    try {
+                        nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, false);
+                    } catch (UnsupportedOperationException ignored) {}
+                    // Retry without CUDA graphs
+                    try {
+                        Map<String, INDArray> retryResult = executeNative(plan, placeholderArrays);
+                        if (retryResult != null) {
+                            return retryResult;
+                        }
+                    } catch (Exception retryEx) {
+                        log.warn("Native executor failed even without CUDA graphs, falling back to Java: {}", retryEx.getMessage());
+                        nativeExecutorFailed = true;
+                        freeNativePlanHandle();
+                    }
+                } else {
+                    log.warn("Native graph executor failed, falling back to Java executor: {}", e.getMessage());
+                    nativeExecutorFailed = true;
+                    freeNativePlanHandle();
+                }
+            }
+        }
+
         // Always clear per-slot shape caches between executions.
         // During autoregressive decoding, KV cache dimensions grow by 1 each step,
         // so shapes computed in the previous step are stale. Without this, the attention
@@ -250,6 +421,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         // causing a broadcast mismatch at /model/attn_mask_reformat/Add (slot 591).
         plan.clearAllShapeCaches();
 
+        pendingCloseBytes = 0;  // Reset unconditionally (used by byte-based flush trigger)
+        workspaceOpsSinceReset = 0;  // Start fresh for workspace reset throttling
         if (TIMING_ENABLED) {
             timingWireInputsNs = timingSyncNs = timingShapeNs = timingAllocNs = timingExecNs = timingReleaseNs = 0;
             timingShapeHits = timingShapeMisses = 0;
@@ -258,13 +431,17 @@ public class DynamicShapePlanExecutor implements Closeable {
             timingCacheMissReasons.clear();
             timingCacheLeakedConstant = 0;
             timingCacheLeakedConstantBytes = 0;
+            if (perOpTimingNs == null) perOpTimingNs = new HashMap<>();
+            perOpTimingNs.clear();
+            timingBucketSub1ms = timingBucket1to10ms = timingBucket10to100ms = timingBucketOver100ms = 0;
             pendingCloseCount = pendingCloseViewCount = 0;
-            pendingCloseBytes = 0;
         }
 
         // Clear output slots from the previous execution.
         Arrays.fill(outputSlots, null);
+        Arrays.fill(outputSlotDeviceIds, -1);
         Arrays.fill(externalInputs, null);
+        Arrays.fill(externalInputDeviceIds, -1);
         liveSlots.clear();
         if (pendingClose == null) pendingClose = new ArrayList<>();
         pendingClose.clear();
@@ -282,25 +459,42 @@ public class DynamicShapePlanExecutor implements Closeable {
         replicaToDev0Bytes = replicaToDev1Bytes = 0;
         wrongDeviceCacheEjections = 0;
         replicaCacheHits = 0;
+        shapeBufferCorrections = 0;
 
         // Resolve external inputs (constants, variables, placeholders)
         resolveExternalInputs(plan, placeholderArrays);
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        // Clear stale CUDA error state from previous execution's cleanup (closePendingBuffers,
+        // evictOversizedSlotCache, trimPool). Without this, a CUDA error from step N's cleanup
+        // propagates as a sticky error into step N+1, causing the first memsetAsync/op to fail.
+        nativeOps.clearLastError();
+
         DynamicShapeSlot[] slots = plan.getSlots();
         if (localPool == null) localPool = new LocalBufferPool();
 
-        // Cache the execution stream once per execute() call.
+        // Get a fresh execution stream for this execute() call. Between calls,
+        // intermediate JNI operations (closePendingBuffers, trimPool, mmgr.scopeOut)
+        // can trigger ContextBuffers release, invalidating cached stream handles.
+        // Using getFreshExecutionStream() ensures we get a currently-valid stream.
         Pointer execStream = null;
         try {
-            OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-            if (lc != null) {
-                execStream = nativeOps.lcExecutionStream(lc);
-                if (execStream != null) execStream.retainReference();
-            }
+            execStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+            if (execStream != null) execStream.retainReference();
         } catch (Exception e) {
-            // CPU backend or unavailable
+            // CPU backend or unavailable — try fallback
+            try {
+                OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                if (lc != null) {
+                    execStream = nativeOps.lcExecutionStream(lc);
+                    if (execStream != null) execStream.retainReference();
+                }
+            } catch (Exception e2) {
+                // CPU backend
+            }
         }
+
+        executionCount++;
 
         // Build set of output slot indices — these slots must always have real allocations
         // even if they're view producers, because the caller needs the data.
@@ -318,21 +512,38 @@ public class DynamicShapePlanExecutor implements Closeable {
         // correctly via CudaExecutioner.ensureDeviceCoherency() which migrates buffers between
         // devices transparently. Enable parallel mode explicitly with nd4j.dsp.forceParallel=true.
         if (plan.getNumDistinctDevices() > 1 && plan.getSuccessors() != null
-                && Boolean.getBoolean("nd4j.dsp.forceParallel")) {
+                && Boolean.getBoolean(ND4JSystemProperties.DSP_FORCE_PARALLEL)) {
             log.debug("DSP executing in PARALLEL mode ({} devices, {} ops)",
                     plan.getNumDistinctDevices(), slots.length);
             return executeParallel(plan, placeholderArrays, nativeOps, execStream);
         }
 
-        // Log unique op types
-        {
+        // Log unique op types once per plan (not every execute() call).
+        // Building the map iterates all 1962 slots — wasted work on decode steps.
+        if (!opTypesLogged) {
             java.util.Map<String, Integer> opCounts = new java.util.LinkedHashMap<>();
             for (DynamicShapeSlot s : slots) {
                 String name = s.getOp().opName();
                 opCounts.merge(name, 1, Integer::sum);
             }
             log.debug("DSP unique ops ({}): {}", opCounts.size(), opCounts);
+            opTypesLogged = true;
         }
+
+        // Suppress autoGc during DSP execution. DSP manages its own memory via
+        // pendingClose + flushPendingClose. The DeallocatorService's autoGcWindow (default 100ms)
+        // calls System.gc() every 100ms when the PhantomReference queue is empty (which it always
+        // is during DSP since we close buffers directly). This causes 10+ Full GCs/sec, each
+        // ~144ms, consuming more time than actual computation.
+        // Use Integer.MAX_VALUE instead of 0 since CudaConfiguration.setNoGcWindowMs rejects < 1.
+        int savedAutoGcWindow = Nd4j.getMemoryManager().getAutoGcWindow();
+        Nd4j.getMemoryManager().setAutoGcWindow(Integer.MAX_VALUE);
+
+        // Cache the current device ID once before the main loop. executeSlot() uses this
+        // instead of calling getDeviceForCurrentThread() per-slot, saving ~1962 JNI calls
+        // per vision frame (~4ms at ~2us/call). The finally block in executeSlot() restores
+        // the device after each slot, so this value stays accurate across iterations.
+        int cachedDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
         Map<String, INDArray> results = new LinkedHashMap<>();
         try {
@@ -348,7 +559,62 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (stepIdx % 500 == 0 || stepIdx == slots.length - 1) {
                         log.debug("DSP step {}/{}: op={}", stepIdx, slots.length, slot.getOpName());
                     }
-                    executeSlot(slot, ctx, nativeOps, localPool, execStream);
+                    // Trace-level per-slot logging to stderr for crash diagnosis.
+                    // When a native crash (SIGSEGV) occurs, the last stderr line identifies
+                    // the slot that was executing. Uses stderr because it's unbuffered and
+                    // survives native crashes (unlike log4j which may have buffered output).
+                    // Property check is cached at class init (DSP_TRACE_ENABLED) to avoid
+                    // System.getProperty() lock acquisition on every slot.
+                    if (DSP_TRACE_ENABLED) {
+                        System.err.println("DSP slot " + stepIdx + "/" + slots.length + ": " + slot.getOpName());
+                        System.err.flush();
+                    }
+                    long tSlot0 = TIMING_ENABLED ? System.nanoTime() : 0;
+                    executeSlot(slot, ctx, nativeOps, localPool, execStream, cachedDeviceId);
+                    if (TIMING_ENABLED) {
+                        long slotNs = System.nanoTime() - tSlot0;
+                        double slotMs = slotNs / 1_000_000.0;
+                        // Accumulate per-op-type timing
+                        String opName = slot.getOpName();
+                        long[] stats = perOpTimingNs.get(opName);
+                        if (stats == null) {
+                            stats = new long[3]; // [totalNs, count, maxNs]
+                            perOpTimingNs.put(opName, stats);
+                        }
+                        stats[0] += slotNs;
+                        stats[1]++;
+                        if (slotNs > stats[2]) stats[2] = slotNs;
+                        // Time bucket distribution
+                        if (slotMs < 1.0) timingBucketSub1ms++;
+                        else if (slotMs < 10.0) timingBucket1to10ms++;
+                        else if (slotMs < 100.0) timingBucket10to100ms++;
+                        else timingBucketOver100ms++;
+                        // Log slow ops (>10ms)
+                        if (slotMs > 10.0) {
+                            log.info("SLOW OP slot {}: {} took {}ms", stepIdx, opName,
+                                    String.format("%.1f", slotMs));
+                        }
+                    }
+
+                    // Post-slot CUDA error check: detect sticky errors after the slot that
+                    // caused them. lastErrorCode() is a JNI call (~2us each). With 1962 ops
+                    // per vision frame, checking every op adds ~4ms/frame. Check every N ops
+                    // (ERROR_CHECK_INTERVAL, default 50) to reduce JNI overhead by ~50x while
+                    // still catching errors within 50 ops of occurrence. Always check the
+                    // last slot to catch errors before output claiming.
+                    if (ERROR_CHECK_INTERVAL <= 1
+                            || stepIdx % ERROR_CHECK_INTERVAL == 0
+                            || stepIdx == slots.length - 1) {
+                        int postSlotErr = nativeOps.lastErrorCode();
+                        if (postSlotErr != 0) {
+                            String postSlotMsg = nativeOps.lastErrorMessage();
+                            log.error("CUDA error {} after slot {} ({}): {}",
+                                    postSlotErr, stepIdx, slot.getOpName(), postSlotMsg);
+                            nativeOps.clearLastError();
+                            // Don't throw immediately — let the DSP continue so we get more diagnostic info.
+                            // The error is sticky on the GPU side, so subsequent slots will also fail.
+                        }
+                    }
                 } catch (Exception e) {
                     log.error("Error executing slot {} ({}): {}", stepIdx, slot.getOpName(), e.getMessage());
                     // Log input details for diagnosis
@@ -389,22 +655,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                 ctx.purgeForReuse();
                 ctxPool.offerFirst(ctx);
 
-                // Reset native workspace offset between ops. Each op's C++ temporaries
-                // (ALLOCATE calls) are only needed during the op's execution. Without
-                // this reset, the workspace offset accumulates across all ops. Once the
-                // buffer is exhausted, subsequent ALLOCATE calls spill to separate
-                // heap allocations where C++ buffer overruns corrupt adjacent glibc
-                // malloc metadata -> SIGABRT "double free or corruption (!prev)".
-                // Resetting per-op ensures each op gets the full workspace buffer and
-                // all overruns stay within the harmless bump-allocator region.
-                Pointer wsPtr = ownNativeWorkspace;
-                if (wsPtr == null) {
-                    wsPtr = mmgr.getNativeWorkspacePointer();
-                }
-                if (wsPtr != null) {
-                    nativeOps.workspaceScopeOut(wsPtr);
-                    nativeOps.workspaceScopeIn(wsPtr);
-                }
+                // NOTE: Workspace scope-out/scope-in (reset) is now handled inside
+                // executeSlot() after op execution (line ~1690). The previous duplicate
+                // reset here added 2 unnecessary JNI calls per slot (~4000 JNI calls
+                // per 1962-op vision encoder frame). The executeSlot reset is sufficient
+                // because no workspace allocations occur between executeSlot return and
+                // the next executeSlot call — only Java-side release bookkeeping.
 
                 // Mark dead slots for deferred close. Don't close now because:
                 // (1) GPU kernels may still be using the buffer on the execution stream
@@ -421,33 +677,40 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 // View producer — the buffer belongs to the input (C++ made
                                 // this a view of the input's GPU memory). Don't close or cache
                                 // it; the input slot manages its own buffer lifecycle.
-                            } else if (buf.closeable() && slotArrayCache != null) {
+                            } else if (slotArrayCache != null) {
                                 // Non-view producer — cache for O(1) reuse on next execute().
+                                // Don't gate on closeable(): oversized buffers (growth factor
+                                // > 1.0) have data().length() > length() → closeable()=false,
+                                // but these are OWNED arrays safe to cache and reuse.
                                 INDArray prev = slotArrayCache[slotIdx];
                                 if (prev != null && !prev.wasClosed()) {
                                     DataBuffer pbuf = prev.data();
-                                    if (pbuf != null && !pbuf.wasClosed() && pbuf.closeable() && !pbuf.isConstant()) {
+                                    if (pbuf != null && !pbuf.wasClosed() && !pbuf.isConstant()) {
                                         pendingClose.add(pbuf);
                                     }
                                 }
                                 slotArrayCache[slotIdx] = arr;
-                            } else if (buf.closeable()) {
+                            } else {
                                 pendingClose.add(buf);
                             }
-                            if (TIMING_ENABLED && !isViewSlot) {
+                            if (!isViewSlot) {
                                 pendingCloseBytes += buf.length() * buf.getElementSize();
-                                pendingCloseCount++;
+                                if (TIMING_ENABLED) pendingCloseCount++;
                             }
                         }
                         outputSlots[slotIdx] = null;
                         liveSlots.clear(slotIdx);
                     }
                 }
-                // Periodically flush dead buffers to reclaim GPU memory mid-execution.
-                // This prevents ~10GB intermediate accumulation in vision encoder (1962 ops).
-                // The sync cost (~1ms per flush) is negligible vs. the GPU memory savings.
-                if (stepIdx > 0 && stepIdx % RELEASE_FLUSH_INTERVAL == 0 && !pendingClose.isEmpty()) {
+                // Flush dead buffers to reclaim GPU memory mid-execution.
+                // Two triggers: op-count interval (every 100 ops) AND byte threshold (256MB).
+                // The byte trigger prevents multi-GB accumulation between op-count boundaries
+                // (e.g., 95 ops × 48MB = 4.5GB trapped before next interval flush).
+                if (!pendingClose.isEmpty() && (
+                        (stepIdx > 0 && stepIdx % RELEASE_FLUSH_INTERVAL == 0) ||
+                        pendingCloseBytes >= FLUSH_BYTE_THRESHOLD)) {
                     flushPendingClose(nativeOps, execStream);
+                    pendingCloseBytes = 0;
                 }
 
                 if (TIMING_ENABLED) timingReleaseNs += System.nanoTime() - tRelease0;
@@ -526,7 +789,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[i];
                     if (!isViewSlot) {
                         DataBuffer buf = arr.data();
-                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                        if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                             pendingClose.add(buf);
                         }
                     }
@@ -548,12 +811,48 @@ public class DynamicShapePlanExecutor implements Closeable {
             // so subsequent threads can create CUDA contexts/streams.
             evictOversizedSlotCache(nativeOps, execStream);
 
+            // After first successful execution, view-producer detection is complete.
+            // Subsequent executions skip pre/post GPU address comparison (saves ~2 JNI
+            // calls per output per slot — significant for 1962-op vision encoder).
+            if (!viewProducerDetectionDone) {
+                viewProducerDetectionDone = true;
+                if (TIMING_ENABLED) {
+                    int viewCount = 0;
+                    if (slotIsViewProducer != null) {
+                        for (boolean b : slotIsViewProducer) if (b) viewCount++;
+                    }
+                    log.info("  View-producer detection complete: {} view-producer slots", viewCount);
+                }
+            }
+
             if (TIMING_ENABLED) {
                 printTimingSummary(slots.length, localPool);
             }
 
+            // Diagnostic: dump first few values of each output to compare with native executor
+            if (Boolean.getBoolean("nd4j.dsp.java.dumpOutputs")) {
+                for (Map.Entry<String, INDArray> entry : results.entrySet()) {
+                    String name = entry.getKey();
+                    INDArray arr = entry.getValue();
+                    if (arr != null && arr.length() > 0) {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("JAVA_OUT ").append(name).append(" shape=").append(java.util.Arrays.toString(arr.shape()));
+                        sb.append(" first5=[");
+                        long limit = Math.min(5, arr.length());
+                        for (long j = 0; j < limit; j++) {
+                            if (j > 0) sb.append(", ");
+                            sb.append(String.format("%.6f", arr.getFloat(j)));
+                        }
+                        sb.append("]");
+                        log.info(sb.toString());
+                    }
+                }
+            }
+
             return results;
         } finally {
+            // Restore autoGc window so DeallocatorService resumes normal GC for non-DSP code
+            Nd4j.getMemoryManager().setAutoGcWindow(savedAutoGcWindow);
             // Safety: null out remaining slots without closing (already handled above)
             if (outputSlots != null) {
                 Arrays.fill(outputSlots, null);
@@ -586,11 +885,30 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         // Sync execution stream so all GPU kernels using these buffers have completed.
         Nd4j.getExecutioner().commit();
-        // Build sorted array of GPU addresses from live slots. Owner buffers whose
-        // allocation range overlaps with any live address are deferred — a view in a
-        // live slot still needs the parent's GPU memory. Range check catches offset
-        // views (e.g., strided_slice) that exact-match would miss.
-        long[] liveGpuAddresses = collectLiveGpuAddresses(nativeOps);
+
+        // Fast path: for decode steps with small pending close (< 10MB), skip the
+        // expensive collectLiveGpuAddresses() call. With seq_len=1 arrays, aliasing
+        // is extremely unlikely and the overhead of iterating all live slots + JNI
+        // calls for each slot's GPU address outweighs the risk.
+        long estimatedBytes = 0;
+        for (DataBuffer buf : pendingClose) {
+            if (buf != null && !buf.wasClosed()) {
+                estimatedBytes += buf.length() * buf.getElementSize();
+            }
+        }
+        boolean fastPath = estimatedBytes < FAST_CLOSE_THRESHOLD;
+
+        long[] liveGpuAddresses;
+        if (fastPath) {
+            // Skip live address collection — no range check, just identity + ODB dedup
+            liveGpuAddresses = null;
+        } else {
+            // Build sorted array of GPU addresses from live slots. Owner buffers whose
+            // allocation range overlaps with any live address are deferred — a view in a
+            // live slot still needs the parent's GPU memory. Range check catches offset
+            // views (e.g., strided_slice) that exact-match would miss.
+            liveGpuAddresses = collectLiveGpuAddresses(nativeOps);
+        }
         int[] stats = freePendingBuffers(nativeOps, freshStream, liveGpuAddresses);
         // Trim the pool on the execution stream so freed memory is immediately reusable.
         // Without this, cudaFreeAsync enqueues frees but the pool can't reuse until synced.
@@ -601,11 +919,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             // default stream (see dbFreeBuffersOnStream cross-device path).
             // Use trimMemoryPoolOnStream with null stream to sync stream 0 on the
             // target device before trimming — that's where the cross-device frees land.
-            int numDevices = nativeOps.getAvailableDevices();
-            if (numDevices > 1) {
-                for (int d = 0; d < numDevices; d++) {
+            if (cachedNumDevices > 1) {
+                for (int d = 0; d < cachedNumDevices; d++) {
                     if (d != currentDevice) {
-                        nativeOps.trimMemoryPoolOnStream(d, null);
+                        nativeOps.trimMemoryPool(d);
                     }
                 }
             }
@@ -652,11 +969,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             nativeOps.trimMemoryPoolOnStream(currentDevice, freshStream);
             // Trim all other devices — cross-device frees went to their default streams.
             // Use trimMemoryPoolOnStream with null to sync stream 0 on target device.
-            int numDevices = nativeOps.getAvailableDevices();
-            if (numDevices > 1) {
-                for (int d = 0; d < numDevices; d++) {
+            if (cachedNumDevices > 1) {
+                for (int d = 0; d < cachedNumDevices; d++) {
                     if (d != currentDevice) {
-                        nativeOps.trimMemoryPoolOnStream(d, null);
+                        nativeOps.trimMemoryPool(d);
                     }
                 }
             }
@@ -692,7 +1008,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         HashSet<Long> batchGpuAddresses = new HashSet<>();
 
         for (DataBuffer buf : pendingClose) {
-            if (buf == null || buf.wasClosed() || !buf.closeable() || buf.isConstant()) continue;
+            // NOTE: Don't gate on buf.closeable(). Oversized buffers from slot cache
+            // growth factor have data().length() > length() → closeable()=false. But these
+            // are OWNED arrays (not sub-views) that the DSP executor allocated. They must
+            // be freed to prevent permanent GPU memory leaks. Only skip constants and
+            // already-closed buffers.
+            if (buf == null || buf.wasClosed() || buf.isConstant()) continue;
 
             OpaqueDataBuffer odb = buf.opaqueBuffer();
             if (odb == null || odb.isNull()) continue;
@@ -840,21 +1161,21 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     private void executeSlot(DynamicShapeSlot slot, OpContext ctx, NativeOps nativeOps,
-                             LocalBufferPool localPool, Pointer execStream) {
+                             LocalBufferPool localPool, Pointer execStream, int cachedDeviceId) {
         DifferentialFunction fn = slot.getOp();
 
-        // Step 0: Device placement. Always save the caller's device so we can
-        // restore it in the finally block, even if a mid-execution failover
-        // switches us to an unexpected device.
-        int previousDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        // Step 0: Device placement. Use the cached device ID from execute() instead of
+        // querying getDeviceForCurrentThread() per-slot (~2us JNI overhead × 1962 slots).
+        // The execute() loop restores the device after each executeSlot() via the finally
+        // block, so cachedDeviceId is always accurate at entry.
+        int previousDeviceId = cachedDeviceId;
         int targetDevice = slot.getTargetDeviceId();
         // If the planned device hit an unrecoverable CUDA error (e.g., OOM cascade),
         // redirect to the first non-failed device. When device 0 fails, we redirect
         // to device 1 (or the next available). When device 1+ fails, redirect to 0.
         if (targetDevice >= 0 && failedDevices != null && failedDevices.contains(targetDevice)) {
-            int numDevices = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
             int redirectDevice = 0;
-            for (int d = 0; d < numDevices; d++) {
+            for (int d = 0; d < cachedNumDevices; d++) {
                 if (!failedDevices.contains(d)) {
                     redirectDevice = d;
                     break;
@@ -862,8 +1183,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             targetDevice = redirectDevice;
         }
+        boolean deviceSwitchOccurred = false;
         if (targetDevice >= 0) {
             if (previousDeviceId != targetDevice) {
+                deviceSwitchOccurred = true;
                 DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "slot-device-placement");
                 // Re-fetch execution stream for the target device. The execStream passed
                 // in was cached from the original device's launch context — using it for
@@ -914,10 +1237,29 @@ public class DynamicShapePlanExecutor implements Closeable {
             for (int i = 0; i < inputArrays.length; i++) {
                 INDArray input = inputArrays[i];
                 if (input != null && !input.isEmpty() && input.data() != null) {
+                    // Use cached device IDs instead of JNI dbDeviceId() per input.
+                    // Op outputs use outputSlotDeviceIds[], externals use externalInputDeviceIds[].
+                    // Falls back to JNI only when cache is -1 (unknown), which happens on
+                    // failover or first access of external inputs.
+                    int srcIdx2 = inputSourceIndices[i];
                     int inputDevice = -1;
-                    OpaqueDataBuffer inputOdb = input.data().opaqueBuffer();
-                    if (inputOdb != null && !inputOdb.isNull()) {
-                        inputDevice = nativeOps.dbDeviceId(inputOdb);
+                    if (srcIdx2 >= 0) {
+                        inputDevice = outputSlotDeviceIds[srcIdx2];
+                    } else {
+                        int extIdx2 = -(srcIdx2 + 1);
+                        inputDevice = externalInputDeviceIds[extIdx2];
+                    }
+                    // Fall back to JNI if cached value is unknown (-1)
+                    if (inputDevice < 0) {
+                        OpaqueDataBuffer inputOdb = input.data().opaqueBuffer();
+                        if (inputOdb != null && !inputOdb.isNull()) {
+                            inputDevice = nativeOps.dbDeviceId(inputOdb);
+                        }
+                        // Cache the resolved value for future lookups
+                        if (inputDevice >= 0 && srcIdx2 < 0) {
+                            int extIdx2 = -(srcIdx2 + 1);
+                            externalInputDeviceIds[extIdx2] = inputDevice;
+                        }
                     }
                     if (inputDevice >= 0 && inputDevice != targetDevice) {
                         // Check constant replica cache first. Model weights (constants) don't
@@ -930,7 +1272,6 @@ public class DynamicShapePlanExecutor implements Closeable {
                         // (e.g., attention_mask [1,680] cached from step N used at step N+1
                         // where the correct shape is [1,681]).
                         boolean isConstant = input.data() != null && input.data().isConstant();
-                        int srcIdx2 = inputSourceIndices[i];
                         boolean isExternal = srcIdx2 < 0;
                         // Check slot's inputSourceTypes — placeholders are NEVER truly constant
                         byte[] srcTypes = slot.getInputSourceTypes();
@@ -1062,7 +1403,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (slotArrayCache != null && slotArrayCache[slotIdx] != null) {
                     INDArray stale = slotArrayCache[slotIdx];
                     DataBuffer sbuf = stale.data();
-                    if (sbuf != null && !sbuf.wasClosed() && sbuf.closeable() && !sbuf.isConstant()) {
+                    if (sbuf != null && !sbuf.wasClosed() && !sbuf.isConstant()) {
                         pendingClose.add(sbuf);
                     }
                     slotArrayCache[slotIdx] = null;
@@ -1077,8 +1418,38 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (slotIdx >= 0 && slotArrayCache != null) {
                     INDArray cached = slotArrayCache[slotIdx];
                     if (cached != null && !cached.wasClosed()) {
+                        // Validate cached array's native shape info before reuse.
+                        // A C++ op buffer overrun can corrupt constant shape info on the host heap.
+                        // The Java-side jvmShapeInfo (long[]) is immune (JVM-managed memory).
+                        // Detect corruption here to avoid propagating it through execution.
+                        DataBuffer cachedShapeInfo = cached.shapeInfoDataBuffer();
+                        if (cachedShapeInfo != null && cachedShapeInfo.length() > 0) {
+                            long cachedRank = cachedShapeInfo.getLong(0);
+                            if (cachedRank < 0 || cachedRank > 32) {
+                                log.error("Slot cache shape info corruption at slot {} ({}): " +
+                                        "native rank={} (0x{}), shapeInfo constant={}, " +
+                                        "nativeAddr=0x{}. Evicting from cache.",
+                                        slotIdx, slot.getOpName(),
+                                        cachedRank, Long.toHexString(cachedRank),
+                                        cachedShapeInfo.isConstant(),
+                                        Long.toHexString(cachedShapeInfo.pointer().address()));
+                                // Don't reuse corrupted cache entry — force fresh allocation.
+                                DataBuffer cbufCorrupt = cached.data();
+                                if (cbufCorrupt != null && !cbufCorrupt.wasClosed() && !cbufCorrupt.isConstant()) {
+                                    pendingClose.add(cbufCorrupt);
+                                }
+                                slotArrayCache[slotIdx] = null;
+                                cached = null;
+                            }
+                        }
+                    }
+                    if (cached != null && !cached.wasClosed()) {
                         DataBuffer cbuf = cached.data();
-                        if (cbuf != null && !cbuf.wasClosed() && cbuf.closeable()
+                        // NOTE: Don't gate on cbuf.closeable() here. Oversized buffers
+                        // (from growth factor > 1.0) have data().length() > length() which
+                        // makes closeable()=false. But these are OWNED arrays that we
+                        // allocated — safe to reshape and reuse.
+                        if (cbuf != null && !cbuf.wasClosed()
                                 && cached.dataType() == dt
                                 && cbuf.length() >= numElements(actualShape)) {
                             // Check device locality for multi-GPU. If the cached array is on
@@ -1112,10 +1483,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                             // (e.g., scalar ops can modify output shapes in-place). The Java
                             // side still has the correct shape, but the cached C++ wrapper doesn't.
                             cached.clearOpaqueNDArray();
-                            fastZero(cached, nativeOps, execStream);
-                            out = cached;
-                            slotArrayCache[slotIdx] = null;
-                            if (TIMING_ENABLED) { timingPoolHits++; timingZeroApplied++; }
+                            if (fastZero(cached, nativeOps, execStream)) {
+                                out = cached;
+                                slotArrayCache[slotIdx] = null;
+                                if (TIMING_ENABLED) { timingPoolHits++; timingZeroApplied++; }
+                            } else {
+                                // Both async and sync memset failed → GPU memory is invalid.
+                                // This can happen if the buffer was freed through an aliased ODB.
+                                log.warn("Slot cache: invalid GPU memory at slot {} ({}), allocating fresh",
+                                        slotIdx, slot.getOpName());
+                                slotArrayCache[slotIdx] = null;
+                                // out remains null → falls through to fresh allocation
+                            }
                             } // end else (correct device)
                         } else if (TIMING_ENABLED && cbuf != null) {
                             // Diagnose cache miss reason
@@ -1130,12 +1509,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                     }
                     if (out == null) {
-                        // Cached array is stale or wrong type — close it
+                        // Cached array is stale or wrong type — close it.
+                        // Don't gate on closeable() — oversized buffers from growth factor
+                        // are OWNED arrays safe to free. Only skip true constants.
                         if (cached != null && !cached.wasClosed()) {
                             DataBuffer cbuf = cached.data();
-                            if (cbuf != null && !cbuf.wasClosed() && cbuf.closeable() && !cbuf.isConstant()) {
+                            if (cbuf != null && !cbuf.wasClosed() && !cbuf.isConstant()) {
                                 pendingClose.add(cbuf);
-                            } else if (TIMING_ENABLED && cbuf != null && !cbuf.wasClosed() && (cbuf.isConstant() || !cbuf.closeable())) {
+                            } else if (TIMING_ENABLED && cbuf != null && !cbuf.wasClosed() && cbuf.isConstant()) {
                                 timingCacheLeakedConstant++;
                                 timingCacheLeakedConstantBytes += cbuf.length() * cbuf.getElementSize();
                             }
@@ -1166,6 +1547,19 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (slotIdx >= 0) {
                 outputSlots[outputSlotIndices[i]] = outputArrays[i];
                 liveSlots.set(outputSlotIndices[i]);
+                // Cache the ACTUAL device ID for this output slot. C++ allocateFailover
+                // may silently place the buffer on a different GPU than the target device.
+                // Using the planned targetDevice here caused stale cache entries that
+                // prevented Step 1b from migrating cross-device inputs → CUDA error 700.
+                int actualDeviceId = targetDevice >= 0 ? targetDevice : 0;
+                if (out != null && out.data() != null) {
+                    OpaqueDataBuffer outOdb = out.data().opaqueBuffer();
+                    if (outOdb != null && !outOdb.isNull()) {
+                        int realDevice = nativeOps.dbDeviceId(outOdb);
+                        if (realDevice >= 0) actualDeviceId = realDevice;
+                    }
+                }
+                outputSlotDeviceIds[outputSlotIndices[i]] = actualDeviceId;
             }
         }
         ctx.setOutputArrays(outputArrays);
@@ -1179,16 +1573,24 @@ public class DynamicShapePlanExecutor implements Closeable {
         // We save raw long addresses (not ODB objects) because C++ modifies the native
         // DataBuffer in-place — the ODB wraps the same C++ object and would return the
         // NEW address after modification.
-        long[] preExecGpuAddrs = new long[outputArrays.length];
-        for (int i = 0; i < outputArrays.length; i++) {
-            INDArray arr = outputArrays[i];
-            if (arr != null && !arr.isEmpty()) {
-                DataBuffer buf = arr.data();
-                if (buf != null && !buf.wasClosed()) {
-                    OpaqueDataBuffer odb = buf.opaqueBuffer();
-                    if (odb != null && !odb.isNull()) {
-                        Pointer special = nativeOps.dbSpecialBuffer(odb);
-                        if (special != null) preExecGpuAddrs[i] = special.address();
+        //
+        // OPTIMIZATION: Once view-producer detection is complete (after first execution),
+        // skip the expensive JNI calls (dbSpecialBuffer per output per slot). The
+        // slotIsViewProducer[] array is stable across executions since view behavior
+        // depends on the op, not the data. This saves ~2 JNI calls per output per slot.
+        long[] preExecGpuAddrs = null;
+        if (!viewProducerDetectionDone) {
+            preExecGpuAddrs = new long[outputArrays.length];
+            for (int i = 0; i < outputArrays.length; i++) {
+                INDArray arr = outputArrays[i];
+                if (arr != null && !arr.isEmpty()) {
+                    DataBuffer buf = arr.data();
+                    if (buf != null && !buf.wasClosed()) {
+                        OpaqueDataBuffer odb = buf.opaqueBuffer();
+                        if (odb != null && !odb.isNull()) {
+                            Pointer special = nativeOps.dbSpecialBuffer(odb);
+                            if (special != null) preExecGpuAddrs[i] = special.address();
+                        }
                     }
                 }
             }
@@ -1295,6 +1697,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                                             originalTarget, slot.getOpName(), retryDevice, originalTarget);
                                     if (failedDevices != null) failedDevices.add(originalTarget);
                                     targetDevice = retryDevice;
+                                    deviceSwitchOccurred = true;
                                     DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "oom-failover");
                                     nativeOps.clearLastError();
                                     Nd4j.getExecutioner().commit();
@@ -1343,14 +1746,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                             if (slotIdx >= 0) {
                                 outputSlots[slotIdx] = newOut;
                                 liveSlots.set(slotIdx);
+                                // Update cached device ID after failover reallocation.
+                                // Use JNI to get the actual device since retry may land on a different one.
+                                OpaqueDataBuffer retryOdb2 = newOut.data().opaqueBuffer();
+                                if (retryOdb2 != null && !retryOdb2.isNull()) {
+                                    outputSlotDeviceIds[slotIdx] = nativeOps.dbDeviceId(retryOdb2);
+                                }
                             }
                             // Update pre-exec GPU address for view-producer detection
-                            DataBuffer buf = newOut.data();
-                            if (buf != null && !buf.wasClosed()) {
-                                OpaqueDataBuffer odb2 = buf.opaqueBuffer();
-                                if (odb2 != null && !odb2.isNull()) {
-                                    Pointer special = nativeOps.dbSpecialBuffer(odb2);
-                                    if (special != null) preExecGpuAddrs[i] = special.address();
+                            if (preExecGpuAddrs != null) {
+                                DataBuffer buf = newOut.data();
+                                if (buf != null && !buf.wasClosed()) {
+                                    OpaqueDataBuffer odb2 = buf.opaqueBuffer();
+                                    if (odb2 != null && !odb2.isNull()) {
+                                        Pointer special = nativeOps.dbSpecialBuffer(odb2);
+                                        if (special != null) preExecGpuAddrs[i] = special.address();
+                                    }
                                 }
                             }
                         } catch (Exception e) {
@@ -1380,6 +1791,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         flushPendingClose(nativeOps, execStream);
                     }
                     targetDevice = failoverDevice;
+                    deviceSwitchOccurred = true;
                     DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "p2p-failover");
                     nativeOps.clearLastError();
                     Nd4j.getExecutioner().commit();
@@ -1431,6 +1843,33 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                     nativeOps.clearLastError();
                     ctx.setOutputArrays(outputArrays);
+                    // Update cached device IDs for outputs that failed over
+                    for (int i = 0; i < outputSlotIndices.length; i++) {
+                        int si = outputSlotIndices[i];
+                        if (si >= 0) outputSlotDeviceIds[si] = failoverDevice;
+                    }
+                }
+            }
+        }
+
+        // Step 4d: Shape buffer correction for non-P2P devices.
+        // ConstantShapeHelper caches shape buffers per-device, but allocateFailover() may
+        // place them on a different device. For non-P2P GPUs, accessing a shape buffer on
+        // the wrong device causes CUDA error 700 (illegal memory access). Detect and fix
+        // by creating a fresh shape buffer from the Java-side jvmShapeInfo on the target device.
+        if (targetDevice >= 0 && isPeerAccessible != null
+                && targetDevice < isPeerAccessible.length && !isPeerAccessible[targetDevice]) {
+            int corrections = 0;
+            for (INDArray out : outputArrays) {
+                if (ensureShapeOnDevice(out, targetDevice, nativeOps)) corrections++;
+            }
+            for (INDArray in : inputArrays) {
+                if (ensureShapeOnDevice(in, targetDevice, nativeOps)) corrections++;
+            }
+            if (corrections > 0) {
+                shapeBufferCorrections += corrections;
+                if (TIMING_ENABLED) {
+                    log.debug("Op {}: corrected {} shape buffers to device {}", slot.getOpName(), corrections, targetDevice);
                 }
             }
         }
@@ -1440,7 +1879,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Without this, a failed cudaMemsetAsync (e.g., from cross-device buffer zeroing)
         // leaves a stale error that CudaExecutioner picks up via lastErrorCode() after
         // execCustomOp2, causing a spurious "cudaMemsetAsync failed" exception.
-        if (targetDevice >= 0) {
+        // OPTIMIZATION: Only clear when a device switch or failover occurred in this slot.
+        // Same-device slots can't produce stale errors from fastZero/allocation.
+        // Saves ~1800 JNI calls per vision frame (most slots don't switch devices).
+        if (deviceSwitchOccurred) {
             nativeOps.clearLastError();
         }
         // For data-dependent shapes (reshape with dynamic shape input, etc.), Java shape
@@ -1454,7 +1896,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         // for internal temporaries instead of per-op malloc/cudaMalloc. Without this, C++ op
         // temporary buffer overruns corrupt the regular malloc heap metadata, causing
         // "double free or corruption (out)" SIGABRT crashes.
-        Pointer wsPtr = mmgr.getNativeWorkspacePointer();
+        // OPTIMIZATION: Skip mmgr.getNativeWorkspacePointer() after the first call returns
+        // null, since the mmgr type doesn't change between ops. This saves one virtual
+        // method call per slot (~1962 calls per vision encoder frame).
+        Pointer wsPtr = ownNativeWorkspace != null ? null : mmgr.getNativeWorkspacePointer();
         if (wsPtr == null && ownNativeWorkspace == null) {
             log.debug("DSP: mmgr ({}) returned null workspace, creating own", mmgr.getClass().getSimpleName());
         }
@@ -1485,18 +1930,22 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Pre-exec shape validation: ensure allocated buffers can hold the data C++ will write.
         // With shapeFunctionOverride=true, C++ skips shape calc and uses our pre-allocated buffers.
         // If Java calculated wrong shapes, C++ will overflow → heap corruption.
-        for (int i = 0; i < outputArrays.length; i++) {
-            INDArray outArr = outputArrays[i];
-            if (outArr != null && !outArr.isEmpty()) {
-                long javaLen = outArr.length();
-                long bufLen = outArr.data() != null ? outArr.data().length() : 0;
-                // Buffer must be at least as large as the declared shape
-                if (bufLen < javaLen) {
-                    log.error("CRITICAL: Buffer too small for {} output[{}]: shape declares {} elements but buffer only has {}. Disabling shape override to prevent heap corruption.",
-                            slot.getOpName(), i, javaLen, bufLen);
-                    // Disable shape override for this op - let C++ calculate correct shapes
-                    ctx.shapeFunctionOverride(false);
-                    break;
+        // OPTIMIZATION: Only validate when shape override is active — if C++ is computing
+        // shapes itself (data-dependent ops), this check is redundant.
+        if (enableShapeOverride) {
+            for (int i = 0; i < outputArrays.length; i++) {
+                INDArray outArr = outputArrays[i];
+                if (outArr != null && !outArr.isEmpty()) {
+                    long javaLen = outArr.length();
+                    long bufLen = outArr.data() != null ? outArr.data().length() : 0;
+                    // Buffer must be at least as large as the declared shape
+                    if (bufLen < javaLen) {
+                        log.error("CRITICAL: Buffer too small for {} output[{}]: shape declares {} elements but buffer only has {}. Disabling shape override to prevent heap corruption.",
+                                slot.getOpName(), i, javaLen, bufLen);
+                        // Disable shape override for this op - let C++ calculate correct shapes
+                        ctx.shapeFunctionOverride(false);
+                        break;
+                    }
                 }
             }
         }
@@ -1516,15 +1965,21 @@ public class DynamicShapePlanExecutor implements Closeable {
         // calls delete[] on them → SIGSEGV).
         if (wsPtr != null) {
             ctx.detachWorkspace();
-            // Reset workspace offset for next op. RELEASE is a no-op for workspace
+            // Reset workspace offset periodically. RELEASE is a no-op for workspace
             // allocations, so temp memory accumulates. ScopeOut+ScopeIn resets the
             // bump pointer so the workspace can be reused by the next op.
-            // This MUST happen for ALL workspaces (mmgr-provided or self-managed),
-            // otherwise the workspace fills after ~30 ops and all subsequent ops
-            // spill to cudaHostAlloc, accumulating thousands of spill entries whose
-            // tracking vector grows via glibc realloc.
-            nativeOps.workspaceScopeOut(wsPtr);
-            nativeOps.workspaceScopeIn(wsPtr);
+            // This MUST happen periodically for ALL workspaces (mmgr-provided or
+            // self-managed), otherwise the workspace fills after ~30 ops and all
+            // subsequent ops spill to cudaHostAlloc, accumulating thousands of spill
+            // entries whose tracking vector grows via glibc realloc.
+            // OPTIMIZATION: Reset every WORKSPACE_RESET_INTERVAL ops instead of every
+            // op. Saves ~96% of 2 JNI calls × 1962 ops = ~3700 JNI calls per vision frame.
+            workspaceOpsSinceReset++;
+            if (workspaceOpsSinceReset >= WORKSPACE_RESET_INTERVAL) {
+                nativeOps.workspaceScopeOut(wsPtr);
+                nativeOps.workspaceScopeIn(wsPtr);
+                workspaceOpsSinceReset = 0;
+            }
         }
 
         // After execution, C++ may have replaced output arrays or modified them in-place
@@ -1543,17 +1998,21 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (slotIsViewProducer != null) slotIsViewProducer[si] = true;
                     if (!outputArrays[i].isEmpty()) {
                         DataBuffer buf = outputArrays[i].data();
-                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                        if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                             pendingClose.add(buf);
                         }
                     }
                     outputSlots[si] = ctxOut;
-                } else if (slotIsViewProducer != null && !slotIsViewProducer[si]) {
+                } else if (!viewProducerDetectionDone
+                        && slotIsViewProducer != null && !slotIsViewProducer[si]
+                        && preExecGpuAddrs != null) {
                     // Case 2: Check if C++ modified the output's GPU buffer in-place.
                     // Compare pre-execution GPU address with current address.
                     // If they differ, C++ replaced the buffer with a view of the input.
                     // We must NOT use isView() here — 2x headroom allocation makes
                     // isView()=true for ALL arrays >256 elements (false positive).
+                    // OPTIMIZATION: Skip on subsequent executions (viewProducerDetectionDone)
+                    // since view behavior is stable per-op, not per-data.
                     long preAddr = (i < preExecGpuAddrs.length) ? preExecGpuAddrs[i] : 0;
                     if (preAddr != 0) {
                         DataBuffer currentBuf = ctxOut.data();
@@ -1587,7 +2046,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 if (arr != null) {
                     DataBuffer buf = arr.data();
-                    if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                    if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                         pendingClose.add(buf);
                     }
                 }
@@ -1602,7 +2061,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // referenced by a live output slot (e.g., if C++ made an output view of the input).
         if (replicatedInputBuffers != null) {
             for (DataBuffer buf : replicatedInputBuffers) {
-                if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                     pendingClose.add(buf);
                 }
             }
@@ -1612,8 +2071,11 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         } finally {
             // Always restore the caller's device context, even after transparent failover.
-            int currentDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            if (currentDev != previousDeviceId) {
+            // Use targetDevice to detect if a switch happened instead of querying
+            // getDeviceForCurrentThread() (saves ~1962 JNI calls per vision frame).
+            // If targetDevice >= 0 and differs from previousDeviceId, we switched at line 1012.
+            // If failover changed targetDevice mid-execution, we also need to restore.
+            if (targetDevice >= 0 && targetDevice != previousDeviceId) {
                 DeviceMemoryManager.getInstance().switchDevice(previousDeviceId, "DSP.executeSlot", "restore-caller-device");
             }
         }
@@ -1804,11 +2266,19 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /** Growth factor for slot cache refills. Arrays that grow each step (attention scores,
-     *  KV cache intermediates) need aggressive headroom so the cached array lasts many steps.
-     *  2.0 means we allocate 2x the required elements — at seq_len=128, this covers up to
-     *  seq_len=256 before needing reallocation. */
+     *  KV cache intermediates) need headroom so the cached array lasts many steps.
+     *
+     *  With growth > 1.0, data().length() > length() after reshape, causing
+     *  closeable()=false (BaseNDArray line 6471). Previously, closeable() gates in
+     *  release/cache/free paths blocked ALL cleanup → permanent GPU memory leak.
+     *  FIX: All closeable() gates replaced with isConstant() checks throughout
+     *  DynamicShapePlanExecutor, allowing oversized buffers to be properly freed/reused.
+     *
+     *  For autoregressive decoding, KV cache arrays grow by 1 token per step.
+     *  With growth factor 2.0 at 679 tokens → buffer for 1358 → no cache miss
+     *  until step 679. Without headroom, EVERY step has ~133 cache misses. */
     private static final double SLOT_CACHE_GROWTH_FACTOR = Double.parseDouble(
-            System.getProperty("org.nd4j.dsp.slotCacheGrowthFactor", "2.0"));
+            System.getProperty(ND4JSystemProperties.DSP_SLOT_CACHE_GROWTH_FACTOR, "1.0"));
 
     private INDArray allocateForSlotCache(DataType dataType, long[] shape) {
         long requiredElements = numElements(shape);
@@ -1837,44 +2307,112 @@ public class DynamicShapePlanExecutor implements Closeable {
      *
      * Falls back to synchronous memset if async fails or no valid stream is available.
      */
-    private static void fastZero(INDArray arr, NativeOps nativeOps, Pointer execStream) {
+    /**
+     * Ensure an array's shape buffer is on the target device. If not (due to
+     * CudaMemoryPool::allocateFailover placing it on a different device), create
+     * a fresh non-constant shape buffer from the Java-side jvmShapeInfo copy.
+     *
+     * <p>Each fresh buffer allocates host + device memory (~200 bytes each).
+     * Host allocation counts against Pointer.maxPhysicalBytes() (JavaCPP off-heap limit).</p>
+     *
+     * @return true if shape buffer was corrected, false if already correct or skipped
+     */
+    private boolean ensureShapeOnDevice(INDArray array, int targetDevice, NativeOps nativeOps) {
+        if (array == null || array.isEmpty()) return false;
+        DataBuffer shapeDb = array.shapeInfoDataBuffer();
+        if (shapeDb == null) return false;
+        OpaqueDataBuffer shapeOdb = shapeDb.opaqueBuffer();
+        if (shapeOdb == null || shapeOdb.isNull()) return false;
+        int shapeDevice = nativeOps.dbDeviceId(shapeOdb);
+        if (shapeDevice < 0 || shapeDevice == targetDevice) return false;
+
+        // Check off-heap headroom before allocating.
+        // Shape info is tiny (~200 bytes host + device) but respect the limit.
+        long offHeapUsed = Pointer.physicalBytes();
+        long offHeapMax = Pointer.maxPhysicalBytes();
+        if (offHeapMax > 0 && offHeapUsed > offHeapMax * 95 / 100) {
+            log.warn("Shape buffer on device {} needs copy to device {} but off-heap at {}% ({}/{}MB) — skipping",
+                    shapeDevice, targetDevice,
+                    offHeapMax > 0 ? (offHeapUsed * 100 / offHeapMax) : 0,
+                    offHeapUsed / (1024*1024), offHeapMax / (1024*1024));
+            return false;
+        }
+
+        long[] jvmShape = array.shapeInfoJava();
+        DataBuffer freshShape = Nd4j.createBufferDetached(jvmShape);
+        ((BaseNDArray) array).setShapeInfoDataBuffer(freshShape);
+        return true;
+    }
+
+    /**
+     * Zero a buffer's GPU (or host) memory. Returns true on success, false if the
+     * CUDA memset failed (e.g., stale GPU pointer from a freed slot cache entry).
+     * Callers should discard the buffer and allocate fresh on failure.
+     */
+    private static boolean fastZero(INDArray arr, NativeOps nativeOps, Pointer execStream) {
         DataBuffer buf = arr.data();
-        if (buf == null || buf.wasClosed()) return;
+        if (buf == null || buf.wasClosed()) return true;
 
         OpaqueDataBuffer opaque = buf.opaqueBuffer();
         long bytes = buf.length() * buf.getElementSize();
 
         Pointer specialPtr = nativeOps.dbSpecialBuffer(opaque);
         if (specialPtr != null && specialPtr.address() != 0) {
-            // Fetch a fresh stream pointer from the current device's launch context.
-            // This avoids using a stale cached pointer that may have been freed by
-            // C++ ContextBuffers::release() during intervening device context changes.
-            Pointer freshStream = null;
-            try {
-                OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                if (lc != null) {
-                    freshStream = nativeOps.lcExecutionStream(lc);
-                }
-            } catch (Exception e) {
-                // Fall through to sync path
+            // CRITICAL: Check the buffer's actual device. C++ allocateFailover may have
+            // silently placed the buffer on a different GPU than the current thread's device.
+            // Using the wrong device's stream for memsetAsync on non-P2P GPUs causes
+            // CUDA error 700 (illegal memory access) that is only detected at the next
+            // stream sync, corrupting the CUDA context.
+            int bufferDevice = nativeOps.dbDeviceId(opaque);
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            boolean switchedDevice = false;
+            if (bufferDevice >= 0 && bufferDevice != currentDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(bufferDevice,
+                        "DSP.fastZero", "buffer-device-align");
+                switchedDevice = true;
             }
 
-            if (freshStream != null && freshStream.address() != 0) {
-                nativeOps.memsetAsync(specialPtr, 0, bytes, 0, freshStream);
-                if (nativeOps.lastErrorCode() != 0) {
-                    nativeOps.clearLastError();
+            try {
+                // Fetch a fresh stream for the buffer's device.
+                Pointer streamToUse = null;
+                try {
+                    streamToUse = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+                } catch (Exception e) {
+                    // Fall through to sync path
+                }
+                if (streamToUse == null || streamToUse.address() == 0) {
+                    streamToUse = execStream;
+                }
+
+                if (streamToUse != null && streamToUse.address() != 0) {
+                    nativeOps.memsetAsync(specialPtr, 0, bytes, 0, streamToUse);
+                    int err = nativeOps.lastErrorCode();
+                    if (err != 0) {
+                        nativeOps.clearLastError();
+                        nativeOps.memsetSync(specialPtr, 0, bytes, 0, null);
+                        int err2 = nativeOps.lastErrorCode();
+                        if (err2 != 0) {
+                            nativeOps.clearLastError();
+                            return false;
+                        }
+                    }
+                } else {
                     nativeOps.memsetSync(specialPtr, 0, bytes, 0, null);
                 }
-            } else {
-                nativeOps.memsetSync(specialPtr, 0, bytes, 0, null);
+                nativeOps.dbTickDeviceWrite(opaque);
+            } finally {
+                if (switchedDevice) {
+                    DeviceMemoryManager.getInstance().switchDevice(currentDevice,
+                            "DSP.fastZero", "restore-device");
+                }
             }
-            nativeOps.dbTickDeviceWrite(opaque);
         } else {
             Pointer primaryPtr = nativeOps.dbPrimaryBuffer(opaque);
             if (primaryPtr != null && primaryPtr.address() != 0) {
                 nativeOps.memsetSync(primaryPtr, 0, bytes, 0, null);
             }
         }
+        return true;
     }
 
     private static long numElements(long[] shape) {
@@ -1915,7 +2453,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         private int releaseRejected;
         private long currentPoolBytes;
         private static final long MAX_POOL_BYTES = Long.parseLong(
-                System.getProperty("org.nd4j.dsp.pool.maxBytes",
+                System.getProperty(ND4JSystemProperties.DSP_POOL_MAX_BYTES,
                         String.valueOf(2L * 1024 * 1024 * 1024)));
 
         private LocalBufferPool() {
@@ -1941,7 +2479,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                     if (arr == null) continue;
                     if (deque.isEmpty()) tree.remove(bufferElements);
                     DataBuffer buf = arr.data();
-                    if (arr.wasClosed() || buf == null || buf.wasClosed() || !buf.closeable()) continue;
+                    // NOTE: Don't gate on buf.closeable() — oversized buffers are OWNED, safe to reuse
+                    if (arr.wasClosed() || buf == null || buf.wasClosed() || buf.isConstant()) continue;
                     if (arr.dataType() != dataType) continue;
 
                     pooledRefs.remove(arr);
@@ -1959,7 +2498,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         boolean release(INDArray arr) {
             if (arr == null || arr.wasClosed()) return false;
             DataBuffer buf = arr.data();
-            if (buf == null || buf.wasClosed() || !buf.closeable()) {
+            // NOTE: Don't gate on buf.closeable() — oversized buffers are OWNED, safe to pool
+            if (buf == null || buf.wasClosed() || buf.isConstant()) {
                 releaseRejected++;
                 return false;
             }
@@ -1994,7 +2534,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (buf == null || buf.wasClosed()) continue;
                         pooledBytes += buf.length() * arr.dataType().width();
                         pooledCount++;
-                        if (buf.closeable() && !arr.isView()) {
+                        // NOTE: Don't gate on buf.closeable() — use isConstant() instead
+                        if (!buf.isConstant() && !arr.isView()) {
                             try {
                                 buf.close();
                                 closedCount++;
@@ -2034,6 +2575,33 @@ public class DynamicShapePlanExecutor implements Closeable {
                     timingCacheLeakedConstant, timingCacheLeakedConstantBytes / (1024 * 1024));
         }
         log.info("  Native exec:  {}ms", String.format("%.2f", timingExecNs / 1_000_000.0));
+        log.info("  Release:      {}ms", String.format("%.2f", timingReleaseNs / 1_000_000.0));
+        // Per-op time bucket distribution
+        log.info("  Op time distribution: <1ms={}, 1-10ms={}, 10-100ms={}, >100ms={}",
+                timingBucketSub1ms, timingBucket1to10ms, timingBucket10to100ms, timingBucketOver100ms);
+        // Per-op-type timing histogram (top 20 by total time)
+        if (perOpTimingNs != null && !perOpTimingNs.isEmpty()) {
+            List<Map.Entry<String, long[]>> sorted = new ArrayList<>(perOpTimingNs.entrySet());
+            sorted.sort((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]));
+            int limit = Math.min(sorted.size(), 20);
+            log.info("  --- Per-Op Timing (top {} of {} op types) ---", limit, sorted.size());
+            for (int i = 0; i < limit; i++) {
+                Map.Entry<String, long[]> entry = sorted.get(i);
+                long[] s = entry.getValue();
+                double opTotalMs = s[0] / 1_000_000.0;
+                long opCount2 = s[1];
+                double opAvgMs = opTotalMs / opCount2;
+                double opMaxMs = s[2] / 1_000_000.0;
+                double pctOfTotal = totalMs > 0 ? (opTotalMs / totalMs * 100.0) : 0;
+                log.info("    {}: {}ms total ({}%), count={}, avg={}ms, max={}ms",
+                        entry.getKey(),
+                        String.format("%.1f", opTotalMs),
+                        String.format("%.1f", pctOfTotal),
+                        opCount2,
+                        String.format("%.2f", opAvgMs),
+                        String.format("%.1f", opMaxMs));
+            }
+        }
         int viewProducerCount = 0;
         if (slotIsViewProducer != null) {
             for (boolean b : slotIsViewProducer) if (b) viewProducerCount++;
@@ -2050,6 +2618,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (wrongDeviceCacheEjections > 0) {
             log.info("  Wrong-device cache ejections: {}", wrongDeviceCacheEjections);
         }
+        if (shapeBufferCorrections > 0) {
+            log.info("  Shape buffer corrections (non-P2P): {}", shapeBufferCorrections);
+        }
         // GPU memory pool stats (per-device)
         try {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -2058,8 +2629,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             nativeOps.getMemoryPoolStats(0, usedPtr, reservedPtr);
             long usedMB = usedPtr.get() / (1024 * 1024);
             long reservedMB = reservedPtr.get() / (1024 * 1024);
-            int numDevices = nativeOps.getAvailableDevices();
-            if (numDevices > 1) {
+            if (cachedNumDevices > 1) {
                 LongPointer usedPtr1 = new LongPointer(1);
                 LongPointer reservedPtr1 = new LongPointer(1);
                 nativeOps.getMemoryPoolStats(1, usedPtr1, reservedPtr1);
@@ -2258,8 +2828,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Clean remaining live slots — group by device for proper per-device cleanup.
         // In multi-GPU execution, slots may hold buffers on different devices.
         // Freeing all on device 0's stream could cause issues with cross-device cleanup.
-        int availDevices = nativeOps.getAvailableDevices();
-        if (availDevices <= 1) {
+        if (cachedNumDevices <= 1) {
             // Single-GPU: simple path
             for (int i = 0; i < outputSlots.length; i++) {
                 INDArray arr = outputSlots[i];
@@ -2267,7 +2836,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[i];
                     if (!isViewSlot) {
                         DataBuffer buf = arr.data();
-                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                        if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                             pendingClose.add(buf);
                         }
                     }
@@ -2285,7 +2854,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[i];
                     if (!isViewSlot) {
                         DataBuffer buf = arr.data();
-                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                        if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                             int devId = (i < planSlots.length) ? planSlots[i].getTargetDeviceId() : 0;
                             if (devId < 0) devId = 0;
                             perDeviceBuffers.computeIfAbsent(devId, k -> new ArrayList<>()).add(buf);
@@ -2375,8 +2944,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                         -1, deviceId, "worker-init");
                 DeviceMemoryManager.getInstance().switchDevice(deviceId, "DSP.DeviceWorker", "worker-init");
 
-                // Skip CudaExecutioner's device coherency — workers handle placement themselves.
-                Nd4j.getExecutioner().setSkipDeviceCoherency(true);
+                // Do NOT skip device coherency — OOM failover can place outputs on a different
+                // device than the worker, and subsequent ops need coherency to migrate inputs.
+                // The coherency check is lightweight (just device ID comparison) and no-ops when
+                // all arrays are already on the correct device.
 
                 // Create per-worker workspace ON this thread (after device affinity set).
                 // Must be created here, not on main thread, so cudaHostAlloc happens
@@ -2473,13 +3044,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                                     DataBuffer buf = arr.data();
                                     if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                                         boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[srcIdx];
-                                        if (!isViewSlot && buf.closeable()) {
+                                        if (!isViewSlot) {
                                             // Cache for reuse or pending close
                                             if (slotArrayCache != null) {
                                                 INDArray prev = slotArrayCache[srcIdx];
                                                 if (prev != null && !prev.wasClosed()) {
                                                     DataBuffer pbuf = prev.data();
-                                                    if (pbuf != null && !pbuf.wasClosed() && pbuf.closeable() && !pbuf.isConstant()) {
+                                                    if (pbuf != null && !pbuf.wasClosed() && !pbuf.isConstant()) {
                                                         devicePendingClose.add(pbuf);
                                                     }
                                                 }
@@ -2501,7 +3072,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
                         if (freshStream != null) {
                             for (DataBuffer buf : devicePendingClose) {
-                                if (buf == null || buf.wasClosed() || !buf.closeable() || buf.isConstant()) continue;
+                                if (buf == null || buf.wasClosed() || buf.isConstant()) continue;
                                 OpaqueDataBuffer odb = buf.opaqueBuffer();
                                 if (odb == null || odb.isNull()) continue;
                                 if (!deviceSeenIdentity.add(buf)) continue;
@@ -2676,7 +3247,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                         INDArray cached = slotArrayCache[slotIdx];
                         if (cached != null && !cached.wasClosed()) {
                             DataBuffer cbuf = cached.data();
-                            if (cbuf != null && !cbuf.wasClosed() && cbuf.closeable()
+                            if (cbuf != null && !cbuf.wasClosed()
                                     && cached.dataType() == dt
                                     && cbuf.length() >= numElements(actualShape)) {
                                 boolean wrongDevice = false;
@@ -2695,15 +3266,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 } else {
                                     reshapeBuffer(cached, actualShape);
                                     cached.clearOpaqueNDArray();
-                                    fastZero(cached, nativeOps, execStream);
-                                    out = cached;
-                                    slotArrayCache[slotIdx] = null;
+                                    if (fastZero(cached, nativeOps, execStream)) {
+                                        out = cached;
+                                        slotArrayCache[slotIdx] = null;
+                                    } else {
+                                        slotArrayCache[slotIdx] = null;
+                                    }
                                 }
                             }
                         }
                         if (out == null && cached != null && !cached.wasClosed()) {
                             DataBuffer cbuf = cached.data();
-                            if (cbuf != null && !cbuf.wasClosed() && cbuf.closeable() && !cbuf.isConstant()) {
+                            if (cbuf != null && !cbuf.wasClosed() && !cbuf.isConstant()) {
                                 devicePendingClose.add(cbuf);
                             }
                             slotArrayCache[slotIdx] = null;
@@ -2729,17 +3303,20 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             ctx.setOutputArrays(outputArrays);
 
-            // Save GPU addresses for view detection
-            long[] preExecGpuAddrs = new long[outputArrays.length];
-            for (int i = 0; i < outputArrays.length; i++) {
-                INDArray arr = outputArrays[i];
-                if (arr != null && !arr.isEmpty()) {
-                    DataBuffer buf = arr.data();
-                    if (buf != null && !buf.wasClosed()) {
-                        OpaqueDataBuffer odb = buf.opaqueBuffer();
-                        if (odb != null && !odb.isNull()) {
-                            Pointer special = nativeOps.dbSpecialBuffer(odb);
-                            if (special != null) preExecGpuAddrs[i] = special.address();
+            // Save GPU addresses for view detection (skip once detection is complete)
+            long[] preExecGpuAddrs = null;
+            if (!viewProducerDetectionDone) {
+                preExecGpuAddrs = new long[outputArrays.length];
+                for (int i = 0; i < outputArrays.length; i++) {
+                    INDArray arr = outputArrays[i];
+                    if (arr != null && !arr.isEmpty()) {
+                        DataBuffer buf = arr.data();
+                        if (buf != null && !buf.wasClosed()) {
+                            OpaqueDataBuffer odb = buf.opaqueBuffer();
+                            if (odb != null && !odb.isNull()) {
+                                Pointer special = nativeOps.dbSpecialBuffer(odb);
+                                if (special != null) preExecGpuAddrs[i] = special.address();
+                            }
                         }
                     }
                 }
@@ -2794,12 +3371,14 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (slotIsViewProducer != null) slotIsViewProducer[si] = true;
                         if (!outputArrays[i].isEmpty()) {
                             DataBuffer buf = outputArrays[i].data();
-                            if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                            if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                                 devicePendingClose.add(buf);
                             }
                         }
                         outputSlots[si] = ctxOut;
-                    } else if (slotIsViewProducer != null && !slotIsViewProducer[si]) {
+                    } else if (!viewProducerDetectionDone
+                            && slotIsViewProducer != null && !slotIsViewProducer[si]
+                            && preExecGpuAddrs != null) {
                         long preAddr = (i < preExecGpuAddrs.length) ? preExecGpuAddrs[i] : 0;
                         if (preAddr != 0) {
                             DataBuffer currentBuf = ctxOut.data();
@@ -2828,7 +3407,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                     if (arr != null) {
                         DataBuffer buf = arr.data();
-                        if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                        if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                             devicePendingClose.add(buf);
                         }
                     }
@@ -2838,7 +3417,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Release replicated input copies
             if (replicatedInputBuffers != null) {
                 for (DataBuffer buf : replicatedInputBuffers) {
-                    if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                    if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                         devicePendingClose.add(buf);
                     }
                 }
@@ -2871,16 +3450,56 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
 
+        // Only evict when cache exceeds threshold. Cached arrays' GPU memory is valid
+        // (pool tracks them as live allocations). The only issue was stale CUDA streams
+        // (error 400) during fastZero, which is now handled by sync memset fallback.
         long thresholdBytes = 512L * 1024 * 1024; // 512MB
         if (totalCachedBytes <= thresholdBytes) {
             return;
         }
 
-        log.debug("Evicting oversized slot cache: {} arrays, {}MB (threshold {}MB)",
-                cachedCount, totalCachedBytes / (1024 * 1024), thresholdBytes / (1024 * 1024));
+        int evicted = 0;
+        for (int i = 0; i < slotArrayCache.length; i++) {
+            INDArray arr = slotArrayCache[i];
+            if (arr != null && !arr.wasClosed()) {
+                DataBuffer buf = arr.data();
+                if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
+                    pendingClose.add(buf);
+                }
+                evicted++;
+            }
+            slotArrayCache[i] = null;
+        }
 
-        // Use closeSlotArrayCache logic: route through freePendingBuffers for dedup
-        closeSlotArrayCache();
+        if (!pendingClose.isEmpty()) {
+            // Merge deferred buffers from mid-execution flushes
+            if (!deferredClose.isEmpty()) {
+                pendingClose.addAll(deferredClose);
+                deferredClose.clear();
+            }
+            Nd4j.getExecutioner().commit();
+            // Re-fetch a fresh stream pointer. The original execStream may have become
+            // stale: intermediate JNI calls during execution can trigger ContextBuffers::release()
+            // which frees the underlying cudaStream_t. Dereferencing a stale stream pointer
+            // in cudaFreeAsync causes SIGSEGV in the CUDA driver.
+            Pointer freshStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+            freePendingBuffers(nativeOps, freshStream, null);
+            pendingClose.clear();
+            // Trim pool so freed memory is available
+            if (freshStream != null) {
+                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                nativeOps.trimMemoryPoolOnStream(currentDevice, freshStream);
+                for (int d = 0; d < cachedNumDevices; d++) {
+                    if (d != currentDevice) {
+                        nativeOps.trimMemoryPool(d);
+                    }
+                }
+            }
+        }
+
+        log.debug("Slot cache eviction: evicted={}/{} entries, was {}MB (threshold {}MB)",
+                evicted, cachedCount, totalCachedBytes / (1024 * 1024),
+                thresholdBytes / (1024 * 1024));
     }
 
     /**
@@ -2907,7 +3526,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             INDArray arr = slotArrayCache[i];
             if (arr != null && !arr.wasClosed()) {
                 DataBuffer buf = arr.data();
-                if (buf != null && !buf.wasClosed() && buf.closeable() && !buf.isConstant()) {
+                if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
                     pendingClose.add(buf);
                     collected++;
                 }
@@ -2932,14 +3551,229 @@ public class DynamicShapePlanExecutor implements Closeable {
             int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
             nativeOps.trimMemoryPoolOnStream(currentDevice, stream);
             // Cross-device frees use stream 0 on target device — sync that stream
-            int numDevices = nativeOps.getAvailableDevices();
-            for (int d = 0; d < numDevices; d++) {
+            for (int d = 0; d < cachedNumDevices; d++) {
                 if (d != currentDevice) {
                     nativeOps.trimMemoryPoolOnStream(d, null);
                 }
             }
         }
         log.debug("  closeSlotArrayCache: freed {}/{} buffers ({}MB)", stats[0], stats[1], stats[2]);
+    }
+
+    /**
+     * Execute the plan entirely in C++ via a single JNI call.
+     *
+     * <p>On first call, serializes the plan and compiles it into a native C++ executor.
+     * Subsequent calls reuse the compiled handle. External inputs are resolved and
+     * passed as OpaqueNDArray pointers. C++ handles shape inference, memory allocation,
+     * op execution, and release scheduling internally.</p>
+     *
+     * @return output map if native execution succeeded, or null if native execution
+     *         is not available (e.g., backend doesn't support it)
+     * @throws RuntimeException if native execution fails (caller should fall back to Java)
+     */
+    private Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+        // Compile native plan handle on first call or when plan changes
+        if (nativePlanHandle == null || nativePlanSource != plan) {
+            freeNativePlanHandle();
+
+            byte[] serialized = plan.serialize();
+            if (serialized == null || serialized.length == 0) {
+                log.debug("Native executor: plan serialization returned empty, skipping");
+                return null;
+            }
+
+            // Copy serialized bytes to native memory for the C++ side
+            BytePointer planBytes = new BytePointer(serialized);
+            try {
+                nativePlanHandle = nativeOps.compileDynamicShapePlan(planBytes, serialized.length);
+            } catch (UnsupportedOperationException e) {
+                // Backend doesn't support native execution
+                log.debug("Native executor: backend does not support compileDynamicShapePlan");
+                nativeExecutorFailed = true;
+                return null;
+            } finally {
+                planBytes.close();
+            }
+
+            if (nativePlanHandle == null || nativePlanHandle.isNull()) {
+                log.warn("Native executor: compileDynamicShapePlan returned null handle");
+                nativePlanHandle = null;
+                nativeExecutorFailed = true;
+                return null;
+            }
+
+            // Enable CUDA graphs by default for the native plan (unless previously failed)
+            boolean cudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
+                    System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
+            if (cudaGraphsEnabled) {
+                try {
+                    nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // CPU backend doesn't support CUDA graphs
+                }
+            }
+
+            nativePlanSource = plan;
+            log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={})",
+                    plan.getSlots().length, plan.getExternalInputKeys().length,
+                    plan.getRequestedOutputs().size(), cudaGraphsEnabled);
+        }
+
+        // Resolve external inputs (constants, variables, placeholders)
+        String[] extKeys = plan.getExternalInputKeys();
+        INDArray[] extInputs = new INDArray[extKeys.length];
+        for (int i = 0; i < extKeys.length; i++) {
+            String varName = extKeys[i];
+            INDArray arr = null;
+            if (placeholderArrays != null) {
+                arr = placeholderArrays.get(varName);
+            }
+            if (arr == null) {
+                SDVariable var = sd.getVariable(varName);
+                if (var != null &&
+                        (var.getVariableType() == VariableType.CONSTANT ||
+                                var.getVariableType() == VariableType.VARIABLE)) {
+                    arr = var.getArr();
+                }
+            }
+            if (arr == null) {
+                log.warn("Native executor: missing external input '{}', falling back to Java", varName);
+                return null;
+            }
+            extInputs[i] = arr;
+        }
+
+        // Create an OpaqueContext and set inputs one-at-a-time (proven pattern from CudaOpContext)
+        int numOutputs = plan.getRequestedOutputs().size();
+        OpaqueContext opContext = nativeOps.createGraphContext(1);
+        try {
+            // Set inputs on context using per-index approach
+            for (int i = 0; i < extInputs.length; i++) {
+                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
+                nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+            }
+
+            // Set empty output slots on context (C++ plan will allocate and fill them)
+            for (int i = 0; i < numOutputs; i++) {
+                // Create a dummy output — C++ will replace with actual output
+                INDArray dummy = Nd4j.empty(DataType.FLOAT);
+                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
+                nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
+            }
+
+            // Get execution stream
+            Pointer execStream = null;
+            try {
+                OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                if (lc != null) {
+                    execStream = nativeOps.lcExecutionStream(lc);
+                    if (execStream != null) execStream.retainReference();
+                }
+            } catch (Exception e) {
+                // CPU backend
+            }
+
+            // Execute the plan in C++
+            long execStart = System.nanoTime();
+            int status = nativeOps.executeDynamicShapePlan(
+                    nativePlanHandle,
+                    opContext,
+                    execStream);
+            long execMs = (System.nanoTime() - execStart) / 1_000_000;
+
+            if (status != 0) {
+                String errMsg = nativeOps.lastErrorMessage();
+                nativeOps.clearLastError();
+                throw new RuntimeException("Native plan execution failed with status " + status +
+                        ": " + (errMsg != null ? errMsg : "unknown error"));
+            }
+
+            // Extract output arrays from context.
+            // C++ wrote NDArray* pointers back into the context's output slots.
+            long copyStart = System.nanoTime();
+            Map<String, INDArray> results = new LinkedHashMap<>();
+            List<String> requestedOutputs = new ArrayList<>(plan.getRequestedOutputs());
+
+            for (int i = 0; i < numOutputs; i++) {
+                OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
+                if (opaqueOut == null || opaqueOut.isNull()) {
+                    throw new RuntimeException("Native executor: null output at index " + i);
+                }
+
+                // Read shape info from the C++ output NDArray
+                long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueOut);
+                long[] shape = Shape.shape(shapeInfo);
+                DataType dtype = ArrayOptionsHelper.dataType(shapeInfo);
+                long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
+
+                // Create a Java-owned INDArray and copy data from the C++ output
+                INDArray result = Nd4j.createUninitialized(dtype, shape);
+
+                // Get raw pointers — primary may be null on CUDA (data only on GPU)
+                Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
+                Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+
+                OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
+                        length, dtype.toInt(), nativePrimary, nativeSpecial);
+                if (srcOdb != null) {
+                    OpaqueDataBuffer dstOdb = result.data().opaqueBuffer();
+                    if (dstOdb != null) {
+                        nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
+                    }
+                }
+
+                String outputName = requestedOutputs.get(i);
+                results.put(outputName, result);
+            }
+
+            long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
+            if (copyMs > 5 || execMs > 100) {
+                log.info("Native executor: exec={}ms copy={}ms ({} outputs)", execMs, copyMs, numOutputs);
+            }
+
+            // Diagnostic: dump first few values of each output to compare with Java executor
+            if (Boolean.getBoolean("nd4j.dsp.native.dumpOutputs")) {
+                for (Map.Entry<String, INDArray> entry : results.entrySet()) {
+                    String name = entry.getKey();
+                    INDArray arr = entry.getValue();
+                    if (arr != null && arr.length() > 0) {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("NATIVE_OUT ").append(name).append(" shape=").append(java.util.Arrays.toString(arr.shape()));
+                        sb.append(" first5=[");
+                        long limit = Math.min(5, arr.length());
+                        for (long j = 0; j < limit; j++) {
+                            if (j > 0) sb.append(", ");
+                            sb.append(String.format("%.6f", arr.getFloat(j)));
+                        }
+                        sb.append("]");
+                        log.info(sb.toString());
+                    }
+                }
+            }
+
+            return results;
+        } finally {
+            nativeOps.deleteGraphContext(opContext);
+        }
+    }
+
+    /**
+     * Free the native plan handle if it exists.
+     */
+    private void freeNativePlanHandle() {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.freeDynamicShapePlan(nativePlanHandle);
+            } catch (Exception e) {
+                log.debug("Error freeing native plan handle: {}", e.getMessage());
+            }
+        }
+        nativePlanHandle = null;
+        nativePlanSource = null;
     }
 
     @Override
@@ -2976,6 +3810,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             ownNativeWorkspace = null;
         }
 
+        // Free native C++ plan handle if compiled
+        freeNativePlanHandle();
+
         currentPlan = null;
         log.debug("  DSP close() complete");
     }
@@ -2985,7 +3822,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      * on potentially corrupted heap metadata. Falls back to buf.close() if stream unavailable.
      */
     private void safeCloseBuffer(DataBuffer buf, NativeOps nativeOps, Pointer stream) {
-        if (buf == null || buf.wasClosed() || !buf.closeable() || buf.isConstant()) return;
+        if (buf == null || buf.wasClosed() || buf.isConstant()) return;
         OpaqueDataBuffer odb = buf.opaqueBuffer();
         if (odb != null && !odb.isNull() && stream != null) {
             try {

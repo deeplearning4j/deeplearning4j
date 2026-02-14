@@ -221,24 +221,11 @@ if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "nvprof" ]]; then
 fi
 # CUDA_LAUNCH_BLOCKING=1 removed - serializes all GPU work, destroys performance
 
-# Auto-detect and preload jemalloc if available and no other allocator is already loaded.
-# jemalloc's slab-based design separates metadata from user data, making small buffer
-# overruns from C++ ops harmless (glibc uses inline metadata → SIGABRT on free()).
-# Skip if LD_PRELOAD is already set (e.g., for ASan or user-specified allocator).
-if [[ -z "$LD_PRELOAD" ]]; then
-    jemalloc_path=""
-    # Check common locations for jemalloc
-    for candidate in /usr/lib64/libjemalloc.so.2 /usr/lib/x86_64-linux-gnu/libjemalloc.so.2 /usr/lib/libjemalloc.so.2 /usr/local/lib/libjemalloc.so; do
-        if [[ -f "$candidate" ]]; then
-            jemalloc_path="$candidate"
-            break
-        fi
-    done
-    if [[ -n "$jemalloc_path" ]]; then
-        export LD_PRELOAD="$jemalloc_path"
-        echo "Auto-loaded jemalloc: $jemalloc_path"
-    fi
-fi
+
+# GC logging: enabled by default for diagnostics. Writes to target/gc.log.
+gc_log_dir="$(dirname "$0")/../target"
+gc_log_file="${gc_log_dir}/gc.log"
+java_call="${java_call} -Xlog:gc*:file=${gc_log_file}:time,uptime,level,tags"
 
 # print the final command
 echo "$TEST_RUNNER_PREFIX $java_call $@"

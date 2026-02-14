@@ -145,6 +145,8 @@ bool CudaGraphHandle::endCapture(cudaStream_t stream) {
 
     if (err != cudaSuccess) {
         sd_printf("CudaGraphHandle::endCapture failed: %s\n", cudaGetErrorString(err));
+        // Clear sticky CUDA error state so subsequent operations aren't affected
+        cudaGetLastError();
         _state = GraphState::ERROR;
         return false;
     }

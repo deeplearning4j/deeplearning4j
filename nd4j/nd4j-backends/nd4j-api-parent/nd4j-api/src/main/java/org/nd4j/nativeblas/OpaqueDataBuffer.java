@@ -109,6 +109,21 @@ public class OpaqueDataBuffer extends Pointer {
     }
 
     /**
+     * Only invoke System.gc() if Java heap usage exceeds 75% of max.
+     * GPU OOM is not helped by Java GC — calling System.gc() unconditionally
+     * on every native allocation retry causes massive GC pressure (1000+ Full GCs)
+     * while providing zero benefit for GPU memory recovery.
+     */
+    private static void gcIfHeapPressured() {
+        Runtime rt = Runtime.getRuntime();
+        long used = rt.totalMemory() - rt.freeMemory();
+        long max = rt.maxMemory();
+        if (used > max * 3 / 4) {
+            System.gc();
+        }
+    }
+
+    /**
      * Constructor for wrapping native pointers.
      * IMPORTANT: This constructor does NOT register with DeallocatorService.
      * Caller is responsible for cleanup via closeBuffer() or the buffer must
@@ -428,10 +443,10 @@ public class OpaqueDataBuffer extends Pointer {
                 if (ec != 0) {
                     em = Nd4j.getNativeOps().lastErrorMessage();
 
-                    // if allocation failed it might be caused by casual OOM, so we'll try GC
-                    System.gc();
+                    // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
+                    gcIfHeapPressured();
 
-                    // sleeping for 50ms
+                    // sleeping for 50ms to let any pending async frees complete
                     Thread.sleep(50);
                 } else {
                     // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
@@ -535,10 +550,10 @@ public class OpaqueDataBuffer extends Pointer {
                 if (ec != 0) {
                     em = Nd4j.getNativeOps().lastErrorMessage();
 
-                    // if allocation failed it might be caused by casual OOM, so we'll try GC
-                    System.gc();
+                    // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
+                    gcIfHeapPressured();
 
-                    // sleeping for 50ms
+                    // sleeping for 50ms to let any pending async frees complete
                     Thread.sleep(50);
                 } else {
                     // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
@@ -578,8 +593,8 @@ public class OpaqueDataBuffer extends Pointer {
                 
                 em = Nd4j.getNativeOps().lastErrorMessage();
 
-                // if expansion failed it might be caused by casual OOM, so we'll try GC
-                System.gc();
+                // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
+                gcIfHeapPressured();
 
                 Thread.sleep(50);
             } catch (InterruptedException e) {
@@ -642,10 +657,10 @@ public class OpaqueDataBuffer extends Pointer {
                 if (ec != 0) {
                     em = Nd4j.getNativeOps().lastErrorMessage();
 
-                    // if view creation failed it might be caused by casual OOM, so we'll try GC
-                    System.gc();
+                    // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
+                    gcIfHeapPressured();
 
-                    // sleeping to let gc kick in
+                    // sleeping to let any pending async frees complete
                     Thread.sleep(50);
                 } else {
                     // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop

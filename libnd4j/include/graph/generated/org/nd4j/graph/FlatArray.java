@@ -52,6 +52,8 @@ public final class FlatArray extends Table {
   public StringVector externalDataFilenameVector() { return externalDataFilenameVector(new StringVector()); }
   public StringVector externalDataFilenameVector(StringVector obj) { int o = __offset(16); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public boolean isExternal() { int o = __offset(18); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
+  public long appendedDataOffset() { int o = __offset(20); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
+  public long appendedDataLength() { int o = __offset(22); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
 
   public static int createFlatArray(FlatBufferBuilder builder,
       int shapeOffset,
@@ -61,8 +63,12 @@ public final class FlatArray extends Table {
       int bufferChunksOffset,
       long totalBufferSize,
       int externalDataFilenameOffset,
-      boolean isExternal) {
-    builder.startTable(8);
+      boolean isExternal,
+      long appendedDataOffset,
+      long appendedDataLength) {
+    builder.startTable(10);
+    FlatArray.addAppendedDataLength(builder, appendedDataLength);
+    FlatArray.addAppendedDataOffset(builder, appendedDataOffset);
     FlatArray.addTotalBufferSize(builder, totalBufferSize);
     FlatArray.addExternalDataFilename(builder, externalDataFilenameOffset);
     FlatArray.addBufferChunks(builder, bufferChunksOffset);
@@ -74,7 +80,7 @@ public final class FlatArray extends Table {
     return FlatArray.endFlatArray(builder);
   }
 
-  public static void startFlatArray(FlatBufferBuilder builder) { builder.startTable(8); }
+  public static void startFlatArray(FlatBufferBuilder builder) { builder.startTable(10); }
   public static void addShape(FlatBufferBuilder builder, int shapeOffset) { builder.addOffset(0, shapeOffset, 0); }
   public static int createShapeVector(FlatBufferBuilder builder, long[] data) { builder.startVector(8, data.length, 8); for (int i = data.length - 1; i >= 0; i--) builder.addLong(data[i]); return builder.endVector(); }
   public static void startShapeVector(FlatBufferBuilder builder, int numElems) { builder.startVector(8, numElems, 8); }
@@ -92,6 +98,8 @@ public final class FlatArray extends Table {
   public static int createExternalDataFilenameVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startExternalDataFilenameVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
   public static void addIsExternal(FlatBufferBuilder builder, boolean isExternal) { builder.addBoolean(7, isExternal, false); }
+  public static void addAppendedDataOffset(FlatBufferBuilder builder, long appendedDataOffset) { builder.addLong(8, appendedDataOffset, 0L); }
+  public static void addAppendedDataLength(FlatBufferBuilder builder, long appendedDataLength) { builder.addLong(9, appendedDataLength, 0L); }
   public static int endFlatArray(FlatBufferBuilder builder) {
     int o = builder.endTable();
     return o;

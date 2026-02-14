@@ -44,23 +44,6 @@ static void nesterovsUpdater_(NDArray& gradient, NDArray& initState, NDArray& up
   const T momentum = static_cast<T>(dMomentum);
   const T momentumT = (-momentum - 1);
 
-  bool bEws1 = 1 == gradient.ews() && 1 == update.ews() && 1 == stateV.ews() && 1 == initState.ews();
-  bool bSameOrdering = gradient.ordering() == update.ordering() && update.ordering() == stateV.ordering() &&
-                       stateV.ordering() == initState.ordering();
-
-  if (bEws1 && bSameOrdering) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        T prevState = momentum * init[i];
-        st[i] = prevState - lr * grad[i];
-        up[i] = prevState + momentumT * st[i];
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
-    return;
-  }
-
   bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
   bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
   bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateV.shapeInfo());

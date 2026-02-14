@@ -452,11 +452,6 @@ SD_DEVICE void Reduce3<X, Z>::transform(
   __shared__ sd::LongType tadLen;
   __shared__ sd::LongType zLen;
   __shared__ sd::LongType yTadNum;
-  __shared__ sd::LongType xTadEws;
-  __shared__ sd::LongType yTadEws;
-  __shared__ char xTadOrder;
-  __shared__ char yTadOrder;
-
   // Cache shape info
   __shared__ sd::LongType xTadRank;
   __shared__ const sd::LongType* xTadShape;
@@ -474,11 +469,6 @@ SD_DEVICE void Reduce3<X, Z>::transform(
     tadLen     = shape::length(tadOnlyShapeInfo);
     zLen       = shape::length(zShapeInfo);
     yTadNum    = shape::length(yShapeInfo) / tadLen;
-    xTadEws    = shape::elementWiseStride(tadOnlyShapeInfo);
-    yTadEws    = shape::elementWiseStride(yTadOnlyShapeInfo);
-    xTadOrder  = shape::order(tadOnlyShapeInfo);
-    yTadOrder  = shape::order(yTadOnlyShapeInfo);
-
     xTadRank   = shape::rank(tadOnlyShapeInfo);
     xTadShape  = shape::shapeOf(tadOnlyShapeInfo);
     xTadStride = shape::stride(tadOnlyShapeInfo);

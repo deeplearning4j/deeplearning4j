@@ -248,29 +248,31 @@ public final class SamplerUtils {
     /**
      * Batch argmax - find the index of the maximum value for each row.
      *
-     * Uses bulk host transfer (toFloatVector per row) to avoid O(batchSize * vocabSize)
-     * individual getFloat() JNI calls. Each row is transferred in a single bulk copy.
+     * Uses GPU-side argmax (Nd4j.argMax) to avoid transferring the entire logits
+     * tensor to host. Only the result indices (one int per batch) are transferred.
+     * Input is dup'd to ensure contiguity (argMax has issues with views).
      */
     public static int[] argmaxBatch(INDArray logits) {
         if (logits.rank() == 1) {
             return new int[]{argmax(logits)};
         }
-        Nd4j.getExecutioner().commit();
-        int batchSize = (int) logits.size(0);
-        int[] result = new int[batchSize];
-        for (int b = 0; b < batchSize; b++) {
-            float[] row = logits.getRow(b).toFloatVector();
-            int maxIdx = 0;
-            float maxVal = row[0];
-            for (int v = 1; v < row.length; v++) {
-                if (row[v] > maxVal) {
-                    maxVal = row[v];
-                    maxIdx = v;
-                }
+        // Ensure contiguous — argMax has issues with views/non-contiguous arrays
+        INDArray contiguous = logits.isView() ? logits.dup() : logits;
+        try {
+            INDArray indices = Nd4j.argMax(contiguous, 1);
+            Nd4j.getExecutioner().commit();
+            int batchSize = (int) indices.length();
+            int[] result = new int[batchSize];
+            for (int b = 0; b < batchSize; b++) {
+                result[b] = indices.getInt(b);
             }
-            result[b] = maxIdx;
+            indices.close();
+            return result;
+        } finally {
+            if (contiguous != logits) {
+                contiguous.close();
+            }
         }
-        return result;
     }
 
     /**

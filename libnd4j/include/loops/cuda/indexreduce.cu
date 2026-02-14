@@ -213,17 +213,15 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
 
  if (!resultScalar) {
    __shared__ sd::LongType tadLength;
-   __shared__ sd::LongType tadEWS;
    __shared__ sd::LongType numTads;
 
    if (threadIdx.x == 0) {
      tadLength = shape::length(tadOnlyShapeInfo);
-     tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
      numTads = shape::length(xShapeInfo) / tadLength;
    }
    __syncthreads();
 
-   if (dimensionLength > 1 || tadEWS < 1) {
+   if (dimensionLength > 1) {
      for (sd::LongType r = blockIdxX; r < numTads; r += gridDimX) {
        auto tadOffsetForBlock = tadOffsets[r];
        sPartials[threadIdxX] = OpType::startingIndexValue(dx);

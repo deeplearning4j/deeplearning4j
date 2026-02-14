@@ -171,15 +171,9 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws
 
 
   auto func = PRAGMA_THREADS_FOR {
-    if (xEws == 1) {
-      for (auto i = start; i < stop; i++) {
-        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], compatibleExtraParams), compatibleExtraParams);
-      }
-    } else {
-      for (auto i = start; i < stop; i++) {
-        intermediate[thread_id] =
-            OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], compatibleExtraParams), compatibleExtraParams);
-      }
+    for (auto i = start; i < stop; i++) {
+      intermediate[thread_id] =
+          OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], compatibleExtraParams), compatibleExtraParams);
     }
   };
 

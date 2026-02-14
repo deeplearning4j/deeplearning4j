@@ -40,6 +40,9 @@
 
 namespace sd {
 
+// Definition of thread-local graph execution flag (declared in DataBuffer.h)
+thread_local bool tl_graphExecutionActive = false;
+
 void DataBuffer::expand(const uint64_t size) {
   if (size > _lenInBytes) {
     // allocate new buffer
@@ -73,9 +76,11 @@ void DataBuffer::expand(const uint64_t size) {
 #endif
 
     // copy data from existing buffer
+    static constexpr size_t HOST_ALLOC_PADDING = 65536;
+    size_t hostAllocSize = size + (_workspace == nullptr ? HOST_ALLOC_PADDING : 0);
     if (_primaryBuffer != nullptr) {
       // there's non-zero chance that primary buffer doesn't exist yet
-      ALLOCATE(newBuffer, _workspace, size, int8_t);
+      ALLOCATE(newBuffer, _workspace, hostAllocSize, int8_t);
       std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
 
       if (_isOwnerPrimary) {
@@ -121,11 +126,12 @@ void DataBuffer::expand(const uint64_t size) {
     _specialBuffer = newSpecialBuffer;
     _lenInBytes = size;
     _specialAllocBytes = size;
-    if (_primaryBuffer != nullptr) _primaryAllocBytes = size;
+    if (_primaryBuffer != nullptr) _primaryAllocBytes = hostAllocSize;
     _isOwnerSpecial = true;
 
     // Store actual device where memory was allocated (may differ from currentDeviceId after failover)
     _deviceId.store(actualExpandDevice);
+    _specialDeviceId.store(actualExpandDevice);
   }
 }
 
@@ -475,6 +481,15 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     return;
   }
 
+  // During graph execution (CUDA Graphs capture, oneDNN Graph, ACL Dynamic Fusion),
+  // D2H transfers are forbidden — for CUDA, they create illegal dependencies between
+  // the capture stream and the legacy stream; for CPU graphs, they cause unnecessary
+  // data movement. Data stays on the compute device; the warmup pass already computed
+  // any needed host-side values.
+  if (tl_graphExecutionActive) {
+    return;
+  }
+
   if (isPrimaryActual() && !forceSync) {
     return;
   }
@@ -535,22 +550,17 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   // after the memcpy, making it a blocking call regardless of which stream is used.
   cudaStream_t stream = 0;
 
-  // Use event-based synchronization for cross-thread correctness.
-  // The problem: if kernel K runs on Thread A's stream and syncToPrimary() is called
-  // from Thread B, the old code would sync Thread B's stream (useless) and then memcpy
-  // while kernel K might still be running on Thread A's stream.
+  // Event-based synchronization is SKIPPED when using stream 0 (the legacy default
+  // stream). Stream 0 already implicitly synchronizes with ALL other streams on the
+  // device — it waits for all prior work on all streams before starting its own work.
+  // This makes cudaStreamWaitEvent redundant, and more importantly, avoids a SIGSEGV
+  // crash when the _writeEvent handle has been corrupted by a buffer overrun from a
+  // native op (known issue pattern — see MEMORY.md).
   //
-  // Solution: writeSpecial() records an event on the actual kernel stream. Here we wait
-  // on that event on our stream, which properly synchronizes regardless of which thread is calling.
+  // If we ever switch to a non-zero stream for D2H transfers, event synchronization
+  // would need to be re-enabled with proper event handle validation.
   cudaError_t res;
-  if (_writeEvent != nullptr && _writeEventRecorded.load()) {
-    cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
-    // Make our stream wait for the write event (non-blocking on CPU)
-    res = cudaStreamWaitEvent(stream, *event, 0);
-    if (res != cudaSuccess) {
-      // Fallback to event sync if stream wait fails
-      res = cudaEventSynchronize(*event);
-    }
+  if (_writeEventRecorded.load()) {
     _writeEventRecorded.store(false);  // Reset for next write
   }
 
@@ -854,19 +864,8 @@ void DataBuffer::setCountersToZero() {
   _readPrimary.store(0L);
   _readSpecial.store(0L);
 
-  // Initialize or reset the write event for cross-thread synchronization
-  if (_writeEvent == nullptr) {
-    cudaEvent_t* event = new cudaEvent_t();
-    // cudaEventDisableTiming for better performance since we don't need timing
-    auto res = cudaEventCreateWithFlags(event, cudaEventDisableTiming);
-    if (res != cudaSuccess) {
-      delete event;
-      // Non-fatal: fall back to stream sync if event creation fails
-      _writeEvent = nullptr;
-    } else {
-      _writeEvent = event;
-    }
-  }
+  // Event creation intentionally removed — syncToPrimary() uses stream 0 which
+  // provides implicit synchronization with all other streams on the device.
   _writeEventRecorded.store(false);
 }
 
@@ -1023,14 +1022,7 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
     throw cuda_exception::build("DataBuffer::setToZeroBuffers: cudaMemsetAsync failed!", res);
   }
 
-  // Record event for cross-thread synchronization
-  // No need to sync stream here - subsequent GPU operations on same stream will
-  // automatically wait for memset to complete. This eliminates unnecessary CPU-GPU sync.
-  if (_writeEvent != nullptr) {
-    cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
-    cudaEventRecord(*event, *stream);
-    _writeEventRecorded.store(true);
-  }
+  // Event recording removed — syncToPrimary() uses stream 0 for implicit sync.
 
   // Restore original device if we switched
   if (switchedDevice) {
@@ -1364,33 +1356,12 @@ void DataBuffer::writePrimary() const { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const {
   _writeSpecial = ++_counter;
 
-  // Record an event on the current stream so that syncToPrimary() can properly
-  // synchronize even when called from a different thread with a different stream.
-  // This fixes the cross-thread synchronization bug where CUDA kernels complete
-  // on Stream A but syncToPrimary() syncs on Thread B's stream (useless).
-
-  // Create event on demand if it doesn't exist (handles DataBuffers created
-  // before this fix was added, or if setCountersToZero() wasn't called)
-  if (_writeEvent == nullptr) {
-    cudaEvent_t* event = new cudaEvent_t();
-    auto res = cudaEventCreateWithFlags(event, cudaEventDisableTiming);
-    if (res != cudaSuccess) {
-      delete event;
-      // Non-fatal: fall back to stream sync if event creation fails
-      return;
-    }
-    _writeEvent = event;  // _writeEvent is mutable
-  }
-
-  cudaEvent_t* event = reinterpret_cast<cudaEvent_t*>(_writeEvent);
-  cudaStream_t* stream = reinterpret_cast<cudaStream_t*>(
-      LaunchContext::defaultContext()->getCudaStream());
-  if (stream != nullptr && *stream != nullptr) {
-    auto res = cudaEventRecord(*event, *stream);
-    if (res == cudaSuccess) {
-      _writeEventRecorded.store(true);
-    }
-  }
+  // Event recording is intentionally omitted. syncToPrimary() uses stream 0
+  // (the legacy default stream) which implicitly synchronizes with ALL other
+  // streams on the device, making event-based ordering redundant.
+  // Removing event creation also eliminates heap allocations (new cudaEvent_t)
+  // in the hot path that are vulnerable to corrupted heap metadata from native
+  // op buffer overruns.
 }
 void DataBuffer::readPrimary() const { _readPrimary = ++_counter; }
 void DataBuffer::readSpecial() const { _readSpecial = ++_counter; }

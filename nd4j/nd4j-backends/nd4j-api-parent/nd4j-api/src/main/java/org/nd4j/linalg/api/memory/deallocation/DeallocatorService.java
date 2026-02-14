@@ -319,6 +319,16 @@ public class DeallocatorService {
             numDevices = 1;
         }
 
+        // Scale deallocator threads with device count if user hasn't overridden.
+        // With high-throughput execution (e.g. DSP vision encoder), a single thread
+        // cannot keep up with PhantomReference processing, causing massive GC pressure
+        // (5000+ Full GCs). Using max(numDevices, 2) ensures at least 1 thread per
+        // GPU device for device-affine deallocation, with a minimum of 2.
+        String userThreads = System.getProperty(ND4JSystemProperties.DEALLOCATOR_SERVICE_GC_THREADS);
+        if (userThreads == null) {
+            numThreads = Math.max(numDevices, 2);
+        }
+
         for (int e = 0; e < numDevices; e++)
             deviceMap.add(new ArrayList<>());
 
@@ -516,7 +526,16 @@ public class DeallocatorService {
                         val timeout = Nd4j.getMemoryManager().getAutoGcWindow();
                         try {
                             Thread.sleep(timeout);
-                            Nd4j.getMemoryManager().invokeGc();
+                            // Memory-ratio based GC: only invoke System.gc() when Java heap
+                            // usage exceeds 75% of max. This avoids constant Full GC churn
+                            // when there's plenty of heap (e.g., during model loading or DSP
+                            // execution where native memory is managed directly).
+                            Runtime rt = Runtime.getRuntime();
+                            long used = rt.totalMemory() - rt.freeMemory();
+                            long max = rt.maxMemory();
+                            if (used > max * 3 / 4) {
+                                Nd4j.getMemoryManager().invokeGc();
+                            }
                         } catch (InterruptedException e) {
                             canRun = false;
                         }

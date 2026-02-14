@@ -430,25 +430,12 @@ void NDArray::tile(NDArray& target)  {
 
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying
-  const auto ews = target.ews();
   const auto targetLen = target.lengthOf();
-  if (target.ordering() == 'c' && ews >= 1) {
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      auto targetDataType = target.dataType();
-      auto selfDType = dataType();
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-    }
-  } else {
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto xOffset = target.getOffset(i);
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      auto targetDataType = target.dataType();
-      auto selfDType = dataType();
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-    }
+  for (sd::LongType i = 0; i < targetLen; ++i) {
+    auto xOffset = target.getOffset(i);
+    auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
+                          (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
   }
 }
 
