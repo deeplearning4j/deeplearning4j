@@ -95,3 +95,40 @@ nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/nativebla
 *.dll
 *.tmp
 libnd4j/include/generated/include_ops.h
+
+# Large binary files - models, datasets, core dumps
+*.onnx
+!codegen/op-codegen/src/test/resources/lenet.onnx
+!contrib/codegen-tools/onnx-def-gen/lenet.onnx
+!nd4j/nd4j-onnxruntime/src/test/resources/add.onnx
+!nd4j/samediff-import/samediff-import-onnx/src/test/resources/mobilenet.onnx
+!platform-tests/src/test/resources/lenet.onnx
+!platform-tests/src/test/resources/mnist.onnx
+!platform-tests/src/test/resources/mobilenet.onnx
+*.sdz
+*.pdf
+*.gguf
+*.safetensors
+*.pb
+*.pt
+*.pth
+*.weights
+*.model
+vgcore*
+valgrind-*
+core.*
+
+# Node.js
+node_modules/
+nd4j/nd4j-web/nd4j-webjar/node/
+
+# Dev journal / scratch files
+dev-journal.md
+heap-corruption-analysis.md
+optimized-pipeline.md
+profiling-prompt.md
+vision-encoder-expand-investigation.md
+native-executor-kv-cache-investigation.md
+native-executor-not-equals-type-mismatch.md
+cpp-dispatch-rewrite.md
+model-loading-optimization.md
