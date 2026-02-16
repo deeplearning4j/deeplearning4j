@@ -483,6 +483,13 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Get the currently compiled DynamicShapePlan (if any).
+     */
+    public DynamicShapePlan getCurrentPlan() {
+        return currentPlan;
+    }
+
+    /**
      * Execute the plan with the given placeholder arrays.
      *
      * @param plan              the compiled plan

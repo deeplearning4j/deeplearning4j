@@ -89,6 +89,7 @@ struct NativeSlot {
   bool outputShapeDependsOnInputValues;
   bool needsIntLongSync;
   bool isCustomOp;
+  bool isIdentityOp;                       // Identity: output = input, skip execution
   int targetDeviceId;                      // -1 = auto
 
   // Legacy op support for ops not registered in OpRegistrator
@@ -115,7 +116,7 @@ struct NativeSlot {
         bArgs(nullptr), numBArgs(0), dArgs(nullptr), numDArgs(0),
         needsZeroedOutput(true), isDataDependent(false),
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
-        isCustomOp(true), targetDeviceId(-1),
+        isCustomOp(true), isIdentityOp(false), targetDeviceId(-1),
         legacyOpType(0), legacyOpNum(-1),
         cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false) {}
 

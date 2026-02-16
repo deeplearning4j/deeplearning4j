@@ -47,6 +47,7 @@ import org.nd4j.ggml.GGMLModelImport;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -4056,15 +4057,49 @@ public class TestVLMModelImportPipeline {
                         allOutputNames.toArray(new String[0]));
                 long decoderTime = System.currentTimeMillis() - decoderStart;
 
-                // After step 1 succeeds, enable shapes-frozen mode for subsequent steps.
-                // Step 1 populates the shape cache; steps 2+ skip shape inference entirely.
+                // After step 1 succeeds, enable optimizations for subsequent steps.
                 if (step == 1) {
                     DynamicShapePlanExecutor dspExec = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
                     if (dspExec != null) {
+                        // Shapes-frozen: skip shape inference (shapes are constant with static KV)
                         dspExec.setShapesFrozen(true);
-                        log.info("Enabled shapes-frozen mode after step 1");
+                        // Execution timing: log C++ execution breakdown (stderr)
+                        dspExec.setExecutionTimingEnabled(true);
+
+                        // KV cache retention: C++ scatters new KV entries into static buffers
+                        // Build mapping: present output names → past input names
+                        List<String> presentNames = new ArrayList<>();
+                        List<String> pastNames = new ArrayList<>();
+                        for (String keyName : presentKeyNames) {
+                            // present.N.key → past_key_values.N.key
+                            String pastName = keyName.replace("present", "past_key_values");
+                            presentNames.add(keyName);
+                            pastNames.add(pastName);
+                        }
+                        for (String valName : presentValueNames) {
+                            String pastName = valName.replace("present", "past_key_values");
+                            presentNames.add(valName);
+                            pastNames.add(pastName);
+                        }
+
+                        // Get the compiled plan from the executor
+                        org.nd4j.autodiff.samediff.execution.DynamicShapePlan plan =
+                                dspExec.getCurrentPlan();
+                        if (plan != null) {
+                            dspExec.configureKvCacheRetention(plan, presentNames, pastNames,
+                                    (int) maxKvLen, (int) (cachePos - 1));
+                            log.info("Configured C++ KV cache retention: {} mappings, maxKvLen={}, pos={}",
+                                    presentNames.size(), maxKvLen, cachePos - 1);
+                        }
+
+                        log.info("Enabled shapes-frozen mode, execution timing, and KV retention after step 1");
                     }
                 }
+
+                // NOTE: CUDA graph capture is still problematic with cudaMallocAsync pools.
+                // Even with shapes-frozen (cached arrays, no allocs), some ops use internal
+                // workspace allocations that interact badly with capture. Disabled for now.
+                // The slot-by-slot path with shapes-frozen is ~208ms/step.
 
                 // Extract logits
                 INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
@@ -4075,11 +4110,19 @@ public class TestVLMModelImportPipeline {
                 INDArray logits = logitsRaw.dup();
                 SameDiffMemoryUtils.safeClose(logitsRaw);
 
-                // Scatter new KV entries from concat output into static buffers
-                DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
-                        presentKeyNames, presentValueNames, maxKvLen, cachePos);
+                // Scatter new KV entries and handle KV output cleanup
+                DynamicShapePlanExecutor dspExecForKv = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+                boolean kvRetentionActive = dspExecForKv != null && dspExecForKv.isKvCacheRetentionConfigured();
+                if (!kvRetentionActive) {
+                    // Java-side scatter (step 1, before C++ retention is configured)
+                    DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
+                            presentKeyNames, presentValueNames, maxKvLen, cachePos);
+                } else {
+                    // C++ already scattered during execute() — just advance position
+                    dspExecForKv.advanceKvCachePosition();
+                }
 
-                // Close present KV outputs (data already scattered to static buffers)
+                // Close present KV outputs (data already in static buffers)
                 for (String name : presentKeyNames) {
                     INDArray pv = decoderOutputs.get(name);
                     if (pv != null) SameDiffMemoryUtils.safeClose(pv);
@@ -4618,56 +4661,44 @@ public class TestVLMModelImportPipeline {
         embedTokens.enableWorkspaceMode(8 * 1024 * 1024);
         log.info("STEP 3 DONE: {}ms", System.currentTimeMillis() - step3Start);
 
-        // ==================== STEP 4: Load & Tile Single Page ====================
+        // ==================== STEP 4: Load & Tile Page ====================
         log.info("STEP 4: Loading and tiling page...");
         BufferedImage pageImage = loadImageFromPdfOrGenerate(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
         int targetSize = 512;
         int effectiveMaxTiles = maxTiles > 0 ? maxTiles : 9;
+        int tilingThreads = Math.min(Runtime.getRuntime().availableProcessors(), 4);
 
         BufferedImage resized = ImageTiler.resizeLongestEdge(pageImage, 2048);
-        int tilingThreads = Runtime.getRuntime().availableProcessors();
         ImageTiler.SplitImageResult split = ImageTiler.splitImageForVLMParallel(
                 resized, targetSize, effectiveMaxTiles, tilingThreads);
         log.info("  Page: {}x{} -> {} frames ({}x{} grid + global)",
                 pageImage.getWidth(), pageImage.getHeight(),
                 split.getTotalFrames(), split.numRows, split.numCols);
 
-        // ==================== STEP 5: Vision Encoding ====================
-        log.info("STEP 5: Vision encoding ({} frames)...", split.getTotalFrames());
+        // ==================== STEP 5: Pipelined Vision Encoding ====================
+        int totalFrames = split.getTotalFrames();
+        log.info("STEP 5: Vision encoding ({} frames)...", totalFrames);
         long step5Start = System.currentTimeMillis();
-        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
 
-        List<INDArray> framePixelValues = new ArrayList<>();
-        // Process global thumbnail
-        INDArray globalPV = preprocessor.preprocessSingleFrame(split.getGlobalThumbnail(), targetSize);
-        framePixelValues.add(globalPV);
-        // Process content tiles
-        for (BufferedImage tile : split.getTiles()) {
-            framePixelValues.add(preprocessor.preprocessSingleFrame(tile, targetSize));
-        }
+        final int fTargetSize = targetSize;
+        int visionChunkSize = 2;
+        PipelinedVisionEncoder pipelinedEncoder = new PipelinedVisionEncoder(
+                visionEncoder, visionChunkSize, tilingThreads);
+        List<INDArray> pageVisionEmbeddings = pipelinedEncoder.encodePipelined(
+                List.of(split),
+                () -> createSmolDoclingPreprocessor(fTargetSize, true),
+                targetSize);
+        pipelinedEncoder.shutdown();
 
-        // Stack all frames and encode through vision encoder
-        INDArray allFrames = Nd4j.vstack(framePixelValues.toArray(new INDArray[0]));
-        String visionInputName = visionEncoder.inputs().get(0);
-        String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
-        Map<String, INDArray> visionOutputs = visionEncoder.output(
-                Map.of(visionInputName, allFrames), visionOutputNames);
-        INDArray visionEmbeddings = visionOutputs.values().iterator().next().dup();
-        for (INDArray orig : visionOutputs.values()) SameDiffMemoryUtils.safeClose(orig);
-        visionEncoder.clearPlaceholders(true);
-        for (INDArray frame : framePixelValues) SameDiffMemoryUtils.safeClose(frame);
-        SameDiffMemoryUtils.safeClose(allFrames);
-
-        // Reshape: [numFrames, seqPerFrame, hidden] -> [1, numFrames*seqPerFrame, hidden]
-        long numFrames = visionEmbeddings.size(0);
-        long seqPerFrame = visionEmbeddings.size(1);
-        long hiddenSize = visionEmbeddings.size(2);
-        INDArray visionEmbedsFlat = visionEmbeddings.reshape(1, numFrames * seqPerFrame, hiddenSize);
+        INDArray visionEmbedsFlat = pageVisionEmbeddings.get(0); // [1, totalSeq, hidden]
+        long hiddenSize = visionEmbedsFlat.size(2);
+        long visionSeqLen = visionEmbedsFlat.size(1);
+        int imageSeqLenPerFrame = (int) (visionSeqLen / totalFrames);
 
         long step5Time = System.currentTimeMillis() - step5Start;
         log.info("STEP 5 DONE: {}ms, vision shape={}", step5Time, java.util.Arrays.toString(visionEmbedsFlat.shape()));
 
-        // Free vision encoder
+        // Free vision encoder to reclaim GPU memory
         int freedArrays = SameDiffMemoryUtils.freeModelArrays(visionEncoder);
         Nd4j.getExecutioner().commit();
         NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
@@ -4679,7 +4710,6 @@ public class TestVLMModelImportPipeline {
         log.info("STEP 6: Building prompt and merging embeddings...");
         long step6Start = System.currentTimeMillis();
 
-        int imageSeqLenPerFrame = (int) seqPerFrame;
         String imagePrompt = ImagePromptBuilder.buildImagePromptString(split.numRows, split.numCols, imageSeqLenPerFrame);
         String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
         int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
@@ -4924,14 +4954,12 @@ public class TestVLMModelImportPipeline {
         log.info("========================================");
 
         // ==================== Cleanup ====================
-        SameDiffMemoryUtils.safeClose(visionEmbeddings);
-        SameDiffMemoryUtils.safeClose(visionEmbedsFlat);
+        for (INDArray embed : pageVisionEmbeddings) SameDiffMemoryUtils.safeClose(embed);
         SameDiffMemoryUtils.safeClose(textEmbeddings);
         SameDiffMemoryUtils.safeClose(mergedEmbeddings);
         if (currentEmbeddings != mergedEmbeddings) SameDiffMemoryUtils.safeClose(currentEmbeddings);
         for (INDArray kv : kvCache.values()) SameDiffMemoryUtils.safeClose(kv);
         SameDiffMemoryUtils.safeClose(promptTokenIdsTensor);
-        preprocessor.shutdown();
         tokenizer.close();
 
         org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);

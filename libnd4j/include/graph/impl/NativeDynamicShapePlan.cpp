@@ -68,6 +68,7 @@ NativeSlot::NativeSlot(NativeSlot&& other) noexcept
       outputShapeDependsOnInputValues(other.outputShapeDependsOnInputValues),
       needsIntLongSync(other.needsIntLongSync),
       isCustomOp(other.isCustomOp),
+      isIdentityOp(other.isIdentityOp),
       targetDeviceId(other.targetDeviceId),
       legacyOpType(other.legacyOpType),
       legacyOpNum(other.legacyOpNum),
@@ -111,6 +112,7 @@ NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
     outputShapeDependsOnInputValues = other.outputShapeDependsOnInputValues;
     needsIntLongSync = other.needsIntLongSync;
     isCustomOp = other.isCustomOp;
+    isIdentityOp = other.isIdentityOp;
     targetDeviceId = other.targetDeviceId;
     legacyOpType = other.legacyOpType;
     legacyOpNum = other.legacyOpNum;
@@ -390,6 +392,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     }
     // Use the C++ hash for internal computations (shape key, etc.)
     slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
+    // Classify identity ops for fast-path skipping
+    slot.isIdentityOp = (slot.opName == "identity");
   }
 
   // Read release schedule
@@ -482,6 +486,15 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
     sd_printf("NativeDynamicShapePlan: shape analysis: %d static, %d dynamic out of %d slots\n",
               staticCount, dynamicCount, plan->numSlots_);
+
+    // Count identity ops for diagnostics
+    int identityCount = 0;
+    for (int i = 0; i < plan->numSlots_; i++) {
+      if (plan->slots_[i].isIdentityOp) identityCount++;
+    }
+    if (identityCount > 0) {
+      sd_printf("NativeDynamicShapePlan: %d identity ops (will use fast-path)\n", identityCount);
+    }
   }
 
   // Build graph segments for CUDA Graphs
@@ -549,6 +562,10 @@ Status NativeDynamicShapePlan::execute(
 
   // Step 1: Clear output slots
   std::memset(outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots_);
+
+  // Timing instrumentation
+  using Clock = std::chrono::high_resolution_clock;
+  auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
   // Step 2: Execute segments
   int segmentIdx = 0;
@@ -655,6 +672,8 @@ Status NativeDynamicShapePlan::execute(
     segmentIdx++;
   }
 
+  auto tSegsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
   // Step 3: Copy requested outputs
   for (int i = 0; i < numRequestedOutputs_; i++) {
     int slotIdx = requestedOutputSlotIndices_[i];
@@ -670,11 +689,26 @@ Status NativeDynamicShapePlan::execute(
     scatterKvEntries(externalInputs, numExternalInputs, stream);
   }
 
+  auto tOutputsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
   // Step 4: Final flush
   flushPendingClose(stream);
 
+  auto tFlushDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;
+
+  // Print timing breakdown
+  if (executionTimingEnabled_) {
+    auto segMs = std::chrono::duration_cast<std::chrono::microseconds>(tSegsDone - t0).count();
+    auto outMs = std::chrono::duration_cast<std::chrono::microseconds>(tOutputsDone - tSegsDone).count();
+    auto flushMs = std::chrono::duration_cast<std::chrono::microseconds>(tFlushDone - tOutputsDone).count();
+    auto totalMs = std::chrono::duration_cast<std::chrono::microseconds>(tFlushDone - t0).count();
+    sd_printf("DSP timing: segments=%lldus outputs=%lldus flush=%lldus total=%lldus (%d segs, %d slots)\n",
+              segMs, outMs, flushMs, totalMs,
+              static_cast<int>(segments_.size()), numSlots_);
+  }
 
   return Status::OK;
 }
@@ -1096,6 +1130,30 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 Status NativeDynamicShapePlan::executeSlot(
     int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
   NativeSlot& slot = slots_[stepIdx];
+
+  // ── Fast path: identity ops ──────────────────────────────────────────────
+  // Identity ops just pass input through. Skip shape inference, allocation,
+  // op execution — just wire the output slot to point at the input.
+  if (slot.isIdentityOp && slot.numInputs == 1 && slot.numOutputs >= 1) {
+    int srcIdx = slot.inputSourceIndices[0];
+    NDArray* input = nullptr;
+    if (srcIdx >= 0) {
+      input = outputSlots_[srcIdx];
+    } else {
+      int extIdx = -(srcIdx + 1);
+      if (extIdx < numExt) input = externalArrays[extIdx];
+    }
+    if (input != nullptr) {
+      for (int i = 0; i < slot.numOutputs; i++) {
+        int si = slot.outputSlotIndices[i];
+        if (si >= 0 && si < totalOutputSlots_) {
+          outputSlots_[si] = input;
+        }
+      }
+      return Status::OK;
+    }
+    // Fall through to normal path if input is null
+  }
 
   // ── Step 1: Gather inputs ────────────────────────────────────────────────
   // Use thread-local vector to avoid 4441 heap allocations per execute() call
