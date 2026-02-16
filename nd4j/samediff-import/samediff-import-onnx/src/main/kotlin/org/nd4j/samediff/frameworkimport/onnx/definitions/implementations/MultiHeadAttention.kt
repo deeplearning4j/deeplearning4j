@@ -131,9 +131,10 @@ class MultiHeadAttention : PreImportHook {
         // Fused attention path: use DotProductAttentionV2 when no key padding mask.
         // The op's internal useCausalMask replaces the external relativePosBias (causal mask).
         // DotProductAttentionV2 expects BSHD format: [batch, seq, numHeads, headDim].
-        // TODO: Fused attention produces incorrect output — needs debugging.
-        // Disable until the DotProductAttentionV2 input format/masking is validated.
-        val useFusedAttention = false // (keyPaddingMask == null)
+        // Fused path only when NO external masks are present.
+        // relativePosBias carries the model's attention mask (causal + position-dependent),
+        // which can't be represented by DotProductAttentionV2's built-in causal mask alone.
+        val useFusedAttention = (keyPaddingMask == null && relativePosBias == null)
 
         if (useFusedAttention) {
             return doFusedAttention(sd, query, key, value, pastKey, pastValue,
