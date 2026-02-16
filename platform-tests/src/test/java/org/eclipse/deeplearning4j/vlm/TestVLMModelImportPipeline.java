@@ -4017,6 +4017,14 @@ public class TestVLMModelImportPipeline {
             decoder.resetSession();
             Nd4j.getMemoryManager().invokeGc();
 
+            // Helper thread for overlapping embed tokens computation with KV cache cleanup
+            java.util.concurrent.ExecutorService embedExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "EmbedTokens-Async");
+                t.setDaemon(true);
+                return t;
+            });
+
+            long decodeLoopStart = System.currentTimeMillis();
             for (int step = 1; step < maxTokensConfig; step++) {
                 long stepStart = System.currentTimeMillis();
                 long currentSeqLen = 1; // single token decode
@@ -4063,47 +4071,47 @@ public class TestVLMModelImportPipeline {
                         allOutputNames.toArray(new String[0]));
                 long decoderTime = System.currentTimeMillis() - decoderStart;
 
-                // Extract logits
-                INDArray logits = decoderOutputs.get(logitsOutputName);
-                if (logits == null) {
+                // Extract logits — dup and close original to free GPU memory
+                INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
+                if (logitsRaw == null) {
                     log.error("No logits at step {}", step);
                     break;
                 }
+                INDArray logits = logitsRaw.dup();
+                logitsRaw.setCloseable(true);
+                logitsRaw.close();
 
-                // Update KV cache: close old, keep new
-                for (INDArray oldKv : kvCache.values()) SameDiffMemoryUtils.safeClose(oldKv);
-                kvCache.clear();
+                // Update KV cache: close old entries, keep new ones
                 for (String name : presentKeyNames) {
                     INDArray pv = decoderOutputs.get(name);
-                    if (pv != null) kvCache.put(name, pv);
+                    if (pv != null) {
+                        INDArray old = kvCache.put(name, pv);
+                        if (old != null) { old.setCloseable(true); old.close(); }
+                    }
                 }
                 for (String name : presentValueNames) {
                     INDArray pv = decoderOutputs.get(name);
-                    if (pv != null) kvCache.put(name, pv);
+                    if (pv != null) {
+                        INDArray old = kvCache.put(name, pv);
+                        if (old != null) { old.setCloseable(true); old.close(); }
+                    }
                 }
 
                 cachePos++;
 
                 // Sample from logits
-                log.info("  Step {} logits: shape={} rank={} dtype={} len={}",
-                        step, java.util.Arrays.toString(logits.shape()), logits.rank(),
-                        logits.dataType(), logits.length());
                 INDArray lastLogits;
                 if (logits.rank() == 3) {
-                    INDArray logitsSlice = logits.get(NDArrayIndex.all(),
-                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
-                    log.info("  Step {} logitsSlice: shape={} rank={} dataAddr={}", step,
-                            java.util.Arrays.toString(logitsSlice.shape()), logitsSlice.rank(),
-                            logitsSlice.data() != null ? Long.toHexString(logitsSlice.data().pointer().address()) : "null");
-                    lastLogits = logitsSlice.dup();
+                    lastLogits = logits.get(NDArrayIndex.all(),
+                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all()).dup();
                 } else if (logits.rank() == 2) {
                     lastLogits = logits;
                 } else {
                     lastLogits = logits.reshape(1, logits.length());
                 }
                 int[] nextTokenIds = sampler.sampleBatch(lastLogits);
-                if (lastLogits != logits) SameDiffMemoryUtils.safeClose(lastLogits);
-                SameDiffMemoryUtils.safeClose(logits);
+                if (lastLogits != logits) lastLogits.close();
+                logits.close();
 
                 boolean allFinished = true;
                 for (int bi = 0; bi < activeBatchSize; bi++) {
@@ -4121,25 +4129,53 @@ public class TestVLMModelImportPipeline {
                 stepsCompleted = step + 1;
                 if (allFinished) break;
 
-                // Embed next tokens for all batch items
+                // Overlap: start embed tokens computation on helper thread while main
+                // thread cleans up decoder inputs and old KV cache entries
                 int[] tokenIdsForEmbed = new int[activeBatchSize];
                 for (int bi = 0; bi < activeBatchSize; bi++) {
-                    tokenIdsForEmbed[bi] = finished[bi] ? 0 : nextTokenIds[bi];
+                    tokenIdsForEmbed[bi] = finished[bi] ? eosTokenId : nextTokenIds[bi];
                 }
                 INDArray stepTokenTensor = Nd4j.createFromArray(tokenIdsForEmbed)
                         .reshape(activeBatchSize, 1).castTo(DataType.LONG);
-                Map<String, INDArray> stepEmbedOut = embedTokens.output(
-                        Map.of(embedInputName, stepTokenTensor), embedOutputNames);
-                INDArray prevEmbed = currentEmbeddings;
-                currentEmbeddings = stepEmbedOut.values().iterator().next().dup();
-                for (INDArray orig : stepEmbedOut.values()) SameDiffMemoryUtils.safeClose(orig);
-                SameDiffMemoryUtils.safeClose(stepTokenTensor);
-                embedTokens.clearPlaceholders(false);
-                if (prevEmbed != batchedEmbeddings) SameDiffMemoryUtils.safeClose(prevEmbed);
 
-                // Clear placeholder references (don't close per-step inputs —
-                // the DynamicShapePlanExecutor may cache their GPU addresses)
+                final INDArray tokenTensorFinal = stepTokenTensor;
+                java.util.concurrent.Future<INDArray> embedFuture = embedExecutor.submit(() -> {
+                    Map<String, INDArray> newEmbedOutputs = embedTokens.output(
+                            Map.of(embedInputName, tokenTensorFinal), embedOutputNames);
+                    return newEmbedOutputs.values().iterator().next().dup();
+                });
+
+                // Main thread: cleanup decoder inputs while embed tokens computes
+                for (var entry : decoderInputMap.entrySet()) {
+                    String name = entry.getKey();
+                    INDArray arr = entry.getValue();
+                    if (name.equals("inputs_embeds") || name.equals("input_ids")) continue;
+                    if (name.startsWith("past_key_values.")) continue;
+                    if (arr != null && !arr.wasClosed()) {
+                        arr.setCloseable(true);
+                        arr.close();
+                    }
+                }
                 decoder.clearPlaceholders(false);
+
+                // Close prev embeddings
+                INDArray prevEmbed = currentEmbeddings;
+                if (prevEmbed != batchedEmbeddings && prevEmbed != null && !prevEmbed.wasClosed()) {
+                    prevEmbed.setCloseable(true);
+                    prevEmbed.close();
+                }
+
+                // Wait for embed tokens result
+                try {
+                    currentEmbeddings = embedFuture.get();
+                } catch (Exception e) {
+                    throw new RuntimeException("Embed tokens failed", e);
+                }
+                if (stepTokenTensor != null && !stepTokenTensor.wasClosed()) {
+                    stepTokenTensor.setCloseable(true);
+                    stepTokenTensor.close();
+                }
+                embedTokens.clearPlaceholders(false);
 
                 // Log progress
                 if (step < 5 || step % 10 == 0) {
@@ -4154,6 +4190,14 @@ public class TestVLMModelImportPipeline {
                 }
             }
 
+            embedExecutor.shutdown();
+            long decodeLoopTime = System.currentTimeMillis() - decodeLoopStart;
+            int decodeSteps = stepsCompleted - 1; // exclude prefill step
+            int decodeTokens = totalTokensGenerated; // all tokens come from decode
+            log.info("  Decode loop: {}ms for {} steps ({} tokens), avg {}ms/step, {}ms/token (batch amortized)",
+                    decodeLoopTime, decodeSteps, decodeTokens,
+                    decodeSteps > 0 ? decodeLoopTime / decodeSteps : 0,
+                    decodeTokens > 0 ? decodeLoopTime * batchSize / decodeTokens : 0);
         }
         long step7Time = System.currentTimeMillis() - step7Start;
 
