@@ -3250,6 +3250,60 @@ public native void freeDynamicShapePlan(@Cast("sd::Pointer") Pointer planHandle)
 public native void clearDynamicShapePlanCaches(@Cast("sd::Pointer") Pointer planHandle);
 
 /**
+ * Force-clear ALL shape caches unconditionally (including static slots).
+ * Use for session reset or model reload scenarios.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+public native void clearAllDynamicShapePlanCachesForce(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Configure KV cache retention for a compiled plan.
+ * After this call, execute() will scatter new KV entries into static input buffers
+ * instead of returning them as outputs, avoiding per-step JNI round-trips.
+ *
+ * @param planHandle    Handle from compileDynamicShapePlan()
+ * @param mappings      Flat array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
+ * @param numMappings   Number of KV cache mappings
+ * @param maxKvLen      Maximum KV cache length (static buffer size along sequence dimension)
+ * @param initialPos    Initial write position (prefillLen)
+ */
+public native void configurePlanKvCacheRetention(
+    @Cast("sd::Pointer") Pointer planHandle,
+    @Const IntPointer mappings,
+    int numMappings,
+    int maxKvLen,
+    int initialPos);
+public native void configurePlanKvCacheRetention(
+    @Cast("sd::Pointer") Pointer planHandle,
+    @Const IntBuffer mappings,
+    int numMappings,
+    int maxKvLen,
+    int initialPos);
+public native void configurePlanKvCacheRetention(
+    @Cast("sd::Pointer") Pointer planHandle,
+    @Const int[] mappings,
+    int numMappings,
+    int maxKvLen,
+    int initialPos);
+
+/**
+ * Advance the KV cache write position by 1.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return the new position value
+ */
+public native int advancePlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Reset KV cache write position.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param newPos  New write position
+ */
+public native void resetPlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle, int newPos);
+
+/**
  * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
  *
  * @param filePath  Path to the .sdz or .sdnb file
@@ -3320,6 +3374,34 @@ public native void setPlanCudaGraphsEnabled(@Cast("sd::Pointer") Pointer planHan
  * @param minSize  Minimum number of slots for capture (clamped to >=1)
  */
 public native void setPlanMinCaptureSegmentSize(@Cast("sd::Pointer") Pointer planHandle, int minSize);
+
+/**
+ * Set maximum segment size for CUDA graph capture. Large capturable segments
+ * are split into sub-segments of at most this size to prevent OOM during capture.
+ * Default: 300.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param maxSize     Maximum slots per capture segment (0 for unlimited)
+ */
+public native void setPlanMaxCaptureSegmentSize(@Cast("sd::Pointer") Pointer planHandle, int maxSize);
+
+/**
+ * Enable/disable "shapes frozen" mode for a compiled plan.
+ * When frozen, shape inference and cache clearing are skipped between executions.
+ * Use during static KV decode where external input shapes are guaranteed constant.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param frozen      true to enable, false to disable
+ */
+public native void setPlanShapesFrozen(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean frozen);
+
+/**
+ * Enable/disable execution timing breakdown logging for a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable timing, false to disable
+ */
+public native void setPlanExecutionTimingEnabled(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean enabled);
 
 /**
  * Get the number of graph segments in a compiled plan.

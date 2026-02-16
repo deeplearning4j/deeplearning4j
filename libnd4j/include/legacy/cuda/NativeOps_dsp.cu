@@ -87,13 +87,23 @@ int executeDynamicShapePlan(
     sd::Pointer planHandle,
     OpaqueContext* opContext,
     sd::Pointer stream) {
+  // Helper to set error on LaunchContext so Java can read via lastErrorMessage()
+  auto setError = [](int code, const char* msg) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(code);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(msg);
+  };
+
   try {
     if (planHandle == nullptr) {
-      sd_printf("executeDynamicShapePlan: null plan handle\n", "");
+      const char* msg = "executeDynamicShapePlan: null plan handle";
+      sd_printf("%s\n", msg);
+      setError(1, msg);
       return 1;
     }
     if (opContext == nullptr) {
-      sd_printf("executeDynamicShapePlan: null opContext\n", "");
+      const char* msg = "executeDynamicShapePlan: null opContext";
+      sd_printf("%s\n", msg);
+      setError(1, msg);
       return 1;
     }
 
@@ -105,13 +115,19 @@ int executeDynamicShapePlan(
 
     // Validate input/output counts
     if (numInputs != plan->getNumExternalInputs()) {
-      sd_printf("executeDynamicShapePlan: input count mismatch: got %d, expected %d\n",
-                numInputs, plan->getNumExternalInputs());
+      char buf[256];
+      snprintf(buf, sizeof(buf), "executeDynamicShapePlan: input count mismatch: got %d, expected %d",
+               numInputs, plan->getNumExternalInputs());
+      sd_printf("%s\n", buf);
+      setError(2, buf);
       return 2;
     }
     if (numOutputs != plan->getNumRequestedOutputs()) {
-      sd_printf("executeDynamicShapePlan: output count mismatch: got %d, expected %d\n",
-                numOutputs, plan->getNumRequestedOutputs());
+      char buf[256];
+      snprintf(buf, sizeof(buf), "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
+               numOutputs, plan->getNumRequestedOutputs());
+      sd_printf("%s\n", buf);
+      setError(3, buf);
       return 3;
     }
 
@@ -120,7 +136,10 @@ int executeDynamicShapePlan(
     for (int i = 0; i < numInputs; i++) {
       inputPtrs[i] = opContext->array(i);
       if (inputPtrs[i] == nullptr) {
-        sd_printf("executeDynamicShapePlan: null input at index %d\n", i);
+        char buf[256];
+        snprintf(buf, sizeof(buf), "executeDynamicShapePlan: null input at index %d", i);
+        sd_printf("%s\n", buf);
+        setError(4, buf);
         return 4;
       }
     }
@@ -135,6 +154,15 @@ int executeDynamicShapePlan(
 
     auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
 
+    if (status != Status::OK) {
+      char buf[256];
+      snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d",
+               static_cast<int>(status));
+      sd_printf("%s\n", buf);
+      setError(static_cast<int>(status), buf);
+      return static_cast<int>(status);
+    }
+
     // Write output arrays back to context so Java can read them
     for (int i = 0; i < numOutputs; i++) {
       if (outputPtrs[i] != nullptr) {
@@ -142,7 +170,7 @@ int executeDynamicShapePlan(
       }
     }
 
-    return (status == Status::OK) ? 0 : static_cast<int>(status);
+    return 0;
   } catch (const std::exception& e) {
     sd_printf("executeDynamicShapePlan: exception: %s\n", e.what());
     // Clear any sticky CUDA errors and ensure stream is not in capture mode
@@ -153,7 +181,7 @@ int executeDynamicShapePlan(
       cudaGetLastError();
     }
     // Set error message for Java side
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    setError(-1, e.what());
     return -1;
   }
 }
@@ -170,6 +198,33 @@ void clearDynamicShapePlanCaches(sd::Pointer planHandle) {
     auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
     plan->clearShapeCaches();
   }
+}
+
+void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle) {
+  if (planHandle != nullptr) {
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    plan->clearAllShapeCachesForce();
+  }
+}
+
+void configurePlanKvCacheRetention(
+    sd::Pointer planHandle, const int* mappings,
+    int numMappings, int maxKvLen, int initialPos) {
+  if (planHandle == nullptr || mappings == nullptr || numMappings <= 0) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->configureKvCacheRetention(mappings, numMappings, maxKvLen, initialPos);
+}
+
+int advancePlanKvCachePosition(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  return plan->advanceKvCachePosition();
+}
+
+void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->resetKvCachePosition(newPos);
 }
 
 // ─── Model loading (SDZ/SDNB) ───────────────────────────────────────────────
@@ -310,6 +365,24 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
 void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
   if (planHandle != nullptr) {
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMinCaptureSegmentSize(minSize);
+  }
+}
+
+void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxSize) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMaxCaptureSegmentSize(maxSize);
+  }
+}
+
+void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setShapesFrozen(frozen);
+  }
+}
+
+void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setExecutionTimingEnabled(enabled);
   }
 }
 

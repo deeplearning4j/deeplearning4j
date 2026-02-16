@@ -180,6 +180,48 @@ public class DecoderUtils {
     }
 
     /**
+     * Create a KV cache tensor with a specific sequence length.
+     * Used for probe testing multi-token decode support.
+     */
+    public static INDArray createEmptyKvCache(SameDiff decoder, String inputName, long batchSize,
+                                              long hiddenSize, long seqLen) {
+        if (seqLen == 0) {
+            return createEmptyKvCache(decoder, inputName, batchSize, hiddenSize);
+        }
+
+        long numHeads = -1;
+        long headDim = -1;
+        DataType kvType = DataType.FLOAT;
+
+        SDVariable inputVar = decoder.getVariable(inputName);
+        if (inputVar != null && inputVar.getShape() != null && inputVar.getShape().length >= 4) {
+            long[] shape = inputVar.getShape();
+            if (inputVar.dataType() != null) {
+                kvType = inputVar.dataType();
+            }
+            if (shape[1] > 0) numHeads = shape[1];
+            if (shape[3] > 0) headDim = shape[3];
+        }
+
+        if (numHeads <= 0 || headDim <= 0) {
+            String presentName = inputName.replace("past_key_values", "present");
+            SDVariable presentVar = decoder.getVariable(presentName);
+            if (presentVar != null && presentVar.getShape() != null && presentVar.getShape().length >= 4) {
+                long[] shape = presentVar.getShape();
+                if (numHeads <= 0 && shape[1] > 0) numHeads = shape[1];
+                if (headDim <= 0 && shape[3] > 0) headDim = shape[3];
+            }
+        }
+
+        if (headDim <= 0 && numHeads > 0 && hiddenSize > 0) headDim = Math.max(1, hiddenSize / numHeads);
+        if (numHeads <= 0 && headDim > 0 && hiddenSize > 0) numHeads = Math.max(1, hiddenSize / headDim);
+        if (headDim <= 0) headDim = 64;
+        if (numHeads <= 0) numHeads = Math.max(1, hiddenSize / headDim);
+
+        return Nd4j.zeros(kvType, batchSize, numHeads, seqLen, headDim);
+    }
+
+    /**
      * Find the logits output variable name from a decoder model.
      *
      * @param decoder the SameDiff decoder model

@@ -103,6 +103,11 @@ struct NativeSlot {
   std::vector<const LongType*> cachedOutputShapes;   // Cached shape infos (not owned)
   bool shapeCacheValid;
 
+  // Shape static analysis: true if output shape never changes between executions.
+  // Determined at plan construction time by analyzing input dependencies.
+  // Shape-static slots have their caches preserved across clearShapeCaches() calls.
+  bool shapeStatic;
+
   NativeSlot()
       : opHash(0), op(nullptr), numInputs(0), inputSourceIndices(nullptr),
         inputSourceTypes(nullptr), numOutputs(0), outputSlotIndices(nullptr),
@@ -112,7 +117,7 @@ struct NativeSlot {
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
         isCustomOp(true), targetDeviceId(-1),
         legacyOpType(0), legacyOpNum(-1),
-        cachedShapeKey(0), shapeCacheValid(false) {}
+        cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false) {}
 
   ~NativeSlot() {
     delete[] inputSourceIndices;
@@ -181,6 +186,19 @@ struct GraphSegment {
 };
 
 /**
+ * Describes a single KV cache output→input mapping for native KV cache retention.
+ * After execute(), the new KV entry at the last position of the present output
+ * is scattered to the specified position in the static past input buffer.
+ */
+struct KvCacheMapping {
+  int presentOutputSlotIdx;   // Index into requestedOutputSlotIndices_ for the present KV
+  int pastInputExternalIdx;   // Index into external inputs for the past KV buffer
+  int seqDim;                 // Which dimension is the sequence dim (typically 2)
+
+  KvCacheMapping() : presentOutputSlotIdx(-1), pastInputExternalIdx(-1), seqDim(2) {}
+};
+
+/**
  * Native C++ plan executor that replaces the Java DynamicShapePlanExecutor.
  *
  * Executes the entire pre-compiled plan in C++ with a single JNI call,
@@ -243,10 +261,41 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       void* stream);
 
   /**
-   * Clear all per-slot shape caches.
-   * Must be called when session resets to avoid stale GPU memory references.
+   * Clear per-slot shape caches for shape-dynamic slots only.
+   * Shape-static slots (those with no transitive dependency on placeholders)
+   * retain their caches, avoiding redundant shape inference on every step.
+   * Must be called when placeholder shapes change between executions.
    */
   void clearShapeCaches();
+
+  /**
+   * Force-clear ALL shape caches unconditionally (including static slots).
+   * Use for session reset or model reload scenarios.
+   */
+  void clearAllShapeCachesForce();
+
+  /**
+   * Configure KV cache retention. After this, execute() will scatter new KV entries
+   * from present output slots into static past input buffers, avoiding 60 copyBuffer
+   * round-trips per decode step.
+   *
+   * @param mappings       Flat array of (presentSlotIdx, pastExtIdx, seqDim) triples
+   * @param numMappings    Number of KV cache mappings (e.g. 60 for 30-layer model)
+   * @param maxKvLen       Maximum KV cache length (static buffer size along seqDim)
+   * @param initialPos     Initial write position (prefillLen)
+   */
+  void configureKvCacheRetention(const int* mappings, int numMappings, int maxKvLen, int initialPos);
+
+  /**
+   * Advance the KV cache write position by 1.
+   * @return the new position value
+   */
+  int advanceKvCachePosition();
+
+  /**
+   * Reset the KV cache write position.
+   */
+  void resetKvCachePosition(int newPos);
 
   /**
    * Get the number of external inputs expected by this plan.
@@ -297,6 +346,49 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   void setMinCaptureSegmentSize(int minSize) { minCaptureSegmentSize_ = (minSize > 0) ? minSize : 1; }
   int getMinCaptureSegmentSize() const { return minCaptureSegmentSize_; }
+
+  /**
+   * Set maximum segment size for CUDA graph capture. Large capturable segments
+   * are split into sub-segments of at most this size. During graph capture,
+   * cudaFreeAsync calls are recorded but NOT executed, so all intermediate
+   * allocations accumulate — limiting segment size prevents OOM.
+   * Default: 300. Set to 0 for unlimited (not recommended for large models).
+   */
+  void setMaxCaptureSegmentSize(int maxSize) {
+    int newVal = (maxSize > 0) ? maxSize : 0;
+    if (newVal != maxCaptureSegmentSize_) {
+      maxCaptureSegmentSize_ = newVal;
+      segments_.clear();
+      buildSegments();  // Rebuild with new max size
+    }
+  }
+  int getMaxCaptureSegmentSize() const { return maxCaptureSegmentSize_; }
+
+  /**
+   * Enable/disable "shapes frozen" mode. When enabled:
+   * - clearShapeCaches() becomes a no-op (shapes are known constant)
+   * - Shape key computation is skipped for slots with valid cached shapes
+   * - nullify() is skipped for slots with needsZeroedOutput=false
+   *
+   * Use this during static KV decode where all external input shapes
+   * are guaranteed to be constant across decode steps.
+   * The first execution after enabling will still do full shape inference
+   * to populate the cache; subsequent executions skip shape work entirely.
+   */
+  void setShapesFrozen(bool frozen) {
+    shapesFrozen_ = frozen;
+    // Don't reset executeCount_ — if called after executions have already
+    // populated the shape cache, we want to immediately skip shape
+    // computation on the next execution.
+  }
+  bool isShapesFrozen() const { return shapesFrozen_; }
+
+  /**
+   * Enable/disable per-execution timing breakdown logging.
+   * When enabled, prints phase-level timing after each execute() call.
+   */
+  void setExecutionTimingEnabled(bool enabled) { executionTimingEnabled_ = enabled; }
+  bool isExecutionTimingEnabled() const { return executionTimingEnabled_; }
 
   /**
    * Get the capture audit for the most recent CUDA graph capture.
@@ -386,6 +478,16 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool cudaGraphsEnabled_;
   int totalGraphReplays_;
   int minCaptureSegmentSize_;  // minimum # of slots to attempt CUDA graph capture (default 10)
+  int maxCaptureSegmentSize_;  // maximum # of slots per graph capture segment (default 300)
+
+  // Shapes-frozen optimization: when enabled, skip shape cache clearing,
+  // shape key computation, and unnecessary output zeroing between executions.
+  // Use when all external input shapes are guaranteed constant (e.g., static KV decode).
+  bool shapesFrozen_;
+  int executeCount_;  // Tracks executions since shapes were frozen
+
+  // Per-execution timing breakdown (enabled by setExecutionTimingEnabled)
+  bool executionTimingEnabled_;
 
 #ifdef SD_CUDA
   // Capture audit: per-op CUDA node contribution tracking
@@ -399,7 +501,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // (for ops not registered in OpRegistrator)
   std::vector<sd::ops::DeclarableOp*> ownedLegacyOps_;
 
+  // ── KV cache retention ──────────────────────────────────────────────
+  // When configured, present KV outputs are not returned to Java.
+  // Instead, C++ extracts the new KV entry and scatters it into the
+  // static input buffer, avoiding 60 copyBuffer round-trips per step.
+  bool kvCacheRetentionEnabled_;
+  int kvCachePosition_;           // Current write position in static buffers
+  int kvCacheMaxLen_;             // Maximum length of static KV buffers (dim along seqDim)
+  int kvCacheNumMappings_;
+  KvCacheMapping* kvCacheMappings_;  // Array of output→input mappings (owned)
+
   // Internal methods
+  void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
   LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
   LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);

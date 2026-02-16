@@ -31,6 +31,7 @@
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <unordered_set>
 #include <system/Environment.h>
@@ -72,7 +73,8 @@ NativeSlot::NativeSlot(NativeSlot&& other) noexcept
       legacyOpNum(other.legacyOpNum),
       cachedShapeKey(other.cachedShapeKey),
       cachedOutputShapes(std::move(other.cachedOutputShapes)),
-      shapeCacheValid(other.shapeCacheValid) {
+      shapeCacheValid(other.shapeCacheValid),
+      shapeStatic(other.shapeStatic) {
   other.inputSourceIndices = nullptr;
   other.inputSourceTypes = nullptr;
   other.outputSlotIndices = nullptr;
@@ -115,6 +117,7 @@ NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
     cachedShapeKey = other.cachedShapeKey;
     cachedOutputShapes = std::move(other.cachedOutputShapes);
     shapeCacheValid = other.shapeCacheValid;
+    shapeStatic = other.shapeStatic;
 
     other.inputSourceIndices = nullptr;
     other.inputSourceTypes = nullptr;
@@ -136,9 +139,12 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotArrayCache_(nullptr), slotIsViewProducer_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false),
       pendingCloseBytes_(0), cudaGraphsEnabled_(false), totalGraphReplays_(0),
-      minCaptureSegmentSize_(10),
+      minCaptureSegmentSize_(10), maxCaptureSegmentSize_(50),
+      shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
-      gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false) {}
+      gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
+      kvCacheRetentionEnabled_(false), kvCachePosition_(0), kvCacheMaxLen_(0),
+      kvCacheNumMappings_(0), kvCacheMappings_(nullptr) {}
 
 NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Free slots
@@ -190,6 +196,9 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   for (auto* legacyOp : ownedLegacyOps_) {
     delete legacyOp;
   }
+
+  // Free KV cache mappings
+  delete[] kvCacheMappings_;
 }
 
 // ─── Deserialization from binary plan ─────────────────────────────────────────
@@ -417,6 +426,64 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     plan->contextPool_[i] = new Context(1);
   }
 
+  // ── Shape static analysis: classify each slot as shape-static or shape-dynamic ──
+  // A slot is shape-dynamic if it transitively depends on any placeholder input
+  // or is data-dependent. Everything else is shape-static (constants/variables
+  // never change shape between executions).
+  // Slots are in topological order, so predecessors are already classified.
+  {
+    // Build reverse mapping: outputSlotIndex -> stepIndex (which slot produced it)
+    std::vector<int> outputSlotToStepIndex(plan->totalOutputSlots_, -1);
+    for (int s = 0; s < plan->numSlots_; s++) {
+      NativeSlot& slot = plan->slots_[s];
+      for (int i = 0; i < slot.numOutputs; i++) {
+        int si = slot.outputSlotIndices[i];
+        if (si >= 0 && si < plan->totalOutputSlots_) {
+          outputSlotToStepIndex[si] = s;
+        }
+      }
+    }
+
+    int staticCount = 0, dynamicCount = 0;
+    for (int s = 0; s < plan->numSlots_; s++) {
+      NativeSlot& slot = plan->slots_[s];
+      slot.shapeStatic = true;  // assume static
+
+      // Data-dependent ops always dynamic (output shape depends on runtime values)
+      if (slot.isDataDependent || slot.outputShapeDependsOnInputValues) {
+        slot.shapeStatic = false;
+        dynamicCount++;
+        continue;
+      }
+
+      for (int i = 0; i < slot.numInputs; i++) {
+        int srcIdx = slot.inputSourceIndices[i];
+        if (srcIdx < 0) {
+          // External input: placeholders are dynamic, constants/variables are static
+          if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
+            slot.shapeStatic = false;
+            break;
+          }
+        } else {
+          // From prior slot output — check if producer is dynamic
+          if (srcIdx < plan->totalOutputSlots_) {
+            int producerStep = outputSlotToStepIndex[srcIdx];
+            if (producerStep >= 0 && !plan->slots_[producerStep].shapeStatic) {
+              slot.shapeStatic = false;
+              break;
+            }
+          }
+        }
+      }
+
+      if (slot.shapeStatic) staticCount++;
+      else dynamicCount++;
+    }
+
+    sd_printf("NativeDynamicShapePlan: shape analysis: %d static, %d dynamic out of %d slots\n",
+              staticCount, dynamicCount, plan->numSlots_);
+  }
+
   // Build graph segments for CUDA Graphs
   plan->buildSegments();
 
@@ -542,27 +609,19 @@ Status NativeDynamicShapePlan::execute(
       if (status != Status::OK) return status;
     }
 
-    // Detect sticky CUDA errors (e.g., error 700 from illegal memory access in
-    // async kernels) after each segment. Sync the execution stream and check
-    // the stream sync return value (not just cudaGetLastError, which misses
-    // errors that haven't been "surfaced" yet).
-    // NOTE: cudaStreamSynchronize(0) is valid — syncs the default stream.
-    // Always sync when a stream parameter was provided, even if the cudaStream_t
-    // value is 0 (the default stream), since the `stream` parameter being non-null
-    // means the caller provided one.
+    // Check for sticky CUDA errors via cudaGetLastError (non-blocking).
+    // Avoid per-segment cudaStreamSynchronize — with many segments (e.g., 89),
+    // 89 syncs add ~240ms of overhead. Errors are caught at execute() exit.
     {
-      cudaError_t syncErr = cudaSuccess;
-      if (stream != nullptr) {
-        cudaStream_t checkStream = *static_cast<cudaStream_t*>(stream);
-        syncErr = cudaStreamSynchronize(checkStream);
-      }
       auto lastErr = cudaGetLastError();
-      // Take whichever error was detected first
-      cudaError_t cudaErr = (syncErr != cudaSuccess) ? syncErr : lastErr;
-      if (cudaErr != cudaSuccess) {
-        sd_printf("NativeDynamicShapePlan: CUDA error after segment [%d-%d]: %d (%s)\n",
-                  segment.startSlot, segment.endSlot,
-                  static_cast<int>(cudaErr), cudaGetErrorString(cudaErr));
+      if (lastErr != cudaSuccess) {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "CUDA error after segment [%d-%d]: %d (%s)",
+                 segment.startSlot, segment.endSlot,
+                 static_cast<int>(lastErr), cudaGetErrorString(lastErr));
+        sd_printf("NativeDynamicShapePlan: %s\n", buf);
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(lastErr));
+        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
         return Status::KERNEL_FAILURE;
       }
     }
@@ -606,8 +665,16 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
+  // Step 3.5: KV cache retention — scatter new entries into static input buffers
+  if (kvCacheRetentionEnabled_) {
+    scatterKvEntries(externalInputs, numExternalInputs, stream);
+  }
+
   // Step 4: Final flush
   flushPendingClose(stream);
+
+  // Track execution count for shapes-frozen optimization
+  if (shapesFrozen_) executeCount_++;
 
   return Status::OK;
 }
@@ -621,17 +688,29 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     try {
       status = executeSlot(stepIdx, externalArrays, numExt, stream);
     } catch (const std::exception& e) {
-      sd_printf("NativeDynamicShapePlan: slot %d (%s) threw exception: %s\n",
-                stepIdx, slots_[stepIdx].opName.c_str(), e.what());
+      char buf[512];
+      snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
+               stepIdx, slots_[stepIdx].opName.c_str(), e.what());
+      sd_printf("NativeDynamicShapePlan: %s\n", buf);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
       status = Status::KERNEL_FAILURE;
     } catch (...) {
-      sd_printf("NativeDynamicShapePlan: slot %d (%s) threw unknown exception\n",
-                stepIdx, slots_[stepIdx].opName.c_str());
+      char buf[512];
+      snprintf(buf, sizeof(buf), "slot %d (%s) threw unknown exception",
+               stepIdx, slots_[stepIdx].opName.c_str());
+      sd_printf("NativeDynamicShapePlan: %s\n", buf);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
       status = Status::KERNEL_FAILURE;
     }
     if (status != Status::OK) {
-      sd_printf("NativeDynamicShapePlan: slot %d (%s) failed with status %d\n",
-                stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
+      char buf[512];
+      snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
+               stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
+      sd_printf("NativeDynamicShapePlan: %s\n", buf);
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(status));
+      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
 
       // Clear CUDA error queue so non-sticky errors don't cascade to caller.
       // Sticky errors (e.g., error 700) persist regardless, but clearing here
@@ -793,13 +872,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     size_t gpuFree = 0, gpuTotal = 0;
     cudaMemGetInfo(&gpuFree, &gpuTotal);
 
-    // Require 2x the estimated capture memory as safety margin (cuDNN workspaces,
-    // broadcast temporaries, and other allocations not tracked in the slot cache)
-    size_t requiredFree = estimatedCaptureBytes * 2;
+    // During graph capture, cudaFreeAsync is recorded but NOT executed. All intermediates
+    // accumulate. The slot cache only tracks output tensors, not workspace/temporary
+    // allocations inside ops (cuBLAS workspace, broadcast temps, GQA expand buffers).
+    // Use 4x safety factor to account for these hidden allocations.
+    size_t requiredFree = estimatedCaptureBytes * 4;
     if (requiredFree > gpuFree) {
-      sd_printf("NativeDynamicShapePlan: skipping graph capture for segment [%d-%d]: "
-                "estimated capture memory %zu MB > free GPU memory %zu MB (total %zu MB)\n",
-                seg.startSlot, seg.endSlot,
+      sd_printf("NativeDynamicShapePlan: skipping graph capture for segment [%d-%d] (%d ops): "
+                "estimated %zu MB (4x %zu MB) > free %zu MB (total %zu MB)\n",
+                seg.startSlot, seg.endSlot, segSize,
+                requiredFree / (1024 * 1024),
                 estimatedCaptureBytes / (1024 * 1024),
                 gpuFree / (1024 * 1024),
                 gpuTotal / (1024 * 1024));
@@ -1016,7 +1098,9 @@ Status NativeDynamicShapePlan::executeSlot(
   NativeSlot& slot = slots_[stepIdx];
 
   // ── Step 1: Gather inputs ────────────────────────────────────────────────
-  std::vector<NDArray*> inputs(slot.numInputs);
+  // Use thread-local vector to avoid 4441 heap allocations per execute() call
+  static thread_local std::vector<NDArray*> inputs;
+  inputs.resize(slot.numInputs);
   for (int i = 0; i < slot.numInputs; i++) {
     int srcIdx = slot.inputSourceIndices[i];
     if (srcIdx >= 0) {
@@ -1040,8 +1124,16 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Step 2: Shape inference ──────────────────────────────────────────────
-  LongType shapeKey = computeShapeKey(slot, inputs.data(), slot.numInputs);
-  bool cacheHit = slot.shapeCacheValid && (slot.cachedShapeKey == shapeKey);
+  // When shapes are frozen and this slot's cache is populated from a prior execution,
+  // skip shape key computation entirely. This saves ~5-10μs per slot × 4441 slots = ~22-44ms.
+  LongType shapeKey = 0;
+  bool cacheHit;
+  if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid) {
+    cacheHit = true;  // Trust cached shapes — frozen mode guarantees no shape changes
+  } else {
+    shapeKey = computeShapeKey(slot, inputs.data(), slot.numInputs);
+    cacheHit = slot.shapeCacheValid && (slot.cachedShapeKey == shapeKey);
+  }
 
   std::vector<const LongType*> outputShapes;
   if (cacheHit) {
@@ -1110,7 +1202,8 @@ Status NativeDynamicShapePlan::executeSlot(
 
   // ── Step 3: Allocate/reuse outputs ───────────────────────────────────────
   int numActualOutputs = std::min(slot.numOutputs, static_cast<int>(outputShapes.size()));
-  std::vector<NDArray*> outputs(numActualOutputs);
+  static thread_local std::vector<NDArray*> outputs;
+  outputs.resize(numActualOutputs);
 
   for (int i = 0; i < numActualOutputs; i++) {
     int slotIdx = slot.outputSlotIndices[i];
@@ -1132,7 +1225,11 @@ Status NativeDynamicShapePlan::executeSlot(
       if (shape::equalsSoft(cachedShape, shapeInfo) &&
           ArrayOptions::dataType(cachedShape) == dt) {
         // Shape matches — reuse cached buffer.
-        cached->nullify();
+        // When shapes are frozen, skip nullify for ops that fully write their output
+        // (needsZeroedOutput=false). This avoids ~4441 cudaMemsetAsync calls per step.
+        if (slot.needsZeroedOutput || !shapesFrozen_) {
+          cached->nullify();
+        }
         outputs[i] = cached;
         outputSlots_[slotIdx] = cached;
         continue;
@@ -1428,10 +1525,116 @@ void NativeDynamicShapePlan::flushPendingClose(void* stream) {
 }
 
 void NativeDynamicShapePlan::clearShapeCaches() {
+  // When shapes are frozen, skip clearing entirely after first execution.
+  // All cached shapes remain valid since external input shapes are constant.
+  if (shapesFrozen_ && executeCount_ > 0) return;
+
+  for (int i = 0; i < numSlots_; i++) {
+    if (!slots_[i].shapeStatic) {
+      slots_[i].cachedShapeKey = 0;
+      slots_[i].cachedOutputShapes.clear();
+      slots_[i].shapeCacheValid = false;
+    }
+  }
+}
+
+void NativeDynamicShapePlan::clearAllShapeCachesForce() {
   for (int i = 0; i < numSlots_; i++) {
     slots_[i].cachedShapeKey = 0;
     slots_[i].cachedOutputShapes.clear();
     slots_[i].shapeCacheValid = false;
+  }
+}
+
+// ─── KV cache retention ──────────────────────────────────────────────────────
+
+void NativeDynamicShapePlan::configureKvCacheRetention(
+    const int* mappings, int numMappings, int maxKvLen, int initialPos) {
+  // Free existing mappings
+  delete[] kvCacheMappings_;
+
+  kvCacheNumMappings_ = numMappings;
+  kvCacheMaxLen_ = maxKvLen;
+  kvCachePosition_ = initialPos;
+
+  if (numMappings > 0 && mappings != nullptr) {
+    kvCacheMappings_ = new KvCacheMapping[numMappings];
+    for (int i = 0; i < numMappings; i++) {
+      kvCacheMappings_[i].presentOutputSlotIdx = mappings[i * 3];
+      kvCacheMappings_[i].pastInputExternalIdx = mappings[i * 3 + 1];
+      kvCacheMappings_[i].seqDim = mappings[i * 3 + 2];
+    }
+    kvCacheRetentionEnabled_ = true;
+    sd_printf("NativeDynamicShapePlan: KV cache retention configured: %d mappings, maxLen=%d, initialPos=%d\n",
+              numMappings, maxKvLen, initialPos);
+  } else {
+    kvCacheMappings_ = nullptr;
+    kvCacheRetentionEnabled_ = false;
+  }
+}
+
+int NativeDynamicShapePlan::advanceKvCachePosition() {
+  return ++kvCachePosition_;
+}
+
+void NativeDynamicShapePlan::resetKvCachePosition(int newPos) {
+  kvCachePosition_ = newPos;
+}
+
+void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numExt, void* stream) {
+  if (!kvCacheRetentionEnabled_ || kvCacheNumMappings_ == 0) return;
+
+  for (int m = 0; m < kvCacheNumMappings_; m++) {
+    KvCacheMapping& mapping = kvCacheMappings_[m];
+
+    // Get the present KV output from the requested output slot mapping
+    if (mapping.presentOutputSlotIdx < 0 || mapping.presentOutputSlotIdx >= numRequestedOutputs_)
+      continue;
+    int presentSlotIdx = requestedOutputSlotIndices_[mapping.presentOutputSlotIdx];
+    if (presentSlotIdx < 0 || presentSlotIdx >= totalOutputSlots_) continue;
+    NDArray* presentKv = outputSlots_[presentSlotIdx];
+    if (presentKv == nullptr) continue;
+
+    // Get the static past KV input buffer
+    int extIdx = mapping.pastInputExternalIdx;
+    if (extIdx < 0 || extIdx >= numExt) continue;
+    NDArray* staticBuf = externalInputs[extIdx];
+    if (staticBuf == nullptr) continue;
+
+    int seqDim = mapping.seqDim;
+    int rank = presentKv->rankOf();
+    if (seqDim < 0 || seqDim >= rank) continue;
+
+    // presentKv shape: [B, H, maxKvLen+1, D] — new entry is at the last position
+    LongType lastPos = presentKv->sizeAt(seqDim) - 1;
+
+    // Build subarray indices using operator() convention:
+    // {dim0Start, dim0End, dim1Start, dim1End, ...}
+    // When dimStart == dimEnd, it means the whole range for that dimension.
+    // For a point index, use {pos, pos+1} (half-open interval).
+    std::vector<LongType> srcIdx(rank * 2);
+    std::vector<LongType> dstIdx(rank * 2);
+    for (int d = 0; d < rank; d++) {
+      if (d == seqDim) {
+        srcIdx[d * 2] = lastPos;
+        srcIdx[d * 2 + 1] = lastPos + 1;
+        dstIdx[d * 2] = kvCachePosition_;
+        dstIdx[d * 2 + 1] = kvCachePosition_ + 1;
+      } else {
+        // Whole range: dimStart == dimEnd signals "all"
+        srcIdx[d * 2] = 0;
+        srcIdx[d * 2 + 1] = 0;
+        dstIdx[d * 2] = 0;
+        dstIdx[d * 2 + 1] = 0;
+      }
+    }
+
+    // operator() returns a view (no copy); assign() does a single cudaMemcpyAsync
+    NDArray* srcSlice = (*presentKv)(srcIdx, true);  // keepUnities=true for shape compat
+    NDArray* dstSlice = (*staticBuf)(dstIdx, true);
+    dstSlice->assign(srcSlice);
+    delete srcSlice;
+    delete dstSlice;
   }
 }
 
@@ -1449,11 +1652,17 @@ void NativeDynamicShapePlan::buildSegments() {
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
 
     // Break segment when data-dependency status changes OR device changes.
-    // Each new segment's capturability depends only on whether the first op
-    // in the segment is data-dependent — device boundaries start fresh segments
-    // that are capturable if their ops are not data-dependent.
     bool capturabilityChanged = (thisDataDependent == current.isCapturable);
-    if (capturabilityChanged || deviceChange) {
+
+    // Also break capturable segments that exceed maxCaptureSegmentSize_.
+    // During CUDA graph capture, cudaFreeAsync calls are recorded but NOT
+    // executed — all intermediate allocations accumulate simultaneously.
+    // Splitting into smaller segments limits peak capture memory.
+    int segSize = i - current.startSlot;
+    bool sizeExceeded = (maxCaptureSegmentSize_ > 0 && current.isCapturable &&
+                         segSize >= maxCaptureSegmentSize_);
+
+    if (capturabilityChanged || deviceChange || sizeExceeded) {
       // End current segment
       current.endSlot = i - 1;
       segments_.push_back(current);
@@ -1468,6 +1677,17 @@ void NativeDynamicShapePlan::buildSegments() {
   // Finalize last segment
   current.endSlot = numSlots_ - 1;
   segments_.push_back(current);
+
+  // Log segment structure
+  int capturableCount = 0, totalCapturable = 0;
+  for (auto& seg : segments_) {
+    if (seg.isCapturable) {
+      capturableCount++;
+      totalCapturable += (seg.endSlot - seg.startSlot + 1);
+    }
+  }
+  sd_printf("NativeDynamicShapePlan: %d segments (%d capturable covering %d/%d slots, max segment size %d)\n",
+            (int)segments_.size(), capturableCount, totalCapturable, numSlots_, maxCaptureSegmentSize_);
 }
 
 // ─── CPU Graph backend integration ──────────────────────────────────────────

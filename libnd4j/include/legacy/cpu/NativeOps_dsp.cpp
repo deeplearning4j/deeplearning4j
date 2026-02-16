@@ -156,6 +156,33 @@ void clearDynamicShapePlanCaches(sd::Pointer planHandle) {
   }
 }
 
+void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle) {
+  if (planHandle != nullptr) {
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    plan->clearAllShapeCachesForce();
+  }
+}
+
+void configurePlanKvCacheRetention(
+    sd::Pointer planHandle, const int* mappings,
+    int numMappings, int maxKvLen, int initialPos) {
+  if (planHandle == nullptr || mappings == nullptr || numMappings <= 0) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->configureKvCacheRetention(mappings, numMappings, maxKvLen, initialPos);
+}
+
+int advancePlanKvCachePosition(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  return plan->advanceKvCachePosition();
+}
+
+void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->resetKvCachePosition(newPos);
+}
+
 // ─── Model loading ───────────────────────────────────────────────────────────
 
 sd::Pointer loadModelFromFile(const char* filePath) {
@@ -267,6 +294,24 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
 void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
   if (planHandle != nullptr) {
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMinCaptureSegmentSize(minSize);
+  }
+}
+
+void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxSize) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMaxCaptureSegmentSize(maxSize);
+  }
+}
+
+void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setShapesFrozen(frozen);
+  }
+}
+
+void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setExecutionTimingEnabled(enabled);
   }
 }
 

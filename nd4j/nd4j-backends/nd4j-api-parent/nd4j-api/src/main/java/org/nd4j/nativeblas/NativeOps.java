@@ -1420,6 +1420,45 @@ public interface NativeOps {
  }
 
  /**
+  * Force-clear ALL shape caches unconditionally (including static slots).
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void clearAllDynamicShapePlanCachesForce(Pointer planHandle) {
+     throw new UnsupportedOperationException("clearAllDynamicShapePlanCachesForce not implemented in this backend");
+ }
+
+ /**
+  * Configure KV cache retention for a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param mappings flat int array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
+  * @param numMappings number of mappings
+  * @param maxKvLen maximum KV cache length
+  * @param initialPos initial write position (prefillLen)
+  */
+ default void configurePlanKvCacheRetention(Pointer planHandle, IntPointer mappings,
+                                            int numMappings, int maxKvLen, int initialPos) {
+     throw new UnsupportedOperationException("configurePlanKvCacheRetention not implemented in this backend");
+ }
+
+ /**
+  * Advance KV cache write position by 1.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return new position
+  */
+ default int advancePlanKvCachePosition(Pointer planHandle) {
+     throw new UnsupportedOperationException("advancePlanKvCachePosition not implemented in this backend");
+ }
+
+ /**
+  * Reset KV cache write position.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param newPos new position
+  */
+ default void resetPlanKvCachePosition(Pointer planHandle, int newPos) {
+     throw new UnsupportedOperationException("resetPlanKvCachePosition not implemented in this backend");
+ }
+
+ /**
   * Load a model from an SDZ or SDNB file entirely in C++.
   * @param filePath path to the .sdz or .sdnb file
   * @return opaque handle to the loaded model, or null on failure
@@ -1491,6 +1530,35 @@ public interface NativeOps {
   */
  default void setPlanMinCaptureSegmentSize(Pointer planHandle, int minSize) {
      // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
+  * Set maximum segment size for CUDA graph capture to prevent OOM during capture.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param maxSize maximum slots per capture segment (0 for unlimited)
+  */
+ default void setPlanMaxCaptureSegmentSize(Pointer planHandle, int maxSize) {
+     // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
+  * Enable/disable "shapes frozen" mode for a compiled plan.
+  * When frozen, shape inference and cache clearing are skipped between executions.
+  * Use during static KV decode where external input shapes are guaranteed constant.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param frozen true to enable, false to disable
+  */
+ default void setPlanShapesFrozen(Pointer planHandle, boolean frozen) {
+     // No-op by default
+ }
+
+ /**
+  * Enable/disable execution timing breakdown logging for a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param enabled true to enable timing, false to disable
+  */
+ default void setPlanExecutionTimingEnabled(Pointer planHandle, boolean enabled) {
+     // No-op by default
  }
 
  /**

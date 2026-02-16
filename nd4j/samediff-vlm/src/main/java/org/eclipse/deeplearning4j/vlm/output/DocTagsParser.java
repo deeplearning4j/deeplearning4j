@@ -36,33 +36,56 @@ import java.util.regex.Pattern;
  * their bounding boxes and content. The format uses XML-like tags with
  * embedded location tokens.
  *
- * <p>DocTags format example:</p>
+ * <p>SmolDocling DocTags format example:</p>
  * <pre>
- * &lt;page_header&gt;&lt;loc_123&gt;&lt;loc_456&gt;&lt;loc_789&gt;&lt;loc_012&gt;Header Text&lt;/page_header&gt;
- * &lt;text&gt;&lt;loc_100&gt;&lt;loc_200&gt;&lt;loc_300&gt;&lt;loc_400&gt;Paragraph content...&lt;/text&gt;
- * &lt;table&gt;&lt;loc_500&gt;&lt;loc_600&gt;&lt;loc_700&gt;&lt;loc_800&gt;
- *   &lt;tr&gt;&lt;td&gt;Cell 1&lt;/td&gt;&lt;td&gt;Cell 2&lt;/td&gt;&lt;/tr&gt;
- * &lt;/table&gt;
+ * &lt;doctag&gt;&lt;page_header&gt;&lt;loc_127&gt;&lt;loc_27&gt;&lt;loc_419&gt;&lt;loc_34&gt;Header Text&lt;/page_header&gt;
+ * &lt;paragraph&gt;&lt;loc_57&gt;&lt;loc_46&gt;&lt;loc_457&gt;&lt;loc_71&gt;Paragraph content...&lt;/paragraph&gt;
+ * &lt;otsl&gt;&lt;loc_57&gt;&lt;loc_100&gt;&lt;loc_460&gt;&lt;loc_280&gt;&lt;ched&gt;&lt;fcel&gt;Col1&lt;fcel&gt;Col2&lt;nl&gt;
+ * &lt;fcel&gt;A&lt;fcel&gt;B&lt;nl&gt;&lt;/otsl&gt;&lt;/doctag&gt;
  * </pre>
+ *
+ * <p>Supported element types: paragraph, page_header, page_footer, section_header_level_N,
+ * caption, footnote, formula, picture, code, chart, otsl (tables), ordered_list,
+ * unordered_list, list_item, reference, form, group, key_value_region.</p>
+ *
+ * <p>Table cells use OTSL (Optimized Table Structure Language) tokens:
+ * fcel (full cell), ecel (empty cell), lcel (left-span), ucel (up-span),
+ * xcel (cross-span), ched (column header), rhed (row header), nl (newline/row separator).</p>
  *
  * @author Eclipse Deeplearning4j Contributors
  */
 @Slf4j
 public class DocTagsParser {
 
-    // Pattern to match DocTags elements
+    // Pattern to match SmolDocling elements: handles tag names with underscores, digits, and
+    // nested content that may contain other tags (like location tokens or OTSL cell tokens).
+    // Captures: (1) tag name, then within the body: optional 4 loc tokens, then remaining content.
     private static final Pattern ELEMENT_PATTERN = Pattern.compile(
-            "<(\\w+)>(?:<loc_(\\d+)><loc_(\\d+)><loc_(\\d+)><loc_(\\d+)>)?([^<]*?)(?:<[^>]+>.*?)?</\\1>",
+            "<((?:section_header_level_\\d+|page_header|page_footer|paragraph|text|caption|footnote|" +
+                    "formula|picture|code|chart|otsl|ordered_list|unordered_list|list_item|reference|" +
+                    "form|group|key_value_region|title|table|checkbox_selected|checkbox_unselected|smiles))>" +
+                    "(.*?)" +
+                    "</\\1>",
             Pattern.DOTALL
     );
 
-    // Pattern to match location tokens
+    // Pattern to extract 4 location tokens at the start of element body
+    private static final Pattern LOC_PREFIX_PATTERN = Pattern.compile(
+            "^<loc_(\\d+)><loc_(\\d+)><loc_(\\d+)><loc_(\\d+)>"
+    );
+
+    // Pattern to match location tokens (for stripping from content)
     private static final Pattern LOC_PATTERN = Pattern.compile("<loc_(\\d+)>");
 
-    // Pattern to match table rows
-    private static final Pattern TR_PATTERN = Pattern.compile("<tr>(.*?)</tr>", Pattern.DOTALL);
+    // OTSL tokens for table parsing
+    private static final Pattern OTSL_ROW_PATTERN = Pattern.compile("<nl>");
+    private static final Pattern OTSL_CELL_PATTERN = Pattern.compile(
+            "<(fcel|ecel|lcel|ucel|xcel)>(.*?)(?=<(?:fcel|ecel|lcel|ucel|xcel|nl|ched|rhed|/))",
+            Pattern.DOTALL
+    );
 
-    // Pattern to match table cells
+    // Legacy HTML table patterns (for backward compatibility)
+    private static final Pattern TR_PATTERN = Pattern.compile("<tr>(.*?)</tr>", Pattern.DOTALL);
     private static final Pattern TD_PATTERN = Pattern.compile("<td>(.*?)</td>", Pattern.DOTALL);
 
     /**
@@ -74,31 +97,56 @@ public class DocTagsParser {
     public DocumentStructure parse(String docTagsOutput) {
         List<DocumentElement> elements = new ArrayList<>();
 
-        Matcher matcher = ELEMENT_PATTERN.matcher(docTagsOutput);
+        // Strip outer <doctag>...</doctag> wrapper if present
+        String body = docTagsOutput;
+        int doctStart = body.indexOf("<doctag>");
+        int doctEnd = body.lastIndexOf("</doctag>");
+        if (doctStart >= 0) {
+            body = body.substring(doctStart + "<doctag>".length(),
+                    doctEnd >= 0 ? doctEnd : body.length());
+        }
+
+        // Strip control tokens
+        body = body.replace("<end_of_utterance>", "")
+                .replace("<|im_end|>", "")
+                .replace("<|im_start|>", "");
+
+        Matcher matcher = ELEMENT_PATTERN.matcher(body);
         while (matcher.find()) {
             String tagType = matcher.group(1);
-            String content = matcher.group(6);
+            String innerContent = matcher.group(2);
 
-            // Extract bounding box if present
+            // Extract bounding box from loc tokens at start of content
             BoundingBox bbox = null;
-            if (matcher.group(2) != null) {
+            String textContent = innerContent;
+            Matcher locMatcher = LOC_PREFIX_PATTERN.matcher(innerContent);
+            if (locMatcher.find()) {
                 bbox = new BoundingBox(
-                        Integer.parseInt(matcher.group(2)),
-                        Integer.parseInt(matcher.group(3)),
-                        Integer.parseInt(matcher.group(4)),
-                        Integer.parseInt(matcher.group(5))
+                        Integer.parseInt(locMatcher.group(1)),
+                        Integer.parseInt(locMatcher.group(2)),
+                        Integer.parseInt(locMatcher.group(3)),
+                        Integer.parseInt(locMatcher.group(4))
                 );
+                textContent = innerContent.substring(locMatcher.end());
             }
+
+            // Strip any remaining loc tokens from content
+            textContent = LOC_PATTERN.matcher(textContent).replaceAll("");
 
             DocumentElement element = DocumentElement.builder()
                     .tagType(tagType)
-                    .content(content != null ? content.trim() : "")
+                    .content(textContent.trim())
                     .boundingBox(bbox)
                     .build();
 
-            // Parse nested content for tables
-            if ("table".equals(tagType)) {
-                element.setChildren(parseTableRows(matcher.group(0)));
+            // Parse OTSL table content
+            if ("otsl".equals(tagType) || "chart".equals(tagType)) {
+                element.setChildren(parseOtslRows(textContent));
+                element.setTagType("otsl");
+            }
+            // Legacy HTML table support
+            else if ("table".equals(tagType)) {
+                element.setChildren(parseTableRows(innerContent));
             }
 
             elements.add(element);
@@ -111,7 +159,49 @@ public class DocTagsParser {
     }
 
     /**
-     * Parse table rows from table content.
+     * Parse OTSL table rows from SmolDocling output.
+     * OTSL uses &lt;nl&gt; as row separator and &lt;fcel&gt;/&lt;ecel&gt;/etc as cell markers.
+     */
+    private List<DocumentElement> parseOtslRows(String otslContent) {
+        List<DocumentElement> rows = new ArrayList<>();
+
+        // Split on <nl> to get rows
+        String[] rowParts = OTSL_ROW_PATTERN.split(otslContent);
+        for (String rowPart : rowParts) {
+            if (rowPart.trim().isEmpty()) continue;
+
+            List<DocumentElement> cells = new ArrayList<>();
+            // Strip header markers for content extraction
+            String cleanedRow = rowPart.replace("<ched>", "").replace("<rhed>", "");
+
+            // Parse cells: <fcel>content, <ecel>, etc.
+            Matcher cellMatcher = Pattern.compile(
+                    "<(fcel|ecel|lcel|ucel|xcel)>([^<]*)",
+                    Pattern.DOTALL
+            ).matcher(cleanedRow);
+
+            while (cellMatcher.find()) {
+                String cellType = cellMatcher.group(1);
+                String cellContent = cellMatcher.group(2).trim();
+                cells.add(DocumentElement.builder()
+                        .tagType(cellType)
+                        .content(cellContent)
+                        .build());
+            }
+
+            if (!cells.isEmpty()) {
+                rows.add(DocumentElement.builder()
+                        .tagType("row")
+                        .children(cells)
+                        .build());
+            }
+        }
+
+        return rows;
+    }
+
+    /**
+     * Parse legacy HTML table rows from table content.
      */
     private List<DocumentElement> parseTableRows(String tableContent) {
         List<DocumentElement> rows = new ArrayList<>();
@@ -139,6 +229,36 @@ public class DocTagsParser {
     }
 
     /**
+     * Check if the raw DocTags output is structurally complete.
+     *
+     * @param rawOutput the raw model output
+     * @return true if output starts with &lt;doctag&gt; and ends with &lt;/doctag&gt;
+     */
+    public boolean isComplete(String rawOutput) {
+        if (rawOutput == null) return false;
+        String trimmed = rawOutput.trim()
+                .replace("<end_of_utterance>", "")
+                .replace("<|im_end|>", "")
+                .trim();
+        return trimmed.contains("<doctag>") && trimmed.contains("</doctag>");
+    }
+
+    /**
+     * Extract the plain text content from a raw DocTags string, stripping all tags.
+     *
+     * @param rawOutput the raw DocTags output
+     * @return plain text content
+     */
+    public String extractPlainText(String rawOutput) {
+        if (rawOutput == null) return "";
+        // Remove all tags
+        String text = rawOutput.replaceAll("<[^>]+>", " ");
+        // Collapse whitespace
+        text = text.replaceAll("\\s+", " ").trim();
+        return text;
+    }
+
+    /**
      * Convert parsed document to markdown.
      *
      * @param document the parsed document
@@ -148,10 +268,25 @@ public class DocTagsParser {
         StringBuilder sb = new StringBuilder();
 
         for (DocumentElement element : document.getElements()) {
-            switch (element.getTagType()) {
+            String tagType = element.getTagType();
+
+            // Handle section_header_level_N
+            if (tagType.startsWith("section_header_level_")) {
+                int level = 1;
+                try {
+                    level = Integer.parseInt(tagType.substring("section_header_level_".length()));
+                } catch (NumberFormatException ignored) {}
+                String prefix = "#".repeat(Math.min(level, 6));
+                sb.append(prefix).append(" ").append(element.getContent()).append("\n\n");
+                continue;
+            }
+
+            switch (tagType) {
                 case "page_header":
-                case "section_header":
                     sb.append("# ").append(element.getContent()).append("\n\n");
+                    break;
+                case "page_footer":
+                    sb.append("---\n").append(element.getContent()).append("\n\n");
                     break;
                 case "title":
                     sb.append("## ").append(element.getContent()).append("\n\n");
@@ -163,14 +298,24 @@ public class DocTagsParser {
                 case "list_item":
                     sb.append("- ").append(element.getContent()).append("\n");
                     break;
+                case "otsl":
                 case "table":
                     sb.append(tableToMarkdown(element)).append("\n\n");
                     break;
                 case "code":
                     sb.append("```\n").append(element.getContent()).append("\n```\n\n");
                     break;
+                case "formula":
+                    sb.append("$$").append(element.getContent()).append("$$\n\n");
+                    break;
                 case "caption":
                     sb.append("*").append(element.getContent()).append("*\n\n");
+                    break;
+                case "footnote":
+                    sb.append("[^]: ").append(element.getContent()).append("\n\n");
+                    break;
+                case "picture":
+                    sb.append("[Image]\n\n");
                     break;
                 default:
                     if (!element.getContent().isEmpty()) {
@@ -183,7 +328,7 @@ public class DocTagsParser {
     }
 
     /**
-     * Convert a table element to markdown.
+     * Convert a table element (OTSL or legacy HTML) to markdown.
      */
     private String tableToMarkdown(DocumentElement table) {
         if (table.getChildren() == null || table.getChildren().isEmpty()) {
@@ -197,7 +342,14 @@ public class DocTagsParser {
             if (row.getChildren() != null) {
                 sb.append("|");
                 for (DocumentElement cell : row.getChildren()) {
-                    sb.append(" ").append(cell.getContent()).append(" |");
+                    String cellType = cell.getTagType();
+                    String content = cell.getContent();
+                    // Empty/spanning cells
+                    if ("ecel".equals(cellType) || "lcel".equals(cellType) ||
+                            "ucel".equals(cellType) || "xcel".equals(cellType)) {
+                        content = content.isEmpty() ? " " : content;
+                    }
+                    sb.append(" ").append(content).append(" |");
                 }
                 sb.append("\n");
 

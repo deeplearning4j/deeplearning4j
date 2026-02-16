@@ -391,6 +391,56 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     plan->contextPool_[i] = new Context(1);
   }
 
+  // ── Shape static analysis (same as fromSerializedPlan) ──────────────────
+  {
+    std::vector<int> outputSlotToStepIndex(totalOutputSlots, -1);
+    for (int s = 0; s < numSteps; s++) {
+      NativeSlot& slot = plan->slots_[s];
+      for (int i = 0; i < slot.numOutputs; i++) {
+        int si = slot.outputSlotIndices[i];
+        if (si >= 0 && si < totalOutputSlots) {
+          outputSlotToStepIndex[si] = s;
+        }
+      }
+    }
+
+    int staticCount = 0, dynamicCount = 0;
+    for (int s = 0; s < numSteps; s++) {
+      NativeSlot& slot = plan->slots_[s];
+      slot.shapeStatic = true;
+
+      if (slot.isDataDependent || slot.outputShapeDependsOnInputValues) {
+        slot.shapeStatic = false;
+        dynamicCount++;
+        continue;
+      }
+
+      for (int i = 0; i < slot.numInputs; i++) {
+        int srcIdx = slot.inputSourceIndices[i];
+        if (srcIdx < 0) {
+          if (slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
+            slot.shapeStatic = false;
+            break;
+          }
+        } else {
+          if (srcIdx < totalOutputSlots) {
+            int producerStep = outputSlotToStepIndex[srcIdx];
+            if (producerStep >= 0 && !plan->slots_[producerStep].shapeStatic) {
+              slot.shapeStatic = false;
+              break;
+            }
+          }
+        }
+      }
+
+      if (slot.shapeStatic) staticCount++;
+      else dynamicCount++;
+    }
+
+    sd_printf("NativePlanCompiler: shape analysis: %d static, %d dynamic out of %d slots\n",
+              staticCount, dynamicCount, numSteps);
+  }
+
   // Build CUDA graph segments
   plan->buildSegments();
 

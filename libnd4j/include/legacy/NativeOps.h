@@ -1510,6 +1510,48 @@ SD_LIB_EXPORT void freeDynamicShapePlan(sd::Pointer planHandle);
 SD_LIB_EXPORT void clearDynamicShapePlanCaches(sd::Pointer planHandle);
 
 /**
+ * Force-clear ALL shape caches unconditionally (including static slots).
+ * Use for session reset or model reload scenarios.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
+
+/**
+ * Configure KV cache retention for a compiled plan.
+ * After this call, execute() will scatter new KV entries into static input buffers
+ * instead of returning them as outputs, avoiding per-step JNI round-trips.
+ *
+ * @param planHandle    Handle from compileDynamicShapePlan()
+ * @param mappings      Flat array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
+ * @param numMappings   Number of KV cache mappings
+ * @param maxKvLen      Maximum KV cache length (static buffer size along sequence dimension)
+ * @param initialPos    Initial write position (prefillLen)
+ */
+SD_LIB_EXPORT void configurePlanKvCacheRetention(
+    sd::Pointer planHandle,
+    const int* mappings,
+    int numMappings,
+    int maxKvLen,
+    int initialPos);
+
+/**
+ * Advance the KV cache write position by 1.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return the new position value
+ */
+SD_LIB_EXPORT int advancePlanKvCachePosition(sd::Pointer planHandle);
+
+/**
+ * Reset KV cache write position.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param newPos  New write position
+ */
+SD_LIB_EXPORT void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos);
+
+/**
  * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
  *
  * @param filePath  Path to the .sdz or .sdnb file
@@ -1579,6 +1621,34 @@ SD_LIB_EXPORT void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled
  * @param minSize  Minimum number of slots for capture (clamped to >=1)
  */
 SD_LIB_EXPORT void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize);
+
+/**
+ * Set maximum segment size for CUDA graph capture. Large capturable segments
+ * are split into sub-segments of at most this size to prevent OOM during capture.
+ * Default: 300.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param maxSize     Maximum slots per capture segment (0 for unlimited)
+ */
+SD_LIB_EXPORT void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxSize);
+
+/**
+ * Enable/disable "shapes frozen" mode for a compiled plan.
+ * When frozen, shape inference and cache clearing are skipped between executions.
+ * Use during static KV decode where external input shapes are guaranteed constant.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param frozen      true to enable, false to disable
+ */
+SD_LIB_EXPORT void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen);
+
+/**
+ * Enable/disable execution timing breakdown logging for a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable timing, false to disable
+ */
+SD_LIB_EXPORT void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled);
 
 /**
  * Get the number of graph segments in a compiled plan.

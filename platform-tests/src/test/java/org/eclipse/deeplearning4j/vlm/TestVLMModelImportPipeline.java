@@ -40,6 +40,7 @@ import org.nd4j.autodiff.samediff.ArrayHolder;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.ggml.GGMLModelImport;
@@ -3853,6 +3854,12 @@ public class TestVLMModelImportPipeline {
 
         NgramSpeculator speculator = new NgramSpeculator(3, 5);
         SpeculativeDecodeLoop specLoop = new SpeculativeDecodeLoop(speculator);
+        // Probe whether the model supports multi-token decode (seqLen > 1 with KV cache).
+        // Models with internal ONNX Expand ops that create [1,1,seqLen,seqLen] causal masks
+        // can't broadcast to [1,1,seqLen,totalSeqLen] and will fail on every speculative attempt.
+        // This detects the issue upfront with a single throwaway decode, avoiding 3 wasted attempts.
+        specLoop.probeMultiTokenSupport(decoder, decoderInputNames, logitsOutputName,
+                kvNames, 1, hiddenSize);
         BatchCompactor compactor = new BatchCompactor(batchSize, 0.25);
         Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
                 .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokensConfig).doSample(false).build());
@@ -3864,13 +3871,6 @@ public class TestVLMModelImportPipeline {
             generatedTokens.add(new ArrayList<>());
         }
 
-        // Helper thread for overlapping embed tokens with KV cache cleanup
-        java.util.concurrent.ExecutorService embedExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "EmbedTokens-Async");
-            t.setDaemon(true);
-            return t;
-        });
-
         Map<String, INDArray> kvCache = new java.util.HashMap<>();
         INDArray currentEmbeddings = batchedEmbeddings;
         long pastSeqLen = 0;
@@ -3878,104 +3878,19 @@ public class TestVLMModelImportPipeline {
         int stepsCompleted = 0;
         int totalTokensGenerated = 0;
 
-        for (int step = 0; step < maxTokensConfig; step++) {
+        // ===== PHASE 1: PREFILL (Step 0) =====
+        {
             long stepStart = System.currentTimeMillis();
             long currentSeqLen = currentEmbeddings.shape()[1];
             long totalSeqLen = currentSeqLen + pastSeqLen;
 
-            // --- Try speculative decoding for single-sequence case ---
-            // SpeculativeDecodeLoop auto-disables if the model can't handle multi-token
-            // KV-cache decode (e.g. ONNX Expand broadcast failure).
-            if (activeBatchSize == 1 && step > 10) {
-                // Find the active sequence
-                int activeIdx = -1;
-                for (int i = 0; i < batchSize; i++) {
-                    if (!finished[i]) { activeIdx = i; break; }
-                }
-
-                if (activeIdx >= 0) {
-                    int lastTokenId = generatedTokens.get(activeIdx).get(
-                            generatedTokens.get(activeIdx).size() - 1);
-
-                    SpeculativeDecodeLoop.SpeculativeStepResult specResult = specLoop.step(
-                            generatedTokens.get(activeIdx), lastTokenId,
-                            embedTokens, embedInputName, embedOutputNames,
-                            decoder, decoderInputNames, logitsOutputName, kvNames,
-                            kvCache, pastSeqLen, 1, hiddenSize, eosTokenIds);
-
-                    if (specResult != null) {
-                        // Speculative step succeeded — accepted multiple tokens
-                        for (int tok : specResult.getAcceptedTokens()) {
-                            generatedTokens.get(activeIdx).add(tok);
-                            totalTokensGenerated++;
-                            if (eosTokenIds.contains(tok)) {
-                                finished[activeIdx] = true;
-                            }
-                        }
-
-                        // Update KV cache
-                        for (var entry : specResult.getUpdatedKvCache().entrySet()) {
-                            INDArray old = kvCache.put(entry.getKey(), entry.getValue());
-                            SameDiffMemoryUtils.safeClose(old);
-                        }
-                        pastSeqLen += specResult.getNewPositions();
-
-                        // Log
-                        int[] accepted = specResult.getAcceptedTokens();
-                        String tokenTexts = tokenizer.decode(accepted, false);
-                        log.info("  Step {}: SPECULATIVE {} tokens: '{}' [{}ms]",
-                                step, accepted.length, tokenTexts,
-                                System.currentTimeMillis() - stepStart);
-
-                        stepsCompleted = step + 1;
-
-                        if (specResult.hitEos() || finished[activeIdx]) {
-                            log.info("  Sequence finished via speculation at step {}", step);
-                            break;
-                        }
-
-                        // Embed the last accepted token for next step
-                        int lastAccepted = accepted[accepted.length - 1];
-                        INDArray tokenTensor = Nd4j.createFromArray(new int[]{lastAccepted})
-                                .reshape(1, 1).castTo(DataType.LONG);
-                        Map<String, INDArray> newEmbedOutputs = embedTokens.output(
-                                Map.of(embedInputName, tokenTensor), embedOutputNames);
-                        INDArray prevEmb = currentEmbeddings;
-                        currentEmbeddings = newEmbedOutputs.values().iterator().next().dup();
-                        // Close original DSP output arrays to prevent GPU memory leak
-                        for (INDArray orig : newEmbedOutputs.values()) SameDiffMemoryUtils.safeClose(orig);
-                        if (prevEmb != batchedEmbeddings) SameDiffMemoryUtils.safeClose(prevEmb);
-                        SameDiffMemoryUtils.safeClose(tokenTensor);
-                        embedTokens.clearPlaceholders(true);
-                        continue;
-                    }
-                    // specResult == null means no n-gram match — fall through to normal decode
-                }
-            }
-
-            // --- Normal decode step ---
             long inputPrepStart = System.currentTimeMillis();
             Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
             for (String inputName : decoderInputNames) {
                 if (inputName.equals("inputs_embeds")) {
                     decoderInputMap.put(inputName, currentEmbeddings);
                 } else if (inputName.equals("attention_mask")) {
-                    INDArray attentionMask = Nd4j.ones(DataType.LONG, activeBatchSize, totalSeqLen);
-                    int maskIdx = 0;
-                    for (int i = 0; i < batchSize; i++) {
-                        if (compactor.isCompacted()) {
-                            // After compaction, all active entries map via compactor
-                            if (maskIdx < activeBatchSize && finished[compactor.getOriginalIndex(maskIdx)]) {
-                                attentionMask.putRow(maskIdx, Nd4j.zeros(DataType.LONG, totalSeqLen));
-                            }
-                            maskIdx++;
-                        } else {
-                            if (finished[i]) {
-                                attentionMask.putRow(i, Nd4j.zeros(DataType.LONG, totalSeqLen));
-                            }
-                        }
-                    }
-                    decoderInputMap.put(inputName, attentionMask);
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, activeBatchSize, totalSeqLen));
                 } else if (inputName.equals("_causal_mask")) {
                     decoderInputMap.put(inputName,
                             DecoderUtils.buildCausalMask(activeBatchSize, currentSeqLen, totalSeqLen));
@@ -3984,20 +3899,14 @@ public class TestVLMModelImportPipeline {
                             .reshape(1, currentSeqLen).castTo(DataType.LONG);
                     decoderInputMap.put(inputName, Nd4j.tile(posIds, activeBatchSize, 1));
                 } else if (inputName.startsWith("past_key_values.")) {
-                    String presentName = inputName.replace("past_key_values", "present");
-                    if (kvCache.containsKey(presentName)) {
-                        decoderInputMap.put(inputName, kvCache.get(presentName));
-                    } else {
-                        decoderInputMap.put(inputName,
-                                DecoderUtils.createEmptyKvCache(decoder, inputName, activeBatchSize, hiddenSize));
-                    }
+                    decoderInputMap.put(inputName,
+                            DecoderUtils.createEmptyKvCache(decoder, inputName, activeBatchSize, hiddenSize));
                 }
             }
             if (!decoderInputMap.containsKey("inputs_embeds")) {
                 decoderInputMap.put("inputs_embeds", currentEmbeddings);
             }
 
-            // Run decoder
             long inputPrepTime = System.currentTimeMillis() - inputPrepStart;
             long decoderStart = System.currentTimeMillis();
             Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap,
@@ -4006,171 +3915,255 @@ public class TestVLMModelImportPipeline {
 
             INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
             if (logitsRaw == null) {
-                log.error("No logits at step {}", step);
-                break;
+                throw new RuntimeException("No logits from prefill step");
             }
             INDArray logits = logitsRaw.dup();
             SameDiffMemoryUtils.safeClose(logitsRaw);
-            if (step < 3) {
-                log.info("  Step {} decoder: {}ms, logits shape={} rank={}",
-                        step, decoderTime, java.util.Arrays.toString(logits.shape()), logits.rank());
-            }
+            log.info("  Step 0 decoder: {}ms, logits shape={} rank={}",
+                    decoderTime, java.util.Arrays.toString(logits.shape()), logits.rank());
 
-            // Update KV cache
-            long kvStart = System.currentTimeMillis();
+            // Store KV cache from prefill
             for (String presentName : presentKeyNames) {
                 INDArray pv = decoderOutputs.get(presentName);
-                if (pv != null) {
-                    INDArray old = kvCache.put(presentName, pv);
-                    SameDiffMemoryUtils.safeClose(old);
-                }
+                if (pv != null) kvCache.put(presentName, pv);
             }
             for (String presentName : presentValueNames) {
                 INDArray pv = decoderOutputs.get(presentName);
-                if (pv != null) {
-                    INDArray old = kvCache.put(presentName, pv);
-                    SameDiffMemoryUtils.safeClose(old);
-                }
+                if (pv != null) kvCache.put(presentName, pv);
             }
-            long kvTime = System.currentTimeMillis() - kvStart;
 
-            // Sample from last position — logits may be [batch, seq, vocab] (3D),
-            // [batch, vocab] (2D), or even [seq, vocab] (2D from single-batch native executor).
-            // Always extract the last position's logits as a 2D [batch, vocab] tensor.
-            long sampleStart = System.currentTimeMillis();
+            // Sample from last position
             INDArray lastLogits;
             if (logits.rank() == 3) {
                 lastLogits = logits.get(NDArrayIndex.all(),
                         NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all()).dup();
-            } else if (logits.rank() == 2) {
-                // Already [batch, vocab] or [seq, vocab] — use as-is
-                lastLogits = logits;
-            } else if (logits.rank() == 1) {
-                // Single vocab vector — reshape to [1, vocab]
-                lastLogits = logits.reshape(1, logits.length());
             } else {
-                log.error("Unexpected logits rank={} shape={}", logits.rank(), java.util.Arrays.toString(logits.shape()));
                 lastLogits = logits;
             }
-
             int[] nextTokenIds = sampler.sampleBatch(lastLogits);
             if (lastLogits != logits) SameDiffMemoryUtils.safeClose(lastLogits);
-            long sampleTime = System.currentTimeMillis() - sampleStart;
+            SameDiffMemoryUtils.safeClose(logits);
 
-            // Record tokens and check EOS — map through compactor if compacted
-            boolean allFinished = true;
+            // Record tokens and check EOS
             for (int ci = 0; ci < activeBatchSize; ci++) {
                 int origIdx = compactor.getOriginalIndex(ci);
                 if (!finished[origIdx]) {
                     generatedTokens.get(origIdx).add(nextTokenIds[ci]);
                     totalTokensGenerated++;
-
                     if (eosTokenIds.contains(nextTokenIds[ci])) {
                         finished[origIdx] = true;
-                        log.info("  Page {} finished at step {} ({} tokens)",
-                                origIdx, step, generatedTokens.get(origIdx).size());
                     }
                 }
-                if (!finished[origIdx]) allFinished = false;
             }
 
-            // Log progress with timing breakdown
-            if (step < 5 || step % 10 == 0) {
-                StringBuilder sb = new StringBuilder();
-                for (int ci = 0; ci < activeBatchSize; ci++) {
-                    int origIdx = compactor.getOriginalIndex(ci);
-                    String tokenText = tokenizer.decode(new int[]{nextTokenIds[ci]}, false);
-                    if (ci > 0) sb.append(" | ");
-                    sb.append(String.format("p%d:'%s'(%d)", origIdx, tokenText, nextTokenIds[ci]));
-                }
-                log.info("  Step {} [{}ms total, prep={}ms, decoder={}ms, seqLen={}]: {}",
-                        step, System.currentTimeMillis() - stepStart,
-                        inputPrepTime, decoderTime, totalSeqLen, sb);
-            }
-
-            if (allFinished) {
-                log.info("  All sequences finished at step {}", step);
-                stepsCompleted = step + 1;
-                break;
-            }
-
-            SameDiffMemoryUtils.safeClose(logits);
-
-            // --- Batch compaction: remove finished sequences ---
-            // Build finished array for current compact indices
-            boolean[] compactFinished = new boolean[activeBatchSize];
-            for (int ci = 0; ci < activeBatchSize; ci++) {
-                compactFinished[ci] = finished[compactor.getOriginalIndex(ci)];
-            }
-
-            if (compactor.shouldCompact(compactFinished)) {
-                log.info("  Compacting batch: {} -> removing finished sequences", activeBatchSize);
-
-                // Compact KV cache
-                kvCache = compactor.compactKvCache(kvCache, compactFinished);
-
-                // Update compactor mapping
-                activeBatchSize = compactor.compact(compactFinished);
-                log.info("  Compacted to {} active sequences", activeBatchSize);
-            }
-
-            // --- Embed next tokens with async overlap ---
-            long embedPrepStart = System.currentTimeMillis();
-            int[] batchTokenIds = new int[activeBatchSize];
+            StringBuilder sb = new StringBuilder();
             for (int ci = 0; ci < activeBatchSize; ci++) {
                 int origIdx = compactor.getOriginalIndex(ci);
-                batchTokenIds[ci] = finished[origIdx] ? eosTokenId : nextTokenIds[ci];
+                String tokenText = tokenizer.decode(new int[]{nextTokenIds[ci]}, false);
+                if (ci > 0) sb.append(" | ");
+                sb.append(String.format("p%d:'%s'(%d)", origIdx, tokenText, nextTokenIds[ci]));
             }
-            INDArray tokenTensor = Nd4j.createFromArray(batchTokenIds)
-                    .reshape(activeBatchSize, 1).castTo(DataType.LONG);
+            log.info("  Step 0 [{}ms total, prep={}ms, decoder={}ms, seqLen={}]: {}",
+                    System.currentTimeMillis() - stepStart, inputPrepTime, decoderTime, totalSeqLen, sb);
 
-            // Submit embed to helper thread
-            final INDArray tokenTensorFinal = tokenTensor;
-            java.util.concurrent.Future<INDArray> embedFuture = embedExecutor.submit(() -> {
-                Map<String, INDArray> newEmbedOutputs = embedTokens.output(
-                        Map.of(embedInputName, tokenTensorFinal), embedOutputNames);
-                INDArray result = newEmbedOutputs.values().iterator().next().dup();
-                // Close original DSP output arrays to prevent GPU memory leak
-                for (INDArray orig : newEmbedOutputs.values()) SameDiffMemoryUtils.safeClose(orig);
-                // Clear placeholders on the async thread where they were set
-                embedTokens.clearPlaceholders(false);
-                return result;
-            });
+            pastSeqLen += currentSeqLen;
+            stepsCompleted = 1;
 
-            // Main thread: cleanup decoder inputs while embed computes
+            // Embed first decode token
+            INDArray prefillTokenTensor = Nd4j.createFromArray(new int[]{nextTokenIds[0]})
+                    .reshape(1, 1).castTo(DataType.LONG);
+            Map<String, INDArray> prefillEmbedOut = embedTokens.output(
+                    Map.of(embedInputName, prefillTokenTensor), embedOutputNames);
+            INDArray newEmbed = prefillEmbedOut.values().iterator().next().dup();
+            for (INDArray orig : prefillEmbedOut.values()) SameDiffMemoryUtils.safeClose(orig);
+            SameDiffMemoryUtils.safeClose(prefillTokenTensor);
+            embedTokens.clearPlaceholders(false);
+            if (currentEmbeddings != batchedEmbeddings) SameDiffMemoryUtils.safeClose(currentEmbeddings);
+            currentEmbeddings = newEmbed;
+
+            // Cleanup step 0 inputs
             for (var entry : decoderInputMap.entrySet()) {
                 String name = entry.getKey();
                 if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
                 SameDiffMemoryUtils.safeClose(entry.getValue());
             }
             decoder.clearPlaceholders(false);
-
-            INDArray prevEmbeddings = currentEmbeddings;
-            if (prevEmbeddings != batchedEmbeddings) {
-                SameDiffMemoryUtils.safeClose(prevEmbeddings);
-            }
-
-            // Wait for embed result
-            long embedWaitStart = System.currentTimeMillis();
-            try {
-                currentEmbeddings = embedFuture.get();
-            } catch (Exception e) {
-                throw new RuntimeException("Embed tokens failed at step " + step, e);
-            }
-            long embedWaitTime = System.currentTimeMillis() - embedWaitStart;
-            long embedTotalTime = System.currentTimeMillis() - embedPrepStart;
-            SameDiffMemoryUtils.safeClose(tokenTensor);
-            // clearPlaceholders already called on async thread; clear all threads as safety
-            embedTokens.clearPlaceholders(true);
-            pastSeqLen += currentSeqLen;
-            stepsCompleted = step + 1;
-            if (step < 5 || step % 10 == 0) {
-                log.info("    timing: kv={}ms sample={}ms embed={}ms(wait={}ms)",
-                        kvTime, sampleTime, embedTotalTime, embedWaitTime);
-            }
         }
 
-        embedExecutor.shutdown();
+        // Check if all sequences finished during prefill
+        boolean allFinishedAfterPrefill = true;
+        for (boolean f : finished) if (!f) allFinishedAfterPrefill = false;
+
+        if (!allFinishedAfterPrefill) {
+            // ===== PHASE 2: STATIC KV BUFFER SETUP =====
+            // Pre-allocate fixed-size KV buffers so shapes and GPU addresses
+            // stay constant every decode step → enables CUDA graph replay
+            long maxKvLen = pastSeqLen + (maxTokensConfig - 1);
+            Map<String, INDArray> staticKvBuffers = DecoderUtils.padKvCacheToStaticSize(
+                    kvCache, presentKeyNames, presentValueNames, maxKvLen);
+
+            // Close old growing KV cache (data copied into static buffers)
+            for (INDArray kv : kvCache.values()) SameDiffMemoryUtils.safeClose(kv);
+            kvCache.clear();
+
+            // Pre-allocate static input buffers (reused every step, same GPU addresses)
+            long totalStaticLen = maxKvLen + 1; // past positions + new token from concat
+            INDArray staticEmbed = Nd4j.zeros(currentEmbeddings.dataType(), activeBatchSize, 1, hiddenSize);
+            INDArray staticMask = Nd4j.zeros(DataType.LONG, activeBatchSize, totalStaticLen);
+            // Set 1s for valid prefill positions and the new-token slot at end
+            for (int bi = 0; bi < activeBatchSize; bi++) {
+                staticMask.get(NDArrayIndex.point(bi), NDArrayIndex.interval(0, pastSeqLen)).assign(1);
+                staticMask.putScalar(new long[]{bi, maxKvLen}, 1L);
+            }
+            INDArray staticCausalMask = Nd4j.zeros(DataType.FLOAT, activeBatchSize, 1, 1, totalStaticLen);
+            INDArray staticPosIds = Nd4j.zeros(DataType.LONG, activeBatchSize, 1);
+            long cachePos = pastSeqLen;
+
+            // Build the static input map — SAME objects every step for CUDA graph replay
+            Map<String, INDArray> staticInputMap = new java.util.HashMap<>();
+            staticInputMap.put("inputs_embeds", staticEmbed);
+            staticInputMap.put("attention_mask", staticMask);
+            if (decoderInputNames.contains("_causal_mask")) {
+                staticInputMap.put("_causal_mask", staticCausalMask);
+            }
+            staticInputMap.put("position_ids", staticPosIds);
+            for (var entry : staticKvBuffers.entrySet()) {
+                staticInputMap.put(entry.getKey(), entry.getValue());
+            }
+
+            log.info("  Static KV setup: maxKvLen={}, totalStaticLen={}, cachePos={}, {} static inputs",
+                    maxKvLen, totalStaticLen, cachePos, staticInputMap.size());
+
+            // Reset the decoder session to free prefill intermediates and compile fresh with static shapes
+            decoder.resetSession();
+            // Trim GPU memory pool to reclaim memory from the freed prefill intermediates
+            Nd4j.getMemoryManager().invokeGc();
+
+            // ===== PHASE 3: STATIC KV DECODE LOOP =====
+            // Shapes and GPU addresses are fixed → CUDA graphs capture on step 2, replay on step 3+
+            for (int step = 1; step < maxTokensConfig; step++) {
+                long stepStart = System.currentTimeMillis();
+
+                // Update static inputs IN-PLACE (same GPU buffers, different data)
+                staticEmbed.assign(currentEmbeddings);
+                for (int bi = 0; bi < activeBatchSize; bi++) {
+                    staticPosIds.putScalar(new long[]{bi, 0}, cachePos);
+                }
+
+                // Run decoder with SAME static buffers
+                long decoderStart = System.currentTimeMillis();
+                Map<String, INDArray> decoderOutputs = decoder.output(staticInputMap,
+                        allOutputNames.toArray(new String[0]));
+                long decoderTime = System.currentTimeMillis() - decoderStart;
+
+                // After step 1 succeeds, enable shapes-frozen mode for subsequent steps.
+                // Step 1 populates the shape cache; steps 2+ skip shape inference entirely.
+                if (step == 1) {
+                    DynamicShapePlanExecutor dspExec = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
+                    if (dspExec != null) {
+                        dspExec.setShapesFrozen(true);
+                        log.info("Enabled shapes-frozen mode after step 1");
+                    }
+                }
+
+                // Extract logits
+                INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
+                if (logitsRaw == null) {
+                    log.error("No logits at step {}", step);
+                    break;
+                }
+                INDArray logits = logitsRaw.dup();
+                SameDiffMemoryUtils.safeClose(logitsRaw);
+
+                // Scatter new KV entries from concat output into static buffers
+                DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
+                        presentKeyNames, presentValueNames, maxKvLen, cachePos);
+
+                // Close present KV outputs (data already scattered to static buffers)
+                for (String name : presentKeyNames) {
+                    INDArray pv = decoderOutputs.get(name);
+                    if (pv != null) SameDiffMemoryUtils.safeClose(pv);
+                }
+                for (String name : presentValueNames) {
+                    INDArray pv = decoderOutputs.get(name);
+                    if (pv != null) SameDiffMemoryUtils.safeClose(pv);
+                }
+
+                // Advance cache position and update mask for next step
+                cachePos++;
+                for (int bi = 0; bi < activeBatchSize; bi++) {
+                    staticMask.putScalar(new long[]{bi, cachePos - 1}, 1L);
+                }
+
+                // Sample from logits
+                INDArray lastLogits;
+                if (logits.rank() == 3) {
+                    lastLogits = logits.get(NDArrayIndex.all(),
+                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all()).dup();
+                } else if (logits.rank() == 2) {
+                    lastLogits = logits;
+                } else {
+                    lastLogits = logits.reshape(1, logits.length());
+                }
+                int[] nextTokenIds = sampler.sampleBatch(lastLogits);
+                if (lastLogits != logits) SameDiffMemoryUtils.safeClose(lastLogits);
+                SameDiffMemoryUtils.safeClose(logits);
+
+                boolean allFinished = true;
+                for (int bi = 0; bi < activeBatchSize; bi++) {
+                    if (finished[bi]) continue;
+                    int nextTokenId = nextTokenIds[bi];
+                    generatedTokens.get(bi).add(nextTokenId);
+                    totalTokensGenerated++;
+
+                    if (eosTokenIds.contains(nextTokenId)) {
+                        finished[bi] = true;
+                        log.info("  Sequence {} finished at step {} ({} tokens)", bi, step, generatedTokens.get(bi).size());
+                    }
+                }
+                for (boolean f : finished) if (!f) allFinished = false;
+                stepsCompleted = step + 1;
+                if (allFinished) break;
+
+                // Embed next tokens for all batch items
+                int[] tokenIdsForEmbed = new int[activeBatchSize];
+                for (int bi = 0; bi < activeBatchSize; bi++) {
+                    tokenIdsForEmbed[bi] = finished[bi] ? 0 : nextTokenIds[bi];
+                }
+                INDArray stepTokenTensor = Nd4j.createFromArray(tokenIdsForEmbed)
+                        .reshape(activeBatchSize, 1).castTo(DataType.LONG);
+                Map<String, INDArray> stepEmbedOut = embedTokens.output(
+                        Map.of(embedInputName, stepTokenTensor), embedOutputNames);
+                INDArray prevEmbed = currentEmbeddings;
+                currentEmbeddings = stepEmbedOut.values().iterator().next().dup();
+                for (INDArray orig : stepEmbedOut.values()) SameDiffMemoryUtils.safeClose(orig);
+                SameDiffMemoryUtils.safeClose(stepTokenTensor);
+                embedTokens.clearPlaceholders(false);
+                if (prevEmbed != batchedEmbeddings) SameDiffMemoryUtils.safeClose(prevEmbed);
+
+                // Clear placeholder references (don't close static buffers)
+                decoder.clearPlaceholders(false);
+
+                // Log progress
+                if (step < 5 || step % 10 == 0) {
+                    StringBuilder tokInfo = new StringBuilder();
+                    for (int bi = 0; bi < activeBatchSize; bi++) {
+                        if (bi > 0) tokInfo.append(" | ");
+                        String tokenText = tokenizer.decode(new int[]{nextTokenIds[bi]}, false);
+                        tokInfo.append("b").append(bi).append("='").append(tokenText).append("'(").append(nextTokenIds[bi]).append(")");
+                    }
+                    log.info("  Step {} [{}ms, decoder={}ms, cachePos={}]: {}",
+                            step, System.currentTimeMillis() - stepStart, decoderTime, cachePos, tokInfo);
+                }
+            }
+
+            // Cleanup static buffers
+            SameDiffMemoryUtils.safeClose(staticEmbed);
+            SameDiffMemoryUtils.safeClose(staticMask);
+            SameDiffMemoryUtils.safeClose(staticCausalMask);
+            SameDiffMemoryUtils.safeClose(staticPosIds);
+            for (INDArray buf : staticKvBuffers.values()) SameDiffMemoryUtils.safeClose(buf);
+        }
         long step7Time = System.currentTimeMillis() - step7Start;
 
         // ==================== STEP 8: Output Results ====================
@@ -4538,5 +4531,410 @@ public class TestVLMModelImportPipeline {
 
         org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
         log.info("Fixed-shape decode test complete.");
+    }
+
+    // ==================== Full Page OCR Test ====================
+
+    /**
+     * Full page OCR: decode until &lt;/doctag&gt; stop token, not a fixed token count.
+     *
+     * <p>This test matches the Docling Python library's approach to page OCR:</p>
+     * <ul>
+     *   <li>Uses max_new_tokens=8192 (Docling's ceiling), NOT a small fixed count</li>
+     *   <li>Stops on &lt;/doctag&gt; (49230), &lt;end_of_utterance&gt; (49279), or EOS</li>
+     *   <li>Validates the output is a structurally complete DocTags document</li>
+     *   <li>Parses the output into structured elements with bounding boxes</li>
+     *   <li>Converts to markdown for human-readable validation</li>
+     * </ul>
+     *
+     * <p>Run with:</p>
+     * <pre>
+     *   -Dtest=TestVLMModelImportPipeline#testFullPageOcr
+     *   -Dvlm.test.pdf.path=/path/to/document.pdf
+     *   -Dvlm.test.pdf.page=0
+     * </pre>
+     */
+    @Test
+    @DisplayName("Full page OCR: EOS-driven decode matching Docling pipeline")
+    public void testFullPageOcr() throws Exception {
+        if (pdfPath == null || !new File(pdfPath).exists()) {
+            log.info("Skipping test - no PDF provided. Use -Dvlm.test.pdf.path=/path/to/book.pdf");
+            return;
+        }
+
+        Nd4j.getEnvironment().setLogNativeNDArrayCreation(false);
+
+        // Docling uses max_new_tokens=8192; override with vlm.test.maxTokens if set
+        int maxNewTokens = maxTokensConfig > 50 ? maxTokensConfig : 8192;
+
+        log.info("=== FULL PAGE OCR TEST (Docling-style, EOS-driven) ===");
+        log.info("  Max new tokens: {} (Docling default: 8192)", maxNewTokens);
+
+        // ==================== STEP 1: Download Models ====================
+        log.info("STEP 1: Downloading models...");
+        var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
+        var embedTokensResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_EMBED_TOKENS);
+        var tokenizerResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER);
+        VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_TOKENIZER_CONFIG);
+        log.info("STEP 1 DONE.");
+
+        // ==================== STEP 2: Load Tokenizer + Resolve Stop Tokens ====================
+        log.info("STEP 2: Loading tokenizer and resolving stop tokens...");
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerResult.getModelFile());
+
+        int eosTokenId = tokenizer.getEosTokenId();
+        Integer endOfUtteranceId = tokenizer.getTokenId("<end_of_utterance>");
+        Integer doctagCloseId = tokenizer.getTokenId("</doctag>");
+        int imageTokenId = ImagePromptBuilder.resolveImageTokenId(tokenizer);
+
+        // Build complete stop token set (matching Docling's stop_strings)
+        java.util.Set<Integer> stopTokenIds = new java.util.HashSet<>();
+        stopTokenIds.add(eosTokenId);
+        if (endOfUtteranceId != null) stopTokenIds.add(endOfUtteranceId);
+        if (doctagCloseId != null) stopTokenIds.add(doctagCloseId);
+
+        log.info("STEP 2 DONE: vocab={}, eos={}, endOfUtterance={}, doctagClose={}, imageToken={}",
+                tokenizer.getVocabSize(), eosTokenId,
+                endOfUtteranceId != null ? endOfUtteranceId : "N/A",
+                doctagCloseId != null ? doctagCloseId : "N/A",
+                imageTokenId);
+        log.info("  Stop token IDs: {}", stopTokenIds);
+
+        // ==================== STEP 3: Import ONNX Models ====================
+        log.info("STEP 3: Importing ONNX models (with SDZ cache)...");
+        long step3Start = System.currentTimeMillis();
+        SameDiff[] models = OnnxModelCache.importAllWithCache(
+                visionResult.getModelFile().getAbsolutePath(),
+                decoderResult.getModelFile().getAbsolutePath(),
+                embedTokensResult.getModelFile().getAbsolutePath()
+        );
+        SameDiff visionEncoder = models[0];
+        SameDiff decoder = models[1];
+        SameDiff embedTokens = models[2];
+
+        visionEncoder.enableWorkspaceMode(8 * 1024 * 1024);
+        decoder.enableWorkspaceMode(8 * 1024 * 1024);
+        embedTokens.enableWorkspaceMode(8 * 1024 * 1024);
+        log.info("STEP 3 DONE: {}ms", System.currentTimeMillis() - step3Start);
+
+        // ==================== STEP 4: Load & Tile Single Page ====================
+        log.info("STEP 4: Loading and tiling page...");
+        BufferedImage pageImage = loadImageFromPdfOrGenerate(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
+        int targetSize = 512;
+        int effectiveMaxTiles = maxTiles > 0 ? maxTiles : 9;
+
+        BufferedImage resized = ImageTiler.resizeLongestEdge(pageImage, 2048);
+        int tilingThreads = Runtime.getRuntime().availableProcessors();
+        ImageTiler.SplitImageResult split = ImageTiler.splitImageForVLMParallel(
+                resized, targetSize, effectiveMaxTiles, tilingThreads);
+        log.info("  Page: {}x{} -> {} frames ({}x{} grid + global)",
+                pageImage.getWidth(), pageImage.getHeight(),
+                split.getTotalFrames(), split.numRows, split.numCols);
+
+        // ==================== STEP 5: Vision Encoding ====================
+        log.info("STEP 5: Vision encoding ({} frames)...", split.getTotalFrames());
+        long step5Start = System.currentTimeMillis();
+        VLMImagePreprocessor preprocessor = createSmolDoclingPreprocessor(targetSize, true);
+
+        List<INDArray> framePixelValues = new ArrayList<>();
+        // Process global thumbnail
+        INDArray globalPV = preprocessor.preprocessSingleFrame(split.getGlobalThumbnail(), targetSize);
+        framePixelValues.add(globalPV);
+        // Process content tiles
+        for (BufferedImage tile : split.getTiles()) {
+            framePixelValues.add(preprocessor.preprocessSingleFrame(tile, targetSize));
+        }
+
+        // Stack all frames and encode through vision encoder
+        INDArray allFrames = Nd4j.vstack(framePixelValues.toArray(new INDArray[0]));
+        String visionInputName = visionEncoder.inputs().get(0);
+        String[] visionOutputNames = visionEncoder.outputs().toArray(new String[0]);
+        Map<String, INDArray> visionOutputs = visionEncoder.output(
+                Map.of(visionInputName, allFrames), visionOutputNames);
+        INDArray visionEmbeddings = visionOutputs.values().iterator().next().dup();
+        for (INDArray orig : visionOutputs.values()) SameDiffMemoryUtils.safeClose(orig);
+        visionEncoder.clearPlaceholders(true);
+        for (INDArray frame : framePixelValues) SameDiffMemoryUtils.safeClose(frame);
+        SameDiffMemoryUtils.safeClose(allFrames);
+
+        // Reshape: [numFrames, seqPerFrame, hidden] -> [1, numFrames*seqPerFrame, hidden]
+        long numFrames = visionEmbeddings.size(0);
+        long seqPerFrame = visionEmbeddings.size(1);
+        long hiddenSize = visionEmbeddings.size(2);
+        INDArray visionEmbedsFlat = visionEmbeddings.reshape(1, numFrames * seqPerFrame, hiddenSize);
+
+        long step5Time = System.currentTimeMillis() - step5Start;
+        log.info("STEP 5 DONE: {}ms, vision shape={}", step5Time, java.util.Arrays.toString(visionEmbedsFlat.shape()));
+
+        // Free vision encoder
+        int freedArrays = SameDiffMemoryUtils.freeModelArrays(visionEncoder);
+        Nd4j.getExecutioner().commit();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+        log.info("  Freed {} vision encoder arrays.", freedArrays);
+        visionEncoder = null;
+
+        // ==================== STEP 6: Build Prompt & Merge Embeddings ====================
+        log.info("STEP 6: Building prompt and merging embeddings...");
+        long step6Start = System.currentTimeMillis();
+
+        int imageSeqLenPerFrame = (int) seqPerFrame;
+        String imagePrompt = ImagePromptBuilder.buildImagePromptString(split.numRows, split.numCols, imageSeqLenPerFrame);
+        String chatPrompt = "<|im_start|>User:" + imagePrompt + "Convert this page to docling.<end_of_utterance>\nAssistant:";
+        int[] promptTokenIds = tokenizer.encode(chatPrompt, false).getIds();
+        log.info("  Prompt: {} tokens, {} <image> tokens", promptTokenIds.length,
+                ImagePromptBuilder.countOccurrences(promptTokenIds, imageTokenId));
+
+        // Embed text tokens
+        String embedInputName = embedTokens.inputs().isEmpty() ? "input_ids" : embedTokens.inputs().get(0);
+        String[] embedOutputNames = embedTokens.outputs().toArray(new String[0]);
+        INDArray promptTokenIdsTensor = Nd4j.createFromArray(promptTokenIds)
+                .reshape(1, promptTokenIds.length).castTo(DataType.LONG);
+        Map<String, INDArray> embedOutputs = embedTokens.output(
+                Map.of(embedInputName, promptTokenIdsTensor), embedOutputNames);
+        INDArray textEmbeddings = embedOutputs.values().iterator().next().dup();
+        for (INDArray orig : embedOutputs.values()) SameDiffMemoryUtils.safeClose(orig);
+        embedTokens.clearPlaceholders(true);
+
+        // Merge vision + text embeddings
+        INDArray mergedEmbeddings = EmbeddingMerger.mergeEmbeddings(
+                textEmbeddings, visionEmbedsFlat, promptTokenIds, imageTokenId);
+        log.info("  Merged embedding shape: {}", java.util.Arrays.toString(mergedEmbeddings.shape()));
+        log.info("STEP 6 DONE: {}ms", System.currentTimeMillis() - step6Start);
+
+        // ==================== STEP 7: Decode until </doctag> ====================
+        log.info("STEP 7: Decoding until </doctag> (max {} tokens, greedy, temperature=0)...", maxNewTokens);
+        long step7Start = System.currentTimeMillis();
+
+        // Decoder metadata
+        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
+        List<String> presentKeyNames = kvNames.keyNames;
+        List<String> presentValueNames = kvNames.valueNames;
+        List<String> decoderInputNames = decoder.inputs();
+
+        List<String> allOutputNames = new ArrayList<>();
+        allOutputNames.add(logitsOutputName);
+        allOutputNames.addAll(presentKeyNames);
+        allOutputNames.addAll(presentValueNames);
+
+        Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
+                .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxNewTokens).doSample(false).build());
+
+        List<Integer> generatedTokens = new ArrayList<>();
+        Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        INDArray currentEmbeddings = mergedEmbeddings;
+        long pastSeqLen = 0;
+        boolean reachedStopToken = false;
+        String stopReason = "MAX_TOKENS";
+        long firstTokenLatencyMs = 0;
+
+        for (int step = 0; step < maxNewTokens; step++) {
+            long stepStart = System.currentTimeMillis();
+            long currentSeqLen = currentEmbeddings.shape()[1];
+            long totalSeqLen = currentSeqLen + pastSeqLen;
+
+            // Build decoder inputs
+            Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
+            for (String inputName : decoderInputNames) {
+                if (inputName.equals("inputs_embeds")) {
+                    decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (inputName.equals("attention_mask")) {
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
+                } else if (inputName.equals("_causal_mask")) {
+                    decoderInputMap.put(inputName,
+                            DecoderUtils.buildCausalMask(1, currentSeqLen, totalSeqLen));
+                } else if (inputName.equals("position_ids")) {
+                    decoderInputMap.put(inputName,
+                            Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                                    .reshape(1, currentSeqLen).castTo(DataType.LONG));
+                } else if (inputName.startsWith("past_key_values.")) {
+                    String presentName = inputName.replace("past_key_values", "present");
+                    if (kvCache.containsKey(presentName)) {
+                        decoderInputMap.put(inputName, kvCache.get(presentName));
+                    } else {
+                        decoderInputMap.put(inputName,
+                                DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                    }
+                }
+            }
+            if (!decoderInputMap.containsKey("inputs_embeds")) {
+                decoderInputMap.put("inputs_embeds", currentEmbeddings);
+            }
+
+            // Run decoder
+            Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap,
+                    allOutputNames.toArray(new String[0]));
+
+            // Extract logits
+            INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
+            INDArray logits = logitsRaw.dup();
+            SameDiffMemoryUtils.safeClose(logitsRaw);
+
+            // Update KV cache
+            for (INDArray old : kvCache.values()) SameDiffMemoryUtils.safeClose(old);
+            kvCache.clear();
+            for (String name : presentKeyNames) {
+                INDArray pv = decoderOutputs.get(name);
+                if (pv != null) kvCache.put(name, pv);
+            }
+            for (String name : presentValueNames) {
+                INDArray pv = decoderOutputs.get(name);
+                if (pv != null) kvCache.put(name, pv);
+            }
+
+            // Sample: greedy argmax from last position
+            INDArray lastLogits;
+            if (logits.rank() == 3) {
+                lastLogits = logits.get(NDArrayIndex.all(),
+                        NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all()).dup();
+            } else {
+                lastLogits = logits;
+            }
+            int[] nextTokenIds = sampler.sampleBatch(lastLogits);
+            int nextTokenId = nextTokenIds[0];
+            if (lastLogits != logits) SameDiffMemoryUtils.safeClose(lastLogits);
+            SameDiffMemoryUtils.safeClose(logits);
+
+            generatedTokens.add(nextTokenId);
+
+            if (step == 0) {
+                firstTokenLatencyMs = System.currentTimeMillis() - step7Start;
+            }
+
+            // Check stop conditions (matching Docling's stop_strings)
+            if (stopTokenIds.contains(nextTokenId)) {
+                String stopTokenName = "EOS";
+                if (doctagCloseId != null && nextTokenId == doctagCloseId) {
+                    stopTokenName = "</doctag>";
+                } else if (endOfUtteranceId != null && nextTokenId == endOfUtteranceId) {
+                    stopTokenName = "<end_of_utterance>";
+                }
+                stopReason = stopTokenName;
+                log.info("  Stop token '{}' (id={}) at step {} ({} tokens generated)",
+                        stopTokenName, nextTokenId, step, generatedTokens.size());
+                reachedStopToken = true;
+                break;
+            }
+
+            // Embed next token for next step
+            pastSeqLen += currentSeqLen;
+            INDArray stepTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId})
+                    .reshape(1, 1).castTo(DataType.LONG);
+            Map<String, INDArray> stepEmbedOut = embedTokens.output(
+                    Map.of(embedInputName, stepTokenTensor), embedOutputNames);
+            INDArray prevEmbed = currentEmbeddings;
+            currentEmbeddings = stepEmbedOut.values().iterator().next().dup();
+            for (INDArray orig : stepEmbedOut.values()) SameDiffMemoryUtils.safeClose(orig);
+            SameDiffMemoryUtils.safeClose(stepTokenTensor);
+            embedTokens.clearPlaceholders(false);
+            if (prevEmbed != mergedEmbeddings) SameDiffMemoryUtils.safeClose(prevEmbed);
+
+            // Cleanup step inputs (not KV cache or embeddings)
+            for (var entry : decoderInputMap.entrySet()) {
+                String name = entry.getKey();
+                if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
+                SameDiffMemoryUtils.safeClose(entry.getValue());
+            }
+            decoder.clearPlaceholders(false);
+
+            // Log progress periodically
+            if (step < 5 || step % 50 == 0 || (step % 10 == 0 && step < 100)) {
+                String tokenText = tokenizer.decode(new int[]{nextTokenId}, false);
+                log.info("  Step {} [{}ms]: '{}' (id={})",
+                        step, System.currentTimeMillis() - stepStart, tokenText, nextTokenId);
+            }
+        }
+
+        long step7Time = System.currentTimeMillis() - step7Start;
+
+        // ==================== STEP 8: Parse & Validate Output ====================
+        log.info("========================================");
+        log.info("FULL PAGE OCR RESULTS:");
+        log.info("========================================");
+
+        int[] tokenIdArray = generatedTokens.stream().mapToInt(Integer::intValue).toArray();
+        String rawDocTags = tokenizer.decode(tokenIdArray, false);
+        int tokenCount = generatedTokens.size();
+        double tokensPerSec = tokenCount > 0 ? (tokenCount * 1000.0) / step7Time : 0;
+        double msPerToken = tokenCount > 0 ? (double) step7Time / tokenCount : 0;
+
+        log.info("GENERATION STATS:");
+        log.info("  Tokens generated: {}", tokenCount);
+        log.info("  Stop reason: {}", stopReason);
+        log.info("  First token latency: {}ms", firstTokenLatencyMs);
+        log.info("  Total decode time: {}ms", step7Time);
+        log.info("  Throughput: {} tokens/sec ({} ms/token)",
+                String.format("%.1f", tokensPerSec), String.format("%.1f", msPerToken));
+
+        log.info("RAW OUTPUT ({} chars):", rawDocTags.length());
+        log.info("{}", rawDocTags);
+
+        // Parse DocTags into structured document
+        DocTagsParser docTagsParser = new DocTagsParser();
+        boolean isComplete = docTagsParser.isComplete(rawDocTags);
+        DocumentStructure doc = docTagsParser.parse(rawDocTags);
+        String markdown = docTagsParser.toMarkdown(doc);
+        String plainText = docTagsParser.extractPlainText(rawDocTags);
+
+        log.info("STRUCTURAL ANALYSIS:");
+        log.info("  DocTags complete (has <doctag>...</doctag>): {}", isComplete);
+        log.info("  Elements parsed: {}", doc.getElementCount());
+        for (DocTagsParser.DocumentElement elem : doc.getElements()) {
+            String bboxStr = elem.getBoundingBox() != null ?
+                    String.format(" [%d,%d,%d,%d]", elem.getBoundingBox().getX1(),
+                            elem.getBoundingBox().getY1(), elem.getBoundingBox().getX2(),
+                            elem.getBoundingBox().getY2()) : "";
+            String contentPreview = elem.getContent().length() > 80 ?
+                    elem.getContent().substring(0, 80) + "..." : elem.getContent();
+            log.info("    <{}>{}: '{}'", elem.getTagType(), bboxStr, contentPreview);
+        }
+
+        log.info("MARKDOWN OUTPUT:");
+        log.info("{}", markdown);
+
+        log.info("PLAIN TEXT ({} chars):", plainText.length());
+        log.info("{}", plainText.length() > 500 ? plainText.substring(0, 500) + "..." : plainText);
+
+        // ==================== Assertions ====================
+        // Must generate at least some tokens
+        assertTrue(tokenCount > 0, "Should generate at least one token");
+
+        // If generation hit a stop token, the document should be structurally complete
+        if (reachedStopToken) {
+            assertTrue(isComplete,
+                    "When stop token is reached, output should be a complete <doctag>...</doctag> document");
+        }
+
+        // Should have parsed at least one document element
+        assertTrue(doc.getElementCount() > 0,
+                "Should parse at least one document element from the DocTags output. Raw: " +
+                        (rawDocTags.length() > 200 ? rawDocTags.substring(0, 200) : rawDocTags));
+
+        // Plain text content should be non-trivial
+        assertTrue(plainText.length() > 10,
+                "OCR'd text should be non-trivial (>10 chars). Got: '" + plainText + "'");
+
+        log.info("========================================");
+        log.info("VALIDATION: PASSED");
+        log.info("  - Generated {} tokens (stop: {})", tokenCount, stopReason);
+        log.info("  - {} document elements parsed", doc.getElementCount());
+        log.info("  - {} chars of plain text extracted", plainText.length());
+        log.info("========================================");
+
+        // ==================== Cleanup ====================
+        SameDiffMemoryUtils.safeClose(visionEmbeddings);
+        SameDiffMemoryUtils.safeClose(visionEmbedsFlat);
+        SameDiffMemoryUtils.safeClose(textEmbeddings);
+        SameDiffMemoryUtils.safeClose(mergedEmbeddings);
+        if (currentEmbeddings != mergedEmbeddings) SameDiffMemoryUtils.safeClose(currentEmbeddings);
+        for (INDArray kv : kvCache.values()) SameDiffMemoryUtils.safeClose(kv);
+        SameDiffMemoryUtils.safeClose(promptTokenIdsTensor);
+        preprocessor.shutdown();
+        tokenizer.close();
+
+        org.nd4j.linalg.api.memory.deallocation.DeallocatorService.getShutdownInProgress().set(true);
+        log.info("Full page OCR test complete.");
     }
 }

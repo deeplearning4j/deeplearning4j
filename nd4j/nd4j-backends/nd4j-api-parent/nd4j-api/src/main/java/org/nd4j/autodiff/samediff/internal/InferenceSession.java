@@ -273,6 +273,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     }
 
     /**
+     * Get the DynamicShapePlanExecutor for the current thread (if any).
+     * Can be used to configure native plan settings like shapesFrozen mode.
+     */
+    public DynamicShapePlanExecutor getDynamicShapePlanExecutor() {
+        return dynamicShapePlanExecutorTl.get();
+    }
+
+    /**
      * Clear all caches (DAG cache, plan cache, constant/variable cache).
      * Call when the graph structure changes.
      */

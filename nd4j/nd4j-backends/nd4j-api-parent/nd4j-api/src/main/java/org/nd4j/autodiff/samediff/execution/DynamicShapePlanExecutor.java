@@ -55,6 +55,7 @@ import org.nd4j.nativeblas.OpaqueNDArrayArr;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 
@@ -301,6 +302,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** If CUDA graph capture fails, disable CUDA graphs but keep using slot-by-slot native execution. */
     private boolean cudaGraphsFailed;
 
+    /** KV cache retention state: when configured, C++ scatters new KV entries
+     *  into static input buffers, avoiding 60 copyBuffer round-trips per decode step. */
+    private boolean kvCacheRetentionConfigured;
+
     public DynamicShapePlanExecutor(SameDiff sd, SessionMemMgr mmgr) {
         this.sd = sd;
         this.mmgr = mmgr;
@@ -362,6 +367,119 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedNumDevices = 1;
             isPeerAccessible = null;
         }
+    }
+
+    /**
+     * Configure KV cache retention in the native C++ plan.
+     * After this call, executeNative() skips copying KV outputs back to Java;
+     * C++ scatters new KV entries into static input buffers internally.
+     *
+     * @param plan             the current compiled plan
+     * @param presentOutputNames ordered list of present KV output names
+     * @param pastInputNames   ordered list of corresponding past_key_values input names
+     * @param maxKvLen         static KV buffer size along sequence dimension
+     * @param initialPos       initial cache position (prefillLen)
+     */
+    public void configureKvCacheRetention(DynamicShapePlan plan,
+                                          List<String> presentOutputNames,
+                                          List<String> pastInputNames,
+                                          int maxKvLen, int initialPos) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) {
+            log.warn("configureKvCacheRetention: native plan not yet compiled, skipping");
+            return;
+        }
+
+        String[] extKeys = plan.getExternalInputKeys();
+        List<String> reqOutputs = new ArrayList<>(plan.getRequestedOutputs());
+
+        int numMappings = presentOutputNames.size();
+        int[] mappings = new int[numMappings * 3];
+        for (int i = 0; i < numMappings; i++) {
+            // Find present output index in requested outputs
+            int presentIdx = reqOutputs.indexOf(presentOutputNames.get(i));
+            // Find past input index in external inputs
+            String pastName = pastInputNames.get(i);
+            int pastExtIdx = -1;
+            for (int j = 0; j < extKeys.length; j++) {
+                if (extKeys[j].equals(pastName)) {
+                    pastExtIdx = j;
+                    break;
+                }
+            }
+            mappings[i * 3] = presentIdx;
+            mappings[i * 3 + 1] = pastExtIdx;
+            mappings[i * 3 + 2] = 2;  // seqDim is always 2 for [B,H,S,D]
+        }
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        IntPointer mappingsPtr = new IntPointer(mappings);
+        try {
+            nativeOps.configurePlanKvCacheRetention(
+                    nativePlanHandle, mappingsPtr, numMappings, maxKvLen, initialPos);
+        } finally {
+            mappingsPtr.close();
+        }
+
+        this.kvCacheRetentionConfigured = true;
+        log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}",
+                numMappings, maxKvLen, initialPos);
+    }
+
+    /**
+     * Advance the native KV cache position by 1.
+     * @return new position
+     */
+    public int advanceKvCachePosition() {
+        if (nativePlanHandle == null || !kvCacheRetentionConfigured) return -1;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        return nativeOps.advancePlanKvCachePosition(nativePlanHandle);
+    }
+
+    /**
+     * Reset the native KV cache position.
+     */
+    public void resetKvCachePosition(int newPos) {
+        if (nativePlanHandle == null || !kvCacheRetentionConfigured) return;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.resetPlanKvCachePosition(nativePlanHandle, newPos);
+    }
+
+    /**
+     * Get the native plan handle for direct JNI calls.
+     */
+    public Pointer getNativePlanHandle() {
+        return nativePlanHandle;
+    }
+
+    /**
+     * Enable/disable "shapes frozen" mode on the native plan.
+     * When frozen, shape inference and cache clearing are skipped between executions.
+     * Use during static KV decode where all external input shapes are guaranteed constant.
+     * The first execution after enabling will still do full shape inference to populate
+     * the cache; subsequent executions skip shape work entirely.
+     */
+    public void setShapesFrozen(boolean frozen) {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.setPlanShapesFrozen(nativePlanHandle, frozen);
+        }
+    }
+
+    /**
+     * Enable/disable execution timing breakdown logging on the native plan.
+     */
+    public void setExecutionTimingEnabled(boolean enabled) {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, enabled);
+        }
+    }
+
+    /**
+     * Whether KV cache retention is configured.
+     */
+    public boolean isKvCacheRetentionConfigured() {
+        return kvCacheRetentionConfigured;
     }
 
     /**
@@ -3633,10 +3751,27 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
+            // Note: shapes-frozen mode is NOT enabled automatically via system property.
+            // It must be enabled programmatically via setShapesFrozen(true) AFTER the first
+            // successful execution populates the shape cache. Using a system property would
+            // apply to ALL plans (including prefill) which have different shapes.
+            boolean shapesFrozen = false;
+
+            // Enable execution timing if system property set
+            boolean execTiming = "true".equalsIgnoreCase(
+                    System.getProperty("nd4j.dsp.executionTiming", "false"));
+            if (execTiming) {
+                try {
+                    nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support timing
+                }
+            }
+
             nativePlanSource = plan;
-            log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={})",
+            log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
                     plan.getSlots().length, plan.getExternalInputKeys().length,
-                    plan.getRequestedOutputs().size(), cudaGraphsEnabled);
+                    plan.getRequestedOutputs().size(), cudaGraphsEnabled, shapesFrozen);
         }
 
         // Resolve external inputs (constants, variables, placeholders)

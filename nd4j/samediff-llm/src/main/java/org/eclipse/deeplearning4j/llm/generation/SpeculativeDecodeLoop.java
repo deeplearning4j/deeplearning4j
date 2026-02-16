@@ -64,12 +64,116 @@ public class SpeculativeDecodeLoop {
     private long normalSteps;
     private boolean disabled;
 
+    // Retry/cooldown state: replaces permanent disable on first failure
+    private int consecutiveFailures;
+    private static final int MAX_CONSECUTIVE_FAILURES = 3;
+    private int cooldownRemaining;
+    private static final int COOLDOWN_STEPS = 5;
+
+    private boolean probeCompleted;
+
     public SpeculativeDecodeLoop(NgramSpeculator speculator) {
         this.speculator = speculator;
     }
 
     public SpeculativeDecodeLoop() {
         this(new NgramSpeculator());
+    }
+
+    /**
+     * Probe whether the decoder model supports multi-token input (seqLen > 1).
+     *
+     * <p>Some models (e.g., SmolDocling) have internal ONNX Expand ops that create
+     * a causal mask of shape [1,1,seqLen,seqLen]. When seqLen > 1 and pastSeqLen > 0,
+     * this can't broadcast with the external attention mask [1,1,seqLen,totalSeqLen],
+     * causing a shape error on every speculative attempt.</p>
+     *
+     * <p>This method runs a single throwaway decode with seqLen=2 and a minimal
+     * KV cache (pastSeqLen=1) to detect this failure upfront. If it fails,
+     * speculation is disabled immediately with zero wasted decode steps.</p>
+     *
+     * <p>Call this after the first successful single-token decode step, when
+     * the model is warm and KV cache shape info is available.</p>
+     *
+     * @param decoder the decoder SameDiff model
+     * @param decoderInputNames decoder input names
+     * @param logitsOutputName logits output name
+     * @param kvCacheNames KV cache output names
+     * @param batchSize batch size (use 1 for probe)
+     * @param hiddenSize model hidden size
+     * @return true if the model supports multi-token decode, false if not
+     */
+    public boolean probeMultiTokenSupport(
+            SameDiff decoder,
+            List<String> decoderInputNames,
+            String logitsOutputName,
+            DecoderUtils.KVCacheNames kvCacheNames,
+            int batchSize,
+            long hiddenSize) {
+
+        if (probeCompleted) {
+            return !disabled;
+        }
+        probeCompleted = true;
+
+        // Build a minimal 2-token input with pastSeqLen=1
+        // This triggers the Expand broadcast failure if the model can't handle seqLen>1
+        int probeSeqLen = 2;
+        long probePastSeqLen = 1;
+        long probeTotalSeqLen = probeSeqLen + probePastSeqLen;
+
+        Map<String, INDArray> probeInputs = new HashMap<>();
+        for (String inputName : decoderInputNames) {
+            if (inputName.equals("inputs_embeds")) {
+                probeInputs.put(inputName, Nd4j.zeros(DataType.FLOAT, 1, probeSeqLen, hiddenSize));
+            } else if (inputName.equals("attention_mask")) {
+                probeInputs.put(inputName, Nd4j.ones(DataType.LONG, 1, probeTotalSeqLen));
+            } else if (inputName.equals("_causal_mask")) {
+                probeInputs.put(inputName, DecoderUtils.buildCausalMask(1, probeSeqLen, probeTotalSeqLen));
+            } else if (inputName.equals("position_ids")) {
+                probeInputs.put(inputName, Nd4j.arange(probePastSeqLen, probePastSeqLen + probeSeqLen)
+                        .reshape(1, probeSeqLen).castTo(DataType.LONG));
+            } else if (inputName.startsWith("past_key_values.")) {
+                // Create minimal KV cache with seqLen=1
+                probeInputs.put(inputName, DecoderUtils.createEmptyKvCache(
+                        decoder, inputName, 1, hiddenSize, probePastSeqLen));
+            }
+        }
+
+        // Request only logits (minimal output)
+        try {
+            Map<String, INDArray> outputs = decoder.output(probeInputs, logitsOutputName);
+            // Success — model supports multi-token decode
+            log.info("Speculative decoding probe: model supports multi-token decode");
+
+            // Clean up probe outputs
+            for (INDArray arr : outputs.values()) {
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            // Failed — model can't handle seqLen > 1 with KV cache
+            log.info("Speculative decoding probe: model does NOT support multi-token decode, " +
+                    "disabling speculation. Reason: {}", e.getMessage());
+            disabled = true;
+            return false;
+        } finally {
+            // Clean up probe inputs
+            for (var entry : probeInputs.entrySet()) {
+                INDArray arr = entry.getValue();
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+            decoder.clearPlaceholders(false);
+            // Reset the session to clear any stale shape caches and DynamicShapePlanExecutor
+            // state from the probe execution. The next output() call recreates a fresh session.
+            decoder.resetSession();
+        }
     }
 
     /**
@@ -111,6 +215,12 @@ public class SpeculativeDecodeLoop {
             Set<Integer> eosTokenIds) {
 
         if (disabled) {
+            normalSteps++;
+            return null;
+        }
+
+        if (cooldownRemaining > 0) {
+            cooldownRemaining--;
             normalSteps++;
             return null;
         }
@@ -181,12 +291,17 @@ public class SpeculativeDecodeLoop {
         try {
             decoderOutputs = decoder.output(decoderInputMap, allOutputs.toArray(new String[0]));
         } catch (Exception e) {
-            // Model doesn't support multi-token KV-cache decode (e.g. ONNX Expand op
-            // creates [seqLen, seqLen] causal mask that can't broadcast to [seqLen, totalSeqLen]).
-            // Permanently disable speculation and fall back to single-token decode.
-            log.warn("Model incompatible with speculative decoding (multi-token KV-cache decode failed), disabling: {}",
-                    e.getMessage());
-            disabled = true;
+            // Multi-token decode failed. Use retry/cooldown instead of permanent disable.
+            consecutiveFailures++;
+            if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                log.warn("Speculative decoding permanently disabled after {} consecutive failures: {}",
+                        consecutiveFailures, e.getMessage());
+                disabled = true;
+            } else {
+                log.warn("Speculative decoding failed (attempt {}/{}), cooldown {} steps: {}",
+                        consecutiveFailures, MAX_CONSECUTIVE_FAILURES, COOLDOWN_STEPS, e.getMessage());
+                cooldownRemaining = COOLDOWN_STEPS;
+            }
             // Clean up inputs we created
             tokenTensor.setCloseable(true);
             tokenTensor.close();
@@ -323,6 +438,9 @@ public class SpeculativeDecodeLoop {
         embeddings.setCloseable(true);
         embeddings.close();
         decoder.clearPlaceholders(false);
+
+        // Reset failure counter on successful speculation
+        consecutiveFailures = 0;
 
         log.debug("Speculative step: proposed={}, accepted={}, correction={}",
                 specTokens.length, accepted, correctionToken);
