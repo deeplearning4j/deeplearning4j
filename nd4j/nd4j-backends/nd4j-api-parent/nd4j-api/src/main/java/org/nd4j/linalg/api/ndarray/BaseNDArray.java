@@ -6255,7 +6255,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
         int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
         val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(this.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
-        byte order = (byte)(this.ordering() == 'c' ? 0 : 1);
+        // DataOutputStream (used in asBytes()) always writes big-endian regardless of native byte order.
+        // Store BE so the deserializer properly converts to native order during createFromFlatArray().
+        byte order = org.nd4j.graph.ByteOrder.BE;
         int array = FlatArray.createFlatArray(builder, shape, buffer, type, order, 0, 0L, 0, false, 0L, 0L);
 
         return array;

@@ -1648,6 +1648,10 @@
                         <vlm.test.pdf.maxPages>${vlm.test.pdf.maxPages}</vlm.test.pdf.maxPages>
                         <vlm.test.pdf.dpi>${vlm.test.pdf.dpi}</vlm.test.pdf.dpi>
                         <vlm.test.maxTiles>${vlm.test.maxTiles}</vlm.test.maxTiles>
+                        <!-- VLM optimizer and decode configuration -->
+                        <vlm.test.maxTokens>${vlm.test.maxTokens}</vlm.test.maxTokens>
+                        <vlm.model.cache.disable>${vlm.model.cache.disable}</vlm.model.cache.disable>
+                        <nd4j.optimizer.enabled>${nd4j.optimizer.enabled}</nd4j.optimizer.enabled>
                     </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>

@@ -4026,7 +4026,86 @@ public class TestVLMModelImportPipeline {
             long decodeLoopStart = System.currentTimeMillis();
             for (int step = 1; step < maxTokensConfig; step++) {
                 long stepStart = System.currentTimeMillis();
-                long currentSeqLen = 1; // single token decode
+
+                // ── Speculative decode: try to generate multiple tokens in one decoder call ──
+                // Requires batch=1 (per-sequence speculation) and enough history for ngram matching.
+                if (activeBatchSize == 1 && step > 5 && !specLoop.isDisabled()) {
+                    int origIdx = compactor.getOriginalIndex(0);
+                    if (!finished[origIdx] && generatedTokens.get(origIdx).size() >= 6) {
+                        List<Integer> tokenSeq = generatedTokens.get(origIdx);
+                        int lastToken = tokenSeq.get(tokenSeq.size() - 1);
+
+                        SpeculativeDecodeLoop.SpeculativeStepResult specResult = specLoop.step(
+                                tokenSeq, lastToken,
+                                embedTokens, embedInputName, embedOutputNames,
+                                decoder, decoderInputNames, logitsOutputName,
+                                kvNames, kvCache, cachePos,
+                                activeBatchSize, hiddenSize, eosTokenIds);
+
+                        if (specResult != null) {
+                            int[] acceptedTokens = specResult.getAcceptedTokens();
+                            long specStepTime = System.currentTimeMillis() - stepStart;
+
+                            // Record accepted tokens
+                            boolean specFinished = false;
+                            for (int t : acceptedTokens) {
+                                generatedTokens.get(origIdx).add(t);
+                                totalTokensGenerated++;
+                                if (eosTokenIds.contains(t)) {
+                                    finished[origIdx] = true;
+                                    specFinished = true;
+                                    break;
+                                }
+                            }
+
+                            // Update KV cache from speculative result
+                            Map<String, INDArray> updatedKv = specResult.getUpdatedKvCache();
+                            if (updatedKv != null) {
+                                for (var entry : updatedKv.entrySet()) {
+                                    INDArray old = kvCache.put(entry.getKey(), entry.getValue());
+                                    if (old != null) {
+                                        old.setCloseable(true);
+                                        old.close();
+                                    }
+                                }
+                            }
+
+                            cachePos += specResult.getNewPositions();
+                            stepsCompleted = step + 1;
+
+                            if (step < 20 || step % 10 == 0) {
+                                StringBuilder tokStr = new StringBuilder();
+                                for (int t : acceptedTokens) {
+                                    String text = tokenizer.decode(new int[]{t}, false);
+                                    tokStr.append("'").append(text).append("'(").append(t).append(") ");
+                                }
+                                log.info("  Step {} [{}ms, SPECULATIVE {} tokens, cachePos={}]: {}",
+                                        step, specStepTime, acceptedTokens.length, cachePos, tokStr.toString().trim());
+                            }
+
+                            if (specFinished || specResult.hitEos()) break;
+
+                            // Embed last accepted token for next step
+                            INDArray prevEmbed = currentEmbeddings;
+                            int lastAccepted = acceptedTokens[acceptedTokens.length - 1];
+                            INDArray embedTensor = Nd4j.createFromArray(new int[]{lastAccepted})
+                                    .reshape(1, 1).castTo(DataType.LONG);
+                            Map<String, INDArray> embedOut = embedTokens.output(
+                                    Map.of(embedInputName, embedTensor), embedOutputNames);
+                            currentEmbeddings = embedOut.values().iterator().next().dup();
+                            for (INDArray orig : embedOut.values()) SameDiffMemoryUtils.safeClose(orig);
+                            SameDiffMemoryUtils.safeClose(embedTensor);
+                            embedTokens.clearPlaceholders(false);
+                            if (prevEmbed != batchedEmbeddings && prevEmbed != null && !prevEmbed.wasClosed()) {
+                                SameDiffMemoryUtils.safeClose(prevEmbed);
+                            }
+                            continue; // Skip normal single-token decode
+                        }
+                    }
+                }
+
+                // ── Normal single-token decode ──
+                long currentSeqLen = 1;
                 long totalSeqLen = currentSeqLen + cachePos;
 
                 // Build input map fresh each step (growing KV, like batch test)
