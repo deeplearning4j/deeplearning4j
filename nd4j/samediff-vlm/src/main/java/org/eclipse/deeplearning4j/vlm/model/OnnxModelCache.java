@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.vlm.model;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
@@ -32,6 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -63,6 +66,13 @@ public class OnnxModelCache {
      */
     public static final String DISABLE_CACHE_PROPERTY = "vlm.model.cache.disable";
 
+    /**
+     * System property to enable graph optimization after loading.
+     * Set to "true" to run GraphOptimizer (constant folding, identity removal,
+     * attention fusion, etc.). Optimized graphs are cached separately as .opt.sdz files.
+     */
+    public static final String OPTIMIZER_ENABLED_PROPERTY = "nd4j.optimizer.enabled";
+
     private OnnxModelCache() {
         // utility class
     }
@@ -88,6 +98,21 @@ public class OnnxModelCache {
         File sdzFile = getSdzCacheFile(onnxFile);
         boolean cacheDisabled = Boolean.getBoolean(DISABLE_CACHE_PROPERTY);
 
+        boolean optimizerEnabled = Boolean.getBoolean(OPTIMIZER_ENABLED_PROPERTY);
+
+        // Check for cached optimized SDZ first (if optimizer is enabled)
+        if (optimizerEnabled && !cacheDisabled) {
+            File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
+            if (optSdzFile.exists() && optSdzFile.lastModified() >= onnxFile.lastModified()) {
+                log.info("Loading cached optimized SDZ model: {} ({} bytes)", optSdzFile.getName(), optSdzFile.length());
+                long start = System.currentTimeMillis();
+                SameDiff sd = SDZSerializer.load(optSdzFile, false);
+                long elapsed = System.currentTimeMillis() - start;
+                log.info("Loaded cached optimized SDZ model in {}ms: {}", elapsed, optSdzFile.getName());
+                return sd;
+            }
+        }
+
         // Use cached SDZ if it exists and is newer than the ONNX source
         if (!cacheDisabled && sdzFile.exists() && sdzFile.lastModified() >= onnxFile.lastModified()) {
             log.info("Loading cached SDZ model: {} ({} bytes)", sdzFile.getName(), sdzFile.length());
@@ -95,7 +120,7 @@ public class OnnxModelCache {
             SameDiff sd = SDZSerializer.load(sdzFile, false);
             long elapsed = System.currentTimeMillis() - start;
             log.info("Loaded cached SDZ model in {}ms: {}", elapsed, sdzFile.getName());
-            return sd;
+            return maybeOptimize(sd, onnxFile, optimizerEnabled, cacheDisabled);
         }
 
         // Full ONNX import (first run or cache invalidated)
@@ -124,7 +149,58 @@ public class OnnxModelCache {
             }
         }
 
-        return sd;
+        return maybeOptimize(sd, onnxFile, optimizerEnabled, cacheDisabled);
+    }
+
+    /**
+     * Optionally run GraphOptimizer on the loaded model and cache the result.
+     */
+    private static SameDiff maybeOptimize(SameDiff sd, File onnxFile, boolean optimizerEnabled, boolean cacheDisabled) {
+        if (!optimizerEnabled) {
+            return sd;
+        }
+
+        int opsBefore = sd.getOps().size();
+        // Skip optimization for small models (embed_tokens, etc.)
+        if (opsBefore < 100) {
+            log.info("Skipping optimization for small model {} ({} ops)", onnxFile.getName(), opsBefore);
+            return sd;
+        }
+
+        log.info("Running GraphOptimizer on {} ({} ops)...", onnxFile.getName(), opsBefore);
+        long optStart = System.currentTimeMillis();
+
+        List<String> outputs = sd.outputs() != null ? new ArrayList<>(sd.outputs()) : new ArrayList<>();
+        SameDiff optimized = GraphOptimizer.optimize(sd, outputs);
+
+        int opsAfter = optimized.getOps().size();
+        long optElapsed = System.currentTimeMillis() - optStart;
+        log.info("GraphOptimizer: {} -> {} ops ({} removed) in {}ms for {}",
+                opsBefore, opsAfter, opsBefore - opsAfter, optElapsed, onnxFile.getName());
+
+        // Cache the optimized graph for future runs
+        if (!cacheDisabled) {
+            File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
+            try {
+                long saveStart = System.currentTimeMillis();
+                SDZSerializer.save(optimized, optSdzFile, false, Map.of(
+                        "source_onnx", onnxFile.getName(),
+                        "optimized", "true",
+                        "ops_before", String.valueOf(opsBefore),
+                        "ops_after", String.valueOf(opsAfter)
+                ));
+                long saveElapsed = System.currentTimeMillis() - saveStart;
+                log.info("Cached optimized SDZ in {}ms: {} ({} bytes)",
+                        saveElapsed, optSdzFile.getName(), optSdzFile.length());
+            } catch (Exception e) {
+                log.warn("Failed to cache optimized SDZ (non-fatal): {}", e.getMessage());
+                if (optSdzFile.exists()) {
+                    optSdzFile.delete();
+                }
+            }
+        }
+
+        return optimized;
     }
 
     /**
@@ -162,13 +238,72 @@ public class OnnxModelCache {
         log.info("DSP and CUDA graphs disabled during model loading");
 
         // Find the primary GPU (most total memory) for model loading.
-        // All import threads are pinned to this device to prevent model constants
-        // from being split across non-peer GPUs during allocation.
         int primaryDevice = selectPrimaryDevice();
-        log.info("Importing {} ONNX models in parallel (all pinned to device {})...",
-                onnxFilePaths.length, primaryDevice);
+
+        // Check if ALL models have SDZ caches. If not, import sequentially to avoid
+        // CUDA thread-safety issues with parallel ONNX imports (each import creates
+        // thousands of NDArrays on the GPU, and concurrent CUDA context operations
+        // from multiple threads can cause stream synchronization failures).
+        boolean allCached = true;
+        boolean cacheDisabled = Boolean.getBoolean(DISABLE_CACHE_PROPERTY);
+        if (!cacheDisabled) {
+            for (String path : onnxFilePaths) {
+                File onnxFile = new File(path);
+                boolean optimizerEnabled = Boolean.getBoolean(OPTIMIZER_ENABLED_PROPERTY);
+                File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
+                File sdzFile = getSdzCacheFile(onnxFile);
+                boolean hasCachedOpt = optimizerEnabled && optSdzFile.exists() &&
+                        optSdzFile.lastModified() >= onnxFile.lastModified();
+                boolean hasCached = sdzFile.exists() && sdzFile.lastModified() >= onnxFile.lastModified();
+                if (!hasCachedOpt && !hasCached) {
+                    allCached = false;
+                    break;
+                }
+            }
+        } else {
+            allCached = false;
+        }
+
         long start = System.currentTimeMillis();
 
+        try {
+            SameDiff[] results;
+            if (allCached) {
+                // All models have SDZ caches — safe to load in parallel (I/O-bound, no CUDA contention)
+                log.info("Loading {} cached models in parallel (device {})...",
+                        onnxFilePaths.length, primaryDevice);
+                results = importAllParallel(onnxFilePaths, primaryDevice);
+            } else {
+                // Some models need ONNX import — import sequentially to avoid CUDA thread-safety issues
+                log.info("Importing {} models sequentially (some need ONNX import)...",
+                        onnxFilePaths.length);
+                results = new SameDiff[onnxFilePaths.length];
+                for (int i = 0; i < onnxFilePaths.length; i++) {
+                    results[i] = importWithCache(onnxFilePaths[i]);
+                }
+            }
+
+            long elapsed = System.currentTimeMillis() - start;
+            log.info("All {} models loaded in {}ms (device {})",
+                    onnxFilePaths.length, elapsed, primaryDevice);
+            return results;
+        } finally {
+            // Restore DSP and CUDA graph settings
+            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
+            if (prevCudaGraphs != null) {
+                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
+            } else {
+                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
+            }
+            log.info("DSP and CUDA graphs restored after model loading (dsp={}, cudaGraphs={})",
+                    dspWasEnabled, prevCudaGraphs != null ? prevCudaGraphs : "default");
+        }
+    }
+
+    /**
+     * Import all models in parallel using a thread pool.
+     */
+    private static SameDiff[] importAllParallel(String[] onnxFilePaths, int primaryDevice) throws IOException {
         ExecutorService executor = Executors.newFixedThreadPool(onnxFilePaths.length);
         try {
             @SuppressWarnings("unchecked")
@@ -177,7 +312,6 @@ public class OnnxModelCache {
                 final String path = onnxFilePaths[i];
                 final int deviceId = primaryDevice;
                 futures[i] = executor.submit(() -> {
-                    // Pin this thread to the primary GPU before loading
                     DeviceMemoryManager.getInstance().switchDevice(
                             deviceId, "OnnxModelCache.importAllWithCache", "pin-import-thread");
                     return importWithCache(path);
@@ -199,22 +333,9 @@ public class OnnxModelCache {
                     throw new IOException("Import interrupted: " + onnxFilePaths[i], e);
                 }
             }
-
-            long elapsed = System.currentTimeMillis() - start;
-            log.info("All {} models loaded in {}ms (parallel, device {})",
-                    onnxFilePaths.length, elapsed, primaryDevice);
             return results;
         } finally {
             executor.shutdown();
-            // Restore DSP and CUDA graph settings
-            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
-            if (prevCudaGraphs != null) {
-                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
-            } else {
-                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
-            }
-            log.info("DSP and CUDA graphs restored after model loading (dsp={}, cudaGraphs={})",
-                    dspWasEnabled, prevCudaGraphs != null ? prevCudaGraphs : "default");
         }
     }
 
@@ -286,5 +407,20 @@ public class OnnxModelCache {
             baseName = name;
         }
         return new File(onnxFile.getParentFile(), baseName + ".sdz");
+    }
+
+    /**
+     * Get the optimized SDZ cache file path for a given ONNX file.
+     */
+    private static File getOptimizedSdzCacheFile(File onnxFile) {
+        String name = onnxFile.getName();
+        String baseName;
+        int dotIdx = name.lastIndexOf('.');
+        if (dotIdx > 0) {
+            baseName = name.substring(0, dotIdx);
+        } else {
+            baseName = name;
+        }
+        return new File(onnxFile.getParentFile(), baseName + ".opt.sdz");
     }
 }

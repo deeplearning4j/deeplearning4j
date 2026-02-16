@@ -348,3 +348,9 @@ const char* getPlanHostOnlyOpNames(sd::Pointer planHandle) {
 void printPlanCapturedGraphDebug(sd::Pointer planHandle) {
   // No-op on CPU backend
 }
+
+const char* getPlanCaptureStats(sd::Pointer planHandle) {
+  static thread_local char buf[64];
+  snprintf(buf, sizeof(buf), "cpu-backend");
+  return buf;
+}

@@ -1634,4 +1634,15 @@ public interface NativeOps {
  default void printPlanCapturedGraphDebug(Pointer planHandle) {
      // No-op on non-CUDA backends
  }
+
+ /**
+  * Get detailed capture statistics as a formatted string.
+  * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
+  *
+  * @param planHandle  Handle from compileDynamicShapePlan()
+  * @return Thread-local static buffer with stats string
+  */
+ default String getPlanCaptureStats(Pointer planHandle) {
+     return "";
+ }
 }

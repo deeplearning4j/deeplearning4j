@@ -89,12 +89,19 @@ PLATFORM_CHECK(matmul, ENGINE_CUDA) {
 
 //////////////////////////////////////////////////////////////////////////
 // RMS_NORM - RMS Normalization on CUDA
-static void rmsNormCuda(NDArray* input, NDArray* output, float eps) {
+static void rmsNormCuda(NDArray* input, NDArray* weight, NDArray* output, float eps) {
     llamacppUtils::GgmlCudaContextGuard ctx(64 * 1024 * 1024);
 
     struct ggml_tensor* ggml_input = llamacppUtils::createGgmlTensorCuda(ctx, input, ctx.getBackend(), "input");
 
     struct ggml_tensor* ggml_output = ggml_rms_norm(ctx, ggml_input, eps);
+
+    // Apply weight/gamma if provided
+    if (weight != nullptr && !weight->isEmpty()) {
+        struct ggml_tensor* ggml_weight = llamacppUtils::createGgmlTensorCuda(ctx, weight, ctx.getBackend(), "weight");
+        ggml_output = ggml_mul(ctx, ggml_output, ggml_weight);
+    }
+
     ggml_set_name(ggml_output, "output");
 
     struct ggml_cgraph* graph = ggml_new_graph(ctx);
@@ -108,10 +115,12 @@ PLATFORM_IMPL(rms_norm, ENGINE_CUDA) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
+    NDArray* weight = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
+
     if (input->isEmpty()) return sd::Status::OK;
 
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
-    rmsNormCuda(input, output, eps);
+    rmsNormCuda(input, weight, output, eps);
     return sd::Status::OK;
 }
 

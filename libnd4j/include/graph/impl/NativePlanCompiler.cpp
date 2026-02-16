@@ -217,6 +217,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.needsZeroedOutput = !isFullyWritingOp(slot.opName) || isDataDep;
     slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
     slot.isIdentityOp = (slot.opName == "identity");
+    slot.inPlaceFused = false;
+    slot.inPlaceFusedInputIdx = -1;
 
     // Build input wiring from inputPaired
     auto* inputPaired = node->inputPaired();

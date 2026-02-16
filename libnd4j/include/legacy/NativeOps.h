@@ -1707,4 +1707,13 @@ SD_LIB_EXPORT const char* getPlanHostOnlyOpNames(sd::Pointer planHandle);
  */
 SD_LIB_EXPORT void printPlanCapturedGraphDebug(sd::Pointer planHandle);
 
+/**
+ * Get detailed capture statistics as a formatted string.
+ * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Thread-local static buffer with stats string
+ */
+SD_LIB_EXPORT const char* getPlanCaptureStats(sd::Pointer planHandle);
+
 #endif // NATIVEOPS_H

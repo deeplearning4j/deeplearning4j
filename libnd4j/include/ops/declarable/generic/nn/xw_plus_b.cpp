@@ -68,11 +68,11 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     sd::LongType inputLastDim = x->sizeAt(-1);
     sd::LongType outputLastDim = z->sizeAt(-1);
 
-    // Reshape to 2D - these create new NDArray objects
+    // Reshape to 2D - create views (not copies) so matmul writes into the original buffer
     std::vector<sd::LongType> xShape2D = {batchSize, inputLastDim};
     std::vector<sd::LongType> zShape2D = {batchSize, outputLastDim};
-    xEffective = x->reshape('c', xShape2D);
-    zEffective = z->reshape('c', zShape2D);
+    xEffective = x->reshape('c', xShape2D, false);
+    zEffective = z->reshape('c', zShape2D, false);
     deleteX = true;
     deleteZ = true;
   } else {
@@ -192,10 +192,15 @@ DECLARE_SHAPE_FN(xw_plus_b) {
                                                                          'c', outputShape);
     return SHAPELIST(finalShape);
   } else {
-    // Original behavior for rank 2 inputs
-    auto outputShape = ShapeUtils::matrixProductShape(xShape, const_cast<sd::LongType *>(weightsShape), aTranspose,
+    // Rank 2 inputs: compute output dimensions from matmul, but always use C order.
+    // matrixProductShape returns F-order (from cuBLAS convention), but xw_plus_b
+    // needs C-order output for correct row-major semantics when used in SameDiff graphs.
+    auto matmulOutput = ShapeUtils::matrixProductShape(xShape, const_cast<sd::LongType *>(weightsShape), aTranspose,
                                                       bTranspose,
                                                       ArrayOptions::dataType(xShape), block.getWorkspace());
+    std::vector<sd::LongType> outDims = {shape::sizeAt(matmulOutput, 0), shape::sizeAt(matmulOutput, 1)};
+    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(xShape), 'c', outDims);
     return SHAPELIST(outputShape);
   }
 }

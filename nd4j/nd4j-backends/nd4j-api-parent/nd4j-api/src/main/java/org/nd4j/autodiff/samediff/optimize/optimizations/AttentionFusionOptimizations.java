@@ -235,20 +235,81 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     return false;
                 }
 
-                // dot_product_attention_v2 only supports rank 2 or 3 inputs.
-                // Multi-head attention patterns with rank 4 (batch, heads, seq, dim) cannot be fused.
-                // Check static shapes first, then try to infer rank from producer ops.
+                // dot_product_attention_v2 supports rank 2, 3, or 4 inputs.
+                // Rank 4 uses BSHD (batch, seq, numHeads, headDim) format via FlashAttentionHelper::forward4D.
                 int qRank = inferVariableRank(sd, qSDVar);
                 int kRank = inferVariableRank(sd, kSDVar);
                 int vRank = inferVariableRank(sd, vSDVar);
                 log.debug("Attention fusion rank check: Q={} rank={}, K={} rank={}, V={} rank={}",
                         components.queryVar, qRank, components.keyVar, kRank, vVar, vRank);
-                // dot_product_attention_v2 only supports rank 2 or 3.
-                // Reject unknown ranks (-1) and rank 4+ (multi-head with explicit head dim).
-                if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 3 || kRank > 3 || vRank > 3) {
+                // Reject unknown ranks (-1) and rank 5+.
+                if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 4 || kRank > 4 || vRank > 4) {
                     log.debug("Skipping attention fusion: ranks not supported (Q={}, K={}, V={}). " +
-                            "dot_product_attention_v2 requires rank 2 or 3.", qRank, kRank, vRank);
+                            "dot_product_attention_v2 requires rank 2, 3, or 4.", qRank, kRank, vRank);
                     return false;
+                }
+
+                // For rank 4: The pattern typically has permute([0,2,1,3]) converting BSHD→BHSD
+                // before the attention matmuls. The C++ op expects BSHD, so we absorb the upstream
+                // permutes and pass the pre-permute BSHD variables directly.
+                // Track permute ops to remove.
+                List<String> permuteOpsToRemove = new ArrayList<>();
+                List<String> permuteVarsToRemove = new ArrayList<>();
+                // Track downstream permute on attention output (BHSD→BSHD)
+                String downstreamPermuteOpName = null;
+                String downstreamPermuteOutputVar = null;
+
+                if (qRank == 4 || kRank == 4 || vRank == 4) {
+                    // Absorb upstream permute([0,2,1,3]) on Q
+                    String[] qAbsorbed = absorbUpstreamPermute0213(sd, helper, components.queryVar);
+                    if (qAbsorbed != null) {
+                        log.debug("[ATTN-R4] Absorbing Q permute: {} -> {}", components.queryVar, qAbsorbed[0]);
+                        permuteOpsToRemove.add(qAbsorbed[1]);
+                        permuteVarsToRemove.add(components.queryVar);
+                        components.queryVar = qAbsorbed[0];
+                        qSDVar = sd.getVariable(components.queryVar);
+                    }
+
+                    // Absorb upstream permute([0,2,1,3]) on K
+                    String[] kAbsorbed = absorbUpstreamPermute0213(sd, helper, components.keyVar);
+                    if (kAbsorbed != null) {
+                        log.debug("[ATTN-R4] Absorbing K permute: {} -> {}", components.keyVar, kAbsorbed[0]);
+                        permuteOpsToRemove.add(kAbsorbed[1]);
+                        permuteVarsToRemove.add(components.keyVar);
+                        components.keyVar = kAbsorbed[0];
+                        kSDVar = sd.getVariable(components.keyVar);
+                    }
+
+                    // Absorb upstream permute([0,2,1,3]) on V
+                    String[] vAbsorbed = absorbUpstreamPermute0213(sd, helper, vVar);
+                    if (vAbsorbed != null) {
+                        log.debug("[ATTN-R4] Absorbing V permute: {} -> {}", vVar, vAbsorbed[0]);
+                        permuteOpsToRemove.add(vAbsorbed[1]);
+                        permuteVarsToRemove.add(vVar);
+                        vVar = vAbsorbed[0];
+                        vSDVar = sd.getVariable(vVar);
+                    }
+
+                    // Detect downstream permute([0,2,1,3]) on attention output (BHSD→BSHD).
+                    // The fused op outputs BSHD directly, so we can absorb this permute.
+                    Variable attOutVarInfo = getVariableWithFallback(helper, sd, attentionOutputVar);
+                    if (attOutVarInfo != null) {
+                        List<String> attUsers = attOutVarInfo.getInputsForOp();
+                        if (attUsers != null && attUsers.size() == 1) {
+                            SameDiffOp userOp = sd.getOps().get(attUsers.get(0));
+                            if (userOp != null && isPermute0213(userOp)) {
+                                List<String> userOutputs = userOp.getOutputsOfOp();
+                                if (userOutputs != null && !userOutputs.isEmpty()) {
+                                    downstreamPermuteOpName = userOp.getName();
+                                    downstreamPermuteOutputVar = userOutputs.get(0);
+                                    log.debug("[ATTN-R4] Absorbing downstream permute: {} -> output {}",
+                                            downstreamPermuteOpName, downstreamPermuteOutputVar);
+                                }
+                            }
+                        }
+                    }
+
+                    log.debug("[ATTN-R4] After permute absorption: Q={}, K={}, V={}", components.queryVar, components.keyVar, vVar);
                 }
 
                 // Create dot_product_attention_v2 op
@@ -279,11 +340,22 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         false             // not training
                 ).outputVariable();
 
-                // Replace all uses of the attention output with the fused output
-                OptimizationUtils.replaceOpInputsWith(sd, helper, attentionOutputVar, fusedOutput.name());
+                // For rank 4 with downstream permute absorption: replace the permute output's users
+                // (the fused op already outputs BSHD, which is what comes after the permute)
+                if (downstreamPermuteOutputVar != null) {
+                    OptimizationUtils.replaceOpInputsWith(sd, helper, downstreamPermuteOutputVar, fusedOutput.name());
+                } else {
+                    // Replace all uses of the attention output with the fused output
+                    OptimizationUtils.replaceOpInputsWith(sd, helper, attentionOutputVar, fusedOutput.name());
+                }
 
                 // Remove old operations in reverse order
                 OptimizationUtils.removeOp(sd, helper, op.getName());  // final matmul
+
+                // Remove downstream permute if absorbed
+                if (downstreamPermuteOpName != null) {
+                    OptimizationUtils.removeOp(sd, helper, downstreamPermuteOpName);
+                }
 
                 // Remove reshape between softmax and final matmul if it exists
                 if (reshapeAfterSoftmax != null) {
@@ -310,8 +382,23 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 // Remove Q @ K^T matmul
                 OptimizationUtils.removeOp(sd, helper, components.qkMatmulOpName);
 
+                // Remove absorbed upstream permute ops
+                for (String permuteOpName : permuteOpsToRemove) {
+                    OptimizationUtils.removeOp(sd, helper, permuteOpName);
+                }
+
                 // Remove intermediate variables
                 OptimizationUtils.removeVariable(sd, helper, potentialSoftmaxOutput);
+
+                // Remove downstream permute output variable
+                if (downstreamPermuteOutputVar != null) {
+                    OptimizationUtils.removeVariable(sd, helper, downstreamPermuteOutputVar);
+                }
+
+                // Remove absorbed upstream permute output variables
+                for (String permuteVar : permuteVarsToRemove) {
+                    OptimizationUtils.removeVariable(sd, helper, permuteVar);
+                }
 
                 // Remove reshape output variable between matmul and scale
                 if (components.reshapeBeforeScaleOutputVar != null) {
@@ -343,6 +430,56 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 log.debug("[ATTN-WARN] Failed to fuse attention pattern: " + e.getMessage());
                 return false;
             }
+        }
+
+        /**
+         * Checks if an op is a permute([0,2,1,3]) — swapping dims 1 and 2.
+         * This is the standard BSHD↔BHSD conversion in multi-head attention.
+         */
+        private boolean isPermute0213(SameDiffOp op) {
+            if (op == null || !(op.getOp() instanceof Permute)) return false;
+            DynamicCustomOp permOp = (DynamicCustomOp) op.getOp();
+            long[] iArgs = permOp.iArgs();
+            if (iArgs != null && iArgs.length == 4) {
+                return iArgs[0] == 0 && iArgs[1] == 2 && iArgs[2] == 1 && iArgs[3] == 3;
+            }
+            // Also check second input (constant permutation array)
+            List<String> inputs = op.getInputsToOp();
+            if (inputs != null && inputs.size() >= 2) {
+                SameDiff sd = permOp.getSameDiff();
+                if (sd != null) {
+                    SDVariable permVar = sd.getVariable(inputs.get(1));
+                    if (permVar != null && permVar.getVariableType() == VariableType.CONSTANT) {
+                        INDArray permArr = sd.getConstantArrays().getArray(permVar.name());
+                        if (permArr != null && permArr.length() == 4) {
+                            return permArr.getLong(0) == 0 && permArr.getLong(1) == 2 &&
+                                   permArr.getLong(2) == 1 && permArr.getLong(3) == 3;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /**
+         * If the given variable is the output of a permute([0,2,1,3]), returns the
+         * pre-permute variable name and the permute op name as [varName, opName].
+         * Otherwise returns null.
+         */
+        private String[] absorbUpstreamPermute0213(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable v = getVariableWithFallback(helper, sd, varName);
+            if (v == null) return null;
+            String producerOpName = v.getOutputOfOp();
+            if (producerOpName == null) return null;
+            SameDiffOp producerOp = sd.getOps().get(producerOpName);
+            if (producerOp == null) return null;
+            if (isPermute0213(producerOp)) {
+                List<String> inputs = producerOp.getInputsToOp();
+                if (inputs != null && !inputs.isEmpty()) {
+                    return new String[] { inputs.get(0), producerOpName };
+                }
+            }
+            return null;
         }
 
         /**

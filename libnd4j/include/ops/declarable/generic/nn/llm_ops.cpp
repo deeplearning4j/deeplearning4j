@@ -34,6 +34,7 @@
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
 #include <helpers/FlashAttentionHelper.h>
+#include <ops/declarable/helpers/rms_norm.h>
 #include <math/templatemath.h>
 #include <cmath>
 
@@ -50,25 +51,49 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
     NDArray* gamma = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
     float eps = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5f;
 
-    // RMS = sqrt(mean(x^2))
-    NDArray* squared = (*input) * (*input);
+    // Fast path conditions: last-dim normalization with contiguous row-major data
+    const int rank = input->rankOf();
+    const bool inputContiguous = input->ordering() == 'c' &&
+                                 shape::strideDescendingCAscendingF(input->shapeInfo());
+    const bool outputContiguous = output->ordering() == 'c' &&
+                                  shape::strideDescendingCAscendingF(output->shapeInfo());
+    const bool isContiguous = inputContiguous && outputContiguous;
+    const bool isFloat = input->dataType() == DataType::FLOAT32;
+    const bool isDouble = input->dataType() == DataType::DOUBLE;
+    const bool isHalf = input->dataType() == DataType::HALF;
+    const bool gammaContiguous = gamma == nullptr ||
+                                 shape::strideDescendingCAscendingF(gamma->shapeInfo());
+
+#if defined(SD_CUDA)
+    // CUDA fast path: fused kernel
+    if (isContiguous && (isFloat || isDouble || isHalf) && gammaContiguous) {
+        helpers::rmsNormCuda(input, gamma, output, eps, block.launchContext());
+        return Status::OK;
+    }
+#endif
+
+    // CPU fast path: fused 2-pass implementation via helper
+    if (isContiguous && (isFloat || isDouble) && gammaContiguous) {
+        helpers::rmsNormCpu(input, gamma, output, eps);
+        return Status::OK;
+    }
+
+    // General fallback path for non-contiguous data
     std::vector<LongType> axis = {input->rankOf() - 1};
+    NDArray* squared = (*input) * (*input);
     NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, true);
     delete squared;
 
-    // rsqrt = 1 / sqrt(mean + eps)
     NDArray* meanPlusEps = (*meanSquared) + eps;
     delete meanSquared;
     NDArray* rsqrt = meanPlusEps->transform(transform::RSqrt);
     delete meanPlusEps;
 
-    // output = input * rsqrt
     NDArray* result = (*input) * (*rsqrt);
     output->assign(result);
     delete result;
     delete rsqrt;
 
-    // Apply gamma if provided
     if (gamma != nullptr) {
         output->applyBroadcast(broadcast::Multiply, &axis, gamma, output);
     }

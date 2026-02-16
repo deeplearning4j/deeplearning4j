@@ -77,6 +77,23 @@ public:
         NativeSlot* slots, int numSlots);
 
     /**
+     * Apply detected fusions by marking slots for in-place execution.
+     *
+     * For ELEMENTWISE_CHAIN: Each op after the first reuses the previous
+     * op's output buffer, eliminating intermediate allocations.
+     *
+     * For BIAS_ACTIVATION: The activation op reuses the add op's output buffer.
+     *
+     * @param slots Array of NativeSlot (modified in place)
+     * @param numSlots Number of slots
+     * @param candidates Fusion candidates from detectFusions()
+     * @return Number of fusions successfully applied
+     */
+    static int applyFusions(
+        NativeSlot* slots, int numSlots,
+        const std::vector<FusionCandidate>& candidates);
+
+    /**
      * Check if an op hash corresponds to a unary elementwise operation.
      */
     static bool isUnaryElementwise(sd::LongType opHash);

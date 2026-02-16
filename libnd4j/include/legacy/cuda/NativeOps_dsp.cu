@@ -34,6 +34,8 @@
 #include <graph/SdnbReader.h>
 #include <graph/SdzReader.h>
 #include <system/common.h>
+#include <memory/cuda/CudaMemoryPool.h>
+#include <execution/AffinityManager.h>
 
 #include <cstring>
 #include <string>
@@ -437,4 +439,54 @@ void printPlanCapturedGraphDebug(sd::Pointer planHandle) {
       seg.cachedGraph->printGraphContents();
     }
   }
+}
+
+const char* getPlanCaptureStats(sd::Pointer planHandle) {
+  static thread_local char buf[1024];
+  if (planHandle == nullptr) {
+    snprintf(buf, sizeof(buf), "null");
+    return buf;
+  }
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  const auto& segs = plan->getSegments();
+
+  int captured = 0, oomRetrying = 0, permFailed = 0, nonCapt = 0;
+  int captSlots = 0, oomSlots = 0, permSlots = 0, nonCaptSlots = 0;
+  int maxOomRetries = 0;
+
+  for (const auto& seg : segs) {
+    int segSlots = seg.endSlot - seg.startSlot + 1;
+    if (!seg.isCapturable) {
+      nonCapt++;
+      nonCaptSlots += segSlots;
+    } else if (seg.cachedGraph) {
+      captured++;
+      captSlots += segSlots;
+    } else if (seg.captureFailed) {
+      permFailed++;
+      permSlots += segSlots;
+    } else if (seg.captureOomRetries > 0) {
+      oomRetrying++;
+      oomSlots += segSlots;
+      if (seg.captureOomRetries > maxOomRetries) maxOomRetries = seg.captureOomRetries;
+    }
+  }
+
+  // Get GPU memory info
+  size_t gpuFree = 0, gpuTotal = 0;
+  cudaMemGetInfo(&gpuFree, &gpuTotal);
+
+  // Get pool stats
+  size_t poolUsed = 0, poolReserved = 0;
+  int devId = sd::AffinityManager::currentDeviceId();
+  sd::memory::CudaMemoryPool::getInstance().getStats(devId, poolUsed, poolReserved);
+
+  snprintf(buf, sizeof(buf),
+           "captured=%d(%dslots)|oomRetrying=%d(%dslots,maxRetry=%d)|permFailed=%d(%dslots)|nonCapt=%d(%dslots)|total=%d"
+           "|gpuFree=%zuMB|poolUsed=%zuMB|poolRes=%zuMB",
+           captured, captSlots, oomRetrying, oomSlots, maxOomRetries,
+           permFailed, permSlots, nonCapt, nonCaptSlots,
+           static_cast<int>(segs.size()),
+           gpuFree / (1024*1024), poolUsed / (1024*1024), poolReserved / (1024*1024));
+  return buf;
 }

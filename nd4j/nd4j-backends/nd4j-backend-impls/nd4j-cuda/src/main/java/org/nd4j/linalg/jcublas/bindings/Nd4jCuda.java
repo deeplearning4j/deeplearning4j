@@ -3460,6 +3460,15 @@ public native @Cast("char*") String getPlanHostOnlyOpNames(@Cast("sd::Pointer") 
  */
 public native void printPlanCapturedGraphDebug(@Cast("sd::Pointer") Pointer planHandle);
 
+/**
+ * Get detailed capture statistics as a formatted string.
+ * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Thread-local static buffer with stats string
+ */
+public native @Cast("char*") String getPlanCaptureStats(@Cast("sd::Pointer") Pointer planHandle);
+
 // #endif // NATIVEOPS_H
 
 // Parsed from memory/ExternalWorkspace.h

@@ -26,7 +26,6 @@ import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.output.DocTagsParser;
-import org.eclipse.deeplearning4j.vlm.output.DocumentElement;
 import org.eclipse.deeplearning4j.vlm.output.DocumentStructure;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
@@ -4903,7 +4902,7 @@ public class TestVLMModelImportPipeline {
         log.info("STRUCTURAL ANALYSIS:");
         log.info("  DocTags complete (has <doctag>...</doctag>): {}", isComplete);
         log.info("  Elements parsed: {}", doc.getElementCount());
-        for (DocumentElement elem : doc.getElements()) {
+        for (DocTagsParser.DocumentElement elem : doc.getElements()) {
             String bboxStr = elem.getBoundingBox() != null ?
                     String.format(" [%d,%d,%d,%d]", elem.getBoundingBox().getX1(),
                             elem.getBoundingBox().getY1(), elem.getBoundingBox().getX2(),

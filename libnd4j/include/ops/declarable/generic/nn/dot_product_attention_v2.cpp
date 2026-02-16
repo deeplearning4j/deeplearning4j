@@ -40,8 +40,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   REQUIRE_TRUE(queriesOrig->rankOf() == valuesOrig->rankOf(), 0,
                "dot_product_attention_v2: Queries and values must have same rank, got %i vs %i",
                queriesOrig->rankOf(), valuesOrig->rankOf());
-  REQUIRE_TRUE(queriesOrig->rankOf() >= 2 && queriesOrig->rankOf() <= 3, 0,
-               "dot_product_attention_v2: Input rank must be 2 or 3, got %i", queriesOrig->rankOf());
+  REQUIRE_TRUE(queriesOrig->rankOf() >= 2 && queriesOrig->rankOf() <= 4, 0,
+               "dot_product_attention_v2: Input rank must be 2, 3, or 4, got %i", queriesOrig->rankOf());
 
   // Track reshaped arrays for cleanup
   NDArray* queries = nullptr;
@@ -50,6 +50,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   NDArray* qMask = nullptr;
   NDArray* vMask = nullptr;
   bool reshapedQ = false;
+
+  bool isRank4 = (queriesOrig->rankOf() == 4);
 
   // Handle rank 2 inputs by adding batch dimension
   if(queriesOrig->rankOf() == 2) {
@@ -134,14 +136,24 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     config.scale = static_cast<float>(scale);
     config.isCausal = useCausalMask;
     config.dropout = 0.0f;
-    config.numHeads = 1;
-    config.numKvHeads = 1;
 
-    // Call FlashAttentionHelper::forward() directly with 3D inputs
-    // This avoids unnecessary 4D reshape + permute operations
-    // forward3D is called when inputs have rank 3
+    if (isRank4) {
+      // Rank 4: [batch, seq, numHeads, headDim] (BSHD format)
+      // FlashAttentionHelper::forward4D expects this layout directly
+      config.numHeads = queries->sizeAt(2);
+      config.numKvHeads = keys->sizeAt(2);
+    } else {
+      config.numHeads = 1;
+      config.numKvHeads = 1;
+    }
+
+    // Call FlashAttentionHelper::forward() directly
+    // forward() dispatches to forward3D or forward4D based on input rank
+    // Pass nullptr for scores/logits to enable the fast fused CUDA kernel path.
+    // The fused kernel doesn't produce intermediate scores — they would need
+    // a separate matmul which defeats the purpose of fusion.
     FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
-                                  nullptr, attentionScores, attentionLogits,
+                                  nullptr, nullptr, nullptr,
                                   block.launchContext());
   } else {
     // Fallback to AttentionHelper for masks/dropout support
@@ -187,12 +199,25 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
 
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
 
+  // For rank 4: [batch, seq_len, numHeads, headDim] (BSHD)
   // For rank 3: [batch, seq_len, features]
   // For rank 2: [seq_len, features] - treated as batch=1
   std::vector<sd::LongType> outShape;
   std::vector<sd::LongType> scoresShape;
 
-  if(queries->rankOf() == 3) {
+  if(queries->rankOf() == 4) {
+    // Rank 4: [batch, Tq, numHeads, headDim] (BSHD format)
+    sd::LongType batchSize = queries->sizeAt(0);
+    sd::LongType tq = queries->sizeAt(1);
+    sd::LongType numHeads = queries->sizeAt(2);
+    sd::LongType headDim = queries->sizeAt(3);
+    sd::LongType tv = values->sizeAt(1);
+
+    // Output shape: [batch, Tq, numHeads, headDim] (same as query)
+    outShape = {batchSize, tq, numHeads, headDim};
+    // Attention scores shape: [batch, numHeads, Tq, Tv] (per-head scores)
+    scoresShape = {batchSize, numHeads, tq, tv};
+  } else if(queries->rankOf() == 3) {
     // Rank 3: [batch, Tq, dim] @ [batch, Tv, dim]^T -> [batch, Tq, Tv] -> softmax -> @ [batch, Tv, dim] -> [batch, Tq, dim]
     sd::LongType batchSize = queries->sizeAt(0);
     sd::LongType tq = queries->sizeAt(1);  // query sequence length

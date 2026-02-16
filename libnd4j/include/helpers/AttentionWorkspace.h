@@ -112,7 +112,8 @@ class SD_LIB_EXPORT AttentionWorkspace {
   AttentionWorkspace();
 
   struct BufferEntry {
-    std::unique_ptr<NDArray> buffer;
+    std::unique_ptr<NDArray> buffer;     // Owning buffer (holds the actual GPU memory)
+    std::unique_ptr<NDArray> view;       // Non-owning view (different shape, same memory)
     std::vector<LongType> currentShape;
     size_t capacity;  // Total elements allocated
     uint64_t lastUsed;  // For LRU eviction

@@ -90,6 +90,8 @@ struct NativeSlot {
   bool needsIntLongSync;
   bool isCustomOp;
   bool isIdentityOp;                       // Identity: output = input, skip execution
+  bool inPlaceFused;                       // In-place fused: output reuses input buffer (set by FusionPass)
+  int inPlaceFusedInputIdx;                // Which input index to reuse as output (-1 = not fused)
   int targetDeviceId;                      // -1 = auto
 
   // Legacy op support for ops not registered in OpRegistrator
@@ -109,6 +111,11 @@ struct NativeSlot {
   // Shape-static slots have their caches preserved across clearShapeCaches() calls.
   bool shapeStatic;
 
+  // Frozen context: after the first shapes-frozen execution, the context is
+  // fully configured with the same input/output arrays and arguments.
+  // On subsequent executions, skip all setup and just call op->execute().
+  bool frozenContextReady;
+
   NativeSlot()
       : opHash(0), op(nullptr), numInputs(0), inputSourceIndices(nullptr),
         inputSourceTypes(nullptr), numOutputs(0), outputSlotIndices(nullptr),
@@ -116,9 +123,11 @@ struct NativeSlot {
         bArgs(nullptr), numBArgs(0), dArgs(nullptr), numDArgs(0),
         needsZeroedOutput(true), isDataDependent(false),
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
-        isCustomOp(true), isIdentityOp(false), targetDeviceId(-1),
+        isCustomOp(true), isIdentityOp(false),
+        inPlaceFused(false), inPlaceFusedInputIdx(-1), targetDeviceId(-1),
         legacyOpType(0), legacyOpNum(-1),
-        cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false) {}
+        cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false),
+        frozenContextReady(false) {}
 
   ~NativeSlot() {
     delete[] inputSourceIndices;
@@ -160,26 +169,49 @@ struct GraphSegment {
   int executionCount;
 
   // If true, never attempt graph capture/compilation for this segment.
-  // Used by both CUDA and CPU graph backends after validation failure.
+  // Set for permanent failures (capture invalidation, host-only ops, address instability).
+  // NOT set for OOM failures — those use the retry mechanism below.
   bool captureFailed;
+
+  // OOM retry mechanism: instead of permanently disabling capture on allocation failures,
+  // retry after a cooldown period. Memory pressure decreases as other segments get captured
+  // (graph replay uses less memory than slot-by-slot due to kernel fusion).
+  int captureOomRetries;              // Number of OOM retries so far
+  int captureRetryAfterExec;          // Don't attempt capture until executionCount >= this
+  static constexpr int MAX_OOM_RETRIES = 3;
+  static constexpr int RETRY_INTERVAL = 4;  // Retry every N executions
 
 #ifdef SD_CUDA
   // Cached CUDA graph for replay
   std::shared_ptr<sd::cuda::CudaGraphHandle> cachedGraph;
   LongType cachedShapeKey;
 
-  // Input buffer addresses at capture time. CUDA graphs record exact GPU
-  // memory addresses. If any input buffer is reallocated between executions
-  // (e.g., position_ids recreated each decoder step), the graph would read
-  // from stale/freed addresses → CUDA error 700 (illegal memory access).
-  // We store a hash of all input buffer addresses at capture time and
-  // compare before replay. If addresses changed, invalidate the graph.
+  // ── Capture buffers ──────────────────────────────────────────────────
+  // CUDA graphs record exact GPU memory addresses during capture.
+  // External inputs (position_ids, attention_mask) get recreated each
+  // decoder step with new GPU addresses. Instead of checking/invalidating
+  // on address change, we allocate fixed-address "capture buffers" and
+  // copy external input data into them before each graph replay.
+  // The graph always references these stable addresses.
+  struct CaptureBuffer {
+    NDArray* buffer;           // Fixed-address GPU buffer (owned)
+    int externalInputIndex;    // Which external input this maps to (-1 = cross-segment)
+    int crossSegmentSlotIdx;   // Which output slot this maps to (for cross-segment inputs)
+    size_t capturedSize;       // Size in bytes at capture time
+
+    CaptureBuffer() : buffer(nullptr), externalInputIndex(-1),
+                      crossSegmentSlotIdx(-1), capturedSize(0) {}
+  };
+  std::vector<CaptureBuffer> captureBuffers;
+
+  // Legacy address key (kept for fallback diagnostics but no longer used for invalidation)
   LongType capturedInputAddrKey;
 #endif
 
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
-        executionCount(0), captureFailed(false)
+        executionCount(0), captureFailed(false),
+        captureOomRetries(0), captureRetryAfterExec(0)
 #ifdef SD_CUDA
         , cachedShapeKey(0), capturedInputAddrKey(0)
 #endif
@@ -192,7 +224,7 @@ struct GraphSegment {
  * is scattered to the specified position in the static past input buffer.
  */
 struct KvCacheMapping {
-  int presentOutputSlotIdx;   // Index into requestedOutputSlotIndices_ for the present KV
+  int presentOutputSlotIdx;   // Absolute index into outputSlots_ for the present KV output
   int pastInputExternalIdx;   // Index into external inputs for the past KV buffer
   int seqDim;                 // Which dimension is the sequence dim (typically 2)
 
@@ -381,6 +413,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     // Don't reset executeCount_ — if called after executions have already
     // populated the shape cache, we want to immediately skip shape
     // computation on the next execution.
+    if (!frozen) {
+      // Reset frozen context state when unfreezing — shapes may change
+      for (int i = 0; i < numSlots_; i++) {
+        slots_[i].frozenContextReady = false;
+      }
+    }
   }
   bool isShapesFrozen() const { return shapesFrozen_; }
 
@@ -502,6 +540,17 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // (for ops not registered in OpRegistrator)
   std::vector<sd::ops::DeclarableOp*> ownedLegacyOps_;
 
+  // ── Untracked output cache ──────────────────────────────────────────
+  // Ops with untracked outputs (outputSlotIndices[i] < 0) allocate a
+  // temporary buffer every execution. During CUDA graph capture, these
+  // allocations fail because cudaMallocAsync on the captured stream is
+  // deferred. This cache stores untracked outputs from the warmup pass
+  // so they can be reused during capture and shapes-frozen execution.
+  // Indexed as untrackedOutputCache_[slotIndex * maxOutputsPerSlot + outputIndex].
+  NDArray** untrackedOutputCache_;
+  int untrackedOutputCacheSize_;
+  static constexpr int MAX_OUTPUTS_PER_SLOT = 8;  // Max outputs per op (most ops have 1-3)
+
   // ── KV cache retention ──────────────────────────────────────────────
   // When configured, present KV outputs are not returned to Java.
   // Instead, C++ extracts the new KV entry and scatters it into the
@@ -544,6 +593,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
   GraphBackend* getGpuGraphBackend();
+
+#ifdef SD_CUDA
+  // Pre-allocated cuBLAS workspace for CUDA graph capture.
+  // During graph capture, cuBLAS internal cudaMalloc calls on stream 0
+  // break capture on the named stream. Providing an explicit workspace
+  // prevents cuBLAS from doing any internal allocations.
+  void* cublasWorkspaceBuffer_;
+  size_t cublasWorkspaceSize_;
+  void ensureCublasWorkspace(size_t minBytes);
+  void setCublasWorkspaceForCapture(void* stream);
+  void restoreCublasWorkspaceAfterCapture(void* stream);
+#endif
 };
 
 }  // namespace graph

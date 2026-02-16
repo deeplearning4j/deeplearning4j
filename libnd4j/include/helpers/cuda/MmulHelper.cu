@@ -428,13 +428,35 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  const auto bType = B->dataType();
  const auto cType = C->dataType();
 
- const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
+ // Mixed-precision handling: when one input is FLOAT32 and the other is HALF,
+ // cast the FLOAT32 input to HALF so both are HALF. cuBLAS cublasSgemmEx then handles
+ // HALF×HALF→FLOAT32 with FP32 accumulation (tensor cores, much faster than FP32 GEMM).
+ // The cast is fast (GPU parallel) and we still get the memory bandwidth benefit of FP16 weights.
+ NDArray* castA = nullptr;
+ NDArray* castB = nullptr;
+ NDArray* effA = const_cast<NDArray*>(A);
+ NDArray* effB = const_cast<NDArray*>(B);
 
- const bool typeDouble = ABC && aType == DOUBLE;
- const bool typeFloat = ABC && aType == FLOAT32;
- const bool typeHalf = ABC && aType == HALF && major >= 6;
- const bool typeIntFloat = AB && aType == INT8 && cType == FLOAT32 && major >= 6;
- const bool typeHalfFloat = AB && aType == HALF && cType == FLOAT32 && major >= 6;
+ if (aType != bType && cType == FLOAT32 && major >= 6) {
+   if (aType == FLOAT32 && bType == HALF) {
+     castA = effA->cast(HALF);
+     effA = castA;
+   } else if (aType == HALF && bType == FLOAT32) {
+     castB = effB->cast(HALF);
+     effB = castB;
+   }
+ }
+
+ const auto effAType = effA->dataType();
+ const auto effBType = effB->dataType();
+
+ const bool AB(effAType == effBType), AC(effAType == cType), ABC(AB && AC);
+
+ const bool typeDouble = ABC && effAType == DOUBLE;
+ const bool typeFloat = ABC && effAType == FLOAT32;
+ const bool typeHalf = ABC && effAType == HALF && major >= 6;
+ const bool typeIntFloat = AB && effAType == INT8 && cType == FLOAT32 && major >= 6;
+ const bool typeHalfFloat = AB && effAType == HALF && cType == FLOAT32 && major >= 6;
 
  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
@@ -446,34 +468,33 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
-   NDArray::prepareSpecialUse({C}, {A, B});
-   BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
-                                (dims.y, dims.x, dims.z, stream, A->specialBuffer(),
-                                 A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
+   NDArray::prepareSpecialUse({C}, {effA, effB});
+   BUILD_SINGLE_SELECTOR_THRICE(effAType, usualGemm,
+                                (dims.y, dims.x, dims.z, stream, effA->specialBuffer(),
+                                 effA->specialShapeInfo(), effB->specialBuffer(), effB->specialShapeInfo(), C->specialBuffer(),
                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                 SD_NUMERIC_TYPES)
-   NDArray::registerSpecialUse({C}, {A, B});
-   // Don't sync - let CUDA operations run asynchronously
+   NDArray::registerSpecialUse({C}, {effA, effB});
 
  } else {
    std::vector<NDArray*> toDelete;
 
-   NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
+   NDArray *pA(const_cast<NDArray*>(effA)), *pB(const_cast<NDArray*>(effB)), *pC(const_cast<NDArray*>(C));
 
-   bool aMcont = M == 1 || A->strideAt(0) == 1;
-   bool aKcont = K == 1 || A->strideAt(1) == 1;
-   bool bKcont = K == 1 || B->strideAt(0) == 1;
-   bool bNcont = N == 1 || B->strideAt(1) == 1;
+   bool aMcont = M == 1 || effA->strideAt(0) == 1;
+   bool aKcont = K == 1 || effA->strideAt(1) == 1;
+   bool bKcont = K == 1 || effB->strideAt(0) == 1;
+   bool bNcont = N == 1 || effB->strideAt(1) == 1;
    bool cMcont = M == 1 || C->strideAt(0) == 1;
    bool cNcont = N == 1 || C->strideAt(1) == 1;
 
    if (!aMcont && !aKcont) {
-     pA = A->dup('f');
+     pA = effA->dup('f');
      toDelete.push_back(pA);
      aMcont = true;
    }
    if (!bKcont && !bNcont) {
-     pB = B->dup('f');
+     pB = effB->dup('f');
      toDelete.push_back(pB);
      bKcont = true;
    }
@@ -520,12 +541,15 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
 
    NDArray::registerSpecialUse({pC}, {pA, pB});
-   // Don't sync - let CUDA operations run asynchronously
 
    if (C != pC) C->assign(pC);
 
    for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
  }
+
+ // Cleanup cast arrays
+ delete castA;
+ delete castB;
 
  return C;
 }////////////////////////////////////////////////////////////////////////////
@@ -717,6 +741,56 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // Try cuBLAS strided batch GEMM first for 3D tensors - much faster than custom kernel
  if (aRank == 3 && bRank == 3) {
    if (tryBlasStridedBatched(A, B, C, alpha, beta)) {
+     return C;
+   }
+ }
+
+ // Mixed-precision path: when A and B have different types (e.g., FLOAT32 × HALF),
+ // the batchedGemm custom kernel can't handle it (BUILD_SINGLE_SELECTOR_THRICE assumes
+ // all types match). Reshape higher-rank A to 2D and delegate to mmulMxM which has
+ // cublasGemmEx support for mixed FLOAT32/HALF inputs.
+ if (A->dataType() != B->dataType()) {
+   const auto aType = A->dataType();
+   const auto bType = B->dataType();
+   const bool isMixedHalfFloat = ((aType == FLOAT32 && bType == HALF) || (aType == HALF && bType == FLOAT32));
+
+   if (isMixedHalfFloat) {
+     // For [B0, B1, ..., M, K] × [K, N], reshape A to [B0*B1*...*M, K] (2D),
+     // call mmulMxM, then result is [B0*B1*...*M, N] which we reshape to C's shape.
+     // This works because each row of A is independently multiplied by B.
+     const LongType M = A->sizeAt(-2);
+     const LongType K = A->sizeAt(-1);
+     const LongType N = B->sizeAt(-1);
+
+     // Compute total rows = product of all dims except last
+     LongType totalRows = 1;
+     for (int i = 0; i < aRank - 1; ++i) {
+       totalRows *= A->sizeAt(i);
+     }
+
+     // Reshape A to 2D [totalRows, K]
+     std::vector<LongType> a2dShape = {totalRows, K};
+     NDArray* a2d = A->reshape(A->ordering(), a2dShape, false);
+
+     // Reshape B to 2D if needed (should already be 2D for the common case)
+     NDArray* b2d = const_cast<NDArray*>(B);
+     bool bReshaped = false;
+     if (bRank > 2) {
+       std::vector<LongType> b2dShape = {K, N};
+       b2d = B->reshape(B->ordering(), b2dShape, false);
+       bReshaped = true;
+     }
+
+     // Reshape C to 2D [totalRows, N]
+     std::vector<LongType> c2dShape = {totalRows, N};
+     NDArray* c2d = C->reshape(C->ordering(), c2dShape, false);
+
+     mmulMxM(a2d, b2d, c2d, alpha, beta, c2d->ordering());
+
+     delete a2d;
+     if (bReshaped) delete b2d;
+     delete c2d;
+
      return C;
    }
  }

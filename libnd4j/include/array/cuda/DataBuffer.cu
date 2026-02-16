@@ -386,15 +386,22 @@ void DataBuffer::allocateSpecial() {
   }
 
   if (_lenInBytes == 0) {
-    std::string errorMessage;
-    errorMessage += "DataBuffer::allocateSpecial: ";
-    errorMessage += "Special buffer is already allocated";
-    errorMessage += " or length is 0";
-    errorMessage += "Length is: ";
-    errorMessage += std::to_string(getLenInBytes());
-    errorMessage += "Special buffer is nullptr : ";
-    errorMessage += std::to_string(_specialBuffer == nullptr);
-    THROW_EXCEPTION(errorMessage.c_str());
+    // Use getLenInBytes() which handles scalar fallback (sizeOfElement for 0-length buffers)
+    auto computedLen = getLenInBytes();
+    if (computedLen > 0) {
+      // Scalar or uninitialized buffer — fix _lenInBytes and proceed with allocation
+      _lenInBytes = computedLen;
+    } else {
+      std::string errorMessage;
+      errorMessage += "DataBuffer::allocateSpecial: ";
+      errorMessage += "Special buffer is already allocated";
+      errorMessage += " or length is 0";
+      errorMessage += "Length is: ";
+      errorMessage += std::to_string(computedLen);
+      errorMessage += "Special buffer is nullptr : ";
+      errorMessage += std::to_string(_specialBuffer == nullptr);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   }
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {

@@ -363,61 +363,71 @@ void FlashAttentionHelper::forward4D(
   kExpanded->reshapei(kvShape);
   vExpanded->reshapei(kvShape);
 
-  // Scores buffer
-  NDArray* logitsBuffer = nullptr;
-  NDArray* workBuffer = nullptr;
-
-  if (attentionLogits != nullptr && !attentionLogits->isEmpty() &&
-      attentionLogits->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
-    logitsBuffer = attentionLogits;
-  }
-  if (attentionScores != nullptr && !attentionScores->isEmpty() &&
-      attentionScores->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
-    workBuffer = attentionScores;
-  } else {
-    workBuffer = workspace->getBuffer("forward4d_scores", scoresShape, query->dataType(), context);
-  }
+  // Use stack-allocated NDArrays for computation buffers.
+  // These change shape between prefill (seqLenQ=79) and decode (seqLenQ=1),
+  // so workspace caching can trigger CUDA allocations during graph capture (error 901).
+  NDArray workBuffer('c', scoresShape, query->dataType(), context);
 
   // Batched matmul: Q @ K^T with scale
-  MmulHelper::matmul(qPermBuffer, kExpanded, workBuffer, false, true, scale, 0.0);
+  MmulHelper::matmul(qPermBuffer, kExpanded, &workBuffer, false, true, scale, 0.0);
+
+  // Logits buffer for pre-softmax scores
+  NDArray logitsBuf('c', scoresShape, query->dataType(), context);
+  NDArray* logitsBuffer = nullptr;
+  bool wantLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
+  if (wantLogits) {
+    logitsBuffer = &logitsBuf;
+  }
 
 #if defined(SD_CUDA)
-  fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
+  fusedCausalMaskSoftmaxCuda(&workBuffer, &workBuffer, logitsBuffer, config.isCausal, context);
 #else
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
-    NDArray* causalMask = workspace->getBuffer("forward4d_mask", maskShape, query->dataType(), context);
-    causalMask->nullify();
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
-    *workBuffer += *causalMask;
+    NDArray causalMask('c', maskShape, query->dataType(), context);
+    causalMask.nullify();
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask.fillAsTriangular, (-1.0e9f, 1, 0, causalMask, 'u', false), SD_COMMON_TYPES);
+    workBuffer += causalMask;
   }
   if (logitsBuffer != nullptr) {
-    logitsBuffer->assign(workBuffer);
+    logitsBuffer->assign(&workBuffer);
   }
-  ops::helpers::softmax(context, workBuffer, workBuffer, -1);
+  ops::helpers::softmax(context, &workBuffer, &workBuffer, -1);
 #endif
 
-  // Output buffer from workspace
+  // Output buffer
   std::vector<LongType> outShape = {batch * numHeads, seqLenQ, headDim};
-  NDArray* outReshaped = workspace->getBuffer("forward4d_outReshaped", outShape, query->dataType(), context);
+  NDArray outReshaped('c', outShape, query->dataType(), context);
 
   // Batched matmul: scores @ V
-  MmulHelper::matmul(workBuffer, vExpanded, outReshaped, false, false, 1.0, 0.0);
+  MmulHelper::matmul(&workBuffer, vExpanded, &outReshaped, false, false, 1.0, 0.0);
 
   // Reshape and permute back to output
   std::vector<LongType> outPermShape = {batch, numHeads, seqLenQ, headDim};
-  outReshaped->reshapei(outPermShape);
-  auto outPerm = outReshaped->permute(permOrder, false, false);
+  outReshaped.reshapei(outPermShape);
+  auto outPerm = outReshaped.permute(permOrder, false, false);
   output->assign(outPerm);
   delete outPerm;
 
-  // Restore workspace buffer shapes for next call
+  // Copy results to output buffers (4D shape expected by caller)
+  std::vector<LongType> scores4dShape = {batch, numHeads, seqLenQ, seqLenKV};
+  if (attentionScores != nullptr && !attentionScores->isEmpty() &&
+      attentionScores->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
+    workBuffer.reshapei(scores4dShape);
+    attentionScores->assign(&workBuffer);
+  }
+  if (wantLogits && logitsBuffer != nullptr &&
+      attentionLogits->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
+    logitsBuffer->reshapei(scores4dShape);
+    attentionLogits->assign(logitsBuffer);
+  }
+
+  // Restore workspace buffer shapes for next call (qPerm/kPerm/vPerm only)
   qPermBuffer->reshapei(qPermShape);
   if (headsPerKvHead == 1) {
     kExpanded->reshapei(kvPermShape);
     vExpanded->reshapei(kvPermShape);
   }
-  outReshaped->reshapei(outShape);
 
   if (softmaxLse != nullptr) {
     softmaxLse->nullify();

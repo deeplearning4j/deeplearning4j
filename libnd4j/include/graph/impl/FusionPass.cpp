@@ -273,5 +273,125 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     return candidates;
 }
 
+int FusionPass::applyFusions(
+        NativeSlot* slots, int numSlots,
+        const std::vector<FusionCandidate>& candidates) {
+
+    int applied = 0;
+
+    for (const auto& fusion : candidates) {
+        switch (fusion.type) {
+
+            case FusionCandidate::ELEMENTWISE_CHAIN: {
+                // For a chain A → B → C → ...:
+                // Each op after A reuses its primary input buffer as its output.
+                // This eliminates intermediate allocations — the chain runs in-place
+                // through a single buffer.
+                //
+                // The first op (A) allocates normally. B writes its output into A's
+                // output buffer. C writes into B's (=A's) output buffer. Etc.
+                if (fusion.slotIndices.size() < 2) break;
+
+                for (size_t i = 1; i < fusion.slotIndices.size(); i++) {
+                    int slotIdx = fusion.slotIndices[i];
+                    if (slotIdx < 0 || slotIdx >= numSlots) continue;
+
+                    NativeSlot& slot = slots[slotIdx];
+
+                    // Find which input comes from the previous op in the chain
+                    int prevSlotIdx = fusion.slotIndices[i - 1];
+                    int prevOutputSlot = slots[prevSlotIdx].outputSlotIndices[0];
+
+                    int fusedInputIdx = -1;
+                    for (int k = 0; k < slot.numInputs; k++) {
+                        if (slot.inputSourceIndices[k] == prevOutputSlot) {
+                            fusedInputIdx = k;
+                            break;
+                        }
+                    }
+
+                    if (fusedInputIdx >= 0) {
+                        slot.inPlaceFused = true;
+                        slot.inPlaceFusedInputIdx = fusedInputIdx;
+                    }
+                }
+
+                applied++;
+                sd_printf("FusionPass: applied ELEMENTWISE_CHAIN fusion, slots %d-%d (%d ops)\n",
+                          fusion.startSlot, fusion.endSlot, fusion.chainLength);
+                break;
+            }
+
+            case FusionCandidate::BIAS_ACTIVATION: {
+                // add(x, bias) → activation(result)
+                // The activation op reuses the add's output buffer.
+                if (fusion.slotIndices.size() != 2) break;
+
+                int addSlotIdx = fusion.slotIndices[0];
+                int actSlotIdx = fusion.slotIndices[1];
+                if (actSlotIdx < 0 || actSlotIdx >= numSlots) break;
+                if (addSlotIdx < 0 || addSlotIdx >= numSlots) break;
+
+                NativeSlot& actSlot = slots[actSlotIdx];
+                int addOutputSlot = slots[addSlotIdx].outputSlotIndices[0];
+
+                // Find which input of the activation comes from the add
+                int fusedInputIdx = -1;
+                for (int k = 0; k < actSlot.numInputs; k++) {
+                    if (actSlot.inputSourceIndices[k] == addOutputSlot) {
+                        fusedInputIdx = k;
+                        break;
+                    }
+                }
+
+                if (fusedInputIdx >= 0) {
+                    actSlot.inPlaceFused = true;
+                    actSlot.inPlaceFusedInputIdx = fusedInputIdx;
+                    applied++;
+                    sd_printf("FusionPass: applied BIAS_ACTIVATION fusion, slots %d-%d\n",
+                              fusion.startSlot, fusion.endSlot);
+                }
+                break;
+            }
+
+            case FusionCandidate::MATMUL_BIAS_ACTIVATION: {
+                // matmul → add(bias) → activation
+                // The add and activation ops run in-place on the matmul's output.
+                if (fusion.slotIndices.size() < 3) break;
+
+                // Apply in-place starting from the second op (add)
+                for (size_t i = 1; i < fusion.slotIndices.size(); i++) {
+                    int slotIdx = fusion.slotIndices[i];
+                    if (slotIdx < 0 || slotIdx >= numSlots) continue;
+
+                    NativeSlot& slot = slots[slotIdx];
+                    int prevSlotIdx = fusion.slotIndices[i - 1];
+                    int prevOutputSlot = slots[prevSlotIdx].outputSlotIndices[0];
+
+                    int fusedInputIdx = -1;
+                    for (int k = 0; k < slot.numInputs; k++) {
+                        if (slot.inputSourceIndices[k] == prevOutputSlot) {
+                            fusedInputIdx = k;
+                            break;
+                        }
+                    }
+
+                    if (fusedInputIdx >= 0) {
+                        slot.inPlaceFused = true;
+                        slot.inPlaceFusedInputIdx = fusedInputIdx;
+                    }
+                }
+
+                applied++;
+                sd_printf("FusionPass: applied MATMUL_BIAS_ACTIVATION fusion, slots %d-%d\n",
+                          fusion.startSlot, fusion.endSlot);
+                break;
+            }
+        }
+    }
+
+    return applied;
+}
+
 }  // namespace graph
 }  // namespace sd
