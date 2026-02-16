@@ -26,6 +26,7 @@ import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.output.DocTagsParser;
+import org.eclipse.deeplearning4j.vlm.output.DocumentElement;
 import org.eclipse.deeplearning4j.vlm.output.DocumentStructure;
 import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
@@ -52,6 +53,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
+import org.bytedeco.javacpp.Pointer;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -3923,14 +3925,15 @@ public class TestVLMModelImportPipeline {
             log.info("  Step 0 decoder: {}ms, logits shape={} rank={}",
                     decoderTime, java.util.Arrays.toString(logits.shape()), logits.rank());
 
-            // Store KV cache from prefill
+            // Store KV cache from prefill. MUST dup() since resetSession() below
+            // closes all session node outputs including these decoder output arrays.
             for (String presentName : presentKeyNames) {
                 INDArray pv = decoderOutputs.get(presentName);
-                if (pv != null) kvCache.put(presentName, pv);
+                if (pv != null) kvCache.put(presentName, pv.dup());
             }
             for (String presentName : presentValueNames) {
                 INDArray pv = decoderOutputs.get(presentName);
-                if (pv != null) kvCache.put(presentName, pv);
+                if (pv != null) kvCache.put(presentName, pv.dup());
             }
 
             // Sample from last position
@@ -3970,9 +3973,13 @@ public class TestVLMModelImportPipeline {
             pastSeqLen += currentSeqLen;
             stepsCompleted = 1;
 
-            // Embed first decode token
-            INDArray prefillTokenTensor = Nd4j.createFromArray(new int[]{nextTokenIds[0]})
-                    .reshape(1, 1).castTo(DataType.LONG);
+            // Embed first decode token for ALL batch items
+            int[] firstTokenIds = new int[activeBatchSize];
+            for (int ci = 0; ci < activeBatchSize; ci++) {
+                firstTokenIds[ci] = nextTokenIds[ci];
+            }
+            INDArray prefillTokenTensor = Nd4j.createFromArray(firstTokenIds)
+                    .reshape(activeBatchSize, 1).castTo(DataType.LONG);
             Map<String, INDArray> prefillEmbedOut = embedTokens.output(
                     Map.of(embedInputName, prefillTokenTensor), embedOutputNames);
             INDArray newEmbed = prefillEmbedOut.values().iterator().next().dup();
@@ -3996,153 +4003,99 @@ public class TestVLMModelImportPipeline {
         for (boolean f : finished) if (!f) allFinishedAfterPrefill = false;
 
         if (!allFinishedAfterPrefill) {
-            // ===== PHASE 2: STATIC KV BUFFER SETUP =====
-            // Pre-allocate fixed-size KV buffers so shapes and GPU addresses
-            // stay constant every decode step → enables CUDA graph replay
-            long maxKvLen = pastSeqLen + (maxTokensConfig - 1);
-            Map<String, INDArray> staticKvBuffers = DecoderUtils.padKvCacheToStaticSize(
-                    kvCache, presentKeyNames, presentValueNames, maxKvLen);
-
-            // Close old growing KV cache (data copied into static buffers)
-            for (INDArray kv : kvCache.values()) SameDiffMemoryUtils.safeClose(kv);
-            kvCache.clear();
-
-            // Pre-allocate static input buffers (reused every step, same GPU addresses)
-            long totalStaticLen = maxKvLen + 1; // past positions + new token from concat
-            INDArray staticEmbed = Nd4j.zeros(currentEmbeddings.dataType(), activeBatchSize, 1, hiddenSize);
-            INDArray staticMask = Nd4j.zeros(DataType.LONG, activeBatchSize, totalStaticLen);
-            // Set 1s for valid prefill positions and the new-token slot at end
-            for (int bi = 0; bi < activeBatchSize; bi++) {
-                staticMask.get(NDArrayIndex.point(bi), NDArrayIndex.interval(0, pastSeqLen)).assign(1);
-                staticMask.putScalar(new long[]{bi, maxKvLen}, 1L);
-            }
-            INDArray staticCausalMask = Nd4j.zeros(DataType.FLOAT, activeBatchSize, 1, 1, totalStaticLen);
-            INDArray staticPosIds = Nd4j.zeros(DataType.LONG, activeBatchSize, 1);
+            // ===== PHASE 2: DECODE LOOP =====
+            // Use growing KV approach (same as batch test) for correctness.
+            // The KV cache grows by 1 each step; attention mask grows correspondingly.
             long cachePos = pastSeqLen;
 
-            // Build the static input map — SAME objects every step for CUDA graph replay
-            Map<String, INDArray> staticInputMap = new java.util.HashMap<>();
-            staticInputMap.put("inputs_embeds", staticEmbed);
-            staticInputMap.put("attention_mask", staticMask);
-            if (decoderInputNames.contains("_causal_mask")) {
-                staticInputMap.put("_causal_mask", staticCausalMask);
-            }
-            staticInputMap.put("position_ids", staticPosIds);
-            for (var entry : staticKvBuffers.entrySet()) {
-                staticInputMap.put(entry.getKey(), entry.getValue());
-            }
+            log.info("  Decode setup: pastSeqLen={}, cachePos={}, kvCache entries={}",
+                    pastSeqLen, cachePos, kvCache.size());
 
-            log.info("  Static KV setup: maxKvLen={}, totalStaticLen={}, cachePos={}, {} static inputs",
-                    maxKvLen, totalStaticLen, cachePos, staticInputMap.size());
-
-            // Reset the decoder session to free prefill intermediates and compile fresh with static shapes
+            // Reset the decoder session to clear prefill intermediates and compile
+            // a fresh native plan for decode shapes. Without this, the slot array cache
+            // from prefill (seqLen=679) causes allocation errors at decode (seqLen=1).
             decoder.resetSession();
-            // Trim GPU memory pool to reclaim memory from the freed prefill intermediates
             Nd4j.getMemoryManager().invokeGc();
 
-            // ===== PHASE 3: STATIC KV DECODE LOOP =====
-            // Shapes and GPU addresses are fixed → CUDA graphs capture on step 2, replay on step 3+
             for (int step = 1; step < maxTokensConfig; step++) {
                 long stepStart = System.currentTimeMillis();
+                long currentSeqLen = 1; // single token decode
+                long totalSeqLen = currentSeqLen + cachePos;
 
-                // Update static inputs IN-PLACE (same GPU buffers, different data)
-                staticEmbed.assign(currentEmbeddings);
+                // Build input map fresh each step (growing KV, like batch test)
+                Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
+                decoderInputMap.put("inputs_embeds", currentEmbeddings);
+
+                // Attention mask: all 1s, grows each step
+                INDArray attentionMask = Nd4j.ones(DataType.LONG, activeBatchSize, totalSeqLen);
                 for (int bi = 0; bi < activeBatchSize; bi++) {
-                    staticPosIds.putScalar(new long[]{bi, 0}, cachePos);
+                    if (finished[bi]) attentionMask.putRow(bi, Nd4j.zeros(DataType.LONG, totalSeqLen));
+                }
+                decoderInputMap.put("attention_mask", attentionMask);
+
+                if (decoderInputNames.contains("_causal_mask")) {
+                    decoderInputMap.put("_causal_mask",
+                            DecoderUtils.buildCausalMask(activeBatchSize, currentSeqLen, totalSeqLen));
                 }
 
-                // Run decoder with SAME static buffers
-                long decoderStart = System.currentTimeMillis();
-                Map<String, INDArray> decoderOutputs = decoder.output(staticInputMap,
-                        allOutputNames.toArray(new String[0]));
-                long decoderTime = System.currentTimeMillis() - decoderStart;
+                // Position IDs
+                INDArray posIds = Nd4j.arange(cachePos, cachePos + currentSeqLen)
+                        .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                if (activeBatchSize > 1) posIds = Nd4j.tile(posIds, activeBatchSize, 1);
+                decoderInputMap.put("position_ids", posIds);
 
-                // After step 1 succeeds, enable optimizations for subsequent steps.
-                if (step == 1) {
-                    DynamicShapePlanExecutor dspExec = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
-                    if (dspExec != null) {
-                        // Shapes-frozen: skip shape inference (shapes are constant with static KV)
-                        dspExec.setShapesFrozen(true);
-                        // Execution timing: log C++ execution breakdown (stderr)
-                        dspExec.setExecutionTimingEnabled(true);
-
-                        // KV cache retention: C++ scatters new KV entries into static buffers
-                        // Build mapping: present output names → past input names
-                        List<String> presentNames = new ArrayList<>();
-                        List<String> pastNames = new ArrayList<>();
-                        for (String keyName : presentKeyNames) {
-                            // present.N.key → past_key_values.N.key
-                            String pastName = keyName.replace("present", "past_key_values");
-                            presentNames.add(keyName);
-                            pastNames.add(pastName);
+                // KV cache from previous step
+                for (String inputName : decoderInputNames) {
+                    if (inputName.startsWith("past_key_values.")) {
+                        String presentName = inputName.replace("past_key_values", "present");
+                        if (kvCache.containsKey(presentName)) {
+                            decoderInputMap.put(inputName, kvCache.get(presentName));
+                        } else {
+                            decoderInputMap.put(inputName,
+                                    DecoderUtils.createEmptyKvCache(decoder, inputName, activeBatchSize, hiddenSize));
                         }
-                        for (String valName : presentValueNames) {
-                            String pastName = valName.replace("present", "past_key_values");
-                            presentNames.add(valName);
-                            pastNames.add(pastName);
-                        }
-
-                        // Get the compiled plan from the executor
-                        org.nd4j.autodiff.samediff.execution.DynamicShapePlan plan =
-                                dspExec.getCurrentPlan();
-                        if (plan != null) {
-                            dspExec.configureKvCacheRetention(plan, presentNames, pastNames,
-                                    (int) maxKvLen, (int) (cachePos - 1));
-                            log.info("Configured C++ KV cache retention: {} mappings, maxKvLen={}, pos={}",
-                                    presentNames.size(), maxKvLen, cachePos - 1);
-                        }
-
-                        log.info("Enabled shapes-frozen mode, execution timing, and KV retention after step 1");
                     }
                 }
 
-                // NOTE: CUDA graph capture is still problematic with cudaMallocAsync pools.
-                // Even with shapes-frozen (cached arrays, no allocs), some ops use internal
-                // workspace allocations that interact badly with capture. Disabled for now.
-                // The slot-by-slot path with shapes-frozen is ~208ms/step.
+                // Run decoder
+                long decoderStart = System.currentTimeMillis();
+                Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap,
+                        allOutputNames.toArray(new String[0]));
+                long decoderTime = System.currentTimeMillis() - decoderStart;
 
                 // Extract logits
-                INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
-                if (logitsRaw == null) {
+                INDArray logits = decoderOutputs.get(logitsOutputName);
+                if (logits == null) {
                     log.error("No logits at step {}", step);
                     break;
                 }
-                INDArray logits = logitsRaw.dup();
-                SameDiffMemoryUtils.safeClose(logitsRaw);
 
-                // Scatter new KV entries and handle KV output cleanup
-                DynamicShapePlanExecutor dspExecForKv = decoder.getOrCreateSession().getDynamicShapePlanExecutor();
-                boolean kvRetentionActive = dspExecForKv != null && dspExecForKv.isKvCacheRetentionConfigured();
-                if (!kvRetentionActive) {
-                    // Java-side scatter (step 1, before C++ retention is configured)
-                    DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
-                            presentKeyNames, presentValueNames, maxKvLen, cachePos);
-                } else {
-                    // C++ already scattered during execute() — just advance position
-                    dspExecForKv.advanceKvCachePosition();
-                }
-
-                // Close present KV outputs (data already in static buffers)
+                // Update KV cache: close old, keep new
+                for (INDArray oldKv : kvCache.values()) SameDiffMemoryUtils.safeClose(oldKv);
+                kvCache.clear();
                 for (String name : presentKeyNames) {
                     INDArray pv = decoderOutputs.get(name);
-                    if (pv != null) SameDiffMemoryUtils.safeClose(pv);
+                    if (pv != null) kvCache.put(name, pv);
                 }
                 for (String name : presentValueNames) {
                     INDArray pv = decoderOutputs.get(name);
-                    if (pv != null) SameDiffMemoryUtils.safeClose(pv);
+                    if (pv != null) kvCache.put(name, pv);
                 }
 
-                // Advance cache position and update mask for next step
                 cachePos++;
-                for (int bi = 0; bi < activeBatchSize; bi++) {
-                    staticMask.putScalar(new long[]{bi, cachePos - 1}, 1L);
-                }
 
                 // Sample from logits
+                log.info("  Step {} logits: shape={} rank={} dtype={} len={}",
+                        step, java.util.Arrays.toString(logits.shape()), logits.rank(),
+                        logits.dataType(), logits.length());
                 INDArray lastLogits;
                 if (logits.rank() == 3) {
-                    lastLogits = logits.get(NDArrayIndex.all(),
-                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all()).dup();
+                    INDArray logitsSlice = logits.get(NDArrayIndex.all(),
+                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
+                    log.info("  Step {} logitsSlice: shape={} rank={} dataAddr={}", step,
+                            java.util.Arrays.toString(logitsSlice.shape()), logitsSlice.rank(),
+                            logitsSlice.data() != null ? Long.toHexString(logitsSlice.data().pointer().address()) : "null");
+                    lastLogits = logitsSlice.dup();
                 } else if (logits.rank() == 2) {
                     lastLogits = logits;
                 } else {
@@ -4184,7 +4137,8 @@ public class TestVLMModelImportPipeline {
                 embedTokens.clearPlaceholders(false);
                 if (prevEmbed != batchedEmbeddings) SameDiffMemoryUtils.safeClose(prevEmbed);
 
-                // Clear placeholder references (don't close static buffers)
+                // Clear placeholder references (don't close per-step inputs —
+                // the DynamicShapePlanExecutor may cache their GPU addresses)
                 decoder.clearPlaceholders(false);
 
                 // Log progress
@@ -4200,12 +4154,6 @@ public class TestVLMModelImportPipeline {
                 }
             }
 
-            // Cleanup static buffers
-            SameDiffMemoryUtils.safeClose(staticEmbed);
-            SameDiffMemoryUtils.safeClose(staticMask);
-            SameDiffMemoryUtils.safeClose(staticCausalMask);
-            SameDiffMemoryUtils.safeClose(staticPosIds);
-            for (INDArray buf : staticKvBuffers.values()) SameDiffMemoryUtils.safeClose(buf);
         }
         long step7Time = System.currentTimeMillis() - step7Start;
 
@@ -4911,7 +4859,7 @@ public class TestVLMModelImportPipeline {
         log.info("STRUCTURAL ANALYSIS:");
         log.info("  DocTags complete (has <doctag>...</doctag>): {}", isComplete);
         log.info("  Elements parsed: {}", doc.getElementCount());
-        for (DocTagsParser.DocumentElement elem : doc.getElements()) {
+        for (DocumentElement elem : doc.getElements()) {
             String bboxStr = elem.getBoundingBox() != null ?
                     String.format(" [%d,%d,%d,%d]", elem.getBoundingBox().getX1(),
                             elem.getBoundingBox().getY1(), elem.getBoundingBox().getX2(),
