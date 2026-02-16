@@ -88,7 +88,7 @@ BROADCASTABLE_OP_IMPL(divide, 0, 0) {
       std::vector<sd::LongType> dims = {xRank - 1};
       if (yRank > 1) {
         std::vector<sd::LongType> yShape = {yLen};
-        auto yReshaped = y->reshape(y->ordering(), yShape);
+        auto yReshaped = y->reshape(y->ordering(), yShape, false);
         x->applyBroadcast(broadcast::Divide, &dims, yReshaped, z);
         delete yReshaped;
       } else {

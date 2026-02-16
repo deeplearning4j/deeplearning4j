@@ -264,6 +264,12 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
   }
 }
 
+void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMinCaptureSegmentSize(minSize);
+  }
+}
+
 int getPlanNumSegments(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   return static_cast<int>(
@@ -278,4 +284,22 @@ int getPlanNumCapturedGraphSegments(sd::Pointer planHandle) {
 int getPlanTotalGraphReplays(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getTotalGraphReplays();
+}
+
+bool validatePlanCapturedGraph(sd::Pointer planHandle) {
+  // CPU backend: no CUDA graphs, always valid
+  return true;
+}
+
+int getPlanNumHostOnlyOps(sd::Pointer planHandle) {
+  return 0;  // No CUDA graph capture on CPU
+}
+
+const char* getPlanHostOnlyOpNames(sd::Pointer planHandle) {
+  static const char* empty = "";
+  return empty;
+}
+
+void printPlanCapturedGraphDebug(sd::Pointer planHandle) {
+  // No-op on CPU backend
 }

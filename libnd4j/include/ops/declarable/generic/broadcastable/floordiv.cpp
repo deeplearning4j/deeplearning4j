@@ -90,7 +90,7 @@ BROADCASTABLE_OP_IMPL(floordiv, 0, 0) {
       std::vector<sd::LongType> dims = {xRank - 1};
       if (yRank > 1) {
         std::vector<sd::LongType> yShape = {yLen};
-        auto yReshaped = y->reshape(y->ordering(), yShape);
+        auto yReshaped = y->reshape(y->ordering(), yShape, false);
         x->applyBroadcast(broadcast::FloorDiv, &dims, yReshaped, z);
         delete yReshaped;
       } else {

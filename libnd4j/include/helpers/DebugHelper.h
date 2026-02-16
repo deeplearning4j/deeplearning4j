@@ -31,16 +31,26 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
-
 #endif
 #include <helpers/DebugInfo.h>
 namespace sd {
+
+#ifdef __CUDACC__
+// Used to skip cudaStreamSynchronize during CUDA graph capture.
+// Defined in DataBuffer.cu within namespace sd.
+SD_LIB_EXPORT extern thread_local bool tl_graphExecutionActive;
+#endif
 class NDArray;
 class SD_LIB_EXPORT DebugHelper {
  public:
   // cuda-specific debug functions
 #ifdef __CUDACC__
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opType = 0) {
+    // During CUDA graph capture, cudaStreamSynchronize is illegal (error 900).
+    // Kernels aren't actually launched during capture — they're recorded into the graph.
+    // Skip the sync entirely when graph capture is active.
+    if (tl_graphExecutionActive) return;
+
     cudaError_t res = cudaStreamSynchronize(*stream);
 
     if (res != 0) {
@@ -77,6 +87,9 @@ class SD_LIB_EXPORT DebugHelper {
   }
 
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, const char* failMessage = nullptr) {
+    // During CUDA graph capture, cudaStreamSynchronize is illegal (error 900).
+    if (tl_graphExecutionActive) return;
+
     cudaError_t res = cudaStreamSynchronize(*stream);
     if (res != 0) {
       std::string msg = failMessage ? std::string(failMessage) : std::string("CUDA call");

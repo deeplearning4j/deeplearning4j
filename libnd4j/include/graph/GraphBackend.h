@@ -22,12 +22,27 @@
 #include <array/NDArray.h>
 #include <system/common.h>
 
+#include <string>
+#include <vector>
+
 namespace sd {
 namespace graph {
 
 // Forward declarations — avoid circular include with NativeDynamicShapePlan.h
 struct NativeSlot;
 struct GraphSegment;
+
+/**
+ * Backend-agnostic compilation audit entry.
+ * Tracks whether each op in a segment was compiled by the graph backend
+ * or silently skipped. Skipped ops produce stale outputs on graph replay.
+ */
+struct CompilationAuditEntry {
+  int slotIndex = -1;
+  std::string opName;
+  bool wasCompiled = false;    // true if backend included this op
+  std::string reason;          // why it was skipped (e.g., "unmappable op kind")
+};
 
 /**
  * Abstract graph backend interface for hardware-specific graph APIs.
@@ -100,6 +115,13 @@ class SD_LIB_EXPORT GraphBackend {
    * Get the backend name for diagnostics.
    */
   virtual const char* name() const = 0;
+
+  /**
+   * Get the compilation audit for the most recent compileSegment() call.
+   * Each entry shows whether a slot was compiled by the backend or skipped.
+   * Skipped ops will produce stale outputs on graph replay.
+   */
+  virtual std::vector<CompilationAuditEntry> getLastCompilationAudit() const = 0;
 };
 
 }  // namespace graph

@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_size)
 
 #include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/helpers/shapeOpsHelper.h>
 
 namespace sd {
 namespace ops {
@@ -33,8 +34,7 @@ CUSTOM_OP_IMPL(size, 1, 1, false, 0, 0) {
 
   REQUIRE_TRUE(output->isScalar(), 0, "Size output should be scalar");
 
-  output->p(0, input->lengthOf());
-  output->syncToDevice();
+  helpers::sizeHelper(block.launchContext(), input, output);
 
   return Status::OK;
 }

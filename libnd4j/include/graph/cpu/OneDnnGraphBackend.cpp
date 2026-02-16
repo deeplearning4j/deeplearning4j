@@ -247,10 +247,13 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
       NativeSlot& slot = slots[s];
       auto kind = mapOpKind(slot.opName);
       if (kind == dg::op::kind::LastSymbol) {
-        // Can't map this op — oneDNN will leave it as a separate partition
-        // We still need to represent it somehow for the partition to work,
-        // but oneDNN graph API requires known op kinds.
-        // Skip unmappable ops — they'll be handled slot-by-slot
+        // Can't map this op — record as skipped in the audit
+        CompilationAuditEntry auditEntry;
+        auditEntry.slotIndex = s;
+        auditEntry.opName = slot.opName;
+        auditEntry.wasCompiled = false;
+        auditEntry.reason = "unmappable op kind";
+        result.compilationAudit.push_back(std::move(auditEntry));
         continue;
       }
 
@@ -349,6 +352,13 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
       g.add_op(dgOp);
       opsAdded++;
+
+      // Record successful compilation in audit
+      CompilationAuditEntry auditEntry;
+      auditEntry.slotIndex = s;
+      auditEntry.opName = slot.opName;
+      auditEntry.wasCompiled = true;
+      result.compilationAudit.push_back(std::move(auditEntry));
     }
 
     if (opsAdded < 2) {
@@ -436,12 +446,21 @@ bool OneDnnGraphBackend::compileSegment(
                              outputSlots, totalOutputSlots);
   compiled.shapeKey = shapeKey;
 
+  // Store compilation audit for validation
+  lastCompilationAudit_ = compiled.compilationAudit;
+
   if (compiled.valid) {
     cache_[key] = std::move(compiled);
     return true;
   }
 
   return false;
+}
+
+// ─── Compilation audit ──────────────────────────────────────────────────────
+
+std::vector<CompilationAuditEntry> OneDnnGraphBackend::getLastCompilationAudit() const {
+  return lastCompilationAudit_;
 }
 
 // ─── Execute segment ────────────────────────────────────────────────────────

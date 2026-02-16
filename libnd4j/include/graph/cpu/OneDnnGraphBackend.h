@@ -70,6 +70,8 @@ class OneDnnGraphBackend : public GraphBackend {
 
   void invalidateCache() override;
 
+  std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
+
   static OneDnnGraphBackend& getInstance();
 
  private:
@@ -102,6 +104,9 @@ class OneDnnGraphBackend : public GraphBackend {
     // Maps tensor ID to: >=0 = outputSlot index, <0 = -(externalInputIndex+1)
     std::unordered_map<size_t, int> tensorIdToSlotMap;
 
+    // Per-slot compilation audit: tracks which ops were compiled vs skipped
+    std::vector<CompilationAuditEntry> compilationAudit;
+
     CompiledSegment() : shapeKey(0), valid(false) {}
   };
 
@@ -125,6 +130,9 @@ class OneDnnGraphBackend : public GraphBackend {
 
   std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
   std::mutex cacheMtx_;
+
+  // Most recent compilation audit (updated by compileSegment)
+  std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
   // Build a dg::graph from a segment of slots
   CompiledSegment buildGraph(NativeSlot* slots, int startSlot, int endSlot,

@@ -295,7 +295,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum, 
   }
 
   dim3 launchDims = getLaunchDims("broadcast");
-  // shared memory
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::broadcast::Broadcast,

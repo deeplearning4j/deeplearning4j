@@ -31,6 +31,7 @@
 #include <chrono>
 #include <algorithm>
 #include <sstream>
+#include <cxxabi.h>  // For __cxa_demangle (kernel name demangling)
 
 namespace sd {
 namespace cuda {
@@ -85,6 +86,13 @@ void CudaGraphHandle::cleanup() {
         cudaGraphDestroy(_graph);
         _graph = nullptr;
     }
+
+    // Free pinned host buffers that were used for H2D copies during capture.
+    // These persist for graph lifetime so replay can read from them.
+    for (auto* ptr : _capturedHostPtrs) {
+        if (ptr != nullptr) cudaFreeHost(ptr);
+    }
+    _capturedHostPtrs.clear();
 
     _state = GraphState::EMPTY;
 }
@@ -261,10 +269,14 @@ bool CudaGraphHandle::launchAsync(cudaStream_t stream, cudaEvent_t completionEve
 
     _state = GraphState::EXECUTING;
 
+    // Clear any sticky error before launch (e.g., from updateStatistics graph queries)
+    cudaGetLastError();
+
     cudaError_t err = cudaGraphLaunch(_graphExec, stream);
 
     if (err != cudaSuccess) {
-        sd_printf("CudaGraphHandle::launchAsync failed: %s\n", cudaGetErrorString(err));
+        sd_printf("CudaGraphHandle::launchAsync failed: %s (err=%d)\n",
+                  cudaGetErrorString(err), (int)err);
         _state = GraphState::ERROR;
         return false;
     }
@@ -305,12 +317,20 @@ void CudaGraphHandle::updateStatistics() {
     if (_graph == nullptr) return;
 
     size_t numNodes = 0;
-    cudaGraphGetNodes(_graph, nullptr, &numNodes);
+    auto err = cudaGraphGetNodes(_graph, nullptr, &numNodes);
+    if (err != cudaSuccess) {
+        cudaGetLastError();  // Clear sticky error
+        return;
+    }
 
     if (numNodes == 0) return;
 
     std::vector<cudaGraphNode_t> nodes(numNodes);
-    cudaGraphGetNodes(_graph, nodes.data(), &numNodes);
+    err = cudaGraphGetNodes(_graph, nodes.data(), &numNodes);
+    if (err != cudaSuccess) {
+        cudaGetLastError();  // Clear sticky error
+        return;
+    }
 
     _stats = GraphStatistics();
 
@@ -373,6 +393,227 @@ bool CudaGraphHandle::exportToDot(const std::string& filename) const {
 
     cudaError_t err = cudaGraphDebugDotPrint(_graph, filename.c_str(), 0);
     return err == cudaSuccess;
+}
+
+// ============================================================================
+// Detailed graph node introspection
+// ============================================================================
+
+static std::string nodeTypeName(cudaGraphNodeType type) {
+    switch (type) {
+        case cudaGraphNodeTypeKernel:       return "Kernel";
+        case cudaGraphNodeTypeMemcpy:       return "Memcpy";
+        case cudaGraphNodeTypeMemset:       return "Memset";
+        case cudaGraphNodeTypeHost:         return "HostCallback";
+        case cudaGraphNodeTypeGraph:        return "ChildGraph";
+        case cudaGraphNodeTypeEmpty:        return "Empty";
+        case cudaGraphNodeTypeEventRecord:  return "EventRecord";
+        case cudaGraphNodeTypeWaitEvent:    return "WaitEvent";
+        default:                            return "Unknown(" + std::to_string(static_cast<int>(type)) + ")";
+    }
+}
+
+static std::string memcpyKindName(cudaMemcpyKind kind) {
+    switch (kind) {
+        case cudaMemcpyHostToDevice:   return "H2D";
+        case cudaMemcpyDeviceToHost:   return "D2H";
+        case cudaMemcpyDeviceToDevice: return "D2D";
+        case cudaMemcpyHostToHost:     return "H2H";
+        case cudaMemcpyDefault:        return "Default";
+        default:                       return "Unknown";
+    }
+}
+
+static std::string demangleKernelName(const char* mangled) {
+    if (mangled == nullptr || mangled[0] == '\0') return "<unknown>";
+
+    int status = 0;
+    char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
+    if (status == 0 && demangled != nullptr) {
+        std::string result(demangled);
+        free(demangled);
+        // Truncate long template parameters for readability
+        auto pos = result.find('<');
+        if (pos != std::string::npos && result.size() > 120) {
+            result = result.substr(0, pos) + "<...>";
+        }
+        return result;
+    }
+    // Demangling failed — return raw name
+    return std::string(mangled);
+}
+
+std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
+    std::lock_guard<std::mutex> lock(_mutex);
+    std::vector<CudaGraphNodeInfo> result;
+
+    if (_graph == nullptr) return result;
+
+    size_t numNodes = 0;
+    cudaError_t err = cudaGraphGetNodes(_graph, nullptr, &numNodes);
+    if (err != cudaSuccess || numNodes == 0) return result;
+
+    std::vector<cudaGraphNode_t> nodes(numNodes);
+    err = cudaGraphGetNodes(_graph, nodes.data(), &numNodes);
+    if (err != cudaSuccess) return result;
+
+    result.reserve(numNodes);
+
+    for (size_t i = 0; i < numNodes; i++) {
+        CudaGraphNodeInfo info;
+        info.nodeIndex = i;
+
+        cudaGraphNodeType nodeType;
+        err = cudaGraphNodeGetType(nodes[i], &nodeType);
+        if (err != cudaSuccess) continue;
+
+        info.type = nodeType;
+        info.typeName = nodeTypeName(nodeType);
+
+        switch (nodeType) {
+            case cudaGraphNodeTypeKernel: {
+                cudaKernelNodeParams params;
+                memset(&params, 0, sizeof(params));
+                err = cudaGraphKernelNodeGetParams(nodes[i], &params);
+                if (err == cudaSuccess && params.func != nullptr) {
+                    // Get kernel name from function pointer
+                    const char* name = nullptr;
+                    auto nameErr = cudaFuncGetName(&name, params.func);
+                    if (nameErr == cudaSuccess && name != nullptr) {
+                        info.kernelName = demangleKernelName(name);
+                    } else {
+                        // Fallback: show raw function pointer
+                        std::ostringstream oss;
+                        oss << "func@" << params.func;
+                        info.kernelName = oss.str();
+                    }
+                }
+                break;
+            }
+
+            case cudaGraphNodeTypeMemcpy: {
+                // Use cudaGraphMemcpyNodeGetParams (CUDA 10+)
+                cudaMemcpy3DParms mcpyParams;
+                memset(&mcpyParams, 0, sizeof(mcpyParams));
+                err = cudaGraphMemcpyNodeGetParams(nodes[i], &mcpyParams);
+                if (err == cudaSuccess) {
+                    info.memcpyBytes = mcpyParams.extent.width *
+                                       std::max(mcpyParams.extent.height, (size_t)1) *
+                                       std::max(mcpyParams.extent.depth, (size_t)1);
+                    info.memcpyKind = memcpyKindName(mcpyParams.kind);
+                }
+                break;
+            }
+
+            case cudaGraphNodeTypeMemset: {
+                cudaMemsetParams msParams;
+                memset(&msParams, 0, sizeof(msParams));
+                err = cudaGraphMemsetNodeGetParams(nodes[i], &msParams);
+                if (err == cudaSuccess) {
+                    info.memsetBytes = msParams.width * std::max(msParams.height, (size_t)1) *
+                                       msParams.elementSize;
+                    info.memsetValue = msParams.value;
+                }
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        result.push_back(std::move(info));
+    }
+
+    return result;
+}
+
+void CudaGraphHandle::printGraphContents() const {
+    auto nodes = getDetailedNodeInfo();
+
+    sd_print("╔══════════════════════════════════════════════════════════════════╗\n");
+    sd_print("║              CUDA GRAPH CONTENTS                               ║\n");
+    sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+    sd_printf("║ Device: %d  State: %d  Nodes: %zu  Edges: %zu\n",
+              _deviceId, static_cast<int>(_state), nodes.size(), getNumEdges());
+    sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+
+    // Summary counts by type
+    int kernelCount = 0, memcpyH2D = 0, memcpyD2H = 0, memcpyD2D = 0, memcpyOther = 0;
+    int memsetCount = 0, hostCount = 0, childCount = 0, eventCount = 0, emptyCount = 0;
+
+    for (const auto& n : nodes) {
+        switch (n.type) {
+            case cudaGraphNodeTypeKernel:      kernelCount++; break;
+            case cudaGraphNodeTypeMemcpy:
+                if (n.memcpyKind == "H2D") memcpyH2D++;
+                else if (n.memcpyKind == "D2H") memcpyD2H++;
+                else if (n.memcpyKind == "D2D") memcpyD2D++;
+                else memcpyOther++;
+                break;
+            case cudaGraphNodeTypeMemset:      memsetCount++; break;
+            case cudaGraphNodeTypeHost:        hostCount++; break;
+            case cudaGraphNodeTypeGraph:       childCount++; break;
+            case cudaGraphNodeTypeEmpty:       emptyCount++; break;
+            case cudaGraphNodeTypeEventRecord:
+            case cudaGraphNodeTypeWaitEvent:   eventCount++; break;
+            default: break;
+        }
+    }
+
+    sd_printf("║ Summary: %d Kernels, %d Memcpy(H2D), %d Memcpy(D2H), %d Memcpy(D2D)\n",
+              kernelCount, memcpyH2D, memcpyD2H, memcpyD2D);
+    sd_printf("║          %d Memsets, %d HostCallbacks, %d Events, %d Empty\n",
+              memsetCount, hostCount, eventCount, emptyCount);
+    sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+    sd_print("║ Node Details:\n");
+
+    for (const auto& n : nodes) {
+        switch (n.type) {
+            case cudaGraphNodeTypeKernel:
+                sd_printf("║  [%3zu] Kernel: %s\n", n.nodeIndex, n.kernelName.c_str());
+                break;
+            case cudaGraphNodeTypeMemcpy:
+                sd_printf("║  [%3zu] Memcpy %s: %zu bytes\n",
+                          n.nodeIndex, n.memcpyKind.c_str(), n.memcpyBytes);
+                break;
+            case cudaGraphNodeTypeMemset:
+                sd_printf("║  [%3zu] Memset: %zu bytes, value=%d\n",
+                          n.nodeIndex, n.memsetBytes, n.memsetValue);
+                break;
+            default:
+                sd_printf("║  [%3zu] %s\n", n.nodeIndex, n.typeName.c_str());
+                break;
+        }
+    }
+
+    sd_print("╚══════════════════════════════════════════════════════════════════╝\n");
+}
+
+size_t CudaGraphHandle::getNumNodesDuringCapture(cudaStream_t captureStream) const {
+    if (captureStream == nullptr) return 0;
+
+    // During capture, we can query the in-progress graph from the stream
+    cudaStreamCaptureStatus status;
+    cudaGraph_t capGraph = nullptr;
+
+    // cudaStreamGetCaptureInfo_v2 is available since CUDA 11.3
+    // It returns the graph being captured without ending the capture.
+    unsigned long long captureId = 0;
+    cudaError_t err = cudaStreamGetCaptureInfo_v2(captureStream, &status, &captureId,
+                                                   &capGraph, nullptr, nullptr);
+    if (err != cudaSuccess || status != cudaStreamCaptureStatusActive || capGraph == nullptr) {
+        cudaGetLastError();  // Clear any error
+        return 0;
+    }
+
+    size_t numNodes = 0;
+    err = cudaGraphGetNodes(capGraph, nullptr, &numNodes);
+    if (err != cudaSuccess) {
+        cudaGetLastError();
+        return 0;
+    }
+
+    return numNodes;
 }
 
 }  // namespace cuda

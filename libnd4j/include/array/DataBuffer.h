@@ -32,6 +32,7 @@
 
 #include <cstring>
 #include <mutex>
+#include <vector>
 namespace sd {
 
 /**
@@ -43,6 +44,14 @@ namespace sd {
  * execution, cleared when execution completes or is aborted.
  */
 SD_LIB_EXPORT extern thread_local bool tl_graphExecutionActive;
+
+/**
+ * Thread-local accumulator for pinned host buffers allocated during CUDA graph capture.
+ * PointersManager::replicatePointer copies host data to persistent pinned memory
+ * during capture so graph replay reads from valid addresses.
+ * After capture, these are transferred to CudaGraphHandle for lifetime management.
+ */
+SD_LIB_EXPORT extern thread_local std::vector<void*> tl_capturedHostPtrs;
 
 class SD_LIB_EXPORT DataBuffer {
  private:

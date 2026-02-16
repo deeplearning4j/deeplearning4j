@@ -21,6 +21,8 @@ package org.nd4j.samediff.frameworkimport.onnx.importer
 
 import onnx.Onnx
 import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.internal.InferenceSession
+import org.nd4j.common.config.ND4JSystemProperties
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.FrameworkImporter
@@ -65,25 +67,38 @@ class OnnxFrameworkImporter: FrameworkImporter {
         suggestDynamicVariables: Boolean,
         trackVariableChanges: Boolean
     ): SameDiff {
-        val loadGraph = loadGraph(fileName)
-        if(suggestDynamicVariables) {
-            val newDynamicVariables  = suggestDynamicVariables(loadGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
-            val dynamicVariablesConverted = convertToOnnxTensors(newDynamicVariables)
-            // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors
-            addInitializersToDynamicVariables(loadGraph, dynamicVariablesConverted)
-            val ret =   onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
-            ret.outputs().addAll(loadGraph.outputList)
-            return ret
-        } else {
-            val dynamicVariablesConverted = convertToOnnxTensors(dynamicVariables)
-            // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors
-            addInitializersToDynamicVariables(loadGraph, dynamicVariablesConverted)
-            val ret =  onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
-            ret.outputs().addAll(loadGraph.outputList)
-            return ret
-
+        // Disable DSP and CUDA graphs during model import. Importing loads model constants
+        // to GPU — DSP compilation and CUDA graph capture add memory pressure that causes OOM.
+        val dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled()
+        val prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED)
+        InferenceSession.setDynamicShapePlanEnabled(false)
+        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false")
+        try {
+            val loadGraph = loadGraph(fileName)
+            if(suggestDynamicVariables) {
+                val newDynamicVariables  = suggestDynamicVariables(loadGraph as IRGraph<GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, GeneratedMessageV3, ProtocolMessageEnum>)
+                val dynamicVariablesConverted = convertToOnnxTensors(newDynamicVariables)
+                // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors
+                addInitializersToDynamicVariables(loadGraph, dynamicVariablesConverted)
+                val ret = onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
+                ret.outputs().addAll(loadGraph.outputList)
+                return ret
+            } else {
+                val dynamicVariablesConverted = convertToOnnxTensors(dynamicVariables)
+                // Add ONNX initializers to dynamicVariables so PreImportHooks can access constant tensors
+                addInitializersToDynamicVariables(loadGraph, dynamicVariablesConverted)
+                val ret = onnxImporter.importGraph(loadGraph, null, null, dynamicVariablesConverted, registry, trackVariableChanges)
+                ret.outputs().addAll(loadGraph.outputList)
+                return ret
+            }
+        } finally {
+            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled)
+            if (prevCudaGraphs != null) {
+                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs)
+            } else {
+                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED)
+            }
         }
-
     }
 
     /**

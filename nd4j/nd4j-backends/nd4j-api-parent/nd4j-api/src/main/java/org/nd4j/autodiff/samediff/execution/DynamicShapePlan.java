@@ -490,7 +490,7 @@ public class DynamicShapePlan implements Closeable {
             size += (slot.getIArgs() != null ? slot.getIArgs().length : 0) * 8;  // iArgs (long)
             size += (slot.getTArgs() != null ? slot.getTArgs().length : 0) * 8;  // tArgs (double)
             size += (slot.getBArgs() != null ? slot.getBArgs().length : 0);       // bArgs (byte)
-            size += (slot.getDArgs() != null ? slot.getDArgs().length : 0) * 4;  // dArgs (int ordinal)
+            size += (slot.getDArgs() != null ? slot.getDArgs().length : 0) * 4;  // dArgs (int toInt/C++ enum)
             size += 5 + 4; // 5 flag bytes + targetDeviceId int
             size += 8; // legacyOpType (int32) + legacyOpNum (int32)
         }
@@ -543,7 +543,7 @@ public class DynamicShapePlan implements Closeable {
             if (bArgs != null) for (boolean a : bArgs) buf.put(a ? (byte) 1 : (byte) 0);
 
             buf.putInt(dArgs != null ? dArgs.length : 0);
-            if (dArgs != null) for (DataType a : dArgs) buf.putInt(a.ordinal());
+            if (dArgs != null) for (DataType a : dArgs) buf.putInt(a.toInt());
 
             buf.put(slot.isNeedsZeroedOutput() ? (byte) 1 : (byte) 0);
             buf.put(slot.isDataDependent() ? (byte) 1 : (byte) 0);

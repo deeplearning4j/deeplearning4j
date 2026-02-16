@@ -307,6 +307,12 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
   }
 }
 
+void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMinCaptureSegmentSize(minSize);
+  }
+}
+
 int getPlanNumSegments(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   return static_cast<int>(
@@ -321,4 +327,41 @@ int getPlanNumCapturedGraphSegments(sd::Pointer planHandle) {
 int getPlanTotalGraphReplays(sd::Pointer planHandle) {
   if (planHandle == nullptr) return -1;
   return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getTotalGraphReplays();
+}
+
+bool validatePlanCapturedGraph(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return true;
+  return reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->validateCapturedGraph(-1);
+}
+
+int getPlanNumHostOnlyOps(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return 0;
+  auto hostOnly = reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getHostOnlyOps();
+  return static_cast<int>(hostOnly.size());
+}
+
+const char* getPlanHostOnlyOpNames(sd::Pointer planHandle) {
+  static thread_local std::string result;
+  result.clear();
+  if (planHandle == nullptr) return result.c_str();
+
+  auto hostOnly = reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->getHostOnlyOps();
+  for (size_t i = 0; i < hostOnly.size(); i++) {
+    if (i > 0) result += "|";
+    result += hostOnly[i].opName;
+  }
+  return result.c_str();
+}
+
+void printPlanCapturedGraphDebug(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->printCaptureAudit();
+
+  // Also print graph contents for each cached segment
+  for (const auto& seg : plan->getSegments()) {
+    if (seg.cachedGraph) {
+      seg.cachedGraph->printGraphContents();
+    }
+  }
 }

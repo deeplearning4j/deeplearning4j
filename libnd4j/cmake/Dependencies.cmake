@@ -951,3 +951,147 @@ function(setup_mps)
     message(STATUS "✅ MPS setup complete")
 endfunction()
 
+# =============================================================================
+# TRITON GPU COMPILER (Optional)
+# =============================================================================
+function(setup_triton)
+    if(NOT HELPERS_triton STREQUAL "ON")
+        message(STATUS "Triton helper is disabled (HELPERS_triton=${HELPERS_triton})")
+        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+        set(TRITON "" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Triton requires a GPU backend (CUDA, HIP/ROCm, or Level Zero)
+    if(NOT SD_CUDA AND NOT HELPERS_miopen AND NOT SD_HIP AND NOT SD_LEVEL_ZERO)
+        message(STATUS "Triton helper requires a GPU build (SD_CUDA, SD_HIP, or SD_LEVEL_ZERO)")
+        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+        set(TRITON "" PARENT_SCOPE)
+        return()
+    endif()
+
+    if(TARGET triton_external)
+        message(STATUS "Triton helper is enabled (target already exists)")
+        set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+        set(TRITON triton_interface PARENT_SCOPE)
+        return()
+    endif()
+
+    message(STATUS "Triton helper is enabled")
+    set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+    set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
+    set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_external")
+    set(TRITON_VERSION "3.2.0")
+    set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
+
+    # Ensure directories exist
+    file(MAKE_DIRECTORY "${TRITON_STAMP_DIR}")
+    file(MAKE_DIRECTORY "${TRITON_PREFIX}/src")
+    file(MAKE_DIRECTORY "${TRITON_PREFIX}/build")
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+
+    # Clean stale stamp files
+    if(EXISTS "${TRITON_STAMP_DIR}")
+        file(GLOB STALE_STAMPS "${TRITON_STAMP_DIR}/*-lastrun.txt" "${TRITON_STAMP_DIR}/*.txt")
+        foreach(stamp ${STALE_STAMPS})
+            message(STATUS "Cleaning stale Triton stamp file: ${stamp}")
+            file(REMOVE "${stamp}")
+        endforeach()
+    endif()
+
+    set(TRITON_URL "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
+
+    # Determine codegen backends based on TRITON_GPU_TARGET and build config
+    set(TRITON_CODEGEN_BACKENDS "")
+
+    if(TRITON_GPU_TARGET STREQUAL "AUTO")
+        # Auto-detect: include backends based on what's being built
+        if(SD_CUDA)
+            list(APPEND TRITON_CODEGEN_BACKENDS "nvidia")
+        endif()
+        if(HELPERS_miopen OR SD_HIP OR SD_ZLUDA)
+            list(APPEND TRITON_CODEGEN_BACKENDS "amd")
+        endif()
+        if(SD_LEVEL_ZERO OR SD_ZLUDA)
+            list(APPEND TRITON_CODEGEN_BACKENDS "intel")
+        endif()
+        # If SD_CUDA but could be ZLUDA, include all targets
+        if(SD_CUDA AND SD_ZLUDA)
+            list(APPEND TRITON_CODEGEN_BACKENDS "amd" "intel")
+        endif()
+        # Fallback: at least build nvidia if nothing else detected
+        if(NOT TRITON_CODEGEN_BACKENDS)
+            list(APPEND TRITON_CODEGEN_BACKENDS "nvidia")
+        endif()
+        list(REMOVE_DUPLICATES TRITON_CODEGEN_BACKENDS)
+    elseif(TRITON_GPU_TARGET STREQUAL "NVIDIA")
+        set(TRITON_CODEGEN_BACKENDS "nvidia")
+    elseif(TRITON_GPU_TARGET STREQUAL "AMD")
+        set(TRITON_CODEGEN_BACKENDS "amd")
+    elseif(TRITON_GPU_TARGET STREQUAL "INTEL")
+        set(TRITON_CODEGEN_BACKENDS "intel")
+    endif()
+
+    string(REPLACE ";" "\\;" TRITON_BACKENDS_STR "${TRITON_CODEGEN_BACKENDS}")
+    message(STATUS "   Triton codegen backends: ${TRITON_CODEGEN_BACKENDS}")
+
+    set(TRITON_CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${TRITON_INSTALL_DIR}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DTRITON_BUILD_PYTHON_MODULE=OFF
+            -DTRITON_BUILD_TESTING=OFF
+            -DTRITON_CODEGEN_BACKENDS=${TRITON_BACKENDS_STR}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    )
+
+    # Pass compiler launcher if available
+    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+    endif()
+    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+        list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+    endif()
+
+    ExternalProject_Add(triton_external
+            PREFIX            "${TRITON_PREFIX}"
+            URL               "${TRITON_URL}"
+            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+            SOURCE_DIR        "${TRITON_PREFIX}/src/triton-${TRITON_VERSION}"
+            BINARY_DIR        "${TRITON_PREFIX}/build"
+            STAMP_DIR         "${TRITON_STAMP_DIR}"
+            DOWNLOAD_NO_PROGRESS FALSE
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
+            INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
+            BUILD_BYPRODUCTS
+                "${TRITON_INSTALL_DIR}/include/triton/Compiler/Compiler.h"
+                "${TRITON_INSTALL_DIR}/lib64/libtriton.a"
+                "${TRITON_INSTALL_DIR}/lib/libtriton.a"
+            TIMEOUT           1800
+            LOG_DOWNLOAD      OFF
+            LOG_CONFIGURE     OFF
+            LOG_BUILD         OFF
+            LOG_INSTALL       OFF
+    )
+
+    add_library(triton_interface INTERFACE)
+    target_include_directories(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/include")
+    if(WIN32)
+        target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
+    else()
+        # Try lib64 first (common on many Linux distros), then lib
+        if(EXISTS "${TRITON_INSTALL_DIR}/lib64/libtriton.a")
+            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib64/libtriton.a")
+        else()
+            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
+        endif()
+    endif()
+    add_dependencies(triton_interface triton_external)
+    set(TRITON triton_interface PARENT_SCOPE)
+
+    sd_register_helper("triton")
+    message(STATUS "✅ Triton ${TRITON_VERSION} setup complete (target: ${TRITON_GPU_TARGET})")
+endfunction()
+

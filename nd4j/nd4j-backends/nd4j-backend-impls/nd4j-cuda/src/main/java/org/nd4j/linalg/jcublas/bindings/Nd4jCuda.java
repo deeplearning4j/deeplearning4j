@@ -320,6 +320,7 @@ public static final int
 
 // #include <cstring>
 // #include <mutex>
+// #include <vector>
 
 /**
  * Thread-local flag indicating graph execution/capture is in progress.
@@ -330,6 +331,14 @@ public static final int
  * execution, cleared when execution completes or is aborted.
  */
 @Namespace("sd") public static native @Cast("bool") boolean tl_graphExecutionActive(); public static native void tl_graphExecutionActive(boolean setter);
+
+/**
+ * Thread-local accumulator for pinned host buffers allocated during CUDA graph capture.
+ * PointersManager::replicatePointer copies host data to persistent pinned memory
+ * during capture so graph replay reads from valid addresses.
+ * After capture, these are transferred to CudaGraphHandle for lifetime management.
+ */
+@Namespace("sd") public static native @Cast("void**") @StdVector PointerPointer tl_capturedHostPtrs(); public static native void tl_capturedHostPtrs(PointerPointer setter);
 
 @Namespace("sd") @NoOffset public static class DataBuffer extends Pointer {
     static { Loader.load(); }
@@ -3303,6 +3312,16 @@ public native int getPlanNumSlots(@Cast("sd::Pointer") Pointer planHandle);
 public native void setPlanCudaGraphsEnabled(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean enabled);
 
 /**
+ * Set the minimum segment size for CUDA graph capture.
+ * Segments smaller than this are always executed slot-by-slot.
+ * Default: 10. Set to 1 for testing.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param minSize  Minimum number of slots for capture (clamped to >=1)
+ */
+public native void setPlanMinCaptureSegmentSize(@Cast("sd::Pointer") Pointer planHandle, int minSize);
+
+/**
  * Get the number of graph segments in a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -3325,6 +3344,39 @@ public native int getPlanNumCapturedGraphSegments(@Cast("sd::Pointer") Pointer p
  * @return Total graph replay count
  */
 public native int getPlanTotalGraphReplays(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Validate that the captured CUDA graph covers all ops in the plan.
+ * Returns true if every op contributed at least one CUDA graph node.
+ * Must be called after execution with debug/verbose mode active.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return true if all ops are captured, false if any are host-only
+ */
+public native @Cast("bool") boolean validatePlanCapturedGraph(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Get the count of host-only ops from the last capture audit.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of ops that contributed 0 CUDA graph nodes
+ */
+public native int getPlanNumHostOnlyOps(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Get pipe-delimited names of host-only ops from the last capture audit.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Pipe-delimited string of op names (thread-local static storage)
+ */
+public native @Cast("char*") String getPlanHostOnlyOpNames(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Print the full CUDA graph contents and capture audit to stderr.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+public native void printPlanCapturedGraphDebug(@Cast("sd::Pointer") Pointer planHandle);
 
 // #endif // NATIVEOPS_H
 

@@ -849,9 +849,6 @@ NDArray::~NDArray() {
   // DON'T release the buffer - ConstantShapeHelper cache manages lifetime
   // The cache stores buffers and handles cleanup via clearCache()
   // Calling release() here would decrement refCount incorrectly
-
-
-
 }
 
 NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::LongType> &shape,

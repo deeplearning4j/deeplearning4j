@@ -1484,6 +1484,16 @@ public interface NativeOps {
  }
 
  /**
+  * Set the minimum segment size for CUDA graph capture.
+  * Segments smaller than this are executed slot-by-slot. Default: 10.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param minSize minimum number of slots (clamped to >=1)
+  */
+ default void setPlanMinCaptureSegmentSize(Pointer planHandle, int minSize) {
+     // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
   * Get the number of graph segments in a compiled plan.
   * @param planHandle handle from compileDynamicShapePlan()
   * @return number of segments, or -1 on error
@@ -1508,5 +1518,52 @@ public interface NativeOps {
   */
  default int getPlanTotalGraphReplays(Pointer planHandle) {
      return 0;
+ }
+
+ /**
+  * Validate that the captured CUDA graph covers all ops in the plan segment.
+  * Must be called AFTER at least one execution with CUDA graphs enabled
+  * and debug/verbose mode active (so the capture audit was collected).
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return true if all ops contributed at least one CUDA graph node,
+  *         false if any ops are host-only (their work won't replay)
+  */
+ default boolean validatePlanCapturedGraph(Pointer planHandle) {
+     return true;  // Non-CUDA backends always "pass"
+ }
+
+ /**
+  * Get the number of host-only ops detected during the last CUDA graph capture.
+  * Host-only ops do work during capture but produce zero CUDA graph nodes,
+  * meaning their results will be STALE on graph replay.
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return count of host-only ops, or 0 if no audit data
+  */
+ default int getPlanNumHostOnlyOps(Pointer planHandle) {
+     return 0;
+ }
+
+ /**
+  * Get the names of host-only ops from the last CUDA graph capture audit,
+  * as a pipe-delimited string (e.g. "shape_of|reduce_sum").
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return pipe-delimited op names, or empty string if none
+  */
+ default String getPlanHostOnlyOpNames(Pointer planHandle) {
+     return "";
+ }
+
+ /**
+  * Print the full CUDA graph contents and capture audit to stderr.
+  * Shows per-node details (kernel names, memcpy sizes) and per-op
+  * CUDA node contribution. Flags host-only ops with warnings.
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void printPlanCapturedGraphDebug(Pointer planHandle) {
+     // No-op on non-CUDA backends
  }
 }

@@ -26,9 +26,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.optimize.GraphOptimizer;
 import org.nd4j.autodiff.samediff.optimize.OptimizerSet;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -385,6 +387,13 @@ public class SDZSerializer {
             throw new IOException("File is not a valid ZIP archive: " + modelZipFile.getAbsolutePath());
         }
 
+        // Disable DSP and CUDA graphs during model loading. Loading model constants to GPU
+        // is peak memory usage — DSP compilation and CUDA graph capture add memory that causes OOM.
+        boolean dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
+        String prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
+        InferenceSession.setDynamicShapePlanEnabled(false);
+        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
+
         Path tempDir = Files.createTempDirectory("sdz-serializer-load-");
         log.debug("Using temporary directory for ZIP extraction: {}", tempDir);
         SameDiff loadedSameDiff;
@@ -408,6 +417,13 @@ public class SDZSerializer {
                 log.debug("Cleaned up temporary load directory: {}", tempDir);
             } catch (IOException e) {
                 log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+            }
+            // Restore DSP and CUDA graph settings
+            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
+            if (prevCudaGraphs != null) {
+                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
+            } else {
+                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
             }
         }
 
@@ -445,6 +461,13 @@ public class SDZSerializer {
             throw new IOException("File is not a valid ZIP archive: " + modelZipFile.getAbsolutePath());
         }
 
+        // Disable DSP and CUDA graphs during model loading. Loading model constants to GPU
+        // is peak memory usage — DSP compilation and CUDA graph capture add memory that causes OOM.
+        boolean dspWasEnabled = InferenceSession.isDynamicShapePlanEnabled();
+        String prevCudaGraphs = System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
+        InferenceSession.setDynamicShapePlanEnabled(false);
+        System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "false");
+
         log.info("Loading model with intelligent context: target={}, totalSize={}",
                 context.getTargetDevice().getDeviceId(),
                 context.getSizeInfo().toSummaryString());
@@ -472,6 +495,13 @@ public class SDZSerializer {
                 log.debug("Cleaned up temporary load directory: {}", tempDir);
             } catch (IOException e) {
                 log.warn("Failed to delete temporary load directory: {}", tempDir, e);
+            }
+            // Restore DSP and CUDA graph settings
+            InferenceSession.setDynamicShapePlanEnabled(dspWasEnabled);
+            if (prevCudaGraphs != null) {
+                System.setProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, prevCudaGraphs);
+            } else {
+                System.clearProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED);
             }
         }
 

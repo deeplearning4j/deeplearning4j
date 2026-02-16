@@ -8,6 +8,7 @@
 #cmakedefine01 HAVE_CUDNN
 #cmakedefine01 HAVE_OPENBLAS
 #cmakedefine01 HAVE_FLATBUFFERS
+#cmakedefine01 HAVE_TRITON
 
 #define SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
 #define OPENBLAS_PATH "@OPENBLAS_PATH@"

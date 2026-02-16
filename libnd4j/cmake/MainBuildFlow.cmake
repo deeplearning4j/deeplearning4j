@@ -388,6 +388,13 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "🔗 Linking MPS helper")
     endif()
 
+    # Triton GPU Compiler
+    if(HAVE_TRITON AND DEFINED TRITON)
+        target_link_libraries(${main_target_name} PUBLIC ${TRITON})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_TRITON=1)
+        message(STATUS "🔗 Linking Triton GPU compiler backend")
+    endif()
+
     # Apple Accelerate Framework (macOS/iOS)
     if(HAVE_ACCELERATE)
         find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -570,6 +577,21 @@ function(create_and_link_library)
             add_dependencies(${OBJECT_LIB_NAME} zluda_external)
             if(TARGET zluda_interface)
                 target_link_libraries(${OBJECT_LIB_NAME} PUBLIC zluda_interface)
+            endif()
+        endif()
+
+        # Triton GPU compiler helper - MUST complete before object files that include Triton headers
+        if(HELPERS_triton STREQUAL "ON" AND TARGET triton_external)
+            message(STATUS "")
+            message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
+            message(STATUS "║  🔒 DEPENDENCY BLOCK: Triton                                       ║")
+            message(STATUS "║  ${OBJECT_LIB_NAME} compilation will WAIT for Triton               ║")
+            message(STATUS "║  Triton build may take 15-30 minutes (builds LLVM internally)...   ║")
+            message(STATUS "╚═══════════════════════════════════════════════════════════════════╝")
+            message(STATUS "")
+            add_dependencies(${OBJECT_LIB_NAME} triton_external)
+            if(TARGET triton_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC triton_interface)
             endif()
         endif()
 
@@ -871,6 +893,7 @@ endif()
 setup_blas()
 setup_mlir()
 setup_mps()
+setup_triton()
 message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 message(STATUS "Dependencies initialization complete.")
 
@@ -889,6 +912,7 @@ message(STATUS "   MIOPEN:      ${HAVE_MIOPEN}")
 message(STATUS "   PJRT:        ${HAVE_PJRT}")
 message(STATUS "   LLAMACPP:    ${HAVE_LLAMACPP}")
 message(STATUS "   VLM:         ${HAVE_VLM}")
+message(STATUS "   TRITON:      ${HAVE_TRITON}")
 message(STATUS "")
 message(STATUS "🔧 === Dynamic Kernel Selection ===")
 message(STATUS "   Enabled:     ${SD_DYNAMIC_KERNEL_SELECTION}")
@@ -966,10 +990,12 @@ else()
     string(APPEND TYPE_DEFINES "#define HAS_STD_U32STRING 1\n")
 endif()
 
-# --- Generate config.h AFTER setting all variables including TYPE_DEFINES ---
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/include/config.h")
+# --- config.h generation is handled solely by PostBuild.cmake ---
+# PostBuild.cmake reads config.h.in directly and performs all #cmakedefine01,
+# @VAR@, and TYPE_DEFINES substitutions, with write-if-different to preserve
+# PCH timestamps. A redundant configure_file() call here can produce an
+# intermediate config.h with unprocessed #cmakedefine01 directives that
+# compilation sees before PostBuild.cmake runs.
 
 set(DEFINITIONS_CONTENT "")
 if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")

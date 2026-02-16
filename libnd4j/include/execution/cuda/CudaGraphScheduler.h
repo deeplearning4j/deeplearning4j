@@ -109,6 +109,37 @@ struct SD_LIB_EXPORT GraphNodeDescriptor {
 };
 
 /**
+ * Detailed info about a single CUDA graph node, extracted from cudaGraph_t.
+ * Used for debug/verbose printing of the full captured graph.
+ */
+struct SD_LIB_EXPORT CudaGraphNodeInfo {
+    cudaGraphNodeType type;         // CUDA node type enum
+    std::string typeName;           // Human-readable type name
+    std::string kernelName;         // Demangled kernel function name (kernels only)
+    size_t memcpyBytes = 0;        // Bytes transferred (memcpy only)
+    int memcpySrcDevice = -1;      // Source device (memcpy only)
+    int memcpyDstDevice = -1;      // Dest device (memcpy only)
+    std::string memcpyKind;        // "H2D", "D2H", "D2D", "H2H" (memcpy only)
+    size_t memsetBytes = 0;        // Bytes set (memset only)
+    int memsetValue = 0;           // Value set (memset only)
+    size_t nodeIndex = 0;          // Index in the graph node array
+};
+
+/**
+ * Per-op capture audit entry: tracks how many CUDA graph nodes each op contributed.
+ * Used for validating that every op in a segment actually captured work.
+ */
+struct SD_LIB_EXPORT CaptureAuditEntry {
+    int slotIndex = -1;            // Slot index in the NativeDynamicShapePlan
+    std::string opName;            // Op name (e.g. "shape_of", "gather", "multiply")
+    size_t nodesBefore = 0;        // Graph node count before this op executed
+    size_t nodesAfter = 0;         // Graph node count after this op executed
+    size_t nodesContributed = 0;   // nodesAfter - nodesBefore
+
+    bool isHostOnly() const { return nodesContributed == 0; }
+};
+
+/**
  * Statistics for a captured graph
  */
 struct SD_LIB_EXPORT GraphStatistics {
@@ -216,9 +247,34 @@ public:
     size_t getNumEdges() const;
     GraphStatistics getStatistics() const;
 
-    // Debug
+    // Debug / Diagnostics
     void printDebugInfo() const;
     bool exportToDot(const std::string& filename) const;
+
+    /**
+     * Extract detailed info about every node in the captured graph.
+     * Includes kernel names, memcpy directions/sizes, memset values, etc.
+     * Only valid after endCapture() succeeds (state >= CAPTURED).
+     */
+    std::vector<CudaGraphNodeInfo> getDetailedNodeInfo() const;
+
+    /**
+     * Print the full contents of the captured CUDA graph to stderr.
+     * Shows every node with its type, kernel name, memcpy details, etc.
+     * Gated on debug/verbose mode in the caller — this method always prints.
+     */
+    void printGraphContents() const;
+
+    /**
+     * Get the current number of nodes in the underlying cudaGraph_t.
+     * Can be called during capture to track incremental node additions.
+     * Returns 0 if no graph exists or capture hasn't started.
+     *
+     * NOTE: During active capture (between beginCapture and endCapture),
+     * this queries the in-progress graph. The CUDA driver allows this
+     * via cudaStreamGetCaptureInfo to get the graph being captured.
+     */
+    size_t getNumNodesDuringCapture(cudaStream_t captureStream) const;
 
     // Native handles (use with caution)
     cudaGraph_t getGraph() const { return _graph; }
@@ -234,6 +290,16 @@ private:
     int _deviceId = 0;
     GraphStatistics _stats;
     mutable std::mutex _mutex;
+
+    // Persistent pinned host buffers used during graph capture for H2D copies.
+    // These must persist for the lifetime of the graph because graph replay
+    // reads from the recorded host addresses. Freed in cleanup().
+    std::vector<void*> _capturedHostPtrs;
+
+public:
+    // Add persistent pinned host buffers (called during graph capture)
+    void addCapturedHostPtr(void* ptr) { _capturedHostPtrs.push_back(ptr); }
+private:
 };
 
 /**

@@ -92,10 +92,12 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
     if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
       std::vector<sd::LongType> dims = {xRank - 1};
       // applyBroadcast expects the other array to match TAD shape exactly,
-      // so reshape y to strip leading 1s when yRank > 1
+      // so reshape y to strip leading 1s when yRank > 1.
+      // Use view (copyToNewBuff=false) to avoid buffer allocation/deallocation
+      // which breaks CUDA graph capture (cudaFreeAsync on default stream).
       if (yRank > 1) {
         std::vector<sd::LongType> yShape = {yLen};
-        auto yReshaped = y->reshape(y->ordering(), yShape);
+        auto yReshaped = y->reshape(y->ordering(), yShape, false);
         x->applyBroadcast(broadcast::Multiply, &dims, yReshaped, z);
         delete yReshaped;
       } else {
@@ -114,7 +116,7 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
       std::vector<sd::LongType> dims = {yRank - 1};
       if (xRank > 1) {
         std::vector<sd::LongType> xShape = {xLen};
-        auto xReshaped = x->reshape(x->ordering(), xShape);
+        auto xReshaped = x->reshape(x->ordering(), xShape, false);
         y->applyBroadcast(broadcast::Multiply, &dims, xReshaped, z);
         delete xReshaped;
       } else {
@@ -142,7 +144,7 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
         yShape.push_back(y->sizeAt(i));
       }
       // Reshape y to match TAD shape (strip leading 1s)
-      auto yReshaped = y->reshape(y->ordering(), yShape);
+      auto yReshaped = y->reshape(y->ordering(), yShape, false);
       x->applyBroadcast(broadcast::Multiply, &dims, yReshaped, z);
       delete yReshaped;
       cleanupCasts();
@@ -166,7 +168,7 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
         dims.push_back(i);
         xShape.push_back(x->sizeAt(i));
       }
-      auto xReshaped = x->reshape(x->ordering(), xShape);
+      auto xReshaped = x->reshape(x->ordering(), xShape, false);
       y->applyBroadcast(broadcast::Multiply, &dims, xReshaped, z);
       delete xReshaped;
       cleanupCasts();

@@ -148,7 +148,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     /** Pending DataBuffers to close. Accumulated during execution and periodically flushed
      *  to reclaim GPU memory mid-execution (not just at the end). */
-    private ArrayList<DataBuffer> pendingClose;
+    private ArrayList<DataBuffer> pendingClose = new ArrayList<>();
 
     /** Persistent dedup sets across all flushes within one execute() call.
      *  Identity dedup prevents processing the same DataBuffer object twice (views sharing parents).
@@ -162,7 +162,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Buffers deferred from a mid-execution flush because their GPU address was still
      *  used by a live slot (view of parent). Re-checked on the next flush when the view
      *  slot may have been released. */
-    private ArrayList<DataBuffer> deferredClose;
+    private ArrayList<DataBuffer> deferredClose = new ArrayList<>();
 
     /** Flush pendingClose every RELEASE_FLUSH_INTERVAL ops during execution to reduce
      *  peak GPU memory. Vision encoder with 1962 ops accumulates ~10GB of dead intermediates
@@ -387,11 +387,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 // null means native execution not available, fall through to Java
             } catch (Exception e) {
+                // Clear CUDA error state after native plan failure. CUDA errors from
+                // the failed execution (e.g., error 700 illegal memory access) are sticky
+                // and will cause ALL subsequent CUDA operations to fail unless cleared.
+                // Sync + clear on the execution stream ensures a clean state for retry.
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                try {
+                    Nd4j.getExecutioner().commit();
+                    nativeOps.clearLastError();
+                } catch (Exception clearEx) {
+                    log.debug("Error clearing CUDA state after native plan failure: {}", clearEx.getMessage());
+                }
+
                 if (!cudaGraphsFailed && nativePlanHandle != null) {
                     // CUDA graph capture may have failed — disable graphs and retry slot-by-slot
                     log.info("Native executor failed (likely CUDA graph capture), retrying with graphs disabled: {}", e.getMessage());
                     cudaGraphsFailed = true;
-                    NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                     try {
                         nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, false);
                     } catch (UnsupportedOperationException ignored) {}
@@ -443,13 +454,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         Arrays.fill(externalInputs, null);
         Arrays.fill(externalInputDeviceIds, -1);
         liveSlots.clear();
-        if (pendingClose == null) pendingClose = new ArrayList<>();
         pendingClose.clear();
 
         // Initialize persistent dedup sets for this execution.
         seenIdentity = Collections.newSetFromMap(new IdentityHashMap<>());
         closedOdbAddresses = new HashSet<>();
-        if (deferredClose == null) deferredClose = new ArrayList<>();
         deferredClose.clear();
         totalFlushedCount = 0;
         totalFlushedBytes = 0;
@@ -3579,6 +3588,14 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (nativePlanHandle == null || nativePlanSource != plan) {
             freeNativePlanHandle();
 
+            // Reset cudaGraphsFailed when plan changes — the new plan has different shapes/ops,
+            // so graph capture that failed for the old plan (e.g. large prefill) may succeed
+            // for the new plan (e.g. smaller single-token decode with static KV cache).
+            if (cudaGraphsFailed && nativePlanSource != null) {
+                log.info("Native executor: resetting cudaGraphsFailed on plan recompilation");
+                cudaGraphsFailed = false;
+            }
+
             byte[] serialized = plan.serialize();
             if (serialized == null || serialized.length == 0) {
                 log.debug("Native executor: plan serialization returned empty, skipping");
@@ -3675,6 +3692,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             } catch (Exception e) {
                 // CPU backend
             }
+
+            // Clear native shape caches before each execution. During autoregressive
+            // decoding, KV cache dimensions grow by 1 each step, so shapes computed in
+            // the previous step are stale. Without this, the attention mask reshape
+            // produces [1,1,1,N] while the freshly-computed input is [1,1,1,N+1],
+            // causing a broadcast mismatch at /model/attn_mask_reformat/Add.
+            nativeOps.clearDynamicShapePlanCaches(nativePlanHandle);
 
             // Execute the plan in C++
             long execStart = System.nanoTime();

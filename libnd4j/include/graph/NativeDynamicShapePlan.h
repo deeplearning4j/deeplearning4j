@@ -35,8 +35,9 @@
 #include <execution/cuda/CudaGraphScheduler.h>
 #endif
 
-// Forward declare graph backends (included conditionally in .cpp)
-namespace sd { namespace graph { class GraphBackend; } }
+// GraphBackend.h defines CompilationAuditEntry and the GraphBackend base class.
+// Concrete backends (OneDnnGraphBackend, AclGraphBackend) are included conditionally in .cpp.
+#include <graph/GraphBackend.h>
 
 namespace sd {
 namespace graph {
@@ -152,18 +153,29 @@ struct GraphSegment {
   // Execution tracking
   int executionCount;
 
+  // If true, never attempt graph capture/compilation for this segment.
+  // Used by both CUDA and CPU graph backends after validation failure.
+  bool captureFailed;
+
 #ifdef SD_CUDA
   // Cached CUDA graph for replay
   std::shared_ptr<sd::cuda::CudaGraphHandle> cachedGraph;
   LongType cachedShapeKey;
-  bool captureFailed;  // If true, never attempt capture for this segment
+
+  // Input buffer addresses at capture time. CUDA graphs record exact GPU
+  // memory addresses. If any input buffer is reallocated between executions
+  // (e.g., position_ids recreated each decoder step), the graph would read
+  // from stale/freed addresses → CUDA error 700 (illegal memory access).
+  // We store a hash of all input buffer addresses at capture time and
+  // compare before replay. If addresses changed, invalidate the graph.
+  LongType capturedInputAddrKey;
 #endif
 
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
-        executionCount(0)
+        executionCount(0), captureFailed(false)
 #ifdef SD_CUDA
-        , cachedShapeKey(0), captureFailed(false)
+        , cachedShapeKey(0), capturedInputAddrKey(0)
 #endif
   {}
 };
@@ -279,6 +291,64 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setCudaGraphsEnabled(bool enabled) { cudaGraphsEnabled_ = enabled; }
   bool isCudaGraphsEnabled() const { return cudaGraphsEnabled_; }
 
+  /**
+   * Set minimum segment size for CUDA graph capture. Segments smaller than this
+   * are executed slot-by-slot. Default: 10. Set to 1 for testing.
+   */
+  void setMinCaptureSegmentSize(int minSize) { minCaptureSegmentSize_ = (minSize > 0) ? minSize : 1; }
+  int getMinCaptureSegmentSize() const { return minCaptureSegmentSize_; }
+
+  /**
+   * Get the capture audit for the most recent CUDA graph capture.
+   * Each entry shows which op contributed how many CUDA graph nodes.
+   * Empty if no capture has been performed or CUDA graphs are disabled.
+   */
+#ifdef SD_CUDA
+  const std::vector<sd::cuda::CaptureAuditEntry>& getLastCaptureAudit() const { return lastCaptureAudit_; }
+
+  /**
+   * Get ops that contributed zero CUDA graph nodes during the last capture.
+   * These are "host-only" ops whose work is NOT replayed on graph replay,
+   * which means their outputs will be STALE on the 2nd+ execution.
+   * This is a critical diagnostic for debugging graph correctness issues.
+   */
+  std::vector<sd::cuda::CaptureAuditEntry> getHostOnlyOps() const;
+
+  /**
+   * Print the full capture audit to stderr.
+   * Shows every op in the last captured segment with its CUDA node contribution.
+   * Flags host-only ops with a warning marker.
+   */
+  void printCaptureAudit() const;
+
+  /**
+   * Validate that the captured CUDA graph covers all ops in the segment.
+   * Returns true if every op contributed at least one CUDA graph node.
+   * When debug/verbose mode is on, this also prints the full audit and
+   * asserts that no host-only ops exist.
+   *
+   * @param segmentIndex  Which segment to validate (-1 for all segments)
+   * @return true if all ops contributed CUDA graph nodes, false if any host-only ops found
+   */
+  bool validateCapturedGraph(int segmentIndex = -1) const;
+#endif
+
+  /**
+   * Validate that a compiled CPU graph (oneDNN/ACL) covers all ops in the segment.
+   * Returns true if every op was compiled by the backend.
+   * When any ops are missing, logs warnings and returns false.
+   *
+   * @param segmentIndex  Which segment to validate (-1 for all segments)
+   * @return true if all ops were compiled, false if any were skipped
+   */
+  bool validateCompiledCpuGraph(int segmentIndex = -1) const;
+
+  /**
+   * Print the compilation audit for CPU graph backends.
+   * Shows every op with its compilation status (compiled vs skipped).
+   */
+  void printCompilationAudit() const;
+
   friend class NativePlanCompiler;
 
  private:
@@ -315,6 +385,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // CUDA Graphs control
   bool cudaGraphsEnabled_;
   int totalGraphReplays_;
+  int minCaptureSegmentSize_;  // minimum # of slots to attempt CUDA graph capture (default 10)
+
+#ifdef SD_CUDA
+  // Capture audit: per-op CUDA node contribution tracking
+  std::vector<sd::cuda::CaptureAuditEntry> lastCaptureAudit_;
+#endif
+
+  // Compilation audit: per-op compilation status for CPU graph backends
+  std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
   // Owned legacy ops created during deserialization
   // (for ops not registered in OpRegistrator)
@@ -324,6 +403,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
   LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
   LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
+  LongType computeSegmentInputAddrKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
   void flushPendingClose(void* stream);
   void buildSegments();
 
@@ -342,6 +422,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
   GraphBackend* getCpuGraphBackend();
+
+  // GPU graph backend (Triton GPU compiler)
+  GraphBackend* gpuGraphBackend_;
+  bool gpuGraphBackendChecked_;
+
+  Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
+                                    int numExt, void* stream);
+  GraphBackend* getGpuGraphBackend();
 };
 
 }  // namespace graph

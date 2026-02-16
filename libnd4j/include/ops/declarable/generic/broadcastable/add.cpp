@@ -114,7 +114,7 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
       std::vector<sd::LongType> dims = {xRank - 1};
       if (yRank > 1) {
         std::vector<sd::LongType> yShape = {yLen};
-        auto yReshaped = y->reshape(y->ordering(), yShape);
+        auto yReshaped = y->reshape(y->ordering(), yShape, false);
         x->applyBroadcast(broadcast::Add, &dims, yReshaped, z);
         delete yReshaped;
       } else {
@@ -138,7 +138,7 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
       std::vector<sd::LongType> dims = {yRank - 1};
       if (xRank > 1) {
         std::vector<sd::LongType> xShape = {xLen};
-        auto xReshaped = x->reshape(x->ordering(), xShape);
+        auto xReshaped = x->reshape(x->ordering(), xShape, false);
         y->applyBroadcast(broadcast::Add, &dims, xReshaped, z);
         delete xReshaped;
       } else {
@@ -175,7 +175,7 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
         dims.push_back(i);
         yShape.push_back(y->sizeAt(i));
       }
-      auto yReshaped = y->reshape(y->ordering(), yShape);
+      auto yReshaped = y->reshape(y->ordering(), yShape, false);
       x->applyBroadcast(broadcast::Add, &dims, yReshaped, z);
       delete yReshaped;
       cleanupCasts();
@@ -207,7 +207,7 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
         dims.push_back(i);
         xShape.push_back(x->sizeAt(i));
       }
-      auto xReshaped = x->reshape(x->ordering(), xShape);
+      auto xReshaped = x->reshape(x->ordering(), xShape, false);
       y->applyBroadcast(broadcast::Add, &dims, xReshaped, z);
       delete xReshaped;
       cleanupCasts();

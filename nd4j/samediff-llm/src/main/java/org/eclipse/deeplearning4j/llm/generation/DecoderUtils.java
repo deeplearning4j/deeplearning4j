@@ -27,9 +27,14 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utilities for decoder model execution: causal masks, KV cache, and output name resolution.
@@ -214,5 +219,149 @@ public class DecoderUtils {
         Collections.sort(presentValueNames);
 
         return new KVCacheNames(presentKeyNames, presentValueNames);
+    }
+
+    // ==================== Static KV Cache for CUDA Graph Replay ====================
+
+    /**
+     * Pad KV cache tensors from prefill to a fixed static size for CUDA graph replay.
+     *
+     * Takes the present_kv outputs from prefill (shape [batch, heads, prefillLen, dim])
+     * and creates new tensors padded to [batch, heads, maxKvLen, dim] with zeros for
+     * unfilled positions. Returns a map from past_key_values input names to the padded tensors.
+     *
+     * @param prefillOutputs map of present output names to their tensors from prefill
+     * @param presentKeyNames list of present key output names
+     * @param presentValueNames list of present value output names
+     * @param maxKvLen maximum KV cache length (prefillLen + maxNewTokens)
+     * @return map from past_key_values input names to static padded tensors
+     */
+    public static Map<String, INDArray> padKvCacheToStaticSize(
+            Map<String, INDArray> prefillOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen) {
+
+        Map<String, INDArray> staticKvBuffers = new HashMap<>();
+        List<String> allPresentNames = new ArrayList<>();
+        allPresentNames.addAll(presentKeyNames);
+        allPresentNames.addAll(presentValueNames);
+
+        for (String presentName : allPresentNames) {
+            INDArray prefillKv = prefillOutputs.get(presentName);
+            if (prefillKv == null) continue;
+
+            // prefillKv shape: [batch, heads, prefillLen, dim]
+            long[] shape = prefillKv.shape();
+            long batch = shape[0];
+            long heads = shape[1];
+            long prefillLen = shape[2];
+            long dim = shape[3];
+
+            // Create static buffer: [batch, heads, maxKvLen, dim]
+            INDArray staticBuf = Nd4j.zeros(prefillKv.dataType(), batch, heads, maxKvLen, dim);
+
+            // Copy prefill data into positions 0..prefillLen-1
+            if (prefillLen > 0) {
+                INDArray destSlice = staticBuf.get(
+                        NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(0, prefillLen), NDArrayIndex.all());
+                destSlice.assign(prefillKv);
+            }
+
+            // Map present name -> past_key_values input name
+            String pastInputName = presentName.replace("present", "past_key_values");
+            staticKvBuffers.put(pastInputName, staticBuf);
+
+            log.info("  Static KV buffer '{}': [{},{},{},{}] (prefill={} padded to {})",
+                    pastInputName, batch, heads, maxKvLen, dim, prefillLen, maxKvLen);
+        }
+
+        return staticKvBuffers;
+    }
+
+    /**
+     * Scatter the new KV entry from decoder output into the static KV buffer at cachePos.
+     *
+     * The decoder concatenates past_kv [batch,heads,maxKvLen,dim] with the new token's KV,
+     * producing present_kv [batch,heads,maxKvLen+1,dim]. The new token's entry is at the
+     * last position (index maxKvLen). We extract it and write it into the static buffer
+     * at position cachePos.
+     *
+     * @param staticKvBuffers map of past_key_values input names to static buffers
+     * @param decoderOutputs map of decoder output names to tensors
+     * @param presentKeyNames list of present key output names
+     * @param presentValueNames list of present value output names
+     * @param maxKvLen the static KV length (without the +1 from concat)
+     * @param cachePos the position in the static buffer to write the new entry
+     */
+    public static void scatterNewKvEntries(
+            Map<String, INDArray> staticKvBuffers,
+            Map<String, INDArray> decoderOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            long cachePos) {
+
+        List<String> allPresentNames = new ArrayList<>();
+        allPresentNames.addAll(presentKeyNames);
+        allPresentNames.addAll(presentValueNames);
+
+        for (String presentName : allPresentNames) {
+            INDArray presentKv = decoderOutputs.get(presentName);
+            if (presentKv == null) continue;
+
+            // presentKv shape: [batch, heads, maxKvLen+1, dim]
+            // New token's KV is at position maxKvLen (the last position)
+            long lastPos = presentKv.shape()[2] - 1;
+            INDArray newEntry = presentKv.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.point(lastPos), NDArrayIndex.all());
+
+            // Write into static buffer at cachePos
+            String pastInputName = presentName.replace("present", "past_key_values");
+            INDArray staticBuf = staticKvBuffers.get(pastInputName);
+            if (staticBuf != null) {
+                INDArray destSlice = staticBuf.get(
+                        NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.point(cachePos), NDArrayIndex.all());
+                destSlice.assign(newEntry);
+            }
+        }
+    }
+
+    /**
+     * Build a static-size attention mask for decode steps with a padded KV cache.
+     *
+     * Returns [batchSize, maxKvLen+1] LONG mask: 1 for valid positions 0..cachePos-1,
+     * 0 for padding positions cachePos..maxKvLen-1, and 1 for position maxKvLen
+     * (the new token being decoded). Finished sequences get all zeros.
+     *
+     * @param batchSize number of sequences in the batch
+     * @param cachePos number of valid KV entries (positions 0..cachePos-1 are filled)
+     * @param maxKvLen maximum KV cache length (total static buffer size)
+     * @param finished per-sequence finished flags (length = original batchSize)
+     * @return INDArray of shape [batchSize, maxKvLen+1] with LONG dtype
+     */
+    public static INDArray buildStaticDecodeMask(int batchSize, long cachePos, long maxKvLen, boolean[] finished) {
+        long totalLen = maxKvLen + 1; // past KV positions + new token position
+        INDArray mask = Nd4j.zeros(DataType.LONG, batchSize, totalLen);
+
+        // Set all valid past positions (columns 0..cachePos-1) to 1 for all rows
+        if (cachePos > 0) {
+            mask.get(NDArrayIndex.all(), NDArrayIndex.interval(0, cachePos)).assign(1);
+        }
+        // Set new token position (column maxKvLen) to 1 for all rows
+        mask.get(NDArrayIndex.all(), NDArrayIndex.point(maxKvLen)).assign(1);
+
+        // Zero out finished sequences: build [batchSize,1] active mask, broadcast-multiply
+        long[] activeFlags = new long[batchSize];
+        for (int b = 0; b < batchSize; b++) {
+            activeFlags[b] = (b < finished.length && finished[b]) ? 0L : 1L;
+        }
+        INDArray activeMask = Nd4j.createFromArray(activeFlags).reshape(batchSize, 1);
+        mask.muli(activeMask);
+
+        return mask;
     }
 }

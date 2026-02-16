@@ -65,6 +65,14 @@ void NDArray::synchronize(const char* msg) {
 }
 
 void NDArray::syncShape() {
+  // During CUDA graph capture, use async copy to avoid breaking capture.
+  // Synchronous cudaMemcpy on the legacy default stream implicitly syncs with
+  // all named streams, invalidating the captured stream (error 901).
+  if (tl_graphExecutionActive) {
+    cudaMemcpyAsync(const_cast<LongType*>(specialShapeInfo()), shapeInfo(),
+                    shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, 0);
+    return;
+  }
   cudaMemcpy(const_cast<LongType*>(specialShapeInfo()), shapeInfo(), shape::shapeInfoByteLength(shapeInfo()),
              cudaMemcpyHostToDevice);
 }

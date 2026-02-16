@@ -33,6 +33,10 @@ namespace sd {
 // Set during graph segment execution (oneDNN Graph, ACL Dynamic Fusion).
 thread_local bool tl_graphExecutionActive = false;
 
+// Thread-local accumulator for pinned host buffers during graph capture (CUDA only).
+// On CPU builds, this is unused but must be defined to satisfy the linker.
+thread_local std::vector<void*> tl_capturedHostPtrs;
+
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer

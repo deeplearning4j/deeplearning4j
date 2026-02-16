@@ -72,6 +72,8 @@ class AclGraphBackend : public GraphBackend {
 
   void invalidateCache() override;
 
+  std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
+
   static AclGraphBackend& getInstance();
 
  private:
@@ -101,6 +103,9 @@ class AclGraphBackend : public GraphBackend {
     std::unordered_map<int, std::shared_ptr<arm_compute::Tensor>> slotToTensor;
     std::unordered_map<int, std::shared_ptr<arm_compute::Tensor>> extToTensor;
 
+    // Per-slot compilation audit: tracks which ops were compiled vs skipped
+    std::vector<CompilationAuditEntry> compilationAudit;
+
     AclFunctionGroup() : shapeKey(0), valid(false) {}
   };
 
@@ -124,6 +129,9 @@ class AclGraphBackend : public GraphBackend {
 
   std::unordered_map<SegmentCacheKey, AclFunctionGroup, SegmentCacheHash> cache_;
   std::mutex cacheMtx_;
+
+  // Most recent compilation audit (updated by compileSegment)
+  std::vector<CompilationAuditEntry> lastCompilationAudit_;
 
   // Build ACL functions for a segment
   AclFunctionGroup buildFunctions(NativeSlot* slots, int startSlot, int endSlot,

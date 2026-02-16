@@ -22,12 +22,24 @@
 //  @author raver119@gmail.com
 //
 #include <array/CudaPointerDeallocator.h>
+#include <array/DataBuffer.h>
 #include <memory/cuda/CudaMemoryPool.h>
 
 namespace sd {
 
 void CudaPointerDeallocator::release(void *ptr) {
   if (ptr == nullptr) return;
+
+  // During CUDA graph capture, cudaPointerGetAttributes() is a synchronous
+  // driver query that invalidates the capture (error 901). Skip the attributes
+  // check and free directly through CudaMemoryPool. cudaFreeAsync() is
+  // stream-ordered and safe during capture in relaxed mode.
+  if (tl_graphExecutionActive) {
+    int dev;
+    cudaGetDevice(&dev);
+    memory::CudaMemoryPool::getInstance().free(ptr, dev, nullptr);
+    return;
+  }
 
   // Check if this is a valid device pointer before freeing
   cudaPointerAttributes attributes;

@@ -19,6 +19,7 @@
 //
 //  @author raver119@gmail.com
 //
+#include <array/DataBuffer.h>
 #include <array/DataTypeUtils.h>
 #include <array/PrimaryPointerDeallocator.h>
 #include <cuda.h>
@@ -143,10 +144,37 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
     // to pinned host memory which is accessible from ALL GPUs.
     int actualDevice = deviceId;
     size_t allocSize = numBytes + SD_ALLOC_PADDING;
+    // During CUDA graph capture, allocations MUST use the captured stream.
+    // Using nullptr (legacy default stream) causes implicit sync with the captured
+    // stream, invalidating the capture (error 901).
+    cudaStream_t allocStream = nullptr;
+    if (tl_graphExecutionActive) {
+      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+      if (streamPtr != nullptr) allocStream = *streamPtr;
+    }
     ptr = reinterpret_cast<int8_t*>(
-        memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, nullptr, &actualDevice));
+        memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
     if (ptr == nullptr) {
-      THROW_EXCEPTION("[DEVICE] replicatePointer allocation failed");
+      // Shape buffers are tiny (~200 bytes). Failure likely means a stale CUDA
+      // error is blocking allocations, not true OOM. Clear errors, trim pool, retry.
+      cudaGetLastError();
+      memory::CudaMemoryPool::getInstance().trimPool(deviceId);
+      ptr = reinterpret_cast<int8_t*>(
+          memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
+    }
+    if (ptr == nullptr) {
+      // Pool retry failed — fall back to pinned host memory which is
+      // GPU-accessible from ALL devices. Shape buffers are read-only constants
+      // so pinned host is safe and avoids OOM for trivial allocations.
+      cudaGetLastError();
+      auto hostRes = cudaMallocHost(reinterpret_cast<void**>(&ptr), allocSize);
+      if (hostRes != cudaSuccess || ptr == nullptr) {
+        cudaGetLastError();
+        THROW_EXCEPTION("[DEVICE] replicatePointer allocation failed (pool + pinned host both failed)");
+      }
+      usedPinnedHost = true;
+      sd_debug("replicatePointer: pool alloc failed for device %d, using pinned host (%zu bytes)\n",
+               deviceId, allocSize);
     }
     if (actualDevice != deviceId) {
       // Wrong device: free and fall back to pinned host memory immediately.
@@ -178,14 +206,28 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
     // Host-to-host copy for pinned memory (no CUDA context needed)
     memcpy(ptr, src, numBytes);
   } else {
-    auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
-    if (res != 0) {
-      std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
-      auto lastError = cudaGetLastError();
-      if (lastError != cudaSuccess) {
-        errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+    if (tl_graphExecutionActive) {
+      // During CUDA graph capture, synchronous cudaMemcpy on the legacy default stream
+      // implicitly syncs with ALL named streams (including the captured stream), causing
+      // capture invalidation (error 901). Use cudaMemcpyAsync on the CAPTURED stream
+      // so it becomes a recorded graph node.
+      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : 0;
+      auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, capturedStream);
+      if (res != 0) {
+        std::string errorMessage = "cudaMemcpyAsync (graph capture) failed with error code " + std::to_string(res);
+        THROW_EXCEPTION(errorMessage.c_str());
       }
-      THROW_EXCEPTION(errorMessage.c_str());
+    } else {
+      auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
+      if (res != 0) {
+        std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
+        auto lastError = cudaGetLastError();
+        if (lastError != cudaSuccess) {
+          errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+        }
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
     }
   }
 

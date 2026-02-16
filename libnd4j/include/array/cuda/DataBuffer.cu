@@ -43,6 +43,10 @@ namespace sd {
 // Definition of thread-local graph execution flag (declared in DataBuffer.h)
 thread_local bool tl_graphExecutionActive = false;
 
+// Thread-local accumulator for pinned host buffers during CUDA graph capture.
+// Transferred to CudaGraphHandle after successful capture; freed on capture abort.
+thread_local std::vector<void*> tl_capturedHostPtrs;
+
 void DataBuffer::expand(const uint64_t size) {
   if (size > _lenInBytes) {
     // allocate new buffer
@@ -432,8 +436,17 @@ void DataBuffer::allocateSpecial() {
     int actualDevice = deviceId;
     if (_workspace == nullptr) {
       size_t allocSize = getLenInBytes() + 8;
+      // During CUDA graph capture, allocations MUST use the captured stream.
+      // Using nullptr (legacy default stream) causes implicit sync with the captured
+      // stream in DEFAULT scheduling mode, invalidating the capture (error 901).
+      // LaunchContext is guaranteed to be initialized during capture (we're executing ops).
+      cudaStream_t allocStream = nullptr;
+      if (tl_graphExecutionActive) {
+        auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+        if (streamPtr != nullptr) allocStream = *streamPtr;
+      }
       _specialBuffer = reinterpret_cast<int8_t*>(
-          memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, nullptr, &actualDevice));
+          memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
       if (_specialBuffer == nullptr) {
         THROW_EXCEPTION("[DEVICE] allocation failed");
       }
@@ -646,6 +659,25 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     return;
   }
 
+  // During CUDA graph capture, use a capture-safe path:
+  // - Skip cudaPointerGetAttributes (synchronous query breaks capture)
+  // - Use the captured stream instead of stream 0 (default stream syncs with captured stream)
+  // - Skip cudaStreamSynchronize (explicit sync breaks capture)
+  // This is essential for ops like shape_of that produce host-side data needing H2D transfer.
+  if (tl_graphExecutionActive) {
+    allocateSpecial();
+    if (_specialBuffer == nullptr) return;
+    auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+    cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+    auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(),
+                               cudaMemcpyHostToDevice, capturedStream);
+    if (res != cudaSuccess) {
+      cudaGetLastError();  // Clear error
+    }
+    writeSpecial();
+    return;
+  }
+
   allocateSpecial();
 
   // If special buffer exists but is undersized, reallocate to prevent overrun
@@ -774,8 +806,18 @@ void DataBuffer::deleteSpecial() {
     array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
         _specialBuffer,array::BufferType::SPECIAL);
 #endif
-    // Use device-aware free - critical for multi-GPU correctness
-    RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
+    // During CUDA graph capture, we must use the captured stream for cudaFreeAsync.
+    // The default RELEASE_SPECIAL_WITH_DEVICE passes nullptr (legacy default stream),
+    // which implicitly synchronizes with all named streams and breaks capture (error 901).
+    if (tl_graphExecutionActive && _workspace == nullptr) {
+      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+      int deviceIdToUse = (bufferDeviceId >= 0) ? bufferDeviceId : 0;
+      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(p), deviceIdToUse, capturedStream);
+    } else {
+      // Use device-aware free - critical for multi-GPU correctness
+      RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
+    }
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {
@@ -908,16 +950,46 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
 
   int res = 0;
   if (other.isPrimaryActual()) {
-    res = cudaMemcpy(
-        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-        static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
-        sizeToCopyinBytes, cudaMemcpyHostToDevice);
+    // Always use cudaMemcpyAsync with a specific stream instead of synchronous cudaMemcpy.
+    // Synchronous cudaMemcpy uses the legacy default stream (stream 0) which implicitly
+    // synchronizes with ALL other streams. If any stream on the device has active or
+    // recently-invalidated CUDA graph capture, cudaMemcpy fails with error 906
+    // (cudaErrorStreamCaptureImplicit). Using cudaMemcpyAsync on a per-thread stream
+    // avoids this because cudaStreamPerThread doesn't implicitly sync with named streams.
+    if (tl_graphExecutionActive) {
+      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+      res = cudaMemcpyAsync(
+          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+          static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
+          sizeToCopyinBytes, cudaMemcpyHostToDevice, capturedStream);
+    } else {
+      res = cudaMemcpyAsync(
+          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+          static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
+          sizeToCopyinBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      if (res == cudaSuccess) {
+        res = cudaStreamSynchronize(cudaStreamPerThread);
+      }
+    }
     other.readPrimary();
   } else {
-    res = cudaMemcpy(
-        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-        static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
-        sizeToCopyinBytes, cudaMemcpyDeviceToDevice);
+    if (tl_graphExecutionActive) {
+      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+      cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+      res = cudaMemcpyAsync(
+          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+          static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
+          sizeToCopyinBytes, cudaMemcpyDeviceToDevice, capturedStream);
+    } else {
+      res = cudaMemcpyAsync(
+          static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+          static_cast<const int8_t*>(other._specialBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType),
+          sizeToCopyinBytes, cudaMemcpyDeviceToDevice, cudaStreamPerThread);
+      if (res == cudaSuccess) {
+        res = cudaStreamSynchronize(cudaStreamPerThread);
+      }
+    }
     other.readSpecial();
   }
 
@@ -959,10 +1031,22 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
     switchedDevice = true;
   }
 
-  auto res =
-      cudaMemcpy(static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
-                 static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
-                 sizeToCopyinBytes, cudaMemcpyHostToDevice);
+  int res = 0;
+  // During CUDA graph capture, synchronous cudaMemcpy breaks capture (error 906).
+  // Use cudaMemcpyAsync on the captured stream instead.
+  if (tl_graphExecutionActive) {
+    auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+    cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+    res = cudaMemcpyAsync(
+        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+        static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
+        sizeToCopyinBytes, cudaMemcpyHostToDevice, capturedStream);
+  } else {
+    res = cudaMemcpy(
+        static_cast<int8_t*>(_specialBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType),
+        static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType),
+        sizeToCopyinBytes, cudaMemcpyHostToDevice);
+  }
 
   // Restore original device if we switched
   if (switchedDevice) {
@@ -1007,8 +1091,15 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate spe
   bool switchedDevice = false;
 
   if (currentDeviceId != bufferDeviceId) {
-    cudaSetDevice(bufferDeviceId);
-    switchedDevice = true;
+    // During CUDA graph capture, cudaSetDevice is NOT allowed — it invalidates capture.
+    // Skip device switch during capture; the buffer address is still valid as a GPU pointer
+    // regardless of which device is "current" (CUDA unified address space).
+    if (tl_graphExecutionActive) {
+      // Don't switch devices during capture — use the capture stream on the current device
+    } else {
+      cudaSetDevice(bufferDeviceId);
+      switchedDevice = true;
+    }
   }
 
   // Cache the stream reference - must obtain AFTER device switch so we get the correct device's stream

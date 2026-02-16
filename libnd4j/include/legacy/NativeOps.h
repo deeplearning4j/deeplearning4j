@@ -1571,6 +1571,16 @@ SD_LIB_EXPORT int getPlanNumSlots(sd::Pointer planHandle);
 SD_LIB_EXPORT void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled);
 
 /**
+ * Set the minimum segment size for CUDA graph capture.
+ * Segments smaller than this are always executed slot-by-slot.
+ * Default: 10. Set to 1 for testing.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param minSize  Minimum number of slots for capture (clamped to >=1)
+ */
+SD_LIB_EXPORT void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize);
+
+/**
  * Get the number of graph segments in a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -1593,5 +1603,38 @@ SD_LIB_EXPORT int getPlanNumCapturedGraphSegments(sd::Pointer planHandle);
  * @return Total graph replay count
  */
 SD_LIB_EXPORT int getPlanTotalGraphReplays(sd::Pointer planHandle);
+
+/**
+ * Validate that the captured CUDA graph covers all ops in the plan.
+ * Returns true if every op contributed at least one CUDA graph node.
+ * Must be called after execution with debug/verbose mode active.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return true if all ops are captured, false if any are host-only
+ */
+SD_LIB_EXPORT bool validatePlanCapturedGraph(sd::Pointer planHandle);
+
+/**
+ * Get the count of host-only ops from the last capture audit.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of ops that contributed 0 CUDA graph nodes
+ */
+SD_LIB_EXPORT int getPlanNumHostOnlyOps(sd::Pointer planHandle);
+
+/**
+ * Get pipe-delimited names of host-only ops from the last capture audit.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Pipe-delimited string of op names (thread-local static storage)
+ */
+SD_LIB_EXPORT const char* getPlanHostOnlyOpNames(sd::Pointer planHandle);
+
+/**
+ * Print the full CUDA graph contents and capture audit to stderr.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void printPlanCapturedGraphDebug(sd::Pointer planHandle);
 
 #endif // NATIVEOPS_H

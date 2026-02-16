@@ -292,10 +292,32 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
         result.functions.push_back(std::move(entry));
         functionsBuilt++;
 
+        // Record successful compilation in audit
+        CompilationAuditEntry auditEntry;
+        auditEntry.slotIndex = s;
+        auditEntry.opName = slot.opName;
+        auditEntry.wasCompiled = true;
+        result.compilationAudit.push_back(std::move(auditEntry));
+
         // Skip the fused activation if we detected one
         if (actInfo.enabled()) {
+          // Record fused activation in audit
+          CompilationAuditEntry fusedEntry;
+          fusedEntry.slotIndex = s + 1;
+          fusedEntry.opName = slots[s + 1].opName;
+          fusedEntry.wasCompiled = true;
+          fusedEntry.reason = "fused with previous op";
+          result.compilationAudit.push_back(std::move(fusedEntry));
           s++;  // Skip next slot (the activation)
         }
+      } else {
+        // Record skipped op in audit
+        CompilationAuditEntry auditEntry;
+        auditEntry.slotIndex = s;
+        auditEntry.opName = slot.opName;
+        auditEntry.wasCompiled = false;
+        auditEntry.reason = "unsupported op";
+        result.compilationAudit.push_back(std::move(auditEntry));
       }
     }
 
@@ -334,12 +356,21 @@ bool AclGraphBackend::compileSegment(
                                  outputSlots, totalOutputSlots);
   compiled.shapeKey = shapeKey;
 
+  // Store compilation audit for validation
+  lastCompilationAudit_ = compiled.compilationAudit;
+
   if (compiled.valid) {
     cache_[key] = std::move(compiled);
     return true;
   }
 
   return false;
+}
+
+// ─── Compilation audit ──────────────────────────────────────────────────────
+
+std::vector<CompilationAuditEntry> AclGraphBackend::getLastCompilationAudit() const {
+  return lastCompilationAudit_;
 }
 
 // ─── Execute segment ────────────────────────────────────────────────────────

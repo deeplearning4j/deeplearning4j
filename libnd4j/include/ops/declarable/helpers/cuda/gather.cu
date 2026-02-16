@@ -214,24 +214,11 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
     NDArray* scalar = (*input)(intArgs[1], {axis});
     output->assign(scalar);
     delete scalar;
-  } else if (indices != nullptr && indices->isScalar()) {
-    // Sync indices to host for scalar access
-    indices->syncToHost();
-    input->syncToHost();
-
-    if (input->rankOf() <= 1) {  // For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is
-                                 // whole array... instead, we want to get a scalar
-      auto idx = indices->e<LongType>(0);
-      auto scalarNDArray = input->e(idx);
-      output->assign(&scalarNDArray);
-    } else {
-      NDArray* inSubArr = (*input)(indices->e<LongType>(0), {axis});
-      output->assign(inSubArr);
-      delete inSubArr;
-    }
   } else if (indices != nullptr && is1DFlatGather) {
-    // Special case: 1D input with axis=0 - use direct flat indexing
-    // This is critical for shape array operations in models like transformers
+    // 1D input with axis=0: use GPU kernel for flat indexing.
+    // Handles both scalar and non-scalar indices entirely on the GPU,
+    // avoiding syncToHost which breaks CUDA graph capture (error 906).
+    // Critical for shape_of → gather patterns in transformers.
     NDArray::prepareSpecialUse({output}, {input, indices});
     BUILD_DOUBLE_SELECTOR(
         input->dataType(), indices->dataType(), gatherCudaLinear,
@@ -239,6 +226,15 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
          indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
     NDArray::registerSpecialUse({output}, {input, indices});
+  } else if (indices != nullptr && indices->isScalar()) {
+    // Scalar indices for multi-dim input — must sync to host to read the index value.
+    // This path is NOT captured by CUDA graphs (host-only work).
+    indices->syncToHost();
+    input->syncToHost();
+
+    NDArray* inSubArr = (*input)(indices->e<LongType>(0), {axis});
+    output->assign(inSubArr);
+    delete inSubArr;
   } else {
     NDArray* pIndices = const_cast<NDArray*>(indices);
     if (indices == nullptr) {

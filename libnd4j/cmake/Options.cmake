@@ -82,11 +82,12 @@ option(HELPERS_miopen "Enable MIOpen helper (AMD GPUs via ZLUDA)" OFF)
 option(HELPERS_accelerate "Enable Apple Accelerate framework helper (macOS/iOS)" OFF)
 option(HELPERS_llamacpp "Enable LlamaCpp helper for LLM operations" OFF)
 option(HELPERS_vlm "Enable VLM (Vision-Language Model) helper" OFF)
+option(HELPERS_triton "Enable Triton GPU compiler backend" OFF)
 
 # --- Multi-Backend Helper Configuration ---
 # HELPERS_LIST: Semicolon-separated list of helpers to enable (alternative to individual flags)
 # Example: -DHELPERS_LIST="onednn;cudnn" or from pom.xml: -Dlibnd4j.helpers=onednn,cudnn
-set(HELPERS_LIST "" CACHE STRING "Semicolon-separated list of helpers to enable (onednn;cudnn;armcompute;mlir;mps;pjrt;miopen;accelerate;llamacpp;vlm)")
+set(HELPERS_LIST "" CACHE STRING "Semicolon-separated list of helpers to enable (onednn;cudnn;armcompute;mlir;mps;pjrt;miopen;accelerate;llamacpp;vlm;triton)")
 
 # Parse HELPERS_LIST and set individual HELPERS_* flags
 if(HELPERS_LIST)
@@ -152,6 +153,11 @@ set(HAVE_ZLUDA OFF CACHE BOOL "ZLUDA availability" FORCE)
 set(HAVE_ACCELERATE OFF CACHE BOOL "Apple Accelerate availability" FORCE)
 set(HAVE_LLAMACPP OFF CACHE BOOL "LlamaCpp availability" FORCE)
 set(HAVE_VLM OFF CACHE BOOL "VLM availability" FORCE)
+set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+
+# --- Triton GPU Compiler Options ---
+set(TRITON_GPU_TARGET "AUTO" CACHE STRING "Triton target: AUTO, NVIDIA, AMD, INTEL")
+set_property(CACHE TRITON_GPU_TARGET PROPERTY STRINGS AUTO NVIDIA AMD INTEL)
 
 # --- Enabled Helpers Tracking ---
 # This list is populated by helper setup functions and used for dynamic kernel selection
@@ -188,6 +194,7 @@ function(print_helper_configuration)
     message(STATUS "  MIOpen:       REQUESTED=${HELPERS_miopen}, AVAILABLE=${HAVE_MIOPEN}")
     message(STATUS "  LlamaCpp:     REQUESTED=${HELPERS_llamacpp}, AVAILABLE=${HAVE_LLAMACPP}")
     message(STATUS "  VLM:          REQUESTED=${HELPERS_vlm}, AVAILABLE=${HAVE_VLM}")
+    message(STATUS "  Triton:       REQUESTED=${HELPERS_triton}, AVAILABLE=${HAVE_TRITON}")
     message(STATUS "")
     message(STATUS "Enabled Helpers: ${SD_ENABLED_HELPERS}")
     message(STATUS "====================================")

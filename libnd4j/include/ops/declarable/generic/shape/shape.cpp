@@ -22,7 +22,7 @@
 
 #include <system/op_boilerplate.h>
 #include <ops/declarable/headers/shape.h>
-#include <cstring>
+#include <ops/declarable/helpers/shapeOpsHelper.h>
 
 #if NOT_EXCLUDED(OP_shape_of)
 
@@ -35,35 +35,15 @@ CUSTOM_OP_IMPL(shape_of, 1, 1, false, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   const int rank = x->rankOf();
-  const sd::LongType* xShape = shape::shapeOf(x->shapeInfo());
 
   // Guard: output buffer must be large enough for input rank
   REQUIRE_TRUE(z->lengthOf() >= rank, 0,
       "shape_of: output length (%lld) < input rank (%d)", z->lengthOf(), rank);
 
-  // Ensure host buffer is allocated before writing
-  if (z->getDataBuffer() != nullptr) {
-    z->getDataBuffer()->allocatePrimary();
-  }
-
-  // Write to host buffer directly for efficiency
-  if (z->dataType() == sd::DataType::INT64) {
-    auto zBuff = z->bufferAsT<sd::LongType>();
-    std::memcpy(zBuff, xShape, rank * sizeof(sd::LongType));
-  } else if (z->dataType() == sd::DataType::INT32) {
-    auto zBuff = z->bufferAsT<int>();
-    for (int e = 0; e < rank; e++) {
-      zBuff[e] = static_cast<int>(xShape[e]);
-    }
-  } else {
-    for (int e = 0; e < rank; e++) {
-      z->p(e, xShape[e]);
-    }
-  }
-
-  // Mark host as written and sync to device
-  z->tickWriteHost();
-  z->syncToDevice();
+  // Delegate to platform-specific helper:
+  // CPU: writes to host buffer directly
+  // CUDA: uses D2D operations (capturable by CUDA graphs)
+  helpers::shapeOfHelper(block.launchContext(), x, z, rank);
 
   STORE_RESULT(z);
 

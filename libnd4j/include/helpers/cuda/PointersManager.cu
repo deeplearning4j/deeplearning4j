@@ -20,6 +20,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.02.2019
 // @author raver119@gmail.com
 //
+#include <array/DataBuffer.h>
 #include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <helpers/StringUtils.h>
@@ -75,10 +76,39 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
   // allocateDevMem already tracks the allocation
   void* dst = allocateDevMem(numberOfBytes);
   if (src) {
-    if (_context != nullptr)
+    if (tl_graphExecutionActive) {
+      // During CUDA graph capture, H2D copies are recorded as graph nodes with the HOST
+      // source address baked in. On replay, the graph reads from that same address.
+      // If the host data was on the stack or in a temp buffer, it's invalid at replay time.
+      // FIX: Copy host data to persistent pinned memory, then H2D from that.
+      void* pinnedSrc = nullptr;
+      auto pinErr = cudaMallocHost(&pinnedSrc, numberOfBytes);
+      if (pinErr == cudaSuccess && pinnedSrc != nullptr) {
+        std::memcpy(pinnedSrc, src, numberOfBytes);
+        tl_capturedHostPtrs.push_back(pinnedSrc);
+
+        auto* streamPtr = (_context != nullptr) ? _context->getCudaStream()
+                                                 : LaunchContext::defaultContext()->getCudaStream();
+        cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+        cudaMemcpyAsync(dst, pinnedSrc, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
+      } else {
+        // Pinned alloc failed — fall back to direct copy (may fail on replay)
+        sd_printf("PointersManager::replicatePointer: cudaMallocHost failed for %zu bytes\n",
+                  numberOfBytes);
+        auto* streamPtr = (_context != nullptr) ? _context->getCudaStream()
+                                                 : LaunchContext::defaultContext()->getCudaStream();
+        cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+        cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
+      }
+    } else if (_context != nullptr) {
       cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, *_context->getCudaStream());
-    else
-      cudaMemcpy(dst, src, numberOfBytes, cudaMemcpyHostToDevice);
+    } else {
+      // Use cudaMemcpyAsync with per-thread stream instead of synchronous cudaMemcpy.
+      // Synchronous cudaMemcpy uses the legacy default stream which implicitly syncs with
+      // ALL streams — if any stream has capture state, this fails with error 906.
+      cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, cudaStreamPerThread);
+      cudaStreamSynchronize(cudaStreamPerThread);
+    }
   }
   // NOTE: We don't add to _allocatedPointers here because allocateDevMem already did
 
@@ -87,6 +117,11 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
 
 //////////////////////////////////////////////////////////////////////////
 void PointersManager::synchronize() const {
+  // During CUDA graph capture, stream synchronization is illegal on the captured stream
+  // (error 900) and would invalidate the capture. Skip sync entirely — kernels are only
+  // being recorded, not executed, so there's nothing to synchronize.
+  if (tl_graphExecutionActive) return;
+
   if (_context != nullptr) {
     cudaError_t cudaResult = cudaStreamSynchronize(*_context->getCudaStream());
     if (cudaResult != 0) throw cuda_exception::build(_funcName + ": cuda stream synchronization failed !", cudaResult);

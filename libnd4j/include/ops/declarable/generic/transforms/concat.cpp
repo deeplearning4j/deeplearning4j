@@ -206,6 +206,35 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
           error += std::to_string(firstShape[dim]);
           error += " but was: ";
           error += std::to_string(currentShape[dim]);
+          error += " (axis=";
+          error += std::to_string(axis);
+          error += ", isAxisInLastArr=";
+          error += (isAxisInLastArr ? "true" : "false");
+          error += ", numIArgs=";
+          error += std::to_string(block.getIArguments()->size());
+          if (!block.getIArguments()->empty()) {
+            error += ", INT_ARG(0)=";
+            error += std::to_string(block.getIArguments()->at(0));
+          }
+          error += ", numBArgs=";
+          error += std::to_string(block.getBArguments()->size());
+          error += ")\n  ALL INPUT SHAPES (";
+          error += std::to_string(numOfNonEmptyArrs);
+          error += " inputs):\n";
+          for (LongType j = 0; j < numOfNonEmptyArrs; ++j) {
+            error += "    input[";
+            error += std::to_string(j);
+            error += "]: [";
+            auto jRank = nonEmptyArrs[j]->rankOf();
+            const sd::LongType* jShape = shape::shapeOf(nonEmptyArrs[j]->shapeInfo());
+            for (LongType d = 0; d < jRank; ++d) {
+              if (d > 0) error += ",";
+              error += std::to_string(jShape[d]);
+            }
+            error += "] devPtr=";
+            error += std::to_string(reinterpret_cast<uintptr_t>(nonEmptyArrs[j]->specialBuffer()));
+            error += "\n";
+          }
 
           // Cleanup before throwing
           for (auto arr : arrsToDelete) delete arr;

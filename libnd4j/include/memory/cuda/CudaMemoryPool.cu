@@ -219,6 +219,18 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   // If pools not enabled or not supported, fall back to regular cudaMalloc
   if (!enabled_.load() || !supported_) {
     void* ptr = nullptr;
+    if (tl_graphExecutionActive) {
+      // During CUDA graph capture, cudaMalloc (synchronous) breaks capture.
+      // Use cudaMallocAsync with the caller-provided stream (the captured stream).
+      cudaError_t err = cudaMallocAsync(&ptr, size, stream);
+      if (err != cudaSuccess) {
+        cudaGetLastError();
+        restoreDevice();
+        return nullptr;
+      }
+      restoreDevice();
+      return ptr;
+    }
     cudaError_t err = cudaMalloc(&ptr, size);
     if (err != cudaSuccess) {
       sd_debug("cudaMalloc failed: %s\n", cudaGetErrorString(err), "");
@@ -236,6 +248,16 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     if (!initializeForDevice(deviceId)) {
       // Fall back to regular cudaMalloc
       void* ptr = nullptr;
+      if (tl_graphExecutionActive) {
+        cudaError_t err = cudaMallocAsync(&ptr, size, stream);
+        if (err != cudaSuccess) {
+          cudaGetLastError();
+          restoreDevice();
+          return nullptr;
+        }
+        restoreDevice();
+        return ptr;
+      }
       cudaError_t err = cudaMalloc(&ptr, size);
       if (err != cudaSuccess) {
         sd_debug("cudaMalloc fallback failed: %s\n", cudaGetErrorString(err), "");
@@ -261,6 +283,14 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
   cudaError_t err = cudaMallocAsync(&ptr, size, stream);
 
   if (err != cudaSuccess) {
+    // During CUDA graph capture, error recovery (stream sync, failover) would break
+    // capture. Return nullptr — the caller must handle allocation failure during capture.
+    if (tl_graphExecutionActive) {
+      cudaGetLastError();  // clear sticky error
+      restoreDevice();
+      return nullptr;
+    }
+
     // cudaMallocAsync failure places an error both on the host-side sticky state
     // AND on the stream.  We must clear both before retrying.
     cudaGetLastError();  // clear host-side sticky error

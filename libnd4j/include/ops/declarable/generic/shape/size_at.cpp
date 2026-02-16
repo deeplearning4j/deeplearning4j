@@ -24,6 +24,7 @@
 #if NOT_EXCLUDED(OP_size_at)
 
 #include <ops/declarable/headers/shape.h>
+#include <ops/declarable/helpers/shapeOpsHelper.h>
 
 namespace sd {
 namespace ops {
@@ -37,9 +38,7 @@ CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
 
   REQUIRE_TRUE(dim < rank, 0, "Size_At: Dim can't be higher then input rank")
 
-  // Get the size at the specified dimension and write to output
-  // Use p() method which handles host/device sync properly
-  output->p(0, input->sizeAt(dim));
+  helpers::sizeAtHelper(block.launchContext(), input, output, dim);
 
   return Status::OK;
 }

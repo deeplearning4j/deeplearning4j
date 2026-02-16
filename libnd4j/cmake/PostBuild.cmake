@@ -123,6 +123,12 @@ else()
     string(REPLACE "#cmakedefine01 HAVE_FLATBUFFERS" "#define HAVE_FLATBUFFERS 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 endif()
 
+if(HAVE_TRITON)
+    string(REPLACE "#cmakedefine01 HAVE_TRITON" "#define HAVE_TRITON 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_TRITON" "#define HAVE_TRITON 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
 if(SD_SELECTIVE_TYPES)
     string(REPLACE "#cmakedefine01 SD_SELECTIVE_TYPES" "#define SD_SELECTIVE_TYPES 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 else()
