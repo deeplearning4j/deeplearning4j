@@ -21,6 +21,7 @@
 #include <ops/declarable/OpRegistrator.h>
 
 #include <algorithm>
+#include <cctype>
 #include <queue>
 #include <unordered_set>
 
@@ -30,13 +31,22 @@ using namespace ::graph;
 namespace sd {
 namespace graph {
 
+namespace {
+std::string normalizeOpName(const std::string& opName) {
+  std::string normalized = opName;
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return normalized;
+}
+}  // namespace
+
 // ─── Op classification ─────────────────────────────────────────────────────
 
 bool NativePlanCompiler::isDataDependentOp(const std::string& opName) {
   static const std::unordered_set<std::string> DATA_DEPENDENT_OPS = {
-      "Where", "unique", "non_max_suppression", "non_max_suppression_v3"
+      "where", "unique", "non_max_suppression", "non_max_suppression_v3"
   };
-  return DATA_DEPENDENT_OPS.count(opName) > 0;
+  return DATA_DEPENDENT_OPS.count(normalizeOpName(opName)) > 0;
 }
 
 bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
@@ -61,7 +71,7 @@ bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
       "logical_and", "logical_or", "logical_not",
       "clip_by_value",
   };
-  return FULLY_WRITING_OPS.count(opName) > 0;
+  return FULLY_WRITING_OPS.count(normalizeOpName(opName)) > 0;
 }
 
 bool NativePlanCompiler::isValueDependentShapeOp(const std::string& opName) {
@@ -72,7 +82,7 @@ bool NativePlanCompiler::isValueDependentShapeOp(const std::string& opName) {
       "range", "linspace",
       "shape_of", "size_at", "rank",
   };
-  return VALUE_DEPENDENT_OPS.count(opName) > 0;
+  return VALUE_DEPENDENT_OPS.count(normalizeOpName(opName)) > 0;
 }
 
 // ─── Compile FlatGraph → NativeDynamicShapePlan ─────────────────────────────
@@ -216,7 +226,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.isDataDependent = isDataDep;
     slot.needsZeroedOutput = !isFullyWritingOp(slot.opName) || isDataDep;
     slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
-    slot.isIdentityOp = (slot.opName == "identity");
+    slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
     slot.inPlaceFused = false;
     slot.inPlaceFusedInputIdx = -1;
 

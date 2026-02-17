@@ -56,49 +56,35 @@ NDArray* AttentionWorkspace::getBuffer(const std::string& key,
 
   auto it = buffers_.find(key);
   if (it != buffers_.end()) {
-    auto& entry = it->second;
+    auto& existing = it->second;
 
     // Check if existing buffer is compatible
-    if (entry.buffer->dataType() == dtype && entry.capacity >= requiredElements) {
+    if (existing.buffer->dataType() == dtype && existing.capacity >= requiredElements) {
       // Check actual NDArray shape, not tracked currentShape — external reshapei can desync
-      auto* actualShapeVec = entry.buffer->getShapeAsVector();
+      auto* actualShapeVec = existing.buffer->getShapeAsVector();
       bool shapeMatches = (*actualShapeVec == shape);
       delete actualShapeVec;
 
-      if (!shapeMatches) {
-        // Clear any previous view
-        entry.view.reset();
-
-        if (entry.buffer->lengthOf() == requiredElements) {
-          // Same element count — reshapei works directly
-          entry.buffer->reshapei(shape);
-          entry.lastUsed = ++accessCounter_;
-          entry.currentShape = shape;
-          return entry.buffer.get();
-        } else {
-          // Element count differs — create a non-owning view with the new shape.
-          // The owning buffer keeps the GPU memory alive; the view just has different shape info.
-          // Uses constructor 12: NDArray(DataBuffer*, order, shape, dtype, context, isBuffAlloc, isView, offset)
-          // which sets _ownsBuffer = false (line 880 of NDArray.hXX).
-          std::vector<LongType> mutableShape(shape);
-          entry.view = std::make_unique<NDArray>(
-              entry.buffer->dataBuffer(), 'c', mutableShape, dtype, context, false, true, 0);
-          entry.lastUsed = ++accessCounter_;
-          entry.currentShape = shape;
-          return entry.view.get();
+      if (shapeMatches) {
+        existing.lastUsed = ++accessCounter_;
+        // Return view if active (element count differs from buffer), otherwise return buffer
+        if (existing.view) {
+          return existing.view.get();
         }
+        return existing.buffer.get();
       }
 
-      entry.lastUsed = ++accessCounter_;
-      // Return view if active (element count differs from buffer), otherwise return buffer
-      if (entry.view) {
-        return entry.view.get();
-      }
-      return entry.buffer.get();
+      // Shape mismatch — evict old buffer and reallocate.
+      // Previously this tried to reshape/reuse the buffer, but that breaks CUDA graphs:
+      // the graph records kernel launches with the old shape, and replay with reshaped
+      // buffers causes shape mismatches and crashes. Reallocation ensures fresh buffers
+      // with correct shape info are used.
+      currentMemory_ -= existing.capacity * DataTypeUtils::sizeOf(existing.buffer->dataType());
+      buffers_.erase(it);
+    } else {
+      // Buffer exists but wrong type or too small - need to reallocate
+      currentMemory_ -= existing.capacity * DataTypeUtils::sizeOf(existing.buffer->dataType());
     }
-
-    // Buffer exists but wrong type or too small - need to reallocate
-    currentMemory_ -= entry.capacity * DataTypeUtils::sizeOf(entry.buffer->dataType());
   }
 
   // Evict old buffers if needed
