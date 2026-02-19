@@ -1733,10 +1733,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     seg.captureRetryAfterExec = 0;
   }
 
-  sd_printf("NativeDynamicShapePlan: captured CUDA graph for segment [%d-%d] "
-            "(%zu nodes, %zu edges)\n",
-            seg.startSlot, seg.endSlot,
-            handle->getNumNodes(), handle->getNumEdges());
+  if (executionTimingEnabled_) {
+    sd_printf("NativeDynamicShapePlan: captured CUDA graph for segment [%d-%d] "
+              "(%zu nodes, %zu edges)\n",
+              seg.startSlot, seg.endSlot,
+              handle->getNumNodes(), handle->getNumEdges());
+  }
 
   return Status::OK;
 }

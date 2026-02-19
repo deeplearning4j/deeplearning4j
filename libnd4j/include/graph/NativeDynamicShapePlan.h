@@ -356,6 +356,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   const std::vector<GraphSegment>& getSegments() const { return segments_; }
 
   /**
+   * Get mutable plan segments (for clearing CUDA graph timelines, etc.).
+   */
+  std::vector<GraphSegment>& getSegmentsMutable() { return segments_; }
+
+  /**
    * Get CUDA Graph execution statistics.
    * Returns number of segments captured as CUDA graphs.
    */

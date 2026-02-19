@@ -131,6 +131,7 @@ void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray
   // prepare arrays of pointers on buffers and shapes
   std::vector<const void*> hInBuffers(numInArrs);
   std::vector<const LongType*> hInShapeInfo(numInArrs);
+  
   for (int i = 0; i < numInArrs; i++) {
     // Check for empty arrays before accessing specialBuffer to avoid null pointer exception
     // Check both isEmpty() flag AND length AND buffer pointer
