@@ -370,8 +370,20 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
     // we build list of input shapes
     if (fp) {
-      for (const auto p : ctx.fastpath_in()) {
-        inSha.push_back(p == nullptr ? nullptr : p->shapeInfo());
+      int fpIdx = 0;
+      auto& fpIn = ctx.fastpath_in();
+      sd_printf("prepareOutputs: op=%s fastpath_in size=%d\n", this->getOpName()->c_str(), (int)fpIn.size());
+      for (const auto p : fpIn) {
+        sd_printf("prepareOutputs: input[%d] ptr=%p\n", fpIdx, (void*)p);
+        if (p != nullptr) {
+          sd_printf("prepareOutputs: input[%d] calling shapeInfo()...\n", fpIdx);
+          auto si = p->shapeInfo();
+          sd_printf("prepareOutputs: input[%d] shapeInfo=%p rank=%d\n", fpIdx, (void*)si, si ? (int)si[0] : -1);
+          inSha.push_back(si);
+        } else {
+          inSha.push_back(nullptr);
+        }
+        fpIdx++;
       }
     } else {
       int arrCnt = 0;
@@ -691,8 +703,11 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   // rolling over inputs first
   size_t cnt = 0, inT = 0;
   std::vector<sd::DataType> inputTypes(block.width());
+  sd_printf("validateDataTypes: op=%s fastpath=%d width=%d fastpath_in.size=%d\n",
+            _descriptor->getOpName()->c_str(), (int)block.isFastPath(), (int)block.width(), (int)block.fastpath_in().size());
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
+      sd_printf("validateDataTypes: input[%d] ptr=%p\n", (int)cnt, (void*)array);
       if (array == nullptr) {
         continue;
       }

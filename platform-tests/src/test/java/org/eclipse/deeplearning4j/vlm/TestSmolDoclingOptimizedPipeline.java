@@ -38,15 +38,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -288,393 +285,29 @@ public class TestSmolDoclingOptimizedPipeline {
         log.info("STEP 6 DONE: merged shape={}, {}ms", Arrays.toString(inputsEmbeds.shape()), step6Time);
 
         // ==================== STEP 7: Autoregressive Decoding with Timing ====================
-        // Uses static KV cache (fixed shape) for decode steps to enable CUDA graph capture.
-        // Step 0 = prefill (dynamic KV). Steps 1+ = decode with static KV of shape
-        // [batch, heads, maxKvLen, dim] where maxKvLen = prefillLen + maxTokensConfig.
-        // This keeps flash attention input shapes FIXED every decode step, eliminating
-        // the binary-split cascade that marks attention segments as captureFailed.
         log.info("STEP 7: Generating text (max {} tokens, greedy, optimized decoder)...", maxTokensConfig);
-        long decodeStart = System.currentTimeMillis();
 
-        String logitsOutputName = DecoderUtils.findLogitsOutputName(decoder);
-        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(decoder);
-        List<String> decoderInputNames = decoder.inputs();
-        log.info("  Decoder input names: {}", decoderInputNames);
-        int eosTokenId = tokenizer.getEosTokenId();
-        Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
-        Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
-                .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokensConfig).doSample(false).build());
+        StaticKvCacheDecodeLoop decodeLoop = StaticKvCacheDecodeLoop.builder()
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .samplingConfig(SamplingConfig.greedy())
+                .maxNewTokens(maxTokensConfig)
+                .hiddenSize(hiddenSize)
+                .build();
 
-        List<Integer> generatedTokens = new ArrayList<>();
-        INDArray currentEmbeddings = inputsEmbeds;
-        INDArray currentInputIds = promptIdsTensor;
-        long pastSeqLen = 0;
+        GenerationResult result = decodeLoop.decode(inputsEmbeds, promptTokenIds);
 
-        // Per-step timing
-        List<Long> stepTimesMs = new ArrayList<>();
-        long prefillTimeMs = 0;
+        String generatedText = result.getText();
+        long totalDecodeMs = result.getGenerationTimeMs();
 
-        // Phase timing accumulators (steps 2+)
-        long totalInputBuildNs = 0, totalDecoderNs = 0, totalLogitsDupNs = 0;
-        long totalKvUpdateNs = 0, totalSamplingNs = 0;
-        int detailSteps = 0;
-
-        // Static KV cache state (allocated after prefill step 0)
-        Map<String, INDArray> staticKvBuffers = null;  // past_key_values input name -> static buffer
-        long maxKvLen = -1;  // total static KV length
-        long cachePos = 0;   // next write position in static buffer
-        boolean usingStaticKv = false;
-
-        List<String> allOutputNames = new ArrayList<>();
-        allOutputNames.add(logitsOutputName);
-        allOutputNames.addAll(kvNames.keyNames);
-        allOutputNames.addAll(kvNames.valueNames);
-
-        for (int step = 0; step < maxTokensConfig; step++) {
-            long stepStart = System.nanoTime();
-
-            Map<String, INDArray> decoderInputMap = new HashMap<>();
-            long currentSeqLen = currentEmbeddings.shape()[1];
-
-            for (String inputName : decoderInputNames) {
-                if (inputName.equals("inputs_embeds")) {
-                    decoderInputMap.put(inputName, currentEmbeddings);
-                } else if (inputName.equals("attention_mask")) {
-                    if (usingStaticKv) {
-                        // Full static buffer: totalSeqLen = maxKvLen + 1 (past buffer + new token).
-                        // Mask: 1s for valid past (0..cachePos-1), 0s for padding (cachePos..maxKvLen-1),
-                        // 1 for the new token at position maxKvLen.
-                        // The causal mask becomes trivially all-zeros because pastSeqLen=maxKvLen
-                        // makes the condition k>maxKvLen never true. Only the padding mask matters.
-                        long totalSeqLen = maxKvLen + currentSeqLen;
-                        INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-                        // Valid past positions
-                        if (cachePos > 0) {
-                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
-                        }
-                        // New token position (at end)
-                        mask.putScalar(0, totalSeqLen - 1, 1);
-                        decoderInputMap.put(inputName, mask);
-                    } else {
-                        long totalSeqLen = pastSeqLen + currentSeqLen;
-                        decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
-                    }
-                } else if (inputName.equals("_causal_mask")) {
-                    long totalSeqLen = usingStaticKv ? maxKvLen + currentSeqLen : pastSeqLen + currentSeqLen;
-                    decoderInputMap.put(inputName, DecoderUtils.buildCausalMask(currentSeqLen, totalSeqLen));
-                } else if (inputName.equals("input_ids")) {
-                    decoderInputMap.put(inputName, currentInputIds);
-                } else if (inputName.equals("position_ids")) {
-                    // Logical position (for RoPE) — always pastSeqLen regardless of buffer size
-                    decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                            .reshape(1, currentSeqLen).castTo(DataType.LONG));
-                } else if (inputName.startsWith("past_key_values.")) {
-                    if (usingStaticKv) {
-                        // Pass the FULL static buffer — fixed shape every step.
-                        // Padding positions (cachePos..maxKvLen-1) are masked out by attention_mask.
-                        INDArray staticBuf = staticKvBuffers.get(inputName);
-                        if (staticBuf != null) {
-                            decoderInputMap.put(inputName, staticBuf);
-                        } else {
-                            decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
-                        }
-                    } else {
-                        decoderInputMap.put(inputName, DecoderUtils.createEmptyKvCache(decoder, inputName, 1, hiddenSize));
-                    }
-                }
-            }
-
-            if (!decoderInputMap.containsKey("inputs_embeds")) {
-                decoderInputMap.put("inputs_embeds", currentEmbeddings);
-            }
-
-            long tAfterInputBuild = System.nanoTime();
-
-            // Diagnostic: print inputs at step 1-3 for debugging static KV issues
-            if (step >= 1 && step <= 3) {
-                for (var entry : decoderInputMap.entrySet()) {
-                    INDArray v = entry.getValue();
-                    String name = entry.getKey();
-                    if (name.equals("_causal_mask")) {
-                        log.info("  [DIAG] step={} {}: shape={} min={} max={} nonzero={}",
-                                step, name, java.util.Arrays.toString(v.shape()),
-                                v.minNumber().floatValue(), v.maxNumber().floatValue(),
-                                v.neq(0).sumNumber().longValue());
-                        // Print first 5 and last 5 values
-                        long len = v.length();
-                        INDArray flat = v.reshape(len);
-                        StringBuilder sb = new StringBuilder("  [DIAG]   values[0..4]=");
-                        for (int i = 0; i < Math.min(5, len); i++) sb.append(flat.getFloat(i)).append(",");
-                        sb.append(" ... values[").append(len-5).append("..").append(len-1).append("]=");
-                        for (long i = Math.max(0, len-5); i < len; i++) sb.append(flat.getFloat(i)).append(",");
-                        log.info(sb.toString());
-                    } else if (name.equals("attention_mask")) {
-                        log.info("  [DIAG] step={} {}: shape={} sum={}",
-                                step, name, java.util.Arrays.toString(v.shape()), v.sumNumber().longValue());
-                    } else if (name.startsWith("past_key_values.") && name.contains(".key.0")) {
-                        log.info("  [DIAG] step={} {}: shape={} absMax={}",
-                                step, name, java.util.Arrays.toString(v.shape()), v.amaxNumber().floatValue());
-                    } else if (name.equals("position_ids")) {
-                        log.info("  [DIAG] step={} {}: shape={} values={}",
-                                step, name, java.util.Arrays.toString(v.shape()), v);
-                    }
-                }
-            }
-
-            Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap, allOutputNames.toArray(new String[0]));
-
-            long tAfterDecoder = System.nanoTime();
-
-            // Diagnostic: check present output shapes at step 1-3
-            if (step >= 1 && step <= 3) {
-                for (String pn : kvNames.keyNames) {
-                    if (pn.contains(".0")) {
-                        INDArray pv = decoderOutputs.get(pn);
-                        if (pv != null) {
-                            log.info("  [DIAG] step={} present {}: shape={} lastPosAbsMax={}",
-                                    step, pn, java.util.Arrays.toString(pv.shape()),
-                                    pv.get(NDArrayIndex.point(0), NDArrayIndex.all(),
-                                           NDArrayIndex.point(pv.shape()[2]-1), NDArrayIndex.all()).amaxNumber().floatValue());
-                        }
-                    }
-                }
-            }
-
-            INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
-            if (logitsRaw == null) { log.error("No logits output at step {}", step); break; }
-            INDArray logits = logitsRaw.dup();
-
-            // Diagnostic: print top logit values at steps 1-3
-            if (step >= 1 && step <= 3) {
-                INDArray lastLogitsDiag = logits.rank() == 3
-                        ? logits.get(org.nd4j.linalg.indexing.NDArrayIndex.point(0),
-                                     org.nd4j.linalg.indexing.NDArrayIndex.point(logits.size(1) - 1),
-                                     org.nd4j.linalg.indexing.NDArrayIndex.all())
-                        : logits.getRow(0);
-                INDArray topK = org.nd4j.linalg.factory.Nd4j.argMax(lastLogitsDiag);
-                int topId = topK.getInt(0);
-                float topVal = lastLogitsDiag.getFloat(topId);
-                float logitsMin = lastLogitsDiag.minNumber().floatValue();
-                float logitsMean = lastLogitsDiag.meanNumber().floatValue();
-                log.info("  [DIAG] step={} logits: topId={} topVal={} min={} mean={} shape={}",
-                        step, topId, topVal, logitsMin, logitsMean,
-                        java.util.Arrays.toString(lastLogitsDiag.shape()));
-            }
-            logitsRaw.setCloseable(true);
-            logitsRaw.close();
-
-            long tAfterLogitsDup = System.nanoTime();
-
-            if (usingStaticKv) {
-                // Present output shape: [batch, heads, maxKvLen+1, dim].
-                // New token's KV is at the last position (maxKvLen).
-                // Scatter it into the static buffer at position cachePos.
-                DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
-                        kvNames.keyNames, kvNames.valueNames, maxKvLen, cachePos);
-                Nd4j.getExecutioner().commit();
-                for (String pn : kvNames.keyNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null) { pv.setCloseable(true); pv.close(); }
-                }
-                for (String pn : kvNames.valueNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null) { pv.setCloseable(true); pv.close(); }
-                }
-                cachePos++;
-            } else {
-                // Step 0 (prefill): transition to static KV after this step
-                long prefillSeqLen = currentSeqLen;
-                maxKvLen = prefillSeqLen + maxTokensConfig;
-                log.info("  Setting up static KV: prefillLen={}, maxKvLen={} ({} tensors)",
-                        prefillSeqLen, maxKvLen, kvNames.keyNames.size() + kvNames.valueNames.size());
-                staticKvBuffers = DecoderUtils.padKvCacheToStaticSize(
-                        decoderOutputs, kvNames.keyNames, kvNames.valueNames, maxKvLen);
-                // CRITICAL: commit() to ensure async assigns from padKvCacheToStaticSize complete
-                // before the decoder reads from static buffers on a potentially different stream.
-                Nd4j.getExecutioner().commit();
-                cachePos = prefillSeqLen;
-                usingStaticKv = true;
-                // Close prefill KV outputs (data now in static buffers)
-                for (String pn : kvNames.keyNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null) { pv.setCloseable(true); pv.close(); }
-                }
-                for (String pn : kvNames.valueNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null) { pv.setCloseable(true); pv.close(); }
-                }
-
-                // Freeze shapes: with full static buffer, ALL decode steps have identical
-                // input shapes (past_kv=[1,h,maxKvLen,d], attention_mask=[1,maxKvLen+1], etc).
-                // This enables CUDA graph capture and segment merging.
-                InferenceSession decoderSession = decoder.getOrCreateSession();
-                DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
-                if (dspExec != null) {
-                    dspExec.setShapesFrozen(true);
-                    log.info("  [Perf] Shapes frozen — static KV buffer shape=[1,h,{},d], decode fast path active", maxKvLen);
-                } else {
-                    log.warn("  [Perf] No DSP executor found to freeze shapes");
-                }
-            }
-
-            long tAfterKvUpdate = System.nanoTime();
-
-            // Sample from last position — with detailed sub-timing
-            long tSampStart = System.nanoTime();
-            INDArray lastLogits = logits.rank() == 3
-                    ? logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all())
-                    : logits.getRow(0);
-            long tSampView = System.nanoTime();
-            INDArray logitsForSampling = lastLogits.dup();
-            long tSampDup = System.nanoTime();
-            int nextTokenId = sampler.sample(logitsForSampling);
-            long tSampArgmax = System.nanoTime();
-            generatedTokens.add(nextTokenId);
-
-            long stepElapsedNs = System.nanoTime() - stepStart;
-            long stepElapsedMs = stepElapsedNs / 1_000_000;
-
-            // Log sampling sub-timings every 10 steps or first 6
-            if (step < 6 || step % 10 == 0) {
-                log.info("  [SAMP] step={} view={}ms dup={}ms argmax={}ms total={}ms",
-                        step,
-                        (tSampView - tSampStart) / 1_000_000,
-                        (tSampDup - tSampView) / 1_000_000,
-                        (tSampArgmax - tSampDup) / 1_000_000,
-                        (tSampArgmax - tSampStart) / 1_000_000);
-            }
-
-            // Accumulate detailed timing for steps 3+ (fast path active from step 3)
-            if (step >= 3) {
-                totalInputBuildNs += tAfterInputBuild - stepStart;
-                totalDecoderNs    += tAfterDecoder - tAfterInputBuild;
-                totalLogitsDupNs  += tAfterLogitsDup - tAfterDecoder;
-                totalKvUpdateNs   += tAfterKvUpdate - tAfterLogitsDup;
-                totalSamplingNs   += stepElapsedNs - (tAfterKvUpdate - stepStart);
-                detailSteps++;
-            }
-
-            if (step == 0) {
-                prefillTimeMs = stepElapsedMs;
-                log.info("  Step 0 (prefill): {}ms (seq_len={})", stepElapsedMs, currentSeqLen);
-            } else {
-                stepTimesMs.add(stepElapsedMs);
-            }
-
-            String tokenText = tokenizer.decode(new int[]{nextTokenId}, false);
-
-            // Log every 10 steps or first 6
-            if (step < 6 || step % 10 == 0) {
-                double currentTokPerSec = step > 0 && stepElapsedMs > 0 ? 1000.0 / stepElapsedMs : 0;
-                if (step >= 2) {
-                    long inputMs  = (tAfterInputBuild - stepStart) / 1_000_000;
-                    long decMs    = (tAfterDecoder - tAfterInputBuild) / 1_000_000;
-                    long dupMs    = (tAfterLogitsDup - tAfterDecoder) / 1_000_000;
-                    long kvMs     = (tAfterKvUpdate - tAfterLogitsDup) / 1_000_000;
-                    long sampMs   = stepElapsedMs - (tAfterKvUpdate - stepStart) / 1_000_000;
-                    log.info("  Step {}: '{}' (id={}) {}ms ({} tok/s) [input={}ms dec={}ms dup={}ms kv={}ms samp={}ms cachePos={}]",
-                            step, tokenText, nextTokenId, stepElapsedMs, String.format("%.1f", currentTokPerSec),
-                            inputMs, decMs, dupMs, kvMs, sampMs, cachePos - 1);
-                } else {
-                    log.info("  Step {}: '{}' (id={}) {}ms ({} tok/s)",
-                            step, tokenText, nextTokenId, stepElapsedMs, String.format("%.1f", currentTokPerSec));
-                }
-            }
-
-            if (nextTokenId == eosTokenId || (endOfUtteranceTokenId != null && nextTokenId == endOfUtteranceTokenId)) {
-                log.info("  Stop token at step {}", step);
-                break;
-            }
-
-            logits.close();
-            logitsForSampling.close();
-
-            // Clean up per-step inputs (attention_mask, _causal_mask, position_ids, empty KVs)
-            for (var entry : decoderInputMap.entrySet()) {
-                String name = entry.getKey();
-                INDArray arr = entry.getValue();
-                if (name.equals("inputs_embeds") || name.equals("input_ids")) continue;
-                if (name.startsWith("past_key_values.")) continue;  // static buffers, kept alive
-                if (arr != null && !arr.wasClosed()) {
-                    arr.setCloseable(true);
-                    arr.close();
-                }
-            }
-            decoder.clearPlaceholders(false);
-
-            // Get embedding for next token
-            INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-            Map<String, INDArray> newEmbedOutputs = embedTokens.output(Map.of(embedInputName, newTokenTensor), embedOutputNames);
-            INDArray prevEmbeddings = currentEmbeddings;
-            for (var entry : newEmbedOutputs.entrySet()) {
-                currentEmbeddings = entry.getValue();
-            }
-            if (prevEmbeddings != null && !prevEmbeddings.wasClosed()) {
-                prevEmbeddings.setCloseable(true);
-                prevEmbeddings.close();
-            }
-            if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
-                currentInputIds.setCloseable(true);
-                currentInputIds.close();
-            }
-            currentInputIds = newTokenTensor;
-            embedTokens.clearPlaceholders(false);
-            pastSeqLen += currentSeqLen;
-        }
-
-        // Release static KV buffers
-        if (staticKvBuffers != null) {
-            for (INDArray buf : staticKvBuffers.values()) {
-                if (buf != null && !buf.wasClosed()) { buf.setCloseable(true); buf.close(); }
-            }
-        }
-
-        long decodeEnd = System.currentTimeMillis();
-        long totalDecodeMs = decodeEnd - decodeStart;
-
-        // Log phase breakdown averages
-        if (detailSteps > 0) {
-            log.info("=== PHASE BREAKDOWN (avg over {} decode steps, fast path steps 3+) ===", detailSteps);
-            log.info("  Input build:  {}ms", totalInputBuildNs / detailSteps / 1_000_000);
-            log.info("  Decoder exec: {}ms", totalDecoderNs    / detailSteps / 1_000_000);
-            log.info("  Logits dup:   {}ms", totalLogitsDupNs  / detailSteps / 1_000_000);
-            log.info("  KV update:    {}ms", totalKvUpdateNs   / detailSteps / 1_000_000);
-            log.info("  Sampling:     {}ms", totalSamplingNs   / detailSteps / 1_000_000);
-            log.info("  Sum:          {}ms", (totalInputBuildNs + totalDecoderNs + totalLogitsDupNs + totalKvUpdateNs + totalSamplingNs) / detailSteps / 1_000_000);
-        }
-
-        // ==================== STEP 8: Results and Coherence Check ====================
-        int[] tokenIds = generatedTokens.stream().mapToInt(Integer::intValue).toArray();
-        String generatedText = tokenizer.decode(tokenIds, false);
-
-        // Compute timing statistics
-        int decodeTokens = stepTimesMs.size(); // excludes prefill
-        double avgDecodeMs = decodeTokens > 0
-                ? stepTimesMs.stream().mapToLong(Long::longValue).average().orElse(0) : 0;
-        double decodeTokensPerSec = avgDecodeMs > 0 ? 1000.0 / avgDecodeMs : 0;
-        long p50Ms = decodeTokens > 0 ? percentile(stepTimesMs, 50) : 0;
-        long p90Ms = decodeTokens > 0 ? percentile(stepTimesMs, 90) : 0;
-        long p99Ms = decodeTokens > 0 ? percentile(stepTimesMs, 99) : 0;
-
-        log.info("========================================");
-        log.info("GENERATED TEXT ({} tokens):", generatedTokens.size());
-        log.info("{}", generatedText);
-        log.info("========================================");
-        log.info("PERFORMANCE SUMMARY:");
         log.info("  Decoder ops:       {} (optimized via OnnxModelCache)", decoderOps);
-        log.info("  Prefill (step 0):  {}ms", prefillTimeMs);
-        log.info("  Decode tokens:     {} (excluding prefill)", decodeTokens);
-        log.info("  Avg decode time:   {}ms/token", String.format("%.1f", avgDecodeMs));
-        log.info("  Decode throughput: {} tok/s", String.format("%.2f", decodeTokensPerSec));
-        log.info("  Latency P50/P90/P99: {}ms / {}ms / {}ms", p50Ms, p90Ms, p99Ms);
-        log.info("  Total decode time: {}ms ({} tokens)", totalDecodeMs, generatedTokens.size());
         log.info("  Total pipeline:    {}ms (import={}ms, vision={}ms, embed={}ms, decode={}ms)",
                 System.currentTimeMillis() - step3Start, importTime, visionTime, step6Time, totalDecodeMs);
-        log.info("========================================");
 
-        // ==================== Coherence Assertions ====================
+        // ==================== STEP 8: Coherence Assertions ====================
         assertNotNull(generatedText, "Generated text should not be null");
-        assertTrue(generatedTokens.size() > 0, "Should have generated at least one token");
+        assertTrue(result.getGeneratedTokenCount() > 0, "Should have generated at least one token");
 
         // Check that output starts with DocTags structure (SmolDocling produces DOCTAG format)
         // Expected patterns: <doctag>, <page>, <text>, <section_header>, <table>, etc.
@@ -708,29 +341,32 @@ public class TestSmolDoclingOptimizedPipeline {
                     t.equals("section_header") || t.equals("otsl") || t.equals("table"));
             log.info("  Has structural DocTags: {}", hasStructuralTags);
 
-            if (generatedTokens.size() >= 10) {
+            if (result.getGeneratedTokenCount() >= 10) {
                 assertTrue(hasStructuralTags,
-                        "With " + generatedTokens.size() + " tokens, output should contain structural DocTags. Got: " +
+                        "With " + result.getGeneratedTokenCount() + " tokens, output should contain structural DocTags. Got: " +
                         trimmed.substring(0, Math.min(200, trimmed.length())));
             }
         }
 
         // Check output isn't degenerate (all same token repeated)
-        if (generatedTokens.size() >= 10) {
-            Set<Integer> uniqueTokens = new HashSet<>(generatedTokens);
-            double uniqueRatio = (double) uniqueTokens.size() / generatedTokens.size();
+        if (result.getGeneratedTokenCount() >= 10) {
+            int[] tokenIds = result.getTokenIds();
+            Set<Integer> uniqueTokens = new HashSet<>();
+            for (int id : tokenIds) uniqueTokens.add(id);
+            double uniqueRatio = (double) uniqueTokens.size() / tokenIds.length;
             log.info("  Token diversity: {}/{} unique ({}%)", uniqueTokens.size(),
-                    generatedTokens.size(), String.format("%.1f", uniqueRatio * 100));
+                    tokenIds.length, String.format("%.1f", uniqueRatio * 100));
             assertTrue(uniqueRatio > 0.05,
                     "Output appears degenerate: only " + uniqueTokens.size() + " unique tokens out of " +
-                    generatedTokens.size() + " total");
+                    tokenIds.length + " total");
         }
 
         // Verify performance meets minimum threshold
-        if (decodeTokens >= 5) {
-            log.info("  Decode throughput: {} tok/s (minimum expected: 0.5 tok/s)", String.format("%.2f", decodeTokensPerSec));
-            assertTrue(decodeTokensPerSec > 0.1,
-                    "Decode throughput too low: " + String.format("%.2f", decodeTokensPerSec) + " tok/s");
+        if (result.getGeneratedTokenCount() >= 5) {
+            log.info("  Decode throughput: {} tok/s (minimum expected: 0.5 tok/s)",
+                    String.format("%.2f", result.getTokensPerSecond()));
+            assertTrue(result.getTokensPerSecond() > 0.1,
+                    "Decode throughput too low: " + String.format("%.2f", result.getTokensPerSecond()) + " tok/s");
         }
 
         tokenizer.close();
@@ -749,14 +385,6 @@ public class TestSmolDoclingOptimizedPipeline {
             counts.merge(name, 1, Integer::sum);
         }
         return counts;
-    }
-
-    private long percentile(List<Long> values, int percentile) {
-        if (values.isEmpty()) return 0;
-        List<Long> sorted = new ArrayList<>(values);
-        Collections.sort(sorted);
-        int idx = (int) Math.ceil(percentile / 100.0 * sorted.size()) - 1;
-        return sorted.get(Math.max(0, Math.min(idx, sorted.size() - 1)));
     }
 
     private BufferedImage loadImageFromPdfOrGenerate() throws IOException {
@@ -789,6 +417,59 @@ public class TestSmolDoclingOptimizedPipeline {
         g.drawString("consectetur adipiscing elit.", 50, 440);
         g.dispose();
         return img;
+    }
+
+    @Test
+    @DisplayName("Test KvScatter op in isolation")
+    public void testKvScatterIsolated() {
+        int batch = 1, heads = 8, maxKvLen = 100, dim = 64;
+        long cachePos = 5;
+
+        INDArray present = Nd4j.randn(DataType.FLOAT, batch, heads, maxKvLen + 1, dim);
+        INDArray staticBuf = Nd4j.zeros(DataType.FLOAT, batch, heads, maxKvLen, dim);
+
+        log.info("present shape: {}, staticBuf shape: {}",
+                Arrays.toString(present.shape()), Arrays.toString(staticBuf.shape()));
+
+        // Inplace op: input 0 = static (destination), input 1 = present (source)
+        org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter scatter =
+                new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(staticBuf, present, cachePos);
+
+        // Log a sample value from present at lastPos before exec
+        float presentVal = present.getFloat(0, 0, maxKvLen, 0);
+        float staticValBefore = staticBuf.getFloat(0, 0, (int)cachePos, 0);
+        log.info("BEFORE exec: present[0,0,{},0]={}, staticBuf[0,0,{},0]={}",
+                maxKvLen, presentVal, cachePos, staticValBefore);
+
+        INDArray[] result = Nd4j.getExecutioner().exec(scatter);
+        log.info("KvScatter executed, result length: {}", result.length);
+
+        // Check if result[0] is same object as staticBuf
+        if (result.length > 0) {
+            log.info("result[0] == staticBuf: {}", (result[0] == staticBuf));
+            log.info("result[0] data ptr == staticBuf data ptr: {}",
+                    (result[0].data().address() == staticBuf.data().address()));
+            float resultVal = result[0].getFloat(0, 0, (int)cachePos, 0);
+            log.info("result[0][0,0,{},0]={}", cachePos, resultVal);
+        }
+
+        float staticValAfter = staticBuf.getFloat(0, 0, (int)cachePos, 0);
+        log.info("AFTER exec: staticBuf[0,0,{},0]={}", cachePos, staticValAfter);
+
+        // Verify: the entry at cachePos in staticBuf should match the last position in present
+        // Use dup() on views to ensure clean host/device sync
+        INDArray expectedEntry = present.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(maxKvLen), NDArrayIndex.all()).dup();
+        INDArray actualEntry = result[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.point(cachePos), NDArrayIndex.all()).dup();
+
+        double maxDiff = expectedEntry.sub(actualEntry).amaxNumber().doubleValue();
+        log.info("Max diff between expected and actual: {}", maxDiff);
+        assertTrue(maxDiff < 1e-5, "KV scatter should copy present's last pos to static's cachePos");
+
+        present.close();
+        staticBuf.close();
+        log.info("KvScatter isolation test passed!");
     }
 
     private void freeModelConstants(SameDiff model, String label) {

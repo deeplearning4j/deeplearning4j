@@ -120,6 +120,61 @@ public class NDNN {
   }
 
   /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @param temperature Sharpening temperature (typically 0.04-0.07)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public INDArray centerAndSharpen(INDArray input, INDArray center, double temperature) {
+    NDValidation.validateNumerical("centerAndSharpen", "input", input);
+    NDValidation.validateNumerical("centerAndSharpen", "center", center);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(input, center, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public INDArray centerAndSharpen(INDArray input, INDArray center) {
+    NDValidation.validateNumerical("centerAndSharpen", "input", input);
+    NDValidation.validateNumerical("centerAndSharpen", "center", center);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(input, center, 0.07));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
    * <br>
    * Performs greedy (best path) decoding on CTC output. Used in:<br>
@@ -420,6 +475,59 @@ public class NDNN {
   }
 
   /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @param decay EMA decay factor (typically 0.996-0.9999)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public INDArray emaUpdate(INDArray model, INDArray shadow, double decay) {
+    NDValidation.validateNumerical("emaUpdate", "model", model);
+    NDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(model, shadow, decay));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public INDArray emaUpdate(INDArray model, INDArray shadow) {
+    NDValidation.validateNumerical("emaUpdate", "model", model);
+    NDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(model, shadow, 0.999));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Flash Attention - Memory-efficient attention computation.<br>
    * <br>
    * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
@@ -582,6 +690,79 @@ public class NDNN {
     NDValidation.validateNumerical("kvCacheUpdate", "newKeys", newKeys);
     NDValidation.validateNumerical("kvCacheUpdate", "newValues", newValues);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate(keyCache, valueCache, newKeys, newValues, startPosition));
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos) {
+    NDValidation.validateNumerical("kvScatter", "present", present);
+    NDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(present, staticBuffer, cachePos, 1));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @param numPairs Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public INDArray kvScatter(INDArray present, INDArray staticBuffer, long cachePos, int numPairs) {
+    NDValidation.validateNumerical("kvScatter", "present", present);
+    NDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(present, staticBuffer, cachePos, numPairs));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -1457,6 +1638,75 @@ public class NDNN {
   }
 
   /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public INDArray tokenSample(INDArray logits) {
+    NDValidation.validateNumerical("tokenSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(logits, 0.0, 0, 0.0, 0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @param temperature Temperature for sampling. 0 = greedy (argmax)
+   * @param topK Top-K filtering: keep only top K logits. 0 = disabled
+   * @param topP Top-P (nucleus) filtering threshold. 0 = disabled
+   * @param seed Random seed for sampling. 0 = random
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public INDArray tokenSample(INDArray logits, double temperature, int topK, double topP,
+      long seed) {
+    NDValidation.validateNumerical("tokenSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(logits, temperature, topK, topP, seed));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Find values and indices for the largest k entries along the last dimension.<br>
    *
    * @param input Input data (NUMERIC type)
@@ -1466,6 +1716,58 @@ public class NDNN {
   public INDArray[] topK(INDArray input, double k, boolean sorted) {
     NDValidation.validateNumerical("topK", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(input, k, sorted));
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   */
+  public INDArray[] twoWayCrossAttention(INDArray tokenQuery, INDArray tokenKey,
+      INDArray tokenValue, INDArray imageQuery, INDArray imageKey, INDArray imageValue,
+      double scale) {
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, scale));
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   */
+  public INDArray[] twoWayCrossAttention(INDArray tokenQuery, INDArray tokenKey,
+      INDArray tokenValue, INDArray imageQuery, INDArray imageKey, INDArray imageValue) {
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    NDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0));
   }
 
   /**

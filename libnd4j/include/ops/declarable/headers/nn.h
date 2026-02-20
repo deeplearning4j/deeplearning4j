@@ -488,6 +488,125 @@ DECLARE_CUSTOM_OP(windowed_attention, 3, -1, false, -2, 2);
 DECLARE_CUSTOM_OP(relative_position_bias, 1, 1, false, 0, 3);
 #endif
 
+/**
+ * token_sample - Token sampling for LLM inference
+ *
+ * Full sampling pipeline in a single native call:
+ *   temperature scaling -> top-K -> softmax -> top-P -> sample/argmax
+ *
+ * Input:
+ *   0: logits [batch, vocabSize], [vocabSize], or [batch, seqLen, vocabSize]
+ *      For rank 3, samples from the last sequence position (seqLen-1).
+ *
+ * Output:
+ *   0: token indices INT64 [batch] or scalar
+ *
+ * Float args:
+ *   0: temperature (default: 0.0 = greedy/argmax)
+ *   1: topP nucleus threshold (default: 0.0 = disabled)
+ *
+ * Int args:
+ *   0: topK (default: 0 = disabled)
+ *   1: seed (default: 0 = random)
+ */
+#if NOT_EXCLUDED(OP_token_sample)
+DECLARE_CUSTOM_OP(token_sample, 1, 1, false, 0, 0);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * ema_update - Exponential Moving Average parameter update
+ *
+ * Used in DINOv2 for updating teacher network parameters:
+ *   output = decay * shadow + (1 - decay) * model
+ *
+ * Input:
+ *   0: model parameters (student) - any shape
+ *   1: shadow parameters (teacher/EMA) - same shape as model
+ *
+ * Float args:
+ *   0: decay factor (default: 0.999, typically 0.996-0.9999)
+ *
+ * Output:
+ *   0: updated shadow parameters - same shape as inputs
+ */
+#if NOT_EXCLUDED(OP_ema_update)
+DECLARE_CUSTOM_OP(ema_update, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(ema_update_bp, 3, 2, false, 0, 0);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * center_and_sharpen - DINOv2 centering and sharpening
+ *
+ * Prevents mode collapse in self-supervised learning:
+ *   output = softmax((input - center) / temperature)
+ *
+ * Input:
+ *   0: input logits [batch, features] - teacher output
+ *   1: center vector [features] - running mean of teacher outputs
+ *
+ * Float args:
+ *   0: temperature (default: 0.07, typically 0.04-0.07)
+ *
+ * Output:
+ *   0: sharpened probabilities [batch, features]
+ */
+#if NOT_EXCLUDED(OP_center_and_sharpen)
+DECLARE_CUSTOM_OP(center_and_sharpen, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(center_and_sharpen_bp, 3, 2, false, 0, 0);
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+/**
+ * two_way_cross_attention - SAM-style bidirectional cross-attention
+ *
+ * Performs two cross-attention operations simultaneously:
+ *   1. tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+ *   2. imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
+ *
+ * Input:
+ *   0: tokenQuery  [batch, tokenSeqLen, embedDim]
+ *   1: tokenKey    [batch, tokenSeqLen, embedDim]
+ *   2: tokenValue  [batch, tokenSeqLen, embedDim]
+ *   3: imageQuery  [batch, imageSeqLen, embedDim]
+ *   4: imageKey    [batch, imageSeqLen, embedDim]
+ *   5: imageValue  [batch, imageSeqLen, embedDim]
+ *
+ * Float args:
+ *   0: scale factor (default: 1/sqrt(embedDim))
+ *
+ * Output:
+ *   0: tokenOutput [batch, tokenSeqLen, embedDim]
+ *   1: imageOutput [batch, imageSeqLen, embedDim]
+ */
+#if NOT_EXCLUDED(OP_two_way_cross_attention)
+DECLARE_CUSTOM_OP(two_way_cross_attention, 6, 2, false, 0, 0);
+DECLARE_CUSTOM_OP(two_way_cross_attention_bp, 8, 6, false, 0, 0);
+#endif
+
+/**
+ * kv_scatter - Batch KV cache scatter update
+ *
+ * Copies a single time-step slice from each present KV tensor into the
+ * corresponding static KV buffer at a given cache position.
+ * Replaces N individual Java view+assign calls with one native kernel launch.
+ *
+ * Inputs (2*N tensors):
+ *   [0..N-1]:   present_kv tensors [batch, heads, seqLen, dim] (source; last position extracted)
+ *   [N..2N-1]:  static_kv  tensors [batch, heads, maxKvLen, dim] (destination; written in-place)
+ *
+ * Int args:
+ *   0: cachePos  — position in static buffer to write to
+ *   1: numPairs  — N (number of present/static pairs)
+ *
+ * Output:
+ *   0: scalar INT64 (returns 0 on success; framework requires at least 1 output)
+ */
+#if NOT_EXCLUDED(OP_kv_scatter)
+DECLARE_CUSTOM_OP(kv_scatter, 2, 1, false, 0, 1);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

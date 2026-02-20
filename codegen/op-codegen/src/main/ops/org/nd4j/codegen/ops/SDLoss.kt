@@ -65,6 +65,23 @@ fun SDLoss() =  Namespace("Loss"){
         }
     }
 
+    Op("contrastiveLoss") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.loss"
+        javaOpClass = "ContrastiveLoss"
+        Input(NUMERIC, "imageEmbeddings") { description = "L2-normalized image embeddings [batch, embedDim]" }
+        Input(NUMERIC, "textEmbeddings") { description = "L2-normalized text embeddings [batch, embedDim]" }
+        Arg(NUMERIC, "temperature") { description = "Logit temperature scale (default: 1.0)"; defaultValue = 1.0 }
+        Output(NUMERIC, "output"){ description = "Scalar contrastive loss value" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                InfoNCE contrastive loss for CLIP-style contrastive alignment.
+                Computes symmetric cross-entropy over the cosine similarity matrix of
+                L2-normalized image and text embeddings. Used for training vision-language
+                models where matching image-text pairs should have high similarity.
+            """.trimIndent()
+        }
+    }
+
     Op("cosineDistance") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.loss"
         javaOpClass = "CosineDistanceLoss"

@@ -111,6 +111,85 @@ public class SDLoss extends SDOps {
   }
 
   /**
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
+   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
+   * L2-normalized image and text embeddings. Used for training vision-language<br>
+   * models where matching image-text pairs should have high similarity.<br>
+   *
+   * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
+   * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
+   * @param temperature Logit temperature scale (default: 1.0)
+   * @return output Scalar contrastive loss value (NUMERIC type)
+   */
+  public SDVariable contrastiveLoss(SDVariable imageEmbeddings, SDVariable textEmbeddings,
+      double temperature) {
+    SDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
+    SDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(sd,imageEmbeddings, textEmbeddings, temperature).outputVariable();
+    out.markAsLoss();
+    return out;
+  }
+
+  /**
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
+   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
+   * L2-normalized image and text embeddings. Used for training vision-language<br>
+   * models where matching image-text pairs should have high similarity.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
+   * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
+   * @param temperature Logit temperature scale (default: 1.0)
+   * @return output Scalar contrastive loss value (NUMERIC type)
+   */
+  public SDVariable contrastiveLoss(String name, SDVariable imageEmbeddings,
+      SDVariable textEmbeddings, double temperature) {
+    SDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
+    SDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(sd,imageEmbeddings, textEmbeddings, temperature).outputVariable();
+    out.markAsLoss();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
+   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
+   * L2-normalized image and text embeddings. Used for training vision-language<br>
+   * models where matching image-text pairs should have high similarity.<br>
+   *
+   * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
+   * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
+   * @return output Scalar contrastive loss value (NUMERIC type)
+   */
+  public SDVariable contrastiveLoss(SDVariable imageEmbeddings, SDVariable textEmbeddings) {
+    SDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
+    SDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(sd,imageEmbeddings, textEmbeddings, 1.0).outputVariable();
+    out.markAsLoss();
+    return out;
+  }
+
+  /**
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
+   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
+   * L2-normalized image and text embeddings. Used for training vision-language<br>
+   * models where matching image-text pairs should have high similarity.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
+   * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
+   * @return output Scalar contrastive loss value (NUMERIC type)
+   */
+  public SDVariable contrastiveLoss(String name, SDVariable imageEmbeddings,
+      SDVariable textEmbeddings) {
+    SDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
+    SDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(sd,imageEmbeddings, textEmbeddings, 1.0).outputVariable();
+    out.markAsLoss();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is<br>
    * equivalent to cosine distance when both the predictions and labels are normalized.<br>
    * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.<br>

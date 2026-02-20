@@ -373,6 +373,80 @@ public class DecoderUtils {
     }
 
     /**
+     * Build the complete decoder input map for one decode step.
+     *
+     * Handles both dynamic KV (prefill, step 0) and static KV (decode, steps 1+) modes.
+     * Constructs inputs_embeds, attention_mask, _causal_mask, input_ids, position_ids,
+     * and past_key_values entries based on the decoder's declared input names.
+     *
+     * @param decoderInputNames the decoder model's input names
+     * @param decoder the SameDiff decoder model (for createEmptyKvCache fallback)
+     * @param embeddings current step's embeddings [batch, seqLen, hidden]
+     * @param inputIds current step's input IDs [batch, seqLen]
+     * @param pastSeqLen logical past sequence length (for position_ids / RoPE)
+     * @param currentSeqLen current step's sequence length
+     * @param staticKvBuffers map of past_key_values input names to static buffers (null if not using static KV)
+     * @param maxKvLen total static KV length (ignored if not using static KV)
+     * @param cachePos next write position in static buffer (ignored if not using static KV)
+     * @param usingStaticKv whether we are in static KV mode
+     * @param hiddenSize model hidden size (for empty KV cache creation)
+     * @return map of input name to INDArray ready to pass to decoder.output()
+     */
+    public static Map<String, INDArray> buildDecoderInputMap(
+            List<String> decoderInputNames, SameDiff decoder,
+            INDArray embeddings, INDArray inputIds,
+            long pastSeqLen, long currentSeqLen,
+            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
+            boolean usingStaticKv, long hiddenSize) {
+
+        Map<String, INDArray> decoderInputMap = new HashMap<>();
+
+        for (String inputName : decoderInputNames) {
+            if (inputName.equals("inputs_embeds")) {
+                decoderInputMap.put(inputName, embeddings);
+            } else if (inputName.equals("attention_mask")) {
+                if (usingStaticKv) {
+                    long totalSeqLen = maxKvLen + currentSeqLen;
+                    INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
+                    if (cachePos > 0) {
+                        mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+                    }
+                    mask.putScalar(0, totalSeqLen - 1, 1);
+                    decoderInputMap.put(inputName, mask);
+                } else {
+                    long totalSeqLen = pastSeqLen + currentSeqLen;
+                    decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
+                }
+            } else if (inputName.equals("_causal_mask")) {
+                long totalSeqLen = usingStaticKv ? maxKvLen + currentSeqLen : pastSeqLen + currentSeqLen;
+                decoderInputMap.put(inputName, buildCausalMask(currentSeqLen, totalSeqLen));
+            } else if (inputName.equals("input_ids")) {
+                decoderInputMap.put(inputName, inputIds);
+            } else if (inputName.equals("position_ids")) {
+                decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                        .reshape(1, currentSeqLen).castTo(DataType.LONG));
+            } else if (inputName.startsWith("past_key_values.")) {
+                if (usingStaticKv) {
+                    INDArray staticBuf = staticKvBuffers.get(inputName);
+                    if (staticBuf != null) {
+                        decoderInputMap.put(inputName, staticBuf);
+                    } else {
+                        decoderInputMap.put(inputName, createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                    }
+                } else {
+                    decoderInputMap.put(inputName, createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                }
+            }
+        }
+
+        if (!decoderInputMap.containsKey("inputs_embeds")) {
+            decoderInputMap.put("inputs_embeds", embeddings);
+        }
+
+        return decoderInputMap;
+    }
+
+    /**
      * Build a static-size attention mask for decode steps with a padded KV cache.
      *
      * Returns [batchSize, maxKvLen+1] LONG mask: 1 for valid positions 0..cachePos-1,

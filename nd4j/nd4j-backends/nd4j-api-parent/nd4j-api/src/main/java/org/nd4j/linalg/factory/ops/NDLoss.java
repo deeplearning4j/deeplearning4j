@@ -88,6 +88,62 @@ public class NDLoss {
   }
 
   /**
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
+   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
+   * L2-normalized image and text embeddings. Used for training vision-language<br>
+   * models where matching image-text pairs should have high similarity.<br>
+   *
+   * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
+   * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
+   * @param temperature Logit temperature scale (default: 1.0)
+   * @return output Scalar contrastive loss value (NUMERIC type)
+   */
+  public INDArray contrastiveLoss(INDArray imageEmbeddings, INDArray textEmbeddings,
+      double temperature) {
+    NDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
+    NDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(imageEmbeddings, textEmbeddings, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * InfoNCE contrastive loss for CLIP-style contrastive alignment.<br>
+   * Computes symmetric cross-entropy over the cosine similarity matrix of<br>
+   * L2-normalized image and text embeddings. Used for training vision-language<br>
+   * models where matching image-text pairs should have high similarity.<br>
+   *
+   * @param imageEmbeddings L2-normalized image embeddings [batch, embedDim] (NUMERIC type)
+   * @param textEmbeddings L2-normalized text embeddings [batch, embedDim] (NUMERIC type)
+   * @return output Scalar contrastive loss value (NUMERIC type)
+   */
+  public INDArray contrastiveLoss(INDArray imageEmbeddings, INDArray textEmbeddings) {
+    NDValidation.validateNumerical("contrastiveLoss", "imageEmbeddings", imageEmbeddings);
+    NDValidation.validateNumerical("contrastiveLoss", "textEmbeddings", textEmbeddings);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.ContrastiveLoss(imageEmbeddings, textEmbeddings, 1.0));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Cosine distance loss: {@code 1 - cosineSimilarity(x,y)} or {@code 1 - sum_i label[i] * prediction[i]}, which is<br>
    * equivalent to cosine distance when both the predictions and labels are normalized.<br>
    * <b>Note</b>: This loss function assumes that both the predictions and labels are normalized to have unit l2 norm.<br>

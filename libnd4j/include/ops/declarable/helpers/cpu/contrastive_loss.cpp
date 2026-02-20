@@ -1,0 +1,166 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+#include <ops/declarable/helpers/contrastive_loss.h>
+#include <helpers/MmulHelper.h>
+#include <cmath>
+
+namespace sd {
+namespace ops {
+namespace helpers {
+
+// Helper: compute softmax of a vector in-place (row of logits matrix)
+static void rowSoftmax(double* data, sd::LongType len) {
+    double maxVal = data[0];
+    for (sd::LongType i = 1; i < len; i++) {
+        if (data[i] > maxVal) maxVal = data[i];
+    }
+    double sum = 0.0;
+    for (sd::LongType i = 0; i < len; i++) {
+        data[i] = std::exp(data[i] - maxVal);
+        sum += data[i];
+    }
+    for (sd::LongType i = 0; i < len; i++) {
+        data[i] /= sum;
+    }
+}
+
+void contrastiveLoss(NDArray* imageEmbeddings, NDArray* textEmbeddings,
+                        NDArray* output, double temperature,
+                        LaunchContext* context) {
+    // CLIP-style contrastive loss
+    // imageEmbeddings: [batch, embedDim], textEmbeddings: [batch, embedDim]
+    // logits = imageEmb @ textEmb^T * temperature  -> [batch, batch]
+    // targets = diagonal (identity) -> label[i] = i
+    // loss = (CE_along_rows + CE_along_cols) / (2 * batch)
+
+    auto batch = imageEmbeddings->sizeAt(0);
+    auto embedDim = imageEmbeddings->sizeAt(1);
+
+    // Compute similarity matrix: logits = image @ text^T
+    auto textT = textEmbeddings->transpose();
+    NDArray logits('c', {batch, batch}, imageEmbeddings->dataType(), context);
+    MmulHelper::mmul(imageEmbeddings, &textT, &logits);
+
+    // Scale by temperature
+    logits *= temperature;
+
+    // Compute cross-entropy loss where target for row i and col i is index i
+    double totalLoss = 0.0;
+
+    // CE along rows (image-to-text): for each row, target = diagonal index
+    for (sd::LongType i = 0; i < batch; i++) {
+        // Softmax of row i
+        std::vector<double> rowData(batch);
+        for (sd::LongType j = 0; j < batch; j++) {
+            rowData[j] = logits.e<double>(i, j);
+        }
+        rowSoftmax(rowData.data(), batch);
+        // CE = -log(softmax[target])
+        double prob = std::max(rowData[i], 1e-12);
+        totalLoss += -std::log(prob);
+    }
+
+    // CE along columns (text-to-image): for each col, target = diagonal index
+    for (sd::LongType j = 0; j < batch; j++) {
+        std::vector<double> colData(batch);
+        for (sd::LongType i = 0; i < batch; i++) {
+            colData[i] = logits.e<double>(i, j);
+        }
+        rowSoftmax(colData.data(), batch);
+        double prob = std::max(colData[j], 1e-12);
+        totalLoss += -std::log(prob);
+    }
+
+    // Average: total / (2 * batch)
+    totalLoss /= (2.0 * batch);
+
+    // Output is a scalar
+    output->p(0, totalLoss);
+}
+
+void contrastiveLossBp(NDArray* imageEmbeddings, NDArray* textEmbeddings,
+                          NDArray* dLdImage, NDArray* dLdText,
+                          double temperature, LaunchContext* context) {
+    // Backward pass for CLIP contrastive loss
+    auto batch = imageEmbeddings->sizeAt(0);
+    auto embedDim = imageEmbeddings->sizeAt(1);
+
+    // Recompute logits
+    auto textT = textEmbeddings->transpose();
+    NDArray logits('c', {batch, batch}, imageEmbeddings->dataType(), context);
+    MmulHelper::mmul(imageEmbeddings, &textT, &logits);
+    logits *= temperature;
+
+    // Compute softmax along rows and columns
+    NDArray rowSoftmaxMat('c', {batch, batch}, imageEmbeddings->dataType(), context);
+    NDArray colSoftmaxMat('c', {batch, batch}, imageEmbeddings->dataType(), context);
+
+    for (sd::LongType i = 0; i < batch; i++) {
+        std::vector<double> rowData(batch);
+        for (sd::LongType j = 0; j < batch; j++) {
+            rowData[j] = logits.e<double>(i, j);
+        }
+        rowSoftmax(rowData.data(), batch);
+        for (sd::LongType j = 0; j < batch; j++) {
+            rowSoftmaxMat.p(i, j, rowData[j]);
+        }
+    }
+
+    for (sd::LongType j = 0; j < batch; j++) {
+        std::vector<double> colData(batch);
+        for (sd::LongType i = 0; i < batch; i++) {
+            colData[i] = logits.e<double>(i, j);
+        }
+        rowSoftmax(colData.data(), batch);
+        for (sd::LongType i = 0; i < batch; i++) {
+            colSoftmaxMat.p(i, j, colData[i]);
+        }
+    }
+
+    // dL/dlogits from row CE: (softmax_row[i,j] - 1_{j=i}) / (2*batch)
+    // dL/dlogits from col CE: (softmax_col[i,j] - 1_{i=j}) / (2*batch)
+    // Combined: dL/dlogits[i,j] = (softmax_row[i,j] + softmax_col[i,j] - 2*1_{i=j}) / (2*batch)
+    NDArray dLdLogits('c', {batch, batch}, imageEmbeddings->dataType(), context);
+    double scale = 1.0 / (2.0 * batch);
+
+    for (sd::LongType i = 0; i < batch; i++) {
+        for (sd::LongType j = 0; j < batch; j++) {
+            double target = (i == j) ? 1.0 : 0.0;
+            double grad = (rowSoftmaxMat.e<double>(i, j) - target +
+                           colSoftmaxMat.e<double>(i, j) - target) * scale;
+            dLdLogits.p(i, j, grad);
+        }
+    }
+
+    // Apply temperature scaling
+    dLdLogits *= temperature;
+
+    // dL/dImage = dL/dLogits @ textEmbeddings
+    MmulHelper::mmul(&dLdLogits, textEmbeddings, dLdImage);
+
+    // dL/dText = dL/dLogits^T @ imageEmbeddings
+    auto dLdLogitsT = dLdLogits.transpose();
+    MmulHelper::mmul(&dLdLogitsT, imageEmbeddings, dLdText);
+}
+
+}  // namespace helpers
+}  // namespace ops
+}  // namespace sd

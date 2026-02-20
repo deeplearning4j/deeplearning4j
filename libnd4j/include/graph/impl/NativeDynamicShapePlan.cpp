@@ -684,6 +684,10 @@ Status NativeDynamicShapePlan::execute(
         seg.executionCount++;
         executeCount_++;
 
+        // KV cache scatter is handled by Java side (DecoderUtils.scatterNewKvEntries)
+        // C++ scatter via scatterKvEntries() causes shape corruption due to
+        // operator() heap allocations during graph replay — disabled until fixed
+
         // Periodic flush (every 10 steps) and trim
         if (executeCount_ % 10 == 0) {
           flushPendingClose(stream);
@@ -1000,10 +1004,10 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  // Step 3.5: KV cache retention — scatter new entries into static input buffers
-  if (kvCacheRetentionEnabled_) {
-    scatterKvEntries(externalInputs, numExternalInputs, stream);
-  }
+  // Step 3.5: KV cache retention — disabled (Java side handles scatter)
+  // if (kvCacheRetentionEnabled_) {
+  //   scatterKvEntries(externalInputs, numExternalInputs, stream);
+  // }
 
   auto tOutputsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 

@@ -927,5 +927,124 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("emaUpdate") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "EmaUpdate"
+        Input(NUMERIC, "model") { description = "Current model parameters (student)" }
+        Input(NUMERIC, "shadow") { description = "EMA shadow parameters (teacher)" }
+        Arg(NUMERIC, "decay") { description = "EMA decay factor (typically 0.996-0.9999)"; defaultValue = 0.999 }
+        Output(NUMERIC, "output") { description = "Updated shadow parameters" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Exponential Moving Average parameter update for DINOv2 teacher networks.
+             Computes: output = decay * shadow + (1 - decay) * model
+             Used in self-supervised learning to maintain a slowly-updated teacher model.
+            """.trimIndent()
+        }
+    }
+
+    Op("centerAndSharpen") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "CenterAndSharpen"
+        Input(NUMERIC, "input") { description = "Teacher output logits [batch, features]" }
+        Input(NUMERIC, "center") { description = "Running center vector [features]" }
+        Arg(NUMERIC, "temperature") { description = "Sharpening temperature (typically 0.04-0.07)"; defaultValue = 0.07 }
+        Output(NUMERIC, "output") { description = "Sharpened probabilities [batch, features]" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             DINOv2 centering and sharpening operation.
+             Prevents mode collapse in self-supervised learning by centering the teacher output
+             and applying temperature-based sharpening:
+               output = softmax((input - center) / temperature)
+            """.trimIndent()
+        }
+    }
+
+    Op("twoWayCrossAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TwoWayCrossAttention"
+        Input(NUMERIC, "tokenQuery") { description = "Token queries [batch, tokenSeqLen, embedDim]" }
+        Input(NUMERIC, "tokenKey") { description = "Token keys [batch, tokenSeqLen, embedDim]" }
+        Input(NUMERIC, "tokenValue") { description = "Token values [batch, tokenSeqLen, embedDim]" }
+        Input(NUMERIC, "imageQuery") { description = "Image queries [batch, imageSeqLen, embedDim]" }
+        Input(NUMERIC, "imageKey") { description = "Image keys [batch, imageSeqLen, embedDim]" }
+        Input(NUMERIC, "imageValue") { description = "Image values [batch, imageSeqLen, embedDim]" }
+        Arg(NUMERIC, "scale") { description = "Attention scale factor (default: 1/sqrt(embedDim))"; defaultValue = 0.0 }
+        Output(NUMERIC, "tokenOutput") { description = "Attended token embeddings [batch, tokenSeqLen, embedDim]" }
+        Output(NUMERIC, "imageOutput") { description = "Attended image embeddings [batch, imageSeqLen, embedDim]" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             SAM-style Two-Way Cross Attention.
+             Bidirectional cross-attention where tokens attend to image features and
+             image features attend to tokens simultaneously:
+               tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+               imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
+            """.trimIndent()
+        }
+    }
+
+    Op("tokenSample") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TokenSample"
+        val logits = Input(NUMERIC, "logits") { description = "Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position." }
+        val temperature = Arg(FLOATING_POINT, "temperature") { defaultValue = 0.0; description = "Temperature for sampling. 0 = greedy (argmax)" }
+        val topK = Arg(INT, "topK") { defaultValue = 0; description = "Top-K filtering: keep only top K logits. 0 = disabled" }
+        val topP = Arg(FLOATING_POINT, "topP") { defaultValue = 0.0; description = "Top-P (nucleus) filtering threshold. 0 = disabled" }
+        val seed = Arg(LONG, "seed") { defaultValue = 0; description = "Random seed for sampling. 0 = random" }
+
+        Output(LONG, "output") { description = "Sampled token indices. Shape: [batch] or scalar" }
+
+        Signature(logits)
+        Signature(logits, temperature, topK, topP, seed)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Token sampling for LLM inference.
+
+             Full sampling pipeline in a single native GPU call:
+               temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+
+             For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
+             with shared-memory reduction — avoids transferring the full logits tensor to host.
+
+             Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3
+             [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position
+             is automatically extracted for sampling.
+            """.trimIndent()
+        }
+    }
+
+    Op("kvScatter") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "KvScatter"
+        val present = Input(NUMERIC, "present") { description = "Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim]" }
+        val staticBuf = Input(NUMERIC, "staticBuffer") { description = "Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place." }
+
+        val cachePos = Arg(LONG, "cachePos") { description = "Position in static buffer to write the new entry" }
+        val numPairs = Arg(INT, "numPairs") { defaultValue = 1; description = "Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]" }
+
+        Output(LONG, "output") { description = "Scalar 0 on success" }
+
+        Signature(present, staticBuf, cachePos)
+        Signature(present, staticBuf, cachePos, numPairs)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Batch KV cache scatter update for LLM autoregressive decoding.
+
+             Copies a single time-step slice from each present KV tensor into the
+             corresponding static KV buffer at a given cache position. Replaces N
+             individual Java view+assign calls with a single native kernel launch.
+
+             The present tensor has shape [batch, heads, seqLen, dim] where the new
+             token's KV entry is at the last sequence position. This entry is extracted
+             and written into the static buffer at cachePos.
+
+             For multiple pairs, inputs are ordered as:
+             [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]
+            """.trimIndent()
+        }
+    }
+
     Alias(Math(), "tanh")
 }

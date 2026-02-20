@@ -70,12 +70,11 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   if (attnBias != nullptr && (attnBias->isEmpty() || attnBias->rankOf() == 0 || attnBias->lengthOf() <= 1)) attnBias = nullptr;
   if (pastKey != nullptr && (pastKey->isEmpty() || pastKey->rankOf() == 0 || pastKey->lengthOf() <= 1)) pastKey = nullptr;
   if (pastValue != nullptr && (pastValue->isEmpty() || pastValue->rankOf() == 0 || pastValue->lengthOf() <= 1)) pastValue = nullptr;
-
+  
   auto output = OUTPUT_VARIABLE(0);
-
+  
   LongType numHeads = INT_ARG(0);
   bool useCausalMask = INT_ARG(1) != 0;
-
   
   double scale = block.numT() > 0 ? T_ARG(0) : 0.0;
   
