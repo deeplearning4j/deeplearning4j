@@ -22,6 +22,7 @@
 #include <array/NDArray.h>
 #include <graph/Context.h>
 #include <graph/generated/graph_generated.h>
+#include <helpers/MmulHelper.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <system/common.h>
 
@@ -116,6 +117,14 @@ struct NativeSlot {
   // On subsequent executions, skip all setup and just call op->execute().
   bool frozenContextReady;
 
+  // Frozen constant: this slot's output never changes between decode steps
+  // with frozen shapes. Both nullify and execution are skipped entirely.
+  // The output buffer retains its value from the warmup step.
+  // Detected transitively: a slot is frozen constant if ALL its inputs come
+  // from either (a) other frozen constant slots or (b) constant/variable arrays
+  // that don't change between steps (i.e., NOT from external placeholders).
+  bool frozenConstantSlot;
+
   NativeSlot()
       : opHash(0), op(nullptr), numInputs(0), inputSourceIndices(nullptr),
         inputSourceTypes(nullptr), numOutputs(0), outputSlotIndices(nullptr),
@@ -125,7 +134,7 @@ struct NativeSlot {
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
         isCustomOp(true), isIdentityOp(false),
         inPlaceFused(false), inPlaceFusedInputIdx(-1), targetDeviceId(-1),
-        legacyOpType(0), legacyOpNum(-1),
+        legacyOpType(0), legacyOpNum(-1), frozenConstantSlot(false),
         cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false),
         frozenContextReady(false) {}
 
@@ -194,7 +203,7 @@ struct GraphSegment {
   // copy external input data into them before each graph replay.
   // The graph always references these stable addresses.
   struct CaptureBuffer {
-    NDArray* buffer;           // Fixed-address GPU buffer (owned)
+    NDArray* buffer;           // Fixed-address GPU buffer (owned unless directReference)
     int externalInputIndex;    // Which external input this maps to (-1 = cross-segment)
     int crossSegmentSlotIdx;   // Which output slot this maps to (for cross-segment inputs)
     size_t capturedSize;       // Size in bytes at capture time
@@ -203,10 +212,15 @@ struct GraphSegment {
 
     bool neverSkipCopy;    // When true, always copy even if pointer unchanged (KV cache buffers)
 
+    // Direct reference: buffer points to the external input directly (NOT owned).
+    // Used for static KV cache buffers whose GPU address never changes.
+    // Skips D2D copy on replay — graph reads from the external buffer directly.
+    bool directReference;
+
     CaptureBuffer() : buffer(nullptr), externalInputIndex(-1),
                       crossSegmentSlotIdx(-1), capturedSize(0),
                       lastSourcePtr(nullptr), initialCopyDone(false),
-                      neverSkipCopy(false) {}
+                      neverSkipCopy(false), directReference(false) {}
   };
   std::vector<CaptureBuffer> captureBuffers;
 
@@ -430,6 +444,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       rebuildSegmentsForFrozenShapes();
       sd_printf("NativeDSP::setShapesFrozen: merged %d -> %d segments\n",
                 oldSegCount, (int)segments_.size());
+      // Clear stale cast cache entries from prefill phase so warmup
+      // repopulates with correctly-sized decode buffers
+      MmulHelper::clearCastCache();
       // Reset executeCount so step 0 = warmup, step 1+ = capture/replay
       executeCount_ = 0;
     }
@@ -437,7 +454,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       // Reset frozen context state when unfreezing — shapes may change
       for (int i = 0; i < numSlots_; i++) {
         slots_[i].frozenContextReady = false;
+        slots_[i].frozenConstantSlot = false;
       }
+      frozenConstantDetectionDone_ = false;
     }
   }
   bool isShapesFrozen() const { return shapesFrozen_; }
@@ -569,6 +588,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool* slotIsViewProducer_;           // View producer flags (learned from first exec)
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;
+  bool frozenConstantDetectionDone_;
 
   // Graph segments for CUDA Graphs
   std::vector<GraphSegment> segments_;

@@ -3401,6 +3401,12 @@ LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vecto
   // Allow scalar expansion: if array has 1 element (scalar or length-1), it can be expanded to any shape
   // This is used in ONNX models for broadcasting scalar conditions
   if (arrLength != array->lengthOf() && !array->isScalar() && array->lengthOf() != 1) {
+    sd_printf("reshapeShapeInfo FAIL: array shape=%s len=%lld dtype=%d newShape=[",
+              ShapeUtils::shapeAsString(array).c_str(), array->lengthOf(), (int)array->dataType());
+    for (size_t i = 0; i < shape_vector.size(); i++) {
+      sd_printf("%lld%s", shape_vector[i], i < shape_vector.size()-1 ? "," : "");
+    }
+    sd_printf("] arrLength=%lld order=%c\n", arrLength, order);
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
   sd::LongType shapeInfoLength = shape::shapeInfoLength(shape_vector.size());

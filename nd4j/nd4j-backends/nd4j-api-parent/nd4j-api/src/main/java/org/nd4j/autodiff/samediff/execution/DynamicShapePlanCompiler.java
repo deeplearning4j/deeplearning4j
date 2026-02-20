@@ -96,7 +96,7 @@ public class DynamicShapePlanCompiler {
      */
     private static final Set<String> FULLY_WRITING_OPS = Set.of(
             // Matrix ops — BLAS contractually writes C[i,j] = sum(A[i,k]*B[k,j]) for all (i,j)
-            "matmul", "mmul", "batched_gemm", "tensormmul",
+            "matmul", "mmul", "batched_gemm", "tensormmul", "xw_plus_b",
             // Elementwise binary — output[i] = f(a[i], b[i]) for every i (with broadcasting)
             "add", "subtract", "multiply", "divide", "floormod", "floordiv",
             "reversedivide", "reversesubtract", "squaredsubtract",
@@ -121,7 +121,27 @@ public class DynamicShapePlanCompiler {
             // Type conversion — converts every element
             "cast",
             // Clip — elementwise
-            "clipbyvalue"
+            "clipbyvalue",
+            // Data movement — each writes every element of output (views are zero-cost on GPU)
+            "gather", "concat", "stack", "split", "unstack", "slice", "strided_slice",
+            "reshape", "permute", "transpose", "expand_dims", "squeeze",
+            // Shape/metadata — small scalar outputs, always fully written
+            "shape_of", "size_at", "rank",
+            // Array creation — allocates and fills entire output
+            "create", "ones", "zeros", "fill", "range", "linspace",
+            "ones_like", "zeros_like", "ones_as", "zeroslike",
+            // Copy/tile — fully writes output
+            "assign", "tile",
+            // Indexing — write every element at target locations
+            "set_scalar", "scatter_nd", "scatter_update",
+            // Selection — writes every element (conditional)
+            "where", "select",
+            // Normalization — fully computed output
+            "rms_norm", "layer_norm", "batch_norm",
+            // Fused ops from GraphOptimizer
+            "swish_mul", "dot_product_attention_v2", "kv_scatter", "token_sample",
+            // Attention
+            "onnx_multi_head_attention"
     );
 
     private DynamicShapePlanCompiler() {}
@@ -164,6 +184,10 @@ public class DynamicShapePlanCompiler {
             }
             opNodes.add(node);
         }
+
+        // Diagnostic tracking for needsZeroedOutput
+        Map<String, Integer> needsZeroedOutputOps = new java.util.TreeMap<>();
+        Map<String, Integer> skipsZeroedOutputOps = new java.util.TreeMap<>();
 
         // Step 2: Build external input index maps
         // External inputs = constants + variables + placeholders
@@ -407,6 +431,11 @@ public class DynamicShapePlanCompiler {
             // Determine if this op needs zeroed output buffers.
             // Default: true (safe). Only skip for ops known to fully write every output element.
             boolean needsZeroedOutput = !FULLY_WRITING_OPS.contains(opNameLower) || isDataDependent;
+            if (needsZeroedOutput) {
+                needsZeroedOutputOps.merge(opNameLower, 1, Integer::sum);
+            } else {
+                skipsZeroedOutputOps.merge(opNameLower, 1, Integer::sum);
+            }
 
             // Determine if output shape depends on input values (not just shapes).
             // When true, INT/LONG input values are included in the shape cache key.
@@ -551,6 +580,14 @@ public class DynamicShapePlanCompiler {
 
         log.debug("DynamicShapePlan compiled: {} ops, {} output slots, {} external inputs, {} final outputs, {} root slots",
                 slots.length, totalOutputSlots, externalInputKeys.size(), requestedOutputs.size(), rootSlots.length);
+
+        // Log needsZeroedOutput diagnostics
+        int totalNeedsZeroed = needsZeroedOutputOps.values().stream().mapToInt(Integer::intValue).sum();
+        int totalSkipsZeroed = skipsZeroedOutputOps.values().stream().mapToInt(Integer::intValue).sum();
+        log.info("needsZeroedOutput: {} ops need zeroed output, {} ops skip zeroed output", totalNeedsZeroed, totalSkipsZeroed);
+        if (!needsZeroedOutputOps.isEmpty()) {
+            log.info("Ops still needing zeroed output: {}", needsZeroedOutputOps);
+        }
 
         return new DynamicShapePlan(
                 slots,

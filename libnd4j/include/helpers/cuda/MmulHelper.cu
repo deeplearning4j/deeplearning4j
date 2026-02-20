@@ -34,7 +34,33 @@
 #include "../MmulHelper.h"
 #include "execution/cuda/LaunchDims.h"
 
+// Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
+extern thread_local bool tl_graphExecutionActive;
+
 namespace sd {
+
+// Thread-local persistent cast cache for CUDA graph capture.
+// During non-capture execution, cast results are cached here.
+// During capture, cached buffers are reused via assign() to avoid
+// capture workspace allocations that may not replay correctly.
+static thread_local std::vector<NDArray*> tl_castCacheA;
+static thread_local std::vector<NDArray*> tl_castCacheB;
+static thread_local size_t tl_castIdxA = 0;
+static thread_local size_t tl_castIdxB = 0;
+
+void MmulHelper::resetCastCacheIndices() {
+  tl_castIdxA = 0;
+  tl_castIdxB = 0;
+}
+
+void MmulHelper::clearCastCache() {
+  for (auto* p : tl_castCacheA) delete p;
+  for (auto* p : tl_castCacheB) delete p;
+  tl_castCacheA.clear();
+  tl_castCacheB.clear();
+  tl_castIdxA = 0;
+  tl_castIdxB = 0;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
@@ -432,6 +458,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // cast the FLOAT32 input to HALF so both are HALF. cuBLAS cublasSgemmEx then handles
  // HALF×HALF→FLOAT32 with FP32 accumulation (tensor cores, much faster than FP32 GEMM).
  // The cast is fast (GPU parallel) and we still get the memory bandwidth benefit of FP16 weights.
+ //
  NDArray* castA = nullptr;
  NDArray* castB = nullptr;
  NDArray* effA = const_cast<NDArray*>(A);
@@ -439,11 +466,38 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (aType != bType && cType == FLOAT32 && major >= 6) {
    if (aType == FLOAT32 && bType == HALF) {
-     castA = effA->cast(HALF);
-     effA = castA;
+     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+       // During capture: reuse persistent buffer, assign launches FLOAT→HALF kernel (captured)
+       NDArray* cached = tl_castCacheA[tl_castIdxA++];
+       cached->assign(effA);
+       effA = cached;
+     } else {
+       // Non-capture or cache miss: allocate normally
+       castA = effA->cast(HALF);
+       effA = castA;
+       if (!tl_graphExecutionActive) {
+         // Cache a persistent HALF buffer for future capture reuse
+         auto* shapePtr = castA->getShapeAsVector();
+         auto* persistent = new NDArray(castA->ordering(), *shapePtr, HALF, castA->getContext());
+         delete shapePtr;
+         tl_castCacheA.push_back(persistent);
+       }
+     }
    } else if (aType == HALF && bType == FLOAT32) {
-     castB = effB->cast(HALF);
-     effB = castB;
+     if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()) {
+       NDArray* cached = tl_castCacheB[tl_castIdxB++];
+       cached->assign(effB);
+       effB = cached;
+     } else {
+       castB = effB->cast(HALF);
+       effB = castB;
+       if (!tl_graphExecutionActive) {
+         auto* shapePtr = castB->getShapeAsVector();
+         auto* persistent = new NDArray(castB->ordering(), *shapePtr, HALF, castB->getContext());
+         delete shapePtr;
+         tl_castCacheB.push_back(persistent);
+       }
+     }
    }
  }
 
@@ -469,7 +523,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
    NDArray::prepareSpecialUse({C}, {effA, effB});
-   BUILD_SINGLE_SELECTOR_THRICE(effAType, usualGemm,
+   BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
                                 (dims.y, dims.x, dims.z, stream, effA->specialBuffer(),
                                  effA->specialShapeInfo(), effB->specialBuffer(), effB->specialShapeInfo(), C->specialBuffer(),
                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),

@@ -32,9 +32,6 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
-import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -74,128 +71,95 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             }
             applied = true;
 
-            int count = quantizeMatmulWeights(sd);
+            // Only apply FP16 to large models (decoder) — small models like
+            // vision encoder and embed_tokens need FP32 precision.
+            int minOps = Integer.parseInt(System.getProperty("nd4j.optimizer.fp16.minOps", "1000"));
+            if (sd.getOps().size() < minOps) {
+                log.info("FP16 skipped: model has {} ops (threshold {})", sd.getOps().size(), minOps);
+                return false;
+            }
+
+            int count = quantizeAllToHalf(sd);
             if (count > 0) {
-                log.info("Selective FP16 quantization: {} matmul weights converted to HALF", count);
+                log.info("Full FP16 quantization: {} arrays converted to HALF", count);
                 return true;
             }
             return false;
         }
 
         /**
-         * Selectively quantize only matmul weight inputs to FP16.
-         * Only converts CONSTANT/VARIABLE arrays that are weight inputs to Mmul, TensorMmul,
-         * or XwPlusB ops. Other constants (bias, layer norm gamma/beta, embeddings, etc.)
-         * stay FP32 to avoid breaking ops that don't support HALF.
+         * Convert all FP32 CONSTANT and VARIABLE arrays to HALF for full FP16 inference.
          *
-         * cuBLAS natively handles HALF×FLOAT32 mixed precision via cublasSgemmEx,
-         * so HALF weights with FLOAT32 activations work correctly with FP32 accumulation.
+         * All key ops support HALF natively:
+         * - Matmul: cublasHgemm (tensor cores on compute 6.0+)
+         * - FlashAttention: explicit float16 templates
+         * - RMS norm: float16 template with FP32 internal reductions
+         * - OnnxMultiHeadAttention: accepts HALF Q/K/V
+         * - Swish/SwiGLU: element-wise ops support HALF
+         *
+         * Integer-typed arrays (LONG, INT, etc.) are not affected.
          */
-        public static int quantizeMatmulWeights(SameDiff sd) {
-            // Collect all variable names that are weight inputs to matmul ops
-            Set<String> matmulWeightNames = new HashSet<>();
+        /**
+         * Minimum number of elements for an array to be quantized to HALF.
+         * Only large 2D+ weight matrices benefit from FP16 (tensor cores).
+         * Small arrays (biases, normalization gammas/betas, scalars) stay FP32
+         * because element-wise ops may not handle mixed HALF+FLOAT correctly
+         * and the memory savings are negligible.
+         */
+        private static final long MIN_ELEMENTS_FOR_FP16 = 1024;
 
-            for (SameDiffOp op : sd.getOps().values()) {
-                DifferentialFunction func = op.getOp();
-                if (func == null) continue;
-
-                List<String> inputs = op.getInputsToOp();
-                if (inputs == null || inputs.size() < 2) continue;
-
-                // For Mmul: input[1] is typically the weight matrix
-                // For XwPlusB: input[1] is the weight matrix
-                // For TensorMmul: input[1] is typically the weight
-                int weightIdx = -1;
-                if (func instanceof Mmul || func instanceof TensorMmul) {
-                    weightIdx = 1;
-                } else if (func instanceof XwPlusB) {
-                    weightIdx = 1;
-                }
-
-                if (weightIdx >= 0 && weightIdx < inputs.size()) {
-                    String weightName = inputs.get(weightIdx);
-                    SDVariable weightVar = sd.getVariable(weightName);
-                    if (weightVar != null && (weightVar.getVariableType() == VariableType.CONSTANT
-                            || weightVar.getVariableType() == VariableType.VARIABLE)) {
-                        matmulWeightNames.add(weightName);
-                    }
-                }
-            }
-
-            if (matmulWeightNames.isEmpty()) {
-                return 0;
-            }
-
-            // Check that each weight is ONLY used by matmul-type ops
-            // If shared with non-matmul ops, skip it (those ops might not handle HALF)
-            Set<String> safeToQuantize = new HashSet<>();
-            for (String weightName : matmulWeightNames) {
-                Variable var = sd.getVariables().get(weightName);
-                if (var == null) continue;
-
-                List<String> consumers = var.getInputsForOp();
-                if (consumers == null || consumers.isEmpty()) continue;
-
-                boolean allMatmul = true;
-                for (String consumerOp : consumers) {
-                    SameDiffOp consOp = sd.getOps().get(consumerOp);
-                    if (consOp == null || consOp.getOp() == null) continue;
-                    DifferentialFunction consFunc = consOp.getOp();
-                    if (!(consFunc instanceof Mmul) && !(consFunc instanceof TensorMmul)
-                            && !(consFunc instanceof XwPlusB)) {
-                        allMatmul = false;
-                        break;
-                    }
-                }
-
-                if (allMatmul) {
-                    safeToQuantize.add(weightName);
-                } else {
-                    log.debug("Skipping FP16 for {} — shared with non-matmul ops", weightName);
-                }
-            }
-
-            // Quantize the safe weights
+        public static int quantizeAllToHalf(SameDiff sd) {
             ArrayHolder constantArrays = sd.getConstantArrays();
             ArrayHolder variableArrays = sd.getVariablesArrays();
             int quantizedCount = 0;
+            int skippedCount = 0;
             long fp32Bytes = 0;
             long fp16Bytes = 0;
 
-            for (String name : safeToQuantize) {
-                SDVariable sdVar = sd.getVariable(name);
-                if (sdVar == null) continue;
-
-                INDArray arr = null;
-                ArrayHolder holder = null;
-                if (sdVar.getVariableType() == VariableType.CONSTANT) {
-                    arr = constantArrays.getArray(name);
-                    holder = constantArrays;
-                } else if (sdVar.getVariableType() == VariableType.VARIABLE) {
-                    arr = variableArrays.getArray(name);
-                    holder = variableArrays;
+            // Convert large FP32 constants (2D+ weight matrices)
+            for (String name : new ArrayList<>(constantArrays.arrayNames())) {
+                INDArray arr = constantArrays.getArray(name);
+                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                    // Only quantize large 2D+ arrays (matmul weights)
+                    // Skip 1D (biases, norms), scalars, and small arrays
+                    if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_FP16) {
+                        fp32Bytes += arr.length() * 4;
+                        INDArray fp16Arr = arr.castTo(DataType.HALF);
+                        constantArrays.setArray(name, fp16Arr);
+                        fp16Bytes += arr.length() * 2;
+                        quantizedCount++;
+                    } else {
+                        skippedCount++;
+                    }
                 }
+            }
 
-                if (arr != null && arr.dataType() == DataType.FLOAT && holder != null) {
-                    fp32Bytes += arr.length() * 4;
-                    INDArray fp16Arr = arr.castTo(DataType.HALF);
-                    holder.setArray(name, fp16Arr);
-                    fp16Bytes += arr.length() * 2;
-                    quantizedCount++;
-                    log.debug("Quantized matmul weight {} to FP16: {} elements, {}MB -> {}MB",
-                        name, arr.length(), (arr.length() * 4) / (1024 * 1024),
-                        (arr.length() * 2) / (1024 * 1024));
+            // Convert large FP32 variables (e.g., embed_tokens weight)
+            for (String name : new ArrayList<>(variableArrays.arrayNames())) {
+                INDArray arr = variableArrays.getArray(name);
+                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                    if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_FP16) {
+                        fp32Bytes += arr.length() * 4;
+                        INDArray fp16Arr = arr.castTo(DataType.HALF);
+                        variableArrays.setArray(name, fp16Arr);
+                        fp16Bytes += arr.length() * 2;
+                        quantizedCount++;
+                    } else {
+                        skippedCount++;
+                    }
                 }
             }
 
             if (quantizedCount > 0) {
-                log.info("Selective FP16: {} matmul weights quantized, {}MB -> {}MB ({}x reduction)",
+                log.info("FP16 weights: {} arrays quantized ({}MB -> {}MB, {}x), {} small arrays kept FP32",
                     quantizedCount, fp32Bytes / (1024 * 1024), fp16Bytes / (1024 * 1024),
-                    String.format("%.1f", (double) fp32Bytes / Math.max(1, fp16Bytes)));
+                    String.format("%.1f", (double) fp32Bytes / Math.max(1, fp16Bytes)),
+                    skippedCount);
             }
 
             return quantizedCount;
         }
+
     }
 
     /**

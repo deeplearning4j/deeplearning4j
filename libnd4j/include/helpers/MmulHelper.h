@@ -171,6 +171,20 @@ class SD_LIB_EXPORT MmulHelper {
                      NDArray* realFinalResult = nullptr);
 
   /**
+   * Reset the mixed-precision cast cache indices to 0.
+   * Must be called before CUDA graph capture to ensure cached buffers are
+   * reused in the same order as the non-capture warmup execution.
+   */
+  static void resetCastCacheIndices();
+
+  /**
+   * Clear the entire cast cache (delete buffers and reset indices).
+   * Must be called when shapes change (e.g. prefill → decode transition)
+   * so the cache is repopulated with correctly-sized buffers during warmup.
+   */
+  static void clearCastCache();
+
+  /**
    * Resolve transpose flags based on dimension compatibility
    * @return true if dimensions are compatible
    */

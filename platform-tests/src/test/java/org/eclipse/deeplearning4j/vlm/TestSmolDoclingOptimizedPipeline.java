@@ -82,8 +82,10 @@ public class TestSmolDoclingOptimizedPipeline {
         // Enable graph optimizer for this test
         System.setProperty("nd4j.optimizer.enabled", "true");
         System.setProperty("nd4j.optimizer.logApplied", "true");
-        // FP16 quantization disabled — mixed FP16 weights + FP32 activations corrupts output
-        // Proper FP16 inference requires C++ kernel support for mixed precision
+        // FP16 quantization: converts all FLOAT constants/variables to HALF
+        // MmulHelper.cu persistent cast cache handles HALF→FLOAT for CUDA graph capture
+        // FP16 quantization: gated by property, helps larger models (>1024-dim)
+        // For SmolDocling (576-dim), cast overhead negates tensor core benefit
         // System.setProperty("nd4j.optimizer.fp16", "true");
         
         String maxTokensStr = System.getProperty("vlm.test.maxTokens");

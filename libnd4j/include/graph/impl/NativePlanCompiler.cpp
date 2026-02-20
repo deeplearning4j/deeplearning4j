@@ -51,26 +51,42 @@ bool NativePlanCompiler::isDataDependentOp(const std::string& opName) {
 }
 
 bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
+  // Conservative list: only ops that ALWAYS fully overwrite their output buffer.
+  // Data-movement ops (reshape, permute, gather, concat, etc.) are excluded because
+  // they may have edge cases where output isn't fully written (e.g., views, partial copies).
+  // This list is used to skip unnecessary nullify() in the frozen fast path.
   static const std::unordered_set<std::string> FULLY_WRITING_OPS = {
+      // Elementwise arithmetic
       "add", "subtract", "multiply", "divide", "multiply_no_nan",
-      "matmul", "mmul", "batched_gemm",
+      "pow", "maximum", "minimum", "mod", "floormod",
+      // GEMM / linear algebra
+      "matmul", "mmul", "batched_gemm", "xw_plus_b",
+      // Activations
       "relu", "sigmoid", "tanh", "softmax", "log_softmax", "gelu", "silu", "swish", "mish",
+      // Elementwise unary math
       "exp", "log", "abs", "neg", "square", "sqrt", "rsqrt", "reciprocal",
       "sin", "cos", "ceil", "floor", "round",
+      // Reductions (output is always fully written)
       "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
       "reduce_sum_bp", "reduce_mean_bp",
-      "concat", "stack", "unstack", "split", "slice",
-      "reshape", "permute", "transpose", "expand_dims", "squeeze",
-      "cast", "identity", "assign",
+      // Normalization (fully computed)
       "layer_norm", "batch_norm", "normalize_moments",
+      "rms_norm", "rms_norm_bp",
+      // Convolution / pooling
       "conv2d", "maxpool2d", "avgpool2d",
-      "gather", "gather_nd", "scatter_update",
-      "tile", "repeat", "broadcast_to",
-      "zeros_like", "ones_like", "fill",
-      "pow", "maximum", "minimum", "mod", "floormod",
+      // Comparison (elementwise, output always fully written)
       "greater", "less", "greater_equal", "less_equal", "equals", "not_equals",
       "logical_and", "logical_or", "logical_not",
+      // Type conversion (copies all elements with type change)
+      "cast",
+      // Clamping
       "clip_by_value",
+      // Fill operations (write every element)
+      "zeros_like", "ones_like", "fill",
+      // Fused ops from GraphOptimizer
+      "swish_mul", "dot_product_attention_v2", "kv_scatter", "token_sample",
+      // Attention
+      "onnx_multi_head_attention",
   };
   return FULLY_WRITING_OPS.count(normalizeOpName(opName)) > 0;
 }
@@ -481,6 +497,17 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
   // Build CUDA graph segments
   plan->buildSegments();
+
+  // Diagnostic: count how many slots need zeroed output
+  {
+    int needsZero = 0, skipZero = 0;
+    for (int i = 0; i < plan->numSlots_; i++) {
+      if (plan->slots_[i].needsZeroedOutput) needsZero++;
+      else skipZero++;
+    }
+    sd_printf("NativePlanCompiler: %d/%d slots need zeroed output (%d can skip nullify)\n",
+              needsZero, plan->numSlots_, skipZero);
+  }
 
   return plan;
 }

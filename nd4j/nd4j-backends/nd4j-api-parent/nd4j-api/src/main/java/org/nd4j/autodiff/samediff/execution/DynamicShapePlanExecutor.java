@@ -325,6 +325,24 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  Cleared on close() and when setShapesFrozen(false) is called. */
     private Map<String, INDArray> zeroCopyOutputCache;
 
+    /** Cached OpaqueNDArray wrappers for external inputs when shapesFrozen.
+     *  Avoids recreating wrappers + JNI setGraphContextInputArray calls each step.
+     *  Only inputs that changed (by INDArray identity) are re-sent to C++. */
+    private OpaqueNDArray[] cachedInputOpaques;
+    private INDArray[] cachedInputArrays;
+
+    /** Bitmap: true for external inputs that are placeholders (may be modified on host).
+     *  Only these need syncToSpecial on the frozen fast path. Constants never change. */
+    private boolean[] inputIsPlaceholder;
+
+    /** True once dummy outputs have been set on the context for frozen execution.
+     *  After the first frozen call, C++ manages its own output slots — skip dummy setup. */
+    private boolean frozenOutputsInitialized;
+
+    /** Cached execution stream pointer. Avoids 2 JNI calls per step. */
+    private Pointer cachedExecStream;
+    private boolean execStreamCached;
+
     /** Maximum KV cache length for pre-allocation. When > 0 and CUDA graphs enabled,
      *  output slots for KV cache are pre-allocated at max size to keep addresses stable.
      *  Can be set programmatically via setMaxKvCacheLength() or via system property
@@ -492,6 +510,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         this.shapesFrozen = frozen;
         if (!frozen) {
             zeroCopyOutputCache = null;
+            cachedInputOpaques = null;
+            cachedInputArrays = null;
+            inputIsPlaceholder = null;
+            frozenOutputsInitialized = false;
+            cachedExecStream = null;
+            execStreamCached = false;
         }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -3919,27 +3943,47 @@ public class DynamicShapePlanExecutor implements Closeable {
          }
          
          // Resolve external inputs (constants, variables, placeholders)
+        // When frozen, cache constant/variable arrays and only re-resolve placeholders
         String[] extKeys = plan.getExternalInputKeys();
-        INDArray[] extInputs = new INDArray[extKeys.length];
-        for (int i = 0; i < extKeys.length; i++) {
-            String varName = extKeys[i];
-            INDArray arr = null;
-            if (placeholderArrays != null) {
-                arr = placeholderArrays.get(varName);
-            }
-            if (arr == null) {
-                SDVariable var = sd.getVariable(varName);
-                if (var != null &&
-                        (var.getVariableType() == VariableType.CONSTANT ||
-                                var.getVariableType() == VariableType.VARIABLE)) {
-                    arr = var.getArr();
+        INDArray[] extInputs;
+        if (shapesFrozen && cachedInputArrays != null && cachedInputArrays.length == extKeys.length) {
+            // Fast path: reuse cached constant/variable arrays, only re-resolve placeholders.
+            // Use a separate array so we don't corrupt cachedInputArrays (needed for identity comparison).
+            extInputs = new INDArray[extKeys.length];
+            System.arraycopy(cachedInputArrays, 0, extInputs, 0, extKeys.length);
+            if (placeholderArrays != null && !placeholderArrays.isEmpty()
+                    && inputIsPlaceholder != null) {
+                for (int i = 0; i < extKeys.length; i++) {
+                    if (inputIsPlaceholder[i]) {
+                        INDArray ph = placeholderArrays.get(extKeys[i]);
+                        if (ph != null) {
+                            extInputs[i] = ph;
+                        }
+                    }
                 }
             }
-            if (arr == null) {
-                log.warn("Native executor: missing external input '{}', falling back to Java", varName);
-                return null;
+        } else {
+            extInputs = new INDArray[extKeys.length];
+            for (int i = 0; i < extKeys.length; i++) {
+                String varName = extKeys[i];
+                INDArray arr = null;
+                if (placeholderArrays != null) {
+                    arr = placeholderArrays.get(varName);
+                }
+                if (arr == null) {
+                    SDVariable var = sd.getVariable(varName);
+                    if (var != null &&
+                            (var.getVariableType() == VariableType.CONSTANT ||
+                                    var.getVariableType() == VariableType.VARIABLE)) {
+                        arr = var.getArr();
+                    }
+                }
+                if (arr == null) {
+                    log.warn("Native executor: missing external input '{}', falling back to Java", varName);
+                    return null;
+                }
+                extInputs[i] = arr;
             }
-            extInputs[i] = arr;
         }
 
         // Reuse OpaqueContext across calls to avoid JNI create/delete overhead.
@@ -3956,30 +4000,84 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         OpaqueContext opContext = cachedOpContext;
         {
-            // Set inputs on context using per-index approach
-            for (int i = 0; i < extInputs.length; i++) {
-                OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
-                nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+            // Set inputs on context — when frozen, only update inputs that changed
+            if (shapesFrozen && cachedInputOpaques != null
+                    && cachedInputOpaques.length == extInputs.length) {
+                // Fast path: only re-set inputs where the INDArray identity changed.
+                // For same-identity placeholder inputs (modified via putScalar), sync to device.
+                // Constants/variables are never modified on host — skip sync entirely.
+                for (int i = 0; i < extInputs.length; i++) {
+                    if (extInputs[i] != cachedInputArrays[i]) {
+                        // New array reference — full fromINDArray + setGraphContextInputArray
+                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
+                        nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                        cachedInputOpaques[i] = opaqueIn;
+                        cachedInputArrays[i] = extInputs[i];
+                    } else if (inputIsPlaceholder != null && inputIsPlaceholder[i]) {
+                        // Same array, but it's a placeholder that may have been modified on host
+                        INDArray arr = extInputs[i];
+                        if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
+                            OpaqueDataBuffer odb = arr.data().opaqueBuffer();
+                            if (odb != null && !odb.isNull()) {
+                                odb.syncToSpecial();
+                            }
+                        }
+                    }
+                    // else: constant/variable — no sync needed
+                }
+            } else {
+                // First call or non-frozen: set all inputs
+                for (int i = 0; i < extInputs.length; i++) {
+                    OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
+                    nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                }
+                // Cache for subsequent frozen calls
+                if (shapesFrozen) {
+                    cachedInputOpaques = new OpaqueNDArray[extInputs.length];
+                    cachedInputArrays = new INDArray[extInputs.length];
+                    System.arraycopy(extInputs, 0, cachedInputArrays, 0, extInputs.length);
+                    inputIsPlaceholder = new boolean[extInputs.length];
+                    for (int i = 0; i < extInputs.length; i++) {
+                        cachedInputOpaques[i] = OpaqueNDArray.fromINDArray(extInputs[i]);
+                        // Mark as placeholder if it came from the placeholderArrays map
+                        inputIsPlaceholder[i] = placeholderArrays != null
+                                && placeholderArrays.containsKey(extKeys[i]);
+                    }
+                }
             }
 
             // Set empty output slots on context (C++ plan will allocate and fill them)
-            for (int i = 0; i < numOutputs; i++) {
-                // Create a dummy output — C++ will replace with actual output
-                INDArray dummy = Nd4j.empty(DataType.FLOAT);
-                OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
-                nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
+            // When frozen, skip after first call — C++ manages its own output slots
+            if (!shapesFrozen || !frozenOutputsInitialized) {
+                for (int i = 0; i < numOutputs; i++) {
+                    INDArray dummy = Nd4j.empty(DataType.FLOAT);
+                    OpaqueNDArray opaqueOut = OpaqueNDArray.fromINDArray(dummy);
+                    nativeOps.setGraphContextOutputArray(opContext, i, opaqueOut);
+                }
+                if (shapesFrozen) {
+                    frozenOutputsInitialized = true;
+                }
             }
 
-            // Get execution stream
-            Pointer execStream = null;
-            try {
-                OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
-                if (lc != null) {
-                    execStream = nativeOps.lcExecutionStream(lc);
-                    if (execStream != null) execStream.retainReference();
+            // Get execution stream — cache to avoid 2 JNI calls per step
+            Pointer execStream;
+            if (execStreamCached) {
+                execStream = cachedExecStream;
+            } else {
+                execStream = null;
+                try {
+                    OpaqueLaunchContext lc = nativeOps.defaultLaunchContext();
+                    if (lc != null) {
+                        execStream = nativeOps.lcExecutionStream(lc);
+                        if (execStream != null) execStream.retainReference();
+                    }
+                } catch (Exception e) {
+                    // CPU backend
                 }
-            } catch (Exception e) {
-                // CPU backend
+                if (shapesFrozen) {
+                    cachedExecStream = execStream;
+                    execStreamCached = true;
+                }
             }
 
             // Clear native shape caches before each execution — unless shapes are frozen.
@@ -4156,6 +4254,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         nativePlanHandle = null;
         nativePlanSource = null;
+        cachedInputOpaques = null;
+        cachedInputArrays = null;
+        inputIsPlaceholder = null;
+        frozenOutputsInitialized = false;
+        cachedExecStream = null;
+        execStreamCached = false;
     }
 
     @Override
@@ -4202,6 +4306,14 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             zeroCopyOutputCache = null;
         }
+
+        // Clear cached input/output state
+        cachedInputOpaques = null;
+        cachedInputArrays = null;
+        inputIsPlaceholder = null;
+        frozenOutputsInitialized = false;
+        cachedExecStream = null;
+        execStreamCached = false;
 
         // Free cached OpaqueContext
         if (cachedOpContext != null) {

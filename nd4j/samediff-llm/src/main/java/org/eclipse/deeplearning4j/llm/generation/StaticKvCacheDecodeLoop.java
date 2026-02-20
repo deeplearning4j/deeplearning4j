@@ -201,7 +201,9 @@ public class StaticKvCacheDecodeLoop {
 
             // Run decoder — use fast path when shapes are frozen (skips setCloseable overhead)
             Map<String, INDArray> decoderOutputs;
-            if (usingStaticKv && step >= 2) {
+            boolean useDirect = usingStaticKv && step >= 2
+                    && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
+            if (useDirect) {
                 decoderOutputs = decoder.outputDirect(
                         decoderInputMap, allOutputNames.toArray(new String[0]));
             } else {
@@ -222,6 +224,13 @@ public class StaticKvCacheDecodeLoop {
             if (logitsRaw == null) {
                 log.error("No logits output at step {}", step);
                 break;
+            }
+            // Mixed precision decoder (HALF weights + FLOAT activations) keeps logits in FLOAT.
+            // If a future full-HALF path produces HALF logits, cast to FLOAT for sampling precision.
+            if (logitsRaw.dataType() == DataType.HALF) {
+                INDArray floatLogits = logitsRaw.castTo(DataType.FLOAT);
+                if (logitsRaw.closeable()) logitsRaw.close();
+                logitsRaw = floatLogits;
             }
 
             // Diagnostic: top logit values at steps 1-3
@@ -267,7 +276,8 @@ public class StaticKvCacheDecodeLoop {
                 // Freeze shapes for CUDA graph capture
                 InferenceSession decoderSession = decoder.getOrCreateSession();
                 DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
-                if (dspExec != null) {
+                boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
+                if (dspExec != null && !skipFreeze) {
                     dspExec.setShapesFrozen(true);
                     dspExec.setTraceEnabled(true);
                     dspExec.setExecutionTimingEnabled(true);
