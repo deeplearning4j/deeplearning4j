@@ -589,6 +589,14 @@ public class DynamicShapePlanCompiler {
             log.info("Ops still needing zeroed output: {}", needsZeroedOutputOps);
         }
 
+        // Log full op type histogram for kernel count analysis
+        Map<String, Integer> allOpTypes = new java.util.TreeMap<>();
+        allOpTypes.putAll(needsZeroedOutputOps);
+        for (var entry : skipsZeroedOutputOps.entrySet()) {
+            allOpTypes.merge(entry.getKey(), entry.getValue(), Integer::sum);
+        }
+        log.info("Op type histogram ({} total): {}", slots.length, allOpTypes);
+
         return new DynamicShapePlan(
                 slots,
                 totalOutputSlots,
