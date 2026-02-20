@@ -31,6 +31,10 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -70,74 +74,126 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             }
             applied = true;
 
-            int count = quantizeAllConstants(sd);
-            int varCount = quantizeAllVariables(sd);
-            if (count + varCount > 0) {
-                log.info("FP16 quantization: {} constants + {} variables converted", count, varCount);
+            int count = quantizeMatmulWeights(sd);
+            if (count > 0) {
+                log.info("Selective FP16 quantization: {} matmul weights converted to HALF", count);
                 return true;
             }
             return false;
         }
 
         /**
-         * Apply FP16 quantization to all FP32 constants in the graph.
-         * This is called once per graph optimization, not per-op.
+         * Selectively quantize only matmul weight inputs to FP16.
+         * Only converts CONSTANT/VARIABLE arrays that are weight inputs to Mmul, TensorMmul,
+         * or XwPlusB ops. Other constants (bias, layer norm gamma/beta, embeddings, etc.)
+         * stay FP32 to avoid breaking ops that don't support HALF.
+         *
+         * cuBLAS natively handles HALF×FLOAT32 mixed precision via cublasSgemmEx,
+         * so HALF weights with FLOAT32 activations work correctly with FP32 accumulation.
          */
-        public static int quantizeAllConstants(SameDiff sd) {
+        public static int quantizeMatmulWeights(SameDiff sd) {
+            // Collect all variable names that are weight inputs to matmul ops
+            Set<String> matmulWeightNames = new HashSet<>();
+
+            for (SameDiffOp op : sd.getOps().values()) {
+                DifferentialFunction func = op.getOp();
+                if (func == null) continue;
+
+                List<String> inputs = op.getInputsToOp();
+                if (inputs == null || inputs.size() < 2) continue;
+
+                // For Mmul: input[1] is typically the weight matrix
+                // For XwPlusB: input[1] is the weight matrix
+                // For TensorMmul: input[1] is typically the weight
+                int weightIdx = -1;
+                if (func instanceof Mmul || func instanceof TensorMmul) {
+                    weightIdx = 1;
+                } else if (func instanceof XwPlusB) {
+                    weightIdx = 1;
+                }
+
+                if (weightIdx >= 0 && weightIdx < inputs.size()) {
+                    String weightName = inputs.get(weightIdx);
+                    SDVariable weightVar = sd.getVariable(weightName);
+                    if (weightVar != null && (weightVar.getVariableType() == VariableType.CONSTANT
+                            || weightVar.getVariableType() == VariableType.VARIABLE)) {
+                        matmulWeightNames.add(weightName);
+                    }
+                }
+            }
+
+            if (matmulWeightNames.isEmpty()) {
+                return 0;
+            }
+
+            // Check that each weight is ONLY used by matmul-type ops
+            // If shared with non-matmul ops, skip it (those ops might not handle HALF)
+            Set<String> safeToQuantize = new HashSet<>();
+            for (String weightName : matmulWeightNames) {
+                Variable var = sd.getVariables().get(weightName);
+                if (var == null) continue;
+
+                List<String> consumers = var.getInputsForOp();
+                if (consumers == null || consumers.isEmpty()) continue;
+
+                boolean allMatmul = true;
+                for (String consumerOp : consumers) {
+                    SameDiffOp consOp = sd.getOps().get(consumerOp);
+                    if (consOp == null || consOp.getOp() == null) continue;
+                    DifferentialFunction consFunc = consOp.getOp();
+                    if (!(consFunc instanceof Mmul) && !(consFunc instanceof TensorMmul)
+                            && !(consFunc instanceof XwPlusB)) {
+                        allMatmul = false;
+                        break;
+                    }
+                }
+
+                if (allMatmul) {
+                    safeToQuantize.add(weightName);
+                } else {
+                    log.debug("Skipping FP16 for {} — shared with non-matmul ops", weightName);
+                }
+            }
+
+            // Quantize the safe weights
             ArrayHolder constantArrays = sd.getConstantArrays();
-            List<String> constantNames = new ArrayList<>(constantArrays.arrayNames());
-            
+            ArrayHolder variableArrays = sd.getVariablesArrays();
             int quantizedCount = 0;
             long fp32Bytes = 0;
             long fp16Bytes = 0;
 
-            for (String name : constantNames) {
-                INDArray arr = constantArrays.getArray(name);
-                if (arr != null && arr.dataType() == DataType.FLOAT) {
+            for (String name : safeToQuantize) {
+                SDVariable sdVar = sd.getVariable(name);
+                if (sdVar == null) continue;
+
+                INDArray arr = null;
+                ArrayHolder holder = null;
+                if (sdVar.getVariableType() == VariableType.CONSTANT) {
+                    arr = constantArrays.getArray(name);
+                    holder = constantArrays;
+                } else if (sdVar.getVariableType() == VariableType.VARIABLE) {
+                    arr = variableArrays.getArray(name);
+                    holder = variableArrays;
+                }
+
+                if (arr != null && arr.dataType() == DataType.FLOAT && holder != null) {
                     fp32Bytes += arr.length() * 4;
-                    
                     INDArray fp16Arr = arr.castTo(DataType.HALF);
-                    constantArrays.setArray(name, fp16Arr);
-                    
+                    holder.setArray(name, fp16Arr);
                     fp16Bytes += arr.length() * 2;
                     quantizedCount++;
-                    
-                    log.debug("Quantized constant {} to FP16: {} elements, {}KB -> {}KB",
-                        name, arr.length(), (arr.length() * 4) / 1024, (arr.length() * 2) / 1024);
+                    log.debug("Quantized matmul weight {} to FP16: {} elements, {}MB -> {}MB",
+                        name, arr.length(), (arr.length() * 4) / (1024 * 1024),
+                        (arr.length() * 2) / (1024 * 1024));
                 }
             }
 
             if (quantizedCount > 0) {
-                log.info("FP16 Quantization: {} constants quantized, {}KB -> {}KB ({}x reduction)",
-                    quantizedCount, fp32Bytes / 1024, fp16Bytes / 1024,
-                    String.format("%.1f", (double) fp32Bytes / fp16Bytes));
+                log.info("Selective FP16: {} matmul weights quantized, {}MB -> {}MB ({}x reduction)",
+                    quantizedCount, fp32Bytes / (1024 * 1024), fp16Bytes / (1024 * 1024),
+                    String.format("%.1f", (double) fp32Bytes / Math.max(1, fp16Bytes)));
             }
 
-            return quantizedCount;
-        }
-
-        /**
-         * Apply FP16 quantization to all FP32 variable arrays in the graph.
-         * Variables include embed_tokens weights and other trainable parameters.
-         */
-        public static int quantizeAllVariables(SameDiff sd) {
-            ArrayHolder variableArrays = sd.getVariablesArrays();
-            List<String> variableNames = new ArrayList<>(variableArrays.arrayNames());
-
-            int quantizedCount = 0;
-            for (String name : variableNames) {
-                INDArray arr = variableArrays.getArray(name);
-                if (arr != null && arr.dataType() == DataType.FLOAT) {
-                    INDArray fp16Arr = arr.castTo(DataType.HALF);
-                    variableArrays.setArray(name, fp16Arr);
-                    quantizedCount++;
-                    log.debug("Quantized variable {} to FP16: {} elements", name, arr.length());
-                }
-            }
-
-            if (quantizedCount > 0) {
-                log.info("FP16 Quantization: {} variables quantized to HALF", quantizedCount);
-            }
             return quantizedCount;
         }
     }
@@ -361,17 +417,47 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             String inputVar = inputs.get(0);
             String outputVar = outputs.get(0);
 
-            // Determine input dtype
+            // Determine target dtype from Cast op's iArguments (FlatBuffers byte)
+            long[] iArgs = castOp.iArgs();
+            if (iArgs == null || iArgs.length == 0) {
+                return false;
+            }
+            DataType outputDtype = FlatBuffersMapper.getDataTypeFromByte((byte) iArgs[0]);
+
+            // Determine input dtype — try multiple sources
             DataType inputDtype = null;
             SDVariable inputSdVar = sd.getVariable(inputVar);
             if (inputSdVar != null) {
                 inputDtype = inputSdVar.dataType();
             }
-
-            // Determine output dtype from the cast op's iArgs
-            DataType outputDtype = castOp.calculateOutputDataTypes(
-                    inputDtype != null ? Collections.singletonList(inputDtype) : Collections.emptyList()
-            ).get(0);
+            // For ARRAY types, dataType() often returns null — try to infer from producer op
+            if (inputDtype == null) {
+                Variable inputVariable = sd.getVariables().get(inputVar);
+                if (inputVariable != null) {
+                    String producerOpName = inputVariable.getOutputOfOp();
+                    if (producerOpName != null) {
+                        SameDiffOp producerOp = sd.getOps().get(producerOpName);
+                        if (producerOp != null && producerOp.getOp() instanceof Cast) {
+                            // Producer is also a cast — its output type is its iArgs[0]
+                            long[] producerIArgs = ((Cast) producerOp.getOp()).iArgs();
+                            if (producerIArgs != null && producerIArgs.length > 0) {
+                                inputDtype = FlatBuffersMapper.getDataTypeFromByte((byte) producerIArgs[0]);
+                            }
+                        }
+                    }
+                }
+                // If input is a CONSTANT or VARIABLE, get dtype from the array
+                if (inputDtype == null && inputSdVar != null) {
+                    VariableType vt = inputSdVar.getVariableType();
+                    if (vt == VariableType.CONSTANT) {
+                        INDArray arr = constantArrays.getArray(inputVar);
+                        if (arr != null) inputDtype = arr.dataType();
+                    } else if (vt == VariableType.VARIABLE) {
+                        INDArray arr = variablesArrays.getArray(inputVar);
+                        if (arr != null) inputDtype = arr.dataType();
+                    }
+                }
+            }
 
             // Case 1: Identity cast (input dtype == output dtype)
             if (inputDtype != null && inputDtype == outputDtype) {

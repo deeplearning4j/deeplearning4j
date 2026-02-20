@@ -199,9 +199,15 @@ public class StaticKvCacheDecodeLoop {
                 logDiagnostics(step, decoderInputMap);
             }
 
-            // Run decoder
-            Map<String, INDArray> decoderOutputs = decoder.output(
-                    decoderInputMap, allOutputNames.toArray(new String[0]));
+            // Run decoder — use fast path when shapes are frozen (skips setCloseable overhead)
+            Map<String, INDArray> decoderOutputs;
+            if (usingStaticKv && step >= 2) {
+                decoderOutputs = decoder.outputDirect(
+                        decoderInputMap, allOutputNames.toArray(new String[0]));
+            } else {
+                decoderOutputs = decoder.output(
+                        decoderInputMap, allOutputNames.toArray(new String[0]));
+            }
 
             long tAfterDecoder = System.nanoTime();
 

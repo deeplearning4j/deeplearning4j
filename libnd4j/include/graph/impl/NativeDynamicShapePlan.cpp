@@ -687,8 +687,8 @@ Status NativeDynamicShapePlan::execute(
     }
 
     if (ok) {
-      // Sync to ensure capture buffer copies are complete, then launch
-      if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+      // No sync needed before graph launch — capture buffer copies are on the
+      // same stream (cudaStr), so they are ordered before the graph launch.
       if (seg.cachedGraph->launchAsync(cudaStr)) {
         // Return outputs directly from slotArrayCache_ — no slot iteration needed
         for (int i = 0; i < numRequestedOutputs_; i++) {
@@ -703,18 +703,16 @@ Status NativeDynamicShapePlan::execute(
         seg.executionCount++;
         executeCount_++;
 
-        // Sync after graph launch so outputs are ready for KV scatter and Java reads
-        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
-
         // C++ KV scatter using direct kvScatter CUDA kernel (no operator() allocations)
+        // KV scatter now runs on the SAME execution stream as the graph, so no
+        // cross-stream sync is needed — CUDA stream ordering guarantees correctness.
         if (kvCacheRetentionEnabled_) {
+          // No sync needed — scatter runs on same stream as graph (ordered)
           scatterKvEntries(externalInputs, numExternalInputs, stream);
           kvCachePosition_++;
-          // Sync default stream — scatter writes to external inputs must complete
-          // before next step's capture buffer copies on the execution stream
-          auto* defaultStream = LaunchContext::defaultContext()->getCudaStream();
-          if (defaultStream != nullptr) cudaStreamSynchronize(*defaultStream);
         }
+        // Single sync: wait for graph + scatter to complete so Java can read outputs
+        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
 
         // Periodic flush (every 10 steps) and trim
         if (executeCount_ % 10 == 0) {
@@ -2892,7 +2890,16 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
   // the kvScatter CUDA kernel. No operator() calls, no heap allocations.
   // The external buffers are then copied into capture buffers by the next step's
   // frozen fast path (neverSkipCopy=true for KV inputs ensures the copy happens).
+  // Use the execution stream (if provided) so scatter runs on the same stream as
+  // the graph — avoids cross-stream synchronization overhead.
   auto* lc = LaunchContext::defaultContext();
+  cudaStream_t* savedStream = nullptr;
+#ifdef SD_CUDA
+  if (stream != nullptr) {
+    savedStream = lc->getCudaStream();
+    lc->setCudaStream(static_cast<cudaStream_t*>(stream));
+  }
+#endif
 
   int scattered = 0, skipped = 0;
   for (int m = 0; m < kvCacheNumMappings_; m++) {
@@ -2936,6 +2943,14 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 #endif
     scattered++;
   }
+
+#ifdef SD_CUDA
+  // Restore original stream on the default context
+  if (savedStream != nullptr) {
+    lc->setCudaStream(savedStream);
+  }
+#endif
+
   if (traceEnabled_ && (skipped > 0 || executeCount_ <= 3)) {
     sd_printf("KV scatter: %d scattered, %d skipped, pos=%d\n", scattered, skipped, kvCachePosition_);
   }

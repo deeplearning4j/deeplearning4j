@@ -3144,6 +3144,45 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         return batchOutput().output(outputs).inputs(placeholders).output();
     }
 
+    /**
+     * Fast-path inference that bypasses setCloseable management, listener iteration,
+     * and TAD cache clearing. Use when placeholder arrays are managed externally
+     * (e.g., static KV cache decode loop with frozen shapes).
+     *
+     * Saves ~5ms per call by avoiding 5000+ JNI calls for closeable flag toggling.
+     */
+    public Map<String, INDArray> outputDirect(Map<String, INDArray> placeholders, String... outputs) {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession is = sessions.get(threadId);
+        if (is == null) {
+            is = getInferenceFactory().create(this);
+            if (planBasedExecutionDefault) {
+                is.setPlanBasedExecutionEnabled(true);
+            }
+            sessions.put(threadId, is);
+        }
+
+        ExecutionResult result = is.output(
+                outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
+                placeholders,
+                Collections.emptyMap(),
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                At.defaultAt(Operation.INFERENCE));
+
+        if (result.getOutputs() != null) {
+            Map<String, INDArray> ret = new LinkedHashMap<>();
+            for (Map.Entry<String, Optional<INDArray>> entry : result.getOutputs().entrySet()) {
+                ret.put(entry.getKey(), entry.getValue().get());
+            }
+            return ret;
+        } else {
+            Map<String, INDArray> ret = new LinkedHashMap<>();
+            result.getValueOutputs().forEach((k, v) -> ret.put(k, v.getTensorValue()));
+            return ret;
+        }
+    }
 
     /**
      * Do inference for the given variables for a single batch.
