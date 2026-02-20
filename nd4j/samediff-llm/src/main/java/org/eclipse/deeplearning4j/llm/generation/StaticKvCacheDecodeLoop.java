@@ -28,6 +28,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
@@ -171,6 +172,7 @@ public class StaticKvCacheDecodeLoop {
         long maxKvLen = -1;
         long cachePos = 0;
         boolean usingStaticKv = false;
+        boolean kvScatterInCpp = false;  // When true, C++ handles KV scatter — skip Java side
 
         // Reusable input arrays — avoids per-step allocation of masks/position_ids
         Map<String, INDArray> reusableInputs = new HashMap<>();
@@ -225,10 +227,15 @@ public class StaticKvCacheDecodeLoop {
 
             // KV cache update
             if (usingStaticKv) {
-                // Scatter new KV entries into static buffers via Java view+assign
-                DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
-                        kvNames.keyNames, kvNames.valueNames, maxKvLen, cachePos);
-                cachePos++;
+                if (kvScatterInCpp) {
+                    // C++ frozen fast path handles scatter + position advance automatically
+                    cachePos++;
+                } else {
+                    // Java fallback: scatter new KV entries via view+assign
+                    DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
+                            kvNames.keyNames, kvNames.valueNames, maxKvLen, cachePos);
+                    cachePos++;
+                }
             } else {
                 // Step 0 (prefill): transition to static KV
                 long prefillSeqLen = currentSeqLen;
@@ -258,6 +265,26 @@ public class StaticKvCacheDecodeLoop {
                     dspExec.setShapesFrozen(true);
                     dspExec.setTraceEnabled(true);
                     dspExec.setExecutionTimingEnabled(true);
+
+                    // Configure C++ KV scatter: present outputs → static input buffers
+                    // This eliminates 60 copyBuffer + 60 Java view+assign per step
+                    boolean cppKvEnabled = !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
+                    DynamicShapePlan plan = cppKvEnabled ? dspExec.getCurrentPlan() : null;
+                    if (plan != null) {
+                        List<String> presentNames = new ArrayList<>();
+                        presentNames.addAll(kvNames.keyNames);
+                        presentNames.addAll(kvNames.valueNames);
+                        List<String> pastNames = new ArrayList<>();
+                        for (String pn : presentNames) {
+                            pastNames.add(pn.replace("present", "past_key_values"));
+                        }
+                        dspExec.configureKvCacheRetention(plan, presentNames, pastNames,
+                                (int) maxKvLen, (int) cachePos);
+                        kvScatterInCpp = true;
+                        log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}",
+                                presentNames.size(), cachePos);
+                    }
+
                     log.info("  [Perf] Shapes frozen — static KV buffer shape=[1,h,{},d], decode fast path active", maxKvLen);
                 } else {
                     log.warn("  [Perf] No DSP executor found to freeze shapes");

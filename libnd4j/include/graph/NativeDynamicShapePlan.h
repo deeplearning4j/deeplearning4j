@@ -201,9 +201,12 @@ struct GraphSegment {
     const void* lastSourcePtr; // Last source GPU address — skip copy if unchanged (static weights)
     bool initialCopyDone;      // True after first successful copy
 
+    bool neverSkipCopy;    // When true, always copy even if pointer unchanged (KV cache buffers)
+
     CaptureBuffer() : buffer(nullptr), externalInputIndex(-1),
                       crossSegmentSlotIdx(-1), capturedSize(0),
-                      lastSourcePtr(nullptr), initialCopyDone(false) {}
+                      lastSourcePtr(nullptr), initialCopyDone(false),
+                      neverSkipCopy(false) {}
   };
   std::vector<CaptureBuffer> captureBuffers;
 

@@ -310,6 +310,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  into static input buffers, avoiding 60 copyBuffer round-trips per decode step. */
     private boolean kvCacheRetentionConfigured;
 
+    /** Set of present KV output names managed by C++ scatter. Skip copying these in executeNative(). */
+    private Set<String> kvRetentionOutputNames;
+
     /** Cached OpaqueContext for native execution. Reused across executeNative() calls
      *  to avoid JNI create/delete overhead (~1-2ms). Freed on close(). */
     private OpaqueContext cachedOpContext;
@@ -447,8 +450,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
 
         this.kvCacheRetentionConfigured = true;
-        log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}",
-                numMappings, maxKvLen, initialPos);
+        this.kvRetentionOutputNames = new HashSet<>(presentOutputNames);
+        log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}, skip {} outputs",
+                numMappings, maxKvLen, initialPos, kvRetentionOutputNames.size());
     }
 
     /**
@@ -4007,14 +4011,22 @@ public class DynamicShapePlanExecutor implements Closeable {
             List<String> requestedOutputs = new ArrayList<>(plan.getRequestedOutputs());
 
             // Frozen fast path: reuse pre-allocated destination arrays (skip allocation,
-            // only copy). C++ output addresses may change between executions even with
-            // CUDA graphs, so we still copyBuffer but avoid 61 Nd4j.createUninitialized.
+            // only copy non-KV outputs). When kvCacheRetentionConfigured, C++ handles
+            // KV scatter internally — skip copying those 60 outputs entirely.
             if (shapesFrozen && zeroCopyOutputCache != null) {
+                int copiedOutputs = 0;
                 for (int i = 0; i < numOutputs; i++) {
+                    String outputName = requestedOutputs.get(i);
+
+                    // Skip KV outputs — C++ already scattered them into static buffers
+                    if (kvCacheRetentionConfigured && kvRetentionOutputNames != null
+                            && kvRetentionOutputNames.contains(outputName)) {
+                        continue;
+                    }
+
                     OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
                     if (opaqueOut == null || opaqueOut.isNull()) continue;
 
-                    String outputName = requestedOutputs.get(i);
                     INDArray cached = zeroCopyOutputCache.get(outputName);
                     if (cached == null) continue;
 
@@ -4031,11 +4043,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                             nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
                         }
                     }
+                    copiedOutputs++;
                 }
 
                 long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
                 if (execMs > 100) {
-                    log.info("Native executor: exec={}ms copy={}ms (frozen, {} outputs)", execMs, copyMs, numOutputs);
+                    log.info("Native executor: exec={}ms copy={}ms (frozen, {}/{} outputs copied)",
+                            execMs, copyMs, copiedOutputs, numOutputs);
                 }
                 return zeroCopyOutputCache;
             }

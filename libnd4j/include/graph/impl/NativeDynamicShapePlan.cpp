@@ -42,6 +42,7 @@
 #ifdef SD_CUDA
 #include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/AttentionWorkspace.h>
+#include <ops/declarable/helpers/kv_scatter.h>
 #endif
 
 // Include CPU graph backends conditionally
@@ -654,8 +655,9 @@ Status NativeDynamicShapePlan::execute(
 
       if (srcBytes > 0) {
         // Skip copy if source GPU pointer hasn't changed (static weight — same buffer every step)
+        // EXCEPT for KV cache buffers which are updated by scatter each step
         const void* currentPtr = src->specialBuffer();
-        if (cb.initialCopyDone && currentPtr == cb.lastSourcePtr) {
+        if (cb.initialCopyDone && currentPtr == cb.lastSourcePtr && !cb.neverSkipCopy) {
           skippedCount++;
           continue;
         }
@@ -701,9 +703,18 @@ Status NativeDynamicShapePlan::execute(
         seg.executionCount++;
         executeCount_++;
 
-        // KV cache scatter is handled by Java side (DecoderUtils.scatterNewKvEntries)
-        // C++ scatter via scatterKvEntries() causes shape corruption due to
-        // operator() heap allocations during graph replay — disabled until fixed
+        // Sync after graph launch so outputs are ready for KV scatter and Java reads
+        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+
+        // C++ KV scatter using direct kvScatter CUDA kernel (no operator() allocations)
+        if (kvCacheRetentionEnabled_) {
+          scatterKvEntries(externalInputs, numExternalInputs, stream);
+          kvCachePosition_++;
+          // Sync default stream — scatter writes to external inputs must complete
+          // before next step's capture buffer copies on the execution stream
+          auto* defaultStream = LaunchContext::defaultContext()->getCudaStream();
+          if (defaultStream != nullptr) cudaStreamSynchronize(*defaultStream);
+        }
 
         // Periodic flush (every 10 steps) and trim
         if (executeCount_ % 10 == 0) {
@@ -1021,10 +1032,11 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  // Step 3.5: KV cache retention — disabled (Java side handles scatter)
-  // if (kvCacheRetentionEnabled_) {
-  //   scatterKvEntries(externalInputs, numExternalInputs, stream);
-  // }
+  // Step 3.5: KV cache retention — C++ side scatters present KV into static buffers
+  if (kvCacheRetentionEnabled_) {
+    scatterKvEntries(externalInputs, numExternalInputs, stream);
+    kvCachePosition_++;
+  }
 
   auto tOutputsDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
@@ -1622,6 +1634,17 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           cb.externalInputIndex = extIdx;
           cb.crossSegmentSlotIdx = -1;
           cb.capturedSize = srcBytes;
+
+          // Check if this external input is a KV cache buffer — must always be
+          // copied (data changes each step via scatter even though pointer is stable)
+          if (kvCacheRetentionEnabled_) {
+            for (int km = 0; km < kvCacheNumMappings_; km++) {
+              if (kvCacheMappings_[km].pastInputExternalIdx == extIdx) {
+                cb.neverSkipCopy = true;
+                break;
+              }
+            }
+          }
 
           extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
           seg.captureBuffers.push_back(std::move(cb));
@@ -2800,11 +2823,29 @@ void NativeDynamicShapePlan::configureKvCacheRetention(
   if (numMappings > 0 && mappings != nullptr) {
     kvCacheMappings_ = new KvCacheMapping[numMappings];
     for (int i = 0; i < numMappings; i++) {
-      kvCacheMappings_[i].presentOutputSlotIdx = mappings[i * 3];
+      // Java passes requested output index; convert to absolute slot index
+      int reqOutputIdx = mappings[i * 3];
+      int slotIdx = (reqOutputIdx >= 0 && reqOutputIdx < numRequestedOutputs_)
+                    ? requestedOutputSlotIndices_[reqOutputIdx] : -1;
+      kvCacheMappings_[i].presentOutputSlotIdx = slotIdx;
       kvCacheMappings_[i].pastInputExternalIdx = mappings[i * 3 + 1];
       kvCacheMappings_[i].seqDim = mappings[i * 3 + 2];
     }
     kvCacheRetentionEnabled_ = true;
+
+    // Mark capture buffers for KV inputs as "always copy" — their data changes
+    // each step via kvScatter even though the GPU pointer stays the same
+    for (auto& seg : segments_) {
+      for (auto& cb : seg.captureBuffers) {
+        for (int i = 0; i < numMappings; i++) {
+          if (cb.externalInputIndex == kvCacheMappings_[i].pastInputExternalIdx) {
+            cb.neverSkipCopy = true;
+            break;
+          }
+        }
+      }
+    }
+
     sd_printf("NativeDynamicShapePlan: KV cache retention configured: %d mappings, maxLen=%d, initialPos=%d\n",
               numMappings, maxKvLen, initialPos);
   } else {
@@ -2847,70 +2888,55 @@ void NativeDynamicShapePlan::setMaxKvCacheLength(int maxLen) {
 void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numExt, void* stream) {
   if (!kvCacheRetentionEnabled_ || kvCacheNumMappings_ == 0) return;
 
-#ifdef SD_CUDA
-  // Sync the execution stream before reading op outputs.
-  // Model ops ran on this stream; without sync, assign() on the default stream
-  // may read stale/incomplete data from presentKv outputs.
-  if (stream != nullptr) {
-    cudaStream_t execStream = *reinterpret_cast<cudaStream_t*>(stream);
-    cudaStreamSynchronize(execStream);
-  }
-#endif
+  // Scatter present KV outputs into external input (static) buffers using
+  // the kvScatter CUDA kernel. No operator() calls, no heap allocations.
+  // The external buffers are then copied into capture buffers by the next step's
+  // frozen fast path (neverSkipCopy=true for KV inputs ensures the copy happens).
+  auto* lc = LaunchContext::defaultContext();
 
   int scattered = 0, skipped = 0;
   for (int m = 0; m < kvCacheNumMappings_; m++) {
     KvCacheMapping& mapping = kvCacheMappings_[m];
 
-    // Get the present KV output directly from the absolute output slot index
     int presentSlotIdx = mapping.presentOutputSlotIdx;
     if (presentSlotIdx < 0 || presentSlotIdx >= totalOutputSlots_) { skipped++; continue; }
-    NDArray* presentKv = outputSlots_[presentSlotIdx];
+    NDArray* presentKv = slotArrayCache_[presentSlotIdx];
     if (presentKv == nullptr) { skipped++; continue; }
 
-    // Get the static past KV input buffer
     int extIdx = mapping.pastInputExternalIdx;
     if (extIdx < 0 || extIdx >= numExt) { skipped++; continue; }
     NDArray* staticBuf = externalInputs[extIdx];
     if (staticBuf == nullptr) { skipped++; continue; }
 
+    if (presentKv->rankOf() != 4 || staticBuf->rankOf() != 4) { skipped++; continue; }
+
+#ifdef SD_CUDA
+    // Direct CUDA kernel — no heap allocations, no operator()
+    ops::helpers::kvScatter(presentKv, staticBuf, kvCachePosition_, lc);
+#else
+    // CPU fallback: operator() + assign()
     int seqDim = mapping.seqDim;
     int rank = presentKv->rankOf();
-    if (seqDim < 0 || seqDim >= rank) { skipped++; continue; }
-
-    // presentKv shape: [B, H, maxKvLen+1, D] — new entry is at the last position
     LongType lastPos = presentKv->sizeAt(seqDim) - 1;
-
-    // Build subarray indices using operator() convention:
-    // {dim0Start, dim0End, dim1Start, dim1End, ...}
-    // When dimStart == dimEnd, it means the whole range for that dimension.
-    // For a point index, use {pos, pos+1} (half-open interval).
-    std::vector<LongType> srcIdx(rank * 2);
-    std::vector<LongType> dstIdx(rank * 2);
+    std::vector<LongType> srcIdx(rank * 2), dstIdx(rank * 2);
     for (int d = 0; d < rank; d++) {
       if (d == seqDim) {
-        srcIdx[d * 2] = lastPos;
-        srcIdx[d * 2 + 1] = lastPos + 1;
-        dstIdx[d * 2] = kvCachePosition_;
-        dstIdx[d * 2 + 1] = kvCachePosition_ + 1;
+        srcIdx[d*2] = lastPos; srcIdx[d*2+1] = lastPos + 1;
+        dstIdx[d*2] = kvCachePosition_; dstIdx[d*2+1] = kvCachePosition_ + 1;
       } else {
-        // Whole range: dimStart == dimEnd signals "all"
-        srcIdx[d * 2] = 0;
-        srcIdx[d * 2 + 1] = 0;
-        dstIdx[d * 2] = 0;
-        dstIdx[d * 2 + 1] = 0;
+        srcIdx[d*2] = 0; srcIdx[d*2+1] = 0;
+        dstIdx[d*2] = 0; dstIdx[d*2+1] = 0;
       }
     }
-
-    // operator() returns a view (no copy); assign() does strided GPU copy
-    // Stream was synced above so presentKv data is ready to read
-    NDArray* srcSlice = (*presentKv)(srcIdx, true);  // keepUnities=true for shape compat
+    NDArray* srcSlice = (*presentKv)(srcIdx, true);
     NDArray* dstSlice = (*staticBuf)(dstIdx, true);
     dstSlice->assign(srcSlice);
     delete srcSlice;
     delete dstSlice;
+#endif
     scattered++;
   }
-  if (skipped > 0) {
+  if (traceEnabled_ && (skipped > 0 || executeCount_ <= 3)) {
     sd_printf("KV scatter: %d scattered, %d skipped, pos=%d\n", scattered, skipped, kvCachePosition_);
   }
 }
