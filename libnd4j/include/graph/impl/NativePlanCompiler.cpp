@@ -261,9 +261,17 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       isDataDep = false;
     }
     slot.isDataDependent = isDataDep;
-    slot.needsZeroedOutput = !isFullyWritingOp(slot.opName) || isDataDep;
     slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
     slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
+    {
+      auto normalized = normalizeOpName(slot.opName);
+      slot.isViewCapableOp = (normalized == "reshape" || normalized == "reshape_no_copy" ||
+                              normalized == "expand_dims" || normalized == "squeeze");
+    }
+    // View-capable ops share input buffer → no zeroing needed (would corrupt input data).
+    // Non-view-capable data-movement ops still need zeroing for safety.
+    slot.needsZeroedOutput = slot.isViewCapableOp ? false
+                             : (!isFullyWritingOp(slot.opName) || isDataDep);
     slot.numInputs = numInputs;
     slot.inputSourceIndices = new int[numInputs];
     slot.inputSourceTypes = new int8_t[numInputs];

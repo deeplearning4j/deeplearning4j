@@ -91,6 +91,7 @@ struct NativeSlot {
   bool needsIntLongSync;
   bool isCustomOp;
   bool isIdentityOp;                       // Identity: output = input, skip execution
+  bool isViewCapableOp;                    // View-capable: reshape/expand_dims/squeeze — output can share input buffer
   bool inPlaceFused;                       // In-place fused: output reuses input buffer (set by FusionPass)
   int inPlaceFusedInputIdx;                // Which input index to reuse as output (-1 = not fused)
   int targetDeviceId;                      // -1 = auto
@@ -132,7 +133,7 @@ struct NativeSlot {
         bArgs(nullptr), numBArgs(0), dArgs(nullptr), numDArgs(0),
         needsZeroedOutput(true), isDataDependent(false),
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
-        isCustomOp(true), isIdentityOp(false),
+        isCustomOp(true), isIdentityOp(false), isViewCapableOp(false),
         inPlaceFused(false), inPlaceFusedInputIdx(-1), targetDeviceId(-1),
         legacyOpType(0), legacyOpNum(-1), frozenConstantSlot(false),
         cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false),
@@ -586,6 +587,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   NDArray** outputSlots_;              // Current output slot values
   NDArray** slotArrayCache_;           // Per-slot cached arrays for reuse
   bool* slotIsViewProducer_;           // View producer flags (learned from first exec)
+  NDArray** slotViewOutputs_;          // Zero-copy view outputs for view-capable ops (reshape/expand_dims/squeeze)
   Context** contextPool_;              // Pre-allocated Context pool
   bool viewProducerDetectionDone_;
   bool frozenConstantDetectionDone_;

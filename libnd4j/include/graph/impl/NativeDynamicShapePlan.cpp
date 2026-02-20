@@ -162,6 +162,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       releaseAtStep_(nullptr), releaseAtStepCounts_(nullptr),
       requestedOutputSlotIndices_(nullptr), numRequestedOutputs_(0),
       outputSlots_(nullptr), slotArrayCache_(nullptr), slotIsViewProducer_(nullptr),
+      slotViewOutputs_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
       pendingCloseBytes_(0), cudaGraphsEnabled_(false), totalGraphReplays_(0),
       shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false), traceEnabled_(false),
@@ -207,6 +208,14 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
 
   // Free view producer flags
   delete[] slotIsViewProducer_;
+
+  // Free zero-copy view outputs
+  if (slotViewOutputs_) {
+    for (int i = 0; i < totalOutputSlots_; i++) {
+      delete slotViewOutputs_[i];
+    }
+    delete[] slotViewOutputs_;
+  }
 
   // Free context pool
   if (contextPool_) {
@@ -452,6 +461,13 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
     // Classify identity ops for fast-path skipping
     slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
+    {
+      auto normalized = normalizeOpName(slot.opName);
+      slot.isViewCapableOp = (normalized == "reshape" || normalized == "reshape_no_copy" ||
+                              normalized == "expand_dims" || normalized == "squeeze");
+    }
+    // View-capable ops share input buffer → no zeroing needed
+    if (slot.isViewCapableOp) slot.needsZeroedOutput = false;
 
     // Initialize fusion fields (will be set by FusionPass::applyFusions later)
     slot.inPlaceFused = false;
@@ -485,6 +501,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
   plan->slotIsViewProducer_ = new bool[plan->totalOutputSlots_];
   std::memset(plan->slotIsViewProducer_, 0, sizeof(bool) * plan->totalOutputSlots_);
+
+  plan->slotViewOutputs_ = new NDArray*[plan->totalOutputSlots_];
+  std::memset(plan->slotViewOutputs_, 0, sizeof(NDArray*) * plan->totalOutputSlots_);
 
   // Allocate untracked output cache (for outputs with outputSlotIndices[i] < 0).
   // These are temporary buffers needed by ops but not referenced downstream.
@@ -2250,6 +2269,56 @@ Status NativeDynamicShapePlan::executeSlot(
       return Status::OK;
     }
 
+    // ── View-capable fast path (reshape/expand_dims/squeeze) ────────────
+    // These ops are no-ops when output shares input 0's DataBuffer (set in Step 3).
+    // Skip execution entirely — the output already points to input's data.
+    // This eliminates copy kernels during CUDA graph capture/replay.
+    if (slot.isViewCapableOp && slot.numInputs >= 1 && slot.numOutputs >= 1) {
+      int si = slot.outputSlotIndices[0];
+      if (si >= 0 && si < totalOutputSlots_) {
+        // Get current input 0 (may have been updated by upstream slot this step)
+        int srcIdx = slot.inputSourceIndices[0];
+        NDArray* input0 = nullptr;
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+          input0 = outputSlots_[srcIdx];
+        } else if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          if (extIdx < numExt) input0 = externalArrays[extIdx];
+        }
+
+        if (input0 != nullptr && input0->dataBuffer() != nullptr &&
+            input0->ews() == 1 && input0->ordering() == 'c') {
+          NDArray* currentOut = outputSlots_[si];
+          if (currentOut != nullptr && currentOut->dataBuffer() == input0->dataBuffer()) {
+            // Buffer matches — output already views input's data. Skip execution.
+            return Status::OK;
+          }
+          // Buffer mismatch (external input changed) — recreate view
+          if (slot.shapeCacheValid && !slot.cachedOutputShapes.empty()) {
+            const LongType* outShapeInfo = slot.cachedOutputShapes[0];
+            LongType outLen = shape::length(outShapeInfo);
+            LongType inLen = input0->lengthOf();
+            if (outLen > 0 && outLen <= inLen) {
+              NDArray* newView = new NDArray(input0->dataBuffer(),
+                                             const_cast<LongType*>(outShapeInfo));
+              outputSlots_[si] = newView;
+              auto& ctx2 = *contextPool_[stepIdx];
+              ctx2.setOutputArray(0, newView);
+              ctx2.setInputArray(0, input0);
+              // Clean up old view
+              NDArray* old = slotArrayCache_[si];
+              if (old != nullptr && old != newView) {
+                pendingClose_.push_back(old);
+              }
+              slotArrayCache_[si] = newView;
+              return Status::OK;
+            }
+          }
+        }
+      }
+      // Fall through to normal frozen execution if view not possible
+    }
+
     auto& ctx = *contextPool_[stepIdx];
 
     // Refresh inputs that change each decode step:
@@ -2476,6 +2545,51 @@ Status NativeDynamicShapePlan::executeSlot(
         goto step4_execute;  // Skip normal allocation path
       }
       // Shape mismatch — fall through to normal allocation
+    }
+  }
+
+  // ── View-capable ops: share input 0's DataBuffer for output 0 ──────────
+  // For reshape/expand_dims/squeeze, create output that wraps input 0's buffer.
+  // The op sees x->dataBuffer() == z->dataBuffer() → returns OK → no copy kernel.
+  // Safety: only when input is C-contiguous (ews==1), so standard output strides are correct.
+  if (slot.isViewCapableOp && slot.numInputs >= 1 && numActualOutputs >= 1) {
+    NDArray* input0 = inputs[0];
+    if (input0 != nullptr && input0->dataBuffer() != nullptr &&
+        input0->ews() == 1 && input0->ordering() == 'c') {
+      const LongType* outShapeInfo = outputShapes[0];
+      LongType outLen = shape::length(outShapeInfo);
+      LongType inLen = input0->lengthOf();
+      if (outLen > 0 && outLen <= inLen) {
+        int slotIdx = slot.outputSlotIndices[0];
+        NDArray* view = new NDArray(input0->dataBuffer(),
+                                     const_cast<LongType*>(outShapeInfo));
+        outputs[0] = view;
+        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+          NDArray* old = slotArrayCache_[slotIdx];
+          if (old != nullptr && old != view) {
+            pendingClose_.push_back(old);
+          }
+          outputSlots_[slotIdx] = view;
+          slotArrayCache_[slotIdx] = view;
+        }
+
+        // Allocate remaining outputs normally (rare for these ops)
+        for (int i = 1; i < numActualOutputs; i++) {
+          int si = slot.outputSlotIndices[i];
+          const LongType* shapeInfo = outputShapes[i];
+          auto dt = ArrayOptions::dataType(shapeInfo);
+          auto order = shape::order(shapeInfo);
+          int rank = shape::rank(shapeInfo);
+          std::vector<LongType> shape(rank);
+          for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
+          outputs[i] = new NDArray(order, shape, dt);
+          if (si >= 0 && si < totalOutputSlots_) {
+            outputSlots_[si] = outputs[i];
+            slotArrayCache_[si] = outputs[i];
+          }
+        }
+        goto step4_execute;
+      }
     }
   }
 
