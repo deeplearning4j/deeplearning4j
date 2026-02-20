@@ -635,8 +635,11 @@ Status NativeDynamicShapePlan::execute(
     cudaStream_t cudaStr = (stream != nullptr)
         ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
-    // Copy external inputs into fixed-address capture buffers
+    // Copy external inputs into fixed-address capture buffers.
+    // Skip inputs whose GPU address hasn't changed since last copy (static model weights).
     bool ok = true;
+    int copiedCount = 0;
+    int skippedCount = 0;
     for (auto& cb : seg.captureBuffers) {
       NDArray* src = nullptr;
       if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExternalInputs) {
@@ -650,6 +653,13 @@ Status NativeDynamicShapePlan::execute(
       if (srcBytes != cb.capturedSize) { ok = false; break; }
 
       if (srcBytes > 0) {
+        // Skip copy if source GPU pointer hasn't changed (static weight — same buffer every step)
+        const void* currentPtr = src->specialBuffer();
+        if (cb.initialCopyDone && currentPtr == cb.lastSourcePtr) {
+          skippedCount++;
+          continue;
+        }
+
         auto dt = src->dataType();
         bool hostMirror = (dt == INT32 || dt == INT64 || dt == BOOL)
                           && src->lengthOf() > 0 && src->lengthOf() <= 32;
@@ -664,7 +674,14 @@ Status NativeDynamicShapePlan::execute(
                                          srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
           if (copyErr != cudaSuccess) { cudaGetLastError(); ok = false; break; }
         }
+        cb.lastSourcePtr = currentPtr;
+        cb.initialCopyDone = true;
+        copiedCount++;
       }
+    }
+    if (traceEnabled_ && executeCount_ <= 5) {
+      sd_printf("NativeDSP::frozenFastPath: copied=%d skipped=%d total=%d\n",
+                copiedCount, skippedCount, copiedCount + skippedCount);
     }
 
     if (ok) {

@@ -256,6 +256,8 @@ public class StaticKvCacheDecodeLoop {
                 DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
                 if (dspExec != null) {
                     dspExec.setShapesFrozen(true);
+                    dspExec.setTraceEnabled(true);
+                    dspExec.setExecutionTimingEnabled(true);
                     log.info("  [Perf] Shapes frozen — static KV buffer shape=[1,h,{},d], decode fast path active", maxKvLen);
                 } else {
                     log.warn("  [Perf] No DSP executor found to freeze shapes");
