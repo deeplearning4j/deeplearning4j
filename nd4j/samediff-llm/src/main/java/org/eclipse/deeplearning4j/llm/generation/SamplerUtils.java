@@ -231,18 +231,13 @@ public final class SamplerUtils {
      * copy of the entire array to host memory.
      */
     public static int argmax(INDArray logits) {
+        // Use GPU-side argmax — avoids 200-500ms toFloatVector() D2H transfer overhead
         INDArray flat = logits.rank() == 1 ? logits : logits.reshape(logits.length());
+        INDArray result = Nd4j.argMax(flat);
         Nd4j.getExecutioner().commit();
-        float[] data = flat.toFloatVector();
-        int maxIdx = 0;
-        float maxVal = data[0];
-        for (int i = 1; i < data.length; i++) {
-            if (data[i] > maxVal) {
-                maxVal = data[i];
-                maxIdx = i;
-            }
-        }
-        return maxIdx;
+        int idx = result.getInt(0);
+        result.close();
+        return idx;
     }
 
     /**

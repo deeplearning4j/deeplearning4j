@@ -519,16 +519,30 @@ public class TestSmolDoclingOptimizedPipeline {
 
             long tAfterKvUpdate = System.nanoTime();
 
-            // Sample from last position
+            // Sample from last position — with detailed sub-timing
+            long tSampStart = System.nanoTime();
             INDArray lastLogits = logits.rank() == 3
                     ? logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all())
                     : logits.getRow(0);
+            long tSampView = System.nanoTime();
             INDArray logitsForSampling = lastLogits.dup();
+            long tSampDup = System.nanoTime();
             int nextTokenId = sampler.sample(logitsForSampling);
+            long tSampArgmax = System.nanoTime();
             generatedTokens.add(nextTokenId);
 
             long stepElapsedNs = System.nanoTime() - stepStart;
             long stepElapsedMs = stepElapsedNs / 1_000_000;
+
+            // Log sampling sub-timings every 10 steps or first 6
+            if (step < 6 || step % 10 == 0) {
+                log.info("  [SAMP] step={} view={}ms dup={}ms argmax={}ms total={}ms",
+                        step,
+                        (tSampView - tSampStart) / 1_000_000,
+                        (tSampDup - tSampView) / 1_000_000,
+                        (tSampArgmax - tSampDup) / 1_000_000,
+                        (tSampArgmax - tSampStart) / 1_000_000);
+            }
 
             // Accumulate detailed timing for steps 3+ (fast path active from step 3)
             if (step >= 3) {
