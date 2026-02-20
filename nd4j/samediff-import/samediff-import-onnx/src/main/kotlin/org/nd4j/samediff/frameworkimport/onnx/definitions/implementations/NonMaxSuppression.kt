@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - selected_indices: [num_selected_indices, 3] with [batch_index, class_index, box_index]
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["NonMaxSuppression"], frameworkName = "onnx")
 class NonMaxSuppression : PreImportHook {

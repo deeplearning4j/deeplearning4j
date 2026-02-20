@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Note: String operations are not natively supported in SameDiff.
  * This is a passthrough implementation for model compatibility.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["StringNormalizer"], frameworkName = "onnx")
 class StringNormalizer : PreImportHook {

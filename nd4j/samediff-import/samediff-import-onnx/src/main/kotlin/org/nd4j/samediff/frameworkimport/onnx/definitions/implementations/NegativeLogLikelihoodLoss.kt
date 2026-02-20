@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - ignore_index: Label to ignore
  * - reduction: "none", "mean", "sum"
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["NegativeLogLikelihoodLoss"], frameworkName = "onnx")
 class NegativeLogLikelihoodLoss : PreImportHook {

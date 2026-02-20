@@ -43,7 +43,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - axis: Axis along which to concatenate (default: 0)
  * - new_axis: If 1, creates a new axis for stacking instead of concatenating (default: 0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ConcatFromSequence"], frameworkName = "onnx")
 class ConcatFromSequence : PreImportHook {

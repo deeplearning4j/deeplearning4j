@@ -70,11 +70,12 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   if (attnBias != nullptr && (attnBias->isEmpty() || attnBias->rankOf() == 0 || attnBias->lengthOf() <= 1)) attnBias = nullptr;
   if (pastKey != nullptr && (pastKey->isEmpty() || pastKey->rankOf() == 0 || pastKey->lengthOf() <= 1)) pastKey = nullptr;
   if (pastValue != nullptr && (pastValue->isEmpty() || pastValue->rankOf() == 0 || pastValue->lengthOf() <= 1)) pastValue = nullptr;
-  
+
   auto output = OUTPUT_VARIABLE(0);
-  
+
   LongType numHeads = INT_ARG(0);
   bool useCausalMask = INT_ARG(1) != 0;
+
   
   double scale = block.numT() > 0 ? T_ARG(0) : 0.0;
   
@@ -124,37 +125,85 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     auto pastSeq = pastKey->sizeAt(2);
     totalSeqKV = pastSeq + seqKV;
     
-    std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
-    NDArray* pastKeyBSHD = pastKey->permute(permBHSDtoBSHD, false, false);   // BHSD -> BSHD
-    NDArray* pastValueBSHD = pastValue->permute(permBHSDtoBSHD, false, false);
+    // Get output buffers for direct write
+    auto presentKeyOut = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
+    auto presentValueOut = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
     
-    // Create concatenated arrays
-    std::vector<LongType> finalShape = {batch, totalSeqKV, numHeads, headDim};
-    kFinal = new NDArray('c', finalShape, key->dataType(), block.launchContext());
-    vFinal = new NDArray('c', finalShape, value->dataType(), block.launchContext());
-    ownKVFinal = true;
-    
-    // Slice and assign past (operator() returns NDArray*)
-    std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numHeads, 0, headDim};
-    std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numHeads, 0, headDim};
-    
-    NDArray* kPastSlice = (*kFinal)(pastSliceIdx);
-    NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
-    kPastSlice->assign(pastKeyBSHD);
-    vPastSlice->assign(pastValueBSHD);
-    delete kPastSlice;
-    delete vPastSlice;
-    
-    // Slice and assign current
-    NDArray* kCurSlice = (*kFinal)(curSliceIdx);
-    NDArray* vCurSlice = (*vFinal)(curSliceIdx);
-    kCurSlice->assign(kReshaped);
-    vCurSlice->assign(vReshaped);
-    delete kCurSlice;
-    delete vCurSlice;
-    
-    delete pastKeyBSHD;
-    delete pastValueBSHD;
+    if (presentKeyOut != nullptr && presentValueOut != nullptr) {
+      // Write directly to output buffers - they are already the correct size [batch, numHeads, totalSeqKV, headDim]
+      // Permute output from BHSD to BSHD for use in attention
+      std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
+      kFinal = presentKeyOut->permute(permBHSDtoBSHD, false, false);
+      vFinal = presentValueOut->permute(permBHSDtoBSHD, false, false);
+      ownKVFinal = false;
+      
+      // Copy past KV to [0:pastSeq] positions
+      NDArray* pastKeyBSHD = pastKey->permute(permBHSDtoBSHD, false, false);
+      NDArray* pastValueBSHD = pastValue->permute(permBHSDtoBSHD, false, false);
+      
+      // Use applyTrueBroadcast for the past portion (more reliable than slice assign)
+      std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numHeads, 0, headDim};
+      NDArray* kPastSlice = (*kFinal)(pastSliceIdx);
+      NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
+      kPastSlice->assign(pastKeyBSHD);
+      vPastSlice->assign(pastValueBSHD);
+      // Sync to ensure past KV copy completes before current KV write
+      kPastSlice->syncToDevice();
+      vPastSlice->syncToDevice();
+      delete kPastSlice;
+      delete vPastSlice;
+      delete pastKeyBSHD;
+      delete pastValueBSHD;
+      
+      // Write current K/V to [pastSeq:totalSeqKV] position
+      std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numHeads, 0, headDim};
+      NDArray* kCurSlice = (*kFinal)(curSliceIdx);
+      NDArray* vCurSlice = (*vFinal)(curSliceIdx);
+      
+      // CRITICAL: The view-based assign can fail during CUDA graph replay when the 
+      // underlying buffer shape changes. Use applyTrueBroadcast as a more reliable alternative.
+      // This ensures the data is properly written to the target buffer.
+      if (kCurSlice->lengthOf() > 0 && kReshaped->lengthOf() > 0) {
+        kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
+        vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
+        // Force synchronization to ensure write completes before buffer is used
+        kCurSlice->syncToDevice();
+        vCurSlice->syncToDevice();
+      }
+      
+      delete kCurSlice;
+      delete vCurSlice;
+    } else {
+      // Fallback: allocate new buffers (not compatible with CUDA graphs but functional)
+      std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
+      NDArray* pastKeyBSHD = pastKey->permute(permBHSDtoBSHD, false, false);
+      NDArray* pastValueBSHD = pastValue->permute(permBHSDtoBSHD, false, false);
+      
+      std::vector<LongType> finalShape = {batch, totalSeqKV, numHeads, headDim};
+      kFinal = new NDArray('c', finalShape, key->dataType(), block.launchContext());
+      vFinal = new NDArray('c', finalShape, value->dataType(), block.launchContext());
+      ownKVFinal = true;
+      
+      std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numHeads, 0, headDim};
+      std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numHeads, 0, headDim};
+      
+      NDArray* kPastSlice = (*kFinal)(pastSliceIdx);
+      NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
+      kPastSlice->assign(pastKeyBSHD);
+      vPastSlice->assign(pastValueBSHD);
+      delete kPastSlice;
+      delete vPastSlice;
+      
+      NDArray* kCurSlice = (*kFinal)(curSliceIdx);
+      NDArray* vCurSlice = (*vFinal)(curSliceIdx);
+      kCurSlice->assign(kReshaped);
+      vCurSlice->assign(vReshaped);
+      delete kCurSlice;
+      delete vCurSlice;
+      
+      delete pastKeyBSHD;
+      delete pastValueBSHD;
+    }
   } else {
     // No past - just use reshaped k/v directly
     kFinal = kReshaped;
@@ -193,7 +242,8 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   delete attnOutFinal;
   
   // Output present key/value if requested (in BHSD format for ONNX compatibility)
-  if (block.outputWidth() > 1) {
+  // Skip if we already wrote directly to output buffers (ownKVFinal == false && using output view)
+  if (block.outputWidth() > 1 && ownKVFinal) {
     auto presentKey = OUTPUT_VARIABLE(1);
     // kFinal is BSHD, permute to BHSD
     std::vector<LongType> permBSHDtoBHSD = {0, 2, 1, 3};
@@ -201,7 +251,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     presentKey->assign(kBHSD);
     delete kBHSD;
   }
-  if (block.outputWidth() > 2) {
+  if (block.outputWidth() > 2 && ownKVFinal) {
     auto presentValue = OUTPUT_VARIABLE(2);
     std::vector<LongType> permBSHDtoBHSD2 = {0, 2, 1, 3};
     NDArray* vBHSD = vFinal->permute(permBSHDtoBHSD2, false, false);

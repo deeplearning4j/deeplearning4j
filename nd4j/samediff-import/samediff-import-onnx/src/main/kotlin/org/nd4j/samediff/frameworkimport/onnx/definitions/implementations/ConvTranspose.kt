@@ -52,7 +52,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - pads: Padding values [top, left, bottom, right]
  * - strides: Stride values
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ConvTranspose"], frameworkName = "onnx")
 class ConvTranspose : PreImportHook {

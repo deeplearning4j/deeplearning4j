@@ -51,7 +51,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - top_k: Number of experts to route to per token (default: 2)
  * - normalize_router_probs: Whether to normalize router probabilities (default: true)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["MixtureOfExperts", "MoE", "SparseMoE"], frameworkName = "onnx")
 class MixtureOfExperts : PreImportHook {

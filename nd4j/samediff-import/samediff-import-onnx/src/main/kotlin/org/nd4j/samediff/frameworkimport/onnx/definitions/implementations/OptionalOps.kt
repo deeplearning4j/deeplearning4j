@@ -36,7 +36,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * These ops handle optional values which can be present or absent.
  * Used in control flow and conditional execution.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 
 /**

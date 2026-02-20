@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - y_scale: Scale for output
  * - y_zero_point: Zero point for output
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["QLinearMatMul"], frameworkName = "onnx")
 class QLinearMatMul : PreImportHook {

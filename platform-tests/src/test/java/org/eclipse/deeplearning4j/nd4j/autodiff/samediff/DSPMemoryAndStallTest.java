@@ -377,7 +377,7 @@ public class DSPMemoryAndStallTest {
     @DisplayName("Per-op stall detection — find slow ops")
     public void testPerOpStallDetection() {
         // Enable trace mode to see per-slot info
-        String prevTrace = System.getProperty("nd4j.dsp.trace");
+        String prevTrace = System.getProperty(ND4JSystemProperties.DSP_TRACE);
         String prevTiming = System.getProperty(ND4JSystemProperties.INFERENCE_TIMING);
         System.setProperty(ND4JSystemProperties.INFERENCE_TIMING, "true");
 
@@ -415,8 +415,8 @@ public class DSPMemoryAndStallTest {
             sd.close();
             log.info("=== PER-OP STALL DETECTION END ===");
         } finally {
-            if (prevTrace != null) System.setProperty("nd4j.dsp.trace", prevTrace);
-            else System.clearProperty("nd4j.dsp.trace");
+            if (prevTrace != null) System.setProperty(ND4JSystemProperties.DSP_TRACE, prevTrace);
+            else System.clearProperty(ND4JSystemProperties.DSP_TRACE);
             if (prevTiming != null) System.setProperty(ND4JSystemProperties.INFERENCE_TIMING, prevTiming);
             else System.clearProperty(ND4JSystemProperties.INFERENCE_TIMING);
         }

@@ -41,7 +41,7 @@ import java.util.*;
  * 1D Separable convolution layer. Separable convolutions split a regular convolution into two
  * simpler operations: a depthwise convolution and a pointwise convolution.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @NoArgsConstructor

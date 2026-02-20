@@ -189,7 +189,8 @@ class SD_LIB_EXPORT FlashAttentionHelper {
                       NDArray* softmaxLse = nullptr,
                       NDArray* attentionScores = nullptr,
                       NDArray* attentionLogits = nullptr,
-                      LaunchContext* context = LaunchContext::defaultContext());
+                      LaunchContext* context = LaunchContext::defaultContext(),
+                      NDArray* attentionBias = nullptr);
 
   /**
    * Compute flash attention backward pass
@@ -278,7 +279,8 @@ class SD_LIB_EXPORT FlashAttentionHelper {
   static void forward3D(NDArray* query, NDArray* key, NDArray* value,
                         NDArray* output, const Config& config,
                         NDArray* softmaxLse, NDArray* attentionScores,
-                        NDArray* attentionLogits, LaunchContext* context);
+                        NDArray* attentionLogits, LaunchContext* context,
+                        NDArray* attentionBias);
 
   /**
    * Forward implementation for 4D tensors [batch, seq, heads, dim]
@@ -287,7 +289,8 @@ class SD_LIB_EXPORT FlashAttentionHelper {
   static void forward4D(NDArray* query, NDArray* key, NDArray* value,
                         NDArray* output, const Config& config,
                         NDArray* softmaxLse, NDArray* attentionScores,
-                        NDArray* attentionLogits, LaunchContext* context);
+                        NDArray* attentionLogits, LaunchContext* context,
+                        NDArray* attentionBias);
 
   /**
    * Backward implementation for 3D tensors
@@ -379,7 +382,8 @@ class SD_LIB_EXPORT FlashAttentionHelper {
 #if defined(__CUDACC__) || defined(SD_CUDA)
 extern void fusedAttentionCuda(NDArray* query, NDArray* key, NDArray* value,
                                NDArray* output, float scale, bool isCausal,
-                               LaunchContext* context);
+                               LaunchContext* context,
+                               NDArray* attentionBias = nullptr);
 
 // Fused attention that also outputs attention scores and logits
 extern void fusedAttentionCudaWithScores(NDArray* query, NDArray* key, NDArray* value,

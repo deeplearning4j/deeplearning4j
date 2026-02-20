@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - cats_strings: List of categories (strings) - not supported in numeric mode
  * - zeros: If true, include category 0 in encoding (default: true)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["OneHotEncoder"], frameworkName = "onnx")
 class OneHotEncoder : PreImportHook {

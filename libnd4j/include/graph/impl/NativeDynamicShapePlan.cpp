@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <climits>
 #include <cstring>
 #include <unordered_map>
 #include <unordered_set>
@@ -161,13 +162,13 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotArrayCache_(nullptr), slotIsViewProducer_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false),
       pendingCloseBytes_(0), cudaGraphsEnabled_(false), totalGraphReplays_(0),
-      minCaptureSegmentSize_(10), maxCaptureSegmentSize_(50),
-      shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false),
+      shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false), traceEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
       kvCacheRetentionEnabled_(false), kvCachePosition_(0), kvCacheMaxLen_(0),
-      kvCacheNumMappings_(0), kvCacheMappings_(nullptr)
+      kvCacheNumMappings_(0), kvCacheMappings_(nullptr),
+      maxKvCacheLen_(0)
 #ifdef SD_CUDA
       , cublasWorkspaceBuffer_(nullptr), cublasWorkspaceSize_(0)
 #endif
@@ -236,12 +237,17 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   delete[] kvCacheMappings_;
 
 #ifdef SD_CUDA
-  // Free capture buffers from all segments
+  // Free capture buffers and workspace from all segments
   for (auto& seg : segments_) {
     for (auto& cb : seg.captureBuffers) {
       delete cb.buffer;
     }
     seg.captureBuffers.clear();
+    if (seg.captureWorkspacePtr != nullptr) {
+      cudaFree(seg.captureWorkspacePtr);
+      seg.captureWorkspacePtr = nullptr;
+      seg.captureWorkspaceBytes = 0;
+    }
   }
 
   // Free pre-allocated cuBLAS workspace
@@ -600,6 +606,12 @@ Status NativeDynamicShapePlan::execute(
     return Status::BAD_ARGUMENTS;
   }
 
+  if (traceEnabled_) {
+    sd_printf("NativeDSP::execute: executeCount=%d shapesFrozen=%d numSegments=%d cudaGraphs=%d numExt=%d\n",
+              executeCount_, static_cast<int>(shapesFrozen_), static_cast<int>(segments_.size()),
+              static_cast<int>(cudaGraphsEnabled_), numExternalInputs);
+  }
+
   // Step 0: Clear stale CUDA errors and error references from prior execution.
   // Async GPU errors from the previous execute() call may not surface until the
   // next CUDA API call, causing false failures. Clear them proactively.
@@ -610,10 +622,36 @@ Status NativeDynamicShapePlan::execute(
 #ifdef SD_CUDA
   cudaGetLastError();
 
+  // Clear attention workspace when no graphs are cached yet.
+  // This ensures fresh workspace allocations for new shapes (e.g., prefill → decode transition).
+  // When graphs ARE cached, preserve the workspace — captured CUDA graphs recorded the
+  // workspace buffer pointers (stable virtual addresses via Pool Memory Model), and
+  // clearing would corrupt graph replay. The per-segment clear() calls inside
+  // executeSegmentWithGraph() were removed to prevent:
+  //   1. Premature freeing of async GPU buffers from other segments (causes KERNEL_FAILURE at step 1)
+  //   2. Corruption of already-captured segment graphs when capturing subsequent segments
+  {
+    bool anyGraphCached = false;
+    for (const auto& seg : segments_) {
+      if (seg.cachedGraph != nullptr) { anyGraphCached = true; break; }
+    }
+    if (!anyGraphCached) {
+      AttentionWorkspace::getInstance()->clear();
+    }
+  }
+
   // Pre-execution flush: free arrays evicted during the previous call's warmup.
   // Without this, 2-3 calls' worth of evicted arrays accumulate before the next
   // mid-execution flush (every 100 steps), causing OOM on shape buffer allocation.
   flushPendingClose(stream);
+
+  // Clear any CUDA errors from workspace clear or flush operations.
+  // NDArray destructors (from AttentionWorkspace::clear() and flushPendingClose)
+  // call cudaFreeAsync which may post transient stream-ordering errors. These
+  // are benign — the exec stream was synced by Java's commit() before this call,
+  // so all GPU work on those buffers is complete. Clear errors here so the
+  // per-segment checks only catch real errors from segment execution.
+  cudaGetLastError();
 
   // Free captured graphs for segments whose shapes have changed (detectable from
   // external inputs only — cross-segment inputs aren't available yet since
@@ -693,8 +731,22 @@ Status NativeDynamicShapePlan::execute(
     // CUDA Graphs are enabled OR Triton GPU backend is available.
     // Under ZLUDA+AMD: CUDA Graphs may not work, but Triton compiles
     // natively for AMD via HIP and can still fuse ops.
-    if (segment.isCapturable && !segment.captureFailed &&
-        (cudaGraphsEnabled_ || getGpuGraphBackend() != nullptr)) {
+    //
+    // When shapes are frozen (static KV cache, fixed seq_len), ALL segments become
+    // safe to capture regardless of their isCapturable flag. "Value-dependent shape
+    // ops" (gather, where, tile, reshape) were marked non-capturable because their
+    // output SHAPES can depend on input VALUES. With frozen shapes those values are
+    // constant — output shapes never change — so these ops are safe to capture.
+    // The capture-buffer mechanism correctly refreshes external input data each replay.
+    // If any segment fails capture it falls back permanently to slot-by-slot.
+    //
+    // Only enable all-segment capture after at least one full frozen execution
+    // (executeCount_ > 0). Step 1 (executeCount_==0) is the warm-up pass where
+    // outputSlots_ starts zeroed; passing non-capturable segments through
+    // executeSegmentWithGraph with null cross-segment inputs causes spurious CUDA errors.
+    bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
+                      && !segment.captureFailed;
+    if (tryCapture && (cudaGraphsEnabled_ || getGpuGraphBackend() != nullptr)) {
       useGraph = true;
     }
 #else
@@ -714,6 +766,13 @@ Status NativeDynamicShapePlan::execute(
     bool segUsedGraph = false;
     int segSlots = segment.endSlot - segment.startSlot + 1;
 
+    if (traceEnabled_) {
+      sd_printf("NativeDSP::execute: seg[%d-%d] useGraph=%d isCapturable=%d captureFailed=%d hasGraph=%d\n",
+                segment.startSlot, segment.endSlot, static_cast<int>(useGraph),
+                static_cast<int>(segment.isCapturable), static_cast<int>(segment.captureFailed),
+                static_cast<int>(segment.cachedGraph != nullptr));
+    }
+
     if (useGraph) {
       // Try Triton GPU compiler first (fused kernels, best perf).
       // Under ZLUDA+AMD this uses HIP directly, bypassing ZLUDA.
@@ -731,9 +790,38 @@ Status NativeDynamicShapePlan::execute(
           // tl_graphExecutionActive is managed inside executeSegmentWithGraph()
           // — only set to true during the actual capture phase, not warmup.
           auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
-          if (status != Status::OK) return status;
-          // Check if this segment actually replayed a graph (cachedGraph exists and didn't fail)
-          segUsedGraph = (segment.cachedGraph != nullptr && !segment.captureFailed);
+          if (status != Status::OK) {
+            // Graph path failed — degrade this segment permanently to slot-by-slot.
+            // This makes graph failures non-fatal: other segments can still use graphs.
+            if (traceEnabled_) {
+              sd_printf("NativeDSP::execute: graph path failed for seg[%d-%d] status=%d, "
+                        "falling back to slot-by-slot\n",
+                        segment.startSlot, segment.endSlot, static_cast<int>(status));
+            }
+            segment.captureFailed = true;
+            // Clear sticky CUDA errors from the failed graph attempt
+            cudaGetLastError();
+            // Clear outputSlots for this segment's range (undo partial warmup modifications)
+            for (int s = segment.startSlot; s <= segment.endSlot; s++) {
+              for (int o = 0; o < slots_[s].numOutputs; o++) {
+                int si = slots_[s].outputSlotIndices[o];
+                if (si >= 0 && si < totalOutputSlots_) outputSlots_[si] = nullptr;
+              }
+            }
+            // Invalidate shape caches for this segment so slot-by-slot recomputes them
+            for (int s = segment.startSlot; s <= segment.endSlot; s++) {
+              auto& slot = slots_[s];
+              slot.shapeCacheValid = false;
+              slot.cachedShapeKey = 0;
+              slot.cachedOutputShapes.clear();
+              slot.frozenContextReady = false;
+            }
+            status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+            if (status != Status::OK) return status;
+          } else {
+            // Check if this segment actually replayed a graph (cachedGraph exists and didn't fail)
+            segUsedGraph = (segment.cachedGraph != nullptr && !segment.captureFailed);
+          }
         } else {
           // No graph backends handled this segment — slot-by-slot fallback
           auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -765,8 +853,9 @@ Status NativeDynamicShapePlan::execute(
       auto lastErr = cudaGetLastError();
       if (lastErr != cudaSuccess) {
         char buf[512];
-        snprintf(buf, sizeof(buf), "CUDA error after segment [%d-%d]: %d (%s)",
+        snprintf(buf, sizeof(buf), "CUDA error after segment [%d-%d] (execCount=%d shapesFrozen=%d): %d (%s)",
                  segment.startSlot, segment.endSlot,
+                 executeCount_, static_cast<int>(shapesFrozen_),
                  static_cast<int>(lastErr), cudaGetErrorString(lastErr));
         sd_printf("NativeDynamicShapePlan: %s\n", buf);
         sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(lastErr));
@@ -830,6 +919,13 @@ Status NativeDynamicShapePlan::execute(
 
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;
+
+  // Adaptive segment splitting: if a segment's shape key changes for
+  // INSTABILITY_THRESHOLD consecutive executions, split it at the midpoint.
+  // Stable halves capture; unstable halves split further until MIN_SPLIT_SIZE.
+#ifdef SD_CUDA
+  if (cudaGraphsEnabled_ && !shapesFrozen_) maybeSplitUnstableSegments();
+#endif
 
   // Print timing breakdown
   if (executionTimingEnabled_) {
@@ -972,6 +1068,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Compute shape key for this segment's inputs
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
+  if (traceEnabled_) {
+    bool hasGraph = (seg.cachedGraph != nullptr);
+    bool shapeMatch = hasGraph && (seg.cachedShapeKey == segShapeKey);
+    sd_printf("NativeDSP::executeSegmentWithGraph: seg[%d-%d] execCount=%d hasGraph=%d "
+              "shapeMatch=%d captureFailed=%d\n",
+              seg.startSlot, seg.endSlot, executeCount_,
+              static_cast<int>(hasGraph), static_cast<int>(shapeMatch),
+              static_cast<int>(seg.captureFailed));
+  }
+
   auto needsHostMirror = [](NDArray* arr) -> bool {
     if (arr == nullptr) return false;
     auto dt = arr->dataType();
@@ -1078,6 +1184,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
 
+    // Sync stream before launch to ensure all capture buffer copies are complete.
+    // cudaGraphLaunch may fail with "invalid argument" if async copies haven't
+    // committed to the stream yet (observed with 14072-node mega-graphs).
+    if (captureBuffersOk && cudaStr != nullptr) {
+      cudaStreamSynchronize(cudaStr);
+    }
     if (captureBuffersOk && seg.cachedGraph->launchAsync(cudaStr)) {
       // Restore outputSlots_ from slot cache — during replay, executeSlot() is not
       // called, but the graph writes to the same GPU buffers the cached arrays point to.
@@ -1113,6 +1225,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                 "falling back to slot-by-slot\n", seg.startSlot, seg.endSlot);
       clearGraphStreamError(cudaStr);
       seg.cachedGraph.reset();
+      // Free capture workspace — kernel params from the old graph are invalid
+      if (seg.captureWorkspacePtr != nullptr) {
+        cudaFree(seg.captureWorkspacePtr);
+        seg.captureWorkspacePtr = nullptr;
+        seg.captureWorkspaceBytes = 0;
+      }
     }
   }
 
@@ -1123,6 +1241,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // during CUDA graph capture → error 901. So we must do a warmup pass WITHOUT capture
   // to populate the slot cache with the new shapes before attempting capture.
   bool shapeChanged = (seg.cachedShapeKey != segShapeKey);
+
+  // Track consecutive shape changes to detect unstable segments.
+  // Segments whose shapes change every step (e.g. KV-growing attention concat) will
+  // never capture cleanly. After INSTABILITY_THRESHOLD consecutive shape changes,
+  // mark the segment for splitting. maybeSplitUnstableSegments() will split it at
+  // the midpoint after this execute() call; stable halves capture, unstable halves
+  // split recursively until they reach MIN_SPLIT_SIZE (permanent slot-by-slot).
+  if (seg.executionCount > 0 && shapeChanged) {
+    seg.consecutiveShapeChanges++;
+    if (seg.consecutiveShapeChanges >= GraphSegment::INSTABILITY_THRESHOLD) {
+      int segSize = seg.endSlot - seg.startSlot + 1;
+      if (segSize <= GraphSegment::MIN_SPLIT_SIZE) {
+        // Too small to split further — mark permanently slot-by-slot
+        seg.captureFailed = true;
+      } else {
+        seg.needsSplit = true;
+      }
+      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    }
+  } else if (!shapeChanged) {
+    seg.consecutiveShapeChanges = 0;
+  }
+
   if (seg.executionCount == 0 || (shapeChanged && !seg.captureFailed)) {
     // Invalidate the old graph if shapes changed
     if (shapeChanged && seg.cachedGraph) {
@@ -1130,15 +1271,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
     seg.cachedShapeKey = segShapeKey;
 
-#ifdef SD_CUDA
-    // Clear attention workspace when shapes change — the workspace reuses buffers
-    // and creates views with different shape info. CUDA graphs record shape info
-    // at capture time, so stale shape pointers cause crashes during replay.
-    if (shapeChanged) {
-      AttentionWorkspace::getInstance()->clear();
-    }
-#endif
-
+    // Note: AttentionWorkspace::clear() is NOT called here during warmup.
+    // Clearing during warmup would free GPU memory from OTHER segments' async
+    // kernels that are still running, causing KERNEL_FAILURE (status 50).
+    // Instead, we clear ONCE at the beginning of execute() when no graphs are
+    // cached — that path is safe because the Java side calls commit() between
+    // steps, ensuring all previous GPU work is complete before the next execute().
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
@@ -1146,12 +1284,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Shape key changed → invalidate old graph (defensive, already handled above)
   if (seg.cachedGraph && seg.cachedShapeKey != segShapeKey) {
     seg.cachedGraph.reset();
-  }
-
-  int segSize = seg.endSlot - seg.startSlot + 1;
-  // Don't bother capturing tiny segments (overhead > benefit)
-  if (segSize < minCaptureSegmentSize_) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   // OOM retry cooldown: if this segment previously failed capture due to OOM,
@@ -1251,7 +1383,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     if (requiredFree > gpuFree) {
       sd_printf("NativeDynamicShapePlan: skipping graph capture for segment [%d-%d] (%d ops): "
                 "estimated %zu MB (2x %zu MB) > free %zu MB (total %zu MB)\n",
-                seg.startSlot, seg.endSlot, segSize,
+                seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
                 requiredFree / (1024 * 1024),
                 estimatedCaptureBytes / (1024 * 1024),
                 gpuFree / (1024 * 1024),
@@ -1275,8 +1407,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  // Clear attention workspace before capture to ensure fresh allocations
-  AttentionWorkspace::getInstance()->clear();
+  // Note: AttentionWorkspace::clear() is NOT called here before capture.
+  // The workspace was already cleared at the start of execute() (when no graphs were
+  // cached). The pre-warmup (if hasValueDependentShapeOps) already populated the
+  // workspace with fresh buffers for the current shapes. Clearing here would:
+  //   1. Corrupt workspace pointers in previously-captured segment graphs (same execute() call)
+  //   2. Force unnecessary reallocation (the existing buffers are already correctly shaped)
+  // The CUDA Pool Memory Model guarantees stable virtual addresses across replays,
+  // so captured buffer pointers remain valid as long as the workspace is not cleared.
 
   // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
   // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
@@ -1482,6 +1620,35 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
   tl_graphCaptureStream = resolvedCaptureStream;
+
+  // Allocate capture workspace BEFORE beginCapture (cudaMalloc must be outside capture).
+  // This eliminates cudaMallocAsync/cudaFreeAsync graph nodes from PointersManager temporaries.
+  // With 3781 slots and ~1939 temporary allocations, we need enough workspace to hold
+  // all temporaries simultaneously. Use 512MB to be safe (most temps are small shape arrays).
+  static constexpr size_t CAPTURE_WORKSPACE_SIZE = 512ULL * 1024 * 1024;  // 512MB
+  sd_printf("NativeDSP: capture workspace check for segment [%d-%d]: ptr=%p bytes=%zu\n",
+            seg.startSlot, seg.endSlot, seg.captureWorkspacePtr, seg.captureWorkspaceBytes);
+  if (seg.captureWorkspacePtr == nullptr) {
+    cudaError_t wsErr = cudaMalloc(&seg.captureWorkspacePtr, CAPTURE_WORKSPACE_SIZE);
+    if (wsErr == cudaSuccess) {
+      seg.captureWorkspaceBytes = CAPTURE_WORKSPACE_SIZE;
+      sd_printf("NativeDSP: allocated %zuMB capture workspace for segment [%d-%d]\n",
+                CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
+    } else {
+      cudaGetLastError();
+      seg.captureWorkspacePtr = nullptr;
+      seg.captureWorkspaceBytes = 0;
+      sd_printf("NativeDSP: WARNING - capture workspace allocation failed (%s), "
+                "graph will contain cudaMallocAsync nodes\n", cudaGetErrorString(wsErr));
+    }
+  }
+  // Set thread-local workspace for CudaMemoryPool to use during capture
+  tl_captureWorkspace = seg.captureWorkspacePtr;
+  tl_captureWorkspaceSize = seg.captureWorkspaceBytes;
+  tl_captureWorkspaceOffset = 0;
+  sd_printf("NativeDSP: tl_captureWorkspace=%p size=%zu for capture\n",
+            tl_captureWorkspace, tl_captureWorkspaceSize);
+
   tl_graphExecutionActive = true;
   tl_capturedHostPtrs.clear();  // Reset pinned host ptr accumulator for this capture
 
@@ -1490,6 +1657,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               seg.startSlot, seg.endSlot);
     tl_graphExecutionActive = false;
     tl_graphCaptureStream = prevCaptureStream;
+    tl_captureWorkspace = nullptr;
+    tl_captureWorkspaceSize = 0;
+    tl_captureWorkspaceOffset = 0;
     restoreCublasWorkspaceAfterCapture(stream);
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
@@ -1572,8 +1742,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   // Capture phase complete — reset the flag before any exit path
+  size_t captureWorkspaceUsed = tl_captureWorkspaceOffset;  // Save before clearing
   tl_graphExecutionActive = false;
   tl_graphCaptureStream = prevCaptureStream;
+  tl_captureWorkspace = nullptr;
+  tl_captureWorkspaceSize = 0;
+  tl_captureWorkspaceOffset = 0;
   restoreCublasWorkspaceAfterCapture(stream);
 
   // Restore original external/cross-segment input pointers.
@@ -1693,6 +1867,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Clear any sticky error that might have been left by updateStatistics or instantiate
   cudaGetLastError();
 
+  // Log graph statistics after capture + instantiation
+  {
+    auto stats = handle->getStatistics();
+    sd_printf("NativeDynamicShapePlan: graph captured for segment [%d-%d]: "
+              "%zu nodes, %zu edges, %d kernels, %d memcpys, %d memsets, "
+              "%d memAllocs, %d memFrees, %d hostCallbacks, %d events, %d empty\n",
+              seg.startSlot, seg.endSlot,
+              handle->getNumNodes(), handle->getNumEdges(),
+              stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
+              stats.numMemAllocs, stats.numMemFrees,
+              stats.numHostCallbacks, stats.numEvents, stats.numEmpty);
+    if (stats.numMemAllocs != stats.numMemFrees) {
+      sd_printf("  WARNING: Unbalanced memory nodes: %d allocs vs %d frees. "
+                "This WILL cause graph launch failure.\n",
+                stats.numMemAllocs, stats.numMemFrees);
+    }
+  }
+
   // Launch the captured graph (actual execution)
   if (!handle->launchAsync(cudaStr)) {
     cudaGetLastError();
@@ -1725,6 +1917,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   seg.executionCount++;
   totalGraphReplays_++;
 
+  // Populate outputSlots_ from slotArrayCache_ so downstream segments can read
+  // this segment's outputs. The warmup+capture path fills slotArrayCache_ but
+  // restores outputSlots_ to its pre-warmup state; without this step, any
+  // subsequent slot-by-slot segment that reads a cross-segment output from this
+  // captured segment will see a null pointer.  (Mirrors the replay path at the
+  // top of executeSegmentWithCudaGraph.)
+  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+    NativeSlot& slot = slots_[stepIdx];
+    for (int i = 0; i < slot.numOutputs; i++) {
+      int slotIdx = slot.outputSlotIndices[i];
+      if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && slotArrayCache_[slotIdx] != nullptr) {
+        outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
+      }
+    }
+  }
+
   // Reset OOM retry state on success (capture may have succeeded on a retry)
   if (seg.captureOomRetries > 0) {
     sd_printf("NativeDynamicShapePlan: graph capture SUCCEEDED on OOM retry %d for segment [%d-%d]\n",
@@ -1734,10 +1942,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   if (executionTimingEnabled_) {
+    auto stats = handle->getStatistics();
     sd_printf("NativeDynamicShapePlan: captured CUDA graph for segment [%d-%d] "
-              "(%zu nodes, %zu edges)\n",
+              "(%zu nodes, %zu edges) [%d kern, %d memcpy, %d memset, %d alloc, %d free] "
+              "workspace=%zuKB/%zuKB\n",
               seg.startSlot, seg.endSlot,
-              handle->getNumNodes(), handle->getNumEdges());
+              handle->getNumNodes(), handle->getNumEdges(),
+              stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
+              stats.numMemAllocs, stats.numMemFrees,
+              seg.captureWorkspacePtr ? (captureWorkspaceUsed / 1024) : 0,
+              seg.captureWorkspaceBytes / 1024);
   }
 
   return Status::OK;
@@ -1782,8 +1996,37 @@ Status NativeDynamicShapePlan::executeSlot(
   if (slot.frozenContextReady) {
     auto& ctx = *contextPool_[stepIdx];
 
-    // For ops that need zeroed output, nullify the cached array
-    if (slot.needsZeroedOutput) {
+    // Refresh inputs that change each decode step:
+    //   1. External (placeholder) inputs: always recreated each step (position_ids, etc.)
+    //   2. Inputs from view-producer slots: their views point into the external inputs,
+    //      so the view NDArray changes each step as the input is recreated.
+    //
+    // Execution is in ascending slot order, so view-producer slot X always runs before
+    // slot Y that reads X's output. By the time Y runs, outputSlots_[si_X] holds the
+    // fresh view created by X's fast-path execution this step.
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      if (srcIdx < 0) {
+        // External/placeholder input — always refresh
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
+          ctx.setInputArray(i, externalArrays[extIdx]);
+        }
+      } else if (srcIdx < totalOutputSlots_ && slotIsViewProducer_[srcIdx]) {
+        // Input from view-producer slot — refresh from outputSlots_ (already updated
+        // this step by the view producer's own fast-path execution above us)
+        if (outputSlots_[srcIdx] != nullptr) {
+          ctx.setInputArray(i, outputSlots_[srcIdx]);
+        }
+      }
+    }
+
+    // Nullify output arrays before re-execution to prevent stale data accumulation.
+    // Some ops don't fully overwrite their output buffers, causing key/value magnitudes
+    // to grow exponentially (7→13→19→...) as residual data from prior steps compounds.
+    // EXCEPTION: Skip in-place fused ops — their output IS the input (same NDArray).
+    // Nullifying would destroy the input data, producing all-zero outputs at step 3+.
+    if (!slot.inPlaceFused) {
       auto& ctxOuts = ctx.fastpath_out();
       for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
         if (ctxOuts[i] != nullptr) ctxOuts[i]->nullify();
@@ -2016,11 +2259,11 @@ Status NativeDynamicShapePlan::executeSlot(
       if (shape::equalsSoft(cachedShape, shapeInfo) &&
           ArrayOptions::dataType(cachedShape) == dt) {
         // Shape matches — reuse cached buffer.
-        // When shapes are frozen, skip nullify for ops that fully write their output
-        // (needsZeroedOutput=false). This avoids ~4441 cudaMemsetAsync calls per step.
-        if (slot.needsZeroedOutput || !shapesFrozen_) {
-          cached->nullify();
-        }
+        // ALWAYS nullify reused arrays. Some ops don't fully overwrite their output
+        // (despite not being in the needsZeroedOutput set), causing stale data
+        // accumulation across decode steps. The cost of ~3841 cudaMemsetAsync calls
+        // per step (~4ms) is negligible vs the 170ms+ slot-by-slot execution.
+        cached->nullify();
         outputs[i] = cached;
         outputSlots_[slotIdx] = cached;
         continue;
@@ -2037,6 +2280,68 @@ Status NativeDynamicShapePlan::executeSlot(
     for (int d = 0; d < rank; d++) {
       shape[d] = shapeInfo[d + 1];
     }
+    
+    // Check if this slot has a max-allocation size configured
+    auto maxIt = outputSlotMaxSizes_.find(slotIdx);
+    if (maxIt != outputSlotMaxSizes_.end() && maxIt->second > 0) {
+      // Max-allocation mode: check if we already allocated at max size
+      if (maxAllocatedSlots_.find(slotIdx) == maxAllocatedSlots_.end()) {
+        // First time: allocate at max size
+        LongType maxElements = maxIt->second;
+        std::vector<LongType> maxShape = shape;
+        
+        // Calculate which dimension to scale based on shape rank and maxKvCacheLen_
+        // For KV cache [batch, numHeads, seqLen, headDim], we scale seqLen (dim 2)
+        if (rank == 4 && maxKvCacheLen_ > 0 && shape[2] > 0 && shape[2] < maxKvCacheLen_) {
+          // This looks like a KV cache shape - scale seq dimension
+          maxShape[2] = maxKvCacheLen_;
+        } else if (rank == 4 && maxKvCacheLen_ > 0 && shape[1] > 0 && shape[1] < maxKvCacheLen_) {
+          // Alternative KV cache format [batch, seqLen, numHeads, headDim] - scale dim 1
+          maxShape[1] = maxKvCacheLen_;
+        } else {
+          // Default: scale last dimension to reach max elements
+          LongType currentElements = 1;
+          for (int d = 0; d < rank; d++) currentElements *= shape[d];
+          if (currentElements > 0 && maxElements > currentElements) {
+            LongType scale = maxElements / currentElements;
+            if (scale > 1) {
+              maxShape[rank - 1] *= scale;
+            }
+          }
+        }
+        
+        sd_printf("NativeDynamicShapePlan: max-allocating slot %d, current shape=[%lld,%lld,%lld,%lld], max shape=[%lld,%lld,%lld,%lld]\n",
+                  slotIdx, shape[0], rank>1?shape[1]:0, rank>2?shape[2]:0, rank>3?shape[3]:0,
+                  maxShape[0], maxShape.size()>1?maxShape[1]:0, maxShape.size()>2?maxShape[2]:0, maxShape.size()>3?maxShape[3]:0);
+        
+        NDArray* maxOut = nullptr;
+        try {
+          maxOut = new NDArray(order, maxShape, dt);
+          maxOut->nullify();  // Zero the entire buffer
+        } catch (const std::exception& e) {
+          sd_printf("NativeDynamicShapePlan: max-allocation FAILED at slot %d (%s): %s\n",
+                    stepIdx, slot.opName.c_str(), e.what());
+          // Fall back to regular allocation
+          maxOut = new NDArray(order, shape, dt);
+          if (slot.needsZeroedOutput) maxOut->nullify();
+        }
+        
+        outputs[i] = maxOut;
+        outputSlots_[slotIdx] = maxOut;
+        slotArrayCache_[slotIdx] = maxOut;
+        maxAllocatedSlots_.insert(slotIdx);
+        continue;
+      }
+      // Already max-allocated: reuse the cached buffer (it's at max size)
+      NDArray* cached = slotArrayCache_[slotIdx];
+      if (cached != nullptr) {
+        // The cached buffer is at max size
+        outputs[i] = cached;
+        outputSlots_[slotIdx] = cached;
+        continue;
+      }
+    }
+    
     NDArray* out = nullptr;
     try {
       out = new NDArray(order, shape, dt);
@@ -2199,9 +2504,20 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     key *= 0x100000001b3ULL;
   };
 
-  // Mix shape/dtype and (for small integer-like tensors) literal values.
-  // This prevents stale graph replay when shape-driving scalar/tiny tensors
-  // keep the same shape but change values between executions.
+  // Mix shape and dtype only — NOT small-int values.
+  //
+  // With strict capturability (all outputShapeDependsOnInputValues ops are non-capturable),
+  // capturable segments never contain ops whose output SHAPE depends on input VALUES.
+  // Value changes in small INT/BOOL tensors (e.g., position_ids changing each step) do NOT
+  // affect the CUDA graph's validity — the capture buffer mechanism handles these via
+  // device-to-device copy before each replay. Mixing values here would cause the shape key
+  // to change every step for any segment consuming position_ids or similar tensors, triggering
+  // spurious instability detection → binary splits → captureFailed for stable segments.
+  //
+  // Stability is correctly tracked by the capture buffer byte-size check (line ~1049):
+  // if an external/cross-segment input grows (e.g., KV cache), its byte count changes →
+  // captureBuffersOk=false → re-capture. If it stays the same size but changes values,
+  // the D2D copy in the replay path updates the capture buffer with fresh values → correct.
   auto mixArraySignature = [&](NDArray* arr) {
     if (arr == nullptr) return;
 
@@ -2211,22 +2527,10 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     for (int d = 0; d < rank; d++) {
       mix(si[d + 1]);
     }
-
-    auto dt = arr->dataType();
-    mix(static_cast<LongType>(dt));
-
-    // Small INT/LONG/BOOL arrays are often shape/control tensors.
-    // Mix their values so segment keys change when those values change.
-    if ((dt == INT32 || dt == INT64 || dt == BOOL) && arr->lengthOf() > 0 && arr->lengthOf() <= 32) {
-      arr->syncToHost();
-      for (LongType j = 0; j < arr->lengthOf(); j++) {
-        if (dt == BOOL) {
-          mix(static_cast<LongType>(arr->e<bool>(j)));
-        } else {
-          mix(arr->e<LongType>(j));
-        }
-      }
-    }
+    // Mix total byte length so that shape changes (not just rank changes) are detected.
+    // E.g., [1,4,N,64] → [1,4,N+1,64] has the same rank and strides but different length.
+    mix(static_cast<LongType>(arr->lengthOf()));
+    mix(static_cast<LongType>(arr->dataType()));
   };
 
   // Mix segment identity
@@ -2401,6 +2705,29 @@ void NativeDynamicShapePlan::resetKvCachePosition(int newPos) {
   kvCachePosition_ = newPos;
 }
 
+#ifdef SD_CUDA
+void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots) {
+  if (slotIndices == nullptr || maxSizes == nullptr || numSlots <= 0) return;
+
+  outputSlotMaxSizes_.clear();
+  maxAllocatedSlots_.clear();
+
+  for (int i = 0; i < numSlots; i++) {
+    if (slotIndices[i] >= 0 && slotIndices[i] < totalOutputSlots_ && maxSizes[i] > 0) {
+      outputSlotMaxSizes_[slotIndices[i]] = maxSizes[i];
+    }
+  }
+}
+
+void NativeDynamicShapePlan::setKvCachePosition(int pos) {
+  kvCachePosition_ = pos;
+}
+
+void NativeDynamicShapePlan::setMaxKvCacheLength(int maxLen) {
+  maxKvCacheLen_ = maxLen;
+}
+#endif // SD_CUDA
+
 void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numExt, void* stream) {
   if (!kvCacheRetentionEnabled_ || kvCacheNumMappings_ == 0) return;
 
@@ -2477,12 +2804,39 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 void NativeDynamicShapePlan::buildSegments() {
   if (numSlots_ == 0) return;
 
-  // Capturability policy:
-  // - data-dependent ops can emit different shapes/indices across executions
-  // - value-dependent-shape ops can change output shape from input values
-  // Both are unsafe for CUDA graph replay keyed only by input shapes.
+  // Segmentation policy:
+  //
+  // Merge as many consecutive slots as possible into each capturable segment.
+  // Each contiguous capturable run (with the same device) becomes ONE segment.
+  // At runtime, if a segment's shapes are stable it gets captured once and
+  // replayed every step. If a segment's shapes change repeatedly (e.g. KV-growing
+  // attention concat), maybeSplitUnstableSegments() splits it at all value-dep
+  // op boundaries. Stable sub-segments get captured; unstable ones become
+  // permanently slot-by-slot, minimizing overhead.
+  //
+  // Capturability: a slot is capturable iff:
+  //   1. It is NOT data-dependent (where/unique/nms produce variable-length output)
+  //   2. It is NOT a value-dep-shape op (reshape/concat/gather whose output SHAPE
+  //      depends on runtime VALUES). Such ops always run slot-by-slot because the
+  //      segment shape key hashes input SHAPES only — it cannot detect when a
+  //      value-dep op's output shape changes. Replaying a captured graph with stale
+  //      output shapes produces wrong results.
+  //
+  // At runtime, capturable segments with stable shape keys capture once and replay.
+  // Segments whose shapes change every step (e.g. KV-growing attention) will hit
+  // INSTABILITY_THRESHOLD and be permanently marked slot-by-slot (captureFailed)
+  // via maybeSplitUnstableSegments() → no value-dep ops found → captureFailed.
+
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
-    return !slot.isDataDependent && !slot.outputShapeDependsOnInputValues;
+    if (slot.isDataDependent) return false;
+    // Value-dep-shape ops must always run slot-by-slot, regardless of input source.
+    // Their output shapes depend on runtime VALUES (not just shapes), so the segment
+    // shape key (which hashes input shapes) can't detect when their output shapes change.
+    // A CUDA graph replay with stale output shapes produces wrong results.
+    // The adaptive splitting will detect KV-growing segments (no value-dep ops,
+    // shapes change every step) and permanently mark them slot-by-slot via captureFailed.
+    if (slot.outputShapeDependsOnInputValues) return false;
+    return true;
   };
 
   GraphSegment current;
@@ -2493,23 +2847,14 @@ void NativeDynamicShapePlan::buildSegments() {
     bool thisCapturable = isSlotCapturable(slots_[i]);
     bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
 
-    // Break segment when data-dependency status changes OR device changes.
     bool capturabilityChanged = (thisCapturable != current.isCapturable);
 
-    // Also break capturable segments that exceed maxCaptureSegmentSize_.
-    // During CUDA graph capture, cudaFreeAsync calls are recorded but NOT
-    // executed — all intermediate allocations accumulate simultaneously.
-    // Splitting into smaller segments limits peak capture memory.
-    int segSize = i - current.startSlot;
-    bool sizeExceeded = (maxCaptureSegmentSize_ > 0 && current.isCapturable &&
-                         segSize >= maxCaptureSegmentSize_);
-
-    if (capturabilityChanged || deviceChange || sizeExceeded) {
+    if (capturabilityChanged || deviceChange) {
       // End current segment
       current.endSlot = i - 1;
       segments_.push_back(current);
 
-      // Start new segment — capturable if the new slot is not data-dependent
+      // Start new segment
       current = GraphSegment();
       current.startSlot = i;
       current.isCapturable = thisCapturable;
@@ -2522,18 +2867,214 @@ void NativeDynamicShapePlan::buildSegments() {
 
   // Log segment structure
   int capturableCount = 0, totalCapturable = 0;
+  int staticCapturableCount = 0, dynamicCapturableCount = 0;
   for (auto& seg : segments_) {
     if (seg.isCapturable) {
       capturableCount++;
-      totalCapturable += (seg.endSlot - seg.startSlot + 1);
+      int sz = seg.endSlot - seg.startSlot + 1;
+      totalCapturable += sz;
+      // A segment is "static" if all its slots have stable shapes
+      bool allStatic = true;
+      for (int s = seg.startSlot; s <= seg.endSlot && allStatic; s++)
+        allStatic = slots_[s].shapeStatic;
+      if (allStatic) staticCapturableCount++;
+      else dynamicCapturableCount++;
     }
   }
-  sd_printf("NativeDynamicShapePlan: %d segments (%d capturable covering %d/%d slots, max segment size %d)\n",
-            (int)segments_.size(), capturableCount, totalCapturable, numSlots_, maxCaptureSegmentSize_);
+  sd_printf("NativeDynamicShapePlan: %d segments (%d capturable: %d static, %d dynamic; covering %d/%d slots)\n",
+            (int)segments_.size(), capturableCount,
+            staticCapturableCount, dynamicCapturableCount,
+            totalCapturable, numSlots_);
+}
+
+// ─── Rebuild segments for frozen shapes ───────────────────────────────────────
+//
+// When shapes are frozen, value-dependent-shape ops (reshape, gather, slice, etc.)
+// are safe to capture — their input values never change, so output shapes are constant.
+// Only truly data-dependent ops (where/unique/NMS with variable-length output)
+// remain non-capturable.
+//
+// This merges ALL consecutive slots into a single segment, breaking only on:
+//   1. Data-dependent ops (variable-length output)
+//   2. Device boundaries
+//
+void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
+  // Destroy existing cached graphs (they reference old segment boundaries)
+  for (auto& seg : segments_) {
+#ifdef SD_CUDA
+    seg.cachedGraph.reset();
+    seg.captureBuffers.clear();
+    if (seg.captureWorkspacePtr != nullptr) {
+      cudaFree(seg.captureWorkspacePtr);
+      seg.captureWorkspacePtr = nullptr;
+      seg.captureWorkspaceBytes = 0;
+    }
+#endif
+  }
+
+  int oldSegCount = (int)segments_.size();
+  segments_.clear();
+
+  if (numSlots_ == 0) return;
+
+  // When shapes are frozen, value-dependent-shape ops (reshape, gather, slice, etc.)
+  // are safe to capture — their input values never change, so output shapes are constant.
+  // Data-dependent ops (1-input Where/Unique/NMS) remain non-capturable because they
+  // have variable-length output. 3-input Where (element-wise select) IS capturable.
+  // Break segments on: data-dependent ops, device boundaries, and max size limit.
+  //
+  // Max segment size prevents mega-graphs that cause:
+  //   1. Address instability (workspace allocs change address on replay → SIGSEGV)
+  //   2. Slow replay (390ms for 3781-slot graph vs 72ms for 129 smaller graphs)
+  // Cap at ~150 slots per segment — matches typical transformer layer size.
+  // MAX_FROZEN_SEGMENT_SIZE caps graph size. Set to INT_MAX to allow single
+  // mega-graph capture of the entire decoder (3781+ slots).
+  // With frozen shapes, all value-dependent ops are safe to capture.
+  static constexpr int MAX_FROZEN_SEGMENT_SIZE = INT_MAX;
+
+  auto isSlotCapturableFrozen = [this](int idx) -> bool {
+    return !slots_[idx].isDataDependent;
+  };
+
+  GraphSegment current;
+  current.startSlot = 0;
+  current.isCapturable = isSlotCapturableFrozen(0);
+
+  for (int i = 1; i < numSlots_; i++) {
+    bool thisCapturable = isSlotCapturableFrozen(i);
+    bool deviceChange = (slots_[i].targetDeviceId != slots_[i - 1].targetDeviceId);
+    int currentSize = i - current.startSlot;
+    bool sizeLimit = (current.isCapturable && currentSize >= MAX_FROZEN_SEGMENT_SIZE);
+
+    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit) {
+      current.endSlot = i - 1;
+      segments_.push_back(current);
+      current = GraphSegment();
+      current.startSlot = i;
+      current.isCapturable = thisCapturable;
+    }
+  }
+  current.endSlot = numSlots_ - 1;
+  segments_.push_back(current);
+
+  // Reset frozen context for all slots since segment boundaries changed
+  for (int i = 0; i < numSlots_; i++) {
+    slots_[i].frozenContextReady = false;
+  }
+
+  // Log the result and any data-dependent ops that prevent full merge
+  int capturableSlots = 0;
+  int dataDepCount = 0;
+  for (auto& seg : segments_) {
+    if (seg.isCapturable) capturableSlots += (seg.endSlot - seg.startSlot + 1);
+  }
+  for (int i = 0; i < numSlots_; i++) {
+    if (slots_[i].isDataDependent) {
+      dataDepCount++;
+      if (dataDepCount <= 10) {
+        sd_printf("NativeDSP::rebuildSegments: slot %d op='%s' is data-dependent\n",
+                  i, slots_[i].opName.c_str());
+      }
+    }
+  }
+  if (dataDepCount > 10) {
+    sd_printf("NativeDSP::rebuildSegments: ... and %d more data-dependent slots\n",
+              dataDepCount - 10);
+  }
+  sd_printf("NativeDSP::rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep)\n",
+            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount);
+}
+
+// ─── Adaptive segment splitting ───────────────────────────────────────────────
+//
+// When a capturable segment's shape key changes for INSTABILITY_THRESHOLD
+// consecutive executions, it contains mixed stable+unstable ops (e.g., KV-growing
+// attention mixed with stable FFN/projection ops). We binary-split the segment
+// at its midpoint. One half contains the unstable ops (keeps splitting until
+// small enough to be permanently slot-by-slot); the other half is stable and
+// captures cleanly.
+//
+// Convergence: O(log2(seg_size) * INSTABILITY_THRESHOLD) decode steps.
+// For a 150-op segment with THRESHOLD=2: ~14 warmup steps before convergence.
+// All transformer layers have the same structure so they converge in parallel,
+// not sequentially.
+//
+// Split semantics:
+//   - Sub-segments start fresh (executionCount=0, consecutiveShapeChanges=0)
+//   - Stable sub-segments capture on their 2nd execution
+//   - Sub-segments that remain unstable and reach MIN_SPLIT_SIZE → captureFailed
+
+void NativeDynamicShapePlan::maybeSplitUnstableSegments() {
+  // Quick check: any segment needing a split?
+  bool anySplit = false;
+  for (auto& seg : segments_) {
+    if (seg.needsSplit) { anySplit = true; break; }
+  }
+  if (!anySplit) return;
+
+  std::vector<GraphSegment> result;
+  result.reserve(segments_.size() + 4);  // some extra for splits
+
+  for (auto& seg : segments_) {
+    if (!seg.needsSplit) {
+      result.push_back(std::move(seg));
+      continue;
+    }
+
+    int segSize = seg.endSlot - seg.startSlot + 1;
+    if (segSize <= GraphSegment::MIN_SPLIT_SIZE) {
+      // Too small to split — make permanently slot-by-slot
+      seg.needsSplit = false;
+      seg.captureFailed = true;
+      seg.consecutiveShapeChanges = 0;
+      result.push_back(std::move(seg));
+      continue;
+    }
+
+    // Binary midpoint split: bisect the unstable segment.
+    // One half contains the growing-input ops (stays unstable → keeps splitting),
+    // the other half is stable (captures cleanly on its next execution).
+    // Convergence: O(log2(N) * INSTABILITY_THRESHOLD) decode steps.
+    // All 36 transformer layers have the same structure so they converge in parallel
+    // (not sequentially), giving ~log2(seg_size) * 2 total warmup steps total.
+    {
+      int mid = seg.startSlot + segSize / 2;
+
+      auto makeSubSeg = [&](int start, int end) {
+        if (start > end) return;
+        GraphSegment sub;
+        sub.startSlot = start;
+        sub.endSlot = end;
+        sub.isCapturable = seg.isCapturable;
+        sub.executionCount = 0;
+        sub.consecutiveShapeChanges = 0;
+        sub.needsSplit = false;
+#ifdef SD_CUDA
+        sub.cachedShapeKey = 0;
+#endif
+        // Invalidate slot shape caches so sub-segments re-warm correctly
+        for (int s = start; s <= end; s++) {
+          slots_[s].shapeCacheValid = false;
+          slots_[s].cachedShapeKey = 0;
+          slots_[s].cachedOutputShapes.clear();
+          slots_[s].frozenContextReady = false;
+        }
+        result.push_back(std::move(sub));
+      };
+
+      makeSubSeg(seg.startSlot, mid - 1);
+      makeSubSeg(mid, seg.endSlot);
+
+      sd_printf("NativeDynamicShapePlan: binary-splitting unstable segment [%d-%d] (%d ops) "
+                "at midpoint %d into 2 sub-segments\n",
+                seg.startSlot, seg.endSlot, segSize, mid);
+    }
+  }
+
+  segments_ = std::move(result);
 }
 
 // ─── CPU Graph backend integration ──────────────────────────────────────────
-
 GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   if (cpuGraphBackendChecked_) return cpuGraphBackend_;
   cpuGraphBackendChecked_ = true;

@@ -31,6 +31,8 @@
 #include <chrono>
 #include <algorithm>
 #include <sstream>
+#include <fstream>
+#include <iomanip>
 #include <cxxabi.h>  // For __cxa_demangle (kernel name demangling)
 
 namespace sd {
@@ -126,6 +128,9 @@ bool CudaGraphHandle::beginCapture(cudaStream_t stream, cudaStreamCaptureMode mo
     }
 
     _state = GraphState::CAPTURING;
+    _captureStartTimeMs = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
     return true;
 }
 
@@ -165,6 +170,9 @@ bool CudaGraphHandle::endCapture(cudaStream_t stream) {
         return false;
     }
 
+    _captureEndTimeMs = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
     _state = GraphState::CAPTURED;
     updateStatistics();
     return true;
@@ -177,6 +185,10 @@ bool CudaGraphHandle::instantiate() {
         sd_print("CudaGraphHandle::instantiate - Graph not captured\n");
         return false;
     }
+
+    double startTime = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
 
     // Set device
     int prevDevice;
@@ -203,6 +215,11 @@ bool CudaGraphHandle::instantiate() {
         _state = GraphState::ERROR;
         return false;
     }
+
+    double endTime = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
+    _instantiateTimeMs = endTime - startTime;
 
     _state = GraphState::INSTANTIATED;
     return true;
@@ -269,20 +286,67 @@ bool CudaGraphHandle::launchAsync(cudaStream_t stream, cudaEvent_t completionEve
 
     _state = GraphState::EXECUTING;
 
+    // Record start time for execution timeline
+    double startTime = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
+
     // Clear any sticky error before launch (e.g., from updateStatistics graph queries)
     cudaGetLastError();
 
     cudaError_t err = cudaGraphLaunch(_graphExec, stream);
 
+    double endTime = std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
+
     if (err != cudaSuccess) {
         sd_printf("CudaGraphHandle::launchAsync failed: %s (err=%d)\n",
                   cudaGetErrorString(err), (int)err);
+        sd_printf("  Graph stats: %d kernels, %d memcpys, %d memsets, %d memAllocs, %d memFrees, "
+                  "%d hostCallbacks, %d events, %d empty, %d childGraphs\n",
+                  _stats.numKernels, _stats.numMemcpyH2D, _stats.numMemsets,
+                  _stats.numMemAllocs, _stats.numMemFrees,
+                  _stats.numHostCallbacks, _stats.numEvents, _stats.numEmpty, _stats.numChildGraphs);
+        if (_stats.numMemAllocs > 0 || _stats.numMemFrees > 0) {
+            sd_printf("  WARNING: Graph contains %d MemAlloc + %d MemFree nodes from cudaMallocAsync/cudaFreeAsync. "
+                      "These may cause replay failures if virtual addresses are unstable.\n",
+                      _stats.numMemAllocs, _stats.numMemFrees);
+        }
+        if (_stats.numHostCallbacks > 0) {
+            sd_printf("  WARNING: Graph contains %d host callback nodes. "
+                      "Host callbacks may cause replay failures.\n", _stats.numHostCallbacks);
+        }
+        // Try exporting DOT file for debugging
+        if (_graph != nullptr) {
+            std::string dotPath = "/tmp/cuda_graph_failed_launch.dot";
+            auto dotErr = cudaGraphDebugDotPrint(_graph, dotPath.c_str(),
+                                                  cudaGraphDebugDotFlagsVerbose);
+            if (dotErr == cudaSuccess) {
+                sd_printf("  Exported failed graph DOT to %s\n", dotPath.c_str());
+            }
+            cudaGetLastError(); // clear any error from dot print
+        }
         _state = GraphState::ERROR;
+        // Record failed execution in timeline
+        if (!_executionTimeline.empty()) {
+            auto& lastEntry = _executionTimeline.back();
+            lastEntry.durationMs = endTime - startTime;
+            lastEntry.success = false;
+            lastEntry.errorMessage = cudaGetErrorString(err);
+        }
         return false;
     }
 
     if (completionEvent != nullptr) {
         cudaEventRecord(completionEvent, stream);
+    }
+
+    // Update last execution timeline entry with duration
+    if (!_executionTimeline.empty()) {
+        auto& lastEntry = _executionTimeline.back();
+        lastEntry.durationMs = endTime - startTime;
+        lastEntry.success = true;
     }
 
     _state = GraphState::INSTANTIATED;  // Ready for next launch
@@ -360,6 +424,18 @@ void CudaGraphHandle::updateStatistics() {
             case cudaGraphNodeTypeEventRecord:
             case cudaGraphNodeTypeWaitEvent:
                 _stats.numEvents++;
+                break;
+            case cudaGraphNodeTypeEmpty:
+                _stats.numEmpty++;
+                break;
+            // CUDA 11.4+ memory allocation nodes from cudaMallocAsync/cudaFreeAsync during capture
+            case cudaGraphNodeTypeMemAlloc:
+                _stats.numMemAllocs++;
+                _stats.totalMemoryOps++;
+                break;
+            case cudaGraphNodeTypeMemFree:
+                _stats.numMemFrees++;
+                _stats.totalMemoryOps++;
                 break;
             default:
                 break;
@@ -614,6 +690,507 @@ size_t CudaGraphHandle::getNumNodesDuringCapture(cudaStream_t captureStream) con
     }
 
     return numNodes;
+}
+
+// ============================================================================
+// Chrome Trace Export (PyTorch-style visualization)
+// ============================================================================
+
+static double getTimestampMs() {
+    return std::chrono::duration<double, std::milli>(
+        std::chrono::high_resolution_clock::now().time_since_epoch()
+    ).count();
+}
+
+static std::string escapeJson(const std::string& s) {
+    std::string result;
+    result.reserve(s.size() * 1.1);
+    for (char c : s) {
+        switch (c) {
+            case '"':  result += "\\\""; break;
+            case '\\': result += "\\\\"; break;
+            case '\b': result += "\\b"; break;
+            case '\f': result += "\\f"; break;
+            case '\n': result += "\\n"; break;
+            case '\r': result += "\\r"; break;
+            case '\t': result += "\\t"; break;
+            default:
+                if (static_cast<unsigned char>(c) < 0x20) {
+                    char buf[8];
+                    snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned char>(c));
+                    result += buf;
+                } else {
+                    result += c;
+                }
+        }
+    }
+    return result;
+}
+
+std::string CudaGraphHandle::getChromeTraceJson() const {
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    if (_graph == nullptr) return "{}";
+
+    std::ostringstream json;
+    json << std::fixed << std::setprecision(3);
+
+    auto nodes = getDetailedNodeInfo();
+    if (nodes.empty()) return "{\"traceEvents\":[]}";
+
+    // Get dependency edges for flow events
+    size_t numEdges = 0;
+    cudaGraphGetEdges(_graph, nullptr, nullptr, &numEdges);
+    std::vector<cudaGraphNode_t> fromNodes(numEdges), toNodes(numEdges);
+    if (numEdges > 0) {
+        cudaGraphGetEdges(_graph, fromNodes.data(), toNodes.data(), &numEdges);
+    }
+
+    // Build node index map for flow events
+    std::unordered_map<cudaGraphNode_t, size_t> nodeToIndex;
+    size_t numNodes = 0;
+    cudaGraphGetNodes(_graph, nullptr, &numNodes);
+    if (numNodes > 0) {
+        std::vector<cudaGraphNode_t> graphNodes(numNodes);
+        cudaGraphGetNodes(_graph, graphNodes.data(), &numNodes);
+        for (size_t i = 0; i < numNodes; i++) {
+            nodeToIndex[graphNodes[i]] = i;
+        }
+    }
+
+    json << "{\n";
+    json << "  \"traceEvents\": [\n";
+
+    // Process start event (metadata)
+    double baseTime = _captureStartTimeMs > 0 ? _captureStartTimeMs : getTimestampMs();
+    json << "    {\"name\": \"process_name\", \"ph\": \"M\", \"pid\": " << _deviceId
+         << ", \"tid\": 0, \"ts\": 0, \"args\": {\"name\": \"CUDA Graph (Device " << _deviceId << ")\"}},\n";
+
+    // Thread metadata
+    json << "    {\"name\": \"thread_name\", \"ph\": \"M\", \"pid\": " << _deviceId
+         << ", \"tid\": 1, \"ts\": 0, \"args\": {\"name\": \"CUDA Graph Execution\"}},\n";
+
+    // Graph capture event
+    json << "    {\"name\": \"Graph Capture\", \"ph\": \"X\", \"pid\": " << _deviceId
+         << ", \"tid\": 0, \"ts\": 0, \"dur\": "
+         << (_captureEndTimeMs - _captureStartTimeMs)
+         << ", \"args\": {\"nodes\": " << nodes.size() << "}},\n";
+
+    // Graph instantiation event
+    if (_instantiateTimeMs > 0) {
+        json << "    {\"name\": \"Graph Instantiate\", \"ph\": \"X\", \"pid\": " << _deviceId
+             << ", \"tid\": 0, \"ts\": " << (_captureEndTimeMs - _captureStartTimeMs)
+             << ", \"dur\": " << _instantiateTimeMs << "},\n";
+    }
+
+    // Add node events
+    double nodeTime = 0.0;
+    double nodeDuration = 10.0;  // Estimated duration per node in microseconds
+
+    for (size_t i = 0; i < nodes.size(); i++) {
+        const auto& n = nodes[i];
+
+        std::string eventName;
+        std::string category = "gpu";
+
+        switch (n.type) {
+            case cudaGraphNodeTypeKernel:
+                eventName = n.kernelName.empty() ? "Kernel" : n.kernelName;
+                category = "kernel";
+                nodeDuration = 50.0;  // Kernels typically longer
+                break;
+            case cudaGraphNodeTypeMemcpy:
+                eventName = "Memcpy " + n.memcpyKind;
+                category = "memcpy";
+                nodeDuration = 5.0 + (n.memcpyBytes / 1000000.0);  // Scale with size
+                break;
+            case cudaGraphNodeTypeMemset:
+                eventName = "Memset";
+                category = "memset";
+                nodeDuration = 2.0 + (n.memsetBytes / 10000000.0);
+                break;
+            case cudaGraphNodeTypeHost:
+                eventName = "HostCallback";
+                category = "host";
+                nodeDuration = 20.0;
+                break;
+            case cudaGraphNodeTypeGraph:
+                eventName = "ChildGraph";
+                category = "graph";
+                nodeDuration = 100.0;
+                break;
+            default:
+                eventName = n.typeName;
+                break;
+        }
+
+        json << "    {\"name\": \"" << escapeJson(eventName) << "\", \"ph\": \"X\", \"pid\": " << _deviceId
+             << ", \"tid\": 1, \"ts\": " << nodeTime << ", \"dur\": " << nodeDuration
+             << ", \"cat\": \"" << category << "\", \"args\": {\"node_index\": " << i;
+
+        // Add extra args based on type
+        if (n.type == cudaGraphNodeTypeMemcpy) {
+            json << ", \"bytes\": " << n.memcpyBytes << ", \"kind\": \"" << n.memcpyKind << "\"";
+        } else if (n.type == cudaGraphNodeTypeMemset) {
+            json << ", \"bytes\": " << n.memsetBytes << ", \"value\": " << n.memsetValue;
+        }
+
+        json << "}}";
+        if (i < nodes.size() - 1 || numEdges > 0 || !_executionTimeline.empty()) {
+            json << ",";
+        }
+        json << "\n";
+
+        nodeTime += nodeDuration + 1.0;  // Small gap between events
+    }
+
+    // Add flow events for dependencies
+    size_t flowId = 0;
+    for (size_t e = 0; e < numEdges; e++) {
+        auto fromIt = nodeToIndex.find(fromNodes[e]);
+        auto toIt = nodeToIndex.find(toNodes[e]);
+        if (fromIt != nodeToIndex.end() && toIt != nodeToIndex.end()) {
+            json << "    {\"ph\": \"s\", \"name\": \"dependency\", \"pid\": " << _deviceId
+                 << ", \"tid\": 1, \"id\": " << flowId << ", \"ts\": "
+                 << (fromIt->second * nodeDuration) << "},\n";
+            json << "    {\"ph\": \"f\", \"name\": \"dependency\", \"pid\": " << _deviceId
+                 << ", \"tid\": 1, \"id\": " << flowId << ", \"ts\": "
+                 << (toIt->second * nodeDuration) << ", \"bp\": \"e\"}";
+            if (e < numEdges - 1 || !_executionTimeline.empty()) {
+                json << ",";
+            }
+            json << "\n";
+            flowId++;
+        }
+    }
+
+    // Add execution timeline (replay history)
+    double replayBaseTime = nodeTime + 100.0;
+    size_t replayIdx = 0;
+    for (const auto& entry : _executionTimeline) {
+        json << "    {\"name\": \"Graph Replay #" << (replayIdx + 1) << "\", \"ph\": \"X\", \"pid\": " << _deviceId
+             << ", \"tid\": 2, \"ts\": " << replayBaseTime << ", \"dur\": " << entry.durationMs * 1000.0
+             << ", \"cat\": \"replay\", \"args\": {\"success\": " << (entry.success ? "true" : "false")
+             << ", \"kernels\": " << entry.numKernels << ", \"memops\": " << entry.numMemops;
+        if (!entry.errorMessage.empty()) {
+            json << ", \"error\": \"" << escapeJson(entry.errorMessage) << "\"";
+        }
+        json << "}}";
+        if (replayIdx < _executionTimeline.size() - 1) {
+            json << ",";
+        }
+        json << "\n";
+        replayBaseTime += entry.durationMs * 1000.0 + 50.0;
+        replayIdx++;
+    }
+
+    json << "  ],\n";
+
+    // Add metadata
+    json << "  \"displayName\": \"CUDA Graph Visualization\",\n";
+    json << "  \"metadata\": {\n";
+    json << "    \"device\": " << _deviceId << ",\n";
+    json << "    \"numNodes\": " << nodes.size() << ",\n";
+    json << "    \"numEdges\": " << numEdges << ",\n";
+    json << "    \"numReplays\": " << _executionTimeline.size() << ",\n";
+    json << "    \"kernels\": " << _stats.numKernels << ",\n";
+    json << "    \"memcpyOps\": " << _stats.numMemcpyH2D + _stats.numMemcpyD2H + _stats.numMemcpyD2D << ",\n";
+    json << "    \"memsetOps\": " << _stats.numMemsets << "\n";
+    json << "  }\n";
+    json << "}\n";
+
+    return json.str();
+}
+
+bool CudaGraphHandle::exportToChromeTrace(const std::string& filename) const {
+    std::unordered_map<std::string, std::string> emptyMetadata;
+    return exportToChromeTrace(filename, emptyMetadata);
+}
+
+bool CudaGraphHandle::exportToChromeTrace(
+    const std::string& filename,
+    const std::unordered_map<std::string, std::string>& metadata) const {
+
+    std::string json = getChromeTraceJson();
+    if (json == "{}") {
+        sd_printf("CudaGraphHandle::exportToChromeTrace - No graph data to export\n");
+        return false;
+    }
+
+    // Inject custom metadata if provided
+    if (!metadata.empty()) {
+        std::ostringstream metaJson;
+        metaJson << ",\n    \"custom\": {\n";
+        bool first = true;
+        for (const auto& [key, value] : metadata) {
+            if (!first) metaJson << ",\n";
+            metaJson << "      \"" << escapeJson(key) << "\": \"" << escapeJson(value) << "\"";
+            first = false;
+        }
+        metaJson << "\n    }\n";
+
+        // Insert before closing brace of metadata section
+        size_t metaPos = json.rfind("  }\n}");
+        if (metaPos != std::string::npos) {
+            json = json.substr(0, metaPos) + metaJson.str() + "}\n";
+        }
+    }
+
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        sd_printf("CudaGraphHandle::exportToChromeTrace - Failed to open file: %s\n", filename.c_str());
+        return false;
+    }
+
+    file << json;
+    file.close();
+
+    sd_printf("CudaGraphHandle: Exported Chrome trace to %s (%zu bytes)\n",
+              filename.c_str(), json.size());
+    return true;
+}
+
+bool CudaGraphHandle::exportToHtml(const std::string& filename) const {
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    if (_graph == nullptr) return false;
+
+    auto nodes = getDetailedNodeInfo();
+
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        sd_printf("CudaGraphHandle::exportToHtml - Failed to open file: %s\n", filename.c_str());
+        return false;
+    }
+
+    file << R"(<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CUDA Graph Visualization</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #00d4ff; margin-bottom: 10px; }
+        .stats { display: flex; justify-content: center; gap: 30px; margin: 20px 0; flex-wrap: wrap; }
+        .stat-card { background: #16213e; padding: 20px 30px; border-radius: 10px; text-align: center; min-width: 120px; }
+        .stat-value { font-size: 2em; color: #00d4ff; font-weight: bold; }
+        .stat-label { color: #888; font-size: 0.9em; margin-top: 5px; }
+        .graph-container { background: #16213e; border-radius: 15px; padding: 20px; margin: 20px 0; overflow-x: auto; }
+        .node-grid { display: flex; flex-direction: column; gap: 8px; }
+        .node-row { display: flex; align-items: center; gap: 15px; padding: 10px; background: #0f0f23; border-radius: 8px; border-left: 4px solid; }
+        .node-row.kernel { border-color: #00ff88; }
+        .node-row.memcpy { border-color: #ffaa00; }
+        .node-row.memset { border-color: #ff6b6b; }
+        .node-row.host { border-color: #a855f7; }
+        .node-row.graph { border-color: #3b82f6; }
+        .node-row.empty { border-color: #666; }
+        .node-index { font-family: monospace; color: #666; min-width: 50px; }
+        .node-type { font-weight: bold; min-width: 100px; }
+        .node-name { flex: 1; font-family: monospace; font-size: 0.9em; }
+        .node-bytes { color: #888; font-size: 0.85em; }
+        .timeline { margin-top: 30px; }
+        .timeline-bar { height: 30px; background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%); border-radius: 5px; position: relative; margin: 5px 0; }
+        .timeline-section { position: absolute; height: 100%; opacity: 0.8; }
+        .legend { display: flex; justify-content: center; gap: 20px; margin: 20px 0; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 4px; }
+        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CUDA Graph Visualization</h1>
+        <p>Interactive visualization of captured CUDA graph</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-value">)" << _deviceId << R"(</div>
+            <div class="stat-label">Device ID</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">)" << nodes.size() << R"(</div>
+            <div class="stat-label">Nodes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">)" << _stats.numKernels << R"(</div>
+            <div class="stat-label">Kernels</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">)" << (_stats.numMemcpyH2D + _stats.numMemcpyD2H + _stats.numMemcpyD2D) << R"(</div>
+            <div class="stat-label">Memcopies</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">)" << _executionTimeline.size() << R"(</div>
+            <div class="stat-label">Replays</div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background: #00ff88;"></div> Kernel</div>
+        <div class="legend-item"><div class="legend-color" style="background: #ffaa00;"></div> Memcpy</div>
+        <div class="legend-item"><div class="legend-color" style="background: #ff6b6b;"></div> Memset</div>
+        <div class="legend-item"><div class="legend-color" style="background: #a855f7;"></div> Host Callback</div>
+        <div class="legend-item"><div class="legend-color" style="background: #3b82f6;"></div> Child Graph</div>
+    </div>
+
+    <div class="graph-container">
+        <h2>Graph Nodes</h2>
+        <div class="node-grid">
+)";
+
+    for (const auto& n : nodes) {
+        std::string cssClass = "node-row ";
+        switch (n.type) {
+            case cudaGraphNodeTypeKernel: cssClass += "kernel"; break;
+            case cudaGraphNodeTypeMemcpy: cssClass += "memcpy"; break;
+            case cudaGraphNodeTypeMemset: cssClass += "memset"; break;
+            case cudaGraphNodeTypeHost: cssClass += "host"; break;
+            case cudaGraphNodeTypeGraph: cssClass += "graph"; break;
+            default: cssClass += "empty"; break;
+        }
+
+        file << "            <div class=\"" << cssClass << "\">\n";
+        file << "                <span class=\"node-index\">[" << n.nodeIndex << "]</span>\n";
+        file << "                <span class=\"node-type\">" << escapeJson(n.typeName) << "</span>\n";
+        file << "                <span class=\"node-name\">";
+        if (n.type == cudaGraphNodeTypeKernel) {
+            file << escapeJson(n.kernelName);
+        } else if (n.type == cudaGraphNodeTypeMemcpy) {
+            file << n.memcpyKind << " transfer";
+        }
+        file << "</span>\n";
+        if (n.type == cudaGraphNodeTypeMemcpy && n.memcpyBytes > 0) {
+            file << "                <span class=\"node-bytes\">" << n.memcpyBytes << " bytes</span>\n";
+        } else if (n.type == cudaGraphNodeTypeMemset && n.memsetBytes > 0) {
+            file << "                <span class=\"node-bytes\">" << n.memsetBytes << " bytes (value=" << n.memsetValue << ")</span>\n";
+        }
+        file << "            </div>\n";
+    }
+
+    file << R"(        </div>
+    </div>
+
+    <div class="graph-container">
+        <h2>Execution Timeline</h2>
+        <div class="timeline">
+)";
+
+    if (!_executionTimeline.empty()) {
+        double maxDuration = 0;
+        for (const auto& e : _executionTimeline) {
+            maxDuration = std::max(maxDuration, e.durationMs);
+        }
+        double totalWidth = 0;
+        for (const auto& entry : _executionTimeline) {
+            double width = (entry.durationMs / maxDuration) * 100.0;
+            std::string bgColor = entry.success ? "#00ff88" : "#ff6b6b";
+            file << "            <div class=\"timeline-bar\" style=\"width: " << width << "%; background: " << bgColor << ";\" title=\"Duration: " << entry.durationMs << " ms\"></div>\n";
+            totalWidth += width;
+        }
+    } else {
+        file << "            <p style=\"color: #888;\">No replay executions recorded yet.</p>\n";
+    }
+
+    file << R"(        </div>
+    </div>
+
+    <div class="footer">
+        <p>Generated by ND4J CUDA Graph Visualization</p>
+        <p>Open chrome://tracing and load the .json trace file for detailed timeline analysis</p>
+    </div>
+</body>
+</html>
+)";
+
+    file.close();
+    sd_printf("CudaGraphHandle: Exported HTML visualization to %s\n", filename.c_str());
+    return true;
+}
+
+bool CudaGraphHandle::debugDump(const std::string& debugPath) const {
+    bool success = true;
+
+    // 1. Export DOT file for graphviz
+    if (!exportToDot(debugPath + ".dot")) {
+        sd_printf("CudaGraphHandle::debugDump - Failed to export DOT file\n");
+        success = false;
+    }
+
+    // 2. Export Chrome trace JSON
+    if (!exportToChromeTrace(debugPath + ".json")) {
+        sd_printf("CudaGraphHandle::debugDump - Failed to export Chrome trace\n");
+        success = false;
+    }
+
+    // 3. Export HTML visualization
+    if (!exportToHtml(debugPath + ".html")) {
+        sd_printf("CudaGraphHandle::debugDump - Failed to export HTML\n");
+        success = false;
+    }
+
+    // 4. Export node details as JSON
+    {
+        std::ofstream file(debugPath + "_nodes.json");
+        if (file.is_open()) {
+            auto nodes = getDetailedNodeInfo();
+            file << "{\n  \"nodes\": [\n";
+            for (size_t i = 0; i < nodes.size(); i++) {
+                const auto& n = nodes[i];
+                file << "    {\"index\": " << n.nodeIndex
+                     << ", \"type\": \"" << escapeJson(n.typeName) << "\""
+                     << ", \"typeEnum\": " << static_cast<int>(n.type);
+                if (n.type == cudaGraphNodeTypeKernel) {
+                    file << ", \"kernel\": \"" << escapeJson(n.kernelName) << "\"";
+                } else if (n.type == cudaGraphNodeTypeMemcpy) {
+                    file << ", \"memcpyKind\": \"" << escapeJson(n.memcpyKind) << "\""
+                         << ", \"bytes\": " << n.memcpyBytes;
+                } else if (n.type == cudaGraphNodeTypeMemset) {
+                    file << ", \"bytes\": " << n.memsetBytes
+                         << ", \"value\": " << n.memsetValue;
+                }
+                file << "}";
+                if (i < nodes.size() - 1) file << ",";
+                file << "\n";
+            }
+            file << "  ],\n";
+            file << "  \"statistics\": {\n";
+            file << "    \"numKernels\": " << _stats.numKernels << ",\n";
+            file << "    \"numMemcpyH2D\": " << _stats.numMemcpyH2D << ",\n";
+            file << "    \"numMemcpyD2H\": " << _stats.numMemcpyD2H << ",\n";
+            file << "    \"numMemcpyD2D\": " << _stats.numMemcpyD2D << ",\n";
+            file << "    \"numMemsets\": " << _stats.numMemsets << ",\n";
+            file << "    \"numHostCallbacks\": " << _stats.numHostCallbacks << ",\n";
+            file << "    \"numChildGraphs\": " << _stats.numChildGraphs << ",\n";
+            file << "    \"totalMemoryOps\": " << _stats.totalMemoryOps << "\n";
+            file << "  }\n}\n";
+            file.close();
+        }
+    }
+
+    sd_printf("CudaGraphHandle::debugDump - Exported debug files to %s.{dot,json,html}\n",
+              debugPath.c_str());
+    return success;
+}
+
+void CudaGraphHandle::recordReplayStart(cudaStream_t stream) {
+    // Record timestamp for execution timeline
+    // The actual duration will be recorded at launch completion
+    ExecutionTimelineEntry entry;
+    entry.timestampMs = getTimestampMs();
+    entry.numKernels = _stats.numKernels;
+    entry.numMemops = _stats.totalMemoryOps;
+    entry.success = true;
+
+    // Store for later update (in launchAsync)
+    _executionTimeline.push_back(entry);
+
+    // Keep only last 1000 entries to avoid memory growth
+    if (_executionTimeline.size() > 1000) {
+        _executionTimeline.erase(_executionTimeline.begin());
+    }
 }
 
 }  // namespace cuda

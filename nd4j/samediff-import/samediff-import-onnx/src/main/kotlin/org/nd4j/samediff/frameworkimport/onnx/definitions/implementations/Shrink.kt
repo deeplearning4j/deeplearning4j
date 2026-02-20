@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - bias: The bias value added/subtracted (default: 0.0)
  * - lambd: The threshold value (default: 0.5)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Shrink"], frameworkName = "onnx")
 class Shrink : PreImportHook {

@@ -36,7 +36,7 @@ import java.util.List;
  * Short-Time Fourier Transform operation.
  * Computes STFT by applying DFT to windowed overlapping segments.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class STFT extends DynamicCustomOp {

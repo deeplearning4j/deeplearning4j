@@ -55,7 +55,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - output: Tensor [N, C, kH, kW, outH, outW] from native op,
  *           reshaped to [N, C * kH * kW, L] for ONNX compatibility
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Im2Col", "im2col", "Unfold"], frameworkName = "onnx")
 class Im2Col : PreImportHook {

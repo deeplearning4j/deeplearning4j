@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * GPU-specific validation tests for reduction operations.
  * Tests max, min, prod, std, var, norm1, norm2 operations on CUDA backend.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @BackendTest(backends = {MultiBackendTestConfiguration.Backend.CUDA}, description = "GPU reduction operation validation")
 public class GpuReductionOpValidationTests {

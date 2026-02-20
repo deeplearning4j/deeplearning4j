@@ -49,7 +49,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - keepdims: Whether to keep reduced dimensions (default: 1)
  * - noop_with_empty_axes: If true and axes is empty, return input (default: 0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ReduceLogSum"], frameworkName = "onnx")
 class ReduceLogSum : PreImportHook {

@@ -599,6 +599,68 @@ public class ND4JSystemProperties {
      */
     public static final String VLM_SPECULATIVE_MAX_TOKENS = "nd4j.vlm.speculative.maxTokens";
 
+    /**
+     * Applicability: DSP native executor with CUDA graphs<br>
+     * Description: Maximum KV cache sequence length for pre-allocation.
+     * When set to a positive value, KV cache output slots (present_key / present_value outputs)
+     * are pre-allocated at this maximum size on the first decode step and reused for all
+     * subsequent steps. This keeps GPU buffer addresses stable across steps, which is required
+     * for CUDA graph capture of autoregressive decoder models.
+     * <p>
+     * Set this to the maximum sequence length you expect (prompt length + max new tokens).
+     * Example: -Dnd4j.dsp.maxKvCacheLength=2048
+     * <p>
+     * Default: 0 (disabled)
+     */
+    public static final String DSP_MAX_KV_CACHE_LENGTH = "nd4j.dsp.maxKvCacheLength";
+
+    /**
+     * When set, enables trace-level logging for DynamicShapePlanExecutor.
+     * Presence of the property (any value) enables tracing.
+     * Example: -Dnd4j.dsp.trace
+     */
+    public static final String DSP_TRACE = "nd4j.dsp.trace";
+
+    /**
+     * Controls how often CUDA error checks are performed in DynamicShapePlanExecutor.
+     * Set to 1 to check after every op (useful for debugging CUDA errors).
+     * Default: 50
+     * Example: -Dnd4j.dsp.errorCheckInterval=1
+     */
+    public static final String DSP_ERROR_CHECK_INTERVAL = "nd4j.dsp.errorCheckInterval";
+
+    /**
+     * Controls how often the SameDiff workspace is reset during Java-side DSP execution.
+     * Set to 1 to reset every op.
+     * Default: 25
+     * Example: -Dnd4j.dsp.workspaceResetInterval=1
+     */
+    public static final String DSP_WORKSPACE_RESET_INTERVAL = "nd4j.dsp.workspaceResetInterval";
+
+    /**
+     * When set to {@code true}, dumps the first few values of each output to the log
+     * after every Java-side DSP execution step. Useful for comparing Java vs native output.
+     * Default: false
+     * Example: -Dnd4j.dsp.java.dumpOutputs=true
+     */
+    public static final String DSP_JAVA_DUMP_OUTPUTS = "nd4j.dsp.java.dumpOutputs";
+
+    /**
+     * When set to {@code true}, dumps the first few values of each output to the log
+     * after every native-side DSP execution step. Useful for comparing Java vs native output.
+     * Default: false
+     * Example: -Dnd4j.dsp.native.dumpOutputs=true
+     */
+    public static final String DSP_NATIVE_DUMP_OUTPUTS = "nd4j.dsp.native.dumpOutputs";
+
+    /**
+     * When set to {@code true}, enables per-step execution timing in the native DSP executor.
+     * Prints a breakdown of time spent in graph-replay vs slot-by-slot segments.
+     * Default: false
+     * Example: -Dnd4j.dsp.executionTiming=true
+     */
+    public static final String DSP_EXECUTION_TIMING = "nd4j.dsp.executionTiming";
+
     private ND4JSystemProperties() {
     }
 }

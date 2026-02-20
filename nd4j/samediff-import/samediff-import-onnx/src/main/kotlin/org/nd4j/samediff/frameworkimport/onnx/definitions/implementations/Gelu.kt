@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - approximate: Use approximate computation (default: none)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Gelu"], frameworkName = "onnx")
 class Gelu : PreImportHook {

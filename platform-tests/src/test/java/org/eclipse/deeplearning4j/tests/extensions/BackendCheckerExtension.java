@@ -45,7 +45,7 @@ import java.util.Set;
  * - sd.test.allow.all: Allow all tests regardless of backend (default: false)
  *
  * @author Adam Gibson
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class BackendCheckerExtension implements ExecutionCondition {
 

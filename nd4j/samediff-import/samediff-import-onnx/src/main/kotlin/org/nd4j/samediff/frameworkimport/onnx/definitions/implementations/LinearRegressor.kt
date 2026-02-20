@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - targets: Number of targets (default: 1)
  * - post_transform: NONE or PROBIT
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["LinearRegressor"], frameworkName = "onnx")
 class LinearRegressor : PreImportHook {

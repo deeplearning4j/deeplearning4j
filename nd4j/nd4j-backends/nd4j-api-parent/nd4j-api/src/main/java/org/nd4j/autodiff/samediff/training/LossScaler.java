@@ -57,7 +57,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * }
  * </pre>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 public class LossScaler {

@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - output: A copy of data with updates scattered at the indices
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ScatterND"], frameworkName = "onnx")
 class ScatterND : PreImportHook {

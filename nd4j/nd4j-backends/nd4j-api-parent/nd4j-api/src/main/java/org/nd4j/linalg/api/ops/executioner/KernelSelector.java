@@ -57,7 +57,7 @@ import java.util.Map;
  * }</pre>
  * </p>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public interface KernelSelector {
 

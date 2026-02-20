@@ -43,7 +43,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - threshold: Threshold for binarization (default: 0.0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Binarizer"], frameworkName = "onnx")
 class Binarizer : PreImportHook {

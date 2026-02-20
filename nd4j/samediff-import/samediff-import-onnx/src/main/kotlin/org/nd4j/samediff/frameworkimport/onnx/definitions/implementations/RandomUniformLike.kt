@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - low: Lower bound of uniform distribution (default: 0.0)
  * - seed: Random seed (optional)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["RandomUniformLike"], frameworkName = "onnx")
 class RandomUniformLike : PreImportHook {

@@ -47,6 +47,7 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
     private SDVariable queryMask;
     private SDVariable valueMask;
+    private SDVariable attentionBias;
     private SDVariable keyCache;
     private SDVariable valueCache;
 
@@ -66,6 +67,34 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
     public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask,
                                  double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training) {
         super(wrapFilterNull(queries, values, keys, queryMask, valueMask), null);
+        this.scaleFactor = scaleFactor;
+        this.dropout = dropoutProbability;
+        this.useCausalMask = useCausalMask;
+        this.training = training;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, dropoutProbability);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, training, useFlashAttention);
+    }
+
+    /**
+     * Create a dot product attention operation with attention bias.
+     *
+     * @param queries Query tensor [batch, Tq, dim] or [batch, Tq, heads, dim] for flash attention
+     * @param values Value tensor [batch, Tv, dim] or [batch, Tv, heads, dim]
+     * @param keys Key tensor [batch, Tv, dim] or [batch, Tv, heads, dim], or null to use values
+     * @param queryMask Query mask [batch, Tq] or null
+     * @param valueMask Value mask [batch, Tv] or null
+     * @param attentionBias Attention bias [batch, heads, Tq, Tk] or broadcastable, added to scores before softmax
+     * @param scaleFactor Scale factor for attention scores (0 = auto: 1/sqrt(dim))
+     * @param dropoutProbability Dropout probability (0 = no dropout)
+     * @param useCausalMask Whether to apply causal (lower triangular) mask
+     * @param training Whether in training mode (affects dropout)
+     */
+    public DotProductAttentionV2(INDArray queries, INDArray values, INDArray keys, INDArray queryMask, INDArray valueMask,
+                                 INDArray attentionBias, double scaleFactor, double dropoutProbability, 
+                                 boolean useCausalMask, boolean training) {
+        super(wrapFilterNull(queries, values, keys, queryMask, valueMask, attentionBias), null);
         this.scaleFactor = scaleFactor;
         this.dropout = dropoutProbability;
         this.useCausalMask = useCausalMask;
@@ -149,6 +178,39 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         this.training = training;
         this.queryMask = queryMask;
         this.valueMask = valueMask;
+        // T_ARG order: scale, dropout
+        addTArgument(scaleFactor, dropoutProbability);
+        // B_ARG order: useCausalMask, training, useFlashAttention
+        addBArgument(useCausalMask, training, useFlashAttention);
+    }
+
+    /**
+     * Create a dot product attention operation for SameDiff with attention bias.
+     *
+     * @param sd SameDiff instance
+     * @param queries Query tensor [batch, Tq, dim] or [batch, Tq, heads, dim] for flash attention
+     * @param values Value tensor [batch, Tv, dim] or [batch, Tv, heads, dim]
+     * @param keys Key tensor [batch, Tv, dim] or [batch, Tv, heads, dim], or null to use values
+     * @param queryMask Query mask [batch, Tq] or null
+     * @param valueMask Value mask [batch, Tv] or null
+     * @param attentionBias Attention bias [batch, heads, Tq, Tk] or broadcastable, added to scores before softmax
+     * @param scaleFactor Scale factor for attention scores (0 = auto: 1/sqrt(dim))
+     * @param dropoutProbability Dropout probability (0 = no dropout)
+     * @param useCausalMask Whether to apply causal (lower triangular) mask
+     * @param training Whether in training mode (affects dropout)
+     */
+    public DotProductAttentionV2(SameDiff sd, SDVariable queries, SDVariable values, SDVariable keys,
+                                 SDVariable queryMask, SDVariable valueMask, SDVariable attentionBias,
+                                 double scaleFactor, double dropoutProbability,
+                                 boolean useCausalMask, boolean training) {
+        super(null, sd, inputsWithBias(sd, queries, values, keys, queryMask, valueMask, attentionBias), false);
+        this.scaleFactor = scaleFactor;
+        this.dropout = dropoutProbability;
+        this.useCausalMask = useCausalMask;
+        this.training = training;
+        this.queryMask = queryMask;
+        this.valueMask = valueMask;
+        this.attentionBias = attentionBias;
         // T_ARG order: scale, dropout
         addTArgument(scaleFactor, dropoutProbability);
         // B_ARG order: useCausalMask, training, useFlashAttention
@@ -249,6 +311,27 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         return inputs.toArray(new SDVariable[inputs.size()]);
     }
 
+    /**
+     * Build input array with attention bias (placed at index 5 per C++ op spec).
+     * Input order: queries(0), values(1), keys(2), queryMask(3), valueMask(4), attentionBias(5)
+     */
+    private static SDVariable[] inputsWithBias(SameDiff sd,
+                                               SDVariable queries,
+                                               SDVariable values,
+                                               SDVariable keys,
+                                               SDVariable queryMask,
+                                               SDVariable valueMask,
+                                               SDVariable attentionBias) {
+        List<SDVariable> inputs = new ArrayList<>();
+        inputs.add(queries);
+        inputs.add(values);
+        inputs.add(keys == null ? values : keys);
+        inputs.add(queryMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : queryMask);
+        inputs.add(valueMask == null ? sd.constant(Nd4j.empty(queries.dataType())) : valueMask);
+        inputs.add(attentionBias == null ? sd.constant(Nd4j.empty(queries.dataType())) : attentionBias);
+        return inputs.toArray(new SDVariable[inputs.size()]);
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
@@ -283,11 +366,20 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         if(args().length > 4)
             this.valueMask = arg(4);
 
-        if(args().length > 5)
-            this.keyCache = arg(5);
-
-        if(args().length > 6)
-            this.valueCache = arg(6);
+        // Input 5 can be either attentionBias or keyCache depending on context.
+        // The C++ code distinguishes by checking if input 6 is present:
+        // - If only input 5 is present and looks like bias shape, it's attentionBias
+        // - If both input 5 and 6 are present, they are keyCache and valueCache
+        if(args().length > 5) {
+            if(args().length > 6) {
+                // Both 5 and 6 present -> keyCache and valueCache
+                this.keyCache = arg(5);
+                this.valueCache = arg(6);
+            } else {
+                // Only 5 present -> attentionBias
+                this.attentionBias = arg(5);
+            }
+        }
     }
 
     @Override
@@ -321,17 +413,28 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
-        DataType first = dataTypes.get(0);
-        for( int i = 0; i < dataTypes.size(); i++) {
-            Preconditions.checkState(dataTypes.get(i).isFPType(), "Input %s datatype must be a floating point type, got datypes %s", dataTypes);
-            if(i > 0) {
-                Preconditions.checkState(first == dataTypes.get(i), "All datatypes must be same type, got input datatypes %s", dataTypes);
-            }
-        }
-        if(dropout > 0)
-            return Arrays.asList(first, first,first,first);
+        Preconditions.checkState(dataTypes != null && dataTypes.size() >= 3,
+                "Expected at least 3 input datatypes (queries, values, keys), got %s", dataTypes);
 
-        return Arrays.asList(first, first,first);
+        DataType first = dataTypes.get(0);
+        DataType second = dataTypes.get(1);
+        DataType third = dataTypes.get(2);
+
+        Preconditions.checkState(first != null && first.isFPType(),
+                "Query datatype must be floating point, got %s", first);
+        Preconditions.checkState(second != null && second.isFPType(),
+                "Value datatype must be floating point, got %s", second);
+        Preconditions.checkState(third != null && third.isFPType(),
+                "Key datatype must be floating point, got %s", third);
+        Preconditions.checkState(first == second && first == third,
+                "Queries/values/keys datatypes must match, got %s", dataTypes.subList(0, 3));
+
+        // Optional mask/bias/cache inputs may be BOOL/INT in imported graphs.
+        // Runtime op handles casting/validation for optional inputs.
+        if (dropout > 0)
+            return Arrays.asList(first, first, first, first);
+
+        return Arrays.asList(first, first, first);
 
 
     }

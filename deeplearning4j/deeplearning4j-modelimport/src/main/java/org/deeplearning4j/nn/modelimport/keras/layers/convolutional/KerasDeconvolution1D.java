@@ -46,7 +46,7 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.Keras
  * deconvolution or fractionally-strided convolution. It's commonly used
  * for upsampling in autoencoders and generative models.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

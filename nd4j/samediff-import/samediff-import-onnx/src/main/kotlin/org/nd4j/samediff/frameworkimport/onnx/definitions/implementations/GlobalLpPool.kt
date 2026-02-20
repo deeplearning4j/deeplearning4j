@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - p: Exponent of Lp norm (default: 2)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["GlobalLpPool"], frameworkName = "onnx")
 class GlobalLpPool : PreImportHook {

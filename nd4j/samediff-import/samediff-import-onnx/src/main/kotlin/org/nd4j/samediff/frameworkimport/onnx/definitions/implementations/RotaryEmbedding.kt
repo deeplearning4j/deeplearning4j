@@ -58,7 +58,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - rotary_embedding_dim: Dimension for rotary embedding (default: 0 - use head_dim)
  * - scale: Scaling factor (default: 1.0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["RotaryEmbedding"], frameworkName = "onnx")
 class RotaryEmbedding : PreImportHook {

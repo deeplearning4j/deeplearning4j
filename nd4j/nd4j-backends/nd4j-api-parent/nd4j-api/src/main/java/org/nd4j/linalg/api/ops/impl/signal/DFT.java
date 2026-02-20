@@ -36,7 +36,7 @@ import java.util.List;
  * Discrete Fourier Transform operation.
  * Computes the DFT of a complex input tensor.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class DFT extends DynamicCustomOp {

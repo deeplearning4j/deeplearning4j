@@ -108,7 +108,8 @@ void FlashAttentionHelper::forward(
     NDArray* query, NDArray* key, NDArray* value,
     NDArray* output, const Config& config,
     NDArray* softmaxLse, NDArray* attentionScores,
-    NDArray* attentionLogits, LaunchContext* context) {
+    NDArray* attentionLogits, LaunchContext* context,
+    NDArray* attentionBias) {
 
   auto rank = query->rankOf();
   REQUIRE_TRUE(rank == 3 || rank == 4, 0,
@@ -117,9 +118,11 @@ void FlashAttentionHelper::forward(
                "FlashAttentionHelper::forward: query, key, value must have same rank");
 
   if (rank == 3) {
-    forward3D(query, key, value, output, config, softmaxLse, attentionScores, attentionLogits, context);
+    forward3D(query, key, value, output, config, softmaxLse, attentionScores, attentionLogits, context,
+              attentionBias);
   } else {
-    forward4D(query, key, value, output, config, softmaxLse, attentionScores, attentionLogits, context);
+    forward4D(query, key, value, output, config, softmaxLse, attentionScores, attentionLogits, context,
+              attentionBias);
   }
 }
 
@@ -132,7 +135,8 @@ void FlashAttentionHelper::forward3D(
     NDArray* query, NDArray* key, NDArray* value,
     NDArray* output, const Config& config,
     NDArray* softmaxLse, NDArray* attentionScores,
-    NDArray* attentionLogits, LaunchContext* context) {
+    NDArray* attentionLogits, LaunchContext* context,
+    NDArray* attentionBias) {
 
   auto batch = query->sizeAt(0);
   auto seqLenQ = query->sizeAt(1);
@@ -142,8 +146,8 @@ void FlashAttentionHelper::forward3D(
   float scale = config.scale > 0.0f ? config.scale : 1.0f / std::sqrt(static_cast<float>(dim));
 
 #if defined(SD_CUDA)
-  // Use fused CUDA kernel only when no scores output needed
-  // cuBLAS matmuls are faster than custom kernels when we need intermediate results
+  // Use fused CUDA kernel - now supports attention bias!
+  // cuBLAS matmuls are only faster when we need intermediate score results
   bool supportedType = (query->dataType() == DataType::FLOAT32 ||
                         query->dataType() == DataType::DOUBLE ||
                         query->dataType() == DataType::HALF);
@@ -151,8 +155,8 @@ void FlashAttentionHelper::forward3D(
   bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
 
   if (supportedType && !needScores && !needLogits) {
-    // Use fast fused kernel when no scores output needed
-    fusedAttentionCuda(query, key, value, output, scale, config.isCausal, context);
+    // Use fast fused kernel - handles attention bias internally
+    fusedAttentionCuda(query, key, value, output, scale, config.isCausal, context, attentionBias);
     if (softmaxLse != nullptr) {
       softmaxLse->nullify();
     }
@@ -184,6 +188,34 @@ void FlashAttentionHelper::forward3D(
   // Batched matmul: Q @ K^T with scale -> [batch, seqQ, seqKV]
   MmulHelper::matmul(query, key, workBuffer, false, true, scale, 0.0);
 
+  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+    NDArray* biasForAdd = attentionBias;
+    std::unique_ptr<NDArray> biasPermutedOwner;
+    std::unique_ptr<NDArray> biasReshapedOwner;
+
+    // Some ONNX exports provide additive attention bias as [..., seqKV, seqQ]
+    // (source,target) instead of [..., seqQ, seqKV]. Normalize by swapping the
+    // trailing dimensions when needed.
+    if (biasForAdd->rankOf() >= 2 &&
+        biasForAdd->sizeAt(biasForAdd->rankOf() - 2) == seqLenKV &&
+        biasForAdd->sizeAt(biasForAdd->rankOf() - 1) == seqLenQ) {
+      std::vector<LongType> perm(static_cast<size_t>(biasForAdd->rankOf()));
+      for (int i = 0; i < biasForAdd->rankOf(); i++) perm[static_cast<size_t>(i)] = i;
+      std::swap(perm[perm.size() - 2], perm[perm.size() - 1]);
+      biasPermutedOwner.reset(biasForAdd->permute(perm, false, false));
+      biasForAdd = biasPermutedOwner.get();
+    }
+
+    // Common ONNX case for 3D attention bias: [batch,1,seqQ,seqKV] -> [batch,seqQ,seqKV]
+    if (biasForAdd->rankOf() == 4 && biasForAdd->sizeAt(1) == 1) {
+      std::vector<LongType> biasShape3d = {biasForAdd->sizeAt(0), biasForAdd->sizeAt(2), biasForAdd->sizeAt(3)};
+      biasReshapedOwner.reset(biasForAdd->reshape('c', biasShape3d));
+      biasForAdd = biasReshapedOwner.get();
+    }
+
+    workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasForAdd, workBuffer, false);
+  }
+
 #if defined(SD_CUDA)
   // Fused causal mask + softmax (single kernel instead of mask + softmax)
   fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
@@ -194,7 +226,9 @@ void FlashAttentionHelper::forward3D(
     // Get mask from workspace
     NDArray* causalMask = workspace->getBuffer("forward3d_mask", maskShape, query->dataType(), context);
     causalMask->nullify();
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
+                          (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
     *workBuffer += *causalMask;
   }
   if (logitsBuffer != nullptr) {
@@ -220,7 +254,8 @@ void FlashAttentionHelper::forward4D(
     NDArray* query, NDArray* key, NDArray* value,
     NDArray* output, const Config& config,
     NDArray* softmaxLse, NDArray* attentionScores,
-    NDArray* attentionLogits, LaunchContext* context) {
+    NDArray* attentionLogits, LaunchContext* context,
+    NDArray* attentionBias) {
 
   auto batch = query->sizeAt(0);
   auto seqLenQ = query->sizeAt(1);
@@ -235,15 +270,17 @@ void FlashAttentionHelper::forward4D(
   auto workspace = AttentionWorkspace::getInstance();
 
 #if defined(SD_CUDA)
-  // Use fused CUDA kernel only when no scores output needed
+  // Use fused CUDA kernel - supports attention bias in the kernel itself
   bool supportedType = (query->dataType() == DataType::FLOAT32 ||
                         query->dataType() == DataType::DOUBLE ||
                         query->dataType() == DataType::HALF);
   bool noGQA = (headsPerKvHead == 1);
   bool needScores = (attentionScores != nullptr && !attentionScores->isEmpty());
   bool needLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
+  bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
 
-  // Only use fused kernel when no scores needed - cuBLAS is faster for matmuls
+  // Use fused kernel when no scores needed - cuBLAS is only faster when we need intermediate results
+  // The fused kernel now handles attention bias internally for maximum performance
   if (supportedType && noGQA && !needScores && !needLogits) {
     // Use workspace for permuted arrays - CRITICAL: this eliminates malloc/free per call
     std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
@@ -276,8 +313,45 @@ void FlashAttentionHelper::forward4D(
     // Get output buffer from workspace
     NDArray* outFlat = workspace->getBuffer("forward4d_outFlat", shape3D_Q, query->dataType(), context);
 
-    // Fast path: fused kernel
-    fusedAttentionCuda(qPermBuffer, kPermBuffer, vPermBuffer, outFlat, scale, config.isCausal, context);
+    // Prepare attention bias if present - broadcast+reshape to [batch*heads, seqQ, seqKV]
+    // CRITICAL: The fused CUDA kernel templates on query dtype (float32/float64/half).
+    // If the bias is a different dtype (e.g. LONG from ONNX mask), we MUST cast it
+    // to match the query type, otherwise the kernel reads raw bytes as wrong type.
+    NDArray* biasFlat = nullptr;
+    std::unique_ptr<NDArray> biasReshapedOwner;
+    std::unique_ptr<NDArray> biasBroadcastOwner;
+    std::unique_ptr<NDArray> biasCastOwner;
+    if (hasAttentionBias) {
+      NDArray* biasToUse = attentionBias;
+
+      // Cast bias to query dtype if mismatched (LONG->FLOAT32 is common for ONNX masks)
+      if (attentionBias->dataType() != query->dataType()) {
+        biasCastOwner.reset(new NDArray(attentionBias->cast(query->dataType())));
+        biasToUse = biasCastOwner.get();
+      }
+
+      auto biasElements = biasToUse->lengthOf();
+      auto targetElements = batch * numHeads * seqLenQ * seqLenKV;
+
+      if (biasElements == targetElements) {
+        // Direct reshape: [batch, numHeads, seqQ, seqKV] -> [batch*numHeads, seqQ, seqKV]
+        std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
+        biasReshapedOwner.reset(biasToUse->reshape('c', biasShape3D, false));
+        biasFlat = biasReshapedOwner.get();
+      } else {
+        // Bias needs broadcasting (e.g. [1,1,1,seqKV] -> [batch,numHeads,seqQ,seqKV])
+        std::vector<LongType> targetShape4D = {batch, numHeads, seqLenQ, seqLenKV};
+        biasBroadcastOwner.reset(new NDArray('c', targetShape4D, query->dataType(), context));
+        biasToUse->applyTrueBroadcast(BroadcastOpsTuple::Assign(), biasBroadcastOwner.get(),
+                                          biasBroadcastOwner.get(), false);
+        std::vector<LongType> biasShape3D = {batch * numHeads, seqLenQ, seqLenKV};
+        biasReshapedOwner.reset(biasBroadcastOwner->reshape('c', biasShape3D, false));
+        biasFlat = biasReshapedOwner.get();
+      }
+    }
+
+    // Fast path: fused kernel with optional bias
+    fusedAttentionCuda(qPermBuffer, kPermBuffer, vPermBuffer, outFlat, scale, config.isCausal, context, biasFlat);
 
     // Reshape back to 4D: [batch, heads, seq, dim]
     std::vector<LongType> shape4D = {batch, numHeads, seqLenQ, headDim};
@@ -288,7 +362,10 @@ void FlashAttentionHelper::forward4D(
     output->assign(outPerm);
     delete outPerm;
 
-    // Restore workspace buffer shapes for next call
+    // Restore workspace buffer shapes for next call.
+    // Keeping the original shape avoids workspace reallocation for the same key
+    // in later attention ops captured into the same CUDA graph segment.
+    outFlat->reshapei(shape3D_Q);
     qPermBuffer->reshapei(qPermShape);
     kPermBuffer->reshapei(kvPermShape);
     vPermBuffer->reshapei(kvPermShape);
@@ -324,11 +401,12 @@ void FlashAttentionHelper::forward4D(
   NDArray* kExpanded = kPermBuffer;
   NDArray* vExpanded = vPermBuffer;
 
+  std::vector<LongType> tiledShape;
   if (headsPerKvHead > 1) {
     // Tile KV heads using workspace buffer
     std::vector<LongType> expandedShape = {batch, numHeads, seqLenKV, headDim};
     // Get workspace buffers with tiled shape for direct write
-    std::vector<LongType> tiledShape = {batch, numKvHeads, static_cast<LongType>(headsPerKvHead), seqLenKV, headDim};
+    tiledShape = {batch, numKvHeads, static_cast<LongType>(headsPerKvHead), seqLenKV, headDim};
     NDArray* kTiledBuf = workspace->getBuffer("forward4d_kTiled", tiledShape, key->dataType(), context);
     NDArray* vTiledBuf = workspace->getBuffer("forward4d_vTiled", tiledShape, value->dataType(), context);
 
@@ -363,49 +441,82 @@ void FlashAttentionHelper::forward4D(
   kExpanded->reshapei(kvShape);
   vExpanded->reshapei(kvShape);
 
-  // Use stack-allocated NDArrays for computation buffers.
-  // These change shape between prefill (seqLenQ=79) and decode (seqLenQ=1),
-  // so workspace caching can trigger CUDA allocations during graph capture (error 901).
-  NDArray workBuffer('c', scoresShape, query->dataType(), context);
+  // Use persistent workspace buffers for intermediates.
+  // CUDA graph replay captures raw buffer addresses; stack-local NDArrays are
+  // destroyed after capture and leave stale addresses for replay.
+  NDArray* workBuffer = workspace->getBuffer("forward4d_scores", scoresShape, query->dataType(), context);
 
   // Batched matmul: Q @ K^T with scale
-  MmulHelper::matmul(qPermBuffer, kExpanded, &workBuffer, false, true, scale, 0.0);
+  MmulHelper::matmul(qPermBuffer, kExpanded, workBuffer, false, true, scale, 0.0);
+
+  if (attentionBias != nullptr && !attentionBias->isEmpty()) {
+    NDArray* biasForAdd = attentionBias;
+    std::unique_ptr<NDArray> biasPermutedOwner;
+    std::unique_ptr<NDArray> biasExpandedOwner;
+    std::vector<LongType> scores4dShape = {batch, numHeads, seqLenQ, seqLenKV};
+
+    // Normalize ONNX source/target ordering [..., seqKV, seqQ] -> [..., seqQ, seqKV].
+    if (biasForAdd->rankOf() >= 2 &&
+        biasForAdd->sizeAt(biasForAdd->rankOf() - 2) == seqLenKV &&
+        biasForAdd->sizeAt(biasForAdd->rankOf() - 1) == seqLenQ) {
+      std::vector<LongType> perm(static_cast<size_t>(biasForAdd->rankOf()));
+      for (int i = 0; i < biasForAdd->rankOf(); i++) perm[static_cast<size_t>(i)] = i;
+      std::swap(perm[perm.size() - 2], perm[perm.size() - 1]);
+      biasPermutedOwner.reset(biasForAdd->permute(perm, false, false));
+      biasForAdd = biasPermutedOwner.get();
+    }
+
+    // Rank-3 additive bias from ONNX: [batch, seqQ, seqKV] -> [batch, 1, seqQ, seqKV]
+    if (biasForAdd->rankOf() == 3 &&
+        biasForAdd->sizeAt(0) == batch &&
+        biasForAdd->sizeAt(1) == seqLenQ &&
+        biasForAdd->sizeAt(2) == seqLenKV) {
+      std::vector<LongType> expandedShape = {batch, 1, seqLenQ, seqLenKV};
+      biasExpandedOwner.reset(biasForAdd->reshape('c', expandedShape));
+      biasForAdd = biasExpandedOwner.get();
+    }
+
+    workBuffer->reshapei(scores4dShape);
+    workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasForAdd, workBuffer, false);
+    workBuffer->reshapei(scoresShape);
+  }
 
   // Logits buffer for pre-softmax scores
-  NDArray logitsBuf('c', scoresShape, query->dataType(), context);
   NDArray* logitsBuffer = nullptr;
   bool wantLogits = (attentionLogits != nullptr && !attentionLogits->isEmpty());
   if (wantLogits) {
-    logitsBuffer = &logitsBuf;
+    logitsBuffer = workspace->getBuffer("forward4d_logits", scoresShape, query->dataType(), context);
   }
 
 #if defined(SD_CUDA)
-  fusedCausalMaskSoftmaxCuda(&workBuffer, &workBuffer, logitsBuffer, config.isCausal, context);
+  fusedCausalMaskSoftmaxCuda(workBuffer, workBuffer, logitsBuffer, config.isCausal, context);
 #else
   if (config.isCausal && seqLenQ > 0 && seqLenKV > 0) {
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
     NDArray causalMask('c', maskShape, query->dataType(), context);
     causalMask.nullify();
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask.fillAsTriangular, (-1.0e9f, 1, 0, causalMask, 'u', false), SD_COMMON_TYPES);
-    workBuffer += causalMask;
+    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask.fillAsTriangular,
+                          (-1.0e9f, 1, causalOffset, causalMask, 'u', false), SD_COMMON_TYPES);
+    *workBuffer += causalMask;
   }
   if (logitsBuffer != nullptr) {
-    logitsBuffer->assign(&workBuffer);
+    logitsBuffer->assign(workBuffer);
   }
-  ops::helpers::softmax(context, &workBuffer, &workBuffer, -1);
+  ops::helpers::softmax(context, workBuffer, workBuffer, -1);
 #endif
 
   // Output buffer
   std::vector<LongType> outShape = {batch * numHeads, seqLenQ, headDim};
-  NDArray outReshaped('c', outShape, query->dataType(), context);
+  NDArray* outReshaped = workspace->getBuffer("forward4d_outReshaped", outShape, query->dataType(), context);
 
   // Batched matmul: scores @ V
-  MmulHelper::matmul(&workBuffer, vExpanded, &outReshaped, false, false, 1.0, 0.0);
+  MmulHelper::matmul(workBuffer, vExpanded, outReshaped, false, false, 1.0, 0.0);
 
   // Reshape and permute back to output
   std::vector<LongType> outPermShape = {batch, numHeads, seqLenQ, headDim};
-  outReshaped.reshapei(outPermShape);
-  auto outPerm = outReshaped.permute(permOrder, false, false);
+  outReshaped->reshapei(outPermShape);
+  auto outPerm = outReshaped->permute(permOrder, false, false);
   output->assign(outPerm);
   delete outPerm;
 
@@ -413,20 +524,30 @@ void FlashAttentionHelper::forward4D(
   std::vector<LongType> scores4dShape = {batch, numHeads, seqLenQ, seqLenKV};
   if (attentionScores != nullptr && !attentionScores->isEmpty() &&
       attentionScores->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
-    workBuffer.reshapei(scores4dShape);
-    attentionScores->assign(&workBuffer);
+    workBuffer->reshapei(scores4dShape);
+    attentionScores->assign(workBuffer);
+    workBuffer->reshapei(scoresShape);
   }
   if (wantLogits && logitsBuffer != nullptr &&
       attentionLogits->lengthOf() == batch * numHeads * seqLenQ * seqLenKV) {
     logitsBuffer->reshapei(scores4dShape);
     attentionLogits->assign(logitsBuffer);
+    logitsBuffer->reshapei(scoresShape);
   }
+
+  // Restore output intermediate shape for workspace reuse
+  outReshaped->reshapei(outShape);
 
   // Restore workspace buffer shapes for next call (qPerm/kPerm/vPerm only)
   qPermBuffer->reshapei(qPermShape);
   if (headsPerKvHead == 1) {
     kExpanded->reshapei(kvPermShape);
     vExpanded->reshapei(kvPermShape);
+  } else {
+    // Restore tiled workspace buffers to requested shape for deterministic reuse
+    // across multiple attention ops in captured CUDA graph segments.
+    kExpanded->reshapei(tiledShape);
+    vExpanded->reshapei(tiledShape);
   }
 
   if (softmaxLse != nullptr) {
@@ -490,7 +611,9 @@ void FlashAttentionHelper::backward3D(
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
     NDArray* causalMask = workspace->getBuffer("backward3d_mask", maskShape, query->dataType(), context);
     causalMask->nullify();
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
+                          (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
     *scores += *causalMask;
 #endif
   }
@@ -628,7 +751,9 @@ void FlashAttentionHelper::backward4D(
     std::vector<LongType> maskShape = {seqLenQ, seqLenKV};
     NDArray* causalMask = workspace->getBuffer("backward4d_mask", maskShape, query->dataType(), context);
     causalMask->nullify();
-    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular, (-1.0e9f, 1, 0, *causalMask, 'u', false), SD_COMMON_TYPES);
+    LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
+    BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
+                          (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
     *scores += *causalMask;
 #endif
   }
@@ -870,9 +995,9 @@ void FlashAttentionHelper::forwardTiled(NDArray* query, NDArray* key, NDArray* v
                                          LaunchContext* context) {
   auto rank = query->rankOf();
   if (rank == 3) {
-    forward3D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context);
+    forward3D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context, nullptr);
   } else {
-    forward4D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context);
+    forward4D(query, key, value, output, config, softmaxLse, nullptr, nullptr, context, nullptr);
   }
 }
 

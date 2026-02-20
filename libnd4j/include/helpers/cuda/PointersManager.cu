@@ -32,6 +32,17 @@
 
 namespace sd {
 
+namespace {
+SD_INLINE cudaStream_t captureSafeStream(const LaunchContext* context) {
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    return tl_graphCaptureStream;
+  }
+  auto* streamPtr = (context != nullptr) ? context->getCudaStream()
+                                          : LaunchContext::defaultContext()->getCudaStream();
+  return (streamPtr != nullptr) ? *streamPtr : nullptr;
+}
+}  // namespace
+
 //////////////////////////////////////////////////////////////////////////
 PointersManager::PointersManager(const LaunchContext* context, const std::string& funcName) {
   _context = const_cast<LaunchContext*>(context);
@@ -87,17 +98,13 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
         std::memcpy(pinnedSrc, src, numberOfBytes);
         tl_capturedHostPtrs.push_back(pinnedSrc);
 
-        auto* streamPtr = (_context != nullptr) ? _context->getCudaStream()
-                                                 : LaunchContext::defaultContext()->getCudaStream();
-        cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+        cudaStream_t capturedStream = captureSafeStream(_context);
         cudaMemcpyAsync(dst, pinnedSrc, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
       } else {
         // Pinned alloc failed — fall back to direct copy (may fail on replay)
         sd_printf("PointersManager::replicatePointer: cudaMallocHost failed for %zu bytes\n",
                   numberOfBytes);
-        auto* streamPtr = (_context != nullptr) ? _context->getCudaStream()
-                                                 : LaunchContext::defaultContext()->getCudaStream();
-        cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : nullptr;
+        cudaStream_t capturedStream = captureSafeStream(_context);
         cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
       }
     } else if (_context != nullptr) {

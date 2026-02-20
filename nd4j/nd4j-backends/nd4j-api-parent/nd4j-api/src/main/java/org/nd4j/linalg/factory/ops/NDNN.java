@@ -234,7 +234,7 @@ public class NDNN {
   /**
    * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * out = softmax(Q * K^T / scale) * V<br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
    * <br>
    * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
    * For 2D/3D inputs, uses standard attention computation.<br>
@@ -243,6 +243,7 @@ public class NDNN {
    * - O(N) memory complexity instead of O(N^2)<br>
    * - Tiled computation with online softmax<br>
    * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
    * - Pass keyCache and valueCache tensors<br>
@@ -271,7 +272,64 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public INDArray dotProductAttentionV2(INDArray queries, INDArray values, INDArray keys,
+      INDArray queryMask, INDArray valueMask, INDArray attentionBias, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    NDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    NDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    NDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    NDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    NDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training));
     try {
       return __tmp[0];
     } finally {
@@ -1082,6 +1140,116 @@ public class NDNN {
     NDValidation.validateNumerical("reluLayer", "weights", weights);
     NDValidation.validateNumerical("reluLayer", "bias", bias);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(input, weights, bias));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input, INDArray gamma, double epsilon) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input, INDArray gamma) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    NDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, gamma, 1.0E-5));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input, double epsilon) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, null, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public INDArray rmsNorm(INDArray input) {
+    NDValidation.validateNumerical("rmsNorm", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(input, null, 1.0E-5));
     try {
       return __tmp[0];
     } finally {

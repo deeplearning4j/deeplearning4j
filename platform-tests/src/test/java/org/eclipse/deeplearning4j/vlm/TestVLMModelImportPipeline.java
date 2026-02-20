@@ -114,6 +114,7 @@ public class TestVLMModelImportPipeline {
     private static final String PDF_DPI_PROPERTY = "vlm.test.pdf.dpi";         // Render DPI (default 150)
     private static final String MAX_TILES_PROPERTY = "vlm.test.maxTiles";      // Max tiles per image (default -1 = no limit)
     private static final String MAX_TOKENS_PROPERTY = "vlm.test.maxTokens";    // Max tokens to generate (default 50)
+    private static final String SPECULATION_ENABLED_PROPERTY = "vlm.test.speculation.enabled"; // true/false
 
     private static String pdfPath;
     private static int specificPage = -1;   // -1 means process all/range
@@ -122,6 +123,7 @@ public class TestVLMModelImportPipeline {
     private static int renderDpi = 150;
     private static int maxTiles = -1;       // -1 means no limit
     private static int maxTokensConfig = 50; // default token generation limit
+    private static boolean speculationEnabledConfig = true;
 
     @BeforeAll
     public static void setup() {
@@ -158,6 +160,10 @@ public class TestVLMModelImportPipeline {
         if (maxTokensStr != null && !maxTokensStr.isEmpty()) {
             maxTokensConfig = Integer.parseInt(maxTokensStr);
         }
+        String speculationEnabledStr = System.getProperty(SPECULATION_ENABLED_PROPERTY);
+        if (speculationEnabledStr != null && !speculationEnabledStr.isEmpty()) {
+            speculationEnabledConfig = Boolean.parseBoolean(speculationEnabledStr);
+        }
 
         log.info("VLM Model Import Pipeline Test Configuration:");
         log.info("  PDF Path: {}", pdfPath != null ? pdfPath : "(not set)");
@@ -167,6 +173,7 @@ public class TestVLMModelImportPipeline {
         log.info("  Render DPI: {}", renderDpi);
         log.info("  Max Tiles: {}", maxTiles > 0 ? maxTiles : "(no limit)");
         log.info("  Max Tokens: {}", maxTokensConfig);
+        log.info("  Speculation Enabled: {}", speculationEnabledConfig);
         log.info("  Model Cache Dir: {}", VLMModelDownloader.getCacheDir());
         log.info("  Debug mode: {}", Nd4j.getEnvironment().isDebug());
         log.info("  Verbose mode: {}", Nd4j.getEnvironment().isVerbose());
@@ -672,6 +679,7 @@ public class TestVLMModelImportPipeline {
 
         List<Integer> generatedTokens = new java.util.ArrayList<>();
         Map<String, INDArray> kvCache = new java.util.HashMap<>();
+        Map<String, Long> prevKvPointers = new java.util.HashMap<>();  // Track pointer addresses across steps
         INDArray currentEmbeddings = inputsEmbeds;
         INDArray currentInputIds = promptTokenIdsTensor;
         long batchSize = 1;
@@ -818,6 +826,16 @@ public class TestVLMModelImportPipeline {
                 Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
                 long currentSeqLen = currentEmbeddings.shape()[1];
                 long totalSeqLen = currentSeqLen + pastSeqLen;
+                
+                // DEBUG: Check embeddings for NaN for first few steps
+                if (totalStepsAcrossChunks <= 3) {
+                    double embedMin = currentEmbeddings.minNumber().doubleValue();
+                    double embedMax = currentEmbeddings.maxNumber().doubleValue();
+                    boolean hasNaN = Double.isNaN(embedMin) || Double.isNaN(embedMax);
+                    log.info("  DEBUG step {} inputs_embeds: shape={}, min={}, max={}, hasNaN={}, pastSeqLen={}, totalSeqLen={}", 
+                            totalStepsAcrossChunks, java.util.Arrays.toString(currentEmbeddings.shape()), 
+                            embedMin, embedMax, hasNaN, pastSeqLen, totalSeqLen);
+                }
 
                 for (String inputName : decoderInputNames) {
                     if (inputName.equals("inputs_embeds")) {
@@ -847,6 +865,42 @@ public class TestVLMModelImportPipeline {
                     decoderInputMap.put("inputs_embeds", currentEmbeddings);
                 }
 
+                // DEBUG: Check KV cache inputs before decoder execution
+                if (totalStepsAcrossChunks <= 3) {
+                    for (String inputName : decoderInputNames) {
+                        if (inputName.startsWith("past_key_values.")) {
+                            INDArray kvInput = decoderInputMap.get(inputName);
+                            if (kvInput != null && !kvInput.isEmpty() && kvInput.length() > 0) {
+                                double kvMin = kvInput.minNumber().doubleValue();
+                                double kvMax = kvInput.maxNumber().doubleValue();
+                                boolean hasNaN = Double.isNaN(kvMin) || Double.isNaN(kvMax);
+                                // Check last position
+                                long seqLen = kvInput.size(2);
+                                if (seqLen > 0) {
+                                    INDArray lastPos = kvInput.get(NDArrayIndex.point(0), NDArrayIndex.all(), 
+                                            NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
+                                    double lastMin = lastPos.minNumber().doubleValue();
+                                    double lastMax = lastPos.maxNumber().doubleValue();
+                                    log.info("  DEBUG step {} KV INPUT {}: shape={}, seqLen={}, min={}, max={}, hasNaN={}, LAST_POS: min={}, max={}", 
+                                            totalStepsAcrossChunks, inputName, java.util.Arrays.toString(kvInput.shape()), seqLen,
+                                            kvMin, kvMax, hasNaN, lastMin, lastMax);
+                                }
+                            } else if (kvInput != null) {
+                                log.info("  DEBUG step {} KV INPUT {}: shape={}, EMPTY", 
+                                        totalStepsAcrossChunks, inputName, java.util.Arrays.toString(kvInput.shape()));
+                            }
+                        }
+                    }
+                    // Also check inputs_embeds
+                    INDArray emb = decoderInputMap.get("inputs_embeds");
+                    if (emb != null) {
+                        log.info("  DEBUG step {} inputs_embeds: shape={}, min={}, max={}, hasNaN={}", 
+                                totalStepsAcrossChunks, java.util.Arrays.toString(emb.shape()),
+                                emb.minNumber().doubleValue(), emb.maxNumber().doubleValue(),
+                                Double.isNaN(emb.minNumber().doubleValue()) || Double.isNaN(emb.maxNumber().doubleValue()));
+                    }
+                }
+
                 // Request logits + KV cache outputs
                 List<String> allOutputs = new java.util.ArrayList<>();
                 allOutputs.add(logitsOutputName);
@@ -871,6 +925,29 @@ public class TestVLMModelImportPipeline {
                 for (String presentName : presentKeyNames) {
                     INDArray pv = decoderOutputs.get(presentName);
                     if (pv != null) {
+                        // DEBUG: Check for NaN in KV cache for first few steps
+                        // Also check LAST position specifically (where new values are appended)
+                        if (totalStepsAcrossChunks <= 3) {
+                            double kvMin = pv.minNumber().doubleValue();
+                            double kvMax = pv.maxNumber().doubleValue();
+                            boolean hasNaN = Double.isNaN(kvMin) || Double.isNaN(kvMax);
+                            // Check specifically the LAST position in sequence dimension
+                            // pv shape is [batch, heads, seq_len, head_dim]
+                            long seqLen = pv.size(2);
+                            INDArray lastPos = pv.get(NDArrayIndex.point(0), NDArrayIndex.all(), 
+                                    NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
+                            double lastMin = lastPos.minNumber().doubleValue();
+                            double lastMax = lastPos.maxNumber().doubleValue();
+                            boolean lastHasNaN = Double.isNaN(lastMin) || Double.isNaN(lastMax);
+                            long pointer = pv.data().pointer().address();
+                            long prevPointer = prevKvPointers.containsKey(presentName) ? prevKvPointers.get(presentName) : 0;
+                            boolean ptrChanged = prevPointer != 0 && prevPointer != pointer;
+                            log.info("  DEBUG step {} KV key {}: shape={}, min={}, max={}, hasNaN={}, LAST_POS: min={}, max={}, hasNaN={}, PTR=0x{}, PREV=0x{}, CHANGED={}", 
+                                    totalStepsAcrossChunks, presentName, java.util.Arrays.toString(pv.shape()), 
+                                    kvMin, kvMax, hasNaN, lastMin, lastMax, lastHasNaN, Long.toHexString(pointer), 
+                                    Long.toHexString(prevPointer), ptrChanged);
+                            prevKvPointers.put(presentName, pointer);
+                        }
                         INDArray old = kvCache.put(presentName, pv);
                         if (old != null) { old.setCloseable(true); old.close(); }
                     }
@@ -878,6 +955,24 @@ public class TestVLMModelImportPipeline {
                 for (String presentName : presentValueNames) {
                     INDArray pv = decoderOutputs.get(presentName);
                     if (pv != null) {
+                        // DEBUG: Check for NaN in KV cache for first few steps
+                        // Also check LAST position specifically (where new values are appended)
+                        if (totalStepsAcrossChunks <= 3) {
+                            double kvMin = pv.minNumber().doubleValue();
+                            double kvMax = pv.maxNumber().doubleValue();
+                            boolean hasNaN = Double.isNaN(kvMin) || Double.isNaN(kvMax);
+                            // Check specifically the LAST position in sequence dimension
+                            // pv shape is [batch, heads, seq_len, head_dim]
+                            long seqLen = pv.size(2);
+                            INDArray lastPos = pv.get(NDArrayIndex.point(0), NDArrayIndex.all(), 
+                                    NDArrayIndex.point(seqLen - 1), NDArrayIndex.all());
+                            double lastMin = lastPos.minNumber().doubleValue();
+                            double lastMax = lastPos.maxNumber().doubleValue();
+                            boolean lastHasNaN = Double.isNaN(lastMin) || Double.isNaN(lastMax);
+                            log.info("  DEBUG step {} KV value {}: shape={}, min={}, max={}, hasNaN={}, LAST_POS: min={}, max={}, hasNaN={}", 
+                                    totalStepsAcrossChunks, presentName, java.util.Arrays.toString(pv.shape()), 
+                                    kvMin, kvMax, hasNaN, lastMin, lastMax, lastHasNaN);
+                        }
                         INDArray old = kvCache.put(presentName, pv);
                         if (old != null) { old.setCloseable(true); old.close(); }
                     }
@@ -903,6 +998,19 @@ public class TestVLMModelImportPipeline {
                     lastLogits = logits.getRow(0);
                 }
                 INDArray logitsForSampling = lastLogits.dup();
+                
+                // DEBUG: Print top-5 logits for first few steps to diagnose garbage output
+                if (totalStepsAcrossChunks <= 5) {
+                    INDArray[] topK = SamplerUtils.topK(logitsForSampling, 5);
+                    log.info("  DEBUG step {} top-5 indices: {}", totalStepsAcrossChunks, topK[0]);
+                    log.info("  DEBUG step {} top-5 values: {}", totalStepsAcrossChunks, topK[1]);
+                    log.info("  DEBUG step {} logit[0] (endoftext): {}", totalStepsAcrossChunks, logitsForSampling.getDouble(0));
+                    log.info("  DEBUG step {} logit[1] (bos): {}", totalStepsAcrossChunks, logitsForSampling.getDouble(1));
+                    log.info("  DEBUG step {} logit[2] (eos): {}", totalStepsAcrossChunks, logitsForSampling.getDouble(2));
+                    topK[0].close();
+                    topK[1].close();
+                }
+                
                 int nextTokenId = sampler.sample(logitsForSampling);
                 generatedTokens.add(nextTokenId);
 
@@ -2814,6 +2922,7 @@ public class TestVLMModelImportPipeline {
         List<String> presentValueNames = kvNames.valueNames;
         List<String> decoderInputNames = decoder.inputs();
         long hiddenSize = batchedEmbeddings.shape()[2];
+        final boolean passInputIds = Boolean.parseBoolean(System.getProperty("vlm.test.passInputIds", "true"));
 
         int eosTokenId = tokenizer.getEosTokenId();
         Integer endOfUtteranceTokenId = tokenizer.getTokenId("<end_of_utterance>");
@@ -3414,11 +3523,13 @@ public class TestVLMModelImportPipeline {
         List<String> presentValueNames = kvNames.valueNames;
         List<String> decoderInputNames = decoder.inputs();
         long hiddenSize = batchedEmbeddings.shape()[2];
+        final boolean passInputIds = Boolean.parseBoolean(System.getProperty("vlm.test.passInputIds", "true"));
 
         List<String> allOutputNames = new ArrayList<>();
         allOutputNames.add(logitsOutputName);
         allOutputNames.addAll(presentKeyNames);
         allOutputNames.addAll(presentValueNames);
+        
 
         // Initialize BatchGenerationState with multiple stop tokens
         int[] additionalStopTokens = endOfUtteranceId != null ? new int[]{endOfUtteranceId} : new int[0];
@@ -3830,8 +3941,10 @@ public class TestVLMModelImportPipeline {
 
         // ==================== STEP 7: Batched Decode with Speculative Decoding + Batch Compaction ====================
         long step7Start = System.currentTimeMillis();
+        boolean speculationEnabled = speculationEnabledConfig;
         log.info("STEP 7: Optimized batched decoding ({} pages, max {} tokens)...", batchSize, maxTokensConfig);
-        log.info("  Features: speculative decoding (n-gram), batch compaction, embed/KV overlap");
+        log.info("  Features: speculative decoding (n-gram, enabled={}), batch compaction, embed/KV overlap",
+                speculationEnabled);
 
         INDArray batchedEmbeddings = Nd4j.vstack(batchedInputsEmbeds.toArray(new INDArray[0]));
         log.info("  Batched embeddings: {}", java.util.Arrays.toString(batchedEmbeddings.shape()));
@@ -3843,11 +3956,17 @@ public class TestVLMModelImportPipeline {
         List<String> presentValueNames = kvNames.valueNames;
         List<String> decoderInputNames = decoder.inputs();
         long hiddenSize = batchedEmbeddings.shape()[2];
+        final boolean passInputIds = Boolean.parseBoolean(System.getProperty("vlm.test.passInputIds", "true"));
 
         List<String> allOutputNames = new ArrayList<>();
         allOutputNames.add(logitsOutputName);
         allOutputNames.addAll(presentKeyNames);
         allOutputNames.addAll(presentValueNames);
+        final String debugMaskVar = "/model/attn_mask_reformat/Tile/output_0";
+        final boolean captureDebugMask = decoder.getVariable(debugMaskVar) != null;
+        if (captureDebugMask) {
+            allOutputNames.add(debugMaskVar);
+        }
 
         // Initialize components
         java.util.Set<Integer> eosTokenIds = new java.util.HashSet<>();
@@ -3856,12 +3975,16 @@ public class TestVLMModelImportPipeline {
 
         NgramSpeculator speculator = new NgramSpeculator(3, 5);
         SpeculativeDecodeLoop specLoop = new SpeculativeDecodeLoop(speculator);
-        // Probe whether the model supports multi-token decode (seqLen > 1 with KV cache).
-        // Models with internal ONNX Expand ops that create [1,1,seqLen,seqLen] causal masks
-        // can't broadcast to [1,1,seqLen,totalSeqLen] and will fail on every speculative attempt.
-        // This detects the issue upfront with a single throwaway decode, avoiding 3 wasted attempts.
-        specLoop.probeMultiTokenSupport(decoder, decoderInputNames, logitsOutputName,
-                kvNames, 1, hiddenSize);
+        if (speculationEnabled) {
+            // Probe whether the model supports multi-token decode (seqLen > 1 with KV cache).
+            // Models with internal ONNX Expand ops that create [1,1,seqLen,seqLen] causal masks
+            // can't broadcast to [1,1,seqLen,totalSeqLen] and will fail on every speculative attempt.
+            // This detects the issue upfront with a single throwaway decode, avoiding 3 wasted attempts.
+            specLoop.probeMultiTokenSupport(decoder, decoderInputNames, logitsOutputName,
+                    kvNames, 1, hiddenSize);
+        } else {
+            log.info("  Speculative decoding disabled by property: {}=false", SPECULATION_ENABLED_PROPERTY);
+        }
         BatchCompactor compactor = new BatchCompactor(batchSize, 0.25);
         Sampler sampler = Sampler.fromConfig(SamplingConfig.builder()
                 .temperature(0.0).topK(1).topP(1.0).maxNewTokens(maxTokensConfig).doSample(false).build());
@@ -3875,6 +3998,7 @@ public class TestVLMModelImportPipeline {
 
         Map<String, INDArray> kvCache = new java.util.HashMap<>();
         INDArray currentEmbeddings = batchedEmbeddings;
+        INDArray currentInputIds = Nd4j.tile(promptTokenIdsTensor, batchSize, 1);
         long pastSeqLen = 0;
         int activeBatchSize = batchSize;
         int stepsCompleted = 0;
@@ -3891,6 +4015,8 @@ public class TestVLMModelImportPipeline {
             for (String inputName : decoderInputNames) {
                 if (inputName.equals("inputs_embeds")) {
                     decoderInputMap.put(inputName, currentEmbeddings);
+                } else if (passInputIds && inputName.equals("input_ids")) {
+                    decoderInputMap.put(inputName, currentInputIds);
                 } else if (inputName.equals("attention_mask")) {
                     decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, activeBatchSize, totalSeqLen));
                 } else if (inputName.equals("_causal_mask")) {
@@ -3914,6 +4040,25 @@ public class TestVLMModelImportPipeline {
             Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap,
                     allOutputNames.toArray(new String[0]));
             long decoderTime = System.currentTimeMillis() - decoderStart;
+
+            if (captureDebugMask) {
+                INDArray dbgMask = decoderOutputs.get(debugMaskVar);
+                if (dbgMask != null) {
+                    double dbgMin = dbgMask.minNumber().doubleValue();
+                    double dbgMax = dbgMask.maxNumber().doubleValue();
+                    log.info("  Debug attn_mask prefill: shape={}, min={}, max={}",
+                            java.util.Arrays.toString(dbgMask.shape()), dbgMin, dbgMax);
+                    if (dbgMask.rank() == 4 && dbgMask.size(3) > 0) {
+                        long maxCols = Math.min(16, dbgMask.size(3));
+                        INDArray dbgRow = dbgMask.get(
+                                NDArrayIndex.point(0),
+                                NDArrayIndex.point(0),
+                                NDArrayIndex.point(Math.max(0, dbgMask.size(2) - 1)),
+                                NDArrayIndex.interval(0, maxCols));
+                        log.info("  Debug attn_mask prefill last-row[0:{}]={}", maxCols, dbgRow);
+                    }
+                }
+            }
 
             INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
             if (logitsRaw == null) {
@@ -3983,15 +4128,18 @@ public class TestVLMModelImportPipeline {
                     Map.of(embedInputName, prefillTokenTensor), embedOutputNames);
             INDArray newEmbed = prefillEmbedOut.values().iterator().next().dup();
             for (INDArray orig : prefillEmbedOut.values()) SameDiffMemoryUtils.safeClose(orig);
-            SameDiffMemoryUtils.safeClose(prefillTokenTensor);
             embedTokens.clearPlaceholders(false);
             if (currentEmbeddings != batchedEmbeddings) SameDiffMemoryUtils.safeClose(currentEmbeddings);
             currentEmbeddings = newEmbed;
+            if (currentInputIds != null && currentInputIds != promptTokenIdsTensor && !currentInputIds.wasClosed()) {
+                SameDiffMemoryUtils.safeClose(currentInputIds);
+            }
+            currentInputIds = prefillTokenTensor;
 
             // Cleanup step 0 inputs
             for (var entry : decoderInputMap.entrySet()) {
                 String name = entry.getKey();
-                if (name.equals("inputs_embeds") || name.startsWith("past_key_values.")) continue;
+                if (name.equals("inputs_embeds") || name.equals("input_ids") || name.startsWith("past_key_values.")) continue;
                 SameDiffMemoryUtils.safeClose(entry.getValue());
             }
             decoder.clearPlaceholders(false);
@@ -4010,11 +4158,14 @@ public class TestVLMModelImportPipeline {
             log.info("  Decode setup: pastSeqLen={}, cachePos={}, kvCache entries={}",
                     pastSeqLen, cachePos, kvCache.size());
 
-            // Reset the decoder session to clear prefill intermediates and compile
-            // a fresh native plan for decode shapes. Without this, the slot array cache
-            // from prefill (seqLen=679) causes allocation errors at decode (seqLen=1).
-            decoder.resetSession();
-            Nd4j.getMemoryManager().invokeGc();
+            // Reset decoder session between prefill and decode if requested.
+            // Useful for isolating regressions where session reset may impact decode behavior.
+            boolean resetDecodeSession = Boolean.parseBoolean(
+                    System.getProperty("vlm.test.resetDecodeSession", "true"));
+            if (resetDecodeSession) {
+                decoder.resetSession();
+                Nd4j.getMemoryManager().invokeGc();
+            }
 
             // Helper thread for overlapping embed tokens computation with KV cache cleanup
             java.util.concurrent.ExecutorService embedExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
@@ -4026,29 +4177,40 @@ public class TestVLMModelImportPipeline {
             long decodeLoopStart = System.currentTimeMillis();
             for (int step = 1; step < maxTokensConfig; step++) {
                 long stepStart = System.currentTimeMillis();
+                int remainingTokenBudget = maxTokensConfig - totalTokensGenerated;
+                if (remainingTokenBudget <= 0) {
+                    break;
+                }
 
                 // ── Speculative decode: try to generate multiple tokens in one decoder call ──
                 // Requires batch=1 (per-sequence speculation) and enough history for ngram matching.
-                if (activeBatchSize == 1 && step > 5 && !specLoop.isDisabled()) {
+                if (speculationEnabled && activeBatchSize == 1 && step > 5 && !specLoop.isDisabled()) {
                     int origIdx = compactor.getOriginalIndex(0);
                     if (!finished[origIdx] && generatedTokens.get(origIdx).size() >= 6) {
                         List<Integer> tokenSeq = generatedTokens.get(origIdx);
                         int lastToken = tokenSeq.get(tokenSeq.size() - 1);
 
+                        long specCallStart = System.currentTimeMillis();
                         SpeculativeDecodeLoop.SpeculativeStepResult specResult = specLoop.step(
                                 tokenSeq, lastToken,
                                 embedTokens, embedInputName, embedOutputNames,
                                 decoder, decoderInputNames, logitsOutputName,
                                 kvNames, kvCache, cachePos,
                                 activeBatchSize, hiddenSize, eosTokenIds);
+                        long specCallTime = System.currentTimeMillis() - specCallStart;
 
                         if (specResult != null) {
                             int[] acceptedTokens = specResult.getAcceptedTokens();
+                            int consumedTokens = Math.min(acceptedTokens.length, remainingTokenBudget);
+                            if (consumedTokens <= 0) {
+                                break;
+                            }
                             long specStepTime = System.currentTimeMillis() - stepStart;
 
                             // Record accepted tokens
                             boolean specFinished = false;
-                            for (int t : acceptedTokens) {
+                            for (int i = 0; i < consumedTokens; i++) {
+                                int t = acceptedTokens[i];
                                 generatedTokens.get(origIdx).add(t);
                                 totalTokensGenerated++;
                                 if (eosTokenIds.contains(t)) {
@@ -4071,23 +4233,36 @@ public class TestVLMModelImportPipeline {
                             }
 
                             cachePos += specResult.getNewPositions();
-                            stepsCompleted = step + 1;
+                            stepsCompleted = Math.min(maxTokensConfig, step + consumedTokens);
 
                             if (step < 20 || step % 10 == 0) {
                                 StringBuilder tokStr = new StringBuilder();
-                                for (int t : acceptedTokens) {
+                                for (int i = 0; i < consumedTokens; i++) {
+                                    int t = acceptedTokens[i];
                                     String text = tokenizer.decode(new int[]{t}, false);
                                     tokStr.append("'").append(text).append("'(").append(t).append(") ");
                                 }
-                                log.info("  Step {} [{}ms, SPECULATIVE {} tokens, cachePos={}]: {}",
-                                        step, specStepTime, acceptedTokens.length, cachePos, tokStr.toString().trim());
+                                log.info("  Step {} [{}ms, SPECULATIVE {} tokens, specStep={}ms, cachePos={}]: {}",
+                                        step, specStepTime, consumedTokens, specCallTime, cachePos,
+                                        tokStr.toString().trim());
                             }
 
-                            if (specFinished || specResult.hitEos()) break;
+                            // Advance loop index by number of accepted tokens consumed this iteration.
+                            // The for-loop post-increment adds one more.
+                            step += consumedTokens - 1;
+
+                            if (specFinished || specResult.hitEos() || totalTokensGenerated >= maxTokensConfig) {
+                                break;
+                            }
 
                             // Embed last accepted token for next step
                             INDArray prevEmbed = currentEmbeddings;
-                            int lastAccepted = acceptedTokens[acceptedTokens.length - 1];
+                            int lastAccepted = acceptedTokens[consumedTokens - 1];
+                            if (currentInputIds != null && currentInputIds != promptTokenIdsTensor && !currentInputIds.wasClosed()) {
+                                SameDiffMemoryUtils.safeClose(currentInputIds);
+                            }
+                            currentInputIds = Nd4j.createFromArray(new int[]{lastAccepted})
+                                    .reshape(1, 1).castTo(DataType.LONG);
                             INDArray embedTensor = Nd4j.createFromArray(new int[]{lastAccepted})
                                     .reshape(1, 1).castTo(DataType.LONG);
                             Map<String, INDArray> embedOut = embedTokens.output(
@@ -4111,6 +4286,9 @@ public class TestVLMModelImportPipeline {
                 // Build input map fresh each step (growing KV, like batch test)
                 Map<String, INDArray> decoderInputMap = new java.util.HashMap<>();
                 decoderInputMap.put("inputs_embeds", currentEmbeddings);
+                if (passInputIds && decoderInputNames.contains("input_ids")) {
+                    decoderInputMap.put("input_ids", currentInputIds);
+                }
 
                 // Attention mask: all 1s, grows each step
                 INDArray attentionMask = Nd4j.ones(DataType.LONG, activeBatchSize, totalSeqLen);
@@ -4148,6 +4326,25 @@ public class TestVLMModelImportPipeline {
                 Map<String, INDArray> decoderOutputs = decoder.output(decoderInputMap,
                         allOutputNames.toArray(new String[0]));
                 long decoderTime = System.currentTimeMillis() - decoderStart;
+
+                if (captureDebugMask && step <= 2) {
+                    INDArray dbgMask = decoderOutputs.get(debugMaskVar);
+                    if (dbgMask != null) {
+                        double dbgMin = dbgMask.minNumber().doubleValue();
+                        double dbgMax = dbgMask.maxNumber().doubleValue();
+                        log.info("  Debug attn_mask step {}: shape={}, min={}, max={}",
+                                step, java.util.Arrays.toString(dbgMask.shape()), dbgMin, dbgMax);
+                        if (dbgMask.rank() == 4 && dbgMask.size(3) > 0) {
+                            long maxCols = Math.min(16, dbgMask.size(3));
+                            INDArray dbgRow = dbgMask.get(
+                                    NDArrayIndex.point(0),
+                                    NDArrayIndex.point(0),
+                                    NDArrayIndex.point(Math.max(0, dbgMask.size(2) - 1)),
+                                    NDArrayIndex.interval(0, maxCols));
+                            log.info("  Debug attn_mask step {} last-row[0:{}]={}", step, maxCols, dbgRow);
+                        }
+                    }
+                }
 
                 // Extract logits — dup and close original to free GPU memory
                 INDArray logitsRaw = decoderOutputs.get(logitsOutputName);
@@ -4187,6 +4384,19 @@ public class TestVLMModelImportPipeline {
                 } else {
                     lastLogits = logits.reshape(1, logits.length());
                 }
+                
+                // DEBUG: Print top-5 logits for first few steps
+                if (step <= 3) {
+                    INDArray row0 = lastLogits.getRow(0).dup();
+                    INDArray[] topK = SamplerUtils.topK(row0, 5);
+                    log.info("  DEBUG step {} top-5 indices: {}", step, topK[0]);
+                    log.info("  DEBUG step {} top-5 values: {}", step, topK[1]);
+                    log.info("  DEBUG step {} logit[0] (endoftext): {}", step, row0.getDouble(0));
+                    row0.close();
+                    topK[0].close();
+                    topK[1].close();
+                }
+                
                 int[] nextTokenIds = sampler.sampleBatch(lastLogits);
                 if (lastLogits != logits) lastLogits.close();
                 logits.close();
@@ -4249,10 +4459,12 @@ public class TestVLMModelImportPipeline {
                 } catch (Exception e) {
                     throw new RuntimeException("Embed tokens failed", e);
                 }
-                if (stepTokenTensor != null && !stepTokenTensor.wasClosed()) {
-                    stepTokenTensor.setCloseable(true);
-                    stepTokenTensor.close();
+                if (currentInputIds != null && currentInputIds != promptTokenIdsTensor && currentInputIds != stepTokenTensor
+                        && !currentInputIds.wasClosed()) {
+                    currentInputIds.setCloseable(true);
+                    currentInputIds.close();
                 }
+                currentInputIds = stepTokenTensor;
                 embedTokens.clearPlaceholders(false);
 
                 // Log progress
@@ -4269,6 +4481,10 @@ public class TestVLMModelImportPipeline {
             }
 
             embedExecutor.shutdown();
+            if (currentInputIds != null && currentInputIds != promptTokenIdsTensor && !currentInputIds.wasClosed()) {
+                currentInputIds.setCloseable(true);
+                currentInputIds.close();
+            }
             long decodeLoopTime = System.currentTimeMillis() - decodeLoopStart;
             int decodeSteps = stepsCompleted - 1; // exclude prefill step
             int decodeTokens = totalTokensGenerated; // all tokens come from decode
@@ -4309,6 +4525,7 @@ public class TestVLMModelImportPipeline {
         log.info("  Throughput: {} tokens/sec",
                 String.format("%.1f", totalTokensGenerated * 1000.0 / Math.max(1, step7Time)));
         log.info("  Speculation stats: {}", specLoop.getStats());
+        log.info("  Speculation timing: {}", specLoop.getTimingStats());
         log.info("  Batch compaction: {} -> {} (compacted={})",
                 compactor.getOriginalBatchSize(), compactor.getCurrentBatchSize(), compactor.isCompacted());
         log.info("========================================");

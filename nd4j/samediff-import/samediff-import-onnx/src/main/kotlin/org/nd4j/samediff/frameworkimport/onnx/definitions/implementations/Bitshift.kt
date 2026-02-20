@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - direction: "LEFT" or "RIGHT"
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["BitShift"], frameworkName = "onnx")
 class Bitshift : PreImportHook {

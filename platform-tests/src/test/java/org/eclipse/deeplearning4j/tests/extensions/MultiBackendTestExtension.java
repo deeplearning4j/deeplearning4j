@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * - Provides test parameterization for multiple helpers
  * - Tracks test results per helper for analysis
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class MultiBackendTestExtension implements
         ExecutionCondition,

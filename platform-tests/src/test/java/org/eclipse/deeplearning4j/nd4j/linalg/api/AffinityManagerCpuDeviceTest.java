@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Note: Some tests for CPU device transfers are skipped on CUDA backend when
  * the full infrastructure is not yet available.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Tag(TagNames.MULTI_THREADED)

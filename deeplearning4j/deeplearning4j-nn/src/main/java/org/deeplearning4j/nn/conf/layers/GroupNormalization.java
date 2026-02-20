@@ -47,7 +47,7 @@ import java.util.Map;
  *
  * Reference: "Group Normalization" by Wu and He (2018)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

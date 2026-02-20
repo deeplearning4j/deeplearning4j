@@ -45,6 +45,17 @@ namespace sd {
  */
 SD_LIB_EXPORT extern thread_local bool tl_graphExecutionActive;
 
+#ifdef SD_CUDA
+/**
+ * Captured CUDA stream for the current graph capture session.
+ * Some capture-safe paths must enqueue work on the exact captured stream;
+ * using a different stream can invalidate capture.
+ */
+#ifndef __JAVACPP_HACK__
+SD_LIB_EXPORT extern thread_local cudaStream_t tl_graphCaptureStream;
+#endif
+#endif
+
 /**
  * Thread-local accumulator for pinned host buffers allocated during CUDA graph capture.
  * PointersManager::replicatePointer copies host data to persistent pinned memory
@@ -52,6 +63,18 @@ SD_LIB_EXPORT extern thread_local bool tl_graphExecutionActive;
  * After capture, these are transferred to CudaGraphHandle for lifetime management.
  */
 SD_LIB_EXPORT extern thread_local std::vector<void*> tl_capturedHostPtrs;
+
+/**
+ * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture
+ * to eliminate cudaMallocAsync/cudaFreeAsync nodes from the captured graph.
+ * CudaMemoryPool::allocate uses bump allocation from this workspace instead of
+ * cudaMallocAsync when tl_graphExecutionActive && tl_captureWorkspace != nullptr.
+ * CudaMemoryPool::free becomes a no-op for addresses within this workspace.
+ * The workspace buffer persists for graph lifetime (stored on GraphSegment).
+ */
+SD_LIB_EXPORT extern thread_local void* tl_captureWorkspace;
+SD_LIB_EXPORT extern thread_local size_t tl_captureWorkspaceSize;
+SD_LIB_EXPORT extern thread_local size_t tl_captureWorkspaceOffset;
 
 class SD_LIB_EXPORT DataBuffer {
  private:

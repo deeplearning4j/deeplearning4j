@@ -49,7 +49,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - Y: Result matrix (M x N), int32
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["MatMulInteger"], frameworkName = "onnx")
 class MatMulInteger : PreImportHook {

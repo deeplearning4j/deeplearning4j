@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - y_scale: Computed scale (float)
  * - y_zero_point: Computed zero point (uint8)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["DynamicQuantizeLinear"], frameworkName = "onnx")
 class DynamicQuantizeLinear : PreImportHook {

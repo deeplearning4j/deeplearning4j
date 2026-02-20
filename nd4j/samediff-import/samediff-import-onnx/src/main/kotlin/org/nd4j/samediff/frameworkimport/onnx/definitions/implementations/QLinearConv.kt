@@ -51,7 +51,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - y_zero_point: Output zero point
  * - B: Optional bias (int32)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["QLinearConv"], frameworkName = "onnx")
 class QLinearConv : PreImportHook {

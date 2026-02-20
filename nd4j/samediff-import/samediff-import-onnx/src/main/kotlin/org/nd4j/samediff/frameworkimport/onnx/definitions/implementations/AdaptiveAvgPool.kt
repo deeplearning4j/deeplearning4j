@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - output_size: Target output spatial dimensions
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["AdaptiveAvgPool1d", "AdaptiveAvgPool2d", "AdaptiveAvgPool3d", "adaptive_avg_pool2d"], frameworkName = "onnx")
 class AdaptiveAvgPool : PreImportHook {

@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - blocksize: Block size for rearrangement
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SpaceToDepth"], frameworkName = "onnx")
 class SpaceToDepth : PreImportHook {

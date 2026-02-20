@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
  * List<OpKernelInfo> convKernels = config.findKernels("conv*");
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class KernelConfiguration {
 

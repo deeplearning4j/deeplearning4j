@@ -18,6 +18,7 @@
 
 #include <graph/NativePlanCompiler.h>
 #include <graph/generated/graph_generated.h>
+#include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
 
 #include <algorithm>
@@ -203,36 +204,50 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     auto* node = opNodes[stepIdx];
     NativeSlot& slot = plan->slots_[stepIdx];
 
-    // Op identification
-    slot.opHash = node->opNum();
+    // Op identification.
+    // NOTE: FlatGraph opNum hashes can differ from native HashHelper hashes.
+    // Resolve by op name first, then normalize slot.opHash to native hash.
+    LongType serializedOpHash = node->opNum();
+    slot.opHash = serializedOpHash;
     slot.opName = node->opName() ? node->opName()->str() :
                   (node->name() ? node->name()->str() : "unknown");
     slot.isCustomOp = (node->opType() == OpType_CUSTOM);
 
-    // Resolve op
-    slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.opHash);
-    if (!slot.op && !slot.opName.empty()) {
+    // Resolve op by name first (portable across serializer/runtime hash implementations).
+    slot.op = nullptr;
+    if (!slot.opName.empty()) {
       slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.opName.c_str());
+    }
+    // Fallback to serialized hash for graphs that carry native hashes already.
+    if (!slot.op) {
+      slot.op = sd::ops::OpRegistrator::getInstance().getOperation(serializedOpHash);
     }
     if (!slot.op) {
       sd_printf("NativePlanCompiler: cannot resolve op hash=%lld name=%s\n",
-                slot.opHash, slot.opName.c_str());
+                serializedOpHash, slot.opName.c_str());
       delete plan;
       return nullptr;
     }
+    slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
 
-    // Classify op
-    bool isDataDep = isDataDependentOp(slot.opName);
-    slot.isDataDependent = isDataDep;
-    slot.needsZeroedOutput = !isFullyWritingOp(slot.opName) || isDataDep;
-    slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
-    slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
     slot.inPlaceFused = false;
     slot.inPlaceFusedInputIdx = -1;
 
     // Build input wiring from inputPaired
     auto* inputPaired = node->inputPaired();
     int numInputs = inputPaired ? inputPaired->size() : 0;
+
+    // Classify op (after numInputs is known so we can disambiguate Where)
+    // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
+    // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
+    bool isDataDep = isDataDependentOp(slot.opName);
+    if (isDataDep && normalizeOpName(slot.opName) == "where" && numInputs == 3) {
+      isDataDep = false;
+    }
+    slot.isDataDependent = isDataDep;
+    slot.needsZeroedOutput = !isFullyWritingOp(slot.opName) || isDataDep;
+    slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
+    slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
     slot.numInputs = numInputs;
     slot.inputSourceIndices = new int[numInputs];
     slot.inputSourceTypes = new int8_t[numInputs];
@@ -314,12 +329,22 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
 
     // Freeze arguments from FlatNode
-    auto* extraInteger = node->extraInteger();
-    if (extraInteger && extraInteger->size() > 0) {
-      slot.numIArgs = extraInteger->size();
+    // For reduce ops, dimensions are stored in the 'dimensions' field, not 'extraInteger'
+    auto* dimensions = node->dimensions();
+    if (dimensions && dimensions->size() > 0) {
+      slot.numIArgs = dimensions->size();
       slot.iArgs = new LongType[slot.numIArgs];
       for (int i = 0; i < slot.numIArgs; i++) {
-        slot.iArgs[i] = extraInteger->Get(i);
+        slot.iArgs[i] = dimensions->Get(i);
+      }
+    } else {
+      auto* extraInteger = node->extraInteger();
+      if (extraInteger && extraInteger->size() > 0) {
+        slot.numIArgs = extraInteger->size();
+        slot.iArgs = new LongType[slot.numIArgs];
+        for (int i = 0; i < slot.numIArgs; i++) {
+          slot.iArgs[i] = extraInteger->Get(i);
+        }
       }
     }
 

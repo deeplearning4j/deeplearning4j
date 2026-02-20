@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - axis: Axis along which to take slices. If not specified, input is flattened first.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Compress"], frameworkName = "onnx")
 class Compress : PreImportHook {

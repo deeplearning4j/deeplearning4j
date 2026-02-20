@@ -51,7 +51,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - support_vectors: Support vectors
  * - vectors_per_class: Number of support vectors per class
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SVMClassifier"], frameworkName = "onnx")
 class SVMClassifier : PreImportHook {

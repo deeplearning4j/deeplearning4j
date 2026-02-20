@@ -46,7 +46,7 @@ import java.util.*;
  * - "abc,cd->abd": Dense on last dimension (input: [batch, seq, features], output: [batch, seq, units])
  * - "...x,xy->...y": Dense on last dimension for arbitrary input rank
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

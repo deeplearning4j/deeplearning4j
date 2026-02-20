@@ -55,7 +55,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Note: Full TF-IDF computation requires text processing not available in SameDiff.
  * This implementation provides a simplified numeric-based approach.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["TfIdfVectorizer"], frameworkName = "onnx")
 class TfIdfVectorizer : PreImportHook {

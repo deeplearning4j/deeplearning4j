@@ -36,7 +36,7 @@ import java.util.Map;
  * Imports a Keras Identity layer as a DL4J ActivationLayer with identity activation.
  * The Identity layer simply passes its input to its output without any modification.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+#include <cctype>
 
 namespace sd {
 namespace graph {
@@ -63,9 +64,28 @@ static std::unordered_set<std::string> activationOps = {
 static std::string getOpName(sd::LongType opHash) {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(opHash);
     if (op != nullptr) {
-        return *op->getOpName();
+        std::string name = *op->getOpName();
+        std::transform(name.begin(), name.end(), name.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return name;
     }
     return "";
+}
+
+/**
+ * Resolve op name directly from slot metadata. This avoids hash lookup for legacy
+ * ops that are executable but not present in OpRegistrator hash map.
+ */
+static std::string getOpName(const NativeSlot& slot) {
+    if (!slot.opName.empty()) {
+        std::string name = slot.opName;
+        std::transform(name.begin(), name.end(), name.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        return name;
+    }
+
+    // Fallback for legacy plans that may not persist opName.
+    return getOpName(slot.opHash);
 }
 
 bool FusionPass::isUnaryElementwise(sd::LongType opHash) {
@@ -87,7 +107,7 @@ bool FusionPass::isActivation(sd::LongType opHash) {
  * Check if a slot is element-wise (unary or binary).
  */
 static bool isElementwiseSlot(const NativeSlot& slot) {
-    std::string name = getOpName(slot.opHash);
+    std::string name = getOpName(slot);
     return unaryElementwiseOps.count(name) > 0 || binaryElementwiseOps.count(name) > 0;
 }
 
@@ -107,7 +127,7 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
     if (slotB.isDataDependent || slotB.outputShapeDependsOnInputValues) return false;
 
     // Check that B has exactly the right number of inputs
-    std::string bName = getOpName(slotB.opHash);
+    std::string bName = getOpName(slotB);
     bool bIsBinary = binaryElementwiseOps.count(bName) > 0;
 
     if (bIsBinary) {
@@ -236,7 +256,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     for (int i = 0; i < numSlots - 1; i++) {
         if (fused[i]) continue;
 
-        std::string opName = getOpName(slots[i].opHash);
+        std::string opName = getOpName(slots[i]);
         if (opName != "add") continue;
         if (slots[i].numOutputs != 1) continue;
 
@@ -245,7 +265,8 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         // Find activation consuming this add's output
         for (int j = i + 1; j < numSlots; j++) {
             if (fused[j]) continue;
-            if (!FusionPass::isActivation(slots[j].opHash)) continue;
+            std::string nextName = getOpName(slots[j]);
+            if (nextName.empty() || activationOps.count(nextName) == 0) continue;
             if (slots[j].numInputs != 1) continue;
             if (slots[j].inputSourceIndices[0] != outputIdx) continue;
             if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;

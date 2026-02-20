@@ -45,7 +45,7 @@ import java.util.Map;
  * - center: Whether to add learnable beta offset (default: True)
  * - scale: Whether to add learnable gamma scale (default: True)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

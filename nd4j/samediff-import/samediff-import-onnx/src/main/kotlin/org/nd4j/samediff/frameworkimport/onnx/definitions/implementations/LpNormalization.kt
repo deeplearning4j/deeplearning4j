@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - axis: Axis along which to normalize (default: -1)
  * - p: The order of normalization (default: 2)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["LpNormalization"], frameworkName = "onnx")
 class LpNormalization : PreImportHook {

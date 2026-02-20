@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 //
-// @author Eclipse Deeplearning4j Development Team
+// @author Adam Gibson
 //
 
 #include <ops/declarable/helpers/signal.h>

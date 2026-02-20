@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * GPU-specific validation tests for broadcasting operations.
  * Tests various broadcast scenarios on CUDA backend with cuDNN helper.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @BackendTest(backends = {MultiBackendTestConfiguration.Backend.CUDA},
              helpers = {"cudnn"},

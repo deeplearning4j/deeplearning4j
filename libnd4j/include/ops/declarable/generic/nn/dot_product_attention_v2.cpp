@@ -29,6 +29,8 @@
 #include <ops/declarable/helpers/reverse.h>
 #include <helpers/AttentionHelper.h>
 #include <helpers/FlashAttentionHelper.h>
+#include <cmath>
+#include <memory>
 
 namespace sd {
 namespace ops {
@@ -42,6 +44,12 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
                queriesOrig->rankOf(), valuesOrig->rankOf());
   REQUIRE_TRUE(queriesOrig->rankOf() >= 2 && queriesOrig->rankOf() <= 4, 0,
                "dot_product_attention_v2: Input rank must be 2, 3, or 4, got %i", queriesOrig->rankOf());
+  REQUIRE_TRUE(queriesOrig->isR(), 0,
+               "dot_product_attention_v2: queries must be floating-point/real type, got %i",
+               static_cast<int>(queriesOrig->dataType()));
+  REQUIRE_TRUE(valuesOrig->isR(), 0,
+               "dot_product_attention_v2: values must be floating-point/real type, got %i",
+               static_cast<int>(valuesOrig->dataType()));
 
   // Track reshaped arrays for cleanup
   NDArray* queries = nullptr;
@@ -75,6 +83,9 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   } else {
     keys = keysOrig;
   }
+  REQUIRE_TRUE(keys->isR(), 0,
+               "dot_product_attention_v2: keys must be floating-point/real type, got %i",
+               static_cast<int>(keys->dataType()));
 
   // Handle masks - check for empty arrays as well as nullptr
   auto qMaskOrig = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
@@ -103,9 +114,38 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     vMask = vMaskOrig;
   }
 
+  // Optional additive attention bias (input 5) for ONNX-style relative position bias / attn mask.
+  // We intentionally infer this at runtime from tensor shape only; importer-time .arr/.shape is unreliable.
+  // If input 6 is present, input 5 is treated as KV cache input instead.
+  NDArray* attentionBias = nullptr;
+  auto extraInput = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+  auto extraInput2 = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+  if (extraInput != nullptr && !extraInput->isEmpty() &&
+      (extraInput2 == nullptr || extraInput2->isEmpty())) {
+    auto tq = queries->sizeAt(1);
+    auto tv = values->sizeAt(1);
+    bool looksLikeBias = false;
+    if (extraInput->rankOf() >= 2) {
+      auto d0 = extraInput->sizeAt(extraInput->rankOf() - 2);
+      auto d1 = extraInput->sizeAt(extraInput->rankOf() - 1);
+      // Accept both [..., Tq, Tv] and [..., Tv, Tq].
+      // Some ONNX exports use (source, target) ordering for attention bias.
+      looksLikeBias = (d0 == tq && d1 == tv) || (d0 == tv && d1 == tq);
+    }
+    if (looksLikeBias) {
+      attentionBias = extraInput;
+    }
+  }
+
   // Get arguments - T_ARG order: scale, dropout
   auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
   auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
+
+  // Auto scale when scale <= 0: 1/sqrt(headDim or dim)
+  if (scale <= 0.0) {
+    auto dim = isRank4 ? queries->sizeAt(3) : queries->sizeAt(2);
+    scale = 1.0 / std::sqrt(static_cast<double>(dim));
+  }
 
   // B_ARG order: useCausalMask, training
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
@@ -124,38 +164,46 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     attentionScores->reshapei('c', {1, attentionScores->sizeAt(0), attentionScores->sizeAt(1)});
   }
 
-  // Use FlashAttentionHelper when no custom masks or dropout (faster path)
-  // FlashAttentionHelper only supports causal masking, not custom masks
-  bool canUseFlash = (qMask == nullptr || qMask->isEmpty()) &&
-                     (vMask == nullptr || vMask->isEmpty()) &&
-                     dropout == 0.0;
+  // Setup FlashAttentionHelper config
+  FlashAttentionHelper::Config config;
+  config.scale = static_cast<float>(scale);
+  config.isCausal = useCausalMask;
+  config.dropout = 0.0f;
+  if (isRank4) {
+    // Rank 4: [batch, seq, numHeads, headDim] (BSHD format)
+    config.numHeads = queries->sizeAt(2);
+    config.numKvHeads = keys->sizeAt(2);
+  } else {
+    config.numHeads = 1;
+    config.numKvHeads = 1;
+  }
 
-  if (canUseFlash) {
-    // Setup FlashAttentionHelper config
-    FlashAttentionHelper::Config config;
-    config.scale = static_cast<float>(scale);
-    config.isCausal = useCausalMask;
-    config.dropout = 0.0f;
+  bool hasInputMasks = (qMask != nullptr && !qMask->isEmpty()) ||
+                       (vMask != nullptr && !vMask->isEmpty());
+  bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
+  std::unique_ptr<NDArray> attentionBiasCastOwner;
 
-    if (isRank4) {
-      // Rank 4: [batch, seq, numHeads, headDim] (BSHD format)
-      // FlashAttentionHelper::forward4D expects this layout directly
-      config.numHeads = queries->sizeAt(2);
-      config.numKvHeads = keys->sizeAt(2);
-    } else {
-      config.numHeads = 1;
-      config.numKvHeads = 1;
-    }
+  // Additive bias/mask can arrive as BOOL/INT from importer graphs.
+  // Cast once to query dtype for arithmetic in the helper path.
+  if (hasAttentionBias && attentionBias->dataType() != queries->dataType()) {
+    attentionBiasCastOwner.reset(attentionBias->cast(queries->dataType()));
+    attentionBias = attentionBiasCastOwner.get();
+  }
 
-    // Call FlashAttentionHelper::forward() directly
-    // forward() dispatches to forward3D or forward4D based on input rank
-    // Pass nullptr for scores/logits to enable the fast fused CUDA kernel path.
-    // The fused kernel doesn't produce intermediate scores — they would need
-    // a separate matmul which defeats the purpose of fusion.
+  // Fast flash path: no masks, no dropout
+  // The fused CUDA kernel now handles attention bias internally
+  bool canUseFlashFast = !hasInputMasks && dropout == 0.0;
+
+  if (canUseFlashFast) {
+    // Pass nullptr for scores/logits to enable the fastest fused CUDA kernel path.
+    // The fused kernel handles attention bias internally - no fallback needed.
     FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
                                   nullptr, nullptr, nullptr,
-                                  block.launchContext());
+                                  block.launchContext(), attentionBias);
   } else {
+    REQUIRE_TRUE(!hasAttentionBias, 0,
+                 "dot_product_attention_v2: additive attention bias with query/value masks or dropout is not "
+                 "supported in this path yet");
     // Fallback to AttentionHelper for masks/dropout support
     std::vector<sd::NDArray*> inputs = {queries, values, keys};
     std::vector<sd::NDArray*> masks = {qMask, vMask};
@@ -187,8 +235,15 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 }
 
 DECLARE_TYPES(dot_product_attention_v2) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
-  getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()
+      ->setAllowedInputTypes(0, {ALL_FLOATS})                  // queries
+      ->setAllowedInputTypes(1, {ALL_FLOATS})                  // values
+      ->setAllowedInputTypes(2, {ALL_FLOATS})                  // keys
+      ->setAllowedInputTypes(3, {ALL_FLOATS, ALL_INTS, BOOL})  // queryMask (optional)
+      ->setAllowedInputTypes(4, {ALL_FLOATS, ALL_INTS, BOOL})  // valueMask (optional)
+      ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS, BOOL})  // attentionBias/keyCache (optional)
+      ->setAllowedInputTypes(6, {ALL_FLOATS, ALL_INTS, BOOL})  // valueCache (optional)
+      ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2) {

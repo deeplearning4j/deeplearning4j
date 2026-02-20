@@ -445,6 +445,31 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("rmsNorm") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "RmsNorm"
+        val input = Input(NUMERIC, "input") { description = "Input variable" }
+        val gamma = Input(NUMERIC, "gamma") { description = "Scale/gain vector"; defaultValue = null }
+        val epsilon = Arg(FLOATING_POINT, "epsilon") { defaultValue = 1e-5; description = "Epsilon for numerical stability" }
+
+        Output(NUMERIC, "output") { description = "RMS normalized output" }
+
+        AllParamSignature()
+        Signature(input, gamma)
+        Signature(input, epsilon)
+        Signature(input)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Root Mean Square Layer Normalization (RMSNorm):
+
+             output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+
+             If gamma is not provided, only RMS normalization is applied.
+            """.trimIndent()
+        }
+    }
+
 
     Op("dotProductAttentionV2") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
@@ -453,6 +478,7 @@ fun NN() = Namespace("NN") {
         val k = Input(NUMERIC, "keys") { description = "Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim]" }
         val queryMask = Input(NUMERIC, "queryMask") { description = "Query mask tensor (optional). Shape: [batchSize, numQueries]"; defaultValue = null }
         val valueMask = Input(NUMERIC, "valueMask") { description = "Value mask tensor (optional). Shape: [batchSize, numValues]"; defaultValue = null }
+        val attentionBias = Input(NUMERIC, "attentionBias") { description = "Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax."; defaultValue = null }
 
         val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 0.0; description = "Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))" }
         val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "Dropout probability applied to attention weights" }
@@ -461,14 +487,16 @@ fun NN() = Namespace("NN") {
 
         Output(NUMERIC, "output") { description = "Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim]" }
 
-        // Standard signature matching Java constructor
+        // Standard signature without attention bias (backward compatible)
         Signature(q, v, k, queryMask, valueMask, s, dropout, useCausalMask, training)
+        // Full signature with attention bias
+        Signature(q, v, k, queryMask, valueMask, attentionBias, s, dropout, useCausalMask, training)
 
         Doc(Language.ANY, DocScope.ALL) {
             """
              Dot product attention operation with flash attention and KV cache support.
 
-             out = softmax(Q * K^T / scale) * V
+             out = softmax(Q * K^T / scale + attentionBias) * V
 
              For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
              For 2D/3D inputs, uses standard attention computation.
@@ -477,6 +505,7 @@ fun NN() = Namespace("NN") {
              - O(N) memory complexity instead of O(N^2)
              - Tiled computation with online softmax
              - Supports grouped query attention (GQA) where numHeads > numKvHeads
+             - Supports attention bias (relative position bias, ALiBi, etc.)
 
              KV Cache support for autoregressive generation:
              - Pass keyCache and valueCache tensors

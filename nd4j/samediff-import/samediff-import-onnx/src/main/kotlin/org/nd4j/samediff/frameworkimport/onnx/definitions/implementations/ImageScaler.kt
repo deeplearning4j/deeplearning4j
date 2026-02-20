@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - scale: Scaling factor (default: 1.0)
  * - bias: Per-channel bias values (default: [0, 0, 0, ...])
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ImageScaler"], frameworkName = "onnx")
 class ImageScaler : PreImportHook {

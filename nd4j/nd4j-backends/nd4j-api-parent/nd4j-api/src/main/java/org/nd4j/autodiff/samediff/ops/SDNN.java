@@ -357,7 +357,7 @@ public class SDNN extends SDOps {
   /**
    * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * out = softmax(Q * K^T / scale) * V<br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
    * <br>
    * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
    * For 2D/3D inputs, uses standard attention computation.<br>
@@ -366,6 +366,7 @@ public class SDNN extends SDOps {
    * - O(N) memory complexity instead of O(N^2)<br>
    * - Tiled computation with online softmax<br>
    * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
    * - Pass keyCache and valueCache tensors<br>
@@ -394,13 +395,13 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
   /**
    * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * out = softmax(Q * K^T / scale) * V<br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
    * <br>
    * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
    * For 2D/3D inputs, uses standard attention computation.<br>
@@ -409,6 +410,7 @@ public class SDNN extends SDOps {
    * - O(N) memory complexity instead of O(N^2)<br>
    * - Tiled computation with online softmax<br>
    * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
    * KV Cache support for autoregressive generation:<br>
    * - Pass keyCache and valueCache tensors<br>
@@ -438,7 +440,101 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
+      SDVariable queryMask, SDVariable valueMask, SDVariable attentionBias, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
+      SDVariable keys, SDVariable queryMask, SDVariable valueMask, SDVariable attentionBias,
+      double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1731,6 +1827,146 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("reluLayer", "weights", weights);
     SDValidation.validateNumerical("reluLayer", "bias", bias);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.ReluLayer(sd,input, weights, bias).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input, SDVariable gamma, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, epsilon).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input, SDVariable gamma, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input, SDVariable gamma) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, 1.0E-5).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input, SDVariable gamma) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, 1.0E-5).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, epsilon).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, 1.0E-5).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, 1.0E-5).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

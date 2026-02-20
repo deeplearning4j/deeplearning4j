@@ -55,7 +55,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - inverse_indices: Indices in Y that would reconstruct X (optional)
  * - counts: Count of each unique value (optional)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Unique"], frameworkName = "onnx")
 class Unique : PreImportHook {

@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - scale: Standard deviation (default: 1.0)
  * - seed: Random seed (optional)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["RandomNormalLike"], frameworkName = "onnx")
 class RandomNormalLike : PreImportHook {

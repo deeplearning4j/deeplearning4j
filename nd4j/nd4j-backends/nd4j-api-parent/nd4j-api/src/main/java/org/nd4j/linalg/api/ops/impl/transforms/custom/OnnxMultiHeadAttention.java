@@ -31,7 +31,9 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ONNX MultiHeadAttention operation.
@@ -41,13 +43,14 @@ import java.util.List;
  * 
  * Compatible with Microsoft's ONNX MultiHeadAttention operator.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class OnnxMultiHeadAttention extends DynamicCustomOp {
     private int numHeads;
     private boolean useCausalMask;
     private double scale;
+    private int numOutputs = 3;
 
     /**
      * SameDiff constructor for ONNX MultiHeadAttention.
@@ -66,10 +69,23 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     public OnnxMultiHeadAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
                                    SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
                                    int numHeads, double scale, boolean useCausalMask) {
+        this(sd, query, key, value, attnBias, pastKey, pastValue, numHeads, scale, useCausalMask, 3);
+    }
+
+    /**
+     * SameDiff constructor with explicit output count.
+     * Use 1 when ONNX optional present_key/present_value outputs are empty.
+     */
+    public OnnxMultiHeadAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
+                                  SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
+                                  int numHeads, double scale, boolean useCausalMask, int numOutputs) {
         super(null, sd, buildInputs(sd, query, key, value, attnBias, pastKey, pastValue), false);
         this.numHeads = numHeads;
         this.scale = scale;
         this.useCausalMask = useCausalMask;
+        Preconditions.checkArgument(numOutputs >= 1 && numOutputs <= 3,
+                "numOutputs must be in [1, 3], got %s", numOutputs);
+        this.numOutputs = numOutputs;
         addIArgument(numHeads);
         addIArgument(useCausalMask ? 1 : 0);
         addTArgument(scale);
@@ -81,10 +97,22 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     public OnnxMultiHeadAttention(INDArray query, INDArray key, INDArray value,
                                    INDArray attnBias, INDArray pastKey, INDArray pastValue,
                                    int numHeads, double scale, boolean useCausalMask) {
+        this(query, key, value, attnBias, pastKey, pastValue, numHeads, scale, useCausalMask, 3);
+    }
+
+    /**
+     * INDArray constructor with explicit output count.
+     */
+    public OnnxMultiHeadAttention(INDArray query, INDArray key, INDArray value,
+                                  INDArray attnBias, INDArray pastKey, INDArray pastValue,
+                                  int numHeads, double scale, boolean useCausalMask, int numOutputs) {
         super(buildInputs(query, key, value, attnBias, pastKey, pastValue), null);
         this.numHeads = numHeads;
         this.scale = scale;
         this.useCausalMask = useCausalMask;
+        Preconditions.checkArgument(numOutputs >= 1 && numOutputs <= 3,
+                "numOutputs must be in [1, 3], got %s", numOutputs);
+        this.numOutputs = numOutputs;
         addIArgument(numHeads);
         addIArgument(useCausalMask ? 1 : 0);
         addTArgument(scale);
@@ -138,18 +166,43 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     }
 
     @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        super.setPropertiesForFunction(properties);
+        Object nOut = properties.get("numOutputs");
+        if (nOut instanceof Number) {
+            this.numOutputs = ((Number) nOut).intValue();
+        }
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        // Descriptor fallback for local ops that may not yet exist in nd4j-op-def.pbtxt.
+        // This keeps clone/serialization paths working for graph optimizer and SDZ caching.
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("numHeads", numHeads);
+        ret.put("useCausalMask", useCausalMask);
+        ret.put("scale", scale);
+        ret.put("numOutputs", numOutputs);
+        return ret;
+    }
+
+    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() >= 3,
                 "Expected at least 3 input datatypes, got %s", dataTypes);
         DataType first = dataTypes.get(0);
         Preconditions.checkState(first.isFPType(),
                 "Query datatype must be floating point, got %s", first);
-        // Output: attention output, present_key, present_value
+        if (numOutputs == 1) {
+            return Arrays.asList(first);
+        } else if (numOutputs == 2) {
+            return Arrays.asList(first, first);
+        }
         return Arrays.asList(first, first, first);
     }
 
     @Override
     public int getNumOutputs() {
-        return 3;
+        return numOutputs;
     }
 }

@@ -53,7 +53,7 @@ import java.util.Map;
  * }
  * </pre>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 public class GradientAccumulator {

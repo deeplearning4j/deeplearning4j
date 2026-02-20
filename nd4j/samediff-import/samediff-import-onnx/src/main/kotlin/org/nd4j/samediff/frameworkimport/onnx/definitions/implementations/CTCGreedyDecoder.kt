@@ -52,7 +52,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - decoded_shape: Shape of the decoded output
  * - log_probability: Log probability of the decoded sequence
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["CTCGreedyDecoder", "CTC_greedy_decoder"], frameworkName = "onnx")
 class CTCGreedyDecoder : PreImportHook {

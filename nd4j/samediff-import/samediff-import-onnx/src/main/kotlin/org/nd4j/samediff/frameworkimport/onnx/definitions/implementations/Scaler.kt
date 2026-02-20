@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - offset: Per-feature offset values
  * - scale: Per-feature scale values
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Scaler"], frameworkName = "onnx")
 class Scaler : PreImportHook {

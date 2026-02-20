@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - axis: Axis along which to split (default: 0)
  * - keepdims: If 1, keep the dimension; if 0, squeeze it out (default: 1)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SplitToSequence"], frameworkName = "onnx")
 class SplitToSequence : PreImportHook {

@@ -62,6 +62,9 @@ public class SpeculativeDecodeLoop {
     private long totalAttempted;
     private long speculativeSteps;
     private long normalSteps;
+    private long speculativeWallTimeMs;
+    private long speculativeDecoderTimeMs;
+    private long speculativeEmbedTimeMs;
     private boolean disabled;
 
     // Retry/cooldown state: replaces permanent disable on first failure
@@ -236,6 +239,9 @@ public class SpeculativeDecodeLoop {
 
         speculativeSteps++;
         totalAttempted += specTokens.length;
+        long specStepStartMs = System.currentTimeMillis();
+        long embedTimeMs = 0L;
+        long decoderTimeMs = 0L;
 
         // Build token sequence: [lastTokenId, spec0, spec1, ..., specK-1]
         int seqLen = 1 + specTokens.length;
@@ -244,11 +250,13 @@ public class SpeculativeDecodeLoop {
         System.arraycopy(specTokens, 0, tokenSequence, 1, specTokens.length);
 
         // Embed all tokens at once
+        long embedStartMs = System.currentTimeMillis();
         INDArray tokenTensor = Nd4j.createFromArray(tokenSequence)
                 .reshape(1, seqLen).castTo(DataType.LONG);
         Map<String, INDArray> embedOutputs = embedTokens.output(
                 Map.of(embedInputName, tokenTensor), embedOutputNames);
         INDArray embeddings = embedOutputs.values().iterator().next().dup();
+        embedTimeMs = System.currentTimeMillis() - embedStartMs;
 
         // Tile for batch if needed
         if (batchSize > 1) {
@@ -289,7 +297,9 @@ public class SpeculativeDecodeLoop {
 
         Map<String, INDArray> decoderOutputs;
         try {
+            long decoderStartMs = System.currentTimeMillis();
             decoderOutputs = decoder.output(decoderInputMap, allOutputs.toArray(new String[0]));
+            decoderTimeMs = System.currentTimeMillis() - decoderStartMs;
         } catch (Exception e) {
             // Multi-token decode failed. Use retry/cooldown instead of permanent disable.
             consecutiveFailures++;
@@ -318,6 +328,7 @@ public class SpeculativeDecodeLoop {
             embeddings.setCloseable(true);
             embeddings.close();
             decoder.clearPlaceholders(false);
+            recordSpecTiming(specStepStartMs, embedTimeMs, decoderTimeMs);
             return null;
         }
 
@@ -325,6 +336,7 @@ public class SpeculativeDecodeLoop {
 
         if (logitsRaw == null) {
             log.warn("Speculative step produced no logits");
+            recordSpecTiming(specStepStartMs, embedTimeMs, decoderTimeMs);
             return null;
         }
 
@@ -349,6 +361,7 @@ public class SpeculativeDecodeLoop {
         } else {
             // Rank 2: only last position logits available, can't verify
             log.debug("Speculative step got rank-2 logits, falling back");
+            recordSpecTiming(specStepStartMs, embedTimeMs, decoderTimeMs);
             return null;
         }
 
@@ -444,6 +457,7 @@ public class SpeculativeDecodeLoop {
 
         log.debug("Speculative step: proposed={}, accepted={}, correction={}",
                 specTokens.length, accepted, correctionToken);
+        recordSpecTiming(specStepStartMs, embedTimeMs, decoderTimeMs);
 
         return new SpeculativeStepResult(
                 acceptedTokens,
@@ -463,11 +477,35 @@ public class SpeculativeDecodeLoop {
                 speculativeSteps, normalSteps, totalAttempted, totalAccepted, acceptRate, avgAccepted);
     }
 
+    public String getTimingStats() {
+        if (speculativeSteps == 0) {
+            return "speculative_steps=0";
+        }
+        long hostOverheadMs = Math.max(0L, speculativeWallTimeMs - speculativeDecoderTimeMs);
+        long avgWallMs = speculativeWallTimeMs / speculativeSteps;
+        long avgDecoderMs = speculativeDecoderTimeMs / speculativeSteps;
+        long avgEmbedMs = speculativeEmbedTimeMs / speculativeSteps;
+        long avgHostOverheadMs = hostOverheadMs / speculativeSteps;
+        return String.format(
+                "speculative_steps=%d, wall=%dms (avg=%dms), decoder=%dms (avg=%dms), embed=%dms (avg=%dms), host_overhead=%dms (avg=%dms)",
+                speculativeSteps, speculativeWallTimeMs, avgWallMs,
+                speculativeDecoderTimeMs, avgDecoderMs,
+                speculativeEmbedTimeMs, avgEmbedMs,
+                hostOverheadMs, avgHostOverheadMs);
+    }
+
     public long getTotalAccepted() { return totalAccepted; }
     public long getTotalAttempted() { return totalAttempted; }
     public long getSpeculativeSteps() { return speculativeSteps; }
     public long getNormalSteps() { return normalSteps; }
     public boolean isDisabled() { return disabled; }
+
+    private void recordSpecTiming(long stepStartMs, long embedMs, long decoderMs) {
+        long wallMs = Math.max(0L, System.currentTimeMillis() - stepStartMs);
+        speculativeWallTimeMs += wallMs;
+        speculativeEmbedTimeMs += Math.max(0L, embedMs);
+        speculativeDecoderTimeMs += Math.max(0L, decoderMs);
+    }
 
     /**
      * Result of a speculative decode step.

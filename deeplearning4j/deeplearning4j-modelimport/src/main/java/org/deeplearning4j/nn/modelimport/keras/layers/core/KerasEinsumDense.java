@@ -49,7 +49,7 @@ import java.util.Map;
  * - kernel_initializer: Weight initializer
  * - bias_initializer: Bias initializer
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

@@ -41,6 +41,16 @@ __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
 namespace sd {
 
+namespace {
+SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
+  if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
+    return tl_graphCaptureStream;
+  }
+  auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
+  return (streamPtr != nullptr) ? *streamPtr : nullptr;
+}
+}  // namespace
+
 void * ConstantHelper::getConstantSpace() {
   // Always use memory pool for constant space
   // The __constant__ memory approach via cudaGetSymbolAddress was causing issues
@@ -149,8 +159,7 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
     // stream, invalidating the capture (error 901).
     cudaStream_t allocStream = nullptr;
     if (tl_graphExecutionActive) {
-      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
-      if (streamPtr != nullptr) allocStream = *streamPtr;
+      allocStream = captureSafeStreamOrDefault();
     }
     ptr = reinterpret_cast<int8_t*>(
         memory::CudaMemoryPool::getInstance().allocate(allocSize, deviceId, allocStream, &actualDevice));
@@ -211,8 +220,7 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
       // implicitly syncs with ALL named streams (including the captured stream), causing
       // capture invalidation (error 901). Use cudaMemcpyAsync on the CAPTURED stream
       // so it becomes a recorded graph node.
-      auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
-      cudaStream_t capturedStream = (streamPtr != nullptr) ? *streamPtr : 0;
+      cudaStream_t capturedStream = captureSafeStreamOrDefault();
       auto res = cudaMemcpyAsync(ptr, src, numBytes, cudaMemcpyHostToDevice, capturedStream);
       if (res != 0) {
         std::string errorMessage = "cudaMemcpyAsync (graph capture) failed with error code " + std::to_string(res);

@@ -110,13 +110,13 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  System.getProperty() on every slot (1962 per frame * 20 frames = 39,240 calls).
      *  System.getProperty() acquires a lock on System.properties each invocation.
      *  When enabled, System.err.println + flush() is synchronous and unbuffered. */
-    private static final boolean DSP_TRACE_ENABLED = System.getProperty("nd4j.dsp.trace") != null;
+    private static final boolean DSP_TRACE_ENABLED = System.getProperty(ND4JSystemProperties.DSP_TRACE) != null;
 
     /** Post-slot CUDA error check interval. Checking lastErrorCode() after every op is
      *  a JNI call that adds ~2us * 1962 ops = ~4ms per frame. In non-debug mode, check
      *  only every N ops. Set nd4j.dsp.errorCheckInterval=1 to check every op (for debugging).
      *  Default: 50 (check every 50 ops, ~39x fewer JNI calls). */
-    private static final int ERROR_CHECK_INTERVAL = Integer.getInteger("nd4j.dsp.errorCheckInterval", 50);
+    private static final int ERROR_CHECK_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_ERROR_CHECK_INTERVAL, 50);
 
     /** Whether view-producer detection has been completed (first execution establishes
      *  the slotIsViewProducer[] array; subsequent executions can skip pre/post GPU address
@@ -285,7 +285,7 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  per vision frame). Set nd4j.dsp.workspaceResetInterval=1 to reset every op. */
     private int workspaceOpsSinceReset;
     private static final int WORKSPACE_RESET_INTERVAL = Integer.getInteger(
-            "nd4j.dsp.workspaceResetInterval", 25);
+            ND4JSystemProperties.DSP_WORKSPACE_RESET_INTERVAL, 25);
 
     /** Native C++ plan handle. Compiled once from the serialized plan on first native
      *  execution attempt. Freed on close(). null means not yet compiled or compilation failed. */
@@ -305,6 +305,16 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** KV cache retention state: when configured, C++ scatters new KV entries
      *  into static input buffers, avoiding 60 copyBuffer round-trips per decode step. */
     private boolean kvCacheRetentionConfigured;
+
+    /** Maximum KV cache length for pre-allocation. When > 0 and CUDA graphs enabled,
+     *  output slots for KV cache are pre-allocated at max size to keep addresses stable.
+     *  Can be set programmatically via setMaxKvCacheLength() or via system property
+     *  {@link ND4JSystemProperties#DSP_MAX_KV_CACHE_LENGTH}. */
+    private int maxKvCacheLength = Integer.parseInt(
+            System.getProperty(ND4JSystemProperties.DSP_MAX_KV_CACHE_LENGTH, "0"));
+
+    /** True once max-allocation has been configured (done after the first execution step). */
+    private boolean maxAllocationConfigured = false;
 
     public DynamicShapePlanExecutor(SameDiff sd, SessionMemMgr mmgr) {
         this.sd = sd;
@@ -476,6 +486,41 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Enable/disable trace logging for DSP execution decisions.
+     */
+    public void setTraceEnabled(boolean enabled) {
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.setPlanTraceEnabled(nativePlanHandle, enabled);
+        }
+    }
+
+    /**
+     * Set the maximum KV cache length for pre-allocation.
+     * When set > 0 and CUDA graphs are enabled, output slots for KV cache
+     * are pre-allocated at max size [batch, numHeads, maxLen, headDim] to keep
+     * buffer addresses stable across decode steps. This enables CUDA graph capture.
+     * 
+     * Must be called before the first execute() call.
+     * 
+     * @param maxLen Maximum sequence length for KV cache
+     */
+    public void setMaxKvCacheLength(int maxLen) {
+        this.maxKvCacheLength = maxLen;
+        if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.setPlanMaxKvCacheLength(nativePlanHandle, maxLen);
+        }
+    }
+
+    /**
+     * Get the configured maximum KV cache length.
+     */
+    public int getMaxKvCacheLength() {
+        return maxKvCacheLength;
+    }
+
+    /**
      * Whether KV cache retention is configured.
      */
     public boolean isKvCacheRetentionConfigured() {
@@ -487,6 +532,60 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     public DynamicShapePlan getCurrentPlan() {
         return currentPlan;
+    }
+
+    /**
+     * Configure max-allocation for KV cache output slots.
+     * Called after the first execution step when actual output shapes are known.
+     * Finds present_key/present_value outputs and configures C++ to pre-allocate
+     * them at maximum sequence length so buffer addresses stay stable for CUDA graphs.
+     */
+    private void configureMaxAllocationForKvCache(Map<String, INDArray> firstStepResults, DynamicShapePlan plan) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull() || maxKvCacheLength <= 0) return;
+        if (firstStepResults == null || firstStepResults.isEmpty()) return;
+
+        Map<String, Integer> outputNameToSlot = plan.getOutputNameToSlotIndex();
+
+        List<Integer> kvSlotIndices = new ArrayList<>();
+        List<Long> kvMaxSizes = new ArrayList<>();
+
+        // Get shapes from actual output arrays returned by the first execution step.
+        // Match logic mirrors DecoderUtils.findKVCacheOutputNames: present+key or present+value.
+        for (Map.Entry<String, INDArray> entry : firstStepResults.entrySet()) {
+            String outputName = entry.getKey();
+            boolean isKvKey   = outputName.contains("present") && outputName.contains("key");
+            boolean isKvValue = outputName.contains("present") && outputName.contains("value");
+            if (isKvKey || isKvValue) {
+                Integer slotIdx = outputNameToSlot.get(outputName);
+                if (slotIdx != null && slotIdx >= 0) {
+                    INDArray arr = entry.getValue();
+                    if (arr != null && arr.rank() == 4) {
+                        // Shape is [batch, numHeads, seqLen, headDim]
+                        long batchSize = arr.size(0);
+                        long numHeads  = arr.size(1);
+                        long headDim   = arr.size(3);
+                        long maxSize   = batchSize * numHeads * maxKvCacheLength * headDim;
+
+                        kvSlotIndices.add(slotIdx);
+                        kvMaxSizes.add(maxSize);
+                        log.debug("Max-allocating KV cache slot {} ({}): shape={} -> maxSize={}",
+                                slotIdx, outputName, Arrays.toString(arr.shape()), maxSize);
+                    }
+                }
+            }
+        }
+
+        if (!kvSlotIndices.isEmpty()) {
+            int[] indices = kvSlotIndices.stream().mapToInt(Integer::intValue).toArray();
+            long[] sizes   = kvMaxSizes.stream().mapToLong(Long::longValue).toArray();
+
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            // Use the int[]/long[] overload — the Pointer overload dispatches to a no-op default
+            nativeOps.setPlanOutputSlotMaxSizes(nativePlanHandle, indices.length, indices, sizes);
+            nativeOps.setPlanMaxKvCacheLength(nativePlanHandle, maxKvCacheLength);
+            log.info("Configured max-allocation for {} KV cache slots with maxSeqLen={}",
+                    kvSlotIndices.size(), maxKvCacheLength);
+        }
     }
 
     /**
@@ -964,7 +1063,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
 
             // Diagnostic: dump first few values of each output to compare with native executor
-            if (Boolean.getBoolean("nd4j.dsp.java.dumpOutputs")) {
+            if (Boolean.getBoolean(ND4JSystemProperties.DSP_JAVA_DUMP_OUTPUTS)) {
                 for (Map.Entry<String, INDArray> entry : results.entrySet()) {
                     String name = entry.getKey();
                     INDArray arr = entry.getValue();
@@ -3766,7 +3865,7 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             // Enable execution timing if system property set
             boolean execTiming = "true".equalsIgnoreCase(
-                    System.getProperty("nd4j.dsp.executionTiming", "false"));
+                    System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
             if (execTiming) {
                 try {
                     nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
@@ -3775,13 +3874,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
 
-            nativePlanSource = plan;
-            log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
-                    plan.getSlots().length, plan.getExternalInputKeys().length,
-                    plan.getRequestedOutputs().size(), cudaGraphsEnabled, shapesFrozen);
-        }
+            // Enable trace logging if system property set (presence is sufficient)
+            if (System.getProperty(ND4JSystemProperties.DSP_TRACE) != null) {
+                try {
+                    nativeOps.setPlanTraceEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support trace
+                }
+            }
 
-        // Resolve external inputs (constants, variables, placeholders)
+             nativePlanSource = plan;
+             log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
+                     plan.getSlots().length, plan.getExternalInputKeys().length,
+                     plan.getRequestedOutputs().size(), cudaGraphsEnabled, shapesFrozen);
+         }
+         
+         // Resolve external inputs (constants, variables, placeholders)
         String[] extKeys = plan.getExternalInputKeys();
         INDArray[] extInputs = new INDArray[extKeys.length];
         for (int i = 0; i < extKeys.length; i++) {
@@ -3900,8 +4008,16 @@ public class DynamicShapePlanExecutor implements Closeable {
                 log.info("Native executor: exec={}ms copy={}ms ({} outputs)", execMs, copyMs, numOutputs);
             }
 
+            // NOTE: Max-allocation for KV cache output slots is disabled. Giving ops a
+            // wrong-shaped pre-allocated buffer (e.g. [1,H,2048,D] when the op produces
+            // [1,H,2,D]) causes the CUDA kernel to use the wrong shape → OOB reads →
+            // cudaErrorIllegalAddress → Status::KERNEL_FAILURE (50). The correct approach
+            // requires ops to accept a fixed-size buffer AND a "valid length" parameter
+            // (static KV cache pattern), which is a larger architectural change.
+            // configureMaxAllocationForKvCache is kept here for future use.
+
             // Diagnostic: dump first few values of each output to compare with Java executor
-            if (Boolean.getBoolean("nd4j.dsp.native.dumpOutputs")) {
+            if (Boolean.getBoolean(ND4JSystemProperties.DSP_NATIVE_DUMP_OUTPUTS)) {
                 for (Map.Entry<String, INDArray> entry : results.entrySet()) {
                     String name = entry.getKey();
                     INDArray arr = entry.getValue();

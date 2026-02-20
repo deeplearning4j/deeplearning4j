@@ -49,7 +49,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - axis: The axis for normalization (default: -1)
  * - epsilon: Small constant for numerical stability (default: 1e-5)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SimplifiedLayerNormalization"], frameworkName = "onnx")
 class SimplifiedLayerNormalization : PreImportHook {

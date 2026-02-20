@@ -47,7 +47,7 @@ import java.util.Arrays;
  * 1D Separable Convolution layer implementation.
  * Uses the 2D separable convolution op internally by reshaping input.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class SeparableConvolution1DLayer extends ConvolutionLayer {
 

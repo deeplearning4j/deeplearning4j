@@ -1651,6 +1651,43 @@ SD_LIB_EXPORT void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen);
 SD_LIB_EXPORT void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled);
 
 /**
+ * Enable/disable trace logging for DSP execution decisions.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable trace, false to disable
+ */
+SD_LIB_EXPORT void setPlanTraceEnabled(sd::Pointer planHandle, bool enabled);
+
+/**
+ * Set maximum sizes for specific output slots (KV cache pre-allocation).
+ * When set, these slots will be pre-allocated at the specified maximum size,
+ * keeping buffer addresses stable across all subsequent steps.
+ * This enables CUDA graph capture for models with growing KV caches.
+ *
+ * @param planHandle       Handle from compileDynamicShapePlan()
+ * @param numSlots         Number of slot entries
+ * @param slotIndices      Array of output slot indices to pre-allocate
+ * @param maxSizes         Array of maximum sizes (in number of elements, not bytes)
+ */
+SD_LIB_EXPORT void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
+                                               const int* slotIndices, const sd::LongType* maxSizes);
+
+/**
+ * Set the KV cache sequence position (for slice-based KV cache access).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param pos         Current sequence position (where new KV entries will be written)
+ */
+SD_LIB_EXPORT void setPlanKvCachePosition(sd::Pointer planHandle, int pos);
+
+/**
+ * Set the maximum KV cache length (for pre-allocated attention outputs).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param maxLen      Maximum sequence length for KV cache
+ */
+SD_LIB_EXPORT void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen);
+
+/**
  * Get the number of graph segments in a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -1715,5 +1752,54 @@ SD_LIB_EXPORT void printPlanCapturedGraphDebug(sd::Pointer planHandle);
  * @return Thread-local static buffer with stats string
  */
 SD_LIB_EXPORT const char* getPlanCaptureStats(sd::Pointer planHandle);
+
+/**
+ * Export the CUDA graph visualization to Chrome trace format.
+ * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
+ * Similar to PyTorch's torch.cuda.CUDAGraph.debug_dump() functionality.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Output file path (should end with .json)
+ * @return true on success
+ */
+SD_LIB_EXPORT bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPath);
+
+/**
+ * Export the CUDA graph visualization to HTML format.
+ * Creates a standalone HTML file with interactive visualization.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Output HTML file path
+ * @return true on success
+ */
+SD_LIB_EXPORT bool exportPlanCudaGraphHtml(sd::Pointer planHandle, const char* outputPath);
+
+/**
+ * Dump all CUDA graph debug files (DOT, JSON, HTML, nodes JSON).
+ * Creates: {outputPath}.dot, {outputPath}.json, {outputPath}.html, {outputPath}_nodes.json
+ * PyTorch-style debug dump similar to torch.cuda.CUDAGraph.debug_dump().
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Base path for output files (without extension)
+ * @return true on success
+ */
+SD_LIB_EXPORT bool debugDumpPlanCudaGraph(sd::Pointer planHandle, const char* outputPath);
+
+/**
+ * Get the CUDA graph execution timeline as a JSON string in Chrome trace format.
+ * For programmatic access to the timeline data.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return JSON string, or empty string if no graph data
+ */
+SD_LIB_EXPORT const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle);
+
+/**
+ * Clear the CUDA graph execution timeline history.
+ * Useful to reset timing data between profiling sessions.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void clearPlanCudaGraphTimeline(sd::Pointer planHandle);
 
 #endif // NATIVEOPS_H

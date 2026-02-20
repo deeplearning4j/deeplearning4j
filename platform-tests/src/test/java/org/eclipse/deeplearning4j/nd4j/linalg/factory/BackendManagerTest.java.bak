@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Scoped device forcing works
  * - Fluent configuration API works
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Tag("multi-backend")
 @DisplayName("BackendManager Tests")

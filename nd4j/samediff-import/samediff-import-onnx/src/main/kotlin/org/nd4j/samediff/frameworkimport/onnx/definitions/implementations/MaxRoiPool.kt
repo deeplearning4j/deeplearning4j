@@ -59,7 +59,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - Y: Pooled features of shape [num_rois, C, pooled_h, pooled_w]
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["MaxRoiPool"], frameworkName = "onnx")
 class MaxRoiPool : PreImportHook {

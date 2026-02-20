@@ -52,7 +52,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - window_size: Window size for 2D position encoding
  * - use_alibi: Whether to use ALiBi instead of learned biases
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["RelativePositionBias", "RelativePosEmb", "RelativePositionEmbedding"], frameworkName = "onnx")
 class RelativePositionBias : PreImportHook {

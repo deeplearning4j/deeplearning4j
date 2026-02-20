@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - map_form: Form of the map ('DENSE', 'SPARSE')
  * - max_map: Maximum map size for sparse representation
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["CastMap"], frameworkName = "onnx")
 class CastMap : PreImportHook {

@@ -8,6 +8,21 @@ cmake_minimum_required(VERSION 3.15)
 # cause constant cache invalidation, making ccache overhead > benefit
 # See: Build 265 analysis - 32% hit rate with 55% slower builds
 find_program(CCACHE_PROGRAM ccache)
+# Fallback for environments where Homebrew locations are not on PATH
+if(NOT CCACHE_PROGRAM)
+    set(_CCACHE_FALLBACK_PATHS
+        "/home/linuxbrew/.linuxbrew/bin"  # Linuxbrew default
+        "/opt/homebrew/bin"               # macOS Apple Silicon
+        "/usr/local/Homebrew/bin"         # macOS Intel (alt)
+        "/usr/local/bin"
+    )
+    find_program(CCACHE_PROGRAM ccache PATHS ${_CCACHE_FALLBACK_PATHS} NO_DEFAULT_PATH)
+    unset(_CCACHE_FALLBACK_PATHS)
+
+    if(CCACHE_PROGRAM)
+        message(STATUS "ℹ️  Found ccache via fallback path search: ${CCACHE_PROGRAM}")
+    endif()
+endif()
 if(CCACHE_PROGRAM)
     # Check if this is a debug or functrace build
     set(CCACHE_SKIP_REASON "")

@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - transBatchA: Whether to transpose batch dims of A (default: 0)
  * - transBatchB: Whether to transpose batch dims of B (default: 0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["FusedMatMul"], frameworkName = "onnx")
 class FusedMatMul : PreImportHook {

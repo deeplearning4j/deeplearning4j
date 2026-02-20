@@ -151,6 +151,9 @@ struct SD_LIB_EXPORT GraphStatistics {
     int numEvents = 0;
     int numHostCallbacks = 0;
     int numChildGraphs = 0;
+    int numMemAllocs = 0;    // cudaMallocAsync during capture → cudaGraphMemAllocNode
+    int numMemFrees = 0;     // cudaFreeAsync during capture → cudaGraphMemFreeNode
+    int numEmpty = 0;
     size_t totalMemoryOps = 0;
     double estimatedTimeMs = 0.0;
 };
@@ -252,6 +255,68 @@ public:
     bool exportToDot(const std::string& filename) const;
 
     /**
+     * Export graph execution timeline to Chrome trace format.
+     * The output JSON file can be loaded in chrome://tracing for visualization.
+     * Includes kernel launches, memory operations, and timing data.
+     * @param filename Output file path (should end with .json)
+     * @return true on success
+     */
+    bool exportToChromeTrace(const std::string& filename) const;
+
+    /**
+     * Export graph execution timeline to Chrome trace format with custom metadata.
+     * @param filename Output file path
+     * @param metadata Custom metadata to include in the trace
+     * @return true on success
+     */
+    bool exportToChromeTrace(const std::string& filename,
+                            const std::unordered_map<std::string, std::string>& metadata) const;
+
+    /**
+     * Get the Chrome trace JSON string directly (for programmatic access).
+     * @return JSON string in Chrome trace format
+     */
+    std::string getChromeTraceJson() const;
+
+    /**
+     * Dump graph visualization to multiple formats for debugging.
+     * Creates: {debug_path}.dot, {debug_path}_nodes.json, {debug_path}.html
+     * PyTorch-style debug dump similar to torch.cuda.CUDAGraph.debug_dump().
+     * @param debugPath Base path for output files (without extension)
+     * @return true on success
+     */
+    bool debugDump(const std::string& debugPath) const;
+
+    /**
+     * Export graph to HTML visualization with interactive SVG.
+     * Creates a standalone HTML file with embedded JavaScript for visualization.
+     * @param filename Output HTML file path
+     * @return true on success
+     */
+    bool exportToHtml(const std::string& filename) const;
+
+    /**
+     * Record a graph replay event for Chrome trace timeline.
+     * Call this before each graph launch to track replay history.
+     * @param stream The CUDA stream used for launch
+     */
+    void recordReplayStart(cudaStream_t stream);
+
+    /**
+     * Get execution timeline statistics.
+     */
+    struct ExecutionTimelineEntry {
+        double timestampMs = 0.0;
+        double durationMs = 0.0;
+        int numKernels = 0;
+        int numMemops = 0;
+        bool success = false;
+        std::string errorMessage;
+    };
+    const std::vector<ExecutionTimelineEntry>& getExecutionTimeline() const { return _executionTimeline; }
+    void clearExecutionTimeline() { _executionTimeline.clear(); }
+
+    /**
      * Extract detailed info about every node in the captured graph.
      * Includes kernel names, memcpy directions/sizes, memset values, etc.
      * Only valid after endCapture() succeeds (state >= CAPTURED).
@@ -290,6 +355,12 @@ private:
     int _deviceId = 0;
     GraphStatistics _stats;
     mutable std::mutex _mutex;
+
+    // Execution timeline tracking for Chrome trace visualization
+    std::vector<ExecutionTimelineEntry> _executionTimeline;
+    double _captureStartTimeMs = 0.0;
+    double _captureEndTimeMs = 0.0;
+    double _instantiateTimeMs = 0.0;
 
     // Persistent pinned host buffers used during graph capture for H2D copies.
     // These must persist for the lifetime of the graph because graph replay

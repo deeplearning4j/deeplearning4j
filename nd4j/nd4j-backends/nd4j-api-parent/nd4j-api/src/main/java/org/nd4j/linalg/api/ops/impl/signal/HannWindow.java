@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * Hann window function generator.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class HannWindow extends DynamicCustomOp {

@@ -39,7 +39,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  *
  * Reference: https://github.com/microsoft/onnxruntime/blob/main/docs/ContribOperators.md#QuickGelu
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["QuickGelu"], frameworkName = "onnx")
 class QuickGelu : PreImportHook {

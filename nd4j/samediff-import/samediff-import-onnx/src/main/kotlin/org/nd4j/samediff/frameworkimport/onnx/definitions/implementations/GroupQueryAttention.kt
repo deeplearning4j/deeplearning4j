@@ -55,7 +55,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - scale: Optional scaling factor
  * - local_window_size: Optional local attention window size
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["GroupQueryAttention"], frameworkName = "onnx")
 class GroupQueryAttention : PreImportHook {

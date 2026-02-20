@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - replaced_value_float: Value to replace (default: NaN)
  * - replaced_value_int64: Value to replace for integer inputs
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Imputer"], frameworkName = "onnx")
 class Imputer : PreImportHook {

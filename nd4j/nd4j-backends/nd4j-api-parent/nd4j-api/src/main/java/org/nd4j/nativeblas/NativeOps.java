@@ -1552,21 +1552,72 @@ public interface NativeOps {
      // No-op by default
  }
 
- /**
-  * Enable/disable execution timing breakdown logging for a compiled plan.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @param enabled true to enable timing, false to disable
-  */
- default void setPlanExecutionTimingEnabled(Pointer planHandle, boolean enabled) {
-     // No-op by default
- }
+  /**
+   * Enable/disable execution timing breakdown logging for a compiled plan.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param enabled true to enable timing, false to disable
+   */
+  default void setPlanExecutionTimingEnabled(Pointer planHandle, boolean enabled) {
+      // No-op by default
+  }
 
- /**
-  * Get the number of graph segments in a compiled plan.
-  * @param planHandle handle from compileDynamicShapePlan()
-  * @return number of segments, or -1 on error
-  */
- default int getPlanNumSegments(Pointer planHandle) {
+  /**
+   * Enable/disable trace logging for DSP execution decisions.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param enabled true to enable trace, false to disable
+   */
+  default void setPlanTraceEnabled(Pointer planHandle, boolean enabled) {
+      // No-op by default
+  }
+
+  /**
+   * Set maximum sizes for specific output slots (KV cache pre-allocation).
+   * When set, these slots will be pre-allocated at the specified maximum size,
+   * keeping buffer addresses stable across all subsequent steps.
+   * This enables CUDA graph capture for models with growing KV caches.
+   * 
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param numSlots number of slot entries
+   * @param slotIndicesBuffer pointer to int[] of output slot indices
+   * @param maxSizesBuffer pointer to long[] of maximum sizes (in number of elements)
+   */
+  default void setPlanOutputSlotMaxSizes(Pointer planHandle, long numSlots,
+                                          Pointer slotIndicesBuffer, Pointer maxSizesBuffer) {
+      // No-op by default
+  }
+
+  /**
+   * Typed overload: accepts primitive arrays directly, matching the native binding signatures.
+   */
+  default void setPlanOutputSlotMaxSizes(Pointer planHandle, long numSlots,
+                                          int[] slotIndices, long[] maxSizes) {
+      // No-op by default
+  }
+
+  /**
+   * Set the KV cache sequence position (for slice-based KV cache access).
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param pos current sequence position (where new KV entries will be written)
+   */
+  default void setPlanKvCachePosition(Pointer planHandle, int pos) {
+      // No-op by default
+  }
+
+  /**
+   * Set the maximum KV cache length (for pre-allocated attention outputs).
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param maxLen maximum sequence length for KV cache
+   */
+  default void setPlanMaxKvCacheLength(Pointer planHandle, int maxLen) {
+      // No-op by default
+  }
+
+  /**
+   * Get the number of graph segments in a compiled plan.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @return number of segments, or -1 on error
+   */
+  default int getPlanNumSegments(Pointer planHandle) {
      return -1;
  }
 
@@ -1635,14 +1686,73 @@ public interface NativeOps {
      // No-op on non-CUDA backends
  }
 
- /**
-  * Get detailed capture statistics as a formatted string.
-  * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
-  *
-  * @param planHandle  Handle from compileDynamicShapePlan()
-  * @return Thread-local static buffer with stats string
-  */
- default String getPlanCaptureStats(Pointer planHandle) {
-     return "";
- }
+  /**
+   * Get detailed capture statistics as a formatted string.
+   * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
+   *
+   * @param planHandle  Handle from compileDynamicShapePlan()
+   * @return Thread-local static buffer with stats string
+   */
+  default String getPlanCaptureStats(Pointer planHandle) {
+      return "";
+  }
+
+  /**
+   * Export the CUDA graph visualization to Chrome trace format.
+   * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
+   * Similar to PyTorch's torch.cuda.CUDAGraph.debug_dump() functionality.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @param outputPath Output file path (should end with .json)
+   * @return true on success
+   */
+  default boolean exportPlanCudaGraphChromeTrace(Pointer planHandle, String outputPath) {
+      return false;
+  }
+
+  /**
+   * Export the CUDA graph visualization to HTML format.
+   * Creates a standalone HTML file with interactive visualization.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @param outputPath Output HTML file path
+   * @return true on success
+   */
+  default boolean exportPlanCudaGraphHtml(Pointer planHandle, String outputPath) {
+      return false;
+  }
+
+  /**
+   * Dump all CUDA graph debug files (DOT, JSON, HTML, nodes JSON).
+   * Creates: {outputPath}.dot, {outputPath}.json, {outputPath}.html, {outputPath}_nodes.json
+   * PyTorch-style debug dump similar to torch.cuda.CUDAGraph.debug_dump().
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @param outputPath Base path for output files (without extension)
+   * @return true on success
+   */
+  default boolean debugDumpPlanCudaGraph(Pointer planHandle, String outputPath) {
+      return false;
+  }
+
+  /**
+   * Get the CUDA graph execution timeline as a JSON string in Chrome trace format.
+   * For programmatic access to the timeline data.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @return JSON string, or empty string if no graph data
+   */
+  default String getPlanCudaGraphChromeTraceJson(Pointer planHandle) {
+      return "";
+  }
+
+  /**
+   * Clear the CUDA graph execution timeline history.
+   * Useful to reset timing data between profiling sessions.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   */
+  default void clearPlanCudaGraphTimeline(Pointer planHandle) {
+      // No-op on non-CUDA backends
+  }
 }

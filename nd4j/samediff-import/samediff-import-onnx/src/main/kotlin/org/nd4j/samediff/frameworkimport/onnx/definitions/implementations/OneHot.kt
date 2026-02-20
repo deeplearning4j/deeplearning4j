@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - axis: Axis along which to insert the one-hot dimension (default: -1)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["OneHot"], frameworkName = "onnx")
 class OneHot : PreImportHook {

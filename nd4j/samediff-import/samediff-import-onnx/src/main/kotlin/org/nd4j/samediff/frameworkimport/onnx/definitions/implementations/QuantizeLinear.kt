@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - axis: Axis for per-channel quantization (default: 1)
  * - saturate: Whether to saturate output (default: 1)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["QuantizeLinear"], frameworkName = "onnx")
 class QuantizeLinear : PreImportHook {

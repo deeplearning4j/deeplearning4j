@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  * - SD_KERNEL_STRATEGY: Kernel selection strategy
  * - SD_HELPER_PRIORITY: Helper priority order
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class MultiBackendTestConfiguration {
 

@@ -33,7 +33,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Signal processing operations for ONNX - commonly used in speech/audio models.
  * These implementations use native C++ ops for optimal performance.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 
 /**

@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 3. Concurrent multi-threaded access
  * 4. Race condition prevention
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Tag(TagNames.MULTI_THREADED)

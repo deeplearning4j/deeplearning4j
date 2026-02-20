@@ -43,7 +43,7 @@ import java.util.Map;
  * Note: DL4J uses DotProductAttentionVertex as a simpler approximation.
  * Full multi-head attention semantics may not be fully replicated.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for Keras EinsumDense layer import.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @DisplayName("Keras EinsumDense Test")
 @Tag(TagNames.FILE_IO)

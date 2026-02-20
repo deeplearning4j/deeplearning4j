@@ -58,7 +58,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - output: Image tensor [N, C, H, W]
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Col2Im"], frameworkName = "onnx")
 class Col2Im : PreImportHook {

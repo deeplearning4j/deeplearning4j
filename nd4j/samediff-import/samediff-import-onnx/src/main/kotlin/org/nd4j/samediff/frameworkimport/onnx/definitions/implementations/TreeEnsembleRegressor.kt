@@ -51,7 +51,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - post_transform: NONE, SOFTMAX, LOGISTIC, SOFTMAX_ZERO, PROBIT
  * - target_*: Target values and tree assignments
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["TreeEnsembleRegressor"], frameworkName = "onnx")
 class TreeEnsembleRegressor : PreImportHook {

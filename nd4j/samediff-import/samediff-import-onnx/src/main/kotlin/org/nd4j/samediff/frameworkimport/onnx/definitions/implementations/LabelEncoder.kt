@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - values_floats/values_int64s/values_strings: Output values to map to
  * - default_float/default_int64/default_string: Default value for unknown inputs
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["LabelEncoder"], frameworkName = "onnx")
 class LabelEncoder : PreImportHook {

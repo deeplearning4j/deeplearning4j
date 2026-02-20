@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - classlabels_int64s: Integer class labels
  * - classlabels_strings: String class labels
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ZipMap"], frameworkName = "onnx")
 class ZipMap : PreImportHook {

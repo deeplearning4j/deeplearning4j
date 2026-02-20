@@ -54,7 +54,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - grid: Sampling grid [N, H, W, 2] for 2D or [N, D, H, W, 3] for 3D
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["AffineGrid"], frameworkName = "onnx")
 class AffineGrid : PreImportHook {

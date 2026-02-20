@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Hamming window function generator.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class HammingWindow extends DynamicCustomOp {

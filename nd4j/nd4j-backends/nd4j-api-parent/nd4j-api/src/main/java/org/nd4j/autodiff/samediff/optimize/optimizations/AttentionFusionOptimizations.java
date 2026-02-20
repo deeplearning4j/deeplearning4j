@@ -45,12 +45,14 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.shape.Shape;
 import org.nd4j.linalg.api.ops.impl.shape.Permute;
+import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -173,9 +175,30 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     }
                 }
             }
+            // Check if producer is Cast (common in mixed-precision models) and trace through
+            else if (producerOp.getOp() instanceof Cast) {
+                List<String> castInputs = producerOp.getInputsToOp();
+                if (castInputs != null && !castInputs.isEmpty()) {
+                    Variable castInputVar = getVariableWithFallback(helper, sd, castInputs.get(0));
+                    if (castInputVar != null) {
+                        String castProducerName = castInputVar.getOutputOfOp();
+                        if (castProducerName != null) {
+                            SameDiffOp castProducer = sd.getOps().get(castProducerName);
+                            if (castProducer != null && castProducer.getOp() instanceof SoftMax) {
+                                softmaxOp = castProducer;
+                                log.debug("[ATTN] Found cast " + producerOp.getName() + " between softmax and matmul");
+                            }
+                        }
+                    }
+                }
+            }
 
             if (softmaxOp == null) {
-                log.debug("[ATTN] First input " + potentialSoftmaxOutput + " is NOT from softmax (producer: " + producerOp.getOp().getClass().getSimpleName() + ")");
+                // Log at info for first few misses to help diagnose pattern detection
+                if (op.getName().contains("layers.0")) {
+                    log.info("[ATTN-DIAG] Matmul {} first input {} NOT from softmax (producer: {})",
+                            op.getName(), potentialSoftmaxOutput, producerOp.getOp().getClass().getSimpleName());
+                }
                 return false;
             }
 
@@ -240,12 +263,21 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 int qRank = inferVariableRank(sd, qSDVar);
                 int kRank = inferVariableRank(sd, kSDVar);
                 int vRank = inferVariableRank(sd, vSDVar);
-                log.debug("Attention fusion rank check: Q={} rank={}, K={} rank={}, V={} rank={}",
-                        components.queryVar, qRank, components.keyVar, kRank, vVar, vRank);
+
+                // For unknown ranks (-1): infer from known ranks. In attention, Q/K/V must
+                // be compatible for matmul, so if 2 of 3 have known rank, the third matches.
+                if (qRank == -1 && kRank > 0) qRank = kRank;
+                if (qRank == -1 && vRank > 0) qRank = vRank;
+                if (kRank == -1 && qRank > 0) kRank = qRank;
+                if (kRank == -1 && vRank > 0) kRank = vRank;
+                if (vRank == -1 && qRank > 0) vRank = qRank;
+                if (vRank == -1 && kRank > 0) vRank = kRank;
+
+                log.info("[ATTN-DIAG] Rank check (after inference): Q={}, K={}, V={}", qRank, kRank, vRank);
+
                 // Reject unknown ranks (-1) and rank 5+.
                 if (qRank < 2 || kRank < 2 || vRank < 2 || qRank > 4 || kRank > 4 || vRank > 4) {
-                    log.debug("Skipping attention fusion: ranks not supported (Q={}, K={}, V={}). " +
-                            "dot_product_attention_v2 requires rank 2, 3, or 4.", qRank, kRank, vRank);
+                    log.info("[ATTN-DIAG] Skipping: ranks not supported (Q={}, K={}, V={})", qRank, kRank, vRank);
                     return false;
                 }
 
@@ -316,15 +348,24 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 // Note: We use keys=K (not K^T) because the op handles transposition internally
                 SDVariable emptyQueryMask = sd.constant("attn_empty_qmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
 
-                // Use the detected mask if available, otherwise use empty mask
+                // Use the detected mask if available, otherwise use empty mask.
+                // When useCausalMask is true, use empty valueMask — FlashAttention
+                // handles causal masking internally via config.isCausal, which is much
+                // faster than passing an explicit mask (which would disable FlashAttention).
                 SDVariable valueMask;
-                if (components.hasAdditiveMask && components.maskVar != null) {
+                if (components.hasAdditiveMask && components.maskVar != null && !components.useCausalMask) {
+                    // Non-causal additive mask: rank 4 not supported by AttentionHelper fallback
+                    if (qRank == 4 || kRank == 4 || vRank == 4) {
+                        log.info("[ATTN-DIAG] Skipping rank-4 fusion: non-causal additive mask not supported in flash path");
+                        return false;
+                    }
                     valueMask = sd.getVariable(components.maskVar);
                     if (valueMask == null) {
                         valueMask = sd.constant("attn_empty_vmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
                     }
                     log.debug("[ATTN-DEBUG] Using detected mask variable: " + components.maskVar);
                 } else {
+                    // No mask, or causal mask (FlashAttention handles causal via isCausal flag)
                     valueMask = sd.constant("attn_empty_vmask_" + op.getName(), Nd4j.empty(DataType.FLOAT));
                 }
 
@@ -723,7 +764,23 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 return null;
             }
 
-            log.debug("[ATTN-MASK] Scores var: " + scoresVar + ", Mask var: " + maskVar);
+            // Post-loop causal mask check: the loop may have found scores first (break)
+            // without checking if the other input is a causal mask array.
+            if (maskVar != null && !isCausalMask) {
+                SDVariable maskSdVar = sd.getVariable(maskVar);
+                if (maskSdVar != null && maskSdVar.getArr() != null) {
+                    if (isCausalMaskArray(maskSdVar.getArr())) {
+                        isCausalMask = true;
+                        log.debug("[ATTN-MASK] Detected causal mask post-loop: " + maskVar);
+                    }
+                }
+                if (!isCausalMask && isDynamicCausalMaskGraph(sd, helper, maskVar)) {
+                    isCausalMask = true;
+                    log.debug("[ATTN-MASK] Detected dynamic causal mask graph: " + maskVar);
+                }
+            }
+
+            log.debug("[ATTN-MASK] Scores var: " + scoresVar + ", Mask var: " + maskVar + ", isCausal: " + isCausalMask);
 
             // Now trace back from scoresVar to find the actual Q @ K^T pattern
             log.debug("[ATTN-MASK] Calling traceAttentionScoresWithoutMask for: " + scoresVar);
@@ -826,15 +883,97 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             if (rows != cols) return false;
 
             try {
-                // Check upper right corner (should be very negative for -inf)
-                double upperRight = arr.getDouble(0, cols - 1);
-                // Check lower left corner (should be 0 or close to 0)
-                double lowerLeft = arr.getDouble(rows - 1, 0);
+                // Build full-rank index arrays for upper-right and lower-left corners.
+                // For rank > 2 (e.g., [1,1,S,S]), leading dims are 0.
+                long[] upperRightIdx = new long[arr.rank()];
+                long[] lowerLeftIdx = new long[arr.rank()];
+                Arrays.fill(upperRightIdx, 0);
+                Arrays.fill(lowerLeftIdx, 0);
+                // Upper right: row=0, col=cols-1
+                upperRightIdx[arr.rank() - 1] = cols - 1;
+                // Lower left: row=rows-1, col=0
+                lowerLeftIdx[arr.rank() - 2] = rows - 1;
+
+                double upperRight = arr.getDouble(upperRightIdx);
+                double lowerLeft = arr.getDouble(lowerLeftIdx);
 
                 return upperRight < -1e4 && Math.abs(lowerLeft) < 1e-6;
             } catch (Exception e) {
                 return false;
             }
+        }
+
+        /**
+         * Heuristic for dynamic causal masks that are not materialized as constant arrays.
+         * Looks for range+comparison based causal construction with large negative mask values.
+         */
+        private boolean isDynamicCausalMaskGraph(SameDiff sd, OptimizationHelper helper, String maskVar) {
+            if (maskVar == null) return false;
+
+            String lowerName = maskVar.toLowerCase();
+            if (lowerName.contains("causal") && lowerName.contains("mask")) {
+                return true;
+            }
+
+            // SmolDocling-style dynamic causal mask subgraph naming
+            if (lowerName.contains("attn_mask_reformat")) {
+                return true;
+            }
+
+            Set<String> visitedVars = new HashSet<>();
+            ArrayList<String> queue = new ArrayList<>();
+            queue.add(maskVar);
+
+            boolean hasCompare = false;
+            boolean hasRange = false;
+            boolean hasLargeNegativeConstant = false;
+            int idx = 0;
+
+            while (idx < queue.size() && idx < 256) {
+                String currentVar = queue.get(idx++);
+                if (!visitedVars.add(currentVar)) {
+                    continue;
+                }
+
+                Variable v = getVariableWithFallback(helper, sd, currentVar);
+                if (v == null) continue;
+                String producerName = v.getOutputOfOp();
+                if (producerName == null) continue;
+
+                SameDiffOp producerOp = sd.getOps().get(producerName);
+                if (producerOp == null || producerOp.getOp() == null) continue;
+
+                String opName = producerOp.getOp().opName();
+                String opNameLower = opName != null ? opName.toLowerCase() : "";
+
+                if ("trilu".equals(opNameLower) || "tril".equals(opNameLower) || "triu".equals(opNameLower)) {
+                    return true;
+                }
+                if ("less".equals(opNameLower) || "less_equal".equals(opNameLower) ||
+                        "greater".equals(opNameLower) || "greater_equal".equals(opNameLower)) {
+                    hasCompare = true;
+                }
+                if ("range".equals(opNameLower)) {
+                    hasRange = true;
+                }
+
+                List<String> inputs = producerOp.getInputsToOp();
+                if (inputs == null) continue;
+                for (String in : inputs) {
+                    SDVariable inVar = sd.getVariable(in);
+                    if (inVar != null && inVar.getArr() != null && inVar.getArr().isScalar()) {
+                        double d = inVar.getArr().getDouble(0);
+                        if (d < -1e4) {
+                            hasLargeNegativeConstant = true;
+                        }
+                    }
+                    if (!visitedVars.contains(in)) {
+                        queue.add(in);
+                    }
+                }
+            }
+
+            return hasCompare && hasRange && hasLargeNegativeConstant;
         }
 
         /**
@@ -2023,6 +2162,691 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             // 4. Replace with a single multi-head attention op
 
             return false;
+        }
+    }
+
+    /**
+     * Detects LLaMA-style attention blocks and fuses them into DotProductAttentionV2.
+     * 
+     * LLaMA attention pattern:
+     *   input_layernorm → q_proj/k_proj/v_proj → attention_compute → o_proj → output
+     *                     ↓                      (Q@K^T→softmax→@V)    ↑
+     *                     └────────────────────────────────────────────┘
+     * 
+     * Where:
+     * - q_proj, k_proj, v_proj: Linear projections from normalized input
+     * - attention_compute: Q @ K^T → scale → softmax → @ V
+     * - o_proj: Output projection
+     * 
+     * This optimizer detects the complete block and replaces ~6 ops with 1 fused op.
+     */
+    public static class FuseLLaMAAttentionBlock implements Optimizer {
+
+        private static final Set<Class<? extends DifferentialFunction>> APPLICABLE_OPS = new HashSet<>();
+        static {
+            APPLICABLE_OPS.add(Mmul.class);
+        }
+
+        @Override
+        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+            return APPLICABLE_OPS;
+        }
+
+        private int checkCount = 0;
+        private int oProjCount = 0;
+        private boolean headerPrinted = false;
+        
+        @Override
+        public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
+                                     ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            // Only process matmul ops
+            if (!(op.getOp() instanceof Mmul)) {
+                return false;
+            }
+
+            // Print header on first matmul
+            if (!headerPrinted) {
+                System.out.println("[LLaMA-ATTN-DEBUG] ============================================");
+                System.out.println("[LLaMA-ATTN-DEBUG] Starting LLaMA attention fusion check");
+                System.out.println("[LLaMA-ATTN-DEBUG] Total ops in graph: " + sd.getOps().size());
+                headerPrinted = true;
+            }
+
+            checkCount++;
+            String opName = op.getName();
+            List<String> inputs = op.getInputsToOp();
+            List<String> outputs = op.getOutputsOfOp();
+            
+            // Print first 10 matmuls to see naming pattern
+            if (checkCount <= 10) {
+                System.out.println("[LLaMA-ATTN-DEBUG] Matmul #" + checkCount + ": " + opName);
+                System.out.println("[LLaMA-ATTN-DEBUG]   Inputs: " + inputs);
+                System.out.println("[LLaMA-ATTN-DEBUG]   Outputs: " + outputs);
+            }
+            
+            // Periodic progress report
+            if (checkCount % 100 == 0) {
+                System.out.println("[LLaMA-ATTN-DEBUG] Progress: Checked " + checkCount + " matmuls, found " + oProjCount + " o_proj candidates");
+            }
+            
+            // Check if this is an o_proj matmul (output projection)
+            boolean isOProj = isOProjMatmul(op, sd);
+            if (!isOProj) {
+                return false;
+            }
+            
+            oProjCount++;
+            System.out.println("[LLaMA-ATTN-DEBUG] *** FOUND o_proj candidate #" + oProjCount + " ***");
+            System.out.println("[LLaMA-ATTN-DEBUG] Op name: " + opName);
+            System.out.println("[LLaMA-ATTN-DEBUG] Inputs: " + inputs);
+            System.out.println("[LLaMA-ATTN-DEBUG] Outputs: " + outputs);
+
+            // Get o_proj inputs
+            List<String> oProjInputs = op.getInputsToOp();
+            if (oProjInputs == null || oProjInputs.size() < 2) {
+                log.debug("[LLaMA-ATTN] o_proj {} has insufficient inputs", op.getName());
+                return false;
+            }
+
+            // The first input should be the attention output (after @V and reshape/permute)
+            String attentionOutputVar = oProjInputs.get(0);
+            
+            // Check if input comes from MultiHeadAttention (ONNX fused attention)
+            Variable attnVar = helper.getVariable(attentionOutputVar);
+            if (attnVar != null) {
+                String attnProducerName = attnVar.getOutputOfOp();
+                if (attnProducerName != null) {
+                    SameDiffOp attnProducer = sd.getOps().get(attnProducerName);
+                    if (attnProducer != null && attnProducer.getOp().getClass().getSimpleName().contains("MultiHeadAttention")) {
+                        System.out.println("[LLaMA-ATTN] Input to o_proj comes from MultiHeadAttention: " + attnProducerName);
+                        System.out.println("[LLaMA-ATTN] SmolDocling already uses fused ONNX attention - no fusion needed at graph level");
+                        // Return false but don't log as failure - this is expected for ONNX-imported models
+                        return false;
+                    }
+                }
+            }
+            
+            // Trace back to find the attention computation (softmax @ V matmul)
+            SameDiffOp[] attentionCompute = findAttentionCompute(sd, helper, attentionOutputVar);
+            if (attentionCompute == null) {
+                log.debug("[LLaMA-ATTN] Could not find attention compute pattern for {}", op.getName());
+                return false;
+            }
+            
+            SameDiffOp softmaxOp = attentionCompute[0];
+            SameDiffOp attnMatmulOp = attentionCompute[1];
+
+            log.debug("[LLaMA-ATTN] Found attention compute: softmax={}, matmul={}", 
+                     softmaxOp.getName(), attnMatmulOp.getName());
+
+            // Trace back from softmax to find Q @ K^T
+            AttentionComponents components = traceQKFromSoftmax(sd, helper, softmaxOp);
+            if (components == null) {
+                log.debug("[LLaMA-ATTN] Could not trace Q/K from softmax for {}", op.getName());
+                return false;
+            }
+
+            // Get V from the attention matmul
+            List<String> attnMatmulInputs = attnMatmulOp.getInputsToOp();
+            if (attnMatmulInputs == null || attnMatmulInputs.size() < 2) {
+                log.debug("[LLaMA-ATTN] Attention matmul {} has insufficient inputs", attnMatmulOp.getName());
+                return false;
+            }
+            String vVar = attnMatmulInputs.get(1);
+
+            // Trace Q, K, V back to their projections
+            String qProjOutput = traceBackToProjection(sd, helper, components.queryVar, "q_proj");
+            String kProjOutput = traceBackToProjection(sd, helper, components.keyVar, "k_proj");
+            String vProjOutput = traceBackToProjection(sd, helper, vVar, "v_proj");
+
+            if (qProjOutput == null || kProjOutput == null || vProjOutput == null) {
+                log.debug("[LLaMA-ATTN] Could not trace back to all projections for {}", op.getName());
+                return false;
+            }
+
+            log.debug("[LLaMA-ATTN] Traced to projections: Q={}, K={}, V={}", 
+                     qProjOutput, kProjOutput, vProjOutput);
+
+            // Verify all projections come from the same layernorm source
+            if (!verifyCommonSource(sd, helper, qProjOutput, kProjOutput, vProjOutput)) {
+                log.debug("[LLaMA-ATTN] Projections do not share common source for {}", op.getName());
+                return false;
+            }
+
+            // Get the Q, K, V variables at projection outputs
+            SDVariable qSDVar = sd.getVariable(qProjOutput);
+            SDVariable kSDVar = sd.getVariable(kProjOutput);
+            SDVariable vSDVar = sd.getVariable(vProjOutput);
+
+            if (qSDVar == null || kSDVar == null || vSDVar == null) {
+                log.debug("[LLaMA-ATTN] Could not get SDVariables for Q/K/V");
+                return false;
+            }
+
+            // Get o_proj output for replacement
+            List<String> oProjOutputs = op.getOutputsOfOp();
+            if (oProjOutputs == null || oProjOutputs.isEmpty()) {
+                log.debug("[LLaMA-ATTN] o_proj {} has no outputs", op.getName());
+                return false;
+            }
+            String oProjOutputVar = oProjOutputs.get(0);
+
+            log.info("[LLaMA-ATTN] *** FUSING *** {}: Q={}, K={}, V={}, causal=true", 
+                    op.getName(), qProjOutput, kProjOutput, vProjOutput);
+
+            try {
+                // Create empty masks
+                SDVariable emptyQueryMask = sd.constant("llama_attn_empty_qmask_" + op.getName(), 
+                                                       Nd4j.empty(qSDVar.dataType()));
+                SDVariable emptyValueMask = sd.constant("llama_attn_empty_vmask_" + op.getName(), 
+                                                       Nd4j.empty(vSDVar.dataType()));
+
+                // Create fused attention op with causal masking
+                SDVariable fusedOutput = new DotProductAttentionV2(sd,
+                        qSDVar,              // queries (after q_proj)
+                        vSDVar,              // values (after v_proj)
+                        kSDVar,              // keys (after k_proj)
+                        emptyQueryMask,      // queryMask (empty)
+                        emptyValueMask,      // valueMask (empty)
+                        components.scaleFactor,  // scale factor (extracted from graph)
+                        0.0,                 // no dropout
+                        true,                // causal mask (LLaMA uses causal attention)
+                        false                // not training
+                ).outputVariable();
+
+                // Replace o_proj output with fused output
+                OptimizationUtils.replaceOpInputsWith(sd, helper, oProjOutputVar, fusedOutput.name());
+
+                // Remove old operations in reverse dependency order
+                // 1. Remove o_proj matmul
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+
+                // 2. Remove attention computation ops
+                OptimizationUtils.removeOp(sd, helper, attnMatmulOp.getName());
+                OptimizationUtils.removeOp(sd, helper, softmaxOp.getName());
+                if (components.scaleOpName != null) {
+                    OptimizationUtils.removeOp(sd, helper, components.scaleOpName);
+                }
+                OptimizationUtils.removeOp(sd, helper, components.qkMatmulOpName);
+
+                // 3. Remove projection matmuls (trace back to find them)
+                removeProjectionOps(sd, helper, qProjOutput, kProjOutput, vProjOutput);
+
+                // 4. Remove intermediate variables
+                cleanupIntermediateVars(sd, helper, op, attnMatmulOp, softmaxOp, components, 
+                                       attentionOutputVar, oProjOutputVar);
+
+                log.info("[LLaMA-ATTN] Successfully fused attention block for {}", op.getName());
+                return true;
+
+            } catch (Exception e) {
+                log.warn("[LLaMA-ATTN] Failed to fuse attention block for {}: {}", 
+                        op.getName(), e.getMessage());
+                return false;
+            }
+        }
+
+        /**
+         * Check if this matmul is an o_proj (output projection) by name pattern.
+         * Checks op name, weight variable name, and output variable name.
+         */
+        private boolean isOProjMatmul(SameDiffOp op, SameDiff sd) {
+            String opName = op.getName();
+            
+            // Check op name patterns
+            if ((opName.contains("o_proj") && opName.contains("MatMul")) ||
+                (opName.contains("attn") && opName.contains("o_proj")) ||
+                opName.contains("/attn/o_proj/") ||
+                opName.contains(".attn.o_proj.")) {
+                System.out.println("[LLaMA-ATTN-DEBUG] Matched by op name: " + opName);
+                return true;
+            }
+            
+            // Check weight/input variable names (second input is usually the weight)
+            List<String> inputs = op.getInputsToOp();
+            if (inputs != null && inputs.size() >= 2) {
+                String weightVar = inputs.get(1); // Second input is the weight
+                if (weightVar != null && (
+                    weightVar.contains("o_proj") || 
+                    weightVar.contains("/attn/o_proj/") ||
+                    weightVar.contains(".attn.o_proj.")
+                )) {
+                    System.out.println("[LLaMA-ATTN-DEBUG] Matched by weight var: " + weightVar);
+                    return true;
+                }
+            }
+            
+            // Check output variable names
+            List<String> outputs = op.getOutputsOfOp();
+            if (outputs != null && !outputs.isEmpty()) {
+                for (String output : outputs) {
+                    if (output != null && (
+                        output.contains("o_proj") ||
+                        output.contains("/attn/o_proj/") ||
+                        output.contains(".attn.o_proj.")
+                    )) {
+                        System.out.println("[LLaMA-ATTN-DEBUG] Matched by output var: " + output);
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        /**
+         * Force print summary at end of optimization - call this manually
+         */
+        public void printSummary() {
+            System.out.println("[LLaMA-ATTN-DEBUG] ============================================");
+            System.out.println("[LLaMA-ATTN-DEBUG] LLaMA Fusion Summary:");
+            System.out.println("[LLaMA-ATTN-DEBUG]   Total matmuls checked: " + checkCount);
+            System.out.println("[LLaMA-ATTN-DEBUG]   o_proj candidates found: " + oProjCount);
+            System.out.println("[LLaMA-ATTN-DEBUG] ============================================");
+        }
+
+        /**
+         * Trace back from attention output to find the attention computation.
+         * Returns [softmaxOp, attnMatmulOp] or null if not found.
+         */
+        private SameDiffOp[] findAttentionCompute(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable var = helper.getVariable(varName);
+            if (var == null) return null;
+
+            String producerOpName = var.getOutputOfOp();
+            if (producerOpName == null) return null;
+
+            SameDiffOp producerOp = sd.getOps().get(producerOpName);
+            if (producerOp == null) return null;
+
+            // The attention output may go through reshape/permute before o_proj
+            // Keep tracing back until we find the softmax -> matmul pattern
+            if (producerOp.getOp() instanceof Reshape || 
+                producerOp.getOp() instanceof Permute ||
+                producerOp.getOp() instanceof Transpose) {
+                // Get the input to this op
+                List<String> inputs = producerOp.getInputsToOp();
+                if (inputs != null && !inputs.isEmpty()) {
+                    return findAttentionCompute(sd, helper, inputs.get(0));
+                }
+                return null;
+            }
+
+            // Check if this is the attention matmul (softmax_output @ V)
+            if (producerOp.getOp() instanceof Mmul || producerOp.getOp() instanceof TensorMmul) {
+                // Check if first input comes from softmax
+                List<String> matmulInputs = producerOp.getInputsToOp();
+                if (matmulInputs == null || matmulInputs.size() < 2) return null;
+
+                String firstInput = matmulInputs.get(0);
+                Variable firstInputVar = helper.getVariable(firstInput);
+                if (firstInputVar == null) return null;
+
+                String firstInputProducerName = firstInputVar.getOutputOfOp();
+                if (firstInputProducerName == null) return null;
+
+                SameDiffOp firstInputProducer = sd.getOps().get(firstInputProducerName);
+                if (firstInputProducer == null) return null;
+
+                // Check if producer is softmax (directly or through reshape/permute)
+                SameDiffOp softmaxOp = findSoftmaxProducer(sd, helper, firstInputProducer);
+                if (softmaxOp != null) {
+                    return new SameDiffOp[]{softmaxOp, producerOp};
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Find the softmax op that produces the given op's output.
+         * Handles reshape/permute between softmax and matmul.
+         */
+        private SameDiffOp findSoftmaxProducer(SameDiff sd, OptimizationHelper helper, SameDiffOp op) {
+            if (op.getOp() instanceof SoftMax) {
+                return op;
+            }
+            
+            // Handle reshape/permute between softmax and matmul
+            if (op.getOp() instanceof Reshape || 
+                op.getOp() instanceof Permute ||
+                op.getOp() instanceof Transpose) {
+                List<String> inputs = op.getInputsToOp();
+                if (inputs != null && !inputs.isEmpty()) {
+                    Variable inputVar = helper.getVariable(inputs.get(0));
+                    if (inputVar != null) {
+                        String producerName = inputVar.getOutputOfOp();
+                        if (producerName != null) {
+                            SameDiffOp producer = sd.getOps().get(producerName);
+                            if (producer != null) {
+                                return findSoftmaxProducer(sd, helper, producer);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        /**
+         * Trace back from softmax to find Q @ K^T pattern.
+         */
+        private AttentionComponents traceQKFromSoftmax(SameDiff sd, OptimizationHelper helper, 
+                                                       SameDiffOp softmaxOp) {
+            List<String> softmaxInputs = softmaxOp.getInputsToOp();
+            if (softmaxInputs == null || softmaxInputs.isEmpty()) return null;
+
+            String softmaxInput = softmaxInputs.get(0);
+            Variable inputVar = helper.getVariable(softmaxInput);
+            if (inputVar == null) return null;
+
+            String producerName = inputVar.getOutputOfOp();
+            if (producerName == null) return null;
+
+            SameDiffOp producerOp = sd.getOps().get(producerName);
+            if (producerOp == null) return null;
+
+            // Check for scaled pattern: scores -> Mul/Div (scale) -> SoftMax
+            if (producerOp.getOp() instanceof MulOp || 
+                producerOp.getOp() instanceof ScalarMultiplication ||
+                producerOp.getOp() instanceof DivOp || 
+                producerOp.getOp() instanceof ScalarDivision) {
+                
+                AttentionComponents components = extractScaleAndTraceQK(sd, helper, producerOp, 
+                                                                       softmaxInput, softmaxOp.getName());
+                if (components != null) {
+                    return components;
+                }
+            }
+
+            // Direct matmul -> SoftMax (no scale)
+            if (producerOp.getOp() instanceof Mmul || producerOp.getOp() instanceof TensorMmul) {
+                return extractQKFromMatmul(sd, helper, producerOp, softmaxInput, null, null, 1.0);
+            }
+
+            return null;
+        }
+
+        /**
+         * Extract scale factor and trace back to Q @ K^T matmul.
+         */
+        private AttentionComponents extractScaleAndTraceQK(SameDiff sd, OptimizationHelper helper,
+                                                          SameDiffOp scaleOp, String scaleOutputVar,
+                                                          String softmaxOpName) {
+            List<String> scaleInputs = scaleOp.getInputsToOp();
+            if (scaleInputs == null || scaleInputs.size() < 2) return null;
+
+            boolean isMul = scaleOp.getOp() instanceof MulOp || 
+                           scaleOp.getOp() instanceof ScalarMultiplication;
+            String matmulOutputVar = null;
+            double scaleFactor = 1.0;
+
+            for (String input : scaleInputs) {
+                Variable inputVar = helper.getVariable(input);
+                if (inputVar == null) continue;
+
+                String inputOpName = inputVar.getOutputOfOp();
+                if (inputOpName != null) {
+                    SameDiffOp inputOp = sd.getOps().get(inputOpName);
+                    if (inputOp != null && (inputOp.getOp() instanceof Mmul || 
+                                           inputOp.getOp() instanceof TensorMmul)) {
+                        matmulOutputVar = input;
+                    }
+                }
+
+                SDVariable sdVar = sd.getVariable(input);
+                if (sdVar != null && sdVar.getArr() != null) {
+                    INDArray arr = sdVar.getArr();
+                    if (arr.isScalar() || arr.length() == 1) {
+                        double val = arr.getDouble(0);
+                        scaleFactor = isMul ? val : (1.0 / val);
+                    }
+                }
+            }
+
+            if (matmulOutputVar == null) return null;
+
+            Variable mmOutVar = helper.getVariable(matmulOutputVar);
+            if (mmOutVar == null) return null;
+
+            String mmOpName = mmOutVar.getOutputOfOp();
+            if (mmOpName == null) return null;
+
+            SameDiffOp mmOp = sd.getOps().get(mmOpName);
+            if (mmOp == null) return null;
+
+            return extractQKFromMatmul(sd, helper, mmOp, matmulOutputVar, 
+                                      scaleOp.getName(), scaleOutputVar, scaleFactor);
+        }
+
+        /**
+         * Extract Q and K from Q @ K^T matmul.
+         */
+        private AttentionComponents extractQKFromMatmul(SameDiff sd, OptimizationHelper helper,
+                                                       SameDiffOp matmulOp, String matmulOutputVar,
+                                                       String scaleOpName, String scaleOutputVar,
+                                                       double scaleFactor) {
+            List<String> mmInputs = matmulOp.getInputsToOp();
+            if (mmInputs == null || mmInputs.size() < 2) return null;
+
+            String qVar = mmInputs.get(0);
+            String kVar = mmInputs.get(1);
+
+            // Check if K goes through transpose (K^T)
+            Variable kVariable = helper.getVariable(kVar);
+            if (kVariable != null) {
+                String kProducerName = kVariable.getOutputOfOp();
+                if (kProducerName != null) {
+                    SameDiffOp kProducerOp = sd.getOps().get(kProducerName);
+                    if (kProducerOp != null && kProducerOp.getOp() instanceof Transpose) {
+                        List<String> transposeInputs = kProducerOp.getInputsToOp();
+                        if (transposeInputs != null && !transposeInputs.isEmpty()) {
+                            kVar = transposeInputs.get(0);
+                        }
+                    }
+                }
+            }
+
+            AttentionComponents components = new AttentionComponents();
+            components.queryVar = qVar;
+            components.keyVar = kVar;
+            components.qkMatmulOpName = matmulOp.getName();
+            components.qkMatmulOutputVar = matmulOutputVar;
+            components.scaleOpName = scaleOpName;
+            components.scaleOutputVar = scaleOutputVar;
+            components.scaleFactor = scaleFactor;
+            components.useCausalMask = true;
+
+            return components;
+        }
+
+        /**
+         * Trace a variable back to its projection output (q_proj, k_proj, or v_proj).
+         * Handles reshape and permute ops between projection and attention.
+         */
+        private String traceBackToProjection(SameDiff sd, OptimizationHelper helper, 
+                                            String varName, String projType) {
+            Variable var = helper.getVariable(varName);
+            if (var == null) return null;
+
+            String producerName = var.getOutputOfOp();
+            if (producerName == null) {
+                // Check if var name itself contains projection pattern
+                if (varName.contains(projType)) {
+                    return varName;
+                }
+                return null;
+            }
+
+            SameDiffOp producerOp = sd.getOps().get(producerName);
+            if (producerOp == null) return null;
+
+            // Check if this is the projection matmul
+            if (producerOp.getOp() instanceof Mmul || producerOp.getOp() instanceof TensorMmul) {
+                String producerName2 = producerOp.getName();
+                if (producerName2.contains(projType)) {
+                    // Get the output of this projection matmul
+                    List<String> outputs = producerOp.getOutputsOfOp();
+                    if (outputs != null && !outputs.isEmpty()) {
+                        return outputs.get(0);
+                    }
+                }
+            }
+
+            // Trace through reshape/permute
+            if (producerOp.getOp() instanceof Reshape || 
+                producerOp.getOp() instanceof Permute ||
+                producerOp.getOp() instanceof Transpose) {
+                List<String> inputs = producerOp.getInputsToOp();
+                if (inputs != null && !inputs.isEmpty()) {
+                    return traceBackToProjection(sd, helper, inputs.get(0), projType);
+                }
+            }
+
+            // Check if current var name matches projection pattern
+            if (varName.contains(projType) && varName.contains("MatMul")) {
+                return varName;
+            }
+
+            return null;
+        }
+
+        /**
+         * Verify that Q, K, V projections come from the same source (layernorm output).
+         */
+        private boolean verifyCommonSource(SameDiff sd, OptimizationHelper helper,
+                                          String qProjOutput, String kProjOutput, String vProjOutput) {
+            Variable qVar = helper.getVariable(qProjOutput);
+            Variable kVar = helper.getVariable(kProjOutput);
+            Variable vVar = helper.getVariable(vProjOutput);
+
+            if (qVar == null || kVar == null || vVar == null) return false;
+
+            // Get the producers of the projection outputs
+            String qProducer = qVar.getOutputOfOp();
+            String kProducer = kVar.getOutputOfOp();
+            String vProducer = vVar.getOutputOfOp();
+
+            if (qProducer == null || kProducer == null || vProducer == null) return false;
+
+            SameDiffOp qProjOp = sd.getOps().get(qProducer);
+            SameDiffOp kProjOp = sd.getOps().get(kProducer);
+            SameDiffOp vProjOp = sd.getOps().get(vProducer);
+
+            if (qProjOp == null || kProjOp == null || vProjOp == null) return false;
+
+            // Get inputs to projection matmuls (should be the normalized input)
+            List<String> qProjInputs = qProjOp.getInputsToOp();
+            List<String> kProjInputs = kProjOp.getInputsToOp();
+            List<String> vProjInputs = vProjOp.getInputsToOp();
+
+            if (qProjInputs == null || kProjInputs == null || vProjInputs == null ||
+                qProjInputs.isEmpty() || kProjInputs.isEmpty() || vProjInputs.isEmpty()) {
+                return false;
+            }
+
+            // The first input to each projection should be the same source
+            // (may go through reshape/permute)
+            String qSource = traceToCommonSource(sd, helper, qProjInputs.get(0));
+            String kSource = traceToCommonSource(sd, helper, kProjInputs.get(0));
+            String vSource = traceToCommonSource(sd, helper, vProjInputs.get(0));
+
+            if (qSource == null || kSource == null || vSource == null) return false;
+
+            // Check if sources match
+            return qSource.equals(kSource) && kSource.equals(vSource);
+        }
+
+        /**
+         * Trace a variable back to find its ultimate source (handling reshape/permute).
+         */
+        private String traceToCommonSource(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable var = helper.getVariable(varName);
+            if (var == null) return varName;
+
+            String producerName = var.getOutputOfOp();
+            if (producerName == null) return varName;
+
+            SameDiffOp producerOp = sd.getOps().get(producerName);
+            if (producerOp == null) return varName;
+
+            // If this is a layernorm/RMS norm output, return it
+            if (producerName.contains("layernorm") || 
+                producerName.contains("norm") ||
+                producerOp.getOp() instanceof MulOp) {  // RMS norm is typically Mul
+                return varName;
+            }
+
+            // Trace through reshape/permute
+            if (producerOp.getOp() instanceof Reshape || 
+                producerOp.getOp() instanceof Permute ||
+                producerOp.getOp() instanceof Transpose) {
+                List<String> inputs = producerOp.getInputsToOp();
+                if (inputs != null && !inputs.isEmpty()) {
+                    return traceToCommonSource(sd, helper, inputs.get(0));
+                }
+            }
+
+            return varName;
+        }
+
+        /**
+         * Remove projection matmul ops (q_proj, k_proj, v_proj).
+         */
+        private void removeProjectionOps(SameDiff sd, OptimizationHelper helper,
+                                        String qProjOutput, String kProjOutput, String vProjOutput) {
+            removeProjectionOp(sd, helper, qProjOutput);
+            removeProjectionOp(sd, helper, kProjOutput);
+            removeProjectionOp(sd, helper, vProjOutput);
+        }
+
+        private void removeProjectionOp(SameDiff sd, OptimizationHelper helper, String projOutput) {
+            Variable var = helper.getVariable(projOutput);
+            if (var == null) return;
+
+            String producerName = var.getOutputOfOp();
+            if (producerName == null) return;
+
+            SameDiffOp projOp = sd.getOps().get(producerName);
+            if (projOp == null) return;
+
+            if (projOp.getOp() instanceof Mmul || projOp.getOp() instanceof TensorMmul) {
+                OptimizationUtils.removeOp(sd, helper, projOp.getName());
+            }
+        }
+
+        /**
+         * Clean up intermediate variables.
+         */
+        private void cleanupIntermediateVars(SameDiff sd, OptimizationHelper helper,
+                                            SameDiffOp oProjOp, SameDiffOp attnMatmulOp,
+                                            SameDiffOp softmaxOp, AttentionComponents components,
+                                            String attentionOutputVar, String oProjOutputVar) {
+            // Remove softmax output
+            List<String> softmaxOutputs = softmaxOp.getOutputsOfOp();
+            if (softmaxOutputs != null && !softmaxOutputs.isEmpty()) {
+                OptimizationUtils.removeVariable(sd, helper, softmaxOutputs.get(0));
+            }
+
+            // Remove attention matmul output
+            List<String> attnMatmulOutputs = attnMatmulOp.getOutputsOfOp();
+            if (attnMatmulOutputs != null && !attnMatmulOutputs.isEmpty()) {
+                OptimizationUtils.removeVariable(sd, helper, attnMatmulOutputs.get(0));
+            }
+
+            // Remove Q @ K^T matmul output
+            if (components.qkMatmulOutputVar != null) {
+                OptimizationUtils.removeVariable(sd, helper, components.qkMatmulOutputVar);
+            }
+
+            // Remove scale output if present
+            if (components.scaleOutputVar != null) {
+                OptimizationUtils.removeVariable(sd, helper, components.scaleOutputVar);
+            }
+
+            // Remove o_proj output (replaced by fused output)
+            OptimizationUtils.removeVariable(sd, helper, oProjOutputVar);
         }
     }
 }

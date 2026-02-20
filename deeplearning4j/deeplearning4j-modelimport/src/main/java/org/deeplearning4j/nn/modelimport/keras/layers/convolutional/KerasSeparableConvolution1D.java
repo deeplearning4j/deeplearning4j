@@ -44,7 +44,7 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.Keras
 /**
  * Keras SeparableConv1D layer importer.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

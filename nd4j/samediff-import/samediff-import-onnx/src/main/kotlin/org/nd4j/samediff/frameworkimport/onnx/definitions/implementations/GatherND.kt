@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  *
  * ONNX GatherND spec: https://github.com/onnx/onnx/blob/main/docs/Operators.md#GatherND
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["GatherND"], frameworkName = "onnx")
 class GatherND : PreImportHook {

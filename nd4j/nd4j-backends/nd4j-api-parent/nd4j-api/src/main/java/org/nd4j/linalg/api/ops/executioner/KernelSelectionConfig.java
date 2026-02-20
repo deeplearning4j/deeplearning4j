@@ -53,7 +53,7 @@ import java.util.Set;
  * }</pre>
  * </p>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @Builder

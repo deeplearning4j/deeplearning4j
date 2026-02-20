@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - rho: Bias terms
  * - support_vectors: Support vectors
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SVMRegressor"], frameworkName = "onnx")
 class SVMRegressor : PreImportHook {

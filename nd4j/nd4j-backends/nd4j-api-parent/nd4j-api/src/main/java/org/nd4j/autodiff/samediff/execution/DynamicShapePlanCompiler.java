@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
@@ -61,7 +62,7 @@ import java.util.*;
 public class DynamicShapePlanCompiler {
 
     // Ops with data-dependent output shapes that can't be cached
-    private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("Where", "unique");
+    private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("where", "unique");
 
     /**
      * Ops whose output shape depends on input tensor VALUES, not just input shapes.
@@ -218,6 +219,11 @@ public class DynamicShapePlanCompiler {
                 return null;
             }
             DifferentialFunction op = sdOp.getOp();
+            String opName = op.opName();
+            if (opName == null) {
+                opName = "unknown";
+            }
+            String opNameLower = opName.toLowerCase(Locale.ROOT);
             boolean isCustomOp = op instanceof CustomOp;
 
             // Detect legacy op type and opNum for ops not registered as
@@ -252,7 +258,10 @@ public class DynamicShapePlanCompiler {
             String[] inputVarNames = new String[numInputs];
 
             boolean hasIntLongInputs = false;
-            boolean isDataDependent = DATA_DEPENDENT_OUTPUT_OPS.contains(op.opName());
+            // Where with 3 inputs (condition, x, y) is element-wise select with static output shape.
+            // Only Where with 1 input (coordinate extraction) has data-dependent variable-length output.
+            boolean isDataDependent = DATA_DEPENDENT_OUTPUT_OPS.contains(opNameLower)
+                    && !(opNameLower.equals("where") && numInputs == 3);
 
             for (int i = 0; i < numInputs; i++) {
                 String inputVar = inputVars.get(i);
@@ -357,6 +366,15 @@ public class DynamicShapePlanCompiler {
             if (op instanceof BaseReduceOp) {
                 BaseReduceOp reduceOp = (BaseReduceOp) op;
                 long[] dims = reduceOp.dimensionsArr();
+                // If dimensions array is empty, try to get from dimensionz INDArray
+                if (dims == null || dims.length == 0) {
+                    INDArray dimensionz = reduceOp.dimensions();
+                    if (dimensionz != null && !dimensionz.isEmpty()) {
+                        dims = dimensionz.toLongVector();
+                        // Also update the op's dimensions array so shape inference works correctly
+                        reduceOp.setDimensions(dims);
+                    }
+                }
                 if (dims != null && dims.length > 0) {
                     iArgs = dims;
                 }
@@ -388,18 +406,18 @@ public class DynamicShapePlanCompiler {
 
             // Determine if this op needs zeroed output buffers.
             // Default: true (safe). Only skip for ops known to fully write every output element.
-            boolean needsZeroedOutput = !FULLY_WRITING_OPS.contains(op.opName()) || isDataDependent;
+            boolean needsZeroedOutput = !FULLY_WRITING_OPS.contains(opNameLower) || isDataDependent;
 
             // Determine if output shape depends on input values (not just shapes).
             // When true, INT/LONG input values are included in the shape cache key.
             // When false, only input shapes + dtypes are used, avoiding expensive CUDA D2H syncs.
-            boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(op.opName()) || isDataDependent;
+            boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(opNameLower) || isDataDependent;
 
             // Pre-compute opName hash for shape key computation (avoids String.hashCode per step)
-            long opNameHash = op.opName().hashCode() * 0x9E3779B97F4A7C15L;
+            long opNameHash = opName.hashCode() * 0x9E3779B97F4A7C15L;
 
             slots[stepIdx] = DynamicShapeSlot.builder()
-                    .opName(op.opName())
+                    .opName(opName)
                     .op(op)
                     .customOp(isCustomOp)
                     .legacyOpType(legacyOpType)

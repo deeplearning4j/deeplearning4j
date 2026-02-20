@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - axis: The axis along which to compute softmax (default: 1)
  * - is_inner_broadcast: If true, bias is broadcast as [1, 1, ..., bias_dim]
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["BiasSoftmax"], frameworkName = "onnx")
 class BiasSoftmax : PreImportHook {

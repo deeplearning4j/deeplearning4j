@@ -65,16 +65,26 @@ Status LegacyScalarBoolOp::validateAndExecute(Context &block) {
                                         z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
                                         y->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
   } else if (block.getTArguments()->size() > 0) {
-    auto y = NDArrayFactory::create(T_ARG(0), block.launchContext());
+    // Cache the scalar NDArray in _scalar to avoid creating and destroying a
+    // temporary on every call.  During CUDA graph capture the kernel records
+    // the device address of the scalar buffer; if that buffer is freed before
+    // replay the graph reads stale/garbage memory for the scalar value.
+    // Caching keeps the buffer alive for the entire op lifetime.
+    double scalarVal = T_ARG(0);
+    auto xDt = x->dataType();
+    if (_scalar == nullptr || _scalar->dataType() != xDt ||
+        _scalar->e<double>(0) != scalarVal) {
+      delete _scalar;
+      _scalar = NDArrayFactory::create(xDt, scalarVal, block.launchContext());
+    }
 
-    NDArray::prepareSpecialUse({z}, {x, y});
+    NDArray::prepareSpecialUse({z}, {x, _scalar});
 
     NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                         x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
-                                        z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(),
-                                        y->specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
+                                        z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(),
+                                        _scalar->specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
 
-    delete y;
     manager.synchronize();
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});

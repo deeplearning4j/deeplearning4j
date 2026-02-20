@@ -36,7 +36,7 @@ import java.util.List;
  * GridSample operation - samples input tensor using grid coordinates.
  * Implements bilinear/nearest/bicubic interpolation with various padding modes.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class GridSample extends DynamicCustomOp {

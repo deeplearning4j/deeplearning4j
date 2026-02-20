@@ -20,6 +20,7 @@
 //
 
 #include <memory/cuda/CudaMemoryPool.h>
+#include <array/DataBuffer.h>
 #include <memory/MemoryCounter.h>
 #include <system/Environment.h>
 #include <helpers/DebugHelper.h>
@@ -31,6 +32,13 @@
 
 namespace sd {
 namespace memory {
+
+SD_INLINE cudaStream_t resolveCaptureStream(cudaStream_t stream) {
+  if (tl_graphExecutionActive && stream == nullptr && tl_graphCaptureStream != nullptr) {
+    return tl_graphCaptureStream;
+  }
+  return stream;
+}
 
 CudaMemoryPool& CudaMemoryPool::getInstance() {
   static CudaMemoryPool instance;
@@ -189,6 +197,31 @@ bool CudaMemoryPool::initializeForDevice(int deviceId) {
 
 
 void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, int* actualDeviceId) {
+  // During CUDA graph capture, use pre-allocated workspace instead of cudaMallocAsync.
+  // This eliminates cudaGraphMemAllocNode from the captured graph, preventing
+  // "invalid argument" on cudaGraphLaunch from unpaired alloc/free nodes.
+  if (tl_graphExecutionActive && tl_captureWorkspace != nullptr) {
+    // Align to 256 bytes for GPU memory alignment
+    size_t aligned = (size + 255) & ~255ULL;
+    if (tl_captureWorkspaceOffset + aligned <= tl_captureWorkspaceSize) {
+      void* ptr = static_cast<char*>(tl_captureWorkspace) + tl_captureWorkspaceOffset;
+      tl_captureWorkspaceOffset += aligned;
+      if (actualDeviceId) *actualDeviceId = deviceId;
+      return ptr;
+    }
+    // Workspace exhausted — log and fall through to cudaMallocAsync
+    sd_printf("CudaMemoryPool: capture workspace exhausted (%zu + %zu > %zu), "
+              "falling back to cudaMallocAsync for %zu bytes\n",
+              tl_captureWorkspaceOffset, aligned, tl_captureWorkspaceSize, size);
+  }
+  if (tl_graphExecutionActive && tl_captureWorkspace == nullptr) {
+    static int captureAllocLogCount = 0;
+    if (captureAllocLogCount < 5) {
+      sd_printf("CudaMemoryPool: during capture but NO capture workspace! size=%zu\n", size);
+      captureAllocLogCount++;
+    }
+  }
+
   // Clear any previous CUDA errors to ensure clean state for allocation
   cudaError_t prevErr = cudaGetLastError();
   if (prevErr != cudaSuccess) {
@@ -216,13 +249,15 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     if (needDeviceRestore) cudaSetDevice(savedDev);
   };
 
+  cudaStream_t allocStream = resolveCaptureStream(stream);
+
   // If pools not enabled or not supported, fall back to regular cudaMalloc
   if (!enabled_.load() || !supported_) {
     void* ptr = nullptr;
     if (tl_graphExecutionActive) {
       // During CUDA graph capture, cudaMalloc (synchronous) breaks capture.
       // Use cudaMallocAsync with the caller-provided stream (the captured stream).
-      cudaError_t err = cudaMallocAsync(&ptr, size, stream);
+      cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
       if (err != cudaSuccess) {
         cudaGetLastError();
         restoreDevice();
@@ -249,7 +284,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       // Fall back to regular cudaMalloc
       void* ptr = nullptr;
       if (tl_graphExecutionActive) {
-        cudaError_t err = cudaMallocAsync(&ptr, size, stream);
+        cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
         if (err != cudaSuccess) {
           cudaGetLastError();
           restoreDevice();
@@ -273,14 +308,15 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
 
   // Use async allocation from pool - THIS IS THE FAST PATH (no tracking needed)
   void* ptr = nullptr;
-  // Use the stream provided by the caller. When nullptr (default CUDA stream) is passed,
-  // all allocations share stream 0, which allows the pool to reuse memory across them.
+  // Use the stream provided by the caller. During graph capture, nullptr is resolved
+  // to the active capture stream to avoid cross-stream capture invalidation.
+  // Outside capture, nullptr means default stream 0 and allows broad pool reuse.
   // Callers that need a specific compute stream (e.g., Workspace.cu) should resolve
   // it themselves before calling allocate(). We intentionally do NOT auto-detect the
   // stream here because it would cause recursive ContextBuffers initialization:
   // CudaMemoryPool::allocate() -> LaunchContext::defaultContext() -> getCudaStream()
   // -> ContextBuffers::initialize() -> CudaMemoryPool::allocate() -> ...
-  cudaError_t err = cudaMallocAsync(&ptr, size, stream);
+  cudaError_t err = cudaMallocAsync(&ptr, size, allocStream);
 
   if (err != cudaSuccess) {
     // During CUDA graph capture, error recovery (stream sync, failover) would break
@@ -294,8 +330,8 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     // cudaMallocAsync failure places an error both on the host-side sticky state
     // AND on the stream.  We must clear both before retrying.
     cudaGetLastError();  // clear host-side sticky error
-    if (stream != nullptr) {
-      cudaStreamSynchronize(stream);
+    if (allocStream != nullptr) {
+      cudaStreamSynchronize(allocStream);
     }
     cudaGetLastError();  // clear any error surfaced by the sync
 
@@ -308,7 +344,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
       bool syncedAny = false;
       std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[deviceId]);
       for (auto s : dirtyFreeStreams_[deviceId]) {
-        if (s != stream) {  // only sync OTHER streams (our stream already synced above)
+        if (s != allocStream) {  // only sync OTHER streams (our stream already synced above)
           cudaStreamSynchronize(s);
           syncedAny = true;
         }
@@ -317,7 +353,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
         dirtyFreeStreams_[deviceId].clear();
         cudaGetLastError();  // clear any error from syncs
         ptr = nullptr;
-        err = cudaMallocAsync(&ptr, size, stream);
+        err = cudaMallocAsync(&ptr, size, allocStream);
         if (err == cudaSuccess && ptr != nullptr) {
           restoreDevice();
           return ptr;  // Success after stream sync — no failover needed
@@ -599,6 +635,20 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     return;
   }
 
+  // During CUDA graph capture, skip frees for addresses within the capture workspace.
+  // These workspace allocations are managed by the workspace buffer lifecycle, not
+  // individually freed. This eliminates cudaGraphMemFreeNode from the captured graph.
+  if (tl_graphExecutionActive && tl_captureWorkspace != nullptr) {
+    char* wsStart = static_cast<char*>(tl_captureWorkspace);
+    char* wsEnd = wsStart + tl_captureWorkspaceSize;
+    char* p = static_cast<char*>(ptr);
+    if (p >= wsStart && p < wsEnd) {
+      return;  // Within workspace — no-op
+    }
+  }
+
+  cudaStream_t freeStream = resolveCaptureStream(stream);
+
   // Check host allocations with exception handling
   try {
     std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
@@ -638,14 +688,14 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
   // Device memory: use cudaFreeAsync for stream-ordered deallocation.
   // Works for both pool and non-pool allocations since CUDA 11.2.
   if (enabled_.load() && supported_) {
-    cudaError_t err = cudaFreeAsync(ptr, stream);
+    cudaError_t err = cudaFreeAsync(ptr, freeStream);
     if (err == cudaSuccess) {
       // Track which stream this free was issued on so trimPool() can sync
       // only the relevant streams instead of blocking the entire device.
       int trackDevice = (deviceId >= 0 && deviceId < MAX_DEVICES) ? deviceId : 0;
       {
         std::lock_guard<std::mutex> lock(dirtyStreamsMutex_[trackDevice]);
-        dirtyFreeStreams_[trackDevice].insert(stream);  // nullptr (stream 0) is valid
+        dirtyFreeStreams_[trackDevice].insert(freeStream);  // nullptr (stream 0) is valid
       }
       if (needDeviceRestore) cudaSetDevice(savedDev);
       return;

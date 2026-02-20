@@ -332,6 +332,16 @@ public static final int
  */
 @Namespace("sd") public static native @Cast("bool") boolean tl_graphExecutionActive(); public static native void tl_graphExecutionActive(boolean setter);
 
+// #ifdef SD_CUDA
+/**
+ * Captured CUDA stream for the current graph capture session.
+ * Some capture-safe paths must enqueue work on the exact captured stream;
+ * using a different stream can invalidate capture.
+ */
+// #ifndef __JAVACPP_HACK__
+// #endif
+// #endif
+
 /**
  * Thread-local accumulator for pinned host buffers allocated during CUDA graph capture.
  * PointersManager::replicatePointer copies host data to persistent pinned memory
@@ -339,6 +349,18 @@ public static final int
  * After capture, these are transferred to CudaGraphHandle for lifetime management.
  */
 @Namespace("sd") public static native @Cast("void**") @StdVector PointerPointer tl_capturedHostPtrs(); public static native void tl_capturedHostPtrs(PointerPointer setter);
+
+/**
+ * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture
+ * to eliminate cudaMallocAsync/cudaFreeAsync nodes from the captured graph.
+ * CudaMemoryPool::allocate uses bump allocation from this workspace instead of
+ * cudaMallocAsync when tl_graphExecutionActive && tl_captureWorkspace != nullptr.
+ * CudaMemoryPool::free becomes a no-op for addresses within this workspace.
+ * The workspace buffer persists for graph lifetime (stored on GraphSegment).
+ */
+@Namespace("sd") public static native Pointer tl_captureWorkspace(); public static native void tl_captureWorkspace(Pointer setter);
+@Namespace("sd") public static native @Cast("size_t") long tl_captureWorkspaceSize(); public static native void tl_captureWorkspaceSize(long setter);
+@Namespace("sd") public static native @Cast("size_t") long tl_captureWorkspaceOffset(); public static native void tl_captureWorkspaceOffset(long setter);
 
 @Namespace("sd") @NoOffset public static class DataBuffer extends Pointer {
     static { Loader.load(); }
@@ -3404,6 +3426,47 @@ public native void setPlanShapesFrozen(@Cast("sd::Pointer") Pointer planHandle, 
 public native void setPlanExecutionTimingEnabled(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean enabled);
 
 /**
+ * Enable/disable trace logging for DSP execution decisions.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable trace, false to disable
+ */
+public native void setPlanTraceEnabled(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean enabled);
+
+/**
+ * Set maximum sizes for specific output slots (KV cache pre-allocation).
+ * When set, these slots will be pre-allocated at the specified maximum size,
+ * keeping buffer addresses stable across all subsequent steps.
+ * This enables CUDA graph capture for models with growing KV caches.
+ *
+ * @param planHandle       Handle from compileDynamicShapePlan()
+ * @param numSlots         Number of slot entries
+ * @param slotIndices      Array of output slot indices to pre-allocate
+ * @param maxSizes         Array of maximum sizes (in number of elements, not bytes)
+ */
+public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long numSlots,
+                                               @Const IntPointer slotIndices, @Cast("const sd::LongType*") LongPointer maxSizes);
+public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long numSlots,
+                                               @Const IntBuffer slotIndices, @Cast("const sd::LongType*") LongBuffer maxSizes);
+public native void setPlanOutputSlotMaxSizes(@Cast("sd::Pointer") Pointer planHandle, @Cast("sd::LongType") long numSlots,
+                                               @Const int[] slotIndices, @Cast("const sd::LongType*") long[] maxSizes);
+
+/**
+ * Set the KV cache sequence position (for slice-based KV cache access).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param pos         Current sequence position (where new KV entries will be written)
+ */
+public native void setPlanKvCachePosition(@Cast("sd::Pointer") Pointer planHandle, int pos);
+
+/**
+ * Set the maximum KV cache length (for pre-allocated attention outputs).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param maxLen      Maximum sequence length for KV cache
+ */
+public native void setPlanMaxKvCacheLength(@Cast("sd::Pointer") Pointer planHandle, int maxLen);
+
+/**
  * Get the number of graph segments in a compiled plan.
  *
  * @param planHandle  Handle from compileDynamicShapePlan()
@@ -3468,6 +3531,58 @@ public native void printPlanCapturedGraphDebug(@Cast("sd::Pointer") Pointer plan
  * @return Thread-local static buffer with stats string
  */
 public native @Cast("char*") String getPlanCaptureStats(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Export the CUDA graph visualization to Chrome trace format.
+ * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
+ * Similar to PyTorch's torch.cuda.CUDAGraph.debug_dump() functionality.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Output file path (should end with .json)
+ * @return true on success
+ */
+public native @Cast("bool") boolean exportPlanCudaGraphChromeTrace(@Cast("sd::Pointer") Pointer planHandle, @Cast("char*") String outputPath);
+public native @Cast("bool") boolean exportPlanCudaGraphChromeTrace(@Cast("sd::Pointer") Pointer planHandle, @Cast("char*") BytePointer outputPath);
+
+/**
+ * Export the CUDA graph visualization to HTML format.
+ * Creates a standalone HTML file with interactive visualization.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Output HTML file path
+ * @return true on success
+ */
+public native @Cast("bool") boolean exportPlanCudaGraphHtml(@Cast("sd::Pointer") Pointer planHandle, @Cast("char*") String outputPath);
+public native @Cast("bool") boolean exportPlanCudaGraphHtml(@Cast("sd::Pointer") Pointer planHandle, @Cast("char*") BytePointer outputPath);
+
+/**
+ * Dump all CUDA graph debug files (DOT, JSON, HTML, nodes JSON).
+ * Creates: {outputPath}.dot, {outputPath}.json, {outputPath}.html, {outputPath}_nodes.json
+ * PyTorch-style debug dump similar to torch.cuda.CUDAGraph.debug_dump().
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Base path for output files (without extension)
+ * @return true on success
+ */
+public native @Cast("bool") boolean debugDumpPlanCudaGraph(@Cast("sd::Pointer") Pointer planHandle, @Cast("char*") String outputPath);
+public native @Cast("bool") boolean debugDumpPlanCudaGraph(@Cast("sd::Pointer") Pointer planHandle, @Cast("char*") BytePointer outputPath);
+
+/**
+ * Get the CUDA graph execution timeline as a JSON string in Chrome trace format.
+ * For programmatic access to the timeline data.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return JSON string, or empty string if no graph data
+ */
+public native @Cast("char*") String getPlanCudaGraphChromeTraceJson(@Cast("sd::Pointer") Pointer planHandle);
+
+/**
+ * Clear the CUDA graph execution timeline history.
+ * Useful to reset timing data between profiling sessions.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+public native void clearPlanCudaGraphTimeline(@Cast("sd::Pointer") Pointer planHandle);
 
 // #endif // NATIVEOPS_H
 
@@ -7128,6 +7243,7 @@ public static final int
 // #include <stdint.h>
 
 // #include <cstdio>
+// #include <cstdlib>
 // #include <cstring>
 
 /**

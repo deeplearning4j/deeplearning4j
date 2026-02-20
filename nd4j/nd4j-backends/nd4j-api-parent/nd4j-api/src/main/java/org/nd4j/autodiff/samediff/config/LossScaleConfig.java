@@ -45,7 +45,7 @@ import lombok.AllArgsConstructor;
  *     .build();
  * </pre>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @Builder

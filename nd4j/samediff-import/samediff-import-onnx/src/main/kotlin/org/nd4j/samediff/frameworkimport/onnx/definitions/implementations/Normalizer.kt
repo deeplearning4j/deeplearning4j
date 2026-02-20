@@ -43,7 +43,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - norm: "MAX", "L1", "L2" (default: "MAX")
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Normalizer"], frameworkName = "onnx")
 class Normalizer : PreImportHook {

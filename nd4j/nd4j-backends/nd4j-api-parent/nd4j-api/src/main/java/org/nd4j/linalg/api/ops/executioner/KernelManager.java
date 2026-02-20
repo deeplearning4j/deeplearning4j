@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
  * List<OpKernelInfo> convOps = km.searchOperations("conv*");
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 public class KernelManager {

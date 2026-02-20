@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - epsilon: Small constant for numerical stability (default: 1e-5)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["InstanceNormalization"], frameworkName = "onnx")
 class InstanceNormalization : PreImportHook {

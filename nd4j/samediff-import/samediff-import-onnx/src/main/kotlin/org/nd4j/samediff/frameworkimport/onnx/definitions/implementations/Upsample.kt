@@ -51,7 +51,7 @@ import org.nd4j.linalg.factory.Nd4j
  * Output:
  * - Y: Upsampled tensor
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Upsample"], frameworkName = "onnx")
 class Upsample : PreImportHook {

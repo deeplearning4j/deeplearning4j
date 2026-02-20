@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - axes: Axes along which to compute mean and variance (default: [0, 2, 3])
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["MeanVarianceNormalization"], frameworkName = "onnx")
 class MeanVarianceNormalization : PreImportHook {

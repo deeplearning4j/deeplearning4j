@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - output: Tensor of shape [batch_size, sample_size] with sampled indices
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Multinomial"], frameworkName = "onnx")
 class Multinomial : PreImportHook {

@@ -17,7 +17,7 @@
  ******************************************************************************/
 
 //
-// @author Eclipse Deeplearning4j Development Team
+// @author Adam Gibson
 //
 
 #ifndef LIBND4J_HELPERS_AFFINE_GRID_H

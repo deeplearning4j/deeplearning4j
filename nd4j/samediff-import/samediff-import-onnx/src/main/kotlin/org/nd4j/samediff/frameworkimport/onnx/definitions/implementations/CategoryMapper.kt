@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - default_int64: Default integer for unknown categories
  * - default_string: Default string for unknown categories
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["CategoryMapper"], frameworkName = "onnx")
 class CategoryMapper : PreImportHook {

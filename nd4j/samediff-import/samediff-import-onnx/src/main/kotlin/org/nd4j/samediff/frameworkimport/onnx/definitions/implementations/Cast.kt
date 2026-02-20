@@ -38,7 +38,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * to INT64/UINT64 fails. When the source is BOOL and target is an integer type,
  * we cast through INT8 first to avoid the unsupported kernel.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Cast"], frameworkName = "onnx")
 class Cast : PreImportHook {

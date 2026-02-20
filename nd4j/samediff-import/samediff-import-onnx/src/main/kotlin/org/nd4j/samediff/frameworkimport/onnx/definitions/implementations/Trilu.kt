@@ -56,7 +56,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - output: Tensor with same shape as input, with zeros in the excluded region
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Trilu"], frameworkName = "onnx")
 class Trilu : PreImportHook {

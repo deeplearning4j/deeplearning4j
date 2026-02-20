@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - Dot product: "i,i->"
  * - Outer product: "i,j->ij"
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Einsum"], frameworkName = "onnx")
 class Einsum : PreImportHook {

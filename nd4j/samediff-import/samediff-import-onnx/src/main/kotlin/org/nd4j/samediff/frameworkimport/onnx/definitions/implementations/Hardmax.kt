@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - axis: Axis along which to compute hardmax (default: -1)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Hardmax"], frameworkName = "onnx")
 class Hardmax : PreImportHook {

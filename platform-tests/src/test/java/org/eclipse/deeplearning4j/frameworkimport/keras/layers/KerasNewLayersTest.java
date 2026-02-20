@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for new Keras layer implementations.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @DisplayName("Keras New Layers Test")
 class KerasNewLayersTest {

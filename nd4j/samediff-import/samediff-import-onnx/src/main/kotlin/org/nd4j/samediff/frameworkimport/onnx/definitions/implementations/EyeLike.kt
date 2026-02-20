@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - dtype: Data type of output (optional, defaults to input dtype)
  * - k: Diagonal offset (default: 0, main diagonal)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["EyeLike"], frameworkName = "onnx")
 class EyeLike : PreImportHook {

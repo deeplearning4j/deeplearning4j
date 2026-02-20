@@ -48,7 +48,7 @@ import java.util.Map;
  *
  * This implementation uses SameDiff to apply deconv2d with height=1.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

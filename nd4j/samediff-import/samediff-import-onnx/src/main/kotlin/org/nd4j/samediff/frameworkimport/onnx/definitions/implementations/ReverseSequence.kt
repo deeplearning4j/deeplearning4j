@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - batch_axis: The axis along which to slice (default: 1)
  * - time_axis: The axis along which to reverse (default: 0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ReverseSequence"], frameworkName = "onnx")
 class ReverseSequence : PreImportHook {

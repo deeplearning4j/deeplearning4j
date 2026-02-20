@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - alpha: Threshold value (default: 1.0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ThresholdedRelu"], frameworkName = "onnx")
 class ThresholdedRelu : PreImportHook {

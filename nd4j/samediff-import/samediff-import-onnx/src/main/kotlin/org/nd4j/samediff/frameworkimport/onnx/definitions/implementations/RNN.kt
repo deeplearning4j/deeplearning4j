@@ -53,7 +53,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - direction: forward, reverse, bidirectional
  * - hidden_size: Hidden state size
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["RNN"], frameworkName = "onnx")
 class RNN : PreImportHook {

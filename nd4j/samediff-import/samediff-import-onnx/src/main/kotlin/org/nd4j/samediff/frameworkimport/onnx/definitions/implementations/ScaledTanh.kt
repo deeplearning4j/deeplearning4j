@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - alpha: Scaling factor for output (default: 1.0)
  * - beta: Scaling factor for input (default: 1.0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ScaledTanh"], frameworkName = "onnx")
 class ScaledTanh : PreImportHook {

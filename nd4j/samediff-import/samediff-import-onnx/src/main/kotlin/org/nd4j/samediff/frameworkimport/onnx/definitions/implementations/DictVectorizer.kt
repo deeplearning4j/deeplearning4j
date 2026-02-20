@@ -49,7 +49,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Note: This is a simplified implementation that passes through the input
  * as SameDiff doesn't natively support dictionary/map data types.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["DictVectorizer"], frameworkName = "onnx")
 class DictVectorizer : PreImportHook {

@@ -48,7 +48,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - blocksize: Block size for rearrangement
  * - mode: DCR (depth-column-row) or CRD (column-row-depth)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["DepthToSpace"], frameworkName = "onnx")
 class DepthToSpace : PreImportHook {

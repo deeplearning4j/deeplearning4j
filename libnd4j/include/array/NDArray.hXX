@@ -6873,12 +6873,6 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray* NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                              const bool isStrided)  {
-  // Tripwire: log entry to operator()
-  if (sd::Environment::getInstance().isDebug()) {
-    sd_printf("NDArray::operator() ENTRY: this=%p, shapeInfo=%p, rank=%lld\n",
-              this, shapeInfo(), rankOf());
-  }
-
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
   sd::LongType numOfUntiesInSubArrShape = 0;
@@ -7144,4 +7138,3 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
 }
 
 }
-

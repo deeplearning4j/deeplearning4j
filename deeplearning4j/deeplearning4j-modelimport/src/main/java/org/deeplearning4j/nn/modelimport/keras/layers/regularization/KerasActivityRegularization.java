@@ -41,7 +41,7 @@ import java.util.Map;
  * this layer is imported as a pass-through identity layer. The regularization effect
  * is noted but not fully replicated.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

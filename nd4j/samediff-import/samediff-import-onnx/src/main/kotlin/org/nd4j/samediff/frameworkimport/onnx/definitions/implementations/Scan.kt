@@ -51,7 +51,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Note: This is a simplified implementation that handles common cases.
  * Full subgraph execution would require embedding the body graph.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Scan"], frameworkName = "onnx")
 class Scan : PreImportHook {

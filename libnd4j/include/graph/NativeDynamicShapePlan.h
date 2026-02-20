@@ -206,12 +206,36 @@ struct GraphSegment {
 
   // Legacy address key (kept for fallback diagnostics but no longer used for invalidation)
   LongType capturedInputAddrKey;
+
+  // Capture workspace: pre-allocated GPU buffer for PointersManager temporaries.
+  // Eliminates cudaMallocAsync/cudaFreeAsync graph nodes during capture.
+  // Persists for graph lifetime — kernel params reference these addresses.
+  void* captureWorkspacePtr = nullptr;
+  size_t captureWorkspaceBytes = 0;
 #endif
+
+  // ── Adaptive splitting for unstable segments ──────────────────────────────
+  // If a segment's shape key changes for INSTABILITY_THRESHOLD consecutive
+  // executions after warmup, it likely contains mixed stable + unstable ops
+  // (e.g. KV-cache-growing concat inside a large FFN+attention block).
+  // Instead of permanently marking it slot-by-slot, split it at the midpoint
+  // so stable halves can eventually capture and unstable halves get further
+  // split until small enough to run slot-by-slot with minimal overhead.
+  // MIN_SPLIT_SIZE prevents infinite splitting: segments at this size or below
+  // are permanently marked slot-by-slot.
+  int consecutiveShapeChanges;
+  bool needsSplit;
+  // Require 2 consecutive shape changes before splitting, to filter one-time
+  // events (e.g., first-step initialization differences).  KV-growing segments
+  // change every step and will reliably trigger at threshold=2.
+  static constexpr int INSTABILITY_THRESHOLD = 2;
+  static constexpr int MIN_SPLIT_SIZE = 5;
 
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
         executionCount(0), captureFailed(false),
-        captureOomRetries(0), captureRetryAfterExec(0)
+        captureOomRetries(0), captureRetryAfterExec(0),
+        consecutiveShapeChanges(0), needsSplit(false)
 #ifdef SD_CUDA
         , cachedShapeKey(0), capturedInputAddrKey(0)
 #endif
@@ -378,29 +402,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setCudaGraphsEnabled(bool enabled) { cudaGraphsEnabled_ = enabled; }
   bool isCudaGraphsEnabled() const { return cudaGraphsEnabled_; }
 
-  /**
-   * Set minimum segment size for CUDA graph capture. Segments smaller than this
-   * are executed slot-by-slot. Default: 10. Set to 1 for testing.
-   */
-  void setMinCaptureSegmentSize(int minSize) { minCaptureSegmentSize_ = (minSize > 0) ? minSize : 1; }
-  int getMinCaptureSegmentSize() const { return minCaptureSegmentSize_; }
-
-  /**
-   * Set maximum segment size for CUDA graph capture. Large capturable segments
-   * are split into sub-segments of at most this size. During graph capture,
-   * cudaFreeAsync calls are recorded but NOT executed, so all intermediate
-   * allocations accumulate — limiting segment size prevents OOM.
-   * Default: 300. Set to 0 for unlimited (not recommended for large models).
-   */
-  void setMaxCaptureSegmentSize(int maxSize) {
-    int newVal = (maxSize > 0) ? maxSize : 0;
-    if (newVal != maxCaptureSegmentSize_) {
-      maxCaptureSegmentSize_ = newVal;
-      segments_.clear();
-      buildSegments();  // Rebuild with new max size
-    }
-  }
-  int getMaxCaptureSegmentSize() const { return maxCaptureSegmentSize_; }
 
   /**
    * Enable/disable "shapes frozen" mode. When enabled:
@@ -414,10 +415,18 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * to populate the cache; subsequent executions skip shape work entirely.
    */
   void setShapesFrozen(bool frozen) {
+    bool wasFrozen = shapesFrozen_;
     shapesFrozen_ = frozen;
-    // Don't reset executeCount_ — if called after executions have already
-    // populated the shape cache, we want to immediately skip shape
-    // computation on the next execution.
+    if (frozen && !wasFrozen) {
+      // Merge segments now that value-dep-shape ops are safe to capture
+      // (their input values never change → output shapes are constant).
+      int oldSegCount = (int)segments_.size();
+      rebuildSegmentsForFrozenShapes();
+      sd_printf("NativeDSP::setShapesFrozen: merged %d -> %d segments\n",
+                oldSegCount, (int)segments_.size());
+      // Reset executeCount so step 0 = warmup, step 1+ = capture/replay
+      executeCount_ = 0;
+    }
     if (!frozen) {
       // Reset frozen context state when unfreezing — shapes may change
       for (int i = 0; i < numSlots_; i++) {
@@ -433,6 +442,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    */
   void setExecutionTimingEnabled(bool enabled) { executionTimingEnabled_ = enabled; }
   bool isExecutionTimingEnabled() const { return executionTimingEnabled_; }
+
+  /**
+   * Enable/disable trace logging for DSP execution decisions.
+   * When enabled, logs segment dispatch, graph capture/replay decisions,
+   * and error paths via sd_printf (to stderr).
+   * Controlled by -Dnd4j.dsp.trace system property.
+   */
+  void setTraceEnabled(bool enabled) { traceEnabled_ = enabled; }
+  bool isTraceEnabled() const { return traceEnabled_; }
 
   /**
    * Get the capture audit for the most recent CUDA graph capture.
@@ -466,7 +484,42 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * @param segmentIndex  Which segment to validate (-1 for all segments)
    * @return true if all ops contributed CUDA graph nodes, false if any host-only ops found
    */
-  bool validateCapturedGraph(int segmentIndex = -1) const;
+   bool validateCapturedGraph(int segmentIndex = -1) const;
+
+  /**
+   * Set maximum sizes for specific output slots (KV cache pre-allocation).
+   * 
+   * When set, these slots will be pre-allocated at the specified maximum size during
+   * the first execution, keeping buffer addresses stable across all subsequent steps.
+   * This enables CUDA graph capture for models with growing KV caches.
+   * 
+   * @param slotIndices   Array of output slot indices to pre-allocate
+   * @param maxSizes      Array of maximum sizes (in number of elements, not bytes)
+   * @param numSlots      Number of entries in the arrays
+   * 
+   * Usage for KV cache:
+   *   - Call once before first execution
+   *   - For each KV cache output slot, set max size = batch * numHeads * maxSeqLen * headDim
+   */
+  void setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots);
+  
+  /**
+   * Get the current KV cache sequence position (for slice-based KV cache access).
+   * This is the position where new KV entries will be written.
+   */
+  int getKvCachePosition() const { return kvCachePosition_; }
+  
+  /**
+   * Set the KV cache sequence position.
+   * Call before each decode step to tell the attention op where to write new KV.
+   */
+  void setKvCachePosition(int pos);
+  
+  /**
+   * Set the maximum KV cache length (used with pre-allocated KV cache).
+   * When set, attention outputs are pre-allocated at [batch, numHeads, maxKvLen, headDim].
+   */
+  void setMaxKvCacheLength(int maxLen);
 #endif
 
   /**
@@ -521,8 +574,6 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // CUDA Graphs control
   bool cudaGraphsEnabled_;
   int totalGraphReplays_;
-  int minCaptureSegmentSize_;  // minimum # of slots to attempt CUDA graph capture (default 10)
-  int maxCaptureSegmentSize_;  // maximum # of slots per graph capture segment (default 300)
 
   // Shapes-frozen optimization: when enabled, skip shape cache clearing,
   // shape key computation, and unnecessary output zeroing between executions.
@@ -532,6 +583,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Per-execution timing breakdown (enabled by setExecutionTimingEnabled)
   bool executionTimingEnabled_;
+
+  // Trace logging for execution decisions (enabled by setTraceEnabled / -Dnd4j.dsp.trace)
+  bool traceEnabled_ = false;
 
 #ifdef SD_CUDA
   // Capture audit: per-op CUDA node contribution tracking
@@ -574,6 +628,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   LongType computeSegmentInputAddrKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
   void flushPendingClose(void* stream);
   void buildSegments();
+  void rebuildSegmentsForFrozenShapes();
+  void maybeSplitUnstableSegments();
 
   // Segment execution strategies
   Status executeSegmentSlotBySlot(GraphSegment& seg, NDArray** externalArrays,
@@ -610,6 +666,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setCublasWorkspaceForCapture(void* stream);
   void restoreCublasWorkspaceAfterCapture(void* stream);
 #endif
+
+  // Max-allocation mode for KV cache outputs
+  // Maps output slot index -> max number of elements to pre-allocate
+  std::unordered_map<int, LongType> outputSlotMaxSizes_;
+  // Tracks which slots have been pre-allocated at max size
+  std::unordered_set<int> maxAllocatedSlots_;
+  // Maximum KV cache length (for pre-allocated attention outputs)
+  int maxKvCacheLen_;
 };
 
 }  // namespace graph

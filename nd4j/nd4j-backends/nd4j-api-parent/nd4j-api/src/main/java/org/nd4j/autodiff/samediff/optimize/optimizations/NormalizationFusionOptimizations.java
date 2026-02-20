@@ -30,205 +30,365 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
-import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
- * Normalization fusion optimizations inspired by Luminal's RowRMSNorm.
- * These optimizations detect and potentially fuse normalization patterns
- * that are common in modern transformer architectures.
+ * Normalization-related graph fusions.
  *
- * RMSNorm pattern (used in LLaMA, Mistral, etc.):
- *   output = x * weight / sqrt(mean(x^2) + eps)
- *
- * This is more efficient than LayerNorm as it doesn't require computing
- * the mean for centering, only the root mean square for scaling.
- *
- * The full pattern detection looks for:
- *   1. Square: x * x
- *   2. Mean: reduce_mean(x*x, axis=-1)
- *   3. Add eps: mean + eps
- *   4. Rsqrt: rsqrt(mean + eps) OR 1/sqrt(mean + eps)
- *   5. Scale: x * rsqrt_result
- *   6. Apply weight: scaled * weight
+ * Supported RMSNorm decomposition patterns:
+ * 1) rsqrt form: x * rsqrt(mean(x*x) + eps) * gamma
+ * 2) sqrt/div form: (x / sqrt(mean(pow(x,2)) + eps)) * gamma
  */
 @Slf4j
 public class NormalizationFusionOptimizations extends BaseOptimizerSet {
 
     /**
-     * Detects RMSNorm pattern and logs it for debugging.
-     *
-     * RMSNorm: output = x * weight / sqrt(mean(x^2) + eps)
-     *
-     * This is a detection-only optimizer. Full fusion would require:
-     * 1. A native fused RMSNorm op in libnd4j
-     * 2. Java wrapper for that op
-     *
-     * The pattern we look for (backwards from the final mul with weight):
-     * mul(weight, mul(x, rsqrt(add(mean(mul(x, x)), eps))))
+     * Fuse decomposed RMSNorm chains into native rms_norm op.
      */
-    public static class DetectRMSNormPattern implements Optimizer {
+    public static class FuseRMSNormPattern implements Optimizer {
+
         @Override
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            // Look for the final multiplication (x_normed * weight)
-            if (!(op.getOp() instanceof MulOp)) {
+            if (op == null || op.getOp() == null || !(op.getOp() instanceof MulOp)) {
                 return false;
             }
 
-            List<String> inputs = op.getInputsToOp();
-            if (inputs == null || inputs.size() != 2) {
+            List<String> finalInputs = op.getInputsToOp();
+            List<String> finalOutputs = op.getOutputsOfOp();
+            if (finalInputs == null || finalInputs.size() != 2 || finalOutputs == null || finalOutputs.isEmpty()) {
                 return false;
             }
 
-            // Try to find: one input is weight (constant/variable), other is normalized x
-            String weightVar = null;
-            String normalizedVar = null;
-            SameDiffOp normalizeOp = null;
+            String finalOutputVar = finalOutputs.get(0);
+            RmsNormMatch match = matchRmsNorm(sd, helper, op, finalOutputVar);
+            if (match == null) {
+                return false;
+            }
 
-            for (int i = 0; i < 2; i++) {
-                String inputVar = inputs.get(i);
-                Variable v = helper != null ? helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
-                if (v == null) continue;
+            try {
+                SDVariable x = sd.getVariable(match.xVar);
+                SDVariable gamma = sd.getVariable(match.gammaVar);
+                if (x == null || gamma == null) {
+                    return false;
+                }
 
-                SDVariable sdVar = sd.getVariable(inputVar);
-                if (sdVar == null) continue;
+                SDVariable fused = sd.nn().rmsNorm(x, gamma, match.epsilon);
+                OptimizationUtils.replaceOpInputsWith(sd, helper, finalOutputVar, fused.name());
 
-                // Check if this looks like a weight (constant or variable, 1D shape)
-                if (sdVar.getVariableType() == VariableType.CONSTANT ||
-                    sdVar.getVariableType() == VariableType.VARIABLE) {
-                    long[] shape = sdVar.getShape();
-                    if (shape != null && shape.length == 1) {
-                        weightVar = inputVar;
-                        normalizedVar = inputs.get(1 - i);
-                        break;
+                for (String opName : match.opsToRemove) {
+                    OptimizationUtils.removeOp(sd, helper, opName);
+                }
+                for (String varName : match.varsToRemove) {
+                    if (!match.xVar.equals(varName) && !match.gammaVar.equals(varName)) {
+                        OptimizationUtils.removeVariable(sd, helper, varName);
                     }
                 }
-            }
 
-            if (weightVar == null || normalizedVar == null) {
+                log.info("Fused RMSNorm pattern: x={}, gamma={}, eps={}", match.xVar, match.gammaVar, match.epsilon);
+                return true;
+            } catch (Exception e) {
+                log.debug("Failed to fuse RMSNorm pattern at op {}: {}", op.getName(), e.getMessage());
                 return false;
             }
+        }
 
-            // Now trace back from normalizedVar to see if it matches RMSNorm pattern
-            // normalizedVar should come from mul(x, rsqrt(...))
-            Variable normalizedVariable = helper != null ?
-                helper.getVariable(normalizedVar) : sd.getVariables().get(normalizedVar);
-            if (normalizedVariable == null) return false;
-
-            String producerOpName = normalizedVariable.getOutputOfOp();
-            if (producerOpName == null) return false;
-
-            SameDiffOp producerOp = sd.getOps().get(producerOpName);
-            if (producerOp == null || !(producerOp.getOp() instanceof MulOp)) {
-                return false;
-            }
-
-            // This mul should be x * rsqrt_result
-            List<String> mulInputs = producerOp.getInputsToOp();
-            if (mulInputs == null || mulInputs.size() != 2) {
-                return false;
-            }
-
-            // One of these should be an rsqrt output
-            String xVar = null;
-            String rsqrtVar = null;
+        private RmsNormMatch matchRmsNorm(SameDiff sd, OptimizationHelper helper, SameDiffOp finalMul, String finalOutputVar) {
+            List<String> finalInputs = finalMul.getInputsToOp();
+            String gammaVar = null;
+            String normalizedVar = null;
 
             for (int i = 0; i < 2; i++) {
-                String inputVar = mulInputs.get(i);
-                Variable v = helper != null ? helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
-                if (v == null) continue;
-
-                String opName = v.getOutputOfOp();
-                if (opName == null) {
-                    // This might be the x input (placeholder or variable)
-                    xVar = inputVar;
-                    continue;
-                }
-
-                SameDiffOp inputOp = sd.getOps().get(opName);
-                if (inputOp != null && inputOp.getOp() instanceof RSqrt) {
-                    rsqrtVar = inputVar;
-                    if (xVar == null) xVar = mulInputs.get(1 - i);
-                }
-            }
-
-            if (rsqrtVar == null) {
-                // No rsqrt found, might use div/sqrt pattern instead
-                return false;
-            }
-
-            // Trace rsqrt input - should be add(mean(x*x), eps)
-            Variable rsqrtVariable = helper != null ?
-                helper.getVariable(rsqrtVar) : sd.getVariables().get(rsqrtVar);
-            if (rsqrtVariable == null) return false;
-
-            SameDiffOp rsqrtOp = sd.getOps().get(rsqrtVariable.getOutputOfOp());
-            if (rsqrtOp == null) return false;
-
-            List<String> rsqrtInputs = rsqrtOp.getInputsToOp();
-            if (rsqrtInputs == null || rsqrtInputs.isEmpty()) return false;
-
-            String addEpsVar = rsqrtInputs.get(0);
-            Variable addEpsVariable = helper != null ?
-                helper.getVariable(addEpsVar) : sd.getVariables().get(addEpsVar);
-            if (addEpsVariable == null) return false;
-
-            String addOpName = addEpsVariable.getOutputOfOp();
-            if (addOpName == null) return false;
-
-            SameDiffOp addOp = sd.getOps().get(addOpName);
-            if (addOp == null || !(addOp.getOp() instanceof AddOp)) {
-                return false;
-            }
-
-            // One of add inputs should be mean(x*x), other should be epsilon constant
-            List<String> addInputs = addOp.getInputsToOp();
-            if (addInputs == null || addInputs.size() != 2) return false;
-
-            String meanVar = null;
-            for (String addInput : addInputs) {
-                Variable addInputVar = helper != null ?
-                    helper.getVariable(addInput) : sd.getVariables().get(addInput);
-                if (addInputVar == null) continue;
-
-                String meanOpName = addInputVar.getOutputOfOp();
-                if (meanOpName == null) continue;
-
-                SameDiffOp meanOp = sd.getOps().get(meanOpName);
-                if (meanOp != null && meanOp.getOp() instanceof Mean) {
-                    meanVar = addInput;
+                String candidate = finalInputs.get(i);
+                if (isLikelyGamma(sd, candidate)) {
+                    gammaVar = candidate;
+                    normalizedVar = finalInputs.get(1 - i);
                     break;
                 }
             }
 
-            if (meanVar == null) {
-                return false;
+            if (gammaVar == null || normalizedVar == null) {
+                return null;
+            }
+            if (!hasOnlyConsumer(sd, helper, normalizedVar, finalMul.getName())) {
+                return null;
             }
 
-            // We detected RMSNorm pattern!
-            log.debug("Detected RMSNorm pattern: x={}, weight={}", xVar, weightVar);
+            SameDiffOp normalizedOp = producerOp(sd, helper, normalizedVar);
+            if (normalizedOp == null || normalizedOp.getInputsToOp() == null || normalizedOp.getInputsToOp().size() != 2) {
+                return null;
+            }
 
-            // For now, just detection. Full fusion would require native op.
-            // TODO: Implement fused RMSNorm op and return true when fusing
-            return false;
+            String normalizedOpName = normalizedOp.getName();
+            String normalizedType = opName(normalizedOp);
+            String xVar;
+            String normFactorVar;
+            boolean rsqrtPath;
+            boolean divSqrtPath;
+
+            if ("mul".equals(normalizedType)) {
+                String in0 = normalizedOp.getInputsToOp().get(0);
+                String in1 = normalizedOp.getInputsToOp().get(1);
+                SameDiffOp p0 = producerOp(sd, helper, in0);
+                SameDiffOp p1 = producerOp(sd, helper, in1);
+                if (p0 != null && "rsqrt".equals(opName(p0))) {
+                    normFactorVar = in0;
+                    xVar = in1;
+                } else if (p1 != null && "rsqrt".equals(opName(p1))) {
+                    normFactorVar = in1;
+                    xVar = in0;
+                } else {
+                    return null;
+                }
+                rsqrtPath = true;
+                divSqrtPath = false;
+            } else if ("div".equals(normalizedType)) {
+                String numerator = normalizedOp.getInputsToOp().get(0);
+                String denominator = normalizedOp.getInputsToOp().get(1);
+                SameDiffOp denomOp = producerOp(sd, helper, denominator);
+                if (denomOp == null || !"sqrt".equals(opName(denomOp))) {
+                    return null;
+                }
+                xVar = numerator;
+                normFactorVar = denominator;
+                rsqrtPath = false;
+                divSqrtPath = true;
+            } else {
+                return null;
+            }
+
+            SameDiffOp normFactorOp = producerOp(sd, helper, normFactorVar);
+            if (normFactorOp == null || normFactorOp.getInputsToOp() == null || normFactorOp.getInputsToOp().isEmpty()) {
+                return null;
+            }
+            if (!hasOnlyConsumer(sd, helper, normFactorVar, normalizedOpName)) {
+                return null;
+            }
+
+            String factorType = opName(normFactorOp);
+            if (rsqrtPath && !"rsqrt".equals(factorType)) {
+                return null;
+            }
+            if (divSqrtPath && !"sqrt".equals(factorType)) {
+                return null;
+            }
+
+            String addVar = normFactorOp.getInputsToOp().get(0);
+            if (!hasOnlyConsumer(sd, helper, addVar, normFactorOp.getName())) {
+                return null;
+            }
+            SameDiffOp addOp = producerOp(sd, helper, addVar);
+            if (addOp == null) {
+                return null;
+            }
+
+            String meanVar = null;
+            Double epsilon = null;
+            String addType = opName(addOp);
+            if ("add".equals(addType)) {
+                List<String> addInputs = addOp.getInputsToOp();
+                if (addInputs == null || addInputs.size() != 2) return null;
+
+                for (String in : addInputs) {
+                    SameDiffOp p = producerOp(sd, helper, in);
+                    if (p != null && isMeanLike(p)) {
+                        meanVar = in;
+                    } else {
+                        epsilon = scalarFromVariable(sd, in);
+                    }
+                }
+            } else if ("add_scalar".equals(addType)) {
+                List<String> addInputs = addOp.getInputsToOp();
+                if (addInputs == null || addInputs.size() != 1) return null;
+                meanVar = addInputs.get(0);
+                epsilon = scalarFromScalarOp(addOp);
+            } else {
+                return null;
+            }
+
+            if (meanVar == null || epsilon == null) {
+                return null;
+            }
+            if (!hasOnlyConsumer(sd, helper, meanVar, addOp.getName())) {
+                return null;
+            }
+
+            SameDiffOp meanOp = producerOp(sd, helper, meanVar);
+            if (meanOp == null) {
+                return null;
+            }
+
+            String expectedX = stripTrivial(sd, helper, xVar);
+            String meanInputVar;
+            String squareVar = null;
+            SameDiffOp squareOp = null;
+
+            if ("mean_square".equals(opName(meanOp))) {
+                List<String> meanInputs = meanOp.getInputsToOp();
+                if (meanInputs == null || meanInputs.isEmpty()) return null;
+                meanInputVar = stripTrivial(sd, helper, meanInputs.get(0));
+            } else if ("reduce_mean".equals(opName(meanOp)) || meanOp.getOp() instanceof Mean) {
+                List<String> meanInputs = meanOp.getInputsToOp();
+                if (meanInputs == null || meanInputs.isEmpty()) return null;
+                squareVar = meanInputs.get(0);
+                if (!hasOnlyConsumer(sd, helper, squareVar, meanOp.getName())) {
+                    return null;
+                }
+
+                squareOp = producerOp(sd, helper, squareVar);
+                if (squareOp == null) {
+                    return null;
+                }
+                String squareType = opName(squareOp);
+                if ("mul".equals(squareType)) {
+                    List<String> sqInputs = squareOp.getInputsToOp();
+                    if (sqInputs == null || sqInputs.size() != 2 || !sqInputs.get(0).equals(sqInputs.get(1))) {
+                        return null;
+                    }
+                    meanInputVar = stripTrivial(sd, helper, sqInputs.get(0));
+                } else if ("pow".equals(squareType) || "pow_scalar".equals(squareType)) {
+                    List<String> sqInputs = squareOp.getInputsToOp();
+                    if (sqInputs == null || sqInputs.isEmpty()) return null;
+                    meanInputVar = stripTrivial(sd, helper, sqInputs.get(0));
+                    Double powVal = null;
+                    if (sqInputs.size() >= 2) {
+                        powVal = scalarFromVariable(sd, sqInputs.get(1));
+                    }
+                    if (powVal == null) {
+                        powVal = scalarFromScalarOp(squareOp);
+                    }
+                    if (powVal == null || Math.abs(powVal - 2.0) > 1e-6) {
+                        return null;
+                    }
+                } else if ("square".equals(squareType)) {
+                    List<String> sqInputs = squareOp.getInputsToOp();
+                    if (sqInputs == null || sqInputs.isEmpty()) return null;
+                    meanInputVar = stripTrivial(sd, helper, sqInputs.get(0));
+                } else {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+
+            if (!expectedX.equals(meanInputVar)) {
+                return null;
+            }
+
+            RmsNormMatch m = new RmsNormMatch();
+            m.xVar = xVar;
+            m.gammaVar = gammaVar;
+            m.epsilon = epsilon;
+
+            m.opsToRemove.add(finalMul.getName());
+            m.opsToRemove.add(normalizedOpName);
+            m.opsToRemove.add(normFactorOp.getName());
+            m.opsToRemove.add(addOp.getName());
+            m.opsToRemove.add(meanOp.getName());
+            if (squareOp != null) {
+                m.opsToRemove.add(squareOp.getName());
+            }
+
+            m.varsToRemove.add(finalOutputVar);
+            m.varsToRemove.add(normalizedVar);
+            m.varsToRemove.add(normFactorVar);
+            m.varsToRemove.add(addVar);
+            m.varsToRemove.add(meanVar);
+            if (squareVar != null) {
+                m.varsToRemove.add(squareVar);
+            }
+
+            return m;
+        }
+
+        private String stripTrivial(SameDiff sd, OptimizationHelper helper, String varName) {
+            String current = varName;
+            for (int i = 0; i < 8; i++) {
+                SameDiffOp p = producerOp(sd, helper, current);
+                if (p == null || p.getInputsToOp() == null || p.getInputsToOp().isEmpty()) {
+                    break;
+                }
+                String n = opName(p);
+                if ("cast".equals(n) || "identity".equals(n)) {
+                    current = p.getInputsToOp().get(0);
+                } else {
+                    break;
+                }
+            }
+            return current;
+        }
+
+        private boolean isLikelyGamma(SameDiff sd, String varName) {
+            SDVariable v = sd.getVariable(varName);
+            if (v == null) return false;
+            if (v.getVariableType() != VariableType.CONSTANT && v.getVariableType() != VariableType.VARIABLE) {
+                return false;
+            }
+            long[] shape = v.getShape();
+            return shape != null && shape.length == 1 && shape[0] > 1;
+        }
+
+        private boolean hasOnlyConsumer(SameDiff sd, OptimizationHelper helper, String varName, String expectedConsumerOp) {
+            Variable v = helper != null ? helper.getVariable(varName) : null;
+            if (v == null) {
+                v = sd.getVariables().get(varName);
+            }
+            if (v == null) return false;
+            List<String> users = v.getInputsForOp();
+            return users != null && users.size() == 1 && expectedConsumerOp.equals(users.get(0));
+        }
+
+        private SameDiffOp producerOp(SameDiff sd, OptimizationHelper helper, String varName) {
+            Variable v = helper != null ? helper.getVariable(varName) : null;
+            if (v == null) {
+                v = sd.getVariables().get(varName);
+            }
+            if (v == null) return null;
+            String opName = v.getOutputOfOp();
+            if (opName == null) return null;
+            return sd.getOps().get(opName);
+        }
+
+        private boolean isMeanLike(SameDiffOp op) {
+            String n = opName(op);
+            return "reduce_mean".equals(n) || "mean_square".equals(n) || op.getOp() instanceof Mean;
+        }
+
+        private String opName(SameDiffOp op) {
+            return op != null && op.getOp() != null && op.getOp().opName() != null
+                    ? op.getOp().opName().toLowerCase() : "";
+        }
+
+        private Double scalarFromVariable(SameDiff sd, String varName) {
+            SDVariable v = sd.getVariable(varName);
+            if (v == null || v.getArr() == null || !v.getArr().isScalar()) {
+                return null;
+            }
+            return v.getArr().getDouble(0);
+        }
+
+        private Double scalarFromScalarOp(SameDiffOp op) {
+            if (op == null || op.getOp() == null || !(op.getOp() instanceof ScalarOp)) {
+                return null;
+            }
+            INDArray scalar = ((ScalarOp) op.getOp()).scalar();
+            if (scalar == null || !scalar.isScalar()) {
+                return null;
+            }
+            return scalar.getDouble(0);
         }
     }
 
     /**
-     * Fuses mean(x^2) pattern: mean(mul(x, x)) -> mean_square(x)
-     *
-     * This is a component of RMSNorm that can be optimized.
-     * The pattern mean(x * x) is fused into a single mean_square op.
+     * Fuses mean(x^2) pattern: mean(mul(x, x)) -> mean_square(x).
+     * This is useful both standalone and as an enabler for RMSNorm fusion.
      */
     public static class FuseMeanSquarePattern implements Optimizer {
         @Override
@@ -243,7 +403,6 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
-            // Check if input comes from mul(x, x)
             String inputVar = inputs.get(0);
             Variable v = helper != null ? helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
             if (v == null) return false;
@@ -256,19 +415,12 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
-            // Check if mul is x * x (same variable both inputs)
             List<String> mulInputs = producerOp.getInputsToOp();
-            if (mulInputs == null || mulInputs.size() != 2) return false;
-
-            if (!mulInputs.get(0).equals(mulInputs.get(1))) {
+            if (mulInputs == null || mulInputs.size() != 2 || !mulInputs.get(0).equals(mulInputs.get(1))) {
                 return false;
             }
 
-            String xVar = mulInputs.get(0);
-
-            // Check that the mul output is only used by this mean
-            Variable mulOutVariable = helper != null ?
-                helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
+            Variable mulOutVariable = helper != null ? helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
             if (mulOutVariable == null) return false;
 
             List<String> mulOutputUsers = mulOutVariable.getInputsForOp();
@@ -276,31 +428,22 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
 
-            // Get the mean output
             List<String> outputs = op.getOutputsOfOp();
             if (outputs == null || outputs.isEmpty()) {
                 return false;
             }
             String meanOutputVar = outputs.get(0);
-
-            log.info("Fusing mean({}^2) -> mean_square({})", xVar, xVar);
+            String xVar = mulInputs.get(0);
 
             try {
-                // Create fused mean_square operation
                 SDVariable xSdVar = sd.getVariable(xVar);
                 if (xSdVar == null) return false;
 
-                // Create the fused MeanSquare op - calling outputVariable() registers it with SameDiff
                 SDVariable meanSquareOutput = new MeanSquare(sd, xSdVar, true).outputVariable();
-
-                // Replace all uses of the mean output with mean_square output
                 OptimizationUtils.replaceOpInputsWith(sd, helper, meanOutputVar, meanSquareOutput.name());
 
-                // Remove the old mean and mul operations
                 OptimizationUtils.removeOp(sd, helper, op.getName());
                 OptimizationUtils.removeOp(sd, helper, producerOp.getName());
-
-                // Remove old variables
                 OptimizationUtils.removeVariable(sd, helper, inputVar);
                 OptimizationUtils.removeVariable(sd, helper, meanOutputVar);
 
@@ -310,5 +453,13 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
         }
+    }
+
+    private static class RmsNormMatch {
+        String xVar;
+        String gammaVar;
+        double epsilon;
+        final Set<String> opsToRemove = new LinkedHashSet<>();
+        final Set<String> varsToRemove = new LinkedHashSet<>();
     }
 }

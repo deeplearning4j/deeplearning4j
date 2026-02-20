@@ -36,7 +36,7 @@ import java.util.List;
  * AffineGrid operation - generates a 2D or 3D sampling grid from affine transformation matrices.
  * Used with GridSample for spatial transformer networks.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class AffineGrid extends DynamicCustomOp {

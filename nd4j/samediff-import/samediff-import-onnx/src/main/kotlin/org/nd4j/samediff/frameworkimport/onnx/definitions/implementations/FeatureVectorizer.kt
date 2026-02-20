@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - Y: Concatenated tensor [N, total_features]
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["FeatureVectorizer"], frameworkName = "onnx")
 class FeatureVectorizer : PreImportHook {

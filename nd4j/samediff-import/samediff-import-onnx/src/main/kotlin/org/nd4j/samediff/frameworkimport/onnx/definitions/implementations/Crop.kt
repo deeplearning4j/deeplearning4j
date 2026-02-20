@@ -44,7 +44,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - border: Border values [left, top, right, bottom] for cropping
  * - scale: Scale for output size [height, width]
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Crop"], frameworkName = "onnx")
 class Crop : PreImportHook {

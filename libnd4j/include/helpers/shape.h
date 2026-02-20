@@ -46,6 +46,7 @@
 #include <stdint.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace shape {
@@ -2996,9 +2997,10 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
   const sd::LongType maxRank = rank(maxShapeInfo);
   minOffset = 0;
   sd::LongType first, last, stride, n(isStrided ? 3 : 2);
+  const bool logSubArrayDebug = sd::Environment::getInstance().isDebug() && std::getenv("SD_SUBARRAY_DEBUG") != nullptr;
 
   // Enhanced debugging - log input parameters
-  if (sd::Environment::getInstance().isDebug()) {
+  if (logSubArrayDebug) {
     sd_print("=== calcSubArrShapeInfoAndOffset DEBUG ===\n");
     sd_printf("maxRank: %lld, isStrided: %s, keepUnitiesInShape: %s\n",
               maxRank, isStrided ? "true" : "false", keepUnitiesInShape ? "true" : "false");
@@ -3027,7 +3029,7 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
       shapeOf(minShapeInfo)[j] = shapeOf(maxShapeInfo)[i];
       shape::stride(minShapeInfo)[j++] = shape::stride(maxShapeInfo)[i];
 
-      if (sd::Environment::getInstance().isDebug()) {
+      if (logSubArrayDebug) {
         sd_printf("  Dim %lld: whole dimension (idx[%lld]==idx[%lld]=%lld)\n",
                   i, step, step+1, idx[step]);
       }
@@ -3090,7 +3092,7 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
 
       minOffset += first * shape::stride(maxShapeInfo)[i];
 
-      if (sd::Environment::getInstance().isDebug()) {
+      if (logSubArrayDebug) {
         sd_printf("  Dim %lld: orig_indices=[%lld,%lld", i, orig_first, orig_last);
         if (isStrided) {
           sd_printf(",%lld", idx[step+2]);
@@ -3120,7 +3122,7 @@ SD_LIB_EXPORT SD_HOST SD_INLINE void calcSubArrShapeInfoAndOffset(const sd::Long
   setOrder(minShapeInfo, 'c');                                                     // order
   sd::ArrayOptions::setDataType(minShapeInfo, sd::ArrayOptions::dataType(maxShapeInfo));  // type
 
-  if (sd::Environment::getInstance().isDebug()) {
+  if (logSubArrayDebug) {
     sd_printf("  Final minOffset: %lld\n", minOffset);
     sd_printf("  Final minShape rank: %lld\n", minShapeInfo[0]);
     sd_print("=== End calcSubArrShapeInfoAndOffset DEBUG ===\n");

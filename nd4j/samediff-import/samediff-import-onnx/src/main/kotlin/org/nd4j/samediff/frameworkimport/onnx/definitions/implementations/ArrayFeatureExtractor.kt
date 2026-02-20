@@ -45,7 +45,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - Z: Selected features from input
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ArrayFeatureExtractor"], frameworkName = "onnx")
 class ArrayFeatureExtractor : PreImportHook {

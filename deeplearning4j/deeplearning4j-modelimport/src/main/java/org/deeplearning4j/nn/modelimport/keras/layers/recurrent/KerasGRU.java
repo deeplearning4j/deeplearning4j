@@ -59,7 +59,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  * Note: DL4J does not have a native GRU implementation, so this uses SimpleRnn as an approximation.
  * The GRU-specific gating mechanism is not fully replicated.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

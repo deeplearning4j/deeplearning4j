@@ -22,6 +22,7 @@
 #include <ops/declarable/headers/parity_ops.h>
 #include <system/op_boilerplate.h>
 #include <helpers/ConstantShapeHelper.h>
+#include <string>
 
 #if NOT_EXCLUDED(OP_reduce_mean)
 #include <ops/declarable/helpers/axis.h>
@@ -33,6 +34,7 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   auto dimensions = *block.getIArguments();
+  
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);

@@ -52,7 +52,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - pads: Padding values
  * - strides: Stride values
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["NhwcConv"], frameworkName = "onnx")
 class NhwcConv : PreImportHook {

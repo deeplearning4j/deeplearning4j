@@ -47,7 +47,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - ignore_index: Label to ignore in loss calculation
  * - reduction: "none", "mean", "sum"
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SoftmaxCrossEntropyLoss"], frameworkName = "onnx")
 class SoftmaxCrossEntropyLoss : PreImportHook {

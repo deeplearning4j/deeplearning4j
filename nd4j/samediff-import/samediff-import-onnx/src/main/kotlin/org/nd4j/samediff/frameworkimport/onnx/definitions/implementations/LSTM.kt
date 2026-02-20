@@ -58,7 +58,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - hidden_size: Hidden state size
  * - input_forget: Couple input and forget gates
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["LSTM"], frameworkName = "onnx")
 class LSTM : PreImportHook {

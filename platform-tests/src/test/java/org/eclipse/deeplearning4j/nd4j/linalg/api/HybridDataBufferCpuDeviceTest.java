@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 3. Basic device pinning operations
  * 4. Data validity management
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Tag(TagNames.MULTI_THREADED)

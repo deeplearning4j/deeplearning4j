@@ -36,6 +36,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -457,5 +460,514 @@ public class TestAttentionOpValidation extends BaseOpValidation {
             String err = OpValidation.validate(tc);
             assertNull(err, "Failed for dim=" + dim + ": " + err);
         }
+    }
+
+    // ========================= Fused Attention with Bias Tests =========================
+    // These tests specifically verify that the fused CUDA kernel path is used when
+    // attention bias is provided (performance optimization for VLM models like SmolDocling)
+    // 
+    // dot_product_attention_v2 input order:
+    // - Input 0: queries
+    // - Input 1: values  
+    // - Input 2: keys (optional, defaults to values)
+    // - Input 3: queryMask (optional)
+    // - Input 4: valueMask (optional)
+    // - Input 5: attentionBias (optional)
+    // T_ARG: scale, dropout
+    // B_ARG: useCausalMask, training, useFlashAttention
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Fused Attention - 3D with Additive Bias")
+    public void testFusedAttention3DWithBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 4;
+        int seqLen = 8;
+        int headDim = 16;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        // 3D format for dot_product_attention_v2: [batch, seq, dim]
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, headDim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, headDim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, headDim).muli(0.1f);
+        
+        // Attention bias: [batch, seqQ, seqKV]
+        INDArray bias = Nd4j.randn(DataType.FLOAT, batch, seqLen, seqLen).muli(0.5f);
+
+        // Empty arrays for optional masks (input slots 3 and 4)
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+
+        // Execute dot_product_attention_v2 with bias
+        // Input order: query, value, key, queryMask, valueMask, attentionBias
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)  // T_ARG: scale, dropout
+                .addBooleanArguments(false, false, true)  // B_ARG: useCausalMask, training, useFlashAttention
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+        INDArray attnOutput = outputs[0];
+
+        assertNotNull(attnOutput);
+        assertArrayEquals(new long[]{batch, seqLen, headDim}, attnOutput.shape(),
+                "Output shape should match [batch, seqQ, headDim]");
+
+        // Verify output is not all zeros
+        double absSum = attnOutput.ameanNumber().doubleValue();
+        assertTrue(absSum > 1e-6, "Attention output should not be all zeros");
+
+        // Verify correctness by comparing with manual computation
+        // scores = Q @ K^T * scale + bias
+        // attn_weights = softmax(scores, dim=-1)
+        // output = attn_weights @ V
+        INDArray manualScores = Nd4j.zeros(DataType.FLOAT, batch, seqLen, seqLen);
+        for (int b = 0; b < batch; b++) {
+            INDArray q = query.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b));  // [seqLen, headDim]
+            INDArray k = key.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b));    // [seqLen, headDim]
+            INDArray scores = Nd4j.matmul(q, k.transpose()).mul(scale);              // [seqLen, seqLen]
+            INDArray biasSlice = bias.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b));
+            scores.addi(biasSlice);
+            manualScores.put(new org.nd4j.linalg.indexing.INDArrayIndex[]{
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(b),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all()
+            }, scores);
+        }
+        
+        // Apply softmax along last dimension
+        INDArray manualWeights = Nd4j.nn.softmax(manualScores, 2);
+        
+        // Compute expected output
+        INDArray expected = Nd4j.zeros(DataType.FLOAT, batch, seqLen, headDim);
+        for (int b = 0; b < batch; b++) {
+            INDArray weights = manualWeights.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b));  // [seqLen, seqLen]
+            INDArray v = value.get(org.nd4j.linalg.indexing.NDArrayIndex.point(b));                // [seqLen, headDim]
+            INDArray out = Nd4j.matmul(weights, v);                                                // [seqLen, headDim]
+            expected.put(new org.nd4j.linalg.indexing.INDArrayIndex[]{
+                    org.nd4j.linalg.indexing.NDArrayIndex.point(b),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all(),
+                    org.nd4j.linalg.indexing.NDArrayIndex.all()
+            }, out);
+        }
+
+        double maxDiff = attnOutput.sub(expected).amaxNumber().doubleValue();
+        assertTrue(maxDiff < 1e-3, "Fused attention with bias output should match manual computation. maxDiff=" + maxDiff);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Fused Attention - 4D with Additive Bias")
+    public void testFusedAttention4DWithBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 2;
+        int seqLen = 8;
+        int numHeads = 4;
+        int headDim = 16;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        // 4D format for dot_product_attention_v2: [batch, seq, numHeads, headDim] (BSHD)
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        
+        // Attention bias: [batch, numHeads, seqQ, seqKV]
+        INDArray bias = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, seqLen).muli(0.5f);
+
+        // Empty arrays for optional masks
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+
+        // Execute dot_product_attention_v2 with bias
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)  // T_ARG: scale, dropout
+                .addBooleanArguments(false, false, true)  // B_ARG: useCausalMask, training, useFlashAttention
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+        INDArray attnOutput = outputs[0];
+
+        assertNotNull(attnOutput);
+        assertArrayEquals(new long[]{batch, seqLen, numHeads, headDim}, attnOutput.shape(),
+                "Output shape should match [batch, seqQ, numHeads, headDim]");
+
+        // Verify output is not all zeros
+        double absSum = attnOutput.ameanNumber().doubleValue();
+        assertTrue(absSum > 1e-6, "Attention output should not be all zeros");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Fused Attention - With vs Without Bias Produces Different Results")
+    public void testFusedAttentionBiasAffectsOutput(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 4;
+        int seqLen = 8;
+        int headDim = 16;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, headDim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, headDim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, headDim).muli(0.1f);
+        INDArray bias = Nd4j.randn(DataType.FLOAT, batch, seqLen, seqLen).muli(0.5f);
+
+        // Without bias
+        DynamicCustomOp opNoBias = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key)  // query, value, key
+                .addFloatingPointArguments(scale, 0.0)  // T_ARG: scale, dropout
+                .addBooleanArguments(false, false, true)  // B_ARG: useCausalMask, training, useFlashAttention
+                .build();
+        INDArray outputNoBias = Nd4j.exec(opNoBias)[0];
+
+        // Empty arrays for optional masks
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+
+        // With bias (need to provide empty masks for slots 3 and 4)
+        DynamicCustomOp opWithBias = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)  // T_ARG: scale, dropout
+                .addBooleanArguments(false, false, true)  // B_ARG: useCausalMask, training, useFlashAttention
+                .build();
+        INDArray outputWithBias = Nd4j.exec(opWithBias)[0];
+
+        // Outputs should be different when bias is applied
+        double diff = outputWithBias.sub(outputNoBias).ameanNumber().doubleValue();
+        assertTrue(Math.abs(diff) > 1e-6, 
+                "Attention with bias should produce different output than without bias. diff=" + diff);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("ONNX MHA - With Attention Bias Uses Fused Kernel")
+    public void testOnnxMhaWithBiasUsesFusedKernel(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 2;
+        int seqLen = 8;
+        int numHeads = 4;
+        int headDim = 16;
+        int hidden = numHeads * headDim;
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
+        
+        // Attention bias in ONNX format: [batch, numHeads, seqQ, seqKV]
+        INDArray attnBias = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, seqLen).muli(0.5f);
+
+        // Execute ONNX MHA with bias
+        OnnxMultiHeadAttention op = new OnnxMultiHeadAttention(
+                query, key, value,
+                attnBias, null, null,
+                numHeads, 0.0, false  // scale=auto, causal=false
+        );
+        INDArray[] outputs = Nd4j.exec(op);
+
+        assertNotNull(outputs);
+        assertNotNull(outputs[0]);
+        assertArrayEquals(new long[]{batch, seqLen, hidden}, outputs[0].shape(),
+                "Output shape should match [batch, seq, hidden]");
+
+        // Verify output is meaningful
+        double absSum = outputs[0].ameanNumber().doubleValue();
+        assertTrue(absSum > 1e-6, "ONNX MHA with bias output should not be all zeros");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("ONNX MHA - Bias with Causal Mask Combined")
+    public void testOnnxMhaWithBiasAndCausalMask(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 1;
+        int seqLen = 8;
+        int numHeads = 4;
+        int headDim = 16;
+        int hidden = numHeads * headDim;
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, hidden);
+        
+        // Relative position bias: [batch, numHeads, seqQ, seqKV]
+        INDArray relPosBias = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, seqLen).muli(0.3f);
+
+        // With causal mask + bias
+        OnnxMultiHeadAttention opCausalBias = new OnnxMultiHeadAttention(
+                query, key, value,
+                relPosBias, null, null,
+                numHeads, 0.0, true  // causal=true
+        );
+        INDArray[] outputsCausalBias = Nd4j.exec(opCausalBias);
+
+        // With causal mask only (no bias)
+        OnnxMultiHeadAttention opCausalNoBias = new OnnxMultiHeadAttention(
+                query, key, value,
+                null, null, null,
+                numHeads, 0.0, true  // causal=true
+        );
+        INDArray[] outputsCausalNoBias = Nd4j.exec(opCausalNoBias);
+
+        // Both should work
+        assertNotNull(outputsCausalBias[0]);
+        assertNotNull(outputsCausalNoBias[0]);
+
+        // Outputs should differ due to the bias
+        double diff = outputsCausalBias[0].sub(outputsCausalNoBias[0]).ameanNumber().doubleValue();
+        assertTrue(Math.abs(diff) > 1e-6, 
+                "Causal attention with bias should differ from without bias. diff=" + diff);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Fused Attention - Large Sequence Length (VLM-like)")
+    public void testFusedAttentionLargeSequence(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        // Simulate VLM-like dimensions (smaller for test speed)
+        int batch = 1;
+        int numHeads = 8;
+        int seqLen = 64;  // Would be much larger in real VLM (e.g., 2048+)
+        int headDim = 64;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, headDim);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, headDim);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, headDim);
+        
+        // Simulated relative position bias
+        INDArray bias = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, seqLen).muli(0.1f);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention")
+                .addInputs(query, key, value, bias)
+                .addIntegerArguments(1, 0, 1)  // normalize=true, useMask=false, useBias=true
+                .addFloatingPointArguments(scale)
+                .build();
+
+        long startTime = System.currentTimeMillis();
+        INDArray[] outputs = Nd4j.exec(op);
+        long endTime = System.currentTimeMillis();
+
+        assertNotNull(outputs[0]);
+        assertArrayEquals(new long[]{batch, numHeads, seqLen, headDim}, outputs[0].shape());
+
+        log.info("Large sequence attention with bias completed in {} ms", endTime - startTime);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Fused Attention - FP16 with Bias")
+    public void testFusedAttentionFP16WithBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batchHeads = 4;
+        int seqLen = 8;
+        int headDim = 16;
+
+        INDArray query = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, headDim);
+        INDArray key = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, headDim);
+        INDArray value = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, headDim);
+        INDArray bias = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, seqLen);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention")
+                .addInputs(query, key, value, bias)
+                .addIntegerArguments(1, 0, 1)  // normalize=true, useMask=false, useBias=true
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+
+        assertNotNull(outputs[0]);
+        assertEquals(DataType.FLOAT16, outputs[0].dataType(), 
+                "Output should preserve FP16 data type");
+        assertArrayEquals(new long[]{batchHeads, seqLen, headDim}, outputs[0].shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("Fused Attention - Cross Attention with Bias")
+    public void testFusedCrossAttentionWithBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batchHeads = 4;
+        int seqQ = 4;    // Query sequence length
+        int seqKV = 12;  // Key/Value sequence length (different!)
+        int headDim = 16;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batchHeads, seqQ, headDim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batchHeads, seqKV, headDim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batchHeads, seqKV, headDim).muli(0.1f);
+        
+        // Cross-attention bias: [batchHeads, seqQ, seqKV]
+        INDArray bias = Nd4j.randn(DataType.FLOAT, batchHeads, seqQ, seqKV).muli(0.5f);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention")
+                .addInputs(query, key, value, bias)
+                .addIntegerArguments(1, 0, 1)  // normalize=true, useMask=false, useBias=true
+                .addFloatingPointArguments(scale)
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+        INDArray attnOutput = outputs[0];
+
+        assertNotNull(attnOutput);
+        // Output should have query's sequence length
+        assertArrayEquals(new long[]{batchHeads, seqQ, headDim}, attnOutput.shape(),
+                "Cross attention output should have query's sequence length");
+    }
+
+    // ========================= DotProductAttentionV2 with AttentionBias Tests =========================
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DotProductAttentionV2 - With Attention Bias (SameDiff API)")
+    public void testDotProductAttentionV2WithBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 2;
+        int seqLen = 4;
+        int numHeads = 2;
+        int headDim = 8;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        SameDiff sd = SameDiff.create();
+
+        // 4D input for flash attention: [batch, seq, heads, dim]
+        INDArray queryArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        INDArray keyArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        INDArray valueArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        
+        // Attention bias: [batch, heads, seqQ, seqK]
+        INDArray biasArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, seqLen).muli(0.5f);
+
+        SDVariable query = sd.var("query", queryArr);
+        SDVariable value = sd.var("value", valueArr);
+        SDVariable key = sd.var("key", keyArr);
+        SDVariable attentionBias = sd.var("attentionBias", biasArr);
+
+        // Use the proper SameDiff API with attentionBias
+        SDVariable output = sd.nn().dotProductAttentionV2(
+                query, value, key,  // Note: value comes before key in this API
+                null,               // queryMask
+                null,               // valueMask
+                attentionBias,      // attentionBias - now supported!
+                scale,              // scaleFactor
+                0.0,                // dropoutProbability
+                false,              // useCausalMask
+                false               // training
+        );
+        output.rename("output");
+
+        // Execute and verify output
+        INDArray result = output.eval();
+        
+        assertNotNull(result, "Output should not be null");
+        assertArrayEquals(new long[]{batch, seqLen, numHeads, headDim}, result.shape(),
+                "Output should have same shape as query");
+
+        // Verify finite values
+        assertFalse(result.isNaN().any(), "Output should not contain NaN values");
+        assertFalse(result.isInfinite().any(), "Output should not contain infinite values");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DotProductAttentionV2 - With Relative Position Bias (3D input)")
+    public void testDotProductAttentionV2WithRelativePositionBias(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 2;
+        int seqLen = 6;
+        int dim = 16;
+        double scale = 1.0 / Math.sqrt(dim);
+
+        SameDiff sd = SameDiff.create();
+
+        // 3D input: [batch, seq, dim]
+        INDArray queryArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, dim).muli(0.1f);
+        INDArray keyArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, dim).muli(0.1f);
+        INDArray valueArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, dim).muli(0.1f);
+        
+        // Relative position bias: broadcastable [1, seqQ, seqK] (same for all batches)
+        INDArray biasArr = Nd4j.randn(DataType.FLOAT, 1, seqLen, seqLen).muli(0.3f);
+
+        SDVariable query = sd.var("query", queryArr);
+        SDVariable value = sd.var("value", valueArr);
+        SDVariable key = sd.var("key", keyArr);
+        SDVariable attentionBias = sd.var("attentionBias", biasArr);
+
+        // Use the proper SameDiff API with attentionBias
+        SDVariable output = sd.nn().dotProductAttentionV2(
+                query, value, key,
+                null, null,         // no masks
+                attentionBias,      // relative position bias
+                scale,
+                0.0,
+                false,
+                false
+        );
+        output.rename("output");
+
+        // Execute and verify output
+        INDArray result = output.eval();
+        
+        assertNotNull(result, "Output should not be null");
+        assertArrayEquals(new long[]{batch, seqLen, dim}, result.shape(),
+                "Output should have same shape as query for 3D input");
+        
+        assertFalse(result.isNaN().any(), "Output should not contain NaN values");
+        assertFalse(result.isInfinite().any(), "Output should not contain infinite values");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DotProductAttentionV2 - With Attention Bias and Causal Mask")
+    public void testDotProductAttentionV2WithBiasAndCausalMask(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 2;
+        int seqLen = 4;
+        int numHeads = 2;
+        int headDim = 8;
+        double scale = 1.0 / Math.sqrt(headDim);
+
+        SameDiff sd = SameDiff.create();
+
+        // 4D input: [batch, seq, heads, dim]
+        INDArray queryArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        INDArray keyArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        INDArray valueArr = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim).muli(0.1f);
+        
+        // Attention bias (e.g., ALiBi slopes): [1, heads, 1, seqK]
+        INDArray biasArr = Nd4j.randn(DataType.FLOAT, 1, numHeads, 1, seqLen).muli(0.2f);
+
+        SDVariable query = sd.var("query", queryArr);
+        SDVariable value = sd.var("value", valueArr);
+        SDVariable key = sd.var("key", keyArr);
+        SDVariable attentionBias = sd.var("attentionBias", biasArr);
+
+        // Use causal mask combined with attention bias
+        SDVariable output = sd.nn().dotProductAttentionV2(
+                query, value, key,
+                null, null,
+                attentionBias,
+                scale,
+                0.0,
+                true,   // useCausalMask = true
+                false
+        );
+        output.rename("output");
+
+        // Execute and verify output
+        INDArray result = output.eval();
+        
+        assertNotNull(result, "Output should not be null");
+        assertArrayEquals(new long[]{batch, seqLen, numHeads, headDim}, result.shape(),
+                "Output should have same shape as query");
+
+        assertFalse(result.isNaN().any(), "Output should not contain NaN values");
+        assertFalse(result.isInfinite().any(), "Output should not contain infinite values");
     }
 }

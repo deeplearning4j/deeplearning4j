@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - mode: bilinear, nearest, bicubic
  * - padding_mode: zeros, border, reflection
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["GridSample"], frameworkName = "onnx")
 class GridSample : PreImportHook {

@@ -41,7 +41,7 @@ import org.junit.jupiter.api.DisplayName;
 /**
  * Tests for KerasLayerNormalization layer import.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @DisplayName("Keras Layer Normalization Test")
 @Tag(TagNames.FILE_IO)

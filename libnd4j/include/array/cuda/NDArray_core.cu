@@ -57,6 +57,13 @@ void NDArray::makeBothBuffersActual() {
 }
 
 void NDArray::synchronize(const char* msg) {
+  // During CUDA graph capture, stream synchronization is illegal and breaks
+  // capture. Captured kernels are ordered by stream semantics, so explicit
+  // sync is not required inside the captured region.
+  if (tl_graphExecutionActive) {
+    return;
+  }
+
   auto res = cudaStreamSynchronize(*(getContext()->getCudaStream()));
   if (res != 0) {
     std::string message = msg + std::string(": synchronization failed !");
@@ -65,12 +72,19 @@ void NDArray::synchronize(const char* msg) {
 }
 
 void NDArray::syncShape() {
-  // During CUDA graph capture, use async copy to avoid breaking capture.
-  // Synchronous cudaMemcpy on the legacy default stream implicitly syncs with
-  // all named streams, invalidating the captured stream (error 901).
+  // During CUDA graph capture, use async copy on the active capture stream.
+  // Using legacy stream 0 here can invalidate capture when the graph is being
+  // recorded on a different stream.
   if (tl_graphExecutionActive) {
+    cudaStream_t stream = tl_graphCaptureStream;
+    if (stream == nullptr && getContext() != nullptr && getContext()->getCudaStream() != nullptr) {
+      stream = *(getContext()->getCudaStream());
+    }
+    if (stream == nullptr) {
+      stream = cudaStreamPerThread;
+    }
     cudaMemcpyAsync(const_cast<LongType*>(specialShapeInfo()), shapeInfo(),
-                    shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, 0);
+                    shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice, stream);
     return;
   }
   cudaMemcpy(const_cast<LongType*>(specialShapeInfo()), shapeInfo(), shape::shapeInfoByteLength(shapeInfo()),

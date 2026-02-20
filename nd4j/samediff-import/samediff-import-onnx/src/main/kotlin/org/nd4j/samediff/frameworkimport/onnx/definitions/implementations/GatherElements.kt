@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Attributes:
  * - axis: Which axis to gather on (default: 0)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["GatherElements"], frameworkName = "onnx")
 class GatherElements : PreImportHook {

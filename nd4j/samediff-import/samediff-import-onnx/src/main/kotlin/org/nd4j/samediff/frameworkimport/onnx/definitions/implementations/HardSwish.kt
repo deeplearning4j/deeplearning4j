@@ -43,7 +43,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Inputs:
  * - X: Input tensor
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["HardSwish"], frameworkName = "onnx")
 class HardSwish : PreImportHook {

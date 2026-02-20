@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * This layer has no trainable parameters.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -43,7 +43,7 @@ import java.util.Map;
  * Note: DL4J uses DotProductAttentionVertex as an approximation since
  * native additive attention is not available.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @Data

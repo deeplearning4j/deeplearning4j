@@ -39,6 +39,7 @@
 
 #include <cstring>
 #include <string>
+#include <fstream>
 
 using namespace sd;
 using namespace sd::graph;
@@ -157,9 +158,18 @@ int executeDynamicShapePlan(
     auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
 
     if (status != Status::OK) {
-      char buf[256];
-      snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d",
-               static_cast<int>(status));
+      // Preserve the detailed C++ error message (e.g., "CUDA error after segment [X-Y]: 700 (...")
+      // that was set by the plan's execute() — don't overwrite it with a generic message.
+      // The existing errorReference message contains segment range and CUDA error code.
+      const char* existingMsg = sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
+      char buf[512];
+      if (existingMsg != nullptr && existingMsg[0] != '\0') {
+        snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d: %s",
+                 static_cast<int>(status), existingMsg);
+      } else {
+        snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d",
+                 static_cast<int>(status));
+      }
       sd_printf("%s\n", buf);
       setError(static_cast<int>(status), buf);
       return static_cast<int>(status);
@@ -365,15 +375,11 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
 }
 
 void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMinCaptureSegmentSize(minSize);
-  }
+  // Segment sizes are now auto-discovered from graph structure; this is a no-op.
 }
 
 void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxSize) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMaxCaptureSegmentSize(maxSize);
-  }
+  // Segment sizes are now auto-discovered from graph structure; this is a no-op.
 }
 
 void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
@@ -385,6 +391,30 @@ void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
 void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled) {
   if (planHandle != nullptr) {
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setExecutionTimingEnabled(enabled);
+  }
+}
+
+void setPlanTraceEnabled(sd::Pointer planHandle, bool enabled) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setTraceEnabled(enabled);
+  }
+}
+
+void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
+                                 const int* slotIndices, const sd::LongType* maxSizes) {
+  if (planHandle == nullptr || numSlots <= 0 || slotIndices == nullptr || maxSizes == nullptr) return;
+  reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setOutputSlotMaxSizes(slotIndices, maxSizes, static_cast<int>(numSlots));
+}
+
+void setPlanKvCachePosition(sd::Pointer planHandle, int pos) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setKvCachePosition(pos);
+  }
+}
+
+void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMaxKvCacheLength(maxLen);
   }
 }
 
@@ -489,4 +519,123 @@ const char* getPlanCaptureStats(sd::Pointer planHandle) {
            static_cast<int>(segs.size()),
            gpuFree / (1024*1024), poolUsed / (1024*1024), poolReserved / (1024*1024));
   return buf;
+}
+
+// ─── CUDA Graph Visualization (PyTorch-style) ──────────────────────────────────
+
+bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPath) {
+  if (planHandle == nullptr || outputPath == nullptr) return false;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+
+  // Export each captured segment's graph as a combined trace
+  std::ofstream file(outputPath);
+  if (!file.is_open()) {
+    sd_printf("exportPlanCudaGraphChromeTrace: failed to open file: %s\n", outputPath);
+    return false;
+  }
+
+  file << "{\n  \"traceEvents\": [\n";
+  bool first = true;
+  int segmentIdx = 0;
+
+  for (const auto& seg : plan->getSegments()) {
+    if (seg.cachedGraph) {
+      // Get the Chrome trace JSON for this segment
+      std::string traceJson = seg.cachedGraph->getChromeTraceJson();
+      // Parse out the traceEvents array and add segment prefix
+      // For simplicity, we'll just include the whole trace with segment metadata
+      if (!first) file << ",\n";
+      first = false;
+
+      // Add segment metadata
+      file << "    {\"name\": \"segment_" << segmentIdx << "\", \"ph\": \"M\", \"pid\": 0, "
+           << "\"tid\": 0, \"ts\": 0, \"args\": {\"startSlot\": " << seg.startSlot
+           << ", \"endSlot\": " << seg.endSlot << "}},\n";
+
+      // Extract trace events from the segment's JSON (simplified - just use debug dump)
+    }
+    segmentIdx++;
+  }
+
+  file << "  ]\n}\n";
+  file.close();
+  sd_printf("exportPlanCudaGraphChromeTrace: exported to %s\n", outputPath);
+  return true;
+}
+
+bool exportPlanCudaGraphHtml(sd::Pointer planHandle, const char* outputPath) {
+  if (planHandle == nullptr || outputPath == nullptr) return false;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+
+  // Export the first captured segment's HTML (or combine all)
+  for (const auto& seg : plan->getSegments()) {
+    if (seg.cachedGraph) {
+      return seg.cachedGraph->exportToHtml(std::string(outputPath));
+    }
+  }
+  return false;
+}
+
+bool debugDumpPlanCudaGraph(sd::Pointer planHandle, const char* outputPath) {
+  if (planHandle == nullptr || outputPath == nullptr) return false;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+
+  bool success = false;
+  int segmentIdx = 0;
+
+  for (const auto& seg : plan->getSegments()) {
+    if (seg.cachedGraph) {
+      std::string basePath = std::string(outputPath) + "_seg" + std::to_string(segmentIdx);
+      if (seg.cachedGraph->debugDump(basePath)) {
+        success = true;
+      }
+    }
+    segmentIdx++;
+  }
+
+  if (!success) {
+    sd_printf("debugDumpPlanCudaGraph: no captured graphs to dump\n", "");
+  }
+  return success;
+}
+
+const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle) {
+  static thread_local std::string result;
+  result.clear();
+
+  if (planHandle == nullptr) return "";
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+
+  // Combine all segment traces into one JSON
+  result = "{\n  \"traceEvents\": [\n";
+  bool first = true;
+  int segmentIdx = 0;
+
+  for (const auto& seg : plan->getSegments()) {
+    if (seg.cachedGraph) {
+      std::string segJson = seg.cachedGraph->getChromeTraceJson();
+      if (!segJson.empty() && segJson != "{}") {
+        if (!first) result += ",\n";
+        first = false;
+        result += "    {\"name\": \"segment_" + std::to_string(segmentIdx) + "\", "
+                  "\"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0},\n";
+        // Add segment's trace events (simplified)
+      }
+    }
+    segmentIdx++;
+  }
+
+  result += "  ]\n}\n";
+  return result.c_str();
+}
+
+void clearPlanCudaGraphTimeline(sd::Pointer planHandle) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+
+  for (auto& seg : plan->getSegmentsMutable()) {
+    if (seg.cachedGraph) {
+      seg.cachedGraph->clearExecutionTimeline();
+    }
+  }
 }

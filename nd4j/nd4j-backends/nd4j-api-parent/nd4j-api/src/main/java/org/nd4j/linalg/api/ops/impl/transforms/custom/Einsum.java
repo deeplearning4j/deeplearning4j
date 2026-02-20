@@ -44,7 +44,7 @@ import java.util.List;
  * - Dot product: "i,i->"
  * - Outer product: "i,j->ij"
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class Einsum extends DynamicCustomOp {
 

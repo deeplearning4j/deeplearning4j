@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * mvn test -Ptest-helper-comparison
  * </pre>
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Tag("multi-backend")
 @ExtendWith(BackendCheckerExtension.class)

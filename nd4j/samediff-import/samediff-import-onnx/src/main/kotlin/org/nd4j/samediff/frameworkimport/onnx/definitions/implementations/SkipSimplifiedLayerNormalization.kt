@@ -57,7 +57,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - (optional) inv_std_var: Inverse standard deviation (for backward pass)
  * - (optional) input_skip_bias_sum: Sum of input + skip + bias (intermediate result)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["SkipSimplifiedLayerNormalization"], frameworkName = "onnx")
 class SkipSimplifiedLayerNormalization : PreImportHook {

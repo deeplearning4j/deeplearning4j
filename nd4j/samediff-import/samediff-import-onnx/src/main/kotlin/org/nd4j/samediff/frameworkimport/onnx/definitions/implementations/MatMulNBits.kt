@@ -51,7 +51,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - bits: Number of bits for quantization (default: 4)
  * - block_size: Block size for quantization (default: 32)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["MatMulNBits"], frameworkName = "onnx")
 class MatMulNBits : PreImportHook {

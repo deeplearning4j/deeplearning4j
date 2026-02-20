@@ -292,15 +292,11 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
 }
 
 void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMinCaptureSegmentSize(minSize);
-  }
+  // Segment sizes are now auto-discovered from graph structure; this is a no-op.
 }
 
 void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxSize) {
-  if (planHandle != nullptr) {
-    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setMaxCaptureSegmentSize(maxSize);
-  }
+  // Segment sizes are now auto-discovered from graph structure; this is a no-op.
 }
 
 void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
@@ -312,6 +308,12 @@ void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen) {
 void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled) {
   if (planHandle != nullptr) {
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setExecutionTimingEnabled(enabled);
+  }
+}
+
+void setPlanTraceEnabled(sd::Pointer planHandle, bool enabled) {
+  if (planHandle != nullptr) {
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setTraceEnabled(enabled);
   }
 }
 
@@ -353,4 +355,26 @@ const char* getPlanCaptureStats(sd::Pointer planHandle) {
   static thread_local char buf[64];
   snprintf(buf, sizeof(buf), "cpu-backend");
   return buf;
+}
+
+// ─── CUDA Graph Visualization stubs (CPU backend) ─────────────────────────────
+
+bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPath) {
+  return false;  // Not supported on CPU backend
+}
+
+bool exportPlanCudaGraphHtml(sd::Pointer planHandle, const char* outputPath) {
+  return false;  // Not supported on CPU backend
+}
+
+bool debugDumpPlanCudaGraph(sd::Pointer planHandle, const char* outputPath) {
+  return false;  // Not supported on CPU backend
+}
+
+const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle) {
+  return "";  // Not supported on CPU backend
+}
+
+void clearPlanCudaGraphTimeline(sd::Pointer planHandle) {
+  // No-op on CPU backend
 }

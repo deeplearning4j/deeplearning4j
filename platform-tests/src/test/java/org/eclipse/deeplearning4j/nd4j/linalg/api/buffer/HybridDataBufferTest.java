@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Tests CPU/GPU storage, execution, data synchronization, and automatic failover
  * when GPU memory is constrained.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 public class HybridDataBufferTest extends BaseNd4jTestWithBackends {
 

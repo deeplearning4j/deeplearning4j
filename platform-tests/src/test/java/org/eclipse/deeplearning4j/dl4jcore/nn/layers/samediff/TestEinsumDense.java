@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for EinsumDense layer.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @NativeTag

@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Blackman window function generator.
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class BlackmanWindow extends DynamicCustomOp {

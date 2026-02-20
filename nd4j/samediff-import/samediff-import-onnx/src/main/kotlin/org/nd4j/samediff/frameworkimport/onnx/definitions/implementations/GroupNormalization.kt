@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - epsilon: Small constant for numerical stability (default: 1e-5)
  * - num_groups: Number of groups to divide channels into
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["GroupNormalization"], frameworkName = "onnx")
 class GroupNormalization : PreImportHook {

@@ -46,7 +46,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - x_zero_point: Zero point for input (optional)
  * - w_zero_point: Zero point for weights (optional)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["ConvInteger"], frameworkName = "onnx")
 class ConvInteger : PreImportHook {

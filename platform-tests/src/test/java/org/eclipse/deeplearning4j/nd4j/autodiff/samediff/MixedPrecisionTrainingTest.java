@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - GradientAccumulator accumulation and averaging
  * - TrainingConfig mixed precision builder methods
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Slf4j
 @NativeTag

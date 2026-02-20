@@ -50,7 +50,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * Output:
  * - output: Cropped/padded tensor with specified shape
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["CenterCropPad"], frameworkName = "onnx")
 class CenterCropPad : PreImportHook {

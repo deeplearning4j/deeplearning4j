@@ -53,7 +53,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - nodes_*: Tree node definitions
  * - post_transform: NONE, SOFTMAX, LOGISTIC, SOFTMAX_ZERO, PROBIT
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["TreeEnsembleClassifier"], frameworkName = "onnx")
 class TreeEnsembleClassifier : PreImportHook {

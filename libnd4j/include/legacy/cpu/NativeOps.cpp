@@ -2750,3 +2750,25 @@ int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
 sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle) {
     return mbwGetTotalAllocatedSize(handle);
 }
+
+// Dynamic Shape Plan configuration methods (CPU implementations)
+// These delegate to NativeDynamicShapePlan which exists on both CPU and GPU
+
+void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
+                                 const int* slotIndices, const sd::LongType* maxSizes) {
+    if (planHandle == nullptr || numSlots <= 0 || slotIndices == nullptr || maxSizes == nullptr) return;
+    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+    plan->setOutputSlotMaxSizes(slotIndices, maxSizes, static_cast<int>(numSlots));
+}
+
+void setPlanKvCachePosition(sd::Pointer planHandle, int pos) {
+    if (planHandle == nullptr) return;
+    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+    plan->setKvCachePosition(pos);
+}
+
+void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen) {
+    if (planHandle == nullptr) return;
+    auto* plan = reinterpret_cast<sd::graph::NativeDynamicShapePlan*>(planHandle);
+    plan->setMaxKvCacheLength(maxLen);
+}

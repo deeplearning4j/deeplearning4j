@@ -41,7 +41,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * For opset < 13: axes are specified as an attribute
  * For opset >= 13: axes are specified as an input tensor
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["Unsqueeze"],frameworkName = "onnx")
 class Unsqueeze  : PreImportHook {

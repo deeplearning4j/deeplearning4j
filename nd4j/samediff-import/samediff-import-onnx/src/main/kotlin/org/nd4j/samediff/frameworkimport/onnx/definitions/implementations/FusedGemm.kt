@@ -52,7 +52,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * - activation_beta: Beta parameter for activation
  * - activation_gamma: Gamma parameter for activation
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["FusedGemm"], frameworkName = "onnx")
 class FusedGemm : PreImportHook {

@@ -289,6 +289,37 @@ DECLARE_CUSTOM_OP(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1);
 #endif
 
 /**
+ * ONNX MultiHeadAttention - for pre-projected queries, keys, values
+ *
+ * Compatible with Microsoft's ONNX MultiHeadAttention operator.
+ * Takes already-projected Q, K, V tensors (unlike multi_head_dot_product_attention
+ * which takes unprojected inputs and weight matrices).
+ *
+ * Inputs:
+ *   0: query      [batch, seqQ, hidden] - already projected
+ *   1: key        [batch, seqKV, hidden] - already projected  
+ *   2: value      [batch, seqKV, hidden] - already projected
+ *   3: attn_bias  [batch, numHeads, seqQ, seqKV] or broadcastable (optional)
+ *   4: past_key   [batch, numHeads, pastSeq, headDim] (optional)
+ *   5: past_value [batch, numHeads, pastSeq, headDim] (optional)
+ *
+ * Int args:
+ *   0: numHeads
+ *   1: useCausalMask (0 or 1)
+ *
+ * Float args:
+ *   0: scale (0 = auto compute 1/sqrt(headDim))
+ *
+ * Outputs:
+ *   0: output        [batch, seqQ, hidden]
+ *   1: present_key   [batch, numHeads, totalSeq, headDim] (optional)
+ *   2: present_value [batch, numHeads, totalSeq, headDim] (optional)
+ */
+#if NOT_EXCLUDED(OP_onnx_multi_head_attention)
+DECLARE_CUSTOM_OP(onnx_multi_head_attention, 3, -1, false, -2, 2);
+#endif
+
+/**
  * CTC Greedy Decoder - Connectionist Temporal Classification decoding
  *
  * Used in OCR and speech recognition to decode CTC output to text sequences.

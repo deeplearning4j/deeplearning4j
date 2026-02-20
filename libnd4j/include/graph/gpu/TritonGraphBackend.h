@@ -1,0 +1,148 @@
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+#ifndef LIBND4J_TRITON_GRAPH_BACKEND_H
+#define LIBND4J_TRITON_GRAPH_BACKEND_H
+
+#include <graph/GraphBackend.h>
+#include <graph/NativeDynamicShapePlan.h>
+
+#include <config.h>
+
+#if HAVE_TRITON
+
+#include <graph/gpu/TritonIRBuilder.h>
+#include <graph/gpu/TritonTargetDispatch.h>
+
+#include <memory>
+#include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+namespace sd {
+namespace graph {
+
+/**
+ * Triton GPU compiler backend for the native plan executor.
+ *
+ * Compiles sequences of ops into fused GPU kernels using Triton's MLIR-based
+ * compiler. Unlike CUDA Graphs (which replay separately-launched kernels),
+ * Triton fuses ops at the compiler level — eliminating intermediate global
+ * memory traffic and kernel launch overhead.
+ *
+ * Execution priority (CUDA builds):
+ *   1. Triton  -> fused kernel (best performance for fusible segments)
+ *   2. CUDA Graphs -> captured replay (good for non-fusible segments)
+ *   3. Slot-by-slot -> individual ops (always works)
+ *
+ * Supports NVIDIA (PTX), AMD (AMDGCN), and Intel (SPIR-V) via Triton's
+ * multi-target compiler backend.
+ */
+class TritonGraphBackend : public GraphBackend {
+ public:
+  TritonGraphBackend();
+  ~TritonGraphBackend() override;
+
+  const char* name() const override { return "Triton GPU"; }
+  bool isAvailable() const override;
+  bool canFuseSegment(NativeSlot* slots, int start, int end) override;
+
+  bool compileSegment(GraphSegment& seg, NativeSlot* slots,
+                      NDArray** externalInputs, int numExternalInputs,
+                      NDArray** outputSlots, int totalOutputSlots,
+                      LongType shapeKey) override;
+
+  Status executeSegment(GraphSegment& seg, NativeSlot* slots,
+                        NDArray** externalInputs, int numExternalInputs,
+                        NDArray** outputSlots, int totalOutputSlots,
+                        void* stream) override;
+
+  void invalidateCache() override;
+
+  std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
+
+  static TritonGraphBackend& getInstance();
+
+ private:
+  // Compiled kernel: GPU module + kernel function + launch config
+  struct CompiledKernel {
+    void* gpuModule;            // Driver module (CUmodule / hipModule_t / ze_module_handle_t)
+    void* kernelFunction;       // Kernel function handle
+    unsigned int gridX, gridY, gridZ;
+    unsigned int blockX, blockY, blockZ;
+    unsigned int sharedMemBytes;
+    int numWarps;
+
+    // Argument mapping: index in args -> {slotIndex, isOutput}
+    std::vector<TritonKernelArg> argSlotMapping;
+
+    // Compilation audit
+    std::vector<CompilationAuditEntry> audit;
+
+    CompiledKernel()
+        : gpuModule(nullptr), kernelFunction(nullptr),
+          gridX(1), gridY(1), gridZ(1),
+          blockX(1), blockY(1), blockZ(1),
+          sharedMemBytes(0), numWarps(4) {}
+  };
+
+  // Per-segment cache (keyed by segment start/end + shape)
+  struct SegmentCacheKey {
+    int startSlot;
+    int endSlot;
+    LongType shapeKey;
+    bool operator==(const SegmentCacheKey& o) const {
+      return startSlot == o.startSlot && endSlot == o.endSlot && shapeKey == o.shapeKey;
+    }
+  };
+  struct SegmentCacheHash {
+    size_t operator()(const SegmentCacheKey& k) const {
+      size_t h = std::hash<int>()(k.startSlot);
+      h ^= std::hash<int>()(k.endSlot) << 1;
+      h ^= std::hash<LongType>()(k.shapeKey) << 2;
+      return h;
+    }
+  };
+
+  std::unordered_map<SegmentCacheKey, CompiledKernel, SegmentCacheHash> cache_;
+  std::mutex cacheMtx_;
+
+  // Most recent compilation audit
+  std::vector<CompilationAuditEntry> lastCompilationAudit_;
+
+  // IR builder for constructing Triton MLIR
+  TritonIRBuilder irBuilder_;
+
+  // Minimum fraction of mappable ops required to attempt Triton compilation
+  static constexpr float MIN_MAPPABLE_FRACTION = 0.5f;
+
+  // Minimum number of mappable ops for Triton to be worthwhile
+  static constexpr int MIN_MAPPABLE_OPS = 2;
+
+  // Compile TTIR module to GPU binary, load, and extract kernel
+  CompiledKernel compileToGpuBinary(NativeSlot* slots, int startSlot, int endSlot,
+                                    NDArray** externalInputs, int numExternalInputs,
+                                    NDArray** outputSlots, int totalOutputSlots);
+};
+
+}  // namespace graph
+}  // namespace sd
+
+#endif  // HAVE_TRITON
+#endif  // LIBND4J_TRITON_GRAPH_BACKEND_H

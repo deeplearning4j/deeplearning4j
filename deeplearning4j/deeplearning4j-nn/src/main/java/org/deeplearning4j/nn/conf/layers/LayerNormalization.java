@@ -43,7 +43,7 @@ import java.util.Map;
  *
  * Reference: "Layer Normalization" by Ba, Kiros, and Hinton (2016)
  *
- * @author Eclipse Deeplearning4j Development Team
+ * @author Adam Gibson
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
