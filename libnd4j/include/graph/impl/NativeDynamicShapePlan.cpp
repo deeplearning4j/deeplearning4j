@@ -612,6 +612,101 @@ Status NativeDynamicShapePlan::execute(
               static_cast<int>(cudaGraphsEnabled_), numExternalInputs);
   }
 
+#ifdef SD_CUDA
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FROZEN GRAPH FAST PATH: "1 slot, 1 graph"
+  // When shapes are frozen, we have 1 segment with 1 captured CUDA graph,
+  // and the graph has been successfully replayed at least once, skip ALL
+  // per-slot and per-segment abstractions. The entire decoder becomes a
+  // single atomic operation: copy inputs → launch graph → return outputs.
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1 &&
+      segments_[0].cachedGraph != nullptr &&
+      segments_[0].cachedGraph->getState() == cuda::GraphState::INSTANTIATED) {
+    using Clock = std::chrono::high_resolution_clock;
+    auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
+    // Clear stale CUDA errors
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
+    cudaGetLastError();
+
+    GraphSegment& seg = segments_[0];
+    cudaStream_t cudaStr = (stream != nullptr)
+        ? *static_cast<cudaStream_t*>(stream) : nullptr;
+
+    // Copy external inputs into fixed-address capture buffers
+    bool ok = true;
+    for (auto& cb : seg.captureBuffers) {
+      NDArray* src = nullptr;
+      if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExternalInputs) {
+        src = externalInputs[cb.externalInputIndex];
+      } else if (cb.crossSegmentSlotIdx >= 0 && cb.crossSegmentSlotIdx < totalOutputSlots_) {
+        src = slotArrayCache_[cb.crossSegmentSlotIdx];
+      }
+      if (src == nullptr || cb.buffer == nullptr) { ok = false; break; }
+
+      size_t srcBytes = src->lengthOf() * src->sizeOfT();
+      if (srcBytes != cb.capturedSize) { ok = false; break; }
+
+      if (srcBytes > 0) {
+        auto dt = src->dataType();
+        bool hostMirror = (dt == INT32 || dt == INT64 || dt == BOOL)
+                          && src->lengthOf() > 0 && src->lengthOf() <= 32;
+        if (hostMirror) {
+          src->syncToHost();
+          std::memcpy(cb.buffer->buffer(), src->buffer(), srcBytes);
+          cb.buffer->tickWriteHost();
+          cb.buffer->syncToDevice();
+        } else {
+          src->syncToDevice();
+          auto copyErr = cudaMemcpyAsync(cb.buffer->specialBuffer(), src->specialBuffer(),
+                                         srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
+          if (copyErr != cudaSuccess) { cudaGetLastError(); ok = false; break; }
+        }
+      }
+    }
+
+    if (ok) {
+      // Sync to ensure capture buffer copies are complete, then launch
+      if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
+      if (seg.cachedGraph->launchAsync(cudaStr)) {
+        // Return outputs directly from slotArrayCache_ — no slot iteration needed
+        for (int i = 0; i < numRequestedOutputs_; i++) {
+          int slotIdx = requestedOutputSlotIndices_[i];
+          if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
+            requestedOutputs[i] = slotArrayCache_[slotIdx];
+          } else {
+            requestedOutputs[i] = nullptr;
+          }
+        }
+        totalGraphReplays_++;
+        seg.executionCount++;
+        executeCount_++;
+
+        // Periodic flush (every 10 steps) and trim
+        if (executeCount_ % 10 == 0) {
+          flushPendingClose(stream);
+        }
+
+        if (executionTimingEnabled_) {
+          auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(
+              Clock::now() - t0).count();
+          sd_printf("DSP timing: segments=%lldus outputs=0us flush=0us total=%lldus "
+                    "(1 segs, 1 slots) | graph=%lldus(1 segs/1 slots) sbs=0us(0 segs/0 slots)\n",
+                    totalUs, totalUs, totalUs);
+        }
+        return Status::OK;
+      }
+    }
+    // Fast path failed — fall through to full execution path
+    if (traceEnabled_) {
+      sd_printf("NativeDSP::execute: frozen fast path failed (ok=%d), falling back to full path\n",
+                static_cast<int>(ok));
+    }
+  }
+#endif
+
   // Step 0: Clear stale CUDA errors and error references from prior execution.
   // Async GPU errors from the previous execute() call may not surface until the
   // next CUDA API call, causing false failures. Clear them proactively.
