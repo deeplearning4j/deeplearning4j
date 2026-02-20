@@ -131,6 +131,10 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  instead of on every execute() call. With 1962 slots, building the map takes ~0.5ms. */
     private boolean opTypesLogged;
 
+    /** Java-side tracking of shapes-frozen state. When true, shape caches don't need
+     *  clearing between executions because all shapes are guaranteed constant. */
+    private boolean shapesFrozen;
+
 
     private final SameDiff sd;
     private final SessionMemMgr mmgr;
@@ -306,6 +310,18 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  into static input buffers, avoiding 60 copyBuffer round-trips per decode step. */
     private boolean kvCacheRetentionConfigured;
 
+    /** Cached OpaqueContext for native execution. Reused across executeNative() calls
+     *  to avoid JNI create/delete overhead (~1-2ms). Freed on close(). */
+    private OpaqueContext cachedOpContext;
+    private int cachedOpContextInputCount;
+    private int cachedOpContextOutputCount;
+
+    /** Zero-copy output cache: when shapesFrozen, wraps C++ output pointers via
+     *  dbCreateExternalDataBuffer instead of allocating + copyBuffer per step.
+     *  These INDArrays point directly to C++ memory and must NOT be closed by callers.
+     *  Cleared on close() and when setShapesFrozen(false) is called. */
+    private Map<String, INDArray> zeroCopyOutputCache;
+
     /** Maximum KV cache length for pre-allocation. When > 0 and CUDA graphs enabled,
      *  output slots for KV cache are pre-allocated at max size to keep addresses stable.
      *  Can be set programmatically via setMaxKvCacheLength() or via system property
@@ -469,10 +485,18 @@ public class DynamicShapePlanExecutor implements Closeable {
      * the cache; subsequent executions skip shape work entirely.
      */
     public void setShapesFrozen(boolean frozen) {
+        this.shapesFrozen = frozen;
+        if (!frozen) {
+            zeroCopyOutputCache = null;
+        }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             nativeOps.setPlanShapesFrozen(nativePlanHandle, frozen);
         }
+    }
+
+    public boolean isShapesFrozen() {
+        return shapesFrozen;
     }
 
     /**
@@ -649,12 +673,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
         }
 
-        // Always clear per-slot shape caches between executions.
-        // During autoregressive decoding, KV cache dimensions grow by 1 each step,
-        // so shapes computed in the previous step are stale. Without this, the attention
-        // mask reshape produces [1,1,1,N] while the freshly-computed input is [1,1,1,N+1],
-        // causing a broadcast mismatch at /model/attn_mask_reformat/Add (slot 591).
-        plan.clearAllShapeCaches();
+        // Clear per-slot shape caches between executions — unless shapes are frozen.
+        // During autoregressive decoding with dynamic shapes, KV cache dimensions grow
+        // by 1 each step, so shapes computed in the previous step are stale.
+        // When shapesFrozen=true, all shapes are guaranteed constant so clearing is unnecessary.
+        if (!shapesFrozen) {
+            plan.clearAllShapeCaches();
+        }
 
         pendingCloseBytes = 0;  // Reset unconditionally (used by byte-based flush trigger)
         workspaceOpsSinceReset = 0;  // Start fresh for workspace reset throttling
@@ -3913,10 +3938,20 @@ public class DynamicShapePlanExecutor implements Closeable {
             extInputs[i] = arr;
         }
 
-        // Create an OpaqueContext and set inputs one-at-a-time (proven pattern from CudaOpContext)
+        // Reuse OpaqueContext across calls to avoid JNI create/delete overhead.
+        // Only recreate if input/output count changes.
         int numOutputs = plan.getRequestedOutputs().size();
-        OpaqueContext opContext = nativeOps.createGraphContext(1);
-        try {
+        int numInputs = extInputs.length;
+        if (cachedOpContext == null || numInputs != cachedOpContextInputCount || numOutputs != cachedOpContextOutputCount) {
+            if (cachedOpContext != null) {
+                nativeOps.deleteGraphContext(cachedOpContext);
+            }
+            cachedOpContext = nativeOps.createGraphContext(1);
+            cachedOpContextInputCount = numInputs;
+            cachedOpContextOutputCount = numOutputs;
+        }
+        OpaqueContext opContext = cachedOpContext;
+        {
             // Set inputs on context using per-index approach
             for (int i = 0; i < extInputs.length; i++) {
                 OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
@@ -3943,12 +3978,13 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // CPU backend
             }
 
-            // Clear native shape caches before each execution. During autoregressive
-            // decoding, KV cache dimensions grow by 1 each step, so shapes computed in
-            // the previous step are stale. Without this, the attention mask reshape
-            // produces [1,1,1,N] while the freshly-computed input is [1,1,1,N+1],
-            // causing a broadcast mismatch at /model/attn_mask_reformat/Add.
-            nativeOps.clearDynamicShapePlanCaches(nativePlanHandle);
+            // Clear native shape caches before each execution — unless shapes are frozen.
+            // During autoregressive decoding with dynamic shapes, KV cache dimensions grow
+            // by 1 each step, so shapes are stale. When frozen, clearing is unnecessary
+            // (the C++ side also checks frozen state, but skipping the JNI call saves ~1-2ms).
+            if (!shapesFrozen) {
+                nativeOps.clearDynamicShapePlanCaches(nativePlanHandle);
+            }
 
             // Execute the plan in C++
             long execStart = System.nanoTime();
@@ -3968,9 +4004,43 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Extract output arrays from context.
             // C++ wrote NDArray* pointers back into the context's output slots.
             long copyStart = System.nanoTime();
-            Map<String, INDArray> results = new LinkedHashMap<>();
             List<String> requestedOutputs = new ArrayList<>(plan.getRequestedOutputs());
 
+            // Frozen fast path: reuse pre-allocated destination arrays (skip allocation,
+            // only copy). C++ output addresses may change between executions even with
+            // CUDA graphs, so we still copyBuffer but avoid 61 Nd4j.createUninitialized.
+            if (shapesFrozen && zeroCopyOutputCache != null) {
+                for (int i = 0; i < numOutputs; i++) {
+                    OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
+                    if (opaqueOut == null || opaqueOut.isNull()) continue;
+
+                    String outputName = requestedOutputs.get(i);
+                    INDArray cached = zeroCopyOutputCache.get(outputName);
+                    if (cached == null) continue;
+
+                    long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
+                    DataType dtype = cached.dataType();
+
+                    Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);
+                    Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueOut);
+                    OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
+                            length, dtype.toInt(), nativePrimary, nativeSpecial);
+                    if (srcOdb != null) {
+                        OpaqueDataBuffer dstOdb = cached.data().opaqueBuffer();
+                        if (dstOdb != null) {
+                            nativeOps.copyBuffer(dstOdb, length, srcOdb, 0, 0);
+                        }
+                    }
+                }
+
+                long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
+                if (execMs > 100) {
+                    log.info("Native executor: exec={}ms copy={}ms (frozen, {} outputs)", execMs, copyMs, numOutputs);
+                }
+                return zeroCopyOutputCache;
+            }
+
+            Map<String, INDArray> results = new LinkedHashMap<>();
             for (int i = 0; i < numOutputs; i++) {
                 OpaqueNDArray opaqueOut = nativeOps.getOutputArrayNative(opContext, i);
                 if (opaqueOut == null || opaqueOut.isNull()) {
@@ -4001,6 +4071,16 @@ public class DynamicShapePlanExecutor implements Closeable {
 
                 String outputName = requestedOutputs.get(i);
                 results.put(outputName, result);
+            }
+
+            // Cache allocated arrays for reuse on subsequent frozen executions
+            if (shapesFrozen && zeroCopyOutputCache == null && !results.isEmpty()) {
+                zeroCopyOutputCache = new LinkedHashMap<>(results);
+                // Mark cached outputs as non-closeable — they are reused across steps
+                for (INDArray arr : zeroCopyOutputCache.values()) {
+                    arr.setCloseable(false);
+                }
+                log.info("Native executor: cached {} output arrays for frozen reuse (skip allocation)", results.size());
             }
 
             long copyMs = (System.nanoTime() - copyStart) / 1_000_000;
@@ -4037,8 +4117,6 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
 
             return results;
-        } finally {
-            nativeOps.deleteGraphContext(opContext);
         }
     }
 
@@ -4046,6 +4124,14 @@ public class DynamicShapePlanExecutor implements Closeable {
      * Free the native plan handle if it exists.
      */
     private void freeNativePlanHandle() {
+        // Free cached OpaqueContext first (it references the plan)
+        if (cachedOpContext != null) {
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.deleteGraphContext(cachedOpContext);
+            } catch (Exception ignored) {}
+            cachedOpContext = null;
+        }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
             try {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -4090,6 +4176,28 @@ public class DynamicShapePlanExecutor implements Closeable {
                 wsOps.destroyNativeWorkspace(ownNativeWorkspace);
             } catch (Exception ignored) {}
             ownNativeWorkspace = null;
+        }
+
+        // Free cached output wrappers
+        if (zeroCopyOutputCache != null) {
+            for (INDArray arr : zeroCopyOutputCache.values()) {
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+            zeroCopyOutputCache = null;
+        }
+
+        // Free cached OpaqueContext
+        if (cachedOpContext != null) {
+            try {
+                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+                nativeOps.deleteGraphContext(cachedOpContext);
+            } catch (Exception e) {
+                log.debug("Error freeing cached OpaqueContext: {}", e.getMessage());
+            }
+            cachedOpContext = null;
         }
 
         // Free native C++ plan handle if compiled

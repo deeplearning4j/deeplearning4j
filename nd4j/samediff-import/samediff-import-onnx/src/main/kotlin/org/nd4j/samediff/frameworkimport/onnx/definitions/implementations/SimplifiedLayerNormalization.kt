@@ -73,21 +73,19 @@ class SimplifiedLayerNormalization : PreImportHook {
 
         // RMS Norm: x / sqrt(mean(x^2) + epsilon) * scale
         val squared = sd.math.pow(input, 2.0)
-        val meanSquared = sd.math.mean(squared, false, axis.toLong())
+        val meanSquared = sd.math.mean(squared, true, axis.toLong())
         val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
 
-        // Expand dims for broadcasting if necessary
-        val rmsExpanded = sd.expandDims(rms, axis)
-
-        // Normalize and scale
-        val normalized = sd.math.div(input, rmsExpanded)
+        // Normalize and scale — SameDiff div broadcasts automatically,
+        // no expandDims needed (removing it enables RMSNorm fusion)
+        val normalized = sd.math.div(input, rms)
         val result = sd.math.mul(normalized, scale)
 
         result.rename(outputNames[0])
 
         // Some implementations also output the inverse RMS for backward pass
         if (outputNames.size > 1) {
-            val invRms = sd.math.reciprocal(rmsExpanded)
+            val invRms = sd.math.reciprocal(rms)
             invRms.rename(outputNames[1])
             return mapOf(
                 outputNames[0] to listOf(result),

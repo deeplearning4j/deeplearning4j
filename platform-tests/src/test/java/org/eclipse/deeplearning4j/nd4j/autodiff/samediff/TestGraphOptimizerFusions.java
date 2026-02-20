@@ -576,6 +576,72 @@ public class TestGraphOptimizerFusions {
         return x.div(rms).mul(gamma);
     }
 
+    /**
+     * Test RMSNorm fusion with VARIABLE gamma (not CONSTANT) and an additional
+     * reciprocal consumer on the sqrt output — matches the SmolDocling
+     * SimplifiedLayerNormalization ONNX import pattern.
+     */
+    @Test
+    @DisplayName("RmsNorm fusion: VARIABLE gamma + reciprocal consumer (SmolDocling pattern)")
+    public void testRmsNormVariableGammaWithReciprocal() {
+        SameDiff sd = SameDiff.create();
+        int features = 576;  // SmolDocling hidden size
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, -1, features);
+        // VARIABLE type gamma (like ONNX import produces for layernorm weights)
+        SDVariable weight = sd.var("model.layers.0.input_layernorm.weight",
+                Nd4j.rand(DataType.FLOAT, features).addi(0.5));
+
+        // Build decomposed RMSNorm matching SimplifiedLayerNormalization.kt output:
+        // pow(x,2) -> mean(keepDims=true) -> add_scalar(eps) -> sqrt -> div(x,_) -> mul(_,weight)
+        SDVariable xSquared = sd.math().pow(x, 2.0);
+        SDVariable meanSquared = xSquared.mean(true, -1);
+        SDVariable meanPlusEps = meanSquared.add(1e-5);
+        SDVariable sqrtVal = sd.math().sqrt(meanPlusEps);
+        SDVariable normalized = x.div(sqrtVal);
+        SDVariable output = normalized.mul(weight);
+
+        // SmolDocling also creates a reciprocal of sqrt for the inv_std_var output
+        // This gives sqrt TWO consumers, which previously blocked fusion
+        SDVariable invRms = sd.math().reciprocal(sqrtVal);
+
+        // Don't set outputs — GraphOptimizer removes the output variable and replaces it
+
+        int opsBefore = sd.getOps().size();
+        log.info("SmolDocling-pattern RMSNorm: {} ops before optimization", opsBefore);
+        logOpTypes(sd, "Before");
+
+        SameDiff optimized = optimizeGraph(sd);
+        int opsAfter = optimized.getOps().size();
+        log.info("After optimization: {} ops (removed {})", opsAfter, opsBefore - opsAfter);
+        logOpTypes(optimized, "After");
+
+        assertTrue(hasOpType(optimized, "rms_norm"),
+            "Should fuse to rms_norm even with reciprocal consumer on sqrt");
+
+        // Verify correctness
+        INDArray xArr = Nd4j.randn(DataType.FLOAT, 1, 10, features);
+        INDArray gammaArr = sd.getVariablesArrays().getArray("model.layers.0.input_layernorm.weight");
+        INDArray ref = rmsNormRef(xArr, gammaArr, 1e-5);
+
+        // Execute optimized graph
+        String rmsNormOutput = null;
+        for (SameDiffOp op : optimized.getOps().values()) {
+            if ("rms_norm".equals(op.getOp().opName())) {
+                rmsNormOutput = op.getOutputsOfOp().get(0);
+                break;
+            }
+        }
+        assertNotNull(rmsNormOutput, "Should find rms_norm output");
+        optimized.setOutputs(Collections.singletonList(rmsNormOutput));
+
+        INDArray result = optimized.output(Map.of("x", xArr), rmsNormOutput).get(rmsNormOutput);
+        double maxDiff = ref.sub(result).amaxNumber().doubleValue();
+        log.info("SmolDocling pattern maxDiff: {}", maxDiff);
+        assertTrue(maxDiff < 1e-2,
+            "Fused rms_norm should match reference, maxDiff=" + maxDiff);
+    }
+
     // ─── MatMul + Add -> XwPlusB fusion tests ──────────────────────────────
 
     /**

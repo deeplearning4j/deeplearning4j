@@ -2192,54 +2192,20 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             return APPLICABLE_OPS;
         }
 
-        private int checkCount = 0;
-        private int oProjCount = 0;
-        private boolean headerPrinted = false;
-        
         @Override
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
-            // Only process matmul ops
             if (!(op.getOp() instanceof Mmul)) {
                 return false;
             }
 
-            // Print header on first matmul
-            if (!headerPrinted) {
-                System.out.println("[LLaMA-ATTN-DEBUG] ============================================");
-                System.out.println("[LLaMA-ATTN-DEBUG] Starting LLaMA attention fusion check");
-                System.out.println("[LLaMA-ATTN-DEBUG] Total ops in graph: " + sd.getOps().size());
-                headerPrinted = true;
-            }
-
-            checkCount++;
-            String opName = op.getName();
-            List<String> inputs = op.getInputsToOp();
-            List<String> outputs = op.getOutputsOfOp();
-            
-            // Print first 10 matmuls to see naming pattern
-            if (checkCount <= 10) {
-                System.out.println("[LLaMA-ATTN-DEBUG] Matmul #" + checkCount + ": " + opName);
-                System.out.println("[LLaMA-ATTN-DEBUG]   Inputs: " + inputs);
-                System.out.println("[LLaMA-ATTN-DEBUG]   Outputs: " + outputs);
-            }
-            
-            // Periodic progress report
-            if (checkCount % 100 == 0) {
-                System.out.println("[LLaMA-ATTN-DEBUG] Progress: Checked " + checkCount + " matmuls, found " + oProjCount + " o_proj candidates");
-            }
-            
             // Check if this is an o_proj matmul (output projection)
-            boolean isOProj = isOProjMatmul(op, sd);
-            if (!isOProj) {
+            if (!isOProjMatmul(op, sd)) {
                 return false;
             }
-            
-            oProjCount++;
-            System.out.println("[LLaMA-ATTN-DEBUG] *** FOUND o_proj candidate #" + oProjCount + " ***");
-            System.out.println("[LLaMA-ATTN-DEBUG] Op name: " + opName);
-            System.out.println("[LLaMA-ATTN-DEBUG] Inputs: " + inputs);
-            System.out.println("[LLaMA-ATTN-DEBUG] Outputs: " + outputs);
+
+            log.debug("[LLaMA-ATTN] Found o_proj candidate: {} inputs={} outputs={}",
+                    op.getName(), op.getInputsToOp(), op.getOutputsOfOp());
 
             // Get o_proj inputs
             List<String> oProjInputs = op.getInputsToOp();
@@ -2258,9 +2224,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 if (attnProducerName != null) {
                     SameDiffOp attnProducer = sd.getOps().get(attnProducerName);
                     if (attnProducer != null && attnProducer.getOp().getClass().getSimpleName().contains("MultiHeadAttention")) {
-                        System.out.println("[LLaMA-ATTN] Input to o_proj comes from MultiHeadAttention: " + attnProducerName);
-                        System.out.println("[LLaMA-ATTN] SmolDocling already uses fused ONNX attention - no fusion needed at graph level");
-                        // Return false but don't log as failure - this is expected for ONNX-imported models
+                        log.debug("[LLaMA-ATTN] Input to o_proj comes from MultiHeadAttention: {} — already fused", attnProducerName);
                         return false;
                     }
                 }
@@ -2398,7 +2362,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                 (opName.contains("attn") && opName.contains("o_proj")) ||
                 opName.contains("/attn/o_proj/") ||
                 opName.contains(".attn.o_proj.")) {
-                System.out.println("[LLaMA-ATTN-DEBUG] Matched by op name: " + opName);
+                log.debug("[LLaMA-ATTN] Matched by op name: {}", opName);
                 return true;
             }
             
@@ -2411,7 +2375,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                     weightVar.contains("/attn/o_proj/") ||
                     weightVar.contains(".attn.o_proj.")
                 )) {
-                    System.out.println("[LLaMA-ATTN-DEBUG] Matched by weight var: " + weightVar);
+                    log.debug("[LLaMA-ATTN] Matched by weight var: {}", weightVar);
                     return true;
                 }
             }
@@ -2425,7 +2389,7 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
                         output.contains("/attn/o_proj/") ||
                         output.contains(".attn.o_proj.")
                     )) {
-                        System.out.println("[LLaMA-ATTN-DEBUG] Matched by output var: " + output);
+                        log.debug("[LLaMA-ATTN] Matched by output var: {}", output);
                         return true;
                     }
                 }
@@ -2434,16 +2398,8 @@ public class AttentionFusionOptimizations extends BaseOptimizerSet {
             return false;
         }
         
-        /**
-         * Force print summary at end of optimization - call this manually
-         */
-        public void printSummary() {
-            System.out.println("[LLaMA-ATTN-DEBUG] ============================================");
-            System.out.println("[LLaMA-ATTN-DEBUG] LLaMA Fusion Summary:");
-            System.out.println("[LLaMA-ATTN-DEBUG]   Total matmuls checked: " + checkCount);
-            System.out.println("[LLaMA-ATTN-DEBUG]   o_proj candidates found: " + oProjCount);
-            System.out.println("[LLaMA-ATTN-DEBUG] ============================================");
-        }
+
+
 
         /**
          * Trace back from attention output to find the attention computation.

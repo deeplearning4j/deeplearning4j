@@ -23,7 +23,9 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -35,6 +37,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -121,6 +124,26 @@ public class StaticKvCacheDecodeLoop {
             resolvedHiddenSize = prefillEmbeddings.shape()[2];
         }
 
+        // Extract embedding weight table for direct lookup (avoids full SameDiff.output() per token).
+        // The weight may be stored as CONSTANT or VARIABLE depending on the ONNX import path.
+        INDArray embeddingTable = null;
+        for (SDVariable var : embedTokens.variables()) {
+            if (var.getVariableType() == VariableType.CONSTANT || var.getVariableType() == VariableType.VARIABLE) {
+                INDArray arr = var.getArr();
+                if (arr != null && arr.rank() == 2) {
+                    if (embeddingTable == null || arr.length() > embeddingTable.length()) {
+                        embeddingTable = arr;
+                    }
+                }
+            }
+        }
+        if (embeddingTable != null) {
+            log.info("  Using direct embedding lookup: shape={} (bypasses SameDiff.output() per token)",
+                    Arrays.toString(embeddingTable.shape()));
+        } else {
+            log.warn("  Could not extract embedding table, falling back to SameDiff.output() per token");
+        }
+
         // Build output name list
         List<String> allOutputNames = new ArrayList<>();
         allOutputNames.add(logitsOutputName);
@@ -149,19 +172,23 @@ public class StaticKvCacheDecodeLoop {
         long cachePos = 0;
         boolean usingStaticKv = false;
 
+        // Reusable input arrays — avoids per-step allocation of masks/position_ids
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
         for (int step = 0; step < maxNewTokens; step++) {
             long stepStart = System.nanoTime();
             long currentSeqLen = currentEmbeddings.shape()[1];
 
-            // Build input map
+            // Build input map (with reusable input cache for decode steps)
             Map<String, INDArray> decoderInputMap = DecoderUtils.buildDecoderInputMap(
                     decoderInputNames, decoder,
                     currentEmbeddings, currentInputIds,
                     pastSeqLen, currentSeqLen,
                     staticKvBuffers, maxKvLen, cachePos,
-                    usingStaticKv, resolvedHiddenSize);
+                    usingStaticKv, resolvedHiddenSize,
+                    reusableInputs);
 
             long tAfterInputBuild = System.nanoTime();
 
@@ -306,20 +333,26 @@ public class StaticKvCacheDecodeLoop {
             if (stopTokenIds.contains(nextTokenId)) {
                 log.info("  Stop token at step {}", step);
                 finishReason = GenerationResult.FinishReason.EOS;
-                logitsRaw.setCloseable(true);
-                logitsRaw.close();
+                // Only close if closeable (zero-copy outputs are non-closeable, managed by DSP cache)
+                if (logitsRaw.closeable()) {
+                    logitsRaw.close();
+                }
                 break;
             }
 
-            logitsRaw.setCloseable(true);
-            logitsRaw.close();
+            // Only close if closeable (zero-copy outputs are non-closeable, managed by DSP cache)
+            if (logitsRaw.closeable()) {
+                logitsRaw.close();
+            }
 
-            // Clean up per-step inputs (masks, position_ids — NOT embeddings, input_ids, or static KV)
+            // Clean up per-step inputs (masks, position_ids — NOT embeddings, input_ids, static KV, or reusable)
             for (var entry : decoderInputMap.entrySet()) {
                 String name = entry.getKey();
                 INDArray arr = entry.getValue();
                 if (name.equals("inputs_embeds") || name.equals("input_ids")) continue;
                 if (name.startsWith("past_key_values.")) continue;
+                // Skip arrays managed by the reusable inputs cache
+                if (reusableInputs.containsValue(arr)) continue;
                 if (arr != null && !arr.wasClosed()) {
                     arr.setCloseable(true);
                     arr.close();
@@ -328,25 +361,43 @@ public class StaticKvCacheDecodeLoop {
             decoder.clearPlaceholders(false);
 
             // Get embedding for next token
-            INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-            Map<String, INDArray> newEmbedOutputs = embedTokens.output(
-                    Map.of(resolvedEmbedInputName, newTokenTensor), resolvedEmbedOutputNames);
             INDArray prevEmbeddings = currentEmbeddings;
-            for (var entry : newEmbedOutputs.entrySet()) {
-                currentEmbeddings = entry.getValue();
+            if (embeddingTable != null) {
+                // Direct lookup: single row from embedding table, reshaped to [1, 1, hiddenSize]
+                currentEmbeddings = embeddingTable.getRow(nextTokenId).reshape(1, 1, resolvedHiddenSize);
+                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
+                    currentInputIds.setCloseable(true);
+                    currentInputIds.close();
+                }
+                currentInputIds = newTokenTensor;
+            } else {
+                // Fallback: full SameDiff execution
+                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                Map<String, INDArray> newEmbedOutputs = embedTokens.output(
+                        Map.of(resolvedEmbedInputName, newTokenTensor), resolvedEmbedOutputNames);
+                for (var entry : newEmbedOutputs.entrySet()) {
+                    currentEmbeddings = entry.getValue();
+                }
+                if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
+                    currentInputIds.setCloseable(true);
+                    currentInputIds.close();
+                }
+                currentInputIds = newTokenTensor;
+                embedTokens.clearPlaceholders(false);
             }
             if (prevEmbeddings != null && !prevEmbeddings.wasClosed()) {
                 prevEmbeddings.setCloseable(true);
                 prevEmbeddings.close();
             }
-            if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
-                currentInputIds.setCloseable(true);
-                currentInputIds.close();
-            }
-            currentInputIds = newTokenTensor;
-            embedTokens.clearPlaceholders(false);
             pastSeqLen += currentSeqLen;
         }
+
+        // Release reusable input arrays
+        for (INDArray arr : reusableInputs.values()) {
+            if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
+        }
+        reusableInputs.clear();
 
         // Release static KV buffers
         if (staticKvBuffers != null) {

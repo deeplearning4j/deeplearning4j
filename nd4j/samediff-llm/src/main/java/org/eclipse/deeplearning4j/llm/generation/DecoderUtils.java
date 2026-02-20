@@ -353,21 +353,19 @@ public class DecoderUtils {
             INDArray presentKv = decoderOutputs.get(presentName);
             if (presentKv == null) continue;
 
-            // presentKv shape: [batch, heads, maxKvLen+1, dim]
-            // New token's KV is at position maxKvLen (the last position)
-            long lastPos = presentKv.shape()[2] - 1;
-            INDArray newEntry = presentKv.get(
-                    NDArrayIndex.all(), NDArrayIndex.all(),
-                    NDArrayIndex.point(lastPos), NDArrayIndex.all());
-
-            // Write into static buffer at cachePos
             String pastInputName = presentName.replace("present", "past_key_values");
             INDArray staticBuf = staticKvBuffers.get(pastInputName);
             if (staticBuf != null) {
-                INDArray destSlice = staticBuf.get(
+                // Java view+assign: lightweight NDArrayIndex operations, faster than native KvScatter
+                // op dispatch overhead for 60 individual tensor copies
+                long lastPos = presentKv.size(2) - 1;
+                INDArray newSlice = presentKv.get(
+                        NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.point(lastPos), NDArrayIndex.all());
+                INDArray targetSlice = staticBuf.get(
                         NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.point(cachePos), NDArrayIndex.all());
-                destSlice.assign(newEntry);
+                targetSlice.assign(newSlice);
             }
         }
     }
@@ -398,8 +396,30 @@ public class DecoderUtils {
             long pastSeqLen, long currentSeqLen,
             Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
             boolean usingStaticKv, long hiddenSize) {
+        return buildDecoderInputMap(decoderInputNames, decoder, embeddings, inputIds,
+                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
+                usingStaticKv, hiddenSize, null);
+    }
+
+    /**
+     * Build the complete decoder input map for one decode step, with optional reusable input cache.
+     *
+     * When {@code reusableInputs} is non-null and in static KV mode with seqLen=1,
+     * attention_mask, _causal_mask, and position_ids are allocated once and updated in-place
+     * on subsequent calls, avoiding per-step allocations.
+     *
+     * @param reusableInputs optional cache map; populated on first use, updated in-place thereafter
+     */
+    public static Map<String, INDArray> buildDecoderInputMap(
+            List<String> decoderInputNames, SameDiff decoder,
+            INDArray embeddings, INDArray inputIds,
+            long pastSeqLen, long currentSeqLen,
+            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
+            boolean usingStaticKv, long hiddenSize,
+            Map<String, INDArray> reusableInputs) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
+        boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
 
         for (String inputName : decoderInputNames) {
             if (inputName.equals("inputs_embeds")) {
@@ -407,24 +427,49 @@ public class DecoderUtils {
             } else if (inputName.equals("attention_mask")) {
                 if (usingStaticKv) {
                     long totalSeqLen = maxKvLen + currentSeqLen;
-                    INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-                    if (cachePos > 0) {
-                        mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+                    if (canReuse && reusableInputs.containsKey("attention_mask")) {
+                        // Reuse existing mask, just set the new cachePos bit
+                        INDArray mask = reusableInputs.get("attention_mask");
+                        if (cachePos > 0) {
+                            mask.putScalar(0, cachePos - 1, 1);
+                        }
+                        decoderInputMap.put(inputName, mask);
+                    } else {
+                        INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
+                        if (cachePos > 0) {
+                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+                        }
+                        mask.putScalar(0, totalSeqLen - 1, 1);
+                        decoderInputMap.put(inputName, mask);
+                        if (canReuse) reusableInputs.put("attention_mask", mask);
                     }
-                    mask.putScalar(0, totalSeqLen - 1, 1);
-                    decoderInputMap.put(inputName, mask);
                 } else {
                     long totalSeqLen = pastSeqLen + currentSeqLen;
                     decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
                 }
             } else if (inputName.equals("_causal_mask")) {
-                long totalSeqLen = usingStaticKv ? maxKvLen + currentSeqLen : pastSeqLen + currentSeqLen;
-                decoderInputMap.put(inputName, buildCausalMask(currentSeqLen, totalSeqLen));
+                if (canReuse && reusableInputs.containsKey("_causal_mask")) {
+                    // For seqLen=1, causal mask is all zeros — reuse directly
+                    decoderInputMap.put(inputName, reusableInputs.get("_causal_mask"));
+                } else {
+                    long totalSeqLen = usingStaticKv ? maxKvLen + currentSeqLen : pastSeqLen + currentSeqLen;
+                    INDArray causalMask = buildCausalMask(currentSeqLen, totalSeqLen);
+                    decoderInputMap.put(inputName, causalMask);
+                    if (canReuse) reusableInputs.put("_causal_mask", causalMask);
+                }
             } else if (inputName.equals("input_ids")) {
                 decoderInputMap.put(inputName, inputIds);
             } else if (inputName.equals("position_ids")) {
-                decoderInputMap.put(inputName, Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                        .reshape(1, currentSeqLen).castTo(DataType.LONG));
+                if (canReuse && reusableInputs.containsKey("position_ids")) {
+                    INDArray posIds = reusableInputs.get("position_ids");
+                    posIds.putScalar(0, 0, pastSeqLen);
+                    decoderInputMap.put(inputName, posIds);
+                } else {
+                    INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                    decoderInputMap.put(inputName, posIds);
+                    if (canReuse) reusableInputs.put("position_ids", posIds);
+                }
             } else if (inputName.startsWith("past_key_values.")) {
                 if (usingStaticKv) {
                     INDArray staticBuf = staticKvBuffers.get(inputName);

@@ -63,6 +63,7 @@ public class GraphOptimizer {
                 new NormalizationFusionOptimizations(), // RMSNorm detection
                 new LinearFusionOptimizations(),
                 new AttentionFusionOptimizations(),  // Fuse attention patterns
+                new QuantizationOptimizations(),     // Remove redundant casts, FP16 quantization
                 new UnusedFunctionOptimizations(),
                 new CuDNNFunctionOptimizations()
         );

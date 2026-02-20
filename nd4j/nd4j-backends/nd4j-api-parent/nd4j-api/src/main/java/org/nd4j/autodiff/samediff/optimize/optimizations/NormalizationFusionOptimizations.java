@@ -30,10 +30,18 @@ import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
+import org.nd4j.linalg.api.ops.impl.scalar.Pow;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Square;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -115,33 +123,36 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             }
 
             if (gammaVar == null || normalizedVar == null) {
+                log.debug("RMSNorm: no gamma found for mul op {} inputs={}", finalMul.getName(), finalInputs);
                 return null;
             }
             if (!hasOnlyConsumer(sd, helper, normalizedVar, finalMul.getName())) {
+                log.debug("RMSNorm: normalizedVar {} has multiple consumers (expected only {})", normalizedVar, finalMul.getName());
                 return null;
             }
 
             SameDiffOp normalizedOp = producerOp(sd, helper, normalizedVar);
             if (normalizedOp == null || normalizedOp.getInputsToOp() == null || normalizedOp.getInputsToOp().size() != 2) {
+                log.debug("RMSNorm: normalizedOp null or wrong input count for var {}", normalizedVar);
                 return null;
             }
 
             String normalizedOpName = normalizedOp.getName();
-            String normalizedType = opName(normalizedOp);
+            DifferentialFunction normalizedFunc = normalizedOp.getOp();
             String xVar;
             String normFactorVar;
             boolean rsqrtPath;
             boolean divSqrtPath;
 
-            if ("mul".equals(normalizedType)) {
+            if (normalizedFunc instanceof MulOp) {
                 String in0 = normalizedOp.getInputsToOp().get(0);
                 String in1 = normalizedOp.getInputsToOp().get(1);
                 SameDiffOp p0 = producerOp(sd, helper, in0);
                 SameDiffOp p1 = producerOp(sd, helper, in1);
-                if (p0 != null && "rsqrt".equals(opName(p0))) {
+                if (p0 != null && p0.getOp() instanceof RSqrt) {
                     normFactorVar = in0;
                     xVar = in1;
-                } else if (p1 != null && "rsqrt".equals(opName(p1))) {
+                } else if (p1 != null && p1.getOp() instanceof RSqrt) {
                     normFactorVar = in1;
                     xVar = in0;
                 } else {
@@ -149,11 +160,11 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 }
                 rsqrtPath = true;
                 divSqrtPath = false;
-            } else if ("div".equals(normalizedType)) {
+            } else if (normalizedFunc instanceof DivOp) {
                 String numerator = normalizedOp.getInputsToOp().get(0);
                 String denominator = normalizedOp.getInputsToOp().get(1);
                 SameDiffOp denomOp = producerOp(sd, helper, denominator);
-                if (denomOp == null || !"sqrt".equals(opName(denomOp))) {
+                if (denomOp == null || !(denomOp.getOp() instanceof Sqrt)) {
                     return null;
                 }
                 xVar = numerator;
@@ -168,16 +179,47 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             if (normFactorOp == null || normFactorOp.getInputsToOp() == null || normFactorOp.getInputsToOp().isEmpty()) {
                 return null;
             }
-            if (!hasOnlyConsumer(sd, helper, normFactorVar, normalizedOpName)) {
+            // Note: normFactorVar (sqrt/rsqrt output) may have multiple consumers
+            // (e.g., reciprocal for inv_std_var output in SimplifiedLayerNormalization).
+            // We still fuse, but skip removing normFactorVar/normFactorOp if they have other consumers.
+            boolean normFactorHasOnlyConsumer = hasOnlyConsumer(sd, helper, normFactorVar, normalizedOpName);
+
+            if (rsqrtPath && !(normFactorOp.getOp() instanceof RSqrt)) {
                 return null;
             }
 
-            String factorType = opName(normFactorOp);
-            if (rsqrtPath && !"rsqrt".equals(factorType)) {
-                return null;
-            }
-            if (divSqrtPath && !"sqrt".equals(factorType)) {
-                return null;
+            // For div/sqrt path, traverse through expand_dims/reshape/squeeze to find actual sqrt
+            Set<String> shapeOpsToRemove = new LinkedHashSet<>();
+            Set<String> shapeVarsToRemove = new LinkedHashSet<>();
+            if (divSqrtPath && !(normFactorOp.getOp() instanceof Sqrt)) {
+                // Try to look through shape-preserving-for-broadcast ops
+                SameDiffOp currentOp = normFactorOp;
+                String currentVar = normFactorVar;
+                boolean foundSqrt = false;
+                for (int depth = 0; depth < 4; depth++) {
+                    DifferentialFunction currentFunc = currentOp.getOp();
+                    String currentType = opName(currentOp);
+                    if ("expand_dims".equals(currentType) || "reshape".equals(currentType) || "squeeze".equals(currentType)) {
+                        shapeOpsToRemove.add(currentOp.getName());
+                        shapeVarsToRemove.add(currentVar);
+                        String nextVar = currentOp.getInputsToOp().get(0);
+                        SameDiffOp nextOp = producerOp(sd, helper, nextVar);
+                        if (nextOp == null) break;
+                        currentVar = nextVar;
+                        currentOp = nextOp;
+                        if (nextOp.getOp() instanceof Sqrt) {
+                            normFactorOp = nextOp;
+                            normFactorVar = currentVar;
+                            foundSqrt = true;
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                if (!foundSqrt) {
+                    return null;
+                }
             }
 
             String addVar = normFactorOp.getInputsToOp().get(0);
@@ -191,8 +233,15 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
 
             String meanVar = null;
             Double epsilon = null;
-            String addType = opName(addOp);
-            if ("add".equals(addType)) {
+            DifferentialFunction addFunc = addOp.getOp();
+            if (addFunc instanceof ScalarAdd) {
+                // ScalarAdd: single input + scalar arg
+                List<String> addInputs = addOp.getInputsToOp();
+                if (addInputs == null || addInputs.size() != 1) return null;
+                meanVar = addInputs.get(0);
+                epsilon = scalarFromScalarOp(addOp);
+            } else if (addFunc instanceof org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp) {
+                // Pairwise AddOp: two inputs
                 List<String> addInputs = addOp.getInputsToOp();
                 if (addInputs == null || addInputs.size() != 2) return null;
 
@@ -204,11 +253,6 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                         epsilon = scalarFromVariable(sd, in);
                     }
                 }
-            } else if ("add_scalar".equals(addType)) {
-                List<String> addInputs = addOp.getInputsToOp();
-                if (addInputs == null || addInputs.size() != 1) return null;
-                meanVar = addInputs.get(0);
-                epsilon = scalarFromScalarOp(addOp);
             } else {
                 return null;
             }
@@ -230,11 +274,12 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             String squareVar = null;
             SameDiffOp squareOp = null;
 
-            if ("mean_square".equals(opName(meanOp))) {
+            DifferentialFunction meanFunc = meanOp.getOp();
+            if (meanFunc instanceof MeanSquare) {
                 List<String> meanInputs = meanOp.getInputsToOp();
                 if (meanInputs == null || meanInputs.isEmpty()) return null;
                 meanInputVar = stripTrivial(sd, helper, meanInputs.get(0));
-            } else if ("reduce_mean".equals(opName(meanOp)) || meanOp.getOp() instanceof Mean) {
+            } else if (meanFunc instanceof Mean) {
                 List<String> meanInputs = meanOp.getInputsToOp();
                 if (meanInputs == null || meanInputs.isEmpty()) return null;
                 squareVar = meanInputs.get(0);
@@ -246,14 +291,17 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                 if (squareOp == null) {
                     return null;
                 }
-                String squareType = opName(squareOp);
-                if ("mul".equals(squareType)) {
+                DifferentialFunction squareFunc = squareOp.getOp();
+                if (squareFunc instanceof MulOp) {
+                    // x * x pattern (self-multiply = square)
                     List<String> sqInputs = squareOp.getInputsToOp();
                     if (sqInputs == null || sqInputs.size() != 2 || !sqInputs.get(0).equals(sqInputs.get(1))) {
                         return null;
                     }
                     meanInputVar = stripTrivial(sd, helper, sqInputs.get(0));
-                } else if ("pow".equals(squareType) || "pow_scalar".equals(squareType)) {
+                } else if (squareFunc instanceof Pow || squareFunc instanceof PowPairwise
+                           || squareFunc instanceof org.nd4j.linalg.api.ops.impl.transforms.custom.Pow) {
+                    // pow(x, 2) pattern
                     List<String> sqInputs = squareOp.getInputsToOp();
                     if (sqInputs == null || sqInputs.isEmpty()) return null;
                     meanInputVar = stripTrivial(sd, helper, sqInputs.get(0));
@@ -267,7 +315,7 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                     if (powVal == null || Math.abs(powVal - 2.0) > 1e-6) {
                         return null;
                     }
-                } else if ("square".equals(squareType)) {
+                } else if (squareFunc instanceof Square) {
                     List<String> sqInputs = squareOp.getInputsToOp();
                     if (sqInputs == null || sqInputs.isEmpty()) return null;
                     meanInputVar = stripTrivial(sd, helper, sqInputs.get(0));
@@ -289,21 +337,27 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
 
             m.opsToRemove.add(finalMul.getName());
             m.opsToRemove.add(normalizedOpName);
-            m.opsToRemove.add(normFactorOp.getName());
+            if (normFactorHasOnlyConsumer) {
+                m.opsToRemove.add(normFactorOp.getName());
+            }
             m.opsToRemove.add(addOp.getName());
             m.opsToRemove.add(meanOp.getName());
             if (squareOp != null) {
                 m.opsToRemove.add(squareOp.getName());
             }
+            m.opsToRemove.addAll(shapeOpsToRemove);
 
             m.varsToRemove.add(finalOutputVar);
             m.varsToRemove.add(normalizedVar);
-            m.varsToRemove.add(normFactorVar);
+            if (normFactorHasOnlyConsumer) {
+                m.varsToRemove.add(normFactorVar);
+            }
             m.varsToRemove.add(addVar);
             m.varsToRemove.add(meanVar);
             if (squareVar != null) {
                 m.varsToRemove.add(squareVar);
             }
+            m.varsToRemove.addAll(shapeVarsToRemove);
 
             return m;
         }
@@ -316,7 +370,7 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
                     break;
                 }
                 String n = opName(p);
-                if ("cast".equals(n) || "identity".equals(n)) {
+                if ("cast".equals(n) || "identity".equals(n) || "expand_dims".equals(n) || "squeeze".equals(n) || "reshape".equals(n)) {
                     current = p.getInputsToOp().get(0);
                 } else {
                     break;
@@ -328,10 +382,19 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
         private boolean isLikelyGamma(SameDiff sd, String varName) {
             SDVariable v = sd.getVariable(varName);
             if (v == null) return false;
-            if (v.getVariableType() != VariableType.CONSTANT && v.getVariableType() != VariableType.VARIABLE) {
+            VariableType vt = v.getVariableType();
+            if (vt != VariableType.CONSTANT && vt != VariableType.VARIABLE) {
                 return false;
             }
-            long[] shape = v.getShape();
+            // Get actual array from the appropriate holder — getShape() is unreliable
+            INDArray arr = null;
+            if (vt == VariableType.CONSTANT) {
+                arr = sd.getConstantArrays().getArray(varName);
+            } else if (vt == VariableType.VARIABLE) {
+                arr = sd.getVariablesArrays().getArray(varName);
+            }
+            if (arr == null) return false;
+            long[] shape = arr.shape();
             return shape != null && shape.length == 1 && shape[0] > 1;
         }
 
@@ -357,8 +420,8 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
         }
 
         private boolean isMeanLike(SameDiffOp op) {
-            String n = opName(op);
-            return "reduce_mean".equals(n) || "mean_square".equals(n) || op.getOp() instanceof Mean;
+            DifferentialFunction f = op.getOp();
+            return f instanceof Mean || f instanceof MeanSquare;
         }
 
         private String opName(SameDiffOp op) {

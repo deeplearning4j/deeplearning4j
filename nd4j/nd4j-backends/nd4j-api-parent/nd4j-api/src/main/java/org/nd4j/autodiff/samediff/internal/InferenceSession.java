@@ -600,22 +600,36 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     if (dynamicPlanResults != null) {
                         filteredResults = dynamicPlanResults;
                         dspHandledExecution = true;
-                        // Commit pending async ops — this syncs the execution stream.
-                        long commitStart = System.nanoTime();
-                        Nd4j.getExecutioner().commit();
-                        long commitNs = System.nanoTime() - commitStart;
-                        // Trim pool to release reserved-but-freed memory back to the driver.
-                        // RELEASE_SPECIAL frees go via cudaFreeAsync on stream 0 (nullptr),
-                        // so we must sync stream 0 before trimming. trimMemoryPoolOnStream(d, null)
-                        // syncs stream 0 + trims in one call.
-                        long trimStart = System.nanoTime();
-                        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
-                        long trimNs = System.nanoTime() - trimStart;
-                        if (commitNs > 5_000_000 || trimNs > 5_000_000) { // > 5ms
-                            log.info("DSP post-exec overhead: commit={}ms trim={}ms",
-                                    commitNs / 1_000_000, trimNs / 1_000_000);
+                        dspStepCount++;
+
+                        // Check if shapes are frozen (steady-state decode with CUDA graph replay).
+                        // When frozen, the C++ fast path already does cudaStreamSynchronize before
+                        // graph launch, so outputs are ready when executeDynamicShapePlan() returns.
+                        // We can skip commit() and make trim periodic to save ~2-5ms/step.
+                        DynamicShapePlanExecutor dspExec = dynamicShapePlanExecutorTl.get();
+                        boolean frozen = dspExec != null && dspExec.isShapesFrozen();
+
+                        if (!frozen || dspStepCount <= 2) {
+                            // Non-frozen or early steps: full commit + trim
+                            long commitStart = System.nanoTime();
+                            Nd4j.getExecutioner().commit();
+                            long commitNs = System.nanoTime() - commitStart;
+                            long trimStart = System.nanoTime();
+                            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                            long trimNs = System.nanoTime() - trimStart;
+                            if (commitNs > 5_000_000 || trimNs > 5_000_000) {
+                                log.info("DSP post-exec overhead: commit={}ms trim={}ms",
+                                        commitNs / 1_000_000, trimNs / 1_000_000);
+                            }
+                        } else if (dspStepCount % TRIM_INTERVAL == 0) {
+                            // Frozen steady-state: periodic trim only (every TRIM_INTERVAL steps)
+                            Nd4j.getExecutioner().commit();
+                            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
                         }
+                        // Frozen non-trim steps: skip both commit and trim entirely
+
                         log.debug("DynamicShapePlan-based execution completed successfully");
                         // Do NOT call mmgr.scopeOut() here. The finally block handles both
                         // detaching workspace-backed arrays and closing the workspace scope

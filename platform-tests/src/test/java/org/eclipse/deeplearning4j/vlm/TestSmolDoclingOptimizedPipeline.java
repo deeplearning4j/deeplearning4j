@@ -82,6 +82,9 @@ public class TestSmolDoclingOptimizedPipeline {
         // Enable graph optimizer for this test
         System.setProperty("nd4j.optimizer.enabled", "true");
         System.setProperty("nd4j.optimizer.logApplied", "true");
+        // FP16 quantization disabled — mixed FP16 weights + FP32 activations corrupts output
+        // Proper FP16 inference requires C++ kernel support for mixed precision
+        // System.setProperty("nd4j.optimizer.fp16", "true");
         
         String maxTokensStr = System.getProperty("vlm.test.maxTokens");
         if (maxTokensStr != null && !maxTokensStr.isEmpty()) {

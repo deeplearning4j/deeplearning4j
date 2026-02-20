@@ -27,8 +27,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.optimize.OptimizationHelper;
 import org.nd4j.autodiff.samediff.optimize.Optimizer;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
@@ -46,16 +50,32 @@ import java.util.*;
 public class QuantizationOptimizations extends BaseOptimizerSet {
 
     /**
-     * Optimizer that quantizes FP32 constant arrays to FP16.
+     * Optimizer that quantizes FP32 constant and variable arrays to FP16.
      * This provides 2x memory reduction for model weights with minimal accuracy loss.
      *
-     * Usage: Automatically applied during graph optimization when enabled.
+     * Gated by system property {@code -Dnd4j.optimizer.fp16=true}.
+     * Runs once on the first op encountered (quantizes all constants/variables at once).
      */
     public static class QuantizeConstantsToFP16 implements Optimizer {
+
+        private boolean applied = false;
 
         @Override
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (applied) return false;
+            if (!"true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.fp16"))) {
+                applied = true;
+                return false;
+            }
+            applied = true;
+
+            int count = quantizeAllConstants(sd);
+            int varCount = quantizeAllVariables(sd);
+            if (count + varCount > 0) {
+                log.info("FP16 quantization: {} constants + {} variables converted", count, varCount);
+                return true;
+            }
             return false;
         }
 
@@ -89,10 +109,35 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
             if (quantizedCount > 0) {
                 log.info("FP16 Quantization: {} constants quantized, {}KB -> {}KB ({}x reduction)",
-                    quantizedCount, fp32Bytes / 1024, fp16Bytes / 1024, 
+                    quantizedCount, fp32Bytes / 1024, fp16Bytes / 1024,
                     String.format("%.1f", (double) fp32Bytes / fp16Bytes));
             }
 
+            return quantizedCount;
+        }
+
+        /**
+         * Apply FP16 quantization to all FP32 variable arrays in the graph.
+         * Variables include embed_tokens weights and other trainable parameters.
+         */
+        public static int quantizeAllVariables(SameDiff sd) {
+            ArrayHolder variableArrays = sd.getVariablesArrays();
+            List<String> variableNames = new ArrayList<>(variableArrays.arrayNames());
+
+            int quantizedCount = 0;
+            for (String name : variableNames) {
+                INDArray arr = variableArrays.getArray(name);
+                if (arr != null && arr.dataType() == DataType.FLOAT) {
+                    INDArray fp16Arr = arr.castTo(DataType.HALF);
+                    variableArrays.setArray(name, fp16Arr);
+                    quantizedCount++;
+                    log.debug("Quantized variable {} to FP16: {} elements", name, arr.length());
+                }
+            }
+
+            if (quantizedCount > 0) {
+                log.info("FP16 Quantization: {} variables quantized to HALF", quantizedCount);
+            }
             return quantizedCount;
         }
     }
@@ -283,13 +328,95 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
     }
 
     /**
-     * Placeholder for redundant cast removal.
-     * TODO: implement when SameDiff API supports consumer/output traversal.
+     * Removes redundant cast operations:
+     * 1. Identity casts where input dtype == output dtype (FLOAT→FLOAT)
+     * 2. Chained casts where cast(cast(x, A), B) can be replaced with cast(x, B)
      */
     public static class RemoveRedundantCasts implements Optimizer {
+
+        private static final Set<Class<? extends DifferentialFunction>> APPLICABLE_OPS = new HashSet<>();
+        static {
+            APPLICABLE_OPS.add(Cast.class);
+        }
+
+        @Override
+        public Set<Class<? extends DifferentialFunction>> getApplicableOpTypes() {
+            return APPLICABLE_OPS;
+        }
+
         @Override
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
+            if (!(op.getOp() instanceof Cast)) {
+                return false;
+            }
+
+            Cast castOp = (Cast) op.getOp();
+            List<String> inputs = op.getInputsToOp();
+            List<String> outputs = op.getOutputsOfOp();
+            if (inputs == null || inputs.isEmpty() || outputs == null || outputs.isEmpty()) {
+                return false;
+            }
+
+            String inputVar = inputs.get(0);
+            String outputVar = outputs.get(0);
+
+            // Determine input dtype
+            DataType inputDtype = null;
+            SDVariable inputSdVar = sd.getVariable(inputVar);
+            if (inputSdVar != null) {
+                inputDtype = inputSdVar.dataType();
+            }
+
+            // Determine output dtype from the cast op's iArgs
+            DataType outputDtype = castOp.calculateOutputDataTypes(
+                    inputDtype != null ? Collections.singletonList(inputDtype) : Collections.emptyList()
+            ).get(0);
+
+            // Case 1: Identity cast (input dtype == output dtype)
+            if (inputDtype != null && inputDtype == outputDtype) {
+                OptimizationUtils.replaceOpInputsWith(sd, helper, outputVar, inputVar);
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+                OptimizationUtils.removeVariable(sd, helper, outputVar);
+                log.debug("Removed identity cast {} ({} → {})", op.getName(), inputDtype, outputDtype);
+                return true;
+            }
+
+            // Case 2: Chained casts — cast(cast(x, A), B) → cast(x, B)
+            Variable inputVariable = helper != null ? helper.getVariable(inputVar) : sd.getVariables().get(inputVar);
+            if (inputVariable != null) {
+                String producerOpName = inputVariable.getOutputOfOp();
+                if (producerOpName != null) {
+                    SameDiffOp producerOp = sd.getOps().get(producerOpName);
+                    if (producerOp != null && producerOp.getOp() instanceof Cast) {
+                        // Check if the intermediate cast output is only used by this cast
+                        List<String> intermediateUsers = inputVariable.getInputsForOp();
+                        if (intermediateUsers != null && intermediateUsers.size() == 1) {
+                            // Rewire: this cast now takes the input of the inner cast
+                            String innerInput = producerOp.getInputsToOp().get(0);
+                            List<String> newInputs = new ArrayList<>(inputs);
+                            newInputs.set(0, innerInput);
+                            op.setInputsToOp(newInputs);
+
+                            // Update variable tracking
+                            Variable innerInputVar = helper != null ? helper.getVariable(innerInput) : sd.getVariables().get(innerInput);
+                            if (innerInputVar != null) {
+                                List<String> usedBy = innerInputVar.getInputsForOp();
+                                if (usedBy != null && !usedBy.contains(op.getName())) {
+                                    usedBy.add(op.getName());
+                                }
+                            }
+
+                            // Remove inner cast
+                            OptimizationUtils.removeOp(sd, helper, producerOpName);
+                            OptimizationUtils.removeVariable(sd, helper, inputVar);
+                            log.debug("Fused chained casts: {} absorbed into {}", producerOpName, op.getName());
+                            return true;
+                        }
+                    }
+                }
+            }
+
             return false;
         }
     }
