@@ -1093,14 +1093,41 @@ Status NativeDynamicShapePlan::execute(
   // removing their kernels, memsets, and memcpys from the captured graph.
   // A slot is frozen constant if ALL its inputs come from non-external sources
   // (constants/variables or other frozen constant slots).
+  // Additionally, "value-independent" ops produce the same output every step
+  // regardless of input values when shapes are frozen (e.g., shape_of returns
+  // the shape which is frozen, zeros_like/ones_like fill based on shape only).
+  // These ops break the external dependency chain — their outputs are constant
+  // even though their inputs may change.
   if (shapesFrozen_ && executeCount_ == 1 && !frozenConstantDetectionDone_) {
     frozenConstantDetectionDone_ = true;
 
+    // Ops whose output depends ONLY on input shapes, not input values.
+    // When shapes are frozen, these produce identical output every step.
+    // Include all synonyms since op names come from ONNX import and may vary.
+    static const std::unordered_set<std::string> VALUE_INDEPENDENT_OPS = {
+        "shape_of", "size_at", "rank",
+        "zeros_like", "zeros_as", "zeroslike",
+        "ones_like", "ones_as", "oneslike",
+        "create",
+    };
+
     std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
+    std::vector<bool> isValueIndependentSlot(numSlots_, false);
 
     // Propagate external dependency through the graph (topological order).
+    // Value-independent ops do NOT propagate dependency — their outputs
+    // are constant when shapes are frozen.
     for (int s = 0; s < numSlots_; s++) {
       auto& sl = slots_[s];
+
+      // Check if this op is value-independent
+      auto normalized = normalizeOpName(sl.opName);
+      if (VALUE_INDEPENDENT_OPS.count(normalized) > 0) {
+        isValueIndependentSlot[s] = true;
+        // Do NOT propagate external dependency through this op
+        continue;
+      }
+
       bool anyInputDependsOnExternal = false;
       for (int i = 0; i < sl.numInputs; i++) {
         int srcIdx = sl.inputSourceIndices[i];
@@ -1125,6 +1152,7 @@ Status NativeDynamicShapePlan::execute(
     }
 
     int frozenConstCount = 0;
+    int valueIndepCount = 0;
     for (int s = 0; s < numSlots_; s++) {
       auto& sl = slots_[s];
       bool allOutputsConstant = true;
@@ -1138,10 +1166,11 @@ Status NativeDynamicShapePlan::execute(
       if (allOutputsConstant && !sl.isDataDependent) {
         sl.frozenConstantSlot = true;
         frozenConstCount++;
+        if (isValueIndependentSlot[s]) valueIndepCount++;
       }
     }
-    sd_printf("NativeDSP: frozen constant detection: %d/%d slots are frozen constants\n",
-              frozenConstCount, numSlots_);
+    sd_printf("NativeDSP: frozen constant detection: %d/%d slots are frozen constants (%d value-independent)\n",
+              frozenConstCount, numSlots_, valueIndepCount);
   }
 
   // Adaptive segment splitting: if a segment's shape key changes for
@@ -2349,6 +2378,18 @@ Status NativeDynamicShapePlan::executeSlot(
     // Fall through to normal path if input is null
   }
 
+  // ── Frozen constant optimization ──────────────────────────────────────────
+  // Some ops produce identical output every step with frozen shapes.
+  // Skip both nullify and execution — output retains its value from warmup.
+  // During graph CAPTURE, this means the op's kernel and memset are NOT recorded,
+  // reducing graph node count. During REPLAY, the output buffer is untouched
+  // by the graph (stable address, no graph node writes to it).
+  // This check is BEFORE frozenContextReady so it fires during capture too
+  // (capture disables frozenContextReady).
+  if (slot.frozenConstantSlot) {
+    return Status::OK;
+  }
+
   // ── Fast path: frozen context ────────────────────────────────────────────
   // When shapes are frozen and this slot's context was already configured on a
   // prior execution, skip input gathering, shape inference, output allocation,
@@ -2356,16 +2397,6 @@ Status NativeDynamicShapePlan::executeSlot(
   // outputSlots_ was pre-populated from slotArrayCache_ in execute(), so
   // downstream ops already have the right array pointers.
   if (slot.frozenContextReady) {
-    // ── Frozen constant optimization ──────────────────────────────────────
-    // Some ops produce identical output every step with frozen shapes.
-    // Skip both nullify and execution — output retains its value from warmup.
-    // During graph CAPTURE, this means the op's kernel and memset are NOT recorded,
-    // reducing graph node count. During REPLAY, the output buffer is untouched
-    // by the graph (stable address, no graph node writes to it).
-    // Detect by checking if NO inputs come from external/changing sources.
-    if (slot.frozenConstantSlot) {
-      return Status::OK;
-    }
 
     // ── View-capable fast path (reshape/expand_dims/squeeze) ────────────
     // These ops are no-ops when output shares input 0's DataBuffer (set in Step 3).
@@ -2735,10 +2766,8 @@ Status NativeDynamicShapePlan::executeSlot(
       if (shape::equalsSoft(cachedShape, shapeInfo) &&
           ArrayOptions::dataType(cachedShape) == dt) {
         // Shape matches — reuse cached buffer.
-        // ALWAYS nullify reused arrays. Some ops don't fully overwrite their output
-        // (despite not being in the needsZeroedOutput set), causing stale data
-        // accumulation across decode steps. The cost of ~3841 cudaMemsetAsync calls
-        // per step (~4ms) is negligible vs the 170ms+ slot-by-slot execution.
+        // ALWAYS nullify reused arrays. Some ops don't fully overwrite their output,
+        // causing stale data accumulation across decode steps.
         cached->nullify();
         outputs[i] = cached;
         outputSlots_[slotIdx] = cached;
