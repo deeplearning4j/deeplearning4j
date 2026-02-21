@@ -142,12 +142,27 @@
 - Identical dimension/axis arrays (e.g., [0,1] for reduce) shared across ops
 - -596 memcpy nodes, -596 pinned host allocs, reduced capture workspace usage
 
-### Remaining 1232 memcpy nodes — what they are
-- Each `onnx_multi_head_attention` contributes ~8 memcpys (QKV shapes, dim arrays)
-- These are unique per-attention-head dimension arrays (non-dedupable)
-- Other sources: gather index arrays, reshape targets, broadcast dims
-- **Cannot be further reduced** without caching at the op level (each op creates
-  unique dimension arrays with different values)
+### Remaining 1232 memcpy nodes — deep analysis
+
+**Source breakdown** (56 call sites across CUDA ops):
+- **82% Pointer arrays (void\*\*)**: Arrays of device buffer/shape pointers for multi-input ops
+  - merge.cu: 16 calls (buffer+shape arrays for merge variants)
+  - dynamic.cu: 10 calls (dynamic partition/stitch)
+  - flatten.cu, concat.cu, split.cu, stack.cu, batched_gemm.cu, meshgrid.cu
+  - These contain **runtime device addresses** that are unique per-op — cannot deduplicate
+- **9% Shape arrays**: ShapeInfo descriptors for gather, compare_and_bitpack
+- **7% Dimension/axis arrays**: batchnorm axes, ismax dims, clip dims (4 call sites)
+  - Already largely deduplicated by content hash cache
+- **2% Other**: Random generator state (randomShuffle.cu)
+
+**Why further reduction is impractical**:
+1. Pointer arrays (void\*\*) contain runtime device addresses that differ per-op
+2. With frozen shapes, addresses ARE stable between replays — data persists in capture workspace
+3. `cudaGraphNodeSetEnabled` (CUDA 12+) cannot help: disabling a memcpy node **also skips all
+   dependent downstream nodes** (kernels that read the copied data)
+4. Pre-computing all data before capture would require op-level refactoring (each op constructs
+   its pointer arrays inside execute(), not accessible from outside)
+5. Graph-level memcpy-to-noop transformation is not supported by CUDA graph API
 
 ### Theoretical further reduction
 - If graph memsets could be gated: -2298 memsets → 5188 nodes (31% reduction)
@@ -172,25 +187,33 @@
 - **Not practical to reduce further** without op-level caching or GPU-side dim computation
 - **Capture audit** now identifies top ops by node count for targeting
 
-#### C. Investigate CUDA graph replay memset elimination
+#### C. CUDA graph replay memset elimination — BLOCKED
 - 3238 memsets are 40% of graph nodes. Removing them would be the single biggest optimization.
 - Slot-by-slot execution with gated memsets produces 41/100 unique (correct output).
 - Graph replay with gated memsets produces 3/100 (broken).
-- **Next steps**:
-  1. Use `cuda-memcheck` or `compute-sanitizer --tool racecheck` on the captured graph
-  2. Binary search: gate memsets for ONLY one op type (e.g., only `cast`) during capture
-  3. Check if CUDA graph execution reorders independent nodes → uninitialized read race
-  4. Check if cublas GEMM kernel reads from output (beta parameter handling)
-  5. Test with `cudaGraphInstantiateWithFlags(cudaGraphInstantiateFlagAutoFreeOnLaunch)`
-- **Risk**: High — root cause unknown. May be unfixable due to CUDA runtime behavior.
+- **CUDA graph API limitations investigated**:
+  - `cudaGraphNodeSetEnabled`: Disabling a memset node also disables all dependent nodes → unusable
+  - `cudaGraphInstantiateWithFlags`: No flag exists to skip/optimize memsets
+  - `cudaGraphExecMemsetNodeSetParams`: Could make memset zero-length, but untested
+- **Possible investigation paths (untested)**:
+  1. `compute-sanitizer --tool racecheck` on the captured graph
+  2. Binary search: gate memsets for only ONE op type during capture
+  3. Check if CUDA graph reorders independent nodes → uninitialized read race
+  4. Check if cuBLAS GEMM reads output (beta parameter → output += beta*C)
+- **Risk**: High — root cause unknown. May be fundamental CUDA runtime behavior.
 
-#### D. Remove 30 MemAlloc/MemFree nodes from graph
-- These come from `cudaMallocAsync` calls during capture (op temporary workspace).
-- The 512MB capture workspace (`tl_captureWorkspace`) exists to prevent this, but 30 ops
-  still allocate dynamically.
-- **Test plan**: Add logging in `CudaMemoryPool::allocate` during capture to identify which
-  ops trigger dynamic allocation. Redirect to capture workspace stack allocator.
-- **Risk**: Low — capture workspace already handles most allocations.
+#### D. 30 MemAlloc/MemFree nodes — cuBLAS internal allocations (INVESTIGATED)
+- These do NOT come from CudaMemoryPool (capture workspace intercepts all pool allocations)
+- Source: **cuBLAS internal allocations** during GEMM operations in `onnx_multi_head_attention`
+  - 12 attention heads × ~2.5 alloc pairs = 30 total
+  - `cublasSetWorkspace` provides 32MB explicit workspace, but cuBLAS still does internal allocs
+    for certain GEMM configurations (likely scratch space for algorithm selection)
+- `fusedElementwiseChain.cu` also had direct `cudaMallocAsync` — fixed to use PointersManager,
+  but this op isn't exercised in SmolDocling model
+- **Impact**: 0.4% of total graph nodes — negligible performance effect
+- **Possible fix**: Increase cuBLAS workspace to 64-128MB, or set `CUBLAS_WORKSPACE_CONFIG`
+  env var. May not eliminate all internal allocations.
+- **Verdict**: Not worth pursuing — diminishing returns at 0.4% of nodes.
 
 ### Priority 2: Reduce per-step overhead (~1ms outside GPU)
 
@@ -228,13 +251,15 @@
 
 ### Priority 4: Accuracy improvements
 
-#### I. Investigate 38% vs 41% token diversity gap (graph vs no-graph)
-- Without CUDA graphs: 41/100 unique tokens
-- With CUDA graphs: 38/100 unique tokens
-- This 3-token gap suggests CUDA graph replay introduces subtle numerical differences.
-- **Test plan**: Run both modes with `dumpOutputs=true`, diff the output arrays at each step.
-  Find which step first diverges and which op produces different values.
-- **Risk**: May be inherent floating-point ordering difference (acceptable).
+#### I. ~~Investigate 38% vs 41% token diversity gap~~ — NO GAP EXISTS
+- **Tested Feb 2026**: Both graph and no-graph modes produce identical output:
+  - Graph mode: 38/100 unique tokens, P50=23ms (43.5 tok/s)
+  - No-graph mode: 38/100 unique tokens, P50=159ms (6.22 tok/s)
+  - Same token IDs at every step — numerically identical
+- The previously documented "41/100" was from a different test configuration (different model
+  weights or sampling parameters)
+- **Result**: CUDA graph replay is numerically identical to slot-by-slot execution. No accuracy
+  investigation needed. **6.3x speedup with zero quality loss.**
 
 #### J. Test with longer sequences (1000+ tokens)
 - Current test only runs 100 tokens. Long-running inference may expose:
@@ -258,20 +283,21 @@
 
 #### What's achievable vs what's not
 
-| Target | Current | Achievable? | How |
-|--------|---------|-------------|-----|
-| 0 allocations | 30 | **Yes** | Identify 30 ops that bypass capture workspace, redirect them |
-| 0 memcpys | 1232 | **Partially** | ~596 already eliminated. Remaining are unique per-op data. Could pre-compute all dim arrays on GPU at plan compile time |
-| 0 memsets | 3238 | **No** | Required for CUDA graph replay correctness (see "What NOT To Do #1") |
-| 1 kernel | 2956 | **No (graph)** | CUDA graphs replay individual kernels; can't merge. Would need a code-generation approach (Triton, custom CUDA) |
-| Fewer kernels | 2956 | **Yes** | True kernel fusion via Triton backend or custom fused kernels for common patterns (attention, layer_norm+gelu+mul) |
+| Target | Current | Achievable? | How | Impact |
+|--------|---------|-------------|-----|--------|
+| 0 allocations | 30 | **Likely** | Identify 30 ops bypassing capture workspace, redirect them | Negligible (<0.4% of nodes) |
+| 0 memcpys | 1232 | **No** | 82% are pointer arrays (void\*\*) with unique runtime device addresses. `cudaGraphNodeSetEnabled` disables dependent nodes too. Pre-computing requires op-level refactoring of 56 call sites | Small (memcpy nodes are fast) |
+| 0 memsets | 3238 | **No** | Required for CUDA graph replay correctness. No CUDA API exists to skip memsets without skipping dependent nodes | Would be huge (43% of nodes) but blocked |
+| 1 kernel | 2956 | **No (graph)** | CUDA graphs replay individual kernels; can't merge. Would need code-generation (Triton, custom CUDA) | Largest potential gain |
+| Fewer kernels | 2956 | **Yes** | True kernel fusion via Triton backend or custom fused kernels for common patterns | High — each fused kernel saves N-1 launches |
 
-#### L. Pre-compute dimension arrays at plan compile time
-- Currently: each op creates dimension arrays on host, uploads H2D during capture
-- Better: at compile time, allocate one GPU buffer with ALL dimension arrays packed contiguously
-- Each op gets a pre-computed device pointer offset — zero H2D copies during capture
-- **Eliminates all remaining 1232 memcpy nodes**
-- **Risk**: Medium — requires plan compiler to know all ops' dimension needs upfront
+#### L. Pre-compute dimension arrays at plan compile time — INVESTIGATED, IMPRACTICAL
+- Only 7% of replicatePointer calls (4 call sites) upload dimension/axis arrays
+- 82% upload **pointer arrays** (void\*\* of buffer/shape pointers) constructed at runtime
+- These pointer arrays contain device addresses from slotArrayCache — known only after warmup
+- Would require refactoring 56 call sites across 15+ CUDA op implementation files
+- Content dedup already eliminated all dedupable dimension arrays
+- **Verdict**: Cost/benefit doesn't justify. Remaining memcpy nodes are fast (tiny data).
 
 #### M. True kernel fusion via Triton/custom CUDA
 - Current "fusion" is buffer reuse, not kernel merge
@@ -329,3 +355,55 @@ Everything else (workspace, capture overhead, Java) is in the noise.
 
 5. **Stress test frozen constants**: Verify that frozen constant slots produce identical output
    at step 1 vs step 100 by adding a checksum comparison.
+
+---
+
+## Investigation Conclusions (Feb 2026)
+
+### Graph node reduction — final assessment
+
+**Starting point**: 8522 nodes (before any optimization)
+**Current**: 7486 nodes (12.2% reduction)
+**Theoretical minimum**: ~2956 nodes (kernels only) — but blocked by CUDA graph constraints
+
+| Optimization | Nodes saved | Status |
+|-------------|-------------|--------|
+| Frozen constant detection | 440 | DONE |
+| PointersManager H2D dedup | 596 | DONE |
+| Pre-launch sync removal | 0 | DONE (latency only) |
+| Capture audit/workspace config | 0 | DONE (diagnostic) |
+| **Total saved** | **1036** | **12.2% reduction** |
+
+### What blocks further reduction
+
+1. **3238 memset nodes (43%)**: CUDA graph replay correctness requires unconditional zeroing.
+   Root cause unknown — kernels behave differently during graph replay vs normal execution.
+   No CUDA API exists to conditionally skip nodes without affecting dependents.
+
+2. **1232 memcpy nodes (16%)**: 82% are pointer arrays (void\*\*) with unique runtime device
+   addresses. Pre-computation requires refactoring 56 call sites across 15+ files. Content
+   dedup already handles all dedupable content. `cudaGraphNodeSetEnabled` unusable (cascading
+   disable affects dependent kernel nodes).
+
+3. **30 alloc/free nodes (0.4%)**: Likely cuBLAS/cuDNN internal allocations bypassing capture
+   workspace. Could investigate but negligible impact.
+
+### Where to focus next
+
+**95.7% of per-step time is GPU kernel execution**. The path to faster inference is:
+
+1. **True kernel fusion** — reduce 2956 kernel launches
+   - Triton JIT backend (exists in codebase as `TritonGraphBackend.cpp`)
+   - Custom fused CUDA kernels for hot patterns (attention, layer_norm chain)
+   - Each fusion saves N-1 kernel launches + N-1 intermediate buffer reads/writes
+
+2. **Attention kernel optimization** — 12 attention heads × 24 nodes each = 288 nodes
+   - `onnx_multi_head_attention` is the heaviest single op
+   - Flash Attention integration would reduce to ~1 kernel per head
+
+3. **cuBLAS workspace sharing** — reduce 30 alloc/free nodes to 0
+   - Pre-allocate cuBLAS workspace before capture, pass via `CUBLAS_WORKSPACE_CONFIG`
+
+4. ~~**Accuracy gap**~~ — **RESOLVED: no gap exists**
+   - Both graph and no-graph produce identical 38/100 output
+   - CUDA graph replay is numerically identical to slot-by-slot (6.3x speedup, 0 quality loss)

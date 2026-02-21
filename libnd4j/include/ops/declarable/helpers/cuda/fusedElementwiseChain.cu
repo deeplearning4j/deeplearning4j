@@ -26,6 +26,7 @@
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <array/NDArray.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/PointersManager.h>
 
 namespace sd {
 namespace ops {
@@ -164,11 +165,11 @@ static void fusedChainCudaImpl(
     T clipMinVal = clipMin ? static_cast<T>(*clipMin) : T(0);
     T clipMaxVal = clipMax ? static_cast<T>(*clipMax) : T(0);
 
-    // Copy op codes to device memory (stream-ordered alloc)
-    FusedElemOp* deviceOps = nullptr;
-    cudaMallocAsync(&deviceOps, numOps * sizeof(FusedElemOp), *stream);
-    cudaMemcpyAsync(deviceOps, ops, numOps * sizeof(FusedElemOp),
-                    cudaMemcpyHostToDevice, *stream);
+    // Copy op codes to device via PointersManager (uses capture workspace during graph capture,
+    // eliminating MemAlloc/MemFree graph nodes that cudaMallocAsync would create)
+    PointersManager manager(context, "fusedElemChain");
+    auto deviceOps = reinterpret_cast<const FusedElemOp*>(
+        manager.replicatePointer(ops, numOps * sizeof(FusedElemOp)));
 
     int blockSize = 256;
     int gridSize = (length + blockSize - 1) / blockSize;
@@ -183,8 +184,7 @@ static void fusedChainCudaImpl(
             secPtrs[6], secLens[6], secPtrs[7], secLens[7],
             clipMinVal, clipMaxVal);
 
-    // Free device op codes after kernel completes
-    cudaFreeAsync(deviceOps, *stream);
+    // PointersManager frees device memory on destruction (no-op for capture workspace)
 }
 
 void fusedElementwiseChain(
