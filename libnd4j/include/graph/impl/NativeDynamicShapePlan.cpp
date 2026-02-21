@@ -960,11 +960,16 @@ Status NativeDynamicShapePlan::execute(
             segment.captureFailed = true;
             // Clear sticky CUDA errors from the failed graph attempt
             cudaGetLastError();
-            // Clear outputSlots for this segment's range (undo partial warmup modifications)
+            // Clear outputSlots AND slotArrayCache for this segment's range.
+            // View-capable ops during failed capture may have cached views whose
+            // DataBuffers point into freed capture buffers.
             for (int s = segment.startSlot; s <= segment.endSlot; s++) {
               for (int o = 0; o < slots_[s].numOutputs; o++) {
                 int si = slots_[s].outputSlotIndices[o];
-                if (si >= 0 && si < totalOutputSlots_) outputSlots_[si] = nullptr;
+                if (si >= 0 && si < totalOutputSlots_) {
+                  outputSlots_[si] = nullptr;
+                  slotArrayCache_[si] = nullptr;
+                }
               }
             }
             // Invalidate shape caches for this segment so slot-by-slot recomputes them
@@ -1770,6 +1775,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             cb.crossSegmentSlotIdx = -1;
             cb.capturedSize = srcBytes;
 
+            // Placeholders (attention_mask, position_ids) are modified in-place each step
+            // — same GPU pointer, different data. Must always copy into capture buffer.
+            auto srcType = static_cast<NativeSourceType>(slot.inputSourceTypes[i]);
+            if (srcType == SOURCE_PLACEHOLDER) {
+              cb.neverSkipCopy = true;
+            }
+
             extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
             seg.captureBuffers.push_back(std::move(cb));
           }
@@ -1854,6 +1866,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // This is used on capture failure fallback to recover the original cross-segment
   // inputs plus any non-swapped slots that may be nulled by releaseAtStep_.
   std::vector<NDArray*> preCapOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
+  // Save pendingClose_ size so we can discard entries added during capture on failure.
+  // View-capable ops during capture push step-0 arrays into pendingClose_, but those
+  // arrays are still referenced by preCapOutputSlots — deleting them causes dangling ptrs.
+  size_t pendingClosePreCapSize = pendingClose_.size();
+
+  // Disable frozen fast path during capture. Capture replaces external inputs with
+  // capture buffers and upstream slots produce different output arrays (new views, etc.).
+  // The frozen context has stale input/output pointers from the prior non-capture execution.
+  // Using the full (non-frozen) path during capture is a one-time cost — all context
+  // pointers are properly reconfigured with capture-time arrays.
+  // Save and restore frozenContextReady after capture so replay uses frozen fast path.
+  std::vector<bool> savedFrozenContextReady(seg.endSlot - seg.startSlot + 1);
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    savedFrozenContextReady[s - seg.startSlot] = slots_[s].frozenContextReady;
+    slots_[s].frozenContextReady = false;
+  }
 
   for (auto& [extIdx, cbIdx] : extInputToCaptureIdx) {
     savedExternalInputs.push_back({extIdx, externalArrays[extIdx]});
@@ -1937,14 +1965,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     // Capture may have partially mutated slot shape caches before beginCapture failed.
     invalidateSegmentShapeState(seg);
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
+    // Restore frozen context state so slot-by-slot fallback uses frozen fast path
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
+    }
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   bool captureOk = true;
   bool captureOomFailure = false;  // Track if failure was OOM (retryable)
+  int lastCaptureSlot = seg.startSlot;  // Track for exception diagnostics
 
   try {
     for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+      lastCaptureSlot = stepIdx;
       // Check capture status before executing slot
       {
         cudaStreamCaptureStatus capStatus;
@@ -1992,7 +2026,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
   } catch (const std::exception& e) {
-    sd_printf("NativeDynamicShapePlan: exception during graph capture: %s\n", e.what());
+    sd_printf("NativeDynamicShapePlan: exception during graph capture at slot %d (%s): %s\n",
+              lastCaptureSlot, slots_[lastCaptureSlot].opName.c_str(), e.what());
     captureOk = false;
     // Detect OOM exceptions: "[DEVICE] allocation failed" from DataBuffer.cu
     std::string msg(e.what());
@@ -2064,6 +2099,35 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                 seg.captureOomRetries);
     }
 
+    // Discard pendingClose_ entries added during capture. These reference step-0
+    // arrays that preCapOutputSlots still points to — deleting them would create
+    // dangling pointers after outputSlots_ restore. Delete capture-phase arrays
+    // that are NOT in preCapOutputSlots (they were allocated during capture).
+    {
+      // Delete capture-phase NDArrays that don't appear in preCapOutputSlots
+      std::unordered_set<NDArray*> preCapSet(preCapOutputSlots.begin(), preCapOutputSlots.end());
+      for (size_t pi = pendingClosePreCapSize; pi < pendingClose_.size(); pi++) {
+        if (preCapSet.find(pendingClose_[pi]) == preCapSet.end()) {
+          delete pendingClose_[pi];  // Capture-only array, safe to delete
+        }
+      }
+      pendingClose_.resize(pendingClosePreCapSize);
+    }
+
+    // Clear slotArrayCache_ for this segment BEFORE freeing capture buffers.
+    // During capture, view-capable ops (reshape/expand_dims/squeeze) create views
+    // sharing DataBuffers from capture buffer inputs. Freeing capture buffers
+    // invalidates those views. Clear the cache so slot-by-slot fallback
+    // allocates fresh arrays instead of reusing dangling views.
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int o = 0; o < slots_[s].numOutputs; o++) {
+        int si = slots_[s].outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) {
+          slotArrayCache_[si] = nullptr;
+        }
+      }
+    }
+
     // Free capture buffers on failure — they won't be needed
     for (auto& cb : seg.captureBuffers) {
       if (!cb.directReference) delete cb.buffer;
@@ -2076,16 +2140,43 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
     // Restore outputSlots_ — capture loop releases may have cleared cross-segment inputs
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
+    // Restore frozen context state so slot-by-slot fallback uses frozen fast path
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
+    }
     invalidateSegmentShapeState(seg);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
-  // Helper lambda to clean up capture buffers on failure
-  auto cleanupCaptureBuffersOnFailure = [&seg]() {
+  // Helper lambda to clean up capture buffers on failure.
+  // Must also clear slotArrayCache_ and rollback pendingClose_ because view-capable
+  // ops during capture created views sharing DataBuffers with capture buffer inputs.
+  auto cleanupCaptureBuffersOnFailure = [&seg, &preCapOutputSlots, &pendingClosePreCapSize, &savedFrozenContextReady, this]() {
+    // Rollback pendingClose_ — same logic as main failure path
+    std::unordered_set<NDArray*> preCapSet(preCapOutputSlots.begin(), preCapOutputSlots.end());
+    for (size_t pi = pendingClosePreCapSize; pi < pendingClose_.size(); pi++) {
+      if (preCapSet.find(pendingClose_[pi]) == preCapSet.end()) {
+        delete pendingClose_[pi];
+      }
+    }
+    pendingClose_.resize(pendingClosePreCapSize);
+    // Clear slot array cache
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int o = 0; o < slots_[s].numOutputs; o++) {
+        int si = slots_[s].outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) {
+          slotArrayCache_[si] = nullptr;
+        }
+      }
+    }
     for (auto& cb : seg.captureBuffers) {
       if (!cb.directReference) delete cb.buffer;
     }
     seg.captureBuffers.clear();
+    // Restore frozen context state so slot-by-slot fallback uses frozen fast path
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
+    }
   };
 
   // End capture and instantiate
@@ -2205,6 +2296,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     seg.captureRetryAfterExec = 0;
   }
 
+  // Restore frozen context state after successful capture.
+  // The frozen fast path was disabled during capture (stale pointers) but the captured
+  // graph now has correct addresses. Subsequent replay executions use the frozen path.
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
+  }
+
   if (executionTimingEnabled_) {
     auto stats = handle->getStatistics();
     sd_printf("NativeDynamicShapePlan: captured CUDA graph for segment [%d-%d] "
@@ -2302,6 +2400,7 @@ Status NativeDynamicShapePlan::executeSlot(
               NDArray* newView = new NDArray(input0->dataBuffer(),
                                              const_cast<LongType*>(outShapeInfo));
               outputSlots_[si] = newView;
+              slotIsViewProducer_[si] = true;
               auto& ctx2 = *contextPool_[stepIdx];
               ctx2.setOutputArray(0, newView);
               ctx2.setInputArray(0, input0);
@@ -2329,6 +2428,11 @@ Status NativeDynamicShapePlan::executeSlot(
     // Execution is in ascending slot order, so view-producer slot X always runs before
     // slot Y that reads X's output. By the time Y runs, outputSlots_[si_X] holds the
     // fresh view created by X's fast-path execution this step.
+    //
+    // NOTE: During CUDA graph capture, frozenContextReady is temporarily disabled
+    // (set to false before capture begins), so this code path is NOT reached during
+    // capture. All slots go through the full (non-frozen) path during capture, which
+    // properly configures context with capture-time arrays.
     for (int i = 0; i < slot.numInputs; i++) {
       int srcIdx = slot.inputSourceIndices[i];
       if (srcIdx < 0) {
@@ -2347,12 +2451,9 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     // Nullify output arrays before re-execution to prevent stale data accumulation.
-    // Only nullify when needsZeroedOutput is true — pure compute ops (matmul, add,
-    // relu, softmax, etc.) fully overwrite their output, so zeroing is unnecessary.
-    // Data-movement ops (reshape, permute, gather, concat) still get nullified.
     // EXCEPTION 1: Skip in-place fused ops — their output IS the input (same NDArray).
     // EXCEPTION 2: Skip view producer outputs — they're views into input data.
-    if (!slot.inPlaceFused && slot.needsZeroedOutput) {
+    if (!slot.inPlaceFused) {
       auto& ctxOuts = ctx.fastpath_out();
       for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
         if (ctxOuts[i] == nullptr) continue;
@@ -2571,6 +2672,7 @@ Status NativeDynamicShapePlan::executeSlot(
           }
           outputSlots_[slotIdx] = view;
           slotArrayCache_[slotIdx] = view;
+          slotIsViewProducer_[slotIdx] = true;
         }
 
         // Allocate remaining outputs normally (rare for these ops)
