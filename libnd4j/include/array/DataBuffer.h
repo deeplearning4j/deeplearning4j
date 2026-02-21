@@ -32,6 +32,7 @@
 
 #include <cstring>
 #include <mutex>
+#include <unordered_map>
 #include <vector>
 namespace sd {
 
@@ -63,6 +64,17 @@ SD_LIB_EXPORT extern thread_local cudaStream_t tl_graphCaptureStream;
  * After capture, these are transferred to CudaGraphHandle for lifetime management.
  */
 SD_LIB_EXPORT extern thread_local std::vector<void*> tl_capturedHostPtrs;
+
+#ifndef __JAVACPP_HACK__
+/**
+ * Thread-local cache for PointersManager H2D copies during CUDA graph capture.
+ * Maps {content_hash ^ size} → device pointer. When the same data is uploaded
+ * multiple times during capture (e.g., dimension arrays [0,1] used by many ops),
+ * the cached device pointer is returned without creating a redundant memcpy node.
+ * Cleared at the start of each capture.
+ */
+SD_LIB_EXPORT extern thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+#endif
 
 /**
  * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture

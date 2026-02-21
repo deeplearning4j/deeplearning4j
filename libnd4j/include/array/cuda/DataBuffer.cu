@@ -48,6 +48,9 @@ thread_local cudaStream_t tl_graphCaptureStream = nullptr;
 // Transferred to CudaGraphHandle after successful capture; freed on capture abort.
 thread_local std::vector<void*> tl_capturedHostPtrs;
 
+// Cache for PointersManager H2D copies during capture — deduplicates dimension arrays
+thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+
 // Capture workspace: pre-allocated GPU buffer for eliminating cudaMallocAsync nodes
 thread_local void* tl_captureWorkspace = nullptr;
 thread_local size_t tl_captureWorkspaceSize = 0;

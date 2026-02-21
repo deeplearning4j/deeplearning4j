@@ -28,6 +28,7 @@
 #define LIBND4J_FUSION_PASS_H
 
 #include <system/common.h>
+#include <climits>
 #include <vector>
 #include <string>
 
@@ -109,10 +110,11 @@ public:
     static bool isActivation(sd::LongType opHash);
 
     /**
-     * Maximum chain length for element-wise fusion.
-     * Longer chains increase register pressure and reduce benefit.
+     * Maximum chain length for element-wise in-place buffer chaining.
+     * No practical limit — each op is still a separate kernel launch,
+     * so chain length only affects buffer reuse (no register pressure).
      */
-    static constexpr int MAX_CHAIN_LENGTH = 8;
+    static constexpr int MAX_CHAIN_LENGTH = INT_MAX;
 };
 
 }  // namespace graph

@@ -136,6 +136,13 @@ struct SD_LIB_EXPORT CaptureAuditEntry {
     size_t nodesAfter = 0;         // Graph node count after this op executed
     size_t nodesContributed = 0;   // nodesAfter - nodesBefore
 
+    // Per-op node type breakdown (populated post-capture)
+    int kernels = 0;
+    int memcpys = 0;
+    int memsets = 0;
+    int memAllocs = 0;
+    int memFrees = 0;
+
     bool isHostOnly() const { return nodesContributed == 0; }
 };
 

@@ -35,6 +35,8 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdlib>
+#include <numeric>
 #include <climits>
 #include <cstring>
 #include <unordered_map>
@@ -1447,12 +1449,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
 
-    // Sync stream before launch to ensure all capture buffer copies are complete.
-    // cudaGraphLaunch may fail with "invalid argument" if async copies haven't
-    // committed to the stream yet (observed with 14072-node mega-graphs).
-    if (captureBuffersOk && cudaStr != nullptr) {
-      cudaStreamSynchronize(cudaStr);
-    }
+    // No sync needed before graph launch: capture buffer copies use cudaMemcpyAsync
+    // on cudaStr, and cudaGraphLaunch also runs on cudaStr. Same-stream operations
+    // are ordered by the CUDA runtime — the copies complete before graph launch begins.
+    // (The frozen fast path at line ~719 already skips this sync successfully.)
     if (captureBuffersOk && seg.cachedGraph->launchAsync(cudaStr)) {
       // Restore outputSlots_ from slot cache — during replay, executeSlot() is not
       // called, but the graph writes to the same GPU buffers the cached arrays point to.
@@ -1945,8 +1945,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Allocate capture workspace BEFORE beginCapture (cudaMalloc must be outside capture).
   // This eliminates cudaMallocAsync/cudaFreeAsync graph nodes from PointersManager temporaries.
   // With 3781 slots and ~1939 temporary allocations, we need enough workspace to hold
-  // all temporaries simultaneously. Use 512MB to be safe (most temps are small shape arrays).
-  static constexpr size_t CAPTURE_WORKSPACE_SIZE = 512ULL * 1024 * 1024;  // 512MB
+  // all temporaries simultaneously. Default 512MB; configurable via ND4J_DSP_CAPTURE_WORKSPACE_MB.
+  static size_t CAPTURE_WORKSPACE_SIZE = []() -> size_t {
+    const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
+    size_t mb = 512;  // default
+    if (envVal != nullptr) {
+      int parsed = std::atoi(envVal);
+      if (parsed > 0 && parsed <= 4096) {
+        mb = static_cast<size_t>(parsed);
+      }
+    }
+    return mb * 1024ULL * 1024ULL;
+  }();
   sd_printf("NativeDSP: capture workspace check for segment [%d-%d]: ptr=%p bytes=%zu\n",
             seg.startSlot, seg.endSlot, seg.captureWorkspacePtr, seg.captureWorkspaceBytes);
   if (seg.captureWorkspacePtr == nullptr) {
@@ -1972,6 +1982,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   tl_graphExecutionActive = true;
   tl_capturedHostPtrs.clear();  // Reset pinned host ptr accumulator for this capture
+  tl_captureReplicateCache.clear();  // Reset H2D content dedup cache
 
   if (!handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed)) {
     sd_printf("NativeDynamicShapePlan: graph capture begin failed for segment [%d-%d]\n",
@@ -2004,6 +2015,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   bool captureOk = true;
   bool captureOomFailure = false;  // Track if failure was OOM (retryable)
   int lastCaptureSlot = seg.startSlot;  // Track for exception diagnostics
+  lastCaptureAudit_.clear();
 
   try {
     for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
@@ -2021,6 +2033,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           break;
         }
       }
+
+      // Track node count before this op for capture audit
+      size_t nodesBefore = handle->getNumNodesDuringCapture(cudaStr);
 
       auto status = executeSlot(stepIdx, externalArrays, numExt, stream);
       if (status != Status::OK) {
@@ -2043,6 +2058,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
           // Capture invalidation is permanent (op does host sync or cross-stream work)
           break;
         }
+      }
+
+      // Track node count after this op for capture audit
+      size_t nodesAfter = handle->getNumNodesDuringCapture(cudaStr);
+      {
+        cuda::CaptureAuditEntry entry;
+        entry.slotIndex = stepIdx;
+        entry.opName = slots_[stepIdx].opName;
+        entry.nodesBefore = nodesBefore;
+        entry.nodesAfter = nodesAfter;
+        entry.nodesContributed = (nodesAfter > nodesBefore) ? (nodesAfter - nodesBefore) : 0;
+        lastCaptureAudit_.push_back(std::move(entry));
       }
 
       // Release dead slots during capture
@@ -2098,6 +2125,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (ptr != nullptr) cudaFreeHost(ptr);
     }
     tl_capturedHostPtrs.clear();
+    tl_captureReplicateCache.clear();
 
     // Clear any sticky CUDA errors left from the failed capture
     cudaGetLastError();
@@ -2218,6 +2246,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (ptr != nullptr) cudaFreeHost(ptr);
     }
     tl_capturedHostPtrs.clear();
+    tl_captureReplicateCache.clear();
     // Clear sticky CUDA errors and reset stream
     cudaGetLastError();
     cudaStreamSynchronize(cudaStr);
@@ -2239,6 +2268,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (ptr != nullptr) cudaFreeHost(ptr);
     }
     tl_capturedHostPtrs.clear();
+    tl_captureReplicateCache.clear();
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
     cleanupCaptureBuffersOnFailure();
@@ -2279,6 +2309,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       if (ptr != nullptr) cudaFreeHost(ptr);
     }
     tl_capturedHostPtrs.clear();
+    tl_captureReplicateCache.clear();
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
     cleanupCaptureBuffersOnFailure();
@@ -2294,6 +2325,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     handle->addCapturedHostPtr(ptr);
   }
   tl_capturedHostPtrs.clear();
+  tl_captureReplicateCache.clear();
 
   // Cache the graph for future replays
   seg.cachedGraph = handle;
@@ -2334,15 +2366,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (executionTimingEnabled_) {
     auto stats = handle->getStatistics();
+    double wsUtilPct = seg.captureWorkspaceBytes > 0
+        ? (100.0 * captureWorkspaceUsed / seg.captureWorkspaceBytes) : 0.0;
     sd_printf("NativeDynamicShapePlan: captured CUDA graph for segment [%d-%d] "
               "(%zu nodes, %zu edges) [%d kern, %d memcpy, %d memset, %d alloc, %d free] "
-              "workspace=%zuKB/%zuKB\n",
+              "workspace=%zuKB/%zuKB (%.1f%%)\n",
               seg.startSlot, seg.endSlot,
               handle->getNumNodes(), handle->getNumEdges(),
               stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
               stats.numMemAllocs, stats.numMemFrees,
               seg.captureWorkspacePtr ? (captureWorkspaceUsed / 1024) : 0,
-              seg.captureWorkspaceBytes / 1024);
+              seg.captureWorkspaceBytes / 1024, wsUtilPct);
+
+    // Print top-10 ops by node count for optimization targeting
+    if (!lastCaptureAudit_.empty()) {
+      printCaptureAudit();
+    }
   }
 
   return Status::OK;
@@ -3798,15 +3837,15 @@ std::vector<cuda::CaptureAuditEntry> NativeDynamicShapePlan::getHostOnlyOps() co
 
 void NativeDynamicShapePlan::printCaptureAudit() const {
   if (lastCaptureAudit_.empty()) {
-    sd_print("NativeDynamicShapePlan: No capture audit data (debug/verbose mode was off during capture)\n");
+    sd_print("NativeDynamicShapePlan: No capture audit data (no capture has occurred)\n");
     return;
   }
 
-  sd_print("╔══════════════════════════════════════════════════════════════════╗\n");
-  sd_print("║           CUDA GRAPH CAPTURE AUDIT (per-op node count)         ║\n");
-  sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+  sd_print("╔══════════════════════════════════════════════════════════════════════════╗\n");
+  sd_print("║           CUDA GRAPH CAPTURE AUDIT (per-op node count)                 ║\n");
+  sd_print("╠══════════════════════════════════════════════════════════════════════════╣\n");
   sd_printf("║ Total ops in segment: %zu\n", lastCaptureAudit_.size());
-  sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+  sd_print("╠══════════════════════════════════════════════════════════════════════════╣\n");
 
   int hostOnlyCount = 0;
   size_t totalNodes = 0;
@@ -3815,27 +3854,37 @@ void NativeDynamicShapePlan::printCaptureAudit() const {
     totalNodes += entry.nodesContributed;
     if (entry.isHostOnly()) {
       hostOnlyCount++;
-      sd_printf("║  [slot %3d] %-30s  nodes: %3zu  *** HOST-ONLY ***\n",
-                entry.slotIndex, entry.opName.c_str(), entry.nodesContributed);
-    } else {
-      sd_printf("║  [slot %3d] %-30s  nodes: %3zu\n",
-                entry.slotIndex, entry.opName.c_str(), entry.nodesContributed);
     }
   }
 
-  sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+  // Print top-10 ops by node contribution (highest first)
+  sd_print("║ TOP-10 OPS BY NODE COUNT:\n");
+  std::vector<size_t> indices(lastCaptureAudit_.size());
+  std::iota(indices.begin(), indices.end(), 0);
+  std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
+    return lastCaptureAudit_[a].nodesContributed > lastCaptureAudit_[b].nodesContributed;
+  });
+  int topN = std::min(static_cast<int>(indices.size()), 10);
+  for (int i = 0; i < topN; i++) {
+    const auto& entry = lastCaptureAudit_[indices[i]];
+    sd_printf("║  #%2d [slot %3d] %-25s  nodes: %3zu%s\n",
+              i + 1, entry.slotIndex, entry.opName.c_str(), entry.nodesContributed,
+              entry.isHostOnly() ? "  *** HOST-ONLY ***" : "");
+  }
+
+  sd_print("╠══════════════════════════════════════════════════════════════════════════╣\n");
   sd_printf("║ Total CUDA graph nodes: %zu from %zu ops\n",
             totalNodes, lastCaptureAudit_.size());
+  sd_printf("║ Host-only ops: %d, Node-contributing ops: %zu\n",
+            hostOnlyCount, lastCaptureAudit_.size() - hostOnlyCount);
   if (hostOnlyCount > 0) {
     sd_printf("║ *** WARNING: %d HOST-ONLY ops detected! ***\n", hostOnlyCount);
     sd_print("║ Host-only ops do work during capture but NOT during replay.\n");
     sd_print("║ Their outputs will be STALE on the 2nd+ graph execution.\n");
-    sd_print("║ These ops must be excluded from CUDA graph segments or\n");
-    sd_print("║ must be rewritten to use CUDA kernels for all their work.\n");
   } else {
     sd_print("║ All ops contributed CUDA graph nodes. Graph is complete.\n");
   }
-  sd_print("╚══════════════════════════════════════════════════════════════════╝\n");
+  sd_print("╚══════════════════════════════════════════════════════════════════════════╝\n");
 }
 
 bool NativeDynamicShapePlan::validateCapturedGraph(int segmentIndex) const {

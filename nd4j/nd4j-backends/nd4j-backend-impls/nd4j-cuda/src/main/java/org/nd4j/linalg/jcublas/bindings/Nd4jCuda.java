@@ -320,6 +320,7 @@ public static final int
 
 // #include <cstring>
 // #include <mutex>
+// #include <unordered_map>
 // #include <vector>
 
 /**
@@ -349,6 +350,9 @@ public static final int
  * After capture, these are transferred to CudaGraphHandle for lifetime management.
  */
 @Namespace("sd") public static native @Cast("void**") @StdVector PointerPointer tl_capturedHostPtrs(); public static native void tl_capturedHostPtrs(PointerPointer setter);
+
+// #ifndef __JAVACPP_HACK__
+// #endif
 
 /**
  * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture

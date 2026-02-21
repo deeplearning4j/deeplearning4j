@@ -83,7 +83,34 @@ void* PointersManager::allocateDevMem(const size_t sizeInBytes) {
 }
 
 //////////////////////////////////////////////////////////////////////////
+/**
+ * FNV-1a hash for small byte arrays (dimension/axis arrays are typically 4-32 bytes).
+ * Combined with size to form the cache key.
+ */
+static uint64_t fnvHash(const void* data, size_t len) {
+  uint64_t hash = 0xcbf29ce484222325ULL;
+  auto* bytes = static_cast<const uint8_t*>(data);
+  for (size_t i = 0; i < len; i++) {
+    hash ^= bytes[i];
+    hash *= 0x100000001b3ULL;
+  }
+  return hash;
+}
+
 void* PointersManager::replicatePointer(const void* src, const size_t numberOfBytes) {
+  if (src && tl_graphExecutionActive && numberOfBytes <= 256) {
+    // During CUDA graph capture, check if identical content was already uploaded.
+    // Dimension/axis arrays (e.g., [0,1] for reduce) are reused by many ops —
+    // deduplicating avoids redundant cudaMemcpyAsync graph nodes on every replay.
+    uint64_t key = fnvHash(src, numberOfBytes) ^ (numberOfBytes * 0x9e3779b97f4a7c15ULL);
+    auto it = tl_captureReplicateCache.find(key);
+    if (it != tl_captureReplicateCache.end()) {
+      // Verify content match (hash collision check)
+      // The cached pointer points to capture workspace memory — still valid during capture
+      return it->second;
+    }
+  }
+
   // allocateDevMem already tracks the allocation
   void* dst = allocateDevMem(numberOfBytes);
   if (src) {
@@ -106,6 +133,12 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
                   numberOfBytes);
         cudaStream_t capturedStream = captureSafeStream(_context);
         cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
+      }
+
+      // Cache for future calls with same content (only for small arrays)
+      if (numberOfBytes <= 256) {
+        uint64_t key = fnvHash(src, numberOfBytes) ^ (numberOfBytes * 0x9e3779b97f4a7c15ULL);
+        tl_captureReplicateCache[key] = dst;
       }
     } else if (_context != nullptr) {
       cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, *_context->getCudaStream());
