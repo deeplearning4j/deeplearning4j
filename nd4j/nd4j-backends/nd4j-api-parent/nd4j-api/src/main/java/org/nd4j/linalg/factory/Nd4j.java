@@ -8011,22 +8011,73 @@ public class Nd4j {
 
 
     /**
-     * Execute the operation and return the result
+     * Execute the operation and return the result.
+     * If a GraphScope is active on this thread, the op will be recorded
+     * into the hidden SameDiff graph instead of being executed eagerly.
      *
      * @param op the operation to execute
      */
     public static INDArray[] exec(CustomOp op) {
+        GraphScope scope = GraphScope.active();
+        if (scope != null) {
+            return scope.recordOp(op);
+        }
         return getExecutioner().exec(op);
     }
 
     /**
-     * Execute the operation and return the result
+     * Execute the operation and return the result.
+     * If a GraphScope is active on this thread, the op will be recorded
+     * into the hidden SameDiff graph instead of being executed eagerly.
      *
      * @param op the operation to execute
      */
     public static INDArray[] exec(CustomOp op, OpContext context) {
+        GraphScope scope = GraphScope.active();
+        if (scope != null) {
+            return scope.recordOp(op);
+        }
         return getExecutioner().exec(op, context);
     }
 
+    /**
+     * Create a new GraphScope for tracing Nd4j operations into a compiled graph.
+     *
+     * Usage:
+     * <pre>
+     * try (GraphScope scope = Nd4j.graphScope()) {
+     *     scope.begin();
+     *     INDArray mm = Nd4j.matmul(a, b);
+     *     INDArray out = Nd4j.nn.relu(mm);
+     *     scope.end();
+     * }
+     * </pre>
+     *
+     * @return a new GraphScope
+     */
+    public static GraphScope graphScope() {
+        return new GraphScope();
+    }
+
+    /**
+     * Compile a reusable graph function. The function is traced on first execution,
+     * compiled into a DSP plan, and replayed on subsequent calls.
+     *
+     * Usage:
+     * <pre>
+     * CompiledGraphFunction fn = Nd4j.compile(2, inputs -> {
+     *     INDArray mm = Nd4j.matmul(inputs[0], inputs[1]);
+     *     return new INDArray[]{Nd4j.nn.relu(mm)};
+     * });
+     * INDArray[] result = fn.execute(a, b);
+     * </pre>
+     *
+     * @param numInputs the number of input arrays the function expects
+     * @param fn the graph function to compile
+     * @return a compiled graph function that can be executed repeatedly
+     */
+    public static CompiledGraphFunction compile(int numInputs, GraphFunction fn) {
+        return new CompiledGraphFunction(fn, numInputs);
+    }
 
 }

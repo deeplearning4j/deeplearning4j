@@ -96,7 +96,7 @@ public class DynamicShapePlanCompiler {
      */
     private static final Set<String> FULLY_WRITING_OPS = Set.of(
             // Matrix ops — BLAS contractually writes C[i,j] = sum(A[i,k]*B[k,j]) for all (i,j)
-            "matmul", "mmul", "batched_gemm", "tensormmul", "xw_plus_b",
+            "matmul", "mmul", "batched_gemm", "tensormmul",
             // Elementwise binary — output[i] = f(a[i], b[i]) for every i (with broadcasting)
             "add", "subtract", "multiply", "divide", "floormod", "floordiv",
             "reversedivide", "reversesubtract", "squaredsubtract",
@@ -121,27 +121,7 @@ public class DynamicShapePlanCompiler {
             // Type conversion — converts every element
             "cast",
             // Clip — elementwise
-            "clipbyvalue",
-            // Data movement — each writes every element of output (views are zero-cost on GPU)
-            "gather", "concat", "stack", "split", "unstack", "slice", "strided_slice",
-            "reshape", "permute", "transpose", "expand_dims", "squeeze",
-            // Shape/metadata — small scalar outputs, always fully written
-            "shape_of", "size_at", "rank",
-            // Array creation — allocates and fills entire output
-            "create", "ones", "zeros", "fill", "range", "linspace",
-            "ones_like", "zeros_like", "ones_as", "zeroslike",
-            // Copy/tile — fully writes output
-            "assign", "tile",
-            // Indexing — write every element at target locations
-            "set_scalar", "scatter_nd", "scatter_update",
-            // Selection — writes every element (conditional)
-            "where", "select",
-            // Normalization — fully computed output
-            "rms_norm", "layer_norm", "batch_norm",
-            // Fused ops from GraphOptimizer
-            "swish_mul", "dot_product_attention_v2", "kv_scatter", "token_sample",
-            // Attention
-            "onnx_multi_head_attention"
+            "clipbyvalue"
     );
 
     private DynamicShapePlanCompiler() {}

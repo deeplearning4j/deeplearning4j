@@ -40,6 +40,7 @@ import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -171,6 +172,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Getter
     @Setter
     private boolean enableCache = true;
+
+    ///////////////////////////////////////
+    //Graph execution mode for DSP (Dynamic Shape Plan) executor
+    @Getter @Setter
+    private GraphExecutionMode graphExecutionMode = GraphExecutionMode.AUTO;
 
     ///////////////////////////////////////
     //Fields related to training

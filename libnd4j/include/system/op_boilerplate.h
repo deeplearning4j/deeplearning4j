@@ -2736,6 +2736,12 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #define T_ARG(INDEX) block.getTArguments()->at(INDEX)
 #define B_ARG(INDEX) block.getBArguments()->at(INDEX)
 
+// Optional argument macros: return default if index is out of range
+#define INT_ARG_OR(INDEX, DEFAULT) \
+  ((block.getIArguments()->size() > static_cast<size_t>(INDEX)) ? block.getIArguments()->at(INDEX) : (DEFAULT))
+#define T_ARG_OR(INDEX, DEFAULT) \
+  ((block.getTArguments()->size() > static_cast<size_t>(INDEX)) ? block.getTArguments()->at(INDEX) : (DEFAULT))
+
 #define COPY_SHAPE(SRC, TGT) TGT = ShapeBuilders::copyShapeInfo(SRC, true, block.getWorkspace())
 
 #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE) TGT = ShapeBuilders::copyShapeInfo(SRC, true, WORKSPACE)

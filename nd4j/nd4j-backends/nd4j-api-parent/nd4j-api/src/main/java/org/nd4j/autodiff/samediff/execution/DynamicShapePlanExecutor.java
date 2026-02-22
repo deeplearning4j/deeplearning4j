@@ -3916,6 +3916,43 @@ public class DynamicShapePlanExecutor implements Closeable {
             // apply to ALL plans (including prefill) which have different shapes.
             boolean shapesFrozen = false;
 
+            // Configure JIT mode if system property set
+            String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
+            if (!"graph".equalsIgnoreCase(jitModeStr)) {
+                int jitModeInt = 0;  // GRAPH_ONLY
+                if ("jit".equalsIgnoreCase(jitModeStr)) {
+                    jitModeInt = 1;  // JIT_ONLY
+                } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
+                    jitModeInt = 2;  // GRAPH_PLUS_JIT
+                }
+                try {
+                    nativeOps.setPlanJitMode(nativePlanHandle, jitModeInt);
+                    log.info("Native executor: JIT mode set to {} ({})", jitModeStr, jitModeInt);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support JIT
+                }
+            }
+
+            // Configure graph execution mode from SameDiff or system property
+            GraphExecutionMode gem = sd.getGraphExecutionMode();
+            // System property overrides SameDiff setting
+            String gemStr = System.getProperty(ND4JSystemProperties.DSP_GRAPH_EXECUTION_MODE);
+            if (gemStr != null) {
+                try {
+                    gem = GraphExecutionMode.valueOf(gemStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid graph execution mode '{}', using {}", gemStr, gem);
+                }
+            }
+            if (gem != GraphExecutionMode.AUTO) {
+                try {
+                    nativeOps.setPlanGraphExecutionMode(nativePlanHandle, gem.getNativeCode());
+                    log.info("Native executor: graph execution mode set to {}", gem);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support graph execution mode
+                }
+            }
+
             // Enable execution timing if system property set
             boolean execTiming = "true".equalsIgnoreCase(
                     System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));

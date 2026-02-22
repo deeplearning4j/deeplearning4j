@@ -37,13 +37,14 @@ function(cuda_cleanup_tmp_files)
     endif()
 
     # Check both /tmp and build directory for temp files
+    # NOTE: Do NOT clean compiler_tmp — GCC uses it for active .s assembler temp files.
+    # Cleaning it during builds causes "can't open .s for reading" errors.
     set(CLEANUP_PATTERNS
         "/tmp/tmpxft_*"
         "/tmp/cuda-dbg"
         "/tmp/fatbin*"
         "/tmp/nvcc*"
         "${CMAKE_BINARY_DIR}/nvcc_tmp/*"
-        "${CMAKE_BINARY_DIR}/compiler_tmp/*"
     )
 
     set(TOTAL_CLEANED 0)
@@ -224,7 +225,7 @@ echo '🧹 Cleaning CUDA temporary files...'
 
 # Count files before (both /tmp and build directory)
 BEFORE=\$(find /tmp -maxdepth 1 -name 'tmpxft_*' 2>/dev/null | wc -l)
-BUILD_BEFORE=\$(find ${CMAKE_BINARY_DIR}/nvcc_tmp ${CMAKE_BINARY_DIR}/compiler_tmp -type f 2>/dev/null | wc -l)
+BUILD_BEFORE=\$(find ${CMAKE_BINARY_DIR}/nvcc_tmp -type f 2>/dev/null | wc -l)
 
 # Remove tmpxft files from /tmp
 rm -rf /tmp/tmpxft_* 2>/dev/null
@@ -235,13 +236,12 @@ rm -rf /tmp/cuda-dbg/* 2>/dev/null
 # Remove other CUDA temp files from /tmp
 rm -rf /tmp/fatbin* /tmp/nvcc* 2>/dev/null
 
-# Clean build directory temp files
+# Clean build directory nvcc temp files (NOT compiler_tmp - GCC uses it for active .s files)
 rm -rf ${CMAKE_BINARY_DIR}/nvcc_tmp/* 2>/dev/null
-rm -rf ${CMAKE_BINARY_DIR}/compiler_tmp/* 2>/dev/null
 
 # Count files after
 AFTER=\$(find /tmp -maxdepth 1 -name 'tmpxft_*' 2>/dev/null | wc -l)
-BUILD_AFTER=\$(find ${CMAKE_BINARY_DIR}/nvcc_tmp ${CMAKE_BINARY_DIR}/compiler_tmp -type f 2>/dev/null | wc -l)
+BUILD_AFTER=\$(find ${CMAKE_BINARY_DIR}/nvcc_tmp -type f 2>/dev/null | wc -l)
 
 CLEANED=\$((BEFORE - AFTER + BUILD_BEFORE - BUILD_AFTER))
 if [ \$CLEANED -gt 0 ]; then

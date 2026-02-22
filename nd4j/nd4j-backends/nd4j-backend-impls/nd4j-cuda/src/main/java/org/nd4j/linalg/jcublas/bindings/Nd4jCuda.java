@@ -3430,6 +3430,21 @@ public native void setPlanShapesFrozen(@Cast("sd::Pointer") Pointer planHandle, 
 public native void setPlanExecutionTimingEnabled(@Cast("sd::Pointer") Pointer planHandle, @Cast("bool") boolean enabled);
 
 /**
+ * Set the JIT compilation mode for DSP segment execution.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param mode  0 = GRAPH_ONLY (default), 1 = JIT_ONLY, 2 = GRAPH_PLUS_JIT
+ */
+public native void setPlanJitMode(@Cast("sd::Pointer") Pointer planHandle, int mode);
+
+/**
+ * Set the graph execution mode for DSP execution.
+ * Controls which backend is used for segment execution.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+ */
+public native void setPlanGraphExecutionMode(@Cast("sd::Pointer") Pointer planHandle, int mode);
+
+/**
  * Enable/disable trace logging for DSP execution decisions.
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @param enabled     true to enable trace, false to disable
@@ -3587,6 +3602,136 @@ public native @Cast("char*") String getPlanCudaGraphChromeTraceJson(@Cast("sd::P
  * @param planHandle  Handle from compileDynamicShapePlan()
  */
 public native void clearPlanCudaGraphTimeline(@Cast("sd::Pointer") Pointer planHandle);
+
+// =============================================================================
+// NCCL Collective Communication Operations
+// =============================================================================
+
+/**
+ * Initialize an NCCL communicator for a group of GPUs.
+ *
+ * @param numRanks   Number of ranks (GPUs) in the communicator
+ * @param rankId     This process's rank (0-indexed)
+ * @param deviceId   CUDA device ID for this rank
+ * @return Opaque pointer to the NCCL communicator, or nullptr on failure
+ */
+public native @Cast("sd::Pointer") Pointer ncclCommInit(int numRanks, int rankId, int deviceId);
+
+/**
+ * Initialize an NCCL communicator from a unique ID (for multi-process).
+ *
+ * @param numRanks   Number of ranks
+ * @param rankId     This process's rank
+ * @param uniqueId   Pointer to an ncclUniqueId (128 bytes)
+ * @return Opaque pointer to the NCCL communicator
+ */
+public native @Cast("sd::Pointer") Pointer ncclCommInitWithId(int numRanks, int rankId, @Cast("sd::Pointer") Pointer uniqueId);
+
+/**
+ * Generate a unique NCCL ID for multi-process initialization.
+ *
+ * @return Pointer to a newly allocated ncclUniqueId (caller must free)
+ */
+public native @Cast("sd::Pointer") Pointer ncclGetUniqueId();
+
+/**
+ * Destroy an NCCL communicator and release resources.
+ *
+ * @param commHandle Handle from ncclCommInit
+ */
+public native void ncclCommDestroy(@Cast("sd::Pointer") Pointer commHandle);
+
+/**
+ * AllReduce: sum all tensors across ranks, result available on all ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (OpaqueDataBuffer*)
+ * @param recvBuf      Receive buffer (OpaqueDataBuffer*), can be same as sendBuf for in-place
+ * @param numElements  Number of elements
+ * @param dataType     Data type (sd::DataType ordinal)
+ * @param reduceOp     Reduction operation (0=SUM, 1=PROD, 2=MAX, 3=MIN, 4=AVG)
+ * @param stream       CUDA stream pointer (nullptr for default stream)
+ * @return 0 on success, non-zero on failure
+ */
+public native int ncclDoAllReduce(@Cast("sd::Pointer") Pointer commHandle,
+                                   @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::Pointer") Pointer recvBuf,
+                                   @Cast("sd::LongType") long numElements, int dataType,
+                                   int reduceOp, @Cast("sd::Pointer") Pointer stream);
+
+/**
+ * AllGather: gather data from all ranks, result available on all ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (this rank's data)
+ * @param recvBuf      Receive buffer (must hold numRanks * sendCount elements)
+ * @param sendCount    Number of elements per rank
+ * @param dataType     Data type ordinal
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+public native int ncclDoAllGather(@Cast("sd::Pointer") Pointer commHandle,
+                                   @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::Pointer") Pointer recvBuf,
+                                   @Cast("sd::LongType") long sendCount, int dataType,
+                                   @Cast("sd::Pointer") Pointer stream);
+
+/**
+ * ReduceScatter: reduce then scatter result across ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (full data)
+ * @param recvBuf      Receive buffer (this rank's shard)
+ * @param recvCount    Number of elements per rank after scatter
+ * @param dataType     Data type ordinal
+ * @param reduceOp     Reduction operation
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+public native int ncclDoReduceScatter(@Cast("sd::Pointer") Pointer commHandle,
+                                       @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::Pointer") Pointer recvBuf,
+                                       @Cast("sd::LongType") long recvCount, int dataType,
+                                       int reduceOp, @Cast("sd::Pointer") Pointer stream);
+
+/**
+ * Send data to a specific peer rank.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer
+ * @param numElements  Number of elements to send
+ * @param dataType     Data type ordinal
+ * @param peerRank     Destination rank
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+public native int ncclDoSend(@Cast("sd::Pointer") Pointer commHandle,
+                              @Cast("sd::Pointer") Pointer sendBuf, @Cast("sd::LongType") long numElements,
+                              int dataType, int peerRank, @Cast("sd::Pointer") Pointer stream);
+
+/**
+ * Receive data from a specific peer rank.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param recvBuf      Receive buffer
+ * @param numElements  Number of elements to receive
+ * @param dataType     Data type ordinal
+ * @param peerRank     Source rank
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+public native int ncclDoRecv(@Cast("sd::Pointer") Pointer commHandle,
+                              @Cast("sd::Pointer") Pointer recvBuf, @Cast("sd::LongType") long numElements,
+                              int dataType, int peerRank, @Cast("sd::Pointer") Pointer stream);
+
+/**
+ * Begin a group of NCCL operations (for fusing multiple collectives).
+ * @return 0 on success
+ */
+public native int ncclGroupStart();
+
+/**
+ * End a group of NCCL operations.
+ * @return 0 on success
+ */
+public native int ncclGroupEnd();
 
 // #endif // NATIVEOPS_H
 
@@ -11463,6 +11608,12 @@ public static final int SD_ALL_OPS_ACTIVATED = 1;
 // #define I_ARG(INDEX) INT_ARG(INDEX)
 // #define T_ARG(INDEX) block.getTArguments()->at(INDEX)
 // #define B_ARG(INDEX) block.getBArguments()->at(INDEX)
+
+// Optional argument macros: return default if index is out of range
+// #define INT_ARG_OR(INDEX, DEFAULT)
+//   ((block.getIArguments()->size() > static_cast<size_t>(INDEX)) ? block.getIArguments()->at(INDEX) : (DEFAULT))
+// #define T_ARG_OR(INDEX, DEFAULT)
+//   ((block.getTArguments()->size() > static_cast<size_t>(INDEX)) ? block.getTArguments()->at(INDEX) : (DEFAULT))
 
 // #define COPY_SHAPE(SRC, TGT) TGT = ShapeBuilders::copyShapeInfo(SRC, true, block.getWorkspace())
 

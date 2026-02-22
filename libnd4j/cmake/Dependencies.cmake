@@ -17,23 +17,19 @@ if(NPROC EQUAL 0)
     set(NPROC 4)  # Fallback
 endif()
 
-# Use SD_PARALLEL_COMPILE_JOBS if specified, otherwise compute from memory
-if(DEFINED SD_PARALLEL_COMPILE_JOBS AND NOT SD_PARALLEL_COMPILE_JOBS STREQUAL "" AND NOT SD_PARALLEL_COMPILE_JOBS STREQUAL "0")
-    set(DEP_PARALLEL_JOBS ${SD_PARALLEL_COMPILE_JOBS})
-else()
-    # Dependencies use less memory per compile (~1GB vs 2GB for main build)
-    # So we can be more aggressive with parallelism
-    cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
-    math(EXPR MEM_BASED_JOBS "${AVAILABLE_MEMORY} / 1000")  # 1GB per job for deps
+# Dependencies (LLVM, flatbuffers, etc.) use less memory per compile (~1GB vs 2-4GB for CUDA)
+# Always auto-compute from available memory and cores — don't use SD_PARALLEL_COMPILE_JOBS
+# which is tuned for CUDA compilation and would under-utilize the machine.
+cmake_host_system_information(RESULT AVAILABLE_MEMORY QUERY AVAILABLE_PHYSICAL_MEMORY)
+math(EXPR MEM_BASED_JOBS "${AVAILABLE_MEMORY} / 1000")  # 1GB per job for deps
 
-    # Cap at processor count and ensure at least 4
-    if(MEM_BASED_JOBS GREATER NPROC)
-        set(DEP_PARALLEL_JOBS ${NPROC})
-    elseif(MEM_BASED_JOBS LESS 4)
-        set(DEP_PARALLEL_JOBS 4)
-    else()
-        set(DEP_PARALLEL_JOBS ${MEM_BASED_JOBS})
-    endif()
+# Cap at processor count and ensure at least 4
+if(MEM_BASED_JOBS GREATER NPROC)
+    set(DEP_PARALLEL_JOBS ${NPROC})
+elseif(MEM_BASED_JOBS LESS 4)
+    set(DEP_PARALLEL_JOBS 4)
+else()
+    set(DEP_PARALLEL_JOBS ${MEM_BASED_JOBS})
 endif()
 
 message(STATUS "🔧 Dependency builds will use ${DEP_PARALLEL_JOBS} parallel jobs (${NPROC} cores, ${AVAILABLE_MEMORY}MB available)")
@@ -955,21 +951,86 @@ endfunction()
 # TRITON GPU COMPILER (Optional)
 # =============================================================================
 function(setup_triton)
-    if(NOT HELPERS_triton STREQUAL "ON")
-        message(STATUS "Triton helper is disabled (HELPERS_triton=${HELPERS_triton})")
+    # Triton is ON by default for GPU builds (CUDA or AMD).
+    # Disable explicitly with -DSD_TRITON=OFF or SD_TRITON=OFF env var.
+    # NVRTC and PTX backends are also available on CUDA builds.
+    set(_triton_requested OFF)
+    # Default ON for GPU builds
+    if(SD_CUDA OR SD_HIP OR SD_LEVEL_ZERO)
+        set(_triton_requested ON)
+    endif()
+    # Explicit opt-in flags
+    if(HELPERS_triton)
+        set(_triton_requested ON)
+    endif()
+    if(DEFINED SD_TRITON AND SD_TRITON)
+        set(_triton_requested ON)
+    endif()
+    if(DEFINED ENV{SD_TRITON} AND "$ENV{SD_TRITON}" STREQUAL "ON")
+        set(_triton_requested ON)
+    endif()
+    # Explicit opt-out overrides
+    if(DEFINED SD_TRITON AND NOT SD_TRITON)
+        set(_triton_requested OFF)
+    endif()
+    if(DEFINED ENV{SD_TRITON} AND "$ENV{SD_TRITON}" STREQUAL "OFF")
+        set(_triton_requested OFF)
+    endif()
+    if(NOT _triton_requested)
+        message(STATUS "Triton disabled (use -DSD_TRITON=ON to enable)")
+        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+        set(TRITON "" PARENT_SCOPE)
+        return()
+    endif()
+    if(NOT SD_CUDA AND NOT SD_HIP AND NOT SD_LEVEL_ZERO)
+        message(STATUS "Triton disabled (requires GPU build: SD_CUDA, SD_HIP, or SD_LEVEL_ZERO)")
         set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
         set(TRITON "" PARENT_SCOPE)
         return()
     endif()
 
-    # Triton requires a GPU backend (CUDA, HIP/ROCm, or Level Zero)
-    if(NOT SD_CUDA AND NOT HELPERS_miopen AND NOT SD_HIP AND NOT SD_LEVEL_ZERO)
-        message(STATUS "Triton helper requires a GPU build (SD_CUDA, SD_HIP, or SD_LEVEL_ZERO)")
-        set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
-        set(TRITON "" PARENT_SCOPE)
+    # Check if Triton and LLVM are already built from a previous run.
+    # After CMake cache clean, targets don't persist but install dirs do.
+    set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
+    set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+    if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" AND
+       EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
+        message(STATUS "Triton helper: reusing existing install at ${TRITON_INSTALL_DIR}")
+        set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+        # Create a dummy triton_external target so MainBuildFlow's dependency block picks us up
+        if(NOT TARGET triton_external)
+            add_custom_target(triton_external)
+        endif()
+        if(NOT TARGET triton_interface)
+            add_library(triton_interface INTERFACE)
+            target_include_directories(triton_interface INTERFACE
+                "${TRITON_INSTALL_DIR}/include"
+                "${TRITON_LLVM_INSTALL_DIR}/include"
+            )
+            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
+            # Glob ALL MLIR and LLVM static libraries — avoids missing transitive deps
+            file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
+            file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
+            file(GLOB _TRITON_MLIR_CAPI_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRCAPI*.a")
+            list(SORT _TRITON_MLIR_LIBS)
+            list(SORT _TRITON_LLVM_LIBS)
+            target_link_libraries(triton_interface INTERFACE
+                -Wl,--start-group
+                ${_TRITON_MLIR_LIBS}
+                ${_TRITON_LLVM_LIBS}
+                ${_TRITON_MLIR_CAPI_LIBS}
+                -Wl,--end-group
+                -lz -lzstd -lrt -ldl -lm -lpthread
+            )
+            # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+            list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
+            list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
+            message(STATUS "Triton interface: ${_mlir_count} MLIR + ${_llvm_count} LLVM static libs (from existing install)")
+        endif()
+        set(TRITON triton_interface PARENT_SCOPE)
         return()
     endif()
-
     if(TARGET triton_external)
         message(STATUS "Triton helper is enabled (target already exists)")
         set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
@@ -979,10 +1040,12 @@ function(setup_triton)
 
     message(STATUS "Triton helper is enabled")
     set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
+    set(HELPERS_triton ON PARENT_SCOPE)
     set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
     set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_external")
     set(TRITON_VERSION "3.2.0")
     set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
+    set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
 
     # Ensure directories exist
     file(MAKE_DIRECTORY "${TRITON_STAMP_DIR}")
@@ -1001,25 +1064,24 @@ function(setup_triton)
 
     set(TRITON_URL "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
 
-    # Determine codegen backends based on TRITON_GPU_TARGET and build config
+    # Determine codegen backends based on TRITON_GPU_TARGET and build config.
+    # This MUST be done before the LLVM build so LLVM_TARGETS_TO_BUILD can be set correctly.
     set(TRITON_CODEGEN_BACKENDS "")
 
     if(TRITON_GPU_TARGET STREQUAL "AUTO")
-        # Auto-detect: include backends based on what's being built
+        # NVIDIA backend: always for CUDA builds (pure or ZLUDA)
         if(SD_CUDA)
             list(APPEND TRITON_CODEGEN_BACKENDS "nvidia")
         endif()
-        if(HELPERS_miopen OR SD_HIP OR SD_ZLUDA)
+        # AMD backend: only when ZLUDA targets AMD, or native HIP build
+        if(SD_HIP OR (SD_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "AMD"))
             list(APPEND TRITON_CODEGEN_BACKENDS "amd")
         endif()
-        if(SD_LEVEL_ZERO OR SD_ZLUDA)
+        # Intel backend: only when ZLUDA targets Intel, or native Level Zero build
+        if(SD_LEVEL_ZERO OR (SD_ZLUDA AND ZLUDA_TARGET_BACKEND STREQUAL "INTEL"))
             list(APPEND TRITON_CODEGEN_BACKENDS "intel")
         endif()
-        # If SD_CUDA but could be ZLUDA, include all targets
-        if(SD_CUDA AND SD_ZLUDA)
-            list(APPEND TRITON_CODEGEN_BACKENDS "amd" "intel")
-        endif()
-        # Fallback: at least build nvidia if nothing else detected
+        # Fallback
         if(NOT TRITON_CODEGEN_BACKENDS)
             list(APPEND TRITON_CODEGEN_BACKENDS "nvidia")
         endif()
@@ -1035,12 +1097,143 @@ function(setup_triton)
     string(REPLACE ";" "\\;" TRITON_BACKENDS_STR "${TRITON_CODEGEN_BACKENDS}")
     message(STATUS "   Triton codegen backends: ${TRITON_CODEGEN_BACKENDS}")
 
+    # Triton v3.2.0 requires a specific LLVM version (pinned commit 86b69c31).
+    # We build LLVM/MLIR from source at that commit to ensure ABI compatibility.
+    # This is a one-time cost — subsequent builds reuse the installed artifacts.
+    set(TRITON_LLVM_COMMIT "86b69c31642e98f8357df62c09d118ad1da4e16a")
+    set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_llvm")
+
+    # Determine LLVM targets based on which Triton codegen backends are needed.
+    # Always include host and NVPTX (for CUDA). Only add AMDGPU if "amd" backend is selected.
+    set(TRITON_LLVM_TARGETS "host$<SEMICOLON>NVPTX")
+    if("amd" IN_LIST TRITON_CODEGEN_BACKENDS)
+        set(TRITON_LLVM_TARGETS "${TRITON_LLVM_TARGETS}$<SEMICOLON>AMDGPU")
+        message(STATUS "   LLVM targets: host, NVPTX, AMDGPU (AMD backend requested)")
+    else()
+        message(STATUS "   LLVM targets: host, NVPTX (no AMD backend)")
+    endif()
+
+    if(NOT EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
+        message(STATUS "   Building LLVM/MLIR from Triton-pinned commit ${TRITON_LLVM_COMMIT}...")
+        message(STATUS "   This is a one-time build (~15-30 min). Install dir: ${TRITON_LLVM_INSTALL_DIR}")
+
+        file(MAKE_DIRECTORY "${TRITON_LLVM_PREFIX}/stamp")
+
+        # Build LLVM cmake args, including compiler launcher if available
+        set(TRITON_LLVM_CMAKE_ARGS
+                -DCMAKE_INSTALL_PREFIX=${TRITON_LLVM_INSTALL_DIR}
+                -DCMAKE_BUILD_TYPE=Release
+                -DLLVM_ENABLE_PROJECTS=mlir
+                -DLLVM_TARGETS_TO_BUILD=${TRITON_LLVM_TARGETS}
+                -DLLVM_ENABLE_ASSERTIONS=ON
+                -DLLVM_ENABLE_RTTI=ON
+                -DMLIR_ENABLE_BINDINGS_PYTHON=OFF
+                # Disable tests — mlir-translate/mlir-query link against test dialect
+                # libraries (TestDialect, SymbolOp) that fail to build.
+                # LLVM_BUILD_TOOLS must stay ON because mlir-tblgen is needed by Triton.
+                -DLLVM_INCLUDE_TESTS=OFF
+                -DLLVM_INCLUDE_BENCHMARKS=OFF
+                -DMLIR_INCLUDE_TESTS=OFF
+                -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        )
+
+        # Pass SmartCcache / compiler launcher to LLVM build
+        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+            list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+            message(STATUS "   Passing C compiler launcher to LLVM build: ${CMAKE_C_COMPILER_LAUNCHER}")
+        endif()
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+            list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+            message(STATUS "   Passing CXX compiler launcher to LLVM build: ${CMAKE_CXX_COMPILER_LAUNCHER}")
+        endif()
+
+        set(TRITON_LLVM_URL "https://github.com/llvm/llvm-project/archive/${TRITON_LLVM_COMMIT}.tar.gz")
+
+        ExternalProject_Add(triton_llvm_external
+                PREFIX            "${TRITON_LLVM_PREFIX}"
+                URL               "${TRITON_LLVM_URL}"
+                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+                DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+                SOURCE_SUBDIR     llvm
+                BINARY_DIR        "${TRITON_LLVM_PREFIX}/build"
+                STAMP_DIR         "${TRITON_LLVM_PREFIX}/stamp"
+                CMAKE_ARGS        ${TRITON_LLVM_CMAKE_ARGS}
+                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel 8
+                INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config Release
+                BUILD_BYPRODUCTS
+                    "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake"
+                    "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake"
+                TIMEOUT           7200
+                LOG_DOWNLOAD      OFF
+                LOG_CONFIGURE     OFF
+                LOG_BUILD         OFF
+                LOG_INSTALL       OFF
+        )
+
+        # Patch MLIRConfig.cmake after install: replace bare "mlir-tblgen" with absolute path.
+        # The installed MLIRConfig.cmake sets MLIR_TABLEGEN_EXE to just "mlir-tblgen" (bare name).
+        # When LLVM is consumed as an external project, there is no imported target for mlir-tblgen,
+        # so cmake's tablegen() function creates broken file-level dependencies.
+        set(_PATCH_MLIR_SCRIPT "${CMAKE_BINARY_DIR}/patch_mlir_config.cmake")
+        file(WRITE "${_PATCH_MLIR_SCRIPT}" "
+            set(F \"${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake\")
+            file(READ \"\${F}\" C)
+            string(REPLACE
+                \"set(MLIR_TABLEGEN_EXE \\\"mlir-tblgen\\\")\"
+                \"set(MLIR_TABLEGEN_EXE \\\"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-tblgen\\\")\"
+                C \"\${C}\")
+            string(REPLACE
+                \"set(MLIR_PDLL_TABLEGEN_EXE \\\"mlir-pdll\\\")\"
+                \"set(MLIR_PDLL_TABLEGEN_EXE \\\"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-pdll\\\")\"
+                C \"\${C}\")
+            file(WRITE \"\${F}\" \"\${C}\")
+            message(STATUS \"Patched MLIRConfig.cmake with absolute tablegen paths\")
+        ")
+        ExternalProject_Add_Step(triton_llvm_external patch_mlir_config
+            COMMAND ${CMAKE_COMMAND} -P "${_PATCH_MLIR_SCRIPT}"
+            DEPENDEES install
+            COMMENT "Patching MLIRConfig.cmake with absolute tablegen executable paths"
+        )
+    else()
+        message(STATUS "   Reusing existing LLVM/MLIR at ${TRITON_LLVM_INSTALL_DIR}")
+        # Create a dummy target so triton_external can depend on it
+        add_custom_target(triton_llvm_external)
+
+        # Patch MLIRConfig.cmake if it has bare tablegen names (idempotent)
+        set(_MLIR_CONFIG_FILE "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
+        if(EXISTS "${_MLIR_CONFIG_FILE}")
+            file(READ "${_MLIR_CONFIG_FILE}" _MLIR_CFG)
+            string(FIND "${_MLIR_CFG}" "set(MLIR_TABLEGEN_EXE \"mlir-tblgen\")" _NEEDS_PATCH)
+            if(NOT _NEEDS_PATCH EQUAL -1)
+                string(REPLACE
+                    "set(MLIR_TABLEGEN_EXE \"mlir-tblgen\")"
+                    "set(MLIR_TABLEGEN_EXE \"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-tblgen\")"
+                    _MLIR_CFG "${_MLIR_CFG}")
+                string(REPLACE
+                    "set(MLIR_PDLL_TABLEGEN_EXE \"mlir-pdll\")"
+                    "set(MLIR_PDLL_TABLEGEN_EXE \"${TRITON_LLVM_INSTALL_DIR}/bin/mlir-pdll\")"
+                    _MLIR_CFG "${_MLIR_CFG}")
+                file(WRITE "${_MLIR_CONFIG_FILE}" "${_MLIR_CFG}")
+                message(STATUS "   Patched MLIRConfig.cmake with absolute tablegen paths")
+            endif()
+        endif()
+    endif()
+
+    set(TRITON_MLIR_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir")
+    set(TRITON_LLVM_DIR "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/llvm")
+
     set(TRITON_CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${TRITON_INSTALL_DIR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DTRITON_BUILD_PYTHON_MODULE=OFF
             -DTRITON_BUILD_TESTING=OFF
+            -DTRITON_BUILD_TUTORIALS=OFF
+            -DTRITON_BUILD_PROTON=OFF
+            -DTRITON_BUILD_UT=OFF
             -DTRITON_CODEGEN_BACKENDS=${TRITON_BACKENDS_STR}
+            -DMLIR_DIR=${TRITON_MLIR_DIR}
+            -DLLVM_DIR=${TRITON_LLVM_DIR}
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     )
@@ -1053,6 +1246,40 @@ function(setup_triton)
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
     endif()
 
+    # Triton v3.2.0's bin/RegisterTritonDialects.h unconditionally includes AMD dialect
+    # headers, even when only the nvidia backend is selected via TRITON_CODEGEN_BACKENDS.
+    # When the AMD backend isn't built, the .h.inc files don't get generated, causing
+    # compilation failures. Write a patch script that removes AMD-specific code.
+    set(TRITON_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton_no_amd.sh")
+    if(NOT "amd" IN_LIST TRITON_CODEGEN_BACKENDS)
+        # Write the patch script to the source tree (survives clean install of build dir)
+        file(WRITE "${TRITON_PATCH_SCRIPT}" "#!/bin/bash
+# Patch RegisterTritonDialects.h to remove AMD backend references
+SRC=\"$1\"
+H=\"$SRC/bin/RegisterTritonDialects.h\"
+BIN_CMAKE=\"$SRC/bin/CMakeLists.txt\"
+if [ -f \"$H\" ]; then
+    sed -i '/amd\\/include\\//d' \"$H\"
+    sed -i '/TritonAMDGPUToLLVM/d' \"$H\"
+    sed -i '/TritonAMDGPUTransforms/d' \"$H\"
+    sed -i '/registerConvertTritonAMDGPUToLLVM/d' \"$H\"
+    sed -i '/registerConvertBuiltinFuncToLLVM/d' \"$H\"
+    sed -i '/registerDecomposeUnsupportedAMDConversions/d' \"$H\"
+    sed -i '/registerOptimizeAMDLDSUsage/d' \"$H\"
+    sed -i '/registerTritonAMDGPU/d' \"$H\"
+    sed -i '/TritonAMDGPUDialect/d' \"$H\"
+fi
+if [ -f \"$BIN_CMAKE\" ]; then
+    sed -i '/MLIRGPUToROCDLTransforms/d' \"$BIN_CMAKE\"
+fi
+")
+        file(CHMOD "${TRITON_PATCH_SCRIPT}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+    else()
+        # AMD backend selected — no patching needed
+        file(WRITE "${TRITON_PATCH_SCRIPT}" "#!/bin/bash\n# No patching needed — AMD backend is enabled\n")
+        file(CHMOD "${TRITON_PATCH_SCRIPT}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+    endif()
+
     ExternalProject_Add(triton_external
             PREFIX            "${TRITON_PREFIX}"
             URL               "${TRITON_URL}"
@@ -1062,36 +1289,326 @@ function(setup_triton)
             STAMP_DIR         "${TRITON_STAMP_DIR}"
             DOWNLOAD_NO_PROGRESS FALSE
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            PATCH_COMMAND     bash "${TRITON_PATCH_SCRIPT}" <SOURCE_DIR>
             CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
-            INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel 8
+            # Triton v3.2.0 uses OBJECT libraries (no install() commands, no libtriton.a).
+            # Custom install: archive all .o files into libtriton.a and copy headers.
+            # Use a script written to CMAKE_SOURCE_DIR so it survives 'clean install'.
+            INSTALL_COMMAND   bash "${CMAKE_SOURCE_DIR}/cmake/install_triton.sh" <BINARY_DIR> <SOURCE_DIR> "${TRITON_INSTALL_DIR}"
             BUILD_BYPRODUCTS
                 "${TRITON_INSTALL_DIR}/include/triton/Compiler/Compiler.h"
-                "${TRITON_INSTALL_DIR}/lib64/libtriton.a"
                 "${TRITON_INSTALL_DIR}/lib/libtriton.a"
             TIMEOUT           1800
             LOG_DOWNLOAD      OFF
             LOG_CONFIGURE     OFF
             LOG_BUILD         OFF
             LOG_INSTALL       OFF
+            DEPENDS           triton_llvm_external
     )
 
     add_library(triton_interface INTERFACE)
-    target_include_directories(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/include")
+    target_include_directories(triton_interface INTERFACE
+        "${TRITON_INSTALL_DIR}/include"
+        "${TRITON_LLVM_INSTALL_DIR}/include"
+    )
+
     if(WIN32)
         target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
     else()
-        # Try lib64 first (common on many Linux distros), then lib
-        if(EXISTS "${TRITON_INSTALL_DIR}/lib64/libtriton.a")
-            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib64/libtriton.a")
-        else()
-            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
-        endif()
+        target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
     endif()
+
+    # Link MLIR/LLVM static libraries from our built LLVM.
+    # On first build, LLVM hasn't been built yet at configure time so we use -l flags
+    # (resolved at link time). On subsequent builds, the early-return path above handles it.
+    target_link_directories(triton_interface INTERFACE "${TRITON_LLVM_INSTALL_DIR}/lib")
+
+    # Try glob first (works when LLVM already built from previous run)
+    file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
+    file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
+    list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
+    list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
+
+    if(_mlir_count GREATER 0 AND _llvm_count GREATER 0)
+        # Libraries exist — use full paths (most reliable)
+        list(SORT _TRITON_MLIR_LIBS)
+        list(SORT _TRITON_LLVM_LIBS)
+        target_link_libraries(triton_interface INTERFACE
+            -Wl,--start-group
+            ${_TRITON_MLIR_LIBS}
+            ${_TRITON_LLVM_LIBS}
+            -Wl,--end-group
+            -lz -lzstd -lrt -ldl -lm -lpthread
+        )
+        message(STATUS "Triton linking ${_mlir_count} MLIR + ${_llvm_count} LLVM static libraries (globbed)")
+    else()
+        # Fresh build — LLVM not built yet, use -l flags resolved at link time.
+        # COMPLETE list of all MLIR + LLVM libraries from Triton's LLVM 19 fork.
+        # --start-group/--end-group handles circular dependencies.
+        # Unused libraries won't increase binary size (linker only pulls needed objects).
+        message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking (all 468 libs)")
+        target_link_libraries(triton_interface INTERFACE
+            -Wl,--start-group
+            # === ALL MLIR libraries (364) ===
+            -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard
+            -lMLIRAffineTransformOps -lMLIRAffineTransforms
+            -lMLIRAffineUtils -lMLIRAMDGPUDialect -lMLIRAMDGPUToROCDL
+            -lMLIRAMDGPUTransforms -lMLIRAMDGPUUtils -lMLIRAMXDialect
+            -lMLIRAMXToLLVMIRTranslation -lMLIRAMXTransforms -lMLIRAnalysis
+            -lMLIRArithAttrToLLVMConversion -lMLIRArithDialect
+            -lMLIRArithToAMDGPU -lMLIRArithToArmSME -lMLIRArithToEmitC
+            -lMLIRArithToLLVM -lMLIRArithToSPIRV -lMLIRArithTransforms
+            -lMLIRArithUtils -lMLIRArithValueBoundsOpInterfaceImpl -lMLIRArmNeon2dToIntr
+            -lMLIRArmNeonDialect -lMLIRArmNeonToLLVMIRTranslation
+            -lMLIRArmNeonTransforms -lMLIRArmSMEDialect
+            -lMLIRArmSMEToLLVM -lMLIRArmSMEToLLVMIRTranslation -lMLIRArmSMEToSCF
+            -lMLIRArmSMETransforms -lMLIRArmSVEDialect -lMLIRArmSVEToLLVMIRTranslation
+            -lMLIRArmSVETransforms -lMLIRAsmParser -lMLIRAsyncDialect
+            -lMLIRAsyncToLLVM -lMLIRAsyncTransforms -lMLIRBufferizationDialect
+            -lMLIRBufferizationPipelines -lMLIRBufferizationToMemRef
+            -lMLIRBufferizationTransformOps -lMLIRBufferizationTransforms
+            -lMLIRBuiltinToLLVMIRTranslation -lMLIRBytecodeOpInterface
+            -lMLIRBytecodeReader -lMLIRBytecodeWriter -lMLIRCallInterfaces
+            -lMLIRCAPIAMDGPU -lMLIRCAPIArith -lMLIRCAPIAsync
+            -lMLIRCAPIControlFlow -lMLIRCAPIConversion -lMLIRCAPIDebug
+            -lMLIRCAPIExecutionEngine -lMLIRCAPIFunc -lMLIRCAPIGPU
+            -lMLIRCAPIInterfaces -lMLIRCAPIIR -lMLIRCAPIIRDL
+            -lMLIRCAPILinalg -lMLIRCAPILLVM -lMLIRCAPIMath
+            -lMLIRCAPIMemRef -lMLIRCAPIMLProgram -lMLIRCAPINVGPU
+            -lMLIRCAPINVVM -lMLIRCAPIOpenMP -lMLIRCAPIPDL
+            -lMLIRCAPIQuant -lMLIRCAPIRegisterEverything -lMLIRCAPIROCDL
+            -lMLIRCAPISCF -lMLIRCAPIShape -lMLIRCAPISparseTensor
+            -lMLIRCAPISPIRV -lMLIRCAPITarget -lMLIRCAPITensor
+            -lMLIRCAPITransformDialect -lMLIRCAPITransformDialectTransforms -lMLIRCAPITransforms
+            -lMLIRCAPIVector -lMLIRCastInterfaces -lMLIRComplexDialect
+            -lMLIRComplexToLibm -lMLIRComplexToLLVM -lMLIRComplexToSPIRV
+            -lMLIRComplexToStandard -lMLIRControlFlowDialect -lMLIRControlFlowInterfaces
+            -lMLIRControlFlowToLLVM -lMLIRControlFlowToSCF
+            -lMLIRControlFlowToSPIRV -lMLIRControlFlowTransforms -lMLIRConvertToLLVMInterface
+            -lMLIRConvertToLLVMPass -lMLIRConvertToSPIRVPass -lMLIRCopyOpInterface
+            -lMLIRDataLayoutInterfaces -lMLIRDebug -lMLIRDerivedAttributeOpInterface
+            -lMLIRDestinationStyleOpInterface -lMLIRDialect -lMLIRDialectUtils
+            -lMLIRDLTIDialect -lMLIRDLTITransformOps
+            -lMLIREmitCDialect -lMLIREmitCTransforms -lMLIRExecutionEngine
+            -lMLIRExecutionEngineUtils -lMLIRFromLLVMIRTranslationRegistration
+            -lMLIRFuncAllExtensions -lMLIRFuncDialect -lMLIRFuncInlinerExtension
+            -lMLIRFuncMeshShardingExtensions -lMLIRFunctionInterfaces
+            -lMLIRFuncToEmitC -lMLIRFuncToLLVM -lMLIRFuncToSPIRV
+            -lMLIRFuncTransformOps -lMLIRFuncTransforms -lMLIRGPUDialect
+            -lMLIRGPUPipelines -lMLIRGPUToGPURuntimeTransforms
+            -lMLIRGPUToLLVMIRTranslation -lMLIRGPUToLLVMSPV -lMLIRGPUToNVVMTransforms
+            -lMLIRGPUToROCDLTransforms -lMLIRGPUToSPIRV -lMLIRGPUToVulkanTransforms
+            -lMLIRGPUTransformOps -lMLIRGPUTransforms -lMLIRIndexDialect
+            -lMLIRIndexToLLVM -lMLIRIndexToSPIRV -lMLIRInferIntRangeCommon
+            -lMLIRInferIntRangeInterface -lMLIRInferTypeOpInterface -lMLIRIR
+            -lMLIRIRDL -lMLIRJitRunner -lMLIRLinalgDialect
+            -lMLIRLinalgToStandard -lMLIRLinalgTransformOps
+            -lMLIRLinalgTransforms -lMLIRLinalgUtils -lMLIRLLVMCommonConversion
+            -lMLIRLLVMDialect -lMLIRLLVMIRToLLVMTranslation -lMLIRLLVMIRToNVVMTranslation
+            -lMLIRLLVMIRTransforms -lMLIRLLVMToLLVMIRTranslation
+            -lMLIRLoopLikeInterface -lMLIRLspServerLib
+            -lMLIRLspServerSupportLib -lMLIRMaskableOpInterface -lMLIRMaskingOpInterface
+            -lMLIRMathDialect -lMLIRMathToFuncs
+            -lMLIRMathToLibm -lMLIRMathToLLVM -lMLIRMathToROCDL
+            -lMLIRMathToSPIRV -lMLIRMathTransforms -lMLIRMemorySlotInterfaces
+            -lMLIRMemRefDialect -lMLIRMemRefToEmitC
+            -lMLIRMemRefToLLVM -lMLIRMemRefToSPIRV -lMLIRMemRefTransformOps
+            -lMLIRMemRefTransforms -lMLIRMemRefUtils -lMLIRMeshDialect
+            -lMLIRMeshTransforms -lMLIRMlirOptMain
+            -lMLIRMLProgramDialect -lMLIRMLProgramTransforms -lMLIRMPIDialect
+            -lMLIRNVGPUDialect -lMLIRNVGPUToNVVM
+            -lMLIRNVGPUTransformOps -lMLIRNVGPUTransforms -lMLIRNVGPUUtils
+            -lMLIRNVVMDialect -lMLIRNVVMTarget -lMLIRNVVMToLLVM
+            -lMLIRNVVMToLLVMIRTranslation -lMLIRObservers -lMLIROpenACCDialect
+            -lMLIROpenACCMPCommon -lMLIROpenACCToLLVMIRTranslation -lMLIROpenACCToSCF
+            -lMLIROpenACCTransforms -lMLIROpenMPDialect -lMLIROpenMPToLLVM
+            -lMLIROpenMPToLLVMIRTranslation -lMLIROptLib -lMLIRParallelCombiningOpInterface
+            -lMLIRParser -lMLIRPass -lMLIRPDLDialect
+            -lMLIRPDLInterpDialect -lMLIRPDLLAST -lMLIRPDLLCodeGen
+            -lMLIRPDLLODS -lMLIRPDLToPDLInterp -lMLIRPluginsLib
+            -lMLIRPolynomialDialect -lMLIRPresburger -lMLIRPtrDialect
+            -lMLIRQuantDialect -lMLIRQuantTransforms -lMLIRQuantUtils
+            -lMLIRQuery -lMLIRQueryLib -lMLIRQueryMatcher
+            -lMLIRReconcileUnrealizedCasts -lMLIRReduce -lMLIRReduceLib
+            -lMLIRRewrite -lMLIRRewritePDL -lMLIRROCDLDialect
+            -lMLIRROCDLTarget -lMLIRROCDLToLLVMIRTranslation -lMLIRRuntimeVerifiableOpInterface
+            -lMLIRSCFDialect -lMLIRSCFToControlFlow
+            -lMLIRSCFToEmitC -lMLIRSCFToGPU -lMLIRSCFToOpenMP
+            -lMLIRSCFToSPIRV -lMLIRSCFTransformOps -lMLIRSCFTransforms
+            -lMLIRSCFUtils -lMLIRShapeDialect -lMLIRShapedOpInterfaces
+            -lMLIRShapeOpsTransforms -lMLIRShapeToStandard
+            -lMLIRShardingInterface -lMLIRSideEffectInterfaces -lMLIRSparseTensorDialect
+            -lMLIRSparseTensorPipelines -lMLIRSparseTensorRuntime -lMLIRSparseTensorTransformOps
+            -lMLIRSparseTensorTransforms -lMLIRSparseTensorUtils -lMLIRSPIRVAttrToLLVMConversion
+            -lMLIRSPIRVBinaryUtils -lMLIRSPIRVConversion -lMLIRSPIRVDeserialization
+            -lMLIRSPIRVDialect -lMLIRSPIRVModuleCombiner -lMLIRSPIRVSerialization
+            -lMLIRSPIRVTarget -lMLIRSPIRVToLLVM
+            -lMLIRSPIRVToLLVMIRTranslation -lMLIRSPIRVTransforms -lMLIRSPIRVTranslateRegistration
+            -lMLIRSPIRVUtils -lMLIRSubsetOpInterface -lMLIRSupport
+            -lMLIRTableGen -lMLIRTargetCpp -lMLIRTargetLLVM
+            -lMLIRTargetLLVMIRExport -lMLIRTargetLLVMIRImport -lMLIRTblgenLib
+            -lMLIRTensorAllExtensions -lMLIRTensorDialect -lMLIRTensorInferTypeOpInterfaceImpl
+            -lMLIRTensorMeshShardingExtensions -lMLIRTensorTilingInterfaceImpl
+            -lMLIRTensorToLinalg -lMLIRTensorToSPIRV -lMLIRTensorTransformOps
+            -lMLIRTensorTransforms -lMLIRTensorUtils -lMLIRTilingInterface
+            -lMLIRToLLVMIRTranslationRegistration -lMLIRTosaDialect -lMLIRTosaShardingInterfaceImpl
+            -lMLIRTosaToArith -lMLIRTosaToLinalg
+            -lMLIRTosaToMLProgram -lMLIRTosaToSCF -lMLIRTosaToTensor
+            -lMLIRTosaTransforms -lMLIRTransformDebugExtension -lMLIRTransformDialect
+            -lMLIRTransformDialectInterfaces -lMLIRTransformDialectIRDLExtension
+            -lMLIRTransformDialectTransforms -lMLIRTransformDialectUtils
+            -lMLIRTransformLoopExtension -lMLIRTransformPDLExtension -lMLIRTransforms
+            -lMLIRTransformUtils -lMLIRTranslateLib -lMLIRUBDialect
+            -lMLIRUBToLLVM -lMLIRUBToSPIRV -lMLIRValueBoundsOpInterface
+            -lMLIRVCIXDialect -lMLIRVCIXToLLVMIRTranslation -lMLIRVectorDialect
+            -lMLIRVectorInterfaces -lMLIRVectorToArmSME
+            -lMLIRVectorToGPU -lMLIRVectorToLLVM -lMLIRVectorToLLVMPass
+            -lMLIRVectorToSCF -lMLIRVectorToSPIRV -lMLIRVectorToXeGPU
+            -lMLIRVectorTransformOps -lMLIRVectorTransforms -lMLIRVectorUtils
+            -lMLIRViewLikeInterface -lMLIRX86VectorDialect -lMLIRX86VectorToLLVMIRTranslation
+            -lMLIRX86VectorTransforms -lMLIRXeGPUDialect -lMLIRXeGPUTransforms
+            # === ALL LLVM libraries (104) ===
+            -lLLVMAggressiveInstCombine -lLLVMAnalysis -lLLVMAsmParser
+            -lLLVMAsmPrinter -lLLVMBinaryFormat -lLLVMBitReader
+            -lLLVMBitstreamReader -lLLVMBitWriter -lLLVMCFGuard
+            -lLLVMCFIVerify -lLLVMCGData -lLLVMCodeGen
+            -lLLVMCodeGenTypes -lLLVMCore -lLLVMCoroutines
+            -lLLVMCoverage -lLLVMDebugInfoBTF -lLLVMDebugInfoCodeView
+            -lLLVMDebuginfod -lLLVMDebugInfoDWARF -lLLVMDebugInfoGSYM
+            -lLLVMDebugInfoLogicalView -lLLVMDebugInfoMSF -lLLVMDebugInfoPDB
+            -lLLVMDemangle -lLLVMDiff -lLLVMDlltoolDriver
+            -lLLVMDWARFLinker -lLLVMDWARFLinkerClassic -lLLVMDWARFLinkerParallel
+            -lLLVMDWP -lLLVMExecutionEngine -lLLVMExegesis
+            -lLLVMExegesisX86 -lLLVMExtensions -lLLVMFileCheck
+            -lLLVMFrontendAtomic -lLLVMFrontendDriver -lLLVMFrontendHLSL
+            -lLLVMFrontendOffloading -lLLVMFrontendOpenACC -lLLVMFrontendOpenMP
+            -lLLVMFuzzerCLI -lLLVMFuzzMutate -lLLVMGlobalISel
+            -lLLVMHipStdPar -lLLVMInstCombine -lLLVMInstrumentation
+            -lLLVMInterfaceStub -lLLVMInterpreter -lLLVMipo
+            -lLLVMIRPrinter -lLLVMIRReader -lLLVMJITLink
+            -lLLVMLibDriver -lLLVMLineEditor -lLLVMLinker
+            -lLLVMLTO -lLLVMMC -lLLVMMCA
+            -lLLVMMCDisassembler -lLLVMMCJIT -lLLVMMCParser
+            -lLLVMMIRParser -lLLVMNVPTXCodeGen -lLLVMNVPTXDesc
+            -lLLVMNVPTXInfo -lLLVMObjCARCOpts -lLLVMObjCopy
+            -lLLVMObject -lLLVMObjectYAML -lLLVMOptDriver
+            -lLLVMOption -lLLVMOrcDebugging -lLLVMOrcJIT
+            -lLLVMOrcShared -lLLVMOrcTargetProcess -lLLVMPasses
+            -lLLVMProfileData -lLLVMRemarks -lLLVMRuntimeDyld
+            -lLLVMSandboxIR -lLLVMScalarOpts -lLLVMSelectionDAG
+            -lLLVMSupport -lLLVMSymbolize -lLLVMTableGen
+            -lLLVMTableGenBasic -lLLVMTableGenCommon -lLLVMTarget
+            -lLLVMTargetParser -lLLVMTextAPI -lLLVMTextAPIBinaryReader
+            -lLLVMTransformUtils -lLLVMVectorize -lLLVMWindowsDriver
+            -lLLVMWindowsManifest -lLLVMX86AsmParser -lLLVMX86CodeGen
+            -lLLVMX86Desc -lLLVMX86Disassembler -lLLVMX86Info
+            -lLLVMX86TargetMCA -lLLVMXRay
+            -Wl,--end-group
+            -lz -lzstd -lrt -ldl -lm -lpthread
+        )
+    endif()
+
     add_dependencies(triton_interface triton_external)
     set(TRITON triton_interface PARENT_SCOPE)
 
-    sd_register_helper("triton")
     message(STATUS "✅ Triton ${TRITON_VERSION} setup complete (target: ${TRITON_GPU_TARGET})")
+endfunction()
+
+# =============================================================================
+# CUTLASS (Header-only CUDA Templates for Linear Algebra)
+# =============================================================================
+function(setup_cutlass)
+    set(HAVE_CUTLASS FALSE PARENT_SCOPE)
+
+    if(NOT HELPERS_cutlass STREQUAL "ON")
+        message(STATUS "CUTLASS helper is disabled (HELPERS_cutlass=${HELPERS_cutlass})")
+        return()
+    endif()
+
+    if(NOT SD_CUDA)
+        message(STATUS "CUTLASS helper requires CUDA build (SD_CUDA=ON)")
+        return()
+    endif()
+
+    if(TARGET cutlass_external)
+        message(STATUS "CUTLASS helper is enabled (target already exists)")
+        set(HAVE_CUTLASS TRUE PARENT_SCOPE)
+        set(CUTLASS cutlass_interface PARENT_SCOPE)
+        return()
+    endif()
+
+    message(STATUS "CUTLASS helper is enabled")
+    set(HAVE_CUTLASS TRUE PARENT_SCOPE)
+    set(HELPERS_cutlass ON PARENT_SCOPE)
+
+    set(CUTLASS_VERSION "3.7.0")
+    set(CUTLASS_INSTALL_DIR "${CMAKE_BINARY_DIR}/cutlass_install")
+    set(CUTLASS_PREFIX "${CMAKE_BINARY_DIR}/cutlass_external")
+
+    file(MAKE_DIRECTORY "${CUTLASS_PREFIX}/stamp")
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+
+    set(CUTLASS_URL "https://github.com/NVIDIA/cutlass/archive/refs/tags/v${CUTLASS_VERSION}.tar.gz")
+
+    # CUTLASS is header-only for templates — we only need to download and install headers
+    ExternalProject_Add(cutlass_external
+            PREFIX            "${CUTLASS_PREFIX}"
+            URL               "${CUTLASS_URL}"
+            DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND     ""
+            INSTALL_COMMAND   ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/include ${CUTLASS_INSTALL_DIR}/include
+            TIMEOUT           300
+            LOG_DOWNLOAD      OFF
+    )
+
+    add_library(cutlass_interface INTERFACE)
+    target_include_directories(cutlass_interface INTERFACE
+        "${CUTLASS_INSTALL_DIR}/include"
+    )
+    add_dependencies(cutlass_interface cutlass_external)
+
+    set(CUTLASS cutlass_interface PARENT_SCOPE)
+    add_compile_definitions(HAVE_CUTLASS=1)
+
+    message(STATUS "✅ CUTLASS ${CUTLASS_VERSION} setup complete (header-only)")
+endfunction()
+
+# =============================================================================
+# NCCL (NVIDIA Collective Communications Library)
+# =============================================================================
+function(setup_nccl)
+    set(HAVE_NCCL FALSE PARENT_SCOPE)
+
+    if(NOT HELPERS_nccl STREQUAL "ON")
+        message(STATUS "NCCL helper is disabled (HELPERS_nccl=${HELPERS_nccl})")
+        return()
+    endif()
+
+    if(NOT SD_CUDA)
+        message(STATUS "NCCL helper requires CUDA build (SD_CUDA=ON)")
+        return()
+    endif()
+
+    # Try to find system-installed NCCL
+    find_package(NCCL QUIET)
+
+    if(NCCL_FOUND)
+        message(STATUS "✅ Found system NCCL: version ${NCCL_VERSION}")
+        message(STATUS "   Include: ${NCCL_INCLUDE_DIRS}")
+        message(STATUS "   Library: ${NCCL_LIBRARIES}")
+
+        set(HAVE_NCCL TRUE PARENT_SCOPE)
+        set(NCCL_LIB NCCL::nccl PARENT_SCOPE)
+        add_compile_definitions(HAVE_NCCL=1)
+        sd_register_helper("nccl")
+    else()
+        message(WARNING "NCCL not found. Install NCCL or set NCCL_ROOT. Multi-GPU collective ops will be unavailable.")
+        message(STATUS "   Install: apt-get install libnccl-dev  OR  set -DNCCL_ROOT=/path/to/nccl")
+    endif()
+
+    message(STATUS "✅ NCCL setup complete (HAVE_NCCL=${HAVE_NCCL})")
 endfunction()
 

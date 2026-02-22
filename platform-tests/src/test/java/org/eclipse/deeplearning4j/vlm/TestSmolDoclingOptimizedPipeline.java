@@ -79,8 +79,10 @@ public class TestSmolDoclingOptimizedPipeline {
 
     @BeforeAll
     public static void setup() {
-        // Enable graph optimizer for this test
-        System.setProperty("nd4j.optimizer.enabled", "true");
+        // Enable graph optimizer for this test (unless overridden by system property)
+        if (System.getProperty("nd4j.optimizer.enabled") == null) {
+            System.setProperty("nd4j.optimizer.enabled", "true");
+        }
         System.setProperty("nd4j.optimizer.logApplied", "true");
         // FP16 quantization: converts all FLOAT constants/variables to HALF
         // MmulHelper.cu persistent cast cache handles HALF→FLOAT for CUDA graph capture

@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(loha_matmul, 6, 1, false, 0, 0) {
   }
 
   // Step 3: Hadamard product: lohaDelta = prod1 * prod2
-  auto lohaDelta = new NDArray(*prod1 * *prod2);
+  auto lohaDelta = (*prod1) * (*prod2);
 
   // Step 4: Compute LoHa output: input @ lohaDelta^T
   auto lohaOutput = output->ulike();  // returns NDArray*
@@ -103,10 +103,14 @@ CUSTOM_OP_IMPL(loha_matmul, 6, 1, false, 0, 0) {
 
   // Step 5: Combine: output = base_output + scaling * loha_output
   if (std::abs(scaling - 1.0) < 1e-9) {
-    output->assign(*baseOutput + *lohaOutput);
+    auto combined = (*baseOutput) + (*lohaOutput);
+    output->assign(combined);
+    delete combined;
   } else {
     lohaOutput->applyScalar(scalar::Multiply, scaling, lohaOutput);
-    output->assign(*baseOutput + *lohaOutput);
+    auto combined = (*baseOutput) + (*lohaOutput);
+    output->assign(combined);
+    delete combined;
   }
 
   delete prod1;
@@ -188,7 +192,7 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
     mmulOp.execute(inputs, outputs);
   }
 
-  auto lohaDelta = new NDArray(*prod1 * *prod2);
+  auto lohaDelta = (*prod1) * (*prod2);
 
   // Gradient w.r.t. input
   {
@@ -211,7 +215,7 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
   // Gradient w.r.t. LoHa components
   auto dLdOutTimesInput = NDArrayFactory::create<float>('c', prodShape, input->getContext());
   {
-    auto dLdOutT = new NDArray(dLdOut->transpose());
+    auto dLdOutT = dLdOut->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {dLdOutT, input};
     std::vector<NDArray*> outputs = {dLdOutTimesInput};
@@ -219,14 +223,14 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
     delete dLdOutT;
   }
 
-  auto gradProd1 = new NDArray(*dLdOutTimesInput * *prod2);
+  auto gradProd1 = (*dLdOutTimesInput) * (*prod2);
   gradProd1->applyScalar(scalar::Multiply, scaling, gradProd1);
-  auto gradProd2 = new NDArray(*dLdOutTimesInput * *prod1);
+  auto gradProd2 = (*dLdOutTimesInput) * (*prod1);
   gradProd2->applyScalar(scalar::Multiply, scaling, gradProd2);
 
   // dLdA1 = B1^T @ gradProd1
   {
-    auto lohaB1T = new NDArray(lohaB1->transpose());
+    auto lohaB1T = lohaB1->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {lohaB1T, gradProd1};
     std::vector<NDArray*> outputs = {dLdLohaA1};
@@ -236,7 +240,7 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
 
   // dLdB1 = gradProd1 @ A1^T
   {
-    auto lohaA1T = new NDArray(lohaA1->transpose());
+    auto lohaA1T = lohaA1->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {gradProd1, lohaA1T};
     std::vector<NDArray*> outputs = {dLdLohaB1};
@@ -246,7 +250,7 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
 
   // dLdA2 = B2^T @ gradProd2
   {
-    auto lohaB2T = new NDArray(lohaB2->transpose());
+    auto lohaB2T = lohaB2->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {lohaB2T, gradProd2};
     std::vector<NDArray*> outputs = {dLdLohaA2};
@@ -256,7 +260,7 @@ CUSTOM_OP_IMPL(loha_matmul_bp, 7, 6, false, 0, 0) {
 
   // dLdB2 = gradProd2 @ A2^T
   {
-    auto lohaA2T = new NDArray(lohaA2->transpose());
+    auto lohaA2T = lohaA2->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {gradProd2, lohaA2T};
     std::vector<NDArray*> outputs = {dLdLohaB2};

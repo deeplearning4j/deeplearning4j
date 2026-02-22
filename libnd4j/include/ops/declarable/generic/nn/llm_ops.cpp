@@ -29,7 +29,8 @@
     NOT_EXCLUDED(OP_quantized_matmul) || NOT_EXCLUDED(OP_grouped_query_attention) || \
     NOT_EXCLUDED(OP_flash_attention) || NOT_EXCLUDED(OP_kv_cache_update) || \
     NOT_EXCLUDED(OP_apply_alibi) || NOT_EXCLUDED(OP_sliding_window_attention) || \
-    NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_mean_square)
+    NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_mean_square) || \
+    NOT_EXCLUDED(OP_column_parallel_linear) || NOT_EXCLUDED(OP_row_parallel_linear)
 
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
@@ -902,6 +903,99 @@ DECLARE_SHAPE_FN(mean_square_bp) {
 }
 
 DECLARE_TYPES(mean_square_bp) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// column_parallel_linear - Column-Parallel Linear for Tensor Parallelism
+#if NOT_EXCLUDED(OP_column_parallel_linear)
+CUSTOM_OP_IMPL(column_parallel_linear, 2, 1, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);       // [batch, in_features]
+    auto weightShard = INPUT_VARIABLE(1); // [in_features, out_features/tp_size]
+    auto output = OUTPUT_VARIABLE(0);
+
+    NDArray* biasShard = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
+
+    int tpSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 1;
+    int tpRank = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+    int gatherOutput = block.getIArguments()->size() > 2 ? INT_ARG(2) : 1;
+
+    // Local matmul: output_shard = input @ weightShard
+    MmulHelper::mmul(input, weightShard, output);
+
+    // Add bias if present
+    if (biasShard != nullptr) {
+        *output += *biasShard;
+    }
+
+    // AllGather is handled at the Java level via NcclCommunicator.
+    // When tpSize=1, this op is just a standard linear layer.
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(column_parallel_linear) {
+    auto inShape = inputShape->at(0);
+    auto wShape = inputShape->at(1);
+
+    auto batchDim = shape::sizeAt(inShape, 0);
+    auto outDim = shape::sizeAt(wShape, -1);
+
+    auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(inShape), 'c', {batchDim, outDim});
+
+    return SHAPELIST(outShape);
+}
+
+DECLARE_TYPES(column_parallel_linear) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// row_parallel_linear - Row-Parallel Linear for Tensor Parallelism
+#if NOT_EXCLUDED(OP_row_parallel_linear)
+CUSTOM_OP_IMPL(row_parallel_linear, 2, 1, false, 0, 0) {
+    auto inputShard = INPUT_VARIABLE(0);  // [batch, in_features/tp_size]
+    auto weightShard = INPUT_VARIABLE(1); // [in_features/tp_size, out_features]
+    auto output = OUTPUT_VARIABLE(0);
+
+    NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
+
+    int tpSize = block.getIArguments()->size() > 0 ? INT_ARG(0) : 1;
+    int tpRank = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+    int reduceOutput = block.getIArguments()->size() > 2 ? INT_ARG(2) : 1;
+
+    // Local matmul: partial = inputShard @ weightShard
+    MmulHelper::mmul(inputShard, weightShard, output);
+
+    // AllReduce is handled at the Java level via NcclCommunicator.
+    // Bias is added AFTER AllReduce at Java level (only on rank 0 or after reduce).
+    // When tpSize=1, add bias here directly.
+    if (bias != nullptr && tpSize <= 1) {
+        *output += *bias;
+    }
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(row_parallel_linear) {
+    auto inShape = inputShape->at(0);
+    auto wShape = inputShape->at(1);
+
+    auto batchDim = shape::sizeAt(inShape, 0);
+    auto outDim = shape::sizeAt(wShape, -1);
+
+    auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        ArrayOptions::dataType(inShape), 'c', {batchDim, outDim});
+
+    return SHAPELIST(outShape);
+}
+
+DECLARE_TYPES(row_parallel_linear) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }

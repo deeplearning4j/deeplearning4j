@@ -1651,6 +1651,21 @@ SD_LIB_EXPORT void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen);
 SD_LIB_EXPORT void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled);
 
 /**
+ * Set the JIT compilation mode for DSP segment execution.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param mode  0 = GRAPH_ONLY (default), 1 = JIT_ONLY, 2 = GRAPH_PLUS_JIT
+ */
+SD_LIB_EXPORT void setPlanJitMode(sd::Pointer planHandle, int mode);
+
+/**
+ * Set the graph execution mode for DSP execution.
+ * Controls which backend is used for segment execution.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+ */
+SD_LIB_EXPORT void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode);
+
+/**
  * Enable/disable trace logging for DSP execution decisions.
  * @param planHandle  Handle from compileDynamicShapePlan()
  * @param enabled     true to enable trace, false to disable
@@ -1801,5 +1816,135 @@ SD_LIB_EXPORT const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle
  * @param planHandle  Handle from compileDynamicShapePlan()
  */
 SD_LIB_EXPORT void clearPlanCudaGraphTimeline(sd::Pointer planHandle);
+
+// =============================================================================
+// NCCL Collective Communication Operations
+// =============================================================================
+
+/**
+ * Initialize an NCCL communicator for a group of GPUs.
+ *
+ * @param numRanks   Number of ranks (GPUs) in the communicator
+ * @param rankId     This process's rank (0-indexed)
+ * @param deviceId   CUDA device ID for this rank
+ * @return Opaque pointer to the NCCL communicator, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId);
+
+/**
+ * Initialize an NCCL communicator from a unique ID (for multi-process).
+ *
+ * @param numRanks   Number of ranks
+ * @param rankId     This process's rank
+ * @param uniqueId   Pointer to an ncclUniqueId (128 bytes)
+ * @return Opaque pointer to the NCCL communicator
+ */
+SD_LIB_EXPORT sd::Pointer ncclCommInitWithId(int numRanks, int rankId, sd::Pointer uniqueId);
+
+/**
+ * Generate a unique NCCL ID for multi-process initialization.
+ *
+ * @return Pointer to a newly allocated ncclUniqueId (caller must free)
+ */
+SD_LIB_EXPORT sd::Pointer ncclGetUniqueId();
+
+/**
+ * Destroy an NCCL communicator and release resources.
+ *
+ * @param commHandle Handle from ncclCommInit
+ */
+SD_LIB_EXPORT void ncclCommDestroy(sd::Pointer commHandle);
+
+/**
+ * AllReduce: sum all tensors across ranks, result available on all ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (OpaqueDataBuffer*)
+ * @param recvBuf      Receive buffer (OpaqueDataBuffer*), can be same as sendBuf for in-place
+ * @param numElements  Number of elements
+ * @param dataType     Data type (sd::DataType ordinal)
+ * @param reduceOp     Reduction operation (0=SUM, 1=PROD, 2=MAX, 3=MIN, 4=AVG)
+ * @param stream       CUDA stream pointer (nullptr for default stream)
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoAllReduce(sd::Pointer commHandle,
+                                   sd::Pointer sendBuf, sd::Pointer recvBuf,
+                                   sd::LongType numElements, int dataType,
+                                   int reduceOp, sd::Pointer stream);
+
+/**
+ * AllGather: gather data from all ranks, result available on all ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (this rank's data)
+ * @param recvBuf      Receive buffer (must hold numRanks * sendCount elements)
+ * @param sendCount    Number of elements per rank
+ * @param dataType     Data type ordinal
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoAllGather(sd::Pointer commHandle,
+                                   sd::Pointer sendBuf, sd::Pointer recvBuf,
+                                   sd::LongType sendCount, int dataType,
+                                   sd::Pointer stream);
+
+/**
+ * ReduceScatter: reduce then scatter result across ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (full data)
+ * @param recvBuf      Receive buffer (this rank's shard)
+ * @param recvCount    Number of elements per rank after scatter
+ * @param dataType     Data type ordinal
+ * @param reduceOp     Reduction operation
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoReduceScatter(sd::Pointer commHandle,
+                                       sd::Pointer sendBuf, sd::Pointer recvBuf,
+                                       sd::LongType recvCount, int dataType,
+                                       int reduceOp, sd::Pointer stream);
+
+/**
+ * Send data to a specific peer rank.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer
+ * @param numElements  Number of elements to send
+ * @param dataType     Data type ordinal
+ * @param peerRank     Destination rank
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoSend(sd::Pointer commHandle,
+                              sd::Pointer sendBuf, sd::LongType numElements,
+                              int dataType, int peerRank, sd::Pointer stream);
+
+/**
+ * Receive data from a specific peer rank.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param recvBuf      Receive buffer
+ * @param numElements  Number of elements to receive
+ * @param dataType     Data type ordinal
+ * @param peerRank     Source rank
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoRecv(sd::Pointer commHandle,
+                              sd::Pointer recvBuf, sd::LongType numElements,
+                              int dataType, int peerRank, sd::Pointer stream);
+
+/**
+ * Begin a group of NCCL operations (for fusing multiple collectives).
+ * @return 0 on success
+ */
+SD_LIB_EXPORT int ncclGroupStart();
+
+/**
+ * End a group of NCCL operations.
+ * @return 0 on success
+ */
+SD_LIB_EXPORT int ncclGroupEnd();
 
 #endif // NATIVEOPS_H

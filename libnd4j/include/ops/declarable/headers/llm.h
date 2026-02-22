@@ -403,6 +403,235 @@ DECLARE_CUSTOM_OP(mean_square, 1, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(mean_square_bp, 2, 1, false, 0, 0);
 #endif
 
+/**
+ * Fused element-wise chain: executes a sequence of element-wise ops in a single kernel.
+ *
+ * Input 0: primary input tensor
+ * Inputs 1..N: secondary inputs for binary ops in the chain (one per binary op)
+ * iArgs: op codes from FusedElemOp enum (one per op in the chain)
+ *   0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu,
+ *   14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish
+ * tArgs[0]: clipMin (optional, for FUSED_CLIP=30)
+ * tArgs[1]: clipMax (optional, for FUSED_CLIP=30)
+ *
+ * Output shape = input 0 shape.
+ */
+#if NOT_EXCLUDED(OP_fused_elementwise_chain)
+DECLARE_CUSTOM_OP(fused_elementwise_chain, 1, 1, true, 0, 1);
+#endif
+
+/**
+ * column_parallel_linear - Column-Parallel Linear Layer
+ *
+ * Tensor parallelism op: each GPU holds W[:, shard].
+ * Output is gathered (AllGather) across TP ranks.
+ *
+ * Y_local = X @ W_shard  (each rank computes partial output)
+ * Y = AllGather(Y_local)  (if gather_output=true)
+ *
+ * Input:
+ *   0: X [batch, in_features]
+ *   1: W_shard [in_features, out_features/tp_size] (this rank's column shard)
+ *   2: bias_shard (optional) [out_features/tp_size]
+ *
+ * Output:
+ *   0: Y [batch, out_features] (if gather) or [batch, out_features/tp_size] (if no gather)
+ *
+ * Integer arguments:
+ *   0: tp_size (tensor parallel world size, default: 1)
+ *   1: tp_rank (this rank, default: 0)
+ *   2: gather_output (0=no, 1=yes, default: 1)
+ */
+#if NOT_EXCLUDED(OP_column_parallel_linear)
+DECLARE_CUSTOM_OP(column_parallel_linear, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * row_parallel_linear - Row-Parallel Linear Layer
+ *
+ * Tensor parallelism op: each GPU holds W[shard, :].
+ * Input is assumed to be split across ranks.
+ * Output is reduced (AllReduce) across TP ranks.
+ *
+ * Y_partial = X_shard @ W_shard  (each rank computes partial sum)
+ * Y = AllReduce(Y_partial)  (if reduce_output=true)
+ *
+ * Input:
+ *   0: X_shard [batch, in_features/tp_size] (this rank's input shard)
+ *   1: W_shard [in_features/tp_size, out_features] (this rank's row shard)
+ *   2: bias (optional, only added on rank 0) [out_features]
+ *
+ * Output:
+ *   0: Y [batch, out_features]
+ *
+ * Integer arguments:
+ *   0: tp_size (tensor parallel world size, default: 1)
+ *   1: tp_rank (this rank, default: 0)
+ *   2: reduce_output (0=no, 1=yes, default: 1)
+ */
+#if NOT_EXCLUDED(OP_row_parallel_linear)
+DECLARE_CUSTOM_OP(row_parallel_linear, 2, 1, false, 0, 0);
+#endif
+
+/**
+ * decoder_masked_mha - Fused Decoder Masked Multi-Head Attention
+ *
+ * Single fused kernel for decode-phase attention:
+ * QKV projection + RoPE + KV cache write + masked attention + output projection
+ *
+ * Optimized for single-token decode (memory-bandwidth bound).
+ * Eliminates all intermediate global memory traffic.
+ *
+ * Input:
+ *   0: hidden_states [batch, 1, hidden_dim]
+ *   1: qkv_weight [3 * hidden_dim, hidden_dim] (fused QKV projection)
+ *   2: o_weight [hidden_dim, hidden_dim] (output projection)
+ *   3: key_cache [batch, num_kv_heads, max_seq_len, head_dim]
+ *   4: value_cache [batch, num_kv_heads, max_seq_len, head_dim]
+ *   5: attention_mask [batch, 1, 1, seq_len] (optional)
+ *   6: cos_cache [max_seq_len, head_dim/2] (RoPE cos, optional)
+ *   7: sin_cache [max_seq_len, head_dim/2] (RoPE sin, optional)
+ *
+ * Output:
+ *   0: output [batch, 1, hidden_dim]
+ *   1: updated key_cache
+ *   2: updated value_cache
+ *
+ * Integer arguments:
+ *   0: num_heads (query heads)
+ *   1: num_kv_heads (key-value heads, for GQA)
+ *   2: cache_position (current position in KV cache)
+ *   3: rope_type (0=none, 1=standard, 2=neox, default: 1)
+ *
+ * Float arguments:
+ *   0: attention_scale (default: 1/sqrt(head_dim))
+ *   1: rope_freq_base (default: 10000.0)
+ */
+// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
+// #if NOT_EXCLUDED(OP_decoder_masked_mha)
+// DECLARE_CUSTOM_OP(decoder_masked_mha, 5, 3, false, 0, 0);
+// #endif
+
+/**
+ * fused_gemm_swiglu - Fused GEMM + SiLU + Element-wise Multiply
+ *
+ * Fuses the MLP computation in LLaMA-style models using CUTLASS EVT:
+ * output = silu(X @ W_gate) * (X @ W_up)
+ *
+ * Input:
+ *   0: X [batch, seq_len, hidden_dim]
+ *   1: W_gate [hidden_dim, intermediate_dim]
+ *   2: W_up [hidden_dim, intermediate_dim]
+ *
+ * Output:
+ *   0: output [batch, seq_len, intermediate_dim]
+ */
+// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
+// #if NOT_EXCLUDED(OP_fused_gemm_swiglu)
+// DECLARE_CUSTOM_OP(fused_gemm_swiglu, 3, 1, false, 0, 0);
+// #endif
+
+/**
+ * moe_gate - Mixture of Experts Gating
+ *
+ * Top-K expert selection with load balancing auxiliary loss.
+ *
+ * Input:
+ *   0: hidden_states [batch, seq_len, hidden_dim]
+ *   1: gate_weights [hidden_dim, num_experts]
+ *
+ * Output:
+ *   0: expert_indices [batch * seq_len, top_k] (INT64)
+ *   1: expert_weights [batch * seq_len, top_k] (softmax scores)
+ *   2: aux_loss (scalar) - load balancing loss
+ *
+ * Integer arguments:
+ *   0: num_experts (default: 8)
+ *   1: top_k (experts per token, default: 2)
+ *
+ * Float arguments:
+ *   0: aux_loss_weight (default: 0.01)
+ *   1: jitter_eps (training noise, default: 0.0)
+ */
+// TODO: Implementation moved to /tmp/new_ops_backup/ — re-enable when fixed
+// #if NOT_EXCLUDED(OP_moe_gate)
+// DECLARE_CUSTOM_OP(moe_gate, 2, 3, false, 0, 0);
+// #endif
+
+/**
+ * selective_scan - Mamba/SSM Selective Scan
+ *
+ * Implements the selective scan operation for state space models (Mamba).
+ * h_t = A_t * h_{t-1} + B_t * x_t
+ * y_t = C_t * h_t + D * x_t
+ *
+ * Input:
+ *   0: x [batch, seq_len, d_inner]
+ *   1: delta [batch, seq_len, d_inner] (discretization step)
+ *   2: A [d_inner, d_state] (state matrix)
+ *   3: B [batch, seq_len, d_state] (input-dependent B)
+ *   4: C [batch, seq_len, d_state] (input-dependent C)
+ *   5: D [d_inner] (skip connection, optional)
+ *
+ * Output:
+ *   0: y [batch, seq_len, d_inner]
+ *   1: last_state [batch, d_inner, d_state] (for recurrent inference)
+ *
+ * Integer arguments:
+ *   0: d_state (state dimension, default: 16)
+ */
+#if NOT_EXCLUDED(OP_selective_scan)
+DECLARE_CUSTOM_OP(selective_scan, 5, 1, false, 0, 0);
+#endif
+
+/**
+ * multi_lora_matmul - Batched LoRA GEMM with per-row adapter selection
+ *
+ * Computes Y = X @ W + X @ A[adapter_id] @ B[adapter_id] * scaling
+ * where different rows of the batch can use different adapters.
+ *
+ * Input:
+ *   0: X [batch, in_features]
+ *   1: W [in_features, out_features] (base weights)
+ *   2: adapter_ids [batch] (INT32, adapter index per row)
+ *   3..3+N: LoRA A matrices [rank, in_features] (one per adapter)
+ *   3+N..3+2N: LoRA B matrices [out_features, rank] (one per adapter)
+ *
+ * Output:
+ *   0: Y [batch, out_features]
+ *
+ * Integer arguments:
+ *   0: num_adapters
+ *   1: lora_rank
+ *
+ * Float arguments:
+ *   0: lora_scaling (alpha/rank)
+ */
+#if NOT_EXCLUDED(OP_multi_lora_matmul)
+DECLARE_CUSTOM_OP(multi_lora_matmul, 5, 1, false, 0, 0);
+#endif
+
+/**
+ * smooth_quant - SmoothQuant W8A8 quantized matmul
+ *
+ * Implements the SmoothQuant technique: Y = (X * diag(s)^-1) @ (diag(s) * W)
+ * where s is a per-channel smoothing scale computed offline via calibration.
+ *
+ * Input arrays:
+ *   0: input [M, K] - FP16/FP32 input activations
+ *   1: weightQuant [K, N] - INT8 pre-quantized smoothed weights
+ *   2: smoothScale [K] - per-channel smoothing scale
+ *   3: weightScale scalar or [N] - dequant scale for weights
+ *   4: (optional) actScale - per-channel activation scale
+ *   5: (optional) bias [N]
+ *
+ * Output arrays:
+ *   0: output [M, N]
+ */
+#if NOT_EXCLUDED(OP_smooth_quant)
+DECLARE_CUSTOM_OP(smooth_quant, 4, 1, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

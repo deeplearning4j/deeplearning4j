@@ -32,6 +32,15 @@
 #include <unordered_set>
 #include <vector>
 
+// Forward declarations for MLIR types used in helper signatures
+namespace mlir {
+class OpBuilder;
+class Location;
+class Value;
+class Type;
+class RankedTensorType;
+}  // namespace mlir
+
 namespace sd {
 namespace graph {
 
@@ -41,11 +50,26 @@ namespace graph {
 enum class TritonOpCategory {
   BINARY_ELEMENTWISE,     // add, sub, mul, div, min, max
   UNARY_ELEMENTWISE,      // relu, sigmoid, tanh, exp, log, sqrt, etc.
+  COMPARISON,             // greater, less, equals, etc. -> arith::CmpFOp/CmpIOp
+  LOGICAL,                // boolean_and, boolean_or, etc. -> arith::AndIOp/OrIOp
+  TERNARY,                // where, select -> arith::SelectOp (3 inputs)
+  IDENTITY,               // identity, assign -> SSA value forwarding
   MATMUL,                 // matmul, batch_matmul -> tt.dot
   REDUCTION,              // reduce_sum, reduce_max, etc. -> tt.reduce
   NORMALIZATION,          // softmax, layer_norm -> multi-op fused pattern
   CAST,                   // type cast -> arith cast ops
   UNSUPPORTED             // cannot be mapped to Triton IR
+};
+
+/**
+ * Kernel pattern classification for mixed-category segments.
+ */
+enum class SegmentKernelPattern {
+  ELEMENTWISE_1D,   // All element-wise (including comparison, logical, ternary, cast)
+  REDUCTION_1D,     // Contains reduction ops
+  NORMALIZATION,    // Contains normalization ops (softmax, layer_norm)
+  MATMUL_2D,        // Contains matmul ops
+  MATMUL_EPILOGUE   // Matmul + element-wise epilogue (bias+activation)
 };
 
 /**
@@ -124,6 +148,16 @@ class TritonIRBuilder {
   static TritonOpCategory getOpCategory(const std::string& opName);
 
   /**
+   * Classify a segment's dominant kernel pattern based on its op mix.
+   */
+  static SegmentKernelPattern classifySegment(NativeSlot* slots, int startSlot, int endSlot);
+
+  /**
+   * Check if an op category is element-wise compatible (can be fused into 1D kernel).
+   */
+  static bool isElementwiseCompatible(TritonOpCategory cat);
+
+  /**
    * Build a Triton MLIR module from a contiguous range of slots.
    *
    * Constructs TTIR by:
@@ -158,6 +192,60 @@ class TritonIRBuilder {
 
   // Generate a unique kernel name from the segment's op sequence
   std::string generateKernelName(NativeSlot* slots, int startSlot, int endSlot);
+
+  // ── MLIR emission helpers ──
+
+  // Emit a binary element-wise op (add, sub, mul, div, min, max)
+  static mlir::Value emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
+                                           const TritonOpMapping& mapping,
+                                           mlir::Value lhs, mlir::Value rhs);
+
+  // Emit a unary element-wise op (relu, sigmoid, tanh, gelu, exp, log, etc.)
+  // Some are compound patterns (e.g., relu = max(x, 0), sigmoid = 1/(1+exp(-x)))
+  static mlir::Value emitUnaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
+                                          const TritonOpMapping& mapping,
+                                          const NativeSlot& slot, mlir::Value input,
+                                          int blockSize);
+
+  // Emit a comparison op (greater, less, equals, etc.)
+  static mlir::Value emitComparisonOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                      const std::string& opName,
+                                      mlir::Value lhs, mlir::Value rhs, int blockSize);
+
+  // Emit a logical op (boolean_and, boolean_or, etc.)
+  static mlir::Value emitLogicalOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                   const std::string& opName,
+                                   mlir::Value lhs, mlir::Value rhs, int blockSize);
+
+  // Emit a ternary select/where op
+  static mlir::Value emitTernaryOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                   mlir::Value condition, mlir::Value trueVal,
+                                   mlir::Value falseVal, int blockSize);
+
+  // Emit a reduction kernel pattern
+  static mlir::Value emitReductionOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                     const std::string& opName,
+                                     mlir::Value input, int reductionAxis,
+                                     mlir::RankedTensorType outputType);
+
+  // Emit a normalization kernel pattern (softmax, layer_norm, rms_norm)
+  static mlir::Value emitNormalizationOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                         const std::string& opName,
+                                         mlir::Value input, int axis,
+                                         mlir::RankedTensorType outputType);
+
+  // Emit a matmul kernel pattern using tt.dot
+  static void emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location loc,
+                               mlir::Value aPtr, mlir::Value bPtr, mlir::Value cPtr,
+                               int M, int N, int K,
+                               int blockM, int blockN, int blockK);
+
+  // Create a splat constant float tensor: splat(val) -> tensor<BLOCKxf32>
+  static mlir::Value splatConstantF32(mlir::OpBuilder& builder, mlir::Location loc,
+                                      mlir::RankedTensorType tensorType, float val);
+
+  // Map an nd4j DataType to an MLIR element type
+  static mlir::Type getMLIRType(mlir::OpBuilder& builder, DataType dtype);
 };
 
 }  // namespace graph

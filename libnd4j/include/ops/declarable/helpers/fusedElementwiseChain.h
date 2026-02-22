@@ -58,9 +58,43 @@ enum FusedElemOp : uint8_t {
     FUSED_SILU = 21,
     FUSED_MISH = 22,
 
+    // Additional unary ops
+    FUSED_RSQRT = 23,
+    FUSED_RECIPROCAL = 24,
+    FUSED_SIGN = 25,
+    FUSED_ERF = 26,
+    FUSED_ERFC = 27,
+    FUSED_LOG1P = 28,
+    FUSED_CEIL = 29,
+
     // Parameterized ops
     FUSED_CLIP = 30,        // Uses clipMin/clipMax
     FUSED_LEAKY_RELU = 31,  // Uses tArgs[0] as alpha
+
+    // Additional unary ops (continued)
+    FUSED_FLOOR = 32,
+    FUSED_ROUND = 33,
+    FUSED_SIN = 34,
+    FUSED_COS = 35,
+    FUSED_ELU = 36,
+    FUSED_SELU = 37,
+    FUSED_SOFTPLUS = 38,
+    FUSED_SOFTSIGN = 39,
+    FUSED_HARD_SIGMOID = 40,
+    FUSED_HARDTANH = 41,
+    FUSED_RELU6 = 42,
+
+    // Additional binary ops
+    FUSED_MIN = 50,         // minimum/min_pairwise
+    FUSED_MAX = 51,         // maximum/max_pairwise
+    FUSED_MOD = 52,         // mod/floormod
+    FUSED_ATAN2 = 53,
+    FUSED_FLOORDIV = 54,
+    FUSED_REVERSE_DIV = 55,
+    FUSED_REVERSE_SUB = 56,
+    FUSED_SQUARED_SUB = 57,
+    FUSED_MUL_NO_NAN = 58,
+    FUSED_POW = 59,
 };
 
 /**
@@ -68,7 +102,8 @@ enum FusedElemOp : uint8_t {
  * Binary arithmetic ops (add/sub/mul/div) and leaky_relu (alpha parameter).
  */
 SD_HOST_DEVICE inline bool isBinaryFusedOp(FusedElemOp op) {
-    return op <= FUSED_DIV || op == FUSED_LEAKY_RELU;
+    return op <= FUSED_DIV || op == FUSED_LEAKY_RELU ||
+           (op >= FUSED_MIN && op <= FUSED_POW);
 }
 
 /**
@@ -97,6 +132,61 @@ SD_LIB_HIDDEN void fusedElementwiseChain(
     const double* clipMin,
     const double* clipMax,
     LaunchContext* context);
+
+/**
+ * Map op name string to FusedElemOp code.
+ * Returns -1 if the op name is not supported for fused execution.
+ */
+inline int opNameToFusedCode(const std::string& opName) {
+    if (opName == "add") return FUSED_ADD;
+    if (opName == "subtract") return FUSED_SUB;
+    if (opName == "multiply") return FUSED_MUL;
+    if (opName == "divide") return FUSED_DIV;
+    if (opName == "relu") return FUSED_RELU;
+    if (opName == "sigmoid") return FUSED_SIGMOID;
+    if (opName == "tanh") return FUSED_TANH;
+    if (opName == "gelu") return FUSED_GELU;
+    if (opName == "exp") return FUSED_EXP;
+    if (opName == "log") return FUSED_LOG;
+    if (opName == "abs") return FUSED_ABS;
+    if (opName == "neg") return FUSED_NEG;
+    if (opName == "square") return FUSED_SQUARE;
+    if (opName == "sqrt") return FUSED_SQRT;
+    if (opName == "swish") return FUSED_SWISH;
+    if (opName == "silu") return FUSED_SILU;
+    if (opName == "mish") return FUSED_MISH;
+    if (opName == "rsqrt") return FUSED_RSQRT;
+    if (opName == "reciprocal") return FUSED_RECIPROCAL;
+    if (opName == "sign") return FUSED_SIGN;
+    if (opName == "erf") return FUSED_ERF;
+    if (opName == "erfc") return FUSED_ERFC;
+    if (opName == "log1p") return FUSED_LOG1P;
+    if (opName == "ceil") return FUSED_CEIL;
+    if (opName == "floor") return FUSED_FLOOR;
+    if (opName == "round") return FUSED_ROUND;
+    if (opName == "sin") return FUSED_SIN;
+    if (opName == "cos") return FUSED_COS;
+    if (opName == "elu") return FUSED_ELU;
+    if (opName == "selu") return FUSED_SELU;
+    if (opName == "softplus") return FUSED_SOFTPLUS;
+    if (opName == "softsign") return FUSED_SOFTSIGN;
+    if (opName == "hard_sigmoid") return FUSED_HARD_SIGMOID;
+    if (opName == "hardtanh") return FUSED_HARDTANH;
+    if (opName == "relu6") return FUSED_RELU6;
+    if (opName == "leakyrelu") return FUSED_LEAKY_RELU;
+    if (opName == "clipbyvalue" || opName == "clip_by_value") return FUSED_CLIP;
+    if (opName == "minimum" || opName == "min_pairwise") return FUSED_MIN;
+    if (opName == "maximum" || opName == "max_pairwise") return FUSED_MAX;
+    if (opName == "mod" || opName == "floormod") return FUSED_MOD;
+    if (opName == "atan2") return FUSED_ATAN2;
+    if (opName == "floordiv") return FUSED_FLOORDIV;
+    if (opName == "reversedivide") return FUSED_REVERSE_DIV;
+    if (opName == "reversesubtract") return FUSED_REVERSE_SUB;
+    if (opName == "squaredsubtract") return FUSED_SQUARED_SUB;
+    if (opName == "multiply_no_nan") return FUSED_MUL_NO_NAN;
+    if (opName == "pow") return FUSED_POW;
+    return -1;
+}
 
 }  // namespace helpers
 }  // namespace ops

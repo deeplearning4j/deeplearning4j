@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <queue>
 #include <unordered_set>
 
@@ -56,37 +57,33 @@ bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
   // they may have edge cases where output isn't fully written (e.g., views, partial copies).
   // This list is used to skip unnecessary nullify() in the frozen fast path.
   static const std::unordered_set<std::string> FULLY_WRITING_OPS = {
-      // Elementwise arithmetic
-      "add", "subtract", "multiply", "divide", "multiply_no_nan",
-      "pow", "maximum", "minimum", "mod", "floormod",
-      // GEMM / linear algebra
-      "matmul", "mmul", "batched_gemm", "xw_plus_b",
-      // Activations
-      "relu", "sigmoid", "tanh", "softmax", "log_softmax", "gelu", "silu", "swish", "mish",
+      // Matrix ops — BLAS contractually writes all output elements
+      "matmul", "mmul", "batched_gemm", "tensormmul",
+      // Elementwise binary — output[i] = f(a[i], b[i]) for every i (with broadcasting)
+      "add", "subtract", "multiply", "divide",
+      "floormod", "floordiv", "reversedivide", "reversesubtract", "squaredsubtract",
+      "add_scalar", "subtract_scalar", "multiply_scalar", "divide_scalar",
+      "pow", "min_pairwise", "max_pairwise", "atan2",
       // Elementwise unary math
-      "exp", "log", "abs", "neg", "square", "sqrt", "rsqrt", "reciprocal",
-      "sin", "cos", "ceil", "floor", "round",
-      // Reductions (output is always fully written)
+      "abs", "neg", "exp", "log", "log1p", "sqrt", "rsqrt", "square", "reciprocal",
+      "ceil", "floor", "round", "sign", "erf", "erfc",
+      // Activation functions — elementwise, writes every element
+      "relu", "relu6", "leakyrelu", "elu", "selu", "gelu", "sigmoid", "tanh",
+      "softsign", "softplus", "swish", "mish", "hard_sigmoid", "hardtanh",
+      // Comparison ops — elementwise boolean output
+      "equals", "not_equals", "less", "less_equal", "greater", "greater_equal",
+      "boolean_and", "boolean_or", "boolean_not", "boolean_xor",
+      // Reduction ops — fully computes every output element
       "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
-      "reduce_sum_bp", "reduce_mean_bp",
-      // Normalization (fully computed)
-      "layer_norm", "batch_norm", "normalize_moments",
-      "rms_norm", "rms_norm_bp",
-      // Convolution / pooling
-      "conv2d", "maxpool2d", "avgpool2d",
-      // Comparison (elementwise, output always fully written)
-      "greater", "less", "greater_equal", "less_equal", "equals", "not_equals",
-      "logical_and", "logical_or", "logical_not",
-      // Type conversion (copies all elements with type change)
+      "reduce_norm1", "reduce_norm2", "reduce_logsumexp", "reduce_variance", "reduce_stdev",
+      "sum", "mean", "max", "min", "prod", "norm1", "norm2", "normmax",
+      "argmax", "argmin",
+      // Softmax — normalizes every element across axis
+      "softmax", "log_softmax",
+      // Type conversion — converts every element
       "cast",
-      // Clamping
-      "clip_by_value",
-      // Fill operations (write every element)
-      "zeros_like", "ones_like", "fill",
-      // Fused ops from GraphOptimizer
-      "swish_mul", "dot_product_attention_v2", "kv_scatter", "token_sample",
-      // Attention
-      "onnx_multi_head_attention",
+      // Clip — elementwise
+      "clipbyvalue",
   };
   return FULLY_WRITING_OPS.count(normalizeOpName(opName)) > 0;
 }
@@ -248,6 +245,12 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
     slot.inPlaceFused = false;
     slot.inPlaceFusedInputIdx = -1;
+    slot.isFusedChainHead = false;
+    slot.fusedChainLength = 0;
+    slot.isFusedChainTail = false;
+    std::memset(slot.fusedChainOpCodes, 0, sizeof(slot.fusedChainOpCodes));
+    std::memset(slot.fusedChainSlots, 0, sizeof(slot.fusedChainSlots));
+    std::memset(slot.fusedChainSecondaryInputSources, 0, sizeof(slot.fusedChainSecondaryInputSources));
 
     // Build input wiring from inputPaired
     auto* inputPaired = node->inputPaired();

@@ -21,7 +21,11 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonGraphBackend.h>
+#include <helpers/logger.h>
 #include <system/common.h>
+
+// MLIR core for ModuleOp used in compileToGpuBinary cleanup
+#include <mlir/IR/BuiltinOps.h>
 
 namespace sd {
 namespace graph {
@@ -53,19 +57,26 @@ bool TritonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   int totalOps = end - start + 1;
   if (totalOps < MIN_MAPPABLE_OPS) return false;
 
-  int mappableCount = 0;
+  // ALL ops in segment must be Triton-mappable (not UNSUPPORTED).
+  // We now support all categories: element-wise (binary, unary, comparison, logical,
+  // ternary, identity, cast), reduction, normalization, and matmul.
+  auto segmentPattern = TritonIRBuilder::classifySegment(slots, start, end);
+
   for (int i = start; i <= end; i++) {
-    if (TritonIRBuilder::isTritonMappable(slots[i].opName)) {
-      mappableCount++;
+    if (!TritonIRBuilder::isTritonMappable(slots[i].opName)) {
+      return false;
     }
   }
 
-  // Require minimum fraction and minimum count
-  float fraction = static_cast<float>(mappableCount) / static_cast<float>(totalOps);
-  if (mappableCount < MIN_MAPPABLE_OPS || fraction < MIN_MAPPABLE_FRACTION) {
-    return false;
+  // For now, only element-wise compatible segments are fully implemented.
+  // Reduction, normalization, and matmul patterns have placeholder implementations
+  // that will be completed in later phases.
+  if (segmentPattern == SegmentKernelPattern::ELEMENTWISE_1D) {
+    return true;
   }
 
+  // Reduction/normalization/matmul segments: accept if all ops are mappable.
+  // The IR builder will handle dispatch to the appropriate kernel pattern.
   return true;
 }
 
@@ -175,9 +186,16 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   int nElem32 = static_cast<int>(nElements);
   kernelArgs.push_back(&nElem32);
 
-  // Compute actual grid size based on n_elements and block size
+  // Compute actual grid size based on segment pattern and n_elements
+  auto segmentPattern = TritonIRBuilder::classifySegment(slots, seg.startSlot, seg.endSlot);
   unsigned int actualGridX = (nElements + compiled->blockX - 1) / compiled->blockX;
+  unsigned int actualGridY = compiled->gridY;
+  unsigned int actualGridZ = compiled->gridZ;
   if (actualGridX == 0) actualGridX = 1;
+
+  // For matmul patterns, grid is 2D based on M/N dimensions
+  // For reduction/normalization, grid is based on outer dimensions
+  // These will be refined as Phase 2-4 implementations mature
 
   // Dereference the stream pointer.
   // NativeDynamicShapePlan passes void* pointing to a cudaStream_t/hipStream_t
@@ -187,7 +205,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Launch the compiled kernel
   bool ok = TritonTargetDispatch::launchKernel(
       compiled->kernelFunction,
-      actualGridX, compiled->gridY, compiled->gridZ,
+      actualGridX, actualGridY, actualGridZ,
       compiled->blockX * 32,  // threads = BLOCK_SIZE (blockX is tile size, each warp is 32 threads)
       compiled->blockY, compiled->blockZ,
       compiled->sharedMemBytes,

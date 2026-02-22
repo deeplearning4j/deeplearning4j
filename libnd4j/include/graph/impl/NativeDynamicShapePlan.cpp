@@ -19,6 +19,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
 #include <graph/FusionPass.h>
+#include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <graph/GraphBackend.h>
 #include <array/DataBuffer.h>
 #include <helpers/ConstantShapeHelper.h>
@@ -46,6 +47,8 @@
 #include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/AttentionWorkspace.h>
 #include <ops/declarable/helpers/kv_scatter.h>
+#include <graph/gpu/NvrtcKernelBuilder.h>
+#include <graph/gpu/NvrtcKernelCache.h>
 #endif
 
 // Include CPU graph backends conditionally
@@ -56,9 +59,13 @@
 #if HAVE_ARMCOMPUTE
 #include <graph/cpu/AclGraphBackend.h>
 #endif
-// Include GPU graph backend (Triton) conditionally
+// Include GPU graph backends conditionally
 #if HAVE_TRITON
 #include <graph/gpu/TritonGraphBackend.h>
+#endif
+#ifdef SD_CUDA
+#include <graph/gpu/NvrtcGraphBackend.h>
+#include <graph/gpu/PtxGraphBackend.h>
 #endif
 
 namespace sd {
@@ -92,6 +99,9 @@ NativeSlot::NativeSlot(NativeSlot&& other) noexcept
       isIdentityOp(other.isIdentityOp),
       inPlaceFused(other.inPlaceFused),
       inPlaceFusedInputIdx(other.inPlaceFusedInputIdx),
+      isFusedChainHead(other.isFusedChainHead),
+      fusedChainLength(other.fusedChainLength),
+      isFusedChainTail(other.isFusedChainTail),
       targetDeviceId(other.targetDeviceId),
       legacyOpType(other.legacyOpType),
       legacyOpNum(other.legacyOpNum),
@@ -99,6 +109,9 @@ NativeSlot::NativeSlot(NativeSlot&& other) noexcept
       cachedOutputShapes(std::move(other.cachedOutputShapes)),
       shapeCacheValid(other.shapeCacheValid),
       shapeStatic(other.shapeStatic) {
+  std::memcpy(fusedChainOpCodes, other.fusedChainOpCodes, sizeof(fusedChainOpCodes));
+  std::memcpy(fusedChainSlots, other.fusedChainSlots, sizeof(fusedChainSlots));
+  std::memcpy(fusedChainSecondaryInputSources, other.fusedChainSecondaryInputSources, sizeof(fusedChainSecondaryInputSources));
   other.inputSourceIndices = nullptr;
   other.inputSourceTypes = nullptr;
   other.outputSlotIndices = nullptr;
@@ -138,6 +151,12 @@ NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
     isIdentityOp = other.isIdentityOp;
     inPlaceFused = other.inPlaceFused;
     inPlaceFusedInputIdx = other.inPlaceFusedInputIdx;
+    isFusedChainHead = other.isFusedChainHead;
+    fusedChainLength = other.fusedChainLength;
+    std::memcpy(fusedChainOpCodes, other.fusedChainOpCodes, sizeof(fusedChainOpCodes));
+    std::memcpy(fusedChainSlots, other.fusedChainSlots, sizeof(fusedChainSlots));
+    std::memcpy(fusedChainSecondaryInputSources, other.fusedChainSecondaryInputSources, sizeof(fusedChainSecondaryInputSources));
+    isFusedChainTail = other.isFusedChainTail;
     targetDeviceId = other.targetDeviceId;
     legacyOpType = other.legacyOpType;
     legacyOpNum = other.legacyOpNum;
@@ -166,7 +185,7 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotArrayCache_(nullptr), slotIsViewProducer_(nullptr),
       slotViewOutputs_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
-      pendingCloseBytes_(0), cudaGraphsEnabled_(false), totalGraphReplays_(0),
+      pendingCloseBytes_(0), cudaGraphsEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
       shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false), traceEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
@@ -250,7 +269,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   delete[] kvCacheMappings_;
 
 #ifdef SD_CUDA
-  // Free capture buffers and workspace from all segments
+  // Free capture buffers, workspace, and JIT kernels from all segments
   for (auto& seg : segments_) {
     for (auto& cb : seg.captureBuffers) {
       if (!cb.directReference) delete cb.buffer;
@@ -261,6 +280,9 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       seg.captureWorkspacePtr = nullptr;
       seg.captureWorkspaceBytes = 0;
     }
+    // Free JIT kernel handle
+    delete seg.jitKernel;
+    seg.jitKernel = nullptr;
   }
 
   // Free pre-allocated cuBLAS workspace
@@ -474,6 +496,12 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     // Initialize fusion fields (will be set by FusionPass::applyFusions later)
     slot.inPlaceFused = false;
     slot.inPlaceFusedInputIdx = -1;
+    slot.isFusedChainHead = false;
+    slot.fusedChainLength = 0;
+    slot.isFusedChainTail = false;
+    std::memset(slot.fusedChainOpCodes, 0, sizeof(slot.fusedChainOpCodes));
+    std::memset(slot.fusedChainSlots, 0, sizeof(slot.fusedChainSlots));
+    std::memset(slot.fusedChainSecondaryInputSources, 0, sizeof(slot.fusedChainSecondaryInputSources));
   }
 
   // Read release schedule
@@ -905,10 +933,14 @@ Status NativeDynamicShapePlan::execute(
     // (executeCount_ > 0). Step 1 (executeCount_==0) is the warm-up pass where
     // outputSlots_ starts zeroed; passing non-capturable segments through
     // executeSegmentWithGraph with null cross-segment inputs causes spurious CUDA errors.
-    bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
-                      && !segment.captureFailed;
-    if (tryCapture && (cudaGraphsEnabled_ || getGpuGraphBackend() != nullptr)) {
-      useGraph = true;
+    // SLOT_BY_SLOT mode: never use any graph/JIT backend
+    if (graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+      bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
+                        && !segment.captureFailed;
+      if (tryCapture && (cudaGraphsEnabled_ || getGpuGraphBackend() != nullptr
+                         || jitMode_ != JitMode::GRAPH_ONLY)) {
+        useGraph = true;
+      }
     }
 #else
     if (segment.isCapturable && !segment.captureFailed &&
@@ -945,7 +977,20 @@ Status NativeDynamicShapePlan::execute(
         tl_graphExecutionActive = false;
         if (status == Status::OK) { tritonHandled = true; segUsedGraph = true; }
       }
-      if (!tritonHandled) {
+
+      // Try NVRTC JIT (CUDA only, element-wise segments)
+      // Skip JIT when forced to CUDA_GRAPHS or SLOT_BY_SLOT mode
+      bool jitHandled = false;
+      if (!tritonHandled && jitMode_ != JitMode::GRAPH_ONLY && !segment.jitCompileFailed
+          && graphExecutionMode_ != GraphExecutionMode::GEM_CUDA_GRAPHS) {
+        auto status = executeSegmentWithJit(segment, externalInputs, numExternalInputs, stream);
+        if (status == Status::OK) {
+          jitHandled = true;
+          segUsedGraph = true;
+        }
+      }
+
+      if (!tritonHandled && !jitHandled) {
         if (cudaGraphsEnabled_) {
           // Fall back to CUDA Graphs (captured replay).
           // tl_graphExecutionActive is managed inside executeSegmentWithGraph()
@@ -1313,6 +1358,172 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   seg.executionCount++;
   return Status::OK;
 }
+
+// ─── Segment execution: NVRTC JIT compilation ────────────────────────────────
+
+#ifdef SD_CUDA
+
+Status NativeDynamicShapePlan::executeSegmentWithJit(
+    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+
+  // Compute shape key for cache invalidation
+  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+
+  // ── 1. If cached JIT kernel exists and shape matches, launch directly ──
+  if (seg.jitKernel != nullptr && seg.jitKernel->valid && seg.jitShapeKey == segShapeKey) {
+    // Restore output slots from slotArrayCache_ (same as graph replay)
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      for (int o = 0; o < slots_[s].numOutputs; o++) {
+        int si = slots_[s].outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_ && slotArrayCache_[si] != nullptr) {
+          outputSlots_[si] = slotArrayCache_[si];
+        }
+      }
+    }
+
+    // Determine element count from the last active slot's output
+    int64_t elementCount = 0;
+    for (int s = seg.endSlot; s >= seg.startSlot; s--) {
+      if (slots_[s].frozenConstantSlot || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
+      for (int o = 0; o < slots_[s].numOutputs; o++) {
+        int si = slots_[s].outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
+          elementCount = outputSlots_[si]->lengthOf();
+          break;
+        }
+      }
+      if (elementCount > 0) break;
+    }
+
+    if (elementCount <= 0) {
+      sd_printf("NVRTC JIT: zero element count for seg[%d-%d]\n", seg.startSlot, seg.endSlot);
+      return Status::KERNEL_FAILURE;
+    }
+
+    auto status = launchKernel(seg.jitKernel, elementCount,
+                               externalArrays, numExt,
+                               outputSlots_, totalOutputSlots_,
+                               stream);
+    if (status == Status::OK) {
+      seg.executionCount++;
+      return Status::OK;
+    }
+    // Launch failed — delete kernel and fall through
+    delete seg.jitKernel;
+    seg.jitKernel = nullptr;
+    seg.jitCompileFailed = true;
+    return Status::KERNEL_FAILURE;
+  }
+
+  // ── 2. Warmup pass (executionCount == 0): slot-by-slot ──
+  if (seg.executionCount == 0) {
+    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+  }
+
+  // ── 3. Compile pass (executionCount >= 1): check fusibility, compile kernel ──
+
+  // If shape changed, invalidate old kernel
+  if (seg.jitKernel != nullptr && seg.jitShapeKey != segShapeKey) {
+    delete seg.jitKernel;
+    seg.jitKernel = nullptr;
+  }
+
+  // Check if segment is fusible
+  if (!canJitSegment(slots_, seg.startSlot, seg.endSlot)) {
+    seg.jitCompileFailed = true;
+    if (traceEnabled_) {
+      sd_printf("NVRTC JIT: seg[%d-%d] not fusible, falling back\n",
+                seg.startSlot, seg.endSlot);
+    }
+    return Status::KERNEL_FAILURE;  // Fall through to CUDA graphs
+  }
+
+  // Restore output slots from slotArrayCache_ first (needed for buildKernelSource)
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    for (int o = 0; o < slots_[s].numOutputs; o++) {
+      int si = slots_[s].outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_ && slotArrayCache_[si] != nullptr) {
+        outputSlots_[si] = slotArrayCache_[si];
+      }
+    }
+  }
+
+  // Build kernel source
+  int segIdx = 0;
+  for (size_t i = 0; i < segments_.size(); i++) {
+    if (&segments_[i] == &seg) { segIdx = static_cast<int>(i); break; }
+  }
+
+  auto source = buildKernelSource(slots_, seg.startSlot, seg.endSlot,
+                                  outputSlots_, totalOutputSlots_, segIdx);
+  if (!source.valid) {
+    seg.jitCompileFailed = true;
+    sd_printf("NVRTC JIT: source generation failed for seg[%d-%d]\n",
+              seg.startSlot, seg.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
+
+  if (traceEnabled_) {
+    sd_printf("NVRTC JIT: compiling kernel '%s' for seg[%d-%d] (%zu bytes source)\n",
+              source.kernelName.c_str(), seg.startSlot, seg.endSlot,
+              source.sourceCode.size());
+  }
+
+  // Compile kernel
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  seg.jitKernel = compileKernel(source, deviceId);
+  if (seg.jitKernel == nullptr || !seg.jitKernel->valid) {
+    seg.jitCompileFailed = true;
+    delete seg.jitKernel;
+    seg.jitKernel = nullptr;
+    sd_printf("NVRTC JIT: compilation failed for seg[%d-%d]\n",
+              seg.startSlot, seg.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
+
+  seg.jitShapeKey = segShapeKey;
+
+  // Determine element count
+  int64_t elementCount = 0;
+  for (int s = seg.endSlot; s >= seg.startSlot; s--) {
+    if (slots_[s].frozenConstantSlot || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
+    for (int o = 0; o < slots_[s].numOutputs; o++) {
+      int si = slots_[s].outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
+        elementCount = outputSlots_[si]->lengthOf();
+        break;
+      }
+    }
+    if (elementCount > 0) break;
+  }
+
+  if (elementCount <= 0) {
+    sd_printf("NVRTC JIT: zero element count for seg[%d-%d]\n", seg.startSlot, seg.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
+
+  // Launch the compiled kernel
+  auto status = launchKernel(seg.jitKernel, elementCount,
+                             externalArrays, numExt,
+                             outputSlots_, totalOutputSlots_,
+                             stream);
+  if (status == Status::OK) {
+    seg.executionCount++;
+    sd_printf("NVRTC JIT: launched kernel '%s' for seg[%d-%d] (%lld elements)\n",
+              seg.jitKernel->kernelName.c_str(), seg.startSlot, seg.endSlot,
+              static_cast<long long>(elementCount));
+    return Status::OK;
+  }
+
+  // Launch failed
+  delete seg.jitKernel;
+  seg.jitKernel = nullptr;
+  seg.jitCompileFailed = true;
+  return Status::KERNEL_FAILURE;
+}
+
+#endif  // SD_CUDA
 
 // ─── Segment execution: CUDA Graph capture/replay ────────────────────────────
 
@@ -2429,6 +2640,159 @@ Status NativeDynamicShapePlan::executeSlot(
     return Status::OK;
   }
 
+  // ── Fused chain tail skip ─────────────────────────────────────────────────
+  // Tail slots in a fused elementwise chain are already computed by the head.
+  // During CUDA graph capture, this means no kernel/memset nodes for tails.
+  // During slot-by-slot warmup, tails are skipped because head already wrote result.
+  if (slot.isFusedChainTail) {
+    return Status::OK;
+  }
+
+  // ── Fused chain head dispatch ─────────────────────────────────────────────
+  // Head slot dispatches a single fused kernel for the entire elementwise chain.
+  // This replaces N separate kernel launches + N-1 intermediate memsets with
+  // 1 kernel launch + 0 memsets.
+  if (slot.isFusedChainHead && slot.fusedChainLength >= 2) {
+    // 1. Gather primary input (head slot's first input)
+    NDArray* primaryInput = nullptr;
+    int primarySrcIdx = slot.inputSourceIndices[0];
+    if (primarySrcIdx >= 0) {
+      primaryInput = outputSlots_[primarySrcIdx];
+    } else {
+      int extIdx = -(primarySrcIdx + 1);
+      if (extIdx < numExt) primaryInput = externalArrays[extIdx];
+    }
+    if (primaryInput == nullptr) {
+      sd_printf("NativeDSP::executeSlot: null primary input for fused chain head slot %d\n", stepIdx);
+      return Status::BAD_INPUT;
+    }
+
+    // For binary head ops, the secondary input source tells us which input is secondary.
+    // The primary (chain) input is the OTHER one.
+    bool headIsBinary = (slot.fusedChainSecondaryInputSources[0] != -1);
+    if (headIsBinary && slot.numInputs == 2) {
+      int secSrc = slot.fusedChainSecondaryInputSources[0];
+      // Find which of the two inputs matches the secondary source
+      // The chain input is the other one
+      for (int k = 0; k < slot.numInputs; k++) {
+        if (slot.inputSourceIndices[k] != secSrc) {
+          // This is the chain input
+          int chainSrcIdx = slot.inputSourceIndices[k];
+          if (chainSrcIdx >= 0) {
+            primaryInput = outputSlots_[chainSrcIdx];
+          } else {
+            int extIdx = -(chainSrcIdx + 1);
+            if (extIdx < numExt) primaryInput = externalArrays[extIdx];
+          }
+          break;
+        }
+      }
+    }
+
+    // 2. Gather secondary inputs first (needed for broadcast shape computation)
+    sd::ops::helpers::FusedElemOp fusedOps[8];
+    NDArray* secondaryInputs[8] = {};
+
+    for (int ci = 0; ci < slot.fusedChainLength; ci++) {
+      fusedOps[ci] = static_cast<sd::ops::helpers::FusedElemOp>(slot.fusedChainOpCodes[ci]);
+
+      int secSrc = slot.fusedChainSecondaryInputSources[ci];
+      if (secSrc != -1) {
+        // Resolve secondary input
+        if (secSrc >= 0) {
+          secondaryInputs[ci] = outputSlots_[secSrc];
+        } else {
+          int extIdx = -(secSrc + 1);
+          if (extIdx < numExt) secondaryInputs[ci] = externalArrays[extIdx];
+        }
+      }
+    }
+
+    // 3. Determine output shape considering broadcasting with secondary inputs.
+    // The fused chain applies ops sequentially. If a binary op has a secondary
+    // input with a different shape, broadcasting may expand the running shape.
+    // We simulate the shape evolution through the chain to get the correct
+    // final output shape.
+    const LongType* outputShapeInfo = primaryInput->shapeInfo();
+    bool needsBroadcast = false;
+    for (int ci = 0; ci < slot.fusedChainLength; ci++) {
+      if (secondaryInputs[ci] != nullptr && sd::ops::helpers::isBinaryFusedOp(fusedOps[ci])) {
+        const LongType* secShape = secondaryInputs[ci]->shapeInfo();
+        if (!shape::equalsSoft(outputShapeInfo, secShape)) {
+          needsBroadcast = true;
+          break;
+        }
+      }
+    }
+
+    // If broadcasting would change the output shape, fall back to non-fused
+    // execution. The fused kernel handles per-element broadcasting but the
+    // output buffer must already have the correct broadcast shape, which is
+    // complex to compute here. Falling back ensures correctness.
+    if (needsBroadcast) {
+      // Un-mark this slot as fused chain head so we don't re-enter this path
+      // on subsequent calls. The tail slots also need to be un-marked so they
+      // actually execute.
+      slot.isFusedChainHead = false;
+      for (int ci = 0; ci < slot.fusedChainLength; ci++) {
+        int chainSlotIdx = slot.fusedChainSlots[ci];
+        if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
+          slots_[chainSlotIdx].isFusedChainTail = false;
+        }
+      }
+      slot.fusedChainLength = 0;
+      // Fall through to normal execution for this slot
+      goto normalExecution;
+    }
+
+    // 4. Allocate/reuse output for the LAST chain slot
+    int lastSlotIdx = slot.fusedChainSlots[slot.fusedChainLength - 1];
+    int lastOutputSlotIdx = slots_[lastSlotIdx].outputSlotIndices[0];
+
+    NDArray* output = nullptr;
+    if (lastOutputSlotIdx >= 0 && lastOutputSlotIdx < totalOutputSlots_) {
+      output = slotArrayCache_[lastOutputSlotIdx];
+      if (output != nullptr) {
+        // Verify shape matches
+        if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
+          output = nullptr;  // Shape mismatch, reallocate
+        }
+      }
+      if (output == nullptr) {
+        output = new NDArray(outputShapeInfo, true, LaunchContext::defaultContext());
+        slotArrayCache_[lastOutputSlotIdx] = output;
+      }
+      output->nullify();  // Zero output before fused kernel writes to it
+    } else {
+      sd_printf("NativeDSP::executeSlot: invalid output slot index for fused chain tail slot %d\n", lastSlotIdx);
+      return Status::BAD_INPUT;
+    }
+
+    // 5. Call fused kernel
+    LaunchContext* lc = LaunchContext::defaultContext();
+    sd::ops::helpers::fusedElementwiseChain(
+        primaryInput, output, fusedOps, slot.fusedChainLength,
+        secondaryInputs, nullptr, nullptr, lc);
+
+    output->tickWriteDevice();
+
+    // 6. Register result at all chain slots' output indices
+    // The last slot's output gets the actual result.
+    // Intermediate slots also need their output registered so downstream
+    // ops (and frozen context path) can find them. Since the chain is
+    // purely in-place through one buffer, all intermediates = same buffer.
+    outputSlots_[lastOutputSlotIdx] = output;
+    for (int ci = 0; ci < slot.fusedChainLength - 1; ci++) {
+      int chainSlotIdx = slot.fusedChainSlots[ci];
+      int chainOutputSlotIdx = slots_[chainSlotIdx].outputSlotIndices[0];
+      if (chainOutputSlotIdx >= 0 && chainOutputSlotIdx < totalOutputSlots_) {
+        outputSlots_[chainOutputSlotIdx] = output;
+      }
+    }
+
+    return Status::OK;
+  }
+
   // ── Fast path: frozen context ────────────────────────────────────────────
   // When shapes are frozen and this slot's context was already configured on a
   // prior execution, skip input gathering, shape inference, output allocation,
@@ -2553,6 +2917,7 @@ Status NativeDynamicShapePlan::executeSlot(
     return status;
   }
 
+  normalExecution:
   // ── Step 1: Gather inputs ────────────────────────────────────────────────
   // Use thread-local vector to avoid 4441 heap allocations per execute() call
   static thread_local std::vector<NDArray*> inputs;
@@ -3737,12 +4102,66 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
   if (gpuGraphBackendChecked_) return gpuGraphBackend_;
   gpuGraphBackendChecked_ = true;
 
+  // If a specific backend is forced via setGraphExecutionMode(), use only that one.
+  // SLOT_BY_SLOT and CUDA_GRAPHS don't use a GPU graph backend.
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS) {
+    gpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+
 #if HAVE_TRITON
-  auto& triton = TritonGraphBackend::getInstance();
-  if (triton.isAvailable()) {
-    gpuGraphBackend_ = &triton;
-    sd_printf("NativeDynamicShapePlan: using Triton GPU compiler backend\n", "");
-    return gpuGraphBackend_;
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& triton = TritonGraphBackend::getInstance();
+    if (triton.isAvailable()) {
+      gpuGraphBackend_ = &triton;
+      sd_printf("NativeDynamicShapePlan: using Triton GPU compiler backend\n", "");
+      return gpuGraphBackend_;
+    }
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
+      sd_printf("NativeDynamicShapePlan: Triton backend requested but not available\n", "");
+      gpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
+    sd_printf("NativeDynamicShapePlan: Triton backend requested but not compiled (HAVE_TRITON=0)\n", "");
+    gpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#endif
+
+#ifdef SD_CUDA
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& nvrtc = NvrtcGraphBackend::getInstance();
+    if (nvrtc.isAvailable()) {
+      gpuGraphBackend_ = &nvrtc;
+      sd_printf("NativeDynamicShapePlan: using NVRTC GPU compiler backend\n", "");
+      return gpuGraphBackend_;
+    }
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT) {
+      sd_printf("NativeDynamicShapePlan: NVRTC backend requested but not available\n", "");
+      gpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& ptx = PtxGraphBackend::getInstance();
+    if (ptx.isAvailable()) {
+      gpuGraphBackend_ = &ptx;
+      sd_printf("NativeDynamicShapePlan: using PTX template GPU compiler backend\n", "");
+      return gpuGraphBackend_;
+    }
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
+      sd_printf("NativeDynamicShapePlan: PTX backend requested but not available\n", "");
+      gpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
   }
 #endif
 

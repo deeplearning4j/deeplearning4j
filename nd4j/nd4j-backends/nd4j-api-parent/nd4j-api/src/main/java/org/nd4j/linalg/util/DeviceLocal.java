@@ -97,6 +97,9 @@ public abstract class DeviceLocal<T extends Object> {
      * @param object
      */
     public void set(int deviceId, T object) {
+        if (deviceId >= locksMap.size()) {
+            ensureCapacity(deviceId);
+        }
         try {
             locksMap.get(deviceId).writeLock().lock();
             backingMap.put(deviceId, object);

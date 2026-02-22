@@ -21,9 +21,12 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonTargetDispatch.h>
+#include <helpers/logger.h>
 #include <system/common.h>
 
 #include <cstring>
+#include <csignal>
+#include <setjmp.h>
 
 // ─── Platform GPU headers ───────────────────────────────────────────────────
 //
@@ -63,9 +66,44 @@
 #include <level_zero/ze_api.h>
 #endif
 
-// Triton compiler C++ API
-#include <triton/Compiler/Compiler.h>
+// MLIR core infrastructure
+#include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Verifier.h>
+#include <mlir/Pass/PassManager.h>
+#include <mlir/Transforms/Passes.h>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Dialect/All.h>
+#include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h>
+#include <mlir/Conversion/IndexToLLVM/IndexToLLVM.h>
+#include <mlir/Conversion/ArithToLLVM/ArithToLLVM.h>
+
+// LLVM backend for PTX generation
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/ErrorHandling.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
+#include <llvm/ADT/SmallString.h>
+#include <llvm/Support/raw_ostream.h>
+
+
+// Triton dialect passes — TTIR -> TTGIR -> LLVM
+#include <triton/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.h>
+#include <triton/Conversion/TritonGPUToLLVM/Passes.h>
+#include <triton/Dialect/TritonGPU/Transforms/Passes.h>
 #include <triton/Target/LLVMIR/Passes.h>
+
+// NVIDIA backend passes (when building with NVIDIA codegen backend)
+#if __has_include(<TritonNVIDIAGPUToLLVM/Passes.h>)
+#include <TritonNVIDIAGPUToLLVM/Passes.h>
+#include <NVGPUToLLVM/NVGPUToLLVMPass.h>
+#define HAVE_TRITON_NVIDIA_PASSES 1
+#endif
 
 namespace sd {
 namespace graph {
@@ -234,90 +272,261 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   result.targetArch = cachedArch_;
   result.numWarps = numWarps;
 
-  // Use Triton's C++ compiler API to lower the MLIR module.
-  // The pipeline is: TTIR -> TTGIR -> LLVM IR -> target ISA
-  //
-  // Each target uses a different Triton backend:
-  //   NVIDIA: mlir::triton::nvidia_gpu -> PTX -> cubin
-  //   AMD:    mlir::triton::amd        -> AMDGCN -> HSACO
-  //   Intel:  mlir::triton::intel      -> SPIR-V -> native binary
-
   auto moduleOp = static_cast<mlir::ModuleOp*>(mlirModule);
+  if (!moduleOp || !*moduleOp) {
+    sd_printf("TritonTargetDispatch::compile: null MLIR module\n", "");
+    return result;
+  }
+
+  // ── Pass pipeline: TTIR -> TTGIR -> LLVM dialect -> LLVM IR -> target ISA ──
+  //
+  // Phase 1: TTIR optimizations (inliner, canonicalizer, CSE)
+  // Phase 2: TTIR -> TTGIR conversion (adds GPU-specific tensor encoding)
+  // Phase 3: TTGIR optimizations (coalesce)
+  // Phase 4: TTGIR -> LLVM MLIR dialect (backend-specific lowering)
+  // Phase 5: LLVM MLIR -> LLVM IR module
+  // Phase 6: LLVM IR -> target ISA (PTX/AMDGCN/SPIR-V)
+
+  // Determine target-specific parameters
+  std::string targetStr;
+  int computeCapability = 0;
 
   switch (target) {
     case TritonGpuTarget::NVIDIA: {
-      // Parse compute capability from arch string (e.g., "sm_89" -> 89)
-      int computeCapability = 0;
       if (cachedArch_.size() > 3) {
         computeCapability = std::stoi(cachedArch_.substr(3));
       }
-
-      mlir::triton::nvidia_gpu::ClusterInfo clusterInfo;
-      clusterInfo.clusterDimX = 1;
-      clusterInfo.clusterDimY = 1;
-      clusterInfo.clusterDimZ = 1;
-
-      // Run the Triton compilation pipeline: TTIR -> TTGIR -> LLVM IR -> PTX
-      auto ptxOrErr = mlir::triton::translateTritonGPUToLLVMIR(
-          *moduleOp, computeCapability, /*compilation*/ {});
-
-      if (!ptxOrErr) {
-        sd_printf("TritonTargetDispatch::compile: NVIDIA PTX compilation failed\n", "");
-        return result;
-      }
-
-      auto& ptx = *ptxOrErr;
-      result.size = ptx.size();
-      result.data = new char[result.size];
-      std::memcpy(result.data, ptx.data(), result.size);
+      targetStr = "cuda:" + std::to_string(computeCapability);
       break;
     }
-
     case TritonGpuTarget::AMD: {
-      // Parse GFX version from arch string (e.g., "gfx1100" -> 1100)
-      int gfxVersion = 0;
-      if (cachedArch_.size() > 3) {
-        gfxVersion = std::stoi(cachedArch_.substr(3));
-      }
-
-      // Run the Triton AMD compilation pipeline: TTIR -> TTGIR -> LLVM IR -> AMDGCN
-      auto amdgcnOrErr = mlir::triton::translateTritonGPUToLLVMIR(
-          *moduleOp, gfxVersion, /*compilation*/ {});
-
-      if (!amdgcnOrErr) {
-        sd_printf("TritonTargetDispatch::compile: AMD AMDGCN compilation failed for %s\n",
-                  cachedArch_.c_str());
-        return result;
-      }
-
-      auto& amdgcn = *amdgcnOrErr;
-      result.size = amdgcn.size();
-      result.data = new char[result.size];
-      std::memcpy(result.data, amdgcn.data(), result.size);
+      targetStr = "hip:" + cachedArch_;
       break;
     }
-
     case TritonGpuTarget::INTEL: {
-      // Run the Triton Intel compilation pipeline: TTIR -> TTGIR -> LLVM IR -> SPIR-V
-      auto spirvOrErr = mlir::triton::translateTritonGPUToLLVMIR(
-          *moduleOp, 0 /*not used for Intel*/, /*compilation*/ {});
-
-      if (!spirvOrErr) {
-        sd_printf("TritonTargetDispatch::compile: Intel SPIR-V compilation failed for %s\n",
-                  cachedArch_.c_str());
-        return result;
-      }
-
-      auto& spirv = *spirvOrErr;
-      result.size = spirv.size();
-      result.data = new char[result.size];
-      std::memcpy(result.data, spirv.data(), result.size);
+      targetStr = "xpu:" + cachedArch_;
       break;
     }
-
     default:
       return result;
   }
+
+  // Phase 1-2: TTIR -> TTGIR
+  {
+    mlir::PassManager pm(moduleOp->getContext());
+
+    // Phase 1: TTIR optimizations
+    pm.addPass(mlir::createInlinerPass());
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+
+    // Phase 2: TTIR -> TTGIR
+    pm.addPass(mlir::triton::createConvertTritonToTritonGPUPass(
+        targetStr, numWarps, /*threadsPerWarp=*/32, /*numCTAs=*/1));
+
+    // Phase 3: TTGIR optimizations
+    pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+
+    if (mlir::failed(pm.run(*moduleOp))) {
+      sd_printf("TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed\n", "");
+      return result;
+    }
+  }
+
+  // Phase 4: TTGIR -> LLVM MLIR dialect
+  {
+    mlir::PassManager pm(moduleOp->getContext());
+
+    // Shared memory allocation (required before LLVM lowering)
+    pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
+
+    // Backend-specific TTGIR -> LLVM conversion
+    //
+    // In Triton v3.2.0, TTGIR -> LLVM lowering is handled by backend-specific
+    // third-party libraries (e.g., TritonNVIDIAGPUToLLVM for NVIDIA).
+    // The core Triton library does NOT provide a generic createConvertTritonGPUToLLVMPass.
+    bool hasBackendLowering = false;
+    switch (target) {
+      case TritonGpuTarget::NVIDIA: {
+#ifdef HAVE_TRITON_NVIDIA_PASSES
+        pm.addPass(mlir::triton::NVIDIA::createDecomposeUnsupportedConversionsPass());
+        pm.addPass(mlir::triton::createConvertTritonGPUToLLVMPass(computeCapability));
+        pm.addPass(mlir::triton::createConvertNVGPUToLLVMPass());
+        hasBackendLowering = true;
+#else
+        sd_printf("TritonTargetDispatch::compile: NVIDIA backend passes not available "
+                  "(TritonNVIDIAGPUToLLVM not found at build time)\n", "");
+#endif
+        break;
+      }
+      case TritonGpuTarget::AMD:
+        sd_printf("TritonTargetDispatch::compile: AMD backend TTGIR->LLVM lowering "
+                  "not yet integrated (requires TritonAMDGPUToLLVM)\n", "");
+        break;
+      case TritonGpuTarget::INTEL:
+        sd_printf("TritonTargetDispatch::compile: Intel backend TTGIR->LLVM lowering "
+                  "not yet integrated (requires TritonIntelGPUToLLVM)\n", "");
+        break;
+      default:
+        break;
+    }
+
+    if (!hasBackendLowering) {
+      sd_printf("TritonTargetDispatch::compile: no backend lowering passes available for target\n", "");
+      return result;
+    }
+
+    // Standard MLIR -> LLVM lowering passes
+    pm.addPass(mlir::createConvertSCFToCFPass());
+    pm.addPass(mlir::createConvertIndexToLLVMPass());
+    pm.addPass(mlir::createArithToLLVMConversionPass());
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::createSymbolDCEPass());
+
+    if (mlir::failed(pm.run(*moduleOp))) {
+      sd_printf("TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed\n", "");
+      return result;
+    }
+  }
+
+  // Phase 5: MLIR LLVM dialect -> LLVM IR module
+  // Verify the MLIR module before attempting LLVM translation
+  if (mlir::failed(mlir::verify(*moduleOp))) {
+    sd_printf("TritonTargetDispatch::compile: MLIR module verification failed after lowering\n", "");
+    return result;
+  }
+
+  // Register ALL dialect translation interfaces — builtin.module, NVVM, GPU, etc.
+  mlir::DialectRegistry registry;
+  mlir::registerAllToLLVMIRTranslations(registry);
+  moduleOp->getContext()->appendDialectRegistry(registry);
+  llvm::LLVMContext llvmCtx;
+
+  // LLVM debug builds call abort() on assertion failures (e.g., invalid cast).
+  // We install a SIGABRT handler with setjmp/longjmp to recover gracefully.
+  // fork() cannot be used because CUDA contexts break on fork.
+  static thread_local jmp_buf tritonJmpBuf;
+  static thread_local bool tritonInProtectedRegion = false;
+
+  struct sigaction oldSigabrt;
+  struct sigaction newSigabrt;
+  memset(&newSigabrt, 0, sizeof(newSigabrt));
+  newSigabrt.sa_handler = [](int) {
+    if (tritonInProtectedRegion) {
+      longjmp(tritonJmpBuf, 1);
+    }
+  };
+  sigemptyset(&newSigabrt.sa_mask);
+  newSigabrt.sa_flags = 0;
+  sigaction(SIGABRT, &newSigabrt, &oldSigabrt);
+
+  tritonInProtectedRegion = true;
+  std::unique_ptr<llvm::Module> llvmModule;
+
+  if (setjmp(tritonJmpBuf) != 0) {
+    // longjmp from SIGABRT handler — LLVM assertion failed
+    tritonInProtectedRegion = false;
+    sigaction(SIGABRT, &oldSigabrt, nullptr);
+    sd_printf("TritonTargetDispatch::compile: MLIR->LLVM translation hit assertion failure "
+              "(recovered via SIGABRT handler)\n", "");
+    return result;
+  }
+
+  llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
+  tritonInProtectedRegion = false;
+  sigaction(SIGABRT, &oldSigabrt, nullptr);
+  if (!llvmModule) {
+    sd_printf("TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed (parent retry)\n", "");
+    return result;
+  }
+
+  // Verify the LLVM module
+  std::string verifyErr;
+  llvm::raw_string_ostream verifyOS(verifyErr);
+  if (llvm::verifyModule(*llvmModule, &verifyOS)) {
+    sd_printf("TritonTargetDispatch::compile: LLVM module verification failed: %s\n", verifyErr.c_str());
+    return result;
+  }
+
+  // Phase 6: LLVM IR -> target ISA
+  // Initialize LLVM targets
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmPrinters();
+
+  std::string triple;
+  std::string proc;
+  std::string features;
+
+  switch (target) {
+    case TritonGpuTarget::NVIDIA:
+      triple = "nvptx64-nvidia-cuda";
+      proc = (computeCapability == 90) ? "sm_90a" : ("sm_" + std::to_string(computeCapability));
+      break;
+    case TritonGpuTarget::AMD:
+      triple = "amdgcn-amd-amdhsa";
+      proc = cachedArch_;
+      break;
+    case TritonGpuTarget::INTEL:
+      triple = "spir64-unknown-unknown";
+      proc = "";
+      break;
+    default:
+      return result;
+  }
+
+  llvmModule->setTargetTriple(triple);
+
+  std::string lookupError;
+  auto* llvmTarget = llvm::TargetRegistry::lookupTarget(triple, lookupError);
+  if (!llvmTarget) {
+    sd_printf("TritonTargetDispatch::compile: LLVM target lookup failed for '%s': %s\n",
+              triple.c_str(), lookupError.c_str());
+    return result;
+  }
+
+  llvm::TargetOptions targetOptions;
+  auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
+      llvmTarget->createTargetMachine(triple, proc, features,
+                                       targetOptions, llvm::Reloc::PIC_));
+  if (!targetMachine) {
+    sd_printf("TritonTargetDispatch::compile: failed to create TargetMachine for %s/%s\n",
+              triple.c_str(), proc.c_str());
+    return result;
+  }
+
+  llvmModule->setDataLayout(targetMachine->createDataLayout());
+
+  // Emit assembly (PTX text for NVIDIA, assembly for AMD)
+  llvm::SmallString<0> asmBuffer;
+  llvm::raw_svector_ostream asmStream(asmBuffer);
+  llvm::legacy::PassManager codegenPM;
+
+  if (targetMachine->addPassesToEmitFile(codegenPM, asmStream, nullptr,
+                                          llvm::CodeGenFileType::AssemblyFile)) {
+    sd_printf("TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s\n",
+              triple.c_str());
+    return result;
+  }
+
+  codegenPM.run(*llvmModule);
+  std::string asmOutput(asmBuffer.begin(), asmBuffer.end());
+
+  if (asmOutput.empty()) {
+    sd_printf("TritonTargetDispatch::compile: empty output for %s\n", cachedArch_.c_str());
+    return result;
+  }
+
+  result.size = asmOutput.size();
+  result.data = new char[result.size + 1];
+  std::memcpy(result.data, asmOutput.data(), result.size);
+  static_cast<char*>(result.data)[result.size] = '\0';
+
+  sd_printf("TritonTargetDispatch::compile: generated %zu bytes for %s (%s)\n",
+            result.size, cachedArch_.c_str(), triple.c_str());
 
   return result;
 }

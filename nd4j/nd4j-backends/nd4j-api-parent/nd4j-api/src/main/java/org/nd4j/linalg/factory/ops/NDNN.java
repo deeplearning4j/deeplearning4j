@@ -1865,4 +1865,30 @@ public class NDNN {
       }
     }
   }
+
+  public INDArray fusedElementwiseChain(INDArray input, int... opCodes) {
+    return fusedElementwiseChain(input, null, opCodes);
+  }
+
+  public INDArray fusedElementwiseChain(INDArray input, INDArray[] secondaryInputs, int[] opCodes) {
+    INDArray output = Nd4j.createUninitialized(input.dataType(), input.shape());
+    org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.ChainBuilder builder =
+            org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.builder().input(input);
+    int secIdx = 0;
+    for (int code : opCodes) {
+      if (code < 10) {
+        // binary op — needs secondary input
+        if (secondaryInputs != null && secIdx < secondaryInputs.length) {
+          builder.addOp(code, secondaryInputs[secIdx++]);
+        } else {
+          throw new IllegalArgumentException("Binary op code " + code + " requires a secondary input");
+        }
+      } else {
+        builder.addOp(code);
+      }
+    }
+    builder.output(output);
+    Nd4j.exec(builder.build());
+    return output;
+  }
 }

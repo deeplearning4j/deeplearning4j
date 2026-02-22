@@ -291,6 +291,14 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
   }
 }
 
+void setPlanJitMode(sd::Pointer planHandle, int mode) {
+  // JIT mode only supported on CUDA — no-op on CPU
+}
+
+void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
+  // Graph execution mode only supported on CUDA — no-op on CPU
+}
+
 void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
   // Segment sizes are now auto-discovered from graph structure; this is a no-op.
 }
@@ -377,4 +385,64 @@ const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle) {
 
 void clearPlanCudaGraphTimeline(sd::Pointer planHandle) {
   // No-op on CPU backend
+}
+
+// =============================================================================
+// NCCL stubs for CPU backend (NCCL requires CUDA)
+// =============================================================================
+
+sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
+    return nullptr;
+}
+
+sd::Pointer ncclCommInitWithId(int numRanks, int rankId, sd::Pointer uniqueId) {
+    return nullptr;
+}
+
+sd::Pointer ncclGetUniqueId() {
+    return nullptr;
+}
+
+void ncclCommDestroy(sd::Pointer commHandle) {
+}
+
+int ncclDoAllReduce(sd::Pointer commHandle,
+                    sd::Pointer sendBuf, sd::Pointer recvBuf,
+                    sd::LongType numElements, int dataType,
+                    int reduceOp, sd::Pointer stream) {
+    return -1;
+}
+
+int ncclDoAllGather(sd::Pointer commHandle,
+                    sd::Pointer sendBuf, sd::Pointer recvBuf,
+                    sd::LongType sendCount, int dataType,
+                    sd::Pointer stream) {
+    return -1;
+}
+
+int ncclDoReduceScatter(sd::Pointer commHandle,
+                        sd::Pointer sendBuf, sd::Pointer recvBuf,
+                        sd::LongType recvCount, int dataType,
+                        int reduceOp, sd::Pointer stream) {
+    return -1;
+}
+
+int ncclDoSend(sd::Pointer commHandle,
+               sd::Pointer sendBuf, sd::LongType numElements,
+               int dataType, int peerRank, sd::Pointer stream) {
+    return -1;
+}
+
+int ncclDoRecv(sd::Pointer commHandle,
+               sd::Pointer recvBuf, sd::LongType numElements,
+               int dataType, int peerRank, sd::Pointer stream) {
+    return -1;
+}
+
+int ncclGroupStart() {
+    return -1;
+}
+
+int ncclGroupEnd() {
+    return -1;
 }

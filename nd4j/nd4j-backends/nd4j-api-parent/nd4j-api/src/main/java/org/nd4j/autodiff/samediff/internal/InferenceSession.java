@@ -1532,8 +1532,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         sb.append("\n      Shape: ").append(formatShape(arr.shape()));
                         sb.append(", DataType: ").append(arr.dataType());
                         sb.append(", Closed: ").append(arr.wasClosed());
-                        if (arr.data() != null) {
-                            sb.append("\n      Buffer Address: 0x").append(Long.toHexString(arr.data().pointer().address()));
+                        if (arr.data() != null && !arr.wasClosed()) {
+                            try {
+                                sb.append("\n      Buffer Address: 0x").append(Long.toHexString(arr.data().pointer().address()));
+                            } catch (Exception e) {
+                                sb.append("\n      Buffer Address: <released>");
+                            }
                         }
                         // For scalars, show the value
                         if (arr.isScalar() && !arr.wasClosed()) {

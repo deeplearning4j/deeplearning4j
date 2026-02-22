@@ -89,7 +89,7 @@ CUSTOM_OP_IMPL(lokr_matmul, 5, 1, false, 0, 2) {
   std::vector<sd::LongType> cReshapeShape = {factor1, factor2, 1, 1};
   auto cReshaped = lokrC->reshape('c', cReshapeShape);  // returns NDArray*
 
-  auto kronecker = new NDArray(*baReshaped * *cReshaped);  // dereference for multiplication
+  auto kronecker = (*baReshaped) * (*cReshaped);
 
   delete baReshaped;
   delete cReshaped;
@@ -98,8 +98,7 @@ CUSTOM_OP_IMPL(lokr_matmul, 5, 1, false, 0, 2) {
   auto permuted = kronecker->permute(permuteDims, false, false);  // returns NDArray*
 
   std::vector<sd::LongType> lokrDeltaShape = {outFeatures, inFeatures};
-  auto lokrDeltaReshaped = permuted->reshape('c', lokrDeltaShape);  // returns NDArray*
-  auto lokrDelta = lokrDeltaReshaped;  // use the reshaped pointer directly
+  auto lokrDelta = permuted->reshape('c', lokrDeltaShape);  // returns NDArray*
 
   // Step 4: Compute LoKr output: input @ lokrDelta^T
   auto lokrOutput = output->ulike();  // returns NDArray*
@@ -115,10 +114,14 @@ CUSTOM_OP_IMPL(lokr_matmul, 5, 1, false, 0, 2) {
 
   // Step 5: Combine: output = base_output + scaling * lokr_output
   if (std::abs(scaling - 1.0) < 1e-9) {
-    output->assign(*baseOutput + *lokrOutput);
+    auto combined = (*baseOutput) + (*lokrOutput);
+    output->assign(combined);
+    delete combined;
   } else {
     lokrOutput->applyScalar(scalar::Multiply, scaling, lokrOutput);
-    output->assign(*baseOutput + *lokrOutput);
+    auto combined = (*baseOutput) + (*lokrOutput);
+    output->assign(combined);
+    delete combined;
   }
 
   delete ba;
@@ -200,7 +203,7 @@ CUSTOM_OP_IMPL(lokr_matmul_bp, 6, 5, false, 0, 2) {
   auto baReshaped = ba->reshape('c', baReshapeShape);  // returns NDArray*
   std::vector<sd::LongType> cReshapeShape = {factor1, factor2, 1, 1};
   auto cReshaped = lokrC->reshape('c', cReshapeShape);  // returns NDArray*
-  auto kronecker = new NDArray(*baReshaped * *cReshaped);  // dereference for multiplication
+  auto kronecker = (*baReshaped) * (*cReshaped);
   delete baReshaped;
   delete cReshaped;
   std::vector<sd::LongType> permuteDims = {0, 2, 1, 3};

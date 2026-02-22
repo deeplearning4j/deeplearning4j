@@ -241,6 +241,13 @@ function(configure_cuda_linking main_target_name)
 
     target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver)
 
+    # NVRTC and CUDA driver API are required for NVRTC JIT and PTX GPU backends.
+    # Link explicitly using full paths since CUDA::nvrtc/CUDA::cuda_driver targets
+    # may not be reliably resolved in all cmake versions.
+    target_link_libraries(${main_target_name} PUBLIC
+        ${CUDAToolkit_LIBRARY_DIR}/libnvrtc.so
+        ${CUDAToolkit_LIBRARY_DIR}/stubs/libcuda.so)
+
     # SD_GCC_FUNCTRACE: Link libdw for stack traces
     if(SD_GCC_FUNCTRACE AND NOT WIN32)
         find_library(LIBDW_LIBRARY NAMES dw)
@@ -274,6 +281,35 @@ function(configure_cuda_linking main_target_name)
     endif()
 
     target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
+
+    # Link OpenBLAS for CUDA builds (needed by BlasHelper.cpp for openblas_set_num_threads)
+    if(OPENBLAS_LIBRARIES)
+        target_link_libraries(${main_target_name} PUBLIC ${OPENBLAS_LIBRARIES})
+        message(STATUS "✅ Linking CUDA build with OpenBLAS: ${OPENBLAS_LIBRARIES}")
+    endif()
+
+    # Triton GPU Compiler linking (for CUDA builds)
+    if(HAVE_TRITON AND TARGET triton_interface)
+        target_link_libraries(${main_target_name} PUBLIC triton_interface)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_TRITON=1)
+        message(STATUS "🔗 Linking Triton GPU compiler backend to ${main_target_name}")
+    elseif(HAVE_TRITON)
+        message(STATUS "⚠️ Triton NOT linked: HAVE_TRITON=${HAVE_TRITON} but triton_interface target missing")
+    endif()
+
+    # JVM library
+    if(JVM_LIBRARY)
+        target_link_libraries(${main_target_name} PUBLIC ${JVM_LIBRARY})
+    endif()
+
+    # OpenMP
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
+    else()
+        target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
+    endif()
+
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 

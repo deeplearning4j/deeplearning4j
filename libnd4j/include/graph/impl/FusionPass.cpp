@@ -24,10 +24,13 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
 
+#include <ops/declarable/helpers/fusedElementwiseChain.h>
+
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 
 namespace sd {
 namespace graph {
@@ -44,12 +47,46 @@ static std::unordered_set<std::string> unaryElementwiseOps = {
     "sin", "cos", "asin", "acos", "atan",
     "sinh", "cosh", "asinh", "acosh", "atanh",
     "reciprocal", "sign", "elu",
+    "erfc", "log1p", "rsqrt",
+    "relu6", "leakyrelu", "selu",
+    "softplus", "softsign", "hard_sigmoid", "hardtanh",
+    // Logical unary
+    "boolean_not", "logical_not",
+    // Identity/copy
+    "identity", "assign",
+    // Cast
+    "cast",
 };
 
 static std::unordered_set<std::string> binaryElementwiseOps = {
     "add", "subtract", "multiply", "divide",
     "maximum", "minimum", "pow",
     "floormod", "floordiv",
+    "atan2", "reversedivide", "reversesubtract",
+    "squaredsubtract", "multiply_no_nan",
+    "min_pairwise", "max_pairwise", "mod",
+    // Comparison ops
+    "greater", "greater_equal", "less", "less_equal",
+    "equals", "not_equals",
+    // Logical binary
+    "boolean_and", "boolean_or", "boolean_xor",
+    "logical_and", "logical_or",
+};
+
+static std::unordered_set<std::string> ternaryElementwiseOps = {
+    "where", "select",
+};
+
+static std::unordered_set<std::string> reductionOps = {
+    "reduce_sum", "reduce_mean", "reduce_max", "reduce_min", "reduce_prod",
+    "reduce_norm1", "reduce_norm2", "reduce_logsumexp", "reduce_variance", "reduce_stdev",
+    "sum", "mean", "max", "min", "prod", "norm1", "norm2", "normmax",
+    "argmax", "argmin",
+};
+
+static std::unordered_set<std::string> normalizationOps = {
+    "softmax", "log_softmax", "layer_norm", "batch_norm", "rms_norm",
+    "normalize_moments",
 };
 
 static std::unordered_set<std::string> activationOps = {
@@ -104,11 +141,29 @@ bool FusionPass::isActivation(sd::LongType opHash) {
 }
 
 /**
- * Check if a slot is element-wise (unary or binary).
+ * Check if a slot is element-wise (unary, binary, or ternary).
  */
 static bool isElementwiseSlot(const NativeSlot& slot) {
     std::string name = getOpName(slot);
-    return unaryElementwiseOps.count(name) > 0 || binaryElementwiseOps.count(name) > 0;
+    return unaryElementwiseOps.count(name) > 0
+        || binaryElementwiseOps.count(name) > 0
+        || ternaryElementwiseOps.count(name) > 0;
+}
+
+/**
+ * Check if a slot is a reduction op.
+ */
+static bool isReductionSlot(const NativeSlot& slot) {
+    std::string name = getOpName(slot);
+    return reductionOps.count(name) > 0;
+}
+
+/**
+ * Check if a slot is a normalization op.
+ */
+static bool isNormalizationSlot(const NativeSlot& slot) {
+    std::string name = getOpName(slot);
+    return normalizationOps.count(name) > 0;
 }
 
 /**
@@ -130,7 +185,21 @@ static bool canChainAfter(const NativeSlot& slotA, const NativeSlot& slotB,
     std::string bName = getOpName(slotB);
     bool bIsBinary = binaryElementwiseOps.count(bName) > 0;
 
-    if (bIsBinary) {
+    bool bIsTernary = ternaryElementwiseOps.count(bName) > 0;
+
+    if (bIsTernary) {
+        // Ternary op (where/select): needs exactly 3 inputs
+        // At least one input must come from A's output
+        if (slotB.numInputs != 3) return false;
+        bool foundAOutput = false;
+        for (int i = 0; i < slotB.numInputs; i++) {
+            if (slotB.inputSourceIndices[i] == slotAOutputIdx) {
+                foundAOutput = true;
+                break;
+            }
+        }
+        return foundAOutput;
+    } else if (bIsBinary) {
         // Binary op: needs exactly 2 inputs
         if (slotB.numInputs != 2) return false;
 
@@ -285,6 +354,154 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
+    // Pass 3: Detect matmul → add(bias) → optional activation patterns
+    for (int i = 0; i < numSlots; i++) {
+        if (fused[i]) continue;
+
+        std::string opName = getOpName(slots[i]);
+        if (opName != "matmul" && opName != "mmul"
+            && opName != "fp8_matmul" && opName != "smooth_quant"
+            && opName != "awq_matmul" && opName != "column_parallel_linear"
+            && opName != "row_parallel_linear" && opName != "multi_lora_matmul"
+            && opName != "fused_gemm_swiglu") continue;
+        if (slots[i].numOutputs != 1) continue;
+
+        int matmulOutputIdx = slots[i].outputSlotIndices[0];
+
+        // Find add consuming matmul's output
+        for (int j = i + 1; j < numSlots; j++) {
+            if (fused[j]) continue;
+            std::string addName = getOpName(slots[j]);
+            if (addName != "add") continue;
+            if (slots[j].numInputs != 2) continue;
+
+            // One input must be matmul output, other must be external (bias)
+            bool foundMatmulOutput = false;
+            bool foundExternal = false;
+            for (int k = 0; k < slots[j].numInputs; k++) {
+                if (slots[j].inputSourceIndices[k] == matmulOutputIdx) foundMatmulOutput = true;
+                else if (slots[j].inputSourceIndices[k] < 0) foundExternal = true;
+            }
+            if (!foundMatmulOutput || !foundExternal) continue;
+            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
+            if (slots[j].numOutputs != 1) continue;
+
+            // Found matmul → add. Now check for optional activation.
+            std::vector<int> chain = {i, j};
+            int addOutputIdx = slots[j].outputSlotIndices[0];
+
+            for (int a = j + 1; a < numSlots; a++) {
+                if (fused[a]) continue;
+                std::string actName = getOpName(slots[a]);
+                if (actName.empty() || activationOps.count(actName) == 0) continue;
+                if (slots[a].numInputs != 1) continue;
+                if (slots[a].inputSourceIndices[0] != addOutputIdx) continue;
+                if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, j)) continue;
+
+                chain.push_back(a);
+                break;
+            }
+
+            // Create candidate if we have at least matmul + add (2 slots)
+            if (chain.size() >= 2) {
+                FusionCandidate candidate;
+                candidate.startSlot = chain.front();
+                candidate.endSlot = chain.back();
+                candidate.type = FusionCandidate::MATMUL_BIAS_ACTIVATION;
+                candidate.slotIndices = chain;
+                candidate.chainLength = static_cast<int>(chain.size());
+                candidates.push_back(candidate);
+
+                for (int idx : chain) fused[idx] = true;
+            }
+            break;  // Only match first add per matmul
+        }
+    }
+
+    // Pass 4: Detect reduction → element-wise chains (e.g., reduce_sum → sqrt for norm)
+    for (int i = 0; i < numSlots; i++) {
+        if (fused[i]) continue;
+        if (!isReductionSlot(slots[i])) continue;
+        if (slots[i].numOutputs != 1) continue;
+
+        int outputIdx = slots[i].outputSlotIndices[0];
+        std::vector<int> chain;
+        chain.push_back(i);
+
+        // Look for element-wise ops consuming the reduction output
+        for (int j = i + 1; j < numSlots && chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH); j++) {
+            if (fused[j]) continue;
+            if (!isElementwiseSlot(slots[j])) break;
+            if (slots[j].numInputs < 1) break;
+
+            bool consumesPrev = false;
+            int prevOutputIdx = slots[chain.back()].outputSlotIndices[0];
+            for (int k = 0; k < slots[j].numInputs; k++) {
+                if (slots[j].inputSourceIndices[k] == prevOutputIdx) {
+                    consumesPrev = true;
+                    break;
+                }
+            }
+            if (!consumesPrev) break;
+            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
+            if (slots[j].numOutputs != 1) break;
+
+            chain.push_back(j);
+        }
+
+        if (chain.size() >= 2) {
+            FusionCandidate candidate;
+            candidate.startSlot = chain.front();
+            candidate.endSlot = chain.back();
+            candidate.type = FusionCandidate::ELEMENTWISE_CHAIN;
+            candidate.slotIndices = chain;
+            candidate.chainLength = static_cast<int>(chain.size());
+            candidates.push_back(candidate);
+            for (int idx : chain) fused[idx] = true;
+        }
+    }
+
+    // Pass 5: Detect normalization → element-wise chains (e.g., softmax → log)
+    for (int i = 0; i < numSlots; i++) {
+        if (fused[i]) continue;
+        if (!isNormalizationSlot(slots[i])) continue;
+        if (slots[i].numOutputs != 1) continue;
+
+        std::vector<int> chain;
+        chain.push_back(i);
+
+        for (int j = i + 1; j < numSlots && chain.size() < static_cast<size_t>(MAX_CHAIN_LENGTH); j++) {
+            if (fused[j]) continue;
+            if (!isElementwiseSlot(slots[j])) break;
+            if (slots[j].numInputs < 1) break;
+
+            int prevOutputIdx = slots[chain.back()].outputSlotIndices[0];
+            bool consumesPrev = false;
+            for (int k = 0; k < slots[j].numInputs; k++) {
+                if (slots[j].inputSourceIndices[k] == prevOutputIdx) {
+                    consumesPrev = true;
+                    break;
+                }
+            }
+            if (!consumesPrev) break;
+            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, static_cast<int>(chain.back()))) break;
+            if (slots[j].numOutputs != 1) break;
+
+            chain.push_back(j);
+        }
+
+        if (chain.size() >= 2) {
+            FusionCandidate candidate;
+            candidate.startSlot = chain.front();
+            candidate.endSlot = chain.back();
+            candidate.type = FusionCandidate::ELEMENTWISE_CHAIN;
+            candidate.slotIndices = chain;
+            candidate.chainLength = static_cast<int>(chain.size());
+            candidates.push_back(candidate);
+            for (int idx : chain) fused[idx] = true;
+        }
+    }
+
     // Sort by startSlot for deterministic ordering
     std::sort(candidates.begin(), candidates.end(),
               [](const FusionCandidate& a, const FusionCandidate& b) {
@@ -337,6 +554,83 @@ int FusionPass::applyFusions(
                     }
                 }
 
+                // ── Fused kernel dispatch metadata ──────────────────────────
+                // Try to map all ops in the chain to FusedElemOp codes.
+                // If all succeed, mark head for fused kernel dispatch and tails for skip.
+                {
+                    int chainLen = static_cast<int>(fusion.slotIndices.size());
+                    if (chainLen <= 8) {
+                        bool allMapped = true;
+                        int opCodes[8] = {};
+                        int secondarySources[8] = {};
+
+                        for (int ci = 0; ci < chainLen; ci++) {
+                            int si = fusion.slotIndices[ci];
+                            std::string name = getOpName(slots[si]);
+                            int code = sd::ops::helpers::opNameToFusedCode(name);
+                            if (code < 0) {
+                                allMapped = false;
+                                break;
+                            }
+                            opCodes[ci] = code;
+
+                            // For binary ops, find the secondary input source
+                            // (the one that does NOT come from the previous chain slot)
+                            secondarySources[ci] = -1;  // -1 = unary, no secondary
+                            if (binaryElementwiseOps.count(name) > 0 && slots[si].numInputs == 2) {
+                                int prevOutputSlotIdx = -1;
+                                if (ci > 0) {
+                                    prevOutputSlotIdx = slots[fusion.slotIndices[ci - 1]].outputSlotIndices[0];
+                                } else {
+                                    // Head slot: primary input is inputSourceIndices[0]
+                                    // Secondary is whatever is NOT that
+                                    // (for head binary op, both inputs are "external" to the chain)
+                                    // The chain input is input 0, secondary is input 1
+                                    // But actually the head's primary chain input could be either index
+                                }
+
+                                for (int k = 0; k < slots[si].numInputs; k++) {
+                                    int srcIdx = slots[si].inputSourceIndices[k];
+                                    if (ci == 0) {
+                                        // Head binary op: secondary is the external input (srcIdx < 0)
+                                        if (srcIdx < 0) {
+                                            secondarySources[ci] = srcIdx;
+                                            break;
+                                        }
+                                    } else {
+                                        // Non-head: secondary is whichever input is NOT from prev chain slot
+                                        if (srcIdx != prevOutputSlotIdx) {
+                                            secondarySources[ci] = srcIdx;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (allMapped) {
+                            // Populate head slot
+                            int headIdx = fusion.slotIndices[0];
+                            NativeSlot& headSlot = slots[headIdx];
+                            headSlot.isFusedChainHead = true;
+                            headSlot.fusedChainLength = chainLen;
+                            std::memcpy(headSlot.fusedChainOpCodes, opCodes, sizeof(int) * chainLen);
+                            std::memcpy(headSlot.fusedChainSecondaryInputSources, secondarySources, sizeof(int) * chainLen);
+                            for (int ci = 0; ci < chainLen; ci++) {
+                                headSlot.fusedChainSlots[ci] = fusion.slotIndices[ci];
+                            }
+
+                            // Mark tail slots (all except head)
+                            for (int ci = 1; ci < chainLen; ci++) {
+                                slots[fusion.slotIndices[ci]].isFusedChainTail = true;
+                            }
+
+                            sd_printf("FusionPass: fused kernel dispatch enabled for chain slots %d-%d (%d ops)\n",
+                                      headIdx, fusion.slotIndices.back(), chainLen);
+                        }
+                    }
+                }
+
                 applied++;
                 sd_printf("FusionPass: applied ELEMENTWISE_CHAIN fusion, slots %d-%d (%d ops)\n",
                           fusion.startSlot, fusion.endSlot, fusion.chainLength);
@@ -378,7 +672,7 @@ int FusionPass::applyFusions(
             case FusionCandidate::MATMUL_BIAS_ACTIVATION: {
                 // matmul → add(bias) → activation
                 // The add and activation ops run in-place on the matmul's output.
-                if (fusion.slotIndices.size() < 3) break;
+                if (fusion.slotIndices.size() < 2) break;
 
                 // Apply in-place starting from the second op (add)
                 for (size_t i = 1; i < fusion.slotIndices.size(); i++) {

@@ -69,31 +69,31 @@ CUSTOM_OP_IMPL(dora_matmul, 5, 1, false, 0, 0) {
   loraDelta->applyScalar(scalar::Multiply, scaling, loraDelta);
 
   // Step 2: Compute effective weight: W + scaling * B @ A
-  auto wEff = new NDArray(*weight + *loraDelta);
+  auto wEff = (*weight) + (*loraDelta);
 
   // Step 3: Compute column-wise L2 norm
-  auto wEffSquared = new NDArray(*wEff * *wEff);
+  auto wEffSquared = (*wEff) * (*wEff);
   std::vector<sd::LongType> sumDims = {1};
   auto normSquared = wEffSquared->reduceAlongDimension(reduce::Sum, &sumDims, true);  // returns NDArray*
   normSquared->applyScalar(scalar::Add, eps, normSquared);
   auto norm = normSquared->transform(transform::Sqrt);  // returns NDArray*
 
   // Step 4: Normalize: direction = W_eff / ||W_eff||
-  auto direction = new NDArray(*wEff / *norm);
+  auto direction = (*wEff) / (*norm);
 
   // Step 5: Apply magnitude
   NDArray* magExpanded = nullptr;
   bool deleteMag = false;
   if (magnitude->rankOf() == 1) {
     std::vector<sd::LongType> magShape = {outFeatures, 1};
-    magExpanded = new NDArray(magnitude->reshape('c', magShape));
+    magExpanded = magnitude->reshape('c', magShape);
     deleteMag = true;
   } else {
     magExpanded = magnitude;
   }
 
   // Final weight: m * direction
-  auto finalWeight = new NDArray(*direction * *magExpanded);
+  auto finalWeight = (*direction) * (*magExpanded);
 
   // Step 6: Compute output: input @ finalWeight^T
   {
@@ -181,25 +181,25 @@ CUSTOM_OP_IMPL(dora_matmul_bp, 6, 5, false, 0, 0) {
   }
   loraDelta->applyScalar(scalar::Multiply, scaling, loraDelta);
 
-  auto wEff = new NDArray(*weight + *loraDelta);
-  auto wEffSquared = new NDArray(*wEff * *wEff);
+  auto wEff = (*weight) + (*loraDelta);
+  auto wEffSquared = (*wEff) * (*wEff);
   std::vector<sd::LongType> sumDims = {1};
   auto normSquared = wEffSquared->reduceAlongDimension(reduce::Sum, &sumDims, true);  // returns NDArray*
   normSquared->applyScalar(scalar::Add, eps, normSquared);
   auto norm = normSquared->transform(transform::Sqrt);  // returns NDArray*
-  auto direction = new NDArray(*wEff / *norm);
+  auto direction = (*wEff) / (*norm);
 
   NDArray* magExpanded = nullptr;
   bool deleteMag = false;
   if (magnitude->rankOf() == 1) {
     std::vector<sd::LongType> magShape = {outFeatures, 1};
-    magExpanded = new NDArray(magnitude->reshape('c', magShape));
+    magExpanded = magnitude->reshape('c', magShape);
     deleteMag = true;
   } else {
     magExpanded = magnitude;
   }
 
-  auto finalWeight = new NDArray(*direction * *magExpanded);
+  auto finalWeight = (*direction) * (*magExpanded);
 
   // Gradient w.r.t. input
   {
@@ -208,24 +208,24 @@ CUSTOM_OP_IMPL(dora_matmul_bp, 6, 5, false, 0, 0) {
   }
 
   // Gradient w.r.t. magnitude
-  auto dLdOutT = new NDArray(dLdOut->transpose());
+  auto dLdOutT = dLdOut->transpose();
   auto dLdOutTimesInput = weight->ulike();
   {
     sd::ops::matmul mmulOp;
     mmulOp.execute({dLdOutT, input}, {dLdOutTimesInput});
   }
 
-  auto gradMagTemp = new NDArray(*dLdOutTimesInput * *direction);
+  auto gradMagTemp = (*dLdOutTimesInput) * (*direction);
   auto gradMag = gradMagTemp->reduceAlongDimension(reduce::Sum, &sumDims, false);  // returns NDArray*
   dLdMagnitude->assign(gradMag);
 
   // Gradient w.r.t. LoRA components (simplified)
-  auto gradDirectionTemp = new NDArray(*dLdOutTimesInput * *magExpanded);
-  auto gradDirection = new NDArray(*gradDirectionTemp / *norm);
+  auto gradDirectionTemp = (*dLdOutTimesInput) * (*magExpanded);
+  auto gradDirection = (*gradDirectionTemp) / (*norm);
 
   // dLdA = scaling * B^T @ gradDirection
   {
-    auto loraBT = new NDArray(loraB->transpose());
+    auto loraBT = loraB->transpose();
     sd::ops::matmul mmulOp;
     mmulOp.execute({loraBT, gradDirection}, {dLdLoraA});
     delete loraBT;
@@ -234,7 +234,7 @@ CUSTOM_OP_IMPL(dora_matmul_bp, 6, 5, false, 0, 0) {
 
   // dLdB = scaling * gradDirection @ A^T
   {
-    auto loraAT = new NDArray(loraA->transpose());
+    auto loraAT = loraA->transpose();
     sd::ops::matmul mmulOp;
     mmulOp.execute({gradDirection, loraAT}, {dLdLoraB});
     delete loraAT;

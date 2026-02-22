@@ -98,10 +98,14 @@ CUSTOM_OP_IMPL(lora_matmul, 4, 1, false, 0, 0) {
 
   // Step 3: Combine
   if (std::abs(scaling - 1.0) < 1e-9) {
-    output->assign(*baseOutput + *loraOutput);
+    auto combined = (*baseOutput) + (*loraOutput);
+    output->assign(combined);
+    delete combined;
   } else {
     loraOutput->applyScalar(scalar::Multiply, scaling, loraOutput);
-    output->assign(*baseOutput + *loraOutput);
+    auto combined = (*baseOutput) + (*loraOutput);
+    output->assign(combined);
+    delete combined;
   }
 
   delete temp1;
@@ -163,7 +167,7 @@ CUSTOM_OP_IMPL(lora_matmul_bp, 5, 4, false, 0, 0) {
     std::vector<NDArray*> outputs = {dLdInput};
     mmulOp.execute(inputs, outputs);
   } else {
-    auto weightT = new NDArray(weight->transpose());
+    auto weightT = weight->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {dLdOut, weightT};
     std::vector<NDArray*> outputs = {dLdInput};
@@ -199,7 +203,7 @@ CUSTOM_OP_IMPL(lora_matmul_bp, 5, 4, false, 0, 0) {
 
   // Gradient w.r.t. loraA
   {
-    auto tempT = new NDArray(temp->transpose());
+    auto tempT = temp->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {tempT, input};
     std::vector<NDArray*> outputs = {dLdLoraA};
@@ -222,7 +226,7 @@ CUSTOM_OP_IMPL(lora_matmul_bp, 5, 4, false, 0, 0) {
   }
 
   {
-    auto dLdOutT = new NDArray(dLdOut->transpose());
+    auto dLdOutT = dLdOut->transpose();
     sd::ops::matmul mmulOp;
     std::vector<NDArray*> inputs = {dLdOutT, temp1};
     std::vector<NDArray*> outputs = {dLdLoraB};

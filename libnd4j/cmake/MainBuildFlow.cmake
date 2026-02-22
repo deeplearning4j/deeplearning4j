@@ -186,6 +186,29 @@ function(collect_all_sources out_source_list)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp)
     file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp)
+    # Exclude ALL GPU backend files (NVRTC, PTX, GpuKernelLauncher, Triton) for CPU builds
+    # These files are guarded by #ifdef SD_CUDA / #if HAVE_TRITON but shouldn't be
+    # collected at all for CPU builds — they are CUDA-only infrastructure
+    if(NOT SD_CUDA)
+        file(GLOB_RECURSE _gpu_backend_sources ./include/graph/gpu/*.cpp)
+        if(_gpu_backend_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_gpu_backend_sources})
+            list(LENGTH _gpu_backend_sources _gpu_count)
+            message(STATUS "Excluded ${_gpu_count} GPU backend files (non-CUDA build)")
+        endif()
+    else()
+        # CUDA build: only exclude Triton files when Triton is not available (they require MLIR headers)
+        if(NOT HAVE_TRITON)
+            file(GLOB_RECURSE _triton_gpu_sources
+                ./include/graph/gpu/Triton*.cpp
+            )
+            if(_triton_gpu_sources)
+                list(REMOVE_ITEM GRAPH_SOURCES ${_triton_gpu_sources})
+                list(LENGTH _triton_gpu_sources _triton_count)
+                message(STATUS "Excluded ${_triton_count} Triton GPU backend files (HAVE_TRITON=OFF)")
+            endif()
+        endif()
+    endif()
     file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
     file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp)
     file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp)
@@ -396,6 +419,14 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "🔗 Linking Triton GPU compiler backend")
     endif()
 
+    # NCCL (Multi-GPU Collective Communications)
+    if(HAVE_NCCL AND DEFINED NCCL_LIB)
+        target_link_libraries(${main_target_name} PUBLIC ${NCCL_LIB})
+        target_include_directories(${main_target_name} PUBLIC ${NCCL_INCLUDE_DIRS})
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_NCCL=1)
+        message(STATUS "🔗 Linking NCCL for multi-GPU collective communications")
+    endif()
+
     # Apple Accelerate Framework (macOS/iOS)
     if(HAVE_ACCELERATE)
         find_library(ACCELERATE_FRAMEWORK Accelerate)
@@ -452,58 +483,9 @@ function(configure_cpu_linking main_target_name)
     endif()
 endfunction()
 
-# UPDATED: Modern CUDA linking with improved cuDNN detection and ZLUDA support
-function(configure_cuda_linking main_target_name)
-    # Find the CUDAToolkit to define the CUDA::toolkit target
-    find_package(CUDAToolkit REQUIRED)
-
-    # Setup modern cuDNN detection
-    setup_modern_cudnn()
-
-    # Modern CMake uses imported targets which handle all necessary dependencies.
-    # Linking against CUDA::toolkit automatically adds include directories,
-    # runtime libraries, and all other required flags.
-    # CUDA::cublas and CUDA::cusolver are required for cuBLAS and cuSolver functions
-    # used in MmulHelper.cu, svd.cu, cublasHelper.cu, etc.
-    target_link_libraries(${main_target_name} PUBLIC
-        CUDA::toolkit
-        CUDA::cublas
-        CUDA::cusolver
-        ${JVM_LIBRARY})
-
-    # If cuDNN was found, link against its imported target
-    if(HAVE_CUDNN AND TARGET CUDNN::cudnn)
-        message(STATUS "✅ Linking with modern CUDNN::cudnn target")
-        target_link_libraries(${main_target_name} PUBLIC CUDNN::cudnn)
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
-    elseif(HAVE_CUDNN AND CUDNN_LIBRARIES)
-        message(STATUS "✅ Linking with cuDNN libraries: ${CUDNN_LIBRARIES}")
-        target_link_libraries(${main_target_name} PUBLIC ${CUDNN_LIBRARIES})
-        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
-    elseif(HAVE_CUDNN AND CUDNN_INCLUDE_DIR)
-        message(STATUS "✅ Linking with cuDNN include-only (embedded in CUDA)")
-        target_include_directories(${main_target_name} PUBLIC ${CUDNN_INCLUDE_DIR})
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=1)
-    else()
-        message(STATUS "ℹ️  Building without cuDNN support")
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_CUDNN=0)
-    endif()
-
-    target_include_directories("${main_target_name}" PUBLIC "${CUDA_INCLUDE_DIRS}")
-    target_link_libraries(${main_target_name} PUBLIC flatbuffers_interface)
-
-    # Link OpenBLAS for CUDA builds (needed by BlasHelper.cpp for openblas_set_num_threads)
-    if(OPENBLAS_LIBRARIES)
-        target_link_libraries(${main_target_name} PUBLIC ${OPENBLAS_LIBRARIES})
-        message(STATUS "✅ Linking CUDA build with OpenBLAS: ${OPENBLAS_LIBRARIES}")
-    endif()
-
-    # ZLUDA linking configuration
-    if(HAVE_ZLUDA)
-        configure_zluda_linking(${main_target_name})
-    endif()
-endfunction()
+# NOTE: configure_cuda_linking() is defined in CudaConfiguration.cmake (included at line ~879).
+# Do NOT redefine it here — cmake uses the last definition, and the CudaConfiguration version
+# already handles: CUDA toolkit, nvrtc, cuda driver, cuDNN, OpenBLAS, Triton, JVM, OpenMP.
 
 # --- Enhanced library creation function ---
 function(create_and_link_library)
@@ -582,7 +564,7 @@ function(create_and_link_library)
         endif()
 
         # Triton GPU compiler helper - MUST complete before object files that include Triton headers
-        if(HELPERS_triton STREQUAL "ON" AND TARGET triton_external)
+        if(HAVE_TRITON AND TARGET triton_external)
             message(STATUS "")
             message(STATUS "╔═══════════════════════════════════════════════════════════════════╗")
             message(STATUS "║  🔒 DEPENDENCY BLOCK: Triton                                       ║")
@@ -593,6 +575,17 @@ function(create_and_link_library)
             add_dependencies(${OBJECT_LIB_NAME} triton_external)
             if(TARGET triton_interface)
                 target_link_libraries(${OBJECT_LIB_NAME} PUBLIC triton_interface)
+                # Explicitly add Triton/LLVM include dirs and HAVE_TRITON define to OBJECT library.
+                # CMake OBJECT libraries may not fully propagate INTERFACE properties
+                # from linked targets in all versions.
+                set(_TRITON_INSTALL "${CMAKE_BINARY_DIR}/triton_install")
+                set(_TRITON_LLVM_INSTALL "${CMAKE_BINARY_DIR}/triton_llvm_install")
+                target_include_directories(${OBJECT_LIB_NAME} PUBLIC
+                    "${_TRITON_INSTALL}/include"
+                    "${_TRITON_LLVM_INSTALL}/include"
+                )
+                target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_TRITON=1)
+                message(STATUS "✅ Triton include dirs and HAVE_TRITON=1 added to ${OBJECT_LIB_NAME}")
             endif()
         endif()
 
@@ -768,8 +761,10 @@ function(create_and_link_library)
     # apply_libnd4j_type_definitions_auto()
 
     # For IMPORTED targets (partial linking), linking is handled by PartialLinking.cmake
+    message(STATUS "DEBUG: SD_PARTIAL_LINKED_TARGET=${SD_PARTIAL_LINKED_TARGET}, SD_CUDA=${SD_CUDA}, MAIN_LIB_NAME=${MAIN_LIB_NAME}")
     if(NOT SD_PARTIAL_LINKED_TARGET)
         if(SD_CUDA)
+            message(STATUS "DEBUG: About to call configure_cuda_linking(${MAIN_LIB_NAME})")
             configure_cuda_linking(${MAIN_LIB_NAME})
         else()
             configure_cpu_linking(${MAIN_LIB_NAME})
@@ -895,6 +890,8 @@ setup_blas()
 setup_mlir()
 setup_mps()
 setup_triton()
+setup_cutlass()
+setup_nccl()
 message(STATUS "🔍 DEBUG: After setup_blas() - OPENBLAS_PATH='${OPENBLAS_PATH}', HAVE_OPENBLAS='${HAVE_OPENBLAS}'")
 message(STATUS "Dependencies initialization complete.")
 
@@ -914,6 +911,8 @@ message(STATUS "   PJRT:        ${HAVE_PJRT}")
 message(STATUS "   LLAMACPP:    ${HAVE_LLAMACPP}")
 message(STATUS "   VLM:         ${HAVE_VLM}")
 message(STATUS "   TRITON:      ${HAVE_TRITON}")
+message(STATUS "   CUTLASS:     ${HAVE_CUTLASS}")
+message(STATUS "   NCCL:        ${HAVE_NCCL}")
 message(STATUS "")
 message(STATUS "🔧 === Dynamic Kernel Selection ===")
 message(STATUS "   Enabled:     ${SD_DYNAMIC_KERNEL_SELECTION}")

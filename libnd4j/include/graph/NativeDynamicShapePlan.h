@@ -37,11 +37,42 @@
 #endif
 
 // GraphBackend.h defines CompilationAuditEntry and the GraphBackend base class.
-// Concrete backends (OneDnnGraphBackend, AclGraphBackend) are included conditionally in .cpp.
+// Concrete backends are included conditionally in .cpp:
+//   GPU: TritonGraphBackend, NvrtcGraphBackend, PtxGraphBackend
+//   CPU: OneDnnGraphBackend, AclGraphBackend
 #include <graph/GraphBackend.h>
 
 namespace sd {
 namespace graph {
+
+// Forward declaration for NVRTC JIT kernel handle (defined in NvrtcKernelCache.h)
+#ifdef SD_CUDA
+struct NvrtcKernelHandle;
+#endif
+
+/**
+ * JIT compilation mode for DSP segment execution.
+ * Configured via -Dnd4j.dsp.jitMode system property.
+ */
+enum class JitMode : int {
+  GRAPH_ONLY = 0,    // CUDA graph capture/replay only (default)
+  JIT_ONLY = 1,      // NVRTC JIT only (skip graph capture for element-wise segments)
+  GRAPH_PLUS_JIT = 2 // Try JIT first, fall back to graph capture for non-fusible segments
+};
+
+/**
+ * Graph execution mode — controls which backend the DSP executor uses.
+ * Set from Java via SameDiff.setGraphExecutionMode().
+ * Must match GraphExecutionMode.java native codes.
+ */
+enum class GraphExecutionMode : int {
+  GEM_AUTO = 0,         // Try Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot
+  GEM_SLOT_BY_SLOT = 1, // Execute each op individually (no fusion, no graphs)
+  GEM_CUDA_GRAPHS = 2,  // CUDA graph capture/replay only
+  GEM_NVRTC_JIT = 3,    // Force NVRTC JIT backend for fusible segments
+  GEM_PTX_JIT = 4,      // Force PTX template backend for fusible segments
+  GEM_TRITON = 5        // Force Triton MLIR backend for fusible segments
+};
 
 // FlatGraph is in the ::graph namespace (FlatBuffer-generated)
 
@@ -94,6 +125,15 @@ struct NativeSlot {
   bool isViewCapableOp;                    // View-capable: reshape/expand_dims/squeeze — output can share input buffer
   bool inPlaceFused;                       // In-place fused: output reuses input buffer (set by FusionPass)
   int inPlaceFusedInputIdx;                // Which input index to reuse as output (-1 = not fused)
+
+  // Fused elementwise chain: head slot dispatches single fused kernel for entire chain
+  bool isFusedChainHead;                     // Head — dispatches fused kernel
+  int fusedChainLength;                      // Chain length (including head)
+  int fusedChainOpCodes[8] = {};              // FusedElemOp codes for each op in chain
+  int fusedChainSlots[8] = {};               // Slot indices of all chain members
+  int fusedChainSecondaryInputSources[8] = {};  // inputSourceIndices for binary ops' 2nd input (-1 if unary)
+  bool isFusedChainTail;                     // Tail — skip execution entirely (head already computed result)
+
   int targetDeviceId;                      // -1 = auto
 
   // Legacy op support for ops not registered in OpRegistrator
@@ -134,7 +174,9 @@ struct NativeSlot {
         needsZeroedOutput(true), isDataDependent(false),
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
         isCustomOp(true), isIdentityOp(false), isViewCapableOp(false),
-        inPlaceFused(false), inPlaceFusedInputIdx(-1), targetDeviceId(-1),
+        inPlaceFused(false), inPlaceFusedInputIdx(-1),
+        isFusedChainHead(false), fusedChainLength(0), isFusedChainTail(false),
+        targetDeviceId(-1),
         legacyOpType(0), legacyOpNum(-1), frozenConstantSlot(false),
         cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false),
         frozenContextReady(false) {}
@@ -233,6 +275,13 @@ struct GraphSegment {
   // Persists for graph lifetime — kernel params reference these addresses.
   void* captureWorkspacePtr = nullptr;
   size_t captureWorkspaceBytes = 0;
+
+  // ── NVRTC JIT kernel ────────────────────────────────────────────────────
+  // When JIT mode is enabled, element-wise segments are compiled into a
+  // single fused CUDA kernel via NVRTC instead of using CUDA graph capture.
+  NvrtcKernelHandle* jitKernel = nullptr;
+  LongType jitShapeKey = 0;
+  bool jitCompileFailed = false;   // Permanent failure flag (non-fusible segment)
 #endif
 
   // ── Adaptive splitting for unstable segments ──────────────────────────────
@@ -423,6 +472,29 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void setCudaGraphsEnabled(bool enabled) { cudaGraphsEnabled_ = enabled; }
   bool isCudaGraphsEnabled() const { return cudaGraphsEnabled_; }
 
+  /**
+   * Set JIT compilation mode for segment execution.
+   * - GRAPH_ONLY: CUDA graph capture/replay only (default)
+   * - JIT_ONLY: NVRTC JIT only for element-wise segments
+   * - GRAPH_PLUS_JIT: Try JIT first, fall back to graph capture
+   */
+  void setJitMode(JitMode mode) { jitMode_ = mode; }
+  JitMode getJitMode() const { return jitMode_; }
+
+  void setGraphExecutionMode(GraphExecutionMode mode) {
+    graphExecutionMode_ = mode;
+    // Reset cached backend so getGpuGraphBackend() re-evaluates with new mode
+    gpuGraphBackendChecked_ = false;
+    gpuGraphBackend_ = nullptr;
+    // Enable CUDA graphs as fallback for all modes except SLOT_BY_SLOT.
+    // JIT backends (Triton/NVRTC/PTX) need CUDA graph fallback when they
+    // can't handle a segment (unsupported ops, etc).
+    if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+      cudaGraphsEnabled_ = true;
+    }
+  }
+  GraphExecutionMode getGraphExecutionMode() const { return graphExecutionMode_; }
+
 
   /**
    * Enable/disable "shapes frozen" mode. When enabled:
@@ -603,6 +675,12 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   bool cudaGraphsEnabled_;
   int totalGraphReplays_;
 
+  // NVRTC JIT mode
+  JitMode jitMode_;
+
+  // Graph execution mode (controls which backend to use)
+  GraphExecutionMode graphExecutionMode_;
+
   // Shapes-frozen optimization: when enabled, skip shape cache clearing,
   // shape key computation, and unnecessary output zeroing between executions.
   // Use when all external input shapes are guaranteed constant (e.g., static KV decode).
@@ -665,6 +743,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 #ifdef SD_CUDA
   Status executeSegmentWithGraph(GraphSegment& seg, NDArray** externalArrays,
                                  int numExt, void* stream);
+  Status executeSegmentWithJit(GraphSegment& seg, NDArray** externalArrays,
+                               int numExt, void* stream);
 #endif
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)

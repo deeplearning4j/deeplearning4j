@@ -699,8 +699,6 @@ unsigned long Context::width() {
 }
 
 void Context::setInputArray(int index, NDArray *array, bool removable) {
-  sd_printf("Context::setInputArray: index=%d ptr=%p removable=%d fastpath_in.size=%d\n",
-            index, (void*)array, (int)removable, (int)_fastpath_in.size());
   // Check for null array FIRST before any dereference
   if (array == nullptr) {
     std::string errorMessage;

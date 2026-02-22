@@ -374,6 +374,29 @@ void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled) {
   }
 }
 
+void setPlanJitMode(sd::Pointer planHandle, int mode) {
+  if (planHandle != nullptr) {
+    sd::graph::JitMode jitMode;
+    switch (mode) {
+      case 1: jitMode = sd::graph::JitMode::JIT_ONLY; break;
+      case 2: jitMode = sd::graph::JitMode::GRAPH_PLUS_JIT; break;
+      default: jitMode = sd::graph::JitMode::GRAPH_ONLY; break;
+    }
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setJitMode(jitMode);
+  }
+}
+
+void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
+  if (planHandle != nullptr) {
+    auto gem = static_cast<sd::graph::GraphExecutionMode>(mode);
+    // Clamp to valid range
+    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_TRITON) {
+      gem = sd::graph::GraphExecutionMode::GEM_AUTO;
+    }
+    reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setGraphExecutionMode(gem);
+  }
+}
+
 void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize) {
   // Segment sizes are now auto-discovered from graph structure; this is a no-op.
 }
@@ -638,4 +661,275 @@ void clearPlanCudaGraphTimeline(sd::Pointer planHandle) {
       seg.cachedGraph->clearExecutionTimeline();
     }
   }
+}
+
+// =============================================================================
+// NCCL Collective Communication Operations
+// =============================================================================
+
+#ifdef HAVE_NCCL
+#include <nccl.h>
+
+static ncclDataType_t toNcclDataType(int dt) {
+    switch (dt) {
+        case 1:  return ncclFloat16;   // HALF
+        case 5:  return ncclFloat32;   // FLOAT
+        case 7:  return ncclFloat64;   // DOUBLE
+        case 3:  return ncclInt32;     // INT32
+        case 9:  return ncclInt64;     // INT64
+        case 2:  return ncclInt8;      // INT8
+        case 6:  return ncclUint8;     // UINT8
+#if NCCL_VERSION_CODE >= 21000
+        case 16: return ncclBfloat16;  // BFLOAT16
+#endif
+        default:
+            sd_printf("NCCL: unsupported data type %d, falling back to float\n", dt);
+            return ncclFloat32;
+    }
+}
+
+static ncclRedOp_t toNcclReduceOp(int op) {
+    switch (op) {
+        case 0:  return ncclSum;
+        case 1:  return ncclProd;
+        case 2:  return ncclMax;
+        case 3:  return ncclMin;
+#if NCCL_VERSION_CODE >= 21000
+        case 4:  return ncclAvg;
+#endif
+        default: return ncclSum;
+    }
+}
+#endif // HAVE_NCCL
+
+sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
+#ifdef HAVE_NCCL
+    ncclComm_t comm;
+    ncclUniqueId id;
+
+    // For single-process multi-GPU, rank 0 generates the ID
+    // and all ranks use it. In this simple case, we generate + init all at once.
+    ncclResult_t res = ncclCommInitAll(&comm, 1, &deviceId);
+    if (res != ncclSuccess) {
+        sd_printf("NCCL ncclCommInitAll failed: %s\n", ncclGetErrorString(res));
+        return nullptr;
+    }
+
+    // For multi-GPU in single process, use ncclCommInitAll with all devices
+    // For now, return single communicator
+    auto* commPtr = new ncclComm_t(comm);
+    return reinterpret_cast<sd::Pointer>(commPtr);
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return nullptr;
+#endif
+}
+
+sd::Pointer ncclCommInitWithId(int numRanks, int rankId, sd::Pointer uniqueId) {
+#ifdef HAVE_NCCL
+    if (uniqueId == nullptr) {
+        sd_printf("NCCL ncclCommInitWithId: uniqueId is null\n", "");
+        return nullptr;
+    }
+
+    ncclComm_t comm;
+    ncclUniqueId* id = reinterpret_cast<ncclUniqueId*>(uniqueId);
+    ncclResult_t res = ncclCommInitRank(&comm, numRanks, *id, rankId);
+    if (res != ncclSuccess) {
+        sd_printf("NCCL ncclCommInitRank failed: %s\n", ncclGetErrorString(res));
+        return nullptr;
+    }
+
+    auto* commPtr = new ncclComm_t(comm);
+    return reinterpret_cast<sd::Pointer>(commPtr);
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return nullptr;
+#endif
+}
+
+sd::Pointer ncclGetUniqueId() {
+#ifdef HAVE_NCCL
+    auto* id = new ncclUniqueId();
+    ncclResult_t res = ncclGetUniqueId(id);
+    if (res != ncclSuccess) {
+        sd_printf("NCCL ncclGetUniqueId failed: %s\n", ncclGetErrorString(res));
+        delete id;
+        return nullptr;
+    }
+    return reinterpret_cast<sd::Pointer>(id);
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return nullptr;
+#endif
+}
+
+void ncclCommDestroy(sd::Pointer commHandle) {
+#ifdef HAVE_NCCL
+    if (commHandle == nullptr) return;
+    auto* commPtr = reinterpret_cast<ncclComm_t*>(commHandle);
+    ncclCommDestroy(*commPtr);
+    delete commPtr;
+#endif
+}
+
+int ncclDoAllReduce(sd::Pointer commHandle,
+                    sd::Pointer sendBuf, sd::Pointer recvBuf,
+                    sd::LongType numElements, int dataType,
+                    int reduceOp, sd::Pointer stream) {
+#ifdef HAVE_NCCL
+    if (commHandle == nullptr) return -1;
+    auto* commPtr = reinterpret_cast<ncclComm_t*>(commHandle);
+
+    cudaStream_t cudaStr = (stream != nullptr)
+        ? *reinterpret_cast<cudaStream_t*>(stream)
+        : 0;
+
+    ncclResult_t res = ncclAllReduce(
+        sendBuf, recvBuf, numElements,
+        toNcclDataType(dataType), toNcclReduceOp(reduceOp),
+        *commPtr, cudaStr
+    );
+
+    if (res != ncclSuccess) {
+        sd_printf("NCCL AllReduce failed: %s\n", ncclGetErrorString(res));
+        return -1;
+    }
+    return 0;
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return -1;
+#endif
+}
+
+int ncclDoAllGather(sd::Pointer commHandle,
+                    sd::Pointer sendBuf, sd::Pointer recvBuf,
+                    sd::LongType sendCount, int dataType,
+                    sd::Pointer stream) {
+#ifdef HAVE_NCCL
+    if (commHandle == nullptr) return -1;
+    auto* commPtr = reinterpret_cast<ncclComm_t*>(commHandle);
+
+    cudaStream_t cudaStr = (stream != nullptr)
+        ? *reinterpret_cast<cudaStream_t*>(stream)
+        : 0;
+
+    ncclResult_t res = ncclAllGather(
+        sendBuf, recvBuf, sendCount,
+        toNcclDataType(dataType),
+        *commPtr, cudaStr
+    );
+
+    if (res != ncclSuccess) {
+        sd_printf("NCCL AllGather failed: %s\n", ncclGetErrorString(res));
+        return -1;
+    }
+    return 0;
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return -1;
+#endif
+}
+
+int ncclDoReduceScatter(sd::Pointer commHandle,
+                        sd::Pointer sendBuf, sd::Pointer recvBuf,
+                        sd::LongType recvCount, int dataType,
+                        int reduceOp, sd::Pointer stream) {
+#ifdef HAVE_NCCL
+    if (commHandle == nullptr) return -1;
+    auto* commPtr = reinterpret_cast<ncclComm_t*>(commHandle);
+
+    cudaStream_t cudaStr = (stream != nullptr)
+        ? *reinterpret_cast<cudaStream_t*>(stream)
+        : 0;
+
+    ncclResult_t res = ncclReduceScatter(
+        sendBuf, recvBuf, recvCount,
+        toNcclDataType(dataType), toNcclReduceOp(reduceOp),
+        *commPtr, cudaStr
+    );
+
+    if (res != ncclSuccess) {
+        sd_printf("NCCL ReduceScatter failed: %s\n", ncclGetErrorString(res));
+        return -1;
+    }
+    return 0;
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return -1;
+#endif
+}
+
+int ncclDoSend(sd::Pointer commHandle,
+               sd::Pointer sendBuf, sd::LongType numElements,
+               int dataType, int peerRank, sd::Pointer stream) {
+#ifdef HAVE_NCCL
+    if (commHandle == nullptr) return -1;
+    auto* commPtr = reinterpret_cast<ncclComm_t*>(commHandle);
+
+    cudaStream_t cudaStr = (stream != nullptr)
+        ? *reinterpret_cast<cudaStream_t*>(stream)
+        : 0;
+
+    ncclResult_t res = ncclSend(
+        sendBuf, numElements,
+        toNcclDataType(dataType), peerRank,
+        *commPtr, cudaStr
+    );
+
+    if (res != ncclSuccess) {
+        sd_printf("NCCL Send failed: %s\n", ncclGetErrorString(res));
+        return -1;
+    }
+    return 0;
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return -1;
+#endif
+}
+
+int ncclDoRecv(sd::Pointer commHandle,
+               sd::Pointer recvBuf, sd::LongType numElements,
+               int dataType, int peerRank, sd::Pointer stream) {
+#ifdef HAVE_NCCL
+    if (commHandle == nullptr) return -1;
+    auto* commPtr = reinterpret_cast<ncclComm_t*>(commHandle);
+
+    cudaStream_t cudaStr = (stream != nullptr)
+        ? *reinterpret_cast<cudaStream_t*>(stream)
+        : 0;
+
+    ncclResult_t res = ncclRecv(
+        recvBuf, numElements,
+        toNcclDataType(dataType), peerRank,
+        *commPtr, cudaStr
+    );
+
+    if (res != ncclSuccess) {
+        sd_printf("NCCL Recv failed: %s\n", ncclGetErrorString(res));
+        return -1;
+    }
+    return 0;
+#else
+    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    return -1;
+#endif
+}
+
+int ncclGroupStart() {
+#ifdef HAVE_NCCL
+    ncclResult_t res = ::ncclGroupStart();
+    return (res == ncclSuccess) ? 0 : -1;
+#else
+    return -1;
+#endif
+}
+
+int ncclGroupEnd() {
+#ifdef HAVE_NCCL
+    ncclResult_t res = ::ncclGroupEnd();
+    return (res == ncclSuccess) ? 0 : -1;
+#else
+    return -1;
+#endif
 }

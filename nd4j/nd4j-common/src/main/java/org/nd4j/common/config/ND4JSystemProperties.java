@@ -569,6 +569,21 @@ public class ND4JSystemProperties {
      */
     public static final String DSP_CUDA_GRAPHS_ENABLED = "nd4j.dsp.cudaGraphs.enabled";
 
+    /**
+     * Applicability: DSP execution engine<br>
+     * Description: JIT compilation mode for DSP segment execution.<br>
+     * Values: "graph" (default, CUDA graph only), "jit" (NVRTC JIT only),
+     *         "graph+jit" (try JIT first, fall back to graph capture)
+     */
+    public static final String DSP_JIT_MODE = "nd4j.dsp.jitMode";
+
+    /**
+     * Applicability: DSP execution engine<br>
+     * Description: Graph execution mode controlling which backend is used.<br>
+     * Values: "AUTO" (default), "SLOT_BY_SLOT", "CUDA_GRAPHS", "NVRTC_JIT", "PTX_JIT", "TRITON"
+     */
+    public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
+
     // ---- VLM speculative decoding properties ----
 
     /**

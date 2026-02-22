@@ -1571,6 +1571,25 @@ public interface NativeOps {
   }
 
   /**
+   * Set the JIT compilation mode for DSP segment execution.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param mode 0 = GRAPH_ONLY (default), 1 = JIT_ONLY, 2 = GRAPH_PLUS_JIT
+   */
+  default void setPlanJitMode(Pointer planHandle, int mode) {
+      // No-op on backends that don't support JIT compilation
+  }
+
+  /**
+   * Set the graph execution mode for DSP execution.
+   * Controls which backend is used for segment execution.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param mode 0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+   */
+  default void setPlanGraphExecutionMode(Pointer planHandle, int mode) {
+      // No-op on backends that don't support graph execution mode
+  }
+
+  /**
    * Set maximum sizes for specific output slots (KV cache pre-allocation).
    * When set, these slots will be pre-allocated at the specified maximum size,
    * keeping buffer addresses stable across all subsequent steps.
@@ -1754,5 +1773,156 @@ public interface NativeOps {
    */
   default void clearPlanCudaGraphTimeline(Pointer planHandle) {
       // No-op on non-CUDA backends
+  }
+
+  // ==========================================================================
+  // NCCL Collective Communication Operations
+  // ==========================================================================
+
+  /**
+   * Initialize an NCCL communicator for a group of GPUs (single-process).
+   *
+   * @param numRanks  number of ranks (GPUs) in the communicator
+   * @param rankId    this process's rank (0-indexed)
+   * @param deviceId  CUDA device ID for this rank
+   * @return opaque handle to the NCCL communicator, or null on failure
+   */
+  default Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
+      return null;
+  }
+
+  /**
+   * Initialize an NCCL communicator from a unique ID (multi-process).
+   *
+   * @param numRanks  number of ranks
+   * @param rankId    this process's rank
+   * @param uniqueId  pointer to ncclUniqueId (128 bytes)
+   * @return opaque handle to the NCCL communicator
+   */
+  default Pointer ncclCommInitWithId(int numRanks, int rankId, Pointer uniqueId) {
+      return null;
+  }
+
+  /**
+   * Generate a unique NCCL ID for multi-process initialization.
+   *
+   * @return pointer to a newly allocated ncclUniqueId
+   */
+  default Pointer ncclGetUniqueId() {
+      return null;
+  }
+
+  /**
+   * Destroy an NCCL communicator and release resources.
+   *
+   * @param commHandle handle from ncclCommInit
+   */
+  default void ncclCommDestroy(Pointer commHandle) {
+  }
+
+  /**
+   * AllReduce: sum all tensors across ranks, result available on all ranks.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer pointer (device memory)
+   * @param recvBuf      receive buffer pointer (can be same as sendBuf for in-place)
+   * @param numElements  number of elements
+   * @param dataType     data type ordinal (sd.DataType)
+   * @param reduceOp     0=SUM, 1=PROD, 2=MAX, 3=MIN, 4=AVG
+   * @param stream       CUDA stream pointer (null for default)
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoAllReduce(Pointer commHandle,
+                               Pointer sendBuf, Pointer recvBuf,
+                               long numElements, int dataType,
+                               int reduceOp, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * AllGather: gather data from all ranks, result available on all ranks.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer (this rank's data)
+   * @param recvBuf      receive buffer (numRanks * sendCount elements)
+   * @param sendCount    number of elements per rank
+   * @param dataType     data type ordinal
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoAllGather(Pointer commHandle,
+                               Pointer sendBuf, Pointer recvBuf,
+                               long sendCount, int dataType,
+                               Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * ReduceScatter: reduce then scatter result across ranks.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer
+   * @param recvBuf      receive buffer (this rank's shard)
+   * @param recvCount    number of elements per rank after scatter
+   * @param dataType     data type ordinal
+   * @param reduceOp     reduction operation
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoReduceScatter(Pointer commHandle,
+                                   Pointer sendBuf, Pointer recvBuf,
+                                   long recvCount, int dataType,
+                                   int reduceOp, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * Send data to a specific peer rank.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer
+   * @param numElements  number of elements
+   * @param dataType     data type ordinal
+   * @param peerRank     destination rank
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoSend(Pointer commHandle,
+                          Pointer sendBuf, long numElements,
+                          int dataType, int peerRank, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * Receive data from a specific peer rank.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param recvBuf      receive buffer
+   * @param numElements  number of elements
+   * @param dataType     data type ordinal
+   * @param peerRank     source rank
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoRecv(Pointer commHandle,
+                          Pointer recvBuf, long numElements,
+                          int dataType, int peerRank, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * Begin a group of NCCL operations (for fusing multiple collectives).
+   * @return 0 on success
+   */
+  default int ncclGroupStart() {
+      return -1;
+  }
+
+  /**
+   * End a group of NCCL operations.
+   * @return 0 on success
+   */
+  default int ncclGroupEnd() {
+      return -1;
   }
 }
