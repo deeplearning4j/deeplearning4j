@@ -21,8 +21,12 @@
 package org.deeplearning4j.parallelism;
 
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.ModelAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
