@@ -20,7 +20,12 @@
 
 package org.nd4j.tensorflow.conversion.graphrunner;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.Singular;
+
 import org.apache.commons.io.FileUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.factory.Nd4j;
