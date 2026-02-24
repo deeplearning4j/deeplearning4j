@@ -46,10 +46,10 @@ namespace graph {
  * Triton fuses ops at the compiler level — eliminating intermediate global
  * memory traffic and kernel launch overhead.
  *
- * Execution priority (CUDA builds):
- *   1. Triton  -> fused kernel (best performance for fusible segments)
- *   2. CUDA Graphs -> captured replay (good for non-fusible segments)
- *   3. Slot-by-slot -> individual ops (always works)
+ * For segments exceeding MAX_COMPILABLE_OPS (register pressure limit),
+ * the backend automatically splits into sub-segments and compiles each
+ * as a separate kernel. All sub-kernels execute sequentially on the same
+ * stream — no fallback to CUDA graphs or slot-by-slot.
  *
  * Supports NVIDIA (PTX), AMD (AMDGCN), and Intel (SPIR-V) via Triton's
  * multi-target compiler backend.
@@ -66,7 +66,10 @@ class TritonGraphBackend : public GraphBackend {
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                       NDArray** externalInputs, int numExternalInputs,
                       NDArray** outputSlots, int totalOutputSlots,
-                      LongType shapeKey) override;
+                      LongType shapeKey,
+                      int totalSlots = 0,
+                      int* requestedOutputSlotIndices = nullptr,
+                      int numRequestedOutputs = 0) override;
 
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,
@@ -79,7 +82,14 @@ class TritonGraphBackend : public GraphBackend {
 
   static TritonGraphBackend& getInstance();
 
+  // Counters for diagnostics and testing
+  LongType getTotalKernelLaunches() const { return totalKernelLaunches_; }
+  LongType getTotalCacheHits() const { return totalCacheHits_; }
+  void resetCounters() { totalKernelLaunches_ = 0; totalCacheHits_ = 0; }
+
  private:
+  LongType totalKernelLaunches_ = 0;
+  LongType totalCacheHits_ = 0;
   // Compiled kernel: GPU module + kernel function + launch config
   struct CompiledKernel {
     void* gpuModule;            // Driver module (CUmodule / hipModule_t / ze_module_handle_t)
@@ -88,6 +98,12 @@ class TritonGraphBackend : public GraphBackend {
     unsigned int blockX, blockY, blockZ;
     unsigned int sharedMemBytes;
     int numWarps;
+    bool useCooperativeLaunch;  // true if kernel needs cuLaunchCooperativeKernel
+    bool useIndirectArgs;       // true if kernel uses indirect arg table (>200 buffer args)
+
+    // Sub-segment range (absolute slot indices)
+    int startSlot_;
+    int endSlot_;
 
     // Argument mapping: index in args -> {slotIndex, isOutput}
     std::vector<TritonKernelArg> argSlotMapping;
@@ -99,7 +115,25 @@ class TritonGraphBackend : public GraphBackend {
         : gpuModule(nullptr), kernelFunction(nullptr),
           gridX(1), gridY(1), gridZ(1),
           blockX(1), blockY(1), blockZ(1),
-          sharedMemBytes(0), numWarps(4) {}
+          sharedMemBytes(0), numWarps(4),
+          useCooperativeLaunch(false),
+          useIndirectArgs(false),
+          startSlot_(-1), endSlot_(-1) {}
+  };
+
+  // A compiled segment may contain multiple sub-kernels when the original
+  // segment exceeds MAX_COMPILABLE_OPS. Each sub-kernel covers a contiguous
+  // range of slots and is executed sequentially.
+  struct CompiledSegment {
+    std::vector<CompiledKernel> subKernels;
+    std::vector<CompilationAuditEntry> audit;  // Combined audit across all sub-kernels
+
+    bool isValid() const {
+      for (const auto& k : subKernels) {
+        if (!k.gpuModule || !k.kernelFunction) return false;
+      }
+      return !subKernels.empty();
+    }
   };
 
   // Per-segment cache (keyed by segment start/end + shape)
@@ -120,7 +154,7 @@ class TritonGraphBackend : public GraphBackend {
     }
   };
 
-  std::unordered_map<SegmentCacheKey, CompiledKernel, SegmentCacheHash> cache_;
+  std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
   std::mutex cacheMtx_;
 
   // Most recent compilation audit
@@ -133,12 +167,31 @@ class TritonGraphBackend : public GraphBackend {
   static constexpr float MIN_MAPPABLE_FRACTION = 0.5f;
 
   // Minimum number of mappable ops for Triton to be worthwhile
-  static constexpr int MIN_MAPPABLE_OPS = 2;
+  static constexpr int MIN_MAPPABLE_OPS = 1;
+
+ public:
+  // Maximum number of ops that can be compiled into a single Triton kernel.
+  // Larger segments exceed register limits (441K virtual regs for 3840 ops).
+  // Segments exceeding this are split into sub-segments automatically.
+  static constexpr int MAX_COMPILABLE_OPS = 512;
+
+  // Check if all ops in a range are Triton-mappable (without size limit check).
+  // Used by sub-segment splitting to verify individual sub-segments.
+  bool areAllOpsMappable(NativeSlot* slots, int start, int end);
+
+ private:
 
   // Compile TTIR module to GPU binary, load, and extract kernel
   CompiledKernel compileToGpuBinary(NativeSlot* slots, int startSlot, int endSlot,
+                                    int totalSlots,
                                     NDArray** externalInputs, int numExternalInputs,
                                     NDArray** outputSlots, int totalOutputSlots);
+
+  // Execute a single compiled sub-kernel
+  Status executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,
+                             NDArray** externalInputs, int numExternalInputs,
+                             NDArray** outputSlots, int totalOutputSlots,
+                             void* stream);
 };
 
 }  // namespace graph
