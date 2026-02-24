@@ -3456,7 +3456,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                   slot.opName.c_str(), si);
         continue;
       }
-      int inputSrc = slot.inputSourceIndices[0];
+      // For assign(target, source): output = source = input[1]
+      // For identity(x): output = x = input[0]
+      int inputIdx = (slot.numInputs >= 2) ? 1 : 0;
+      int inputSrc = slot.inputSourceIndices[inputIdx];
       auto inputIt = ssaValues.find(inputSrc);
       if (inputIt == ssaValues.end()) {
         sd_printf("TritonIRBuilder: missing SSA value for identity op '%s' at slot %d\n",
@@ -4691,7 +4694,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::IDENTITY) {
             if (slot.numInputs < 1) continue;
-            auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+            // assign(target, source): forward input[1]; identity(x): forward input[0]
+            int identIdx = (slot.numInputs >= 2) ? 1 : 0;
+            auto inputIt = ssaValues.find(slot.inputSourceIndices[identIdx]);
             if (inputIt == ssaValues.end()) continue;
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
           } else if (cat == TritonOpCategory::CAST) {
