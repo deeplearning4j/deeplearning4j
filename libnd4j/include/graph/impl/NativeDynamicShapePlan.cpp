@@ -972,10 +972,24 @@ Status NativeDynamicShapePlan::execute(
       auto* gpuBackend = getGpuGraphBackend();
       bool tritonHandled = false;
       if (gpuBackend) {
-        tl_graphExecutionActive = true;
+        // NOTE: tl_graphExecutionActive is NOT set here. executeSegmentWithGpuGraph
+        // may run a warmup pass (slot-by-slot) on the first execution. Setting
+        // tl_graphExecutionActive would block syncToPrimary D2H transfers, causing
+        // ops like 'create' that read input values from host to get stale zeros.
+        // tl_graphExecutionActive is only set inside the actual Triton kernel
+        // execution path (executeSegment at executionCount > 0), not during warmup.
         auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-        tl_graphExecutionActive = false;
         if (status == Status::OK) { tritonHandled = true; segUsedGraph = true; }
+        else if (executeCount_ < 5) {
+          FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+          if (tf) {
+            fprintf(tf, "exec%d seg[%d-%d]: triton FAILED status=%d executionCount=%d captureFailed=%d\n",
+                    executeCount_, segment.startSlot, segment.endSlot,
+                    static_cast<int>(status), segment.executionCount,
+                    static_cast<int>(segment.captureFailed));
+            fflush(tf); fclose(tf);
+          }
+        }
       }
 
       // Try NVRTC JIT (CUDA only, element-wise segments)
@@ -1081,9 +1095,9 @@ Status NativeDynamicShapePlan::execute(
       auto* gpuBackend = getGpuGraphBackend();
       bool tritonHandled = false;
       if (gpuBackend) {
-        tl_graphExecutionActive = true;
+        // NOTE: tl_graphExecutionActive is NOT set here — same as the CUDA path.
+        // executeSegmentWithGpuGraph manages it internally around actual kernel execution.
         auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-        tl_graphExecutionActive = false;
         if (status == Status::OK) tritonHandled = true;
       }
       if (!tritonHandled) {
@@ -1274,45 +1288,19 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
                stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
       sd_printf("NativeDynamicShapePlan: %s\n", buf);
 
-      // Emit failure context: input source slots/external indices and their current shapes.
-      auto printShape = [&](const char* prefix, NDArray* arr) {
-        if (arr == nullptr) {
-          sd_printf("NativeDynamicShapePlan:   %s: null\n", prefix);
-          return;
-        }
-        const LongType* si = arr->shapeInfo();
-        int rank = shape::rank(si);
-        sd_printf("NativeDynamicShapePlan:   %s: dtype=%d rank=%d shape=[",
-                  prefix, static_cast<int>(arr->dataType()), rank);
-        for (int d = 0; d < rank; d++) {
-          sd_printf("%lld%s", static_cast<long long>(si[d + 1]), (d + 1 < rank ? ", " : ""));
-        }
-        sd_printf("]\n", "");
-      };
-
-      auto findProducerSlot = [&](int outputSlotIdx) -> int {
-        for (int s = 0; s < numSlots_; s++) {
-          const auto& prod = slots_[s];
-          for (int o = 0; o < prod.numOutputs; o++) {
-            if (prod.outputSlotIndices[o] == outputSlotIdx) return s;
-          }
-        }
-        return -1;
-      };
-
       auto& failedSlot = slots_[stepIdx];
       for (int i = 0; i < failedSlot.numInputs; i++) {
         int srcIdx = failedSlot.inputSourceIndices[i];
         if (srcIdx >= 0) {
-          int prodSlot = findProducerSlot(srcIdx);
-          const char* prodName = (prodSlot >= 0 ? slots_[prodSlot].opName.c_str() : "unknown");
-          sd_printf("NativeDynamicShapePlan:   input[%d] from outputSlot[%d] producer slot %d (%s)\n",
-                    i, srcIdx, prodSlot, prodName);
-          printShape("input-shape", (srcIdx < totalOutputSlots_ ? outputSlots_[srcIdx] : nullptr));
+          NDArray* inp = (srcIdx < totalOutputSlots_ ? outputSlots_[srcIdx] : nullptr);
+          if (inp != nullptr) {
+            sd_printf("NativeDynamicShapePlan:   input[%d] from outputSlot[%d]: rank=%lld\n",
+                      i, srcIdx, (long long)inp->rankOf());
+          } else {
+            sd_printf("NativeDynamicShapePlan:   input[%d] from outputSlot[%d]: null\n", i, srcIdx);
+          }
         } else {
-          int extIdx = -(srcIdx + 1);
-          sd_printf("NativeDynamicShapePlan:   input[%d] from external[%d]\n", i, extIdx);
-          printShape("input-shape", (extIdx < numExt ? externalArrays[extIdx] : nullptr));
+          sd_printf("NativeDynamicShapePlan:   input[%d] from external[%d]\n", i, -(srcIdx + 1));
         }
       }
 
@@ -1341,6 +1329,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     if ((stepIdx % 100 == 99) || pendingCloseBytes_ > 256ULL * 1024 * 1024) {
       flushPendingClose(stream);
     }
+
   }
 
   // After the first complete slot-by-slot pass, view producer detection is done.
@@ -2658,12 +2647,18 @@ Status NativeDynamicShapePlan::executeSlot(
     int primarySrcIdx = slot.inputSourceIndices[0];
     if (primarySrcIdx >= 0) {
       primaryInput = outputSlots_[primarySrcIdx];
+      // Cross-segment recovery from slotArrayCache_
+      if (primaryInput == nullptr && primarySrcIdx < totalOutputSlots_ && slotArrayCache_[primarySrcIdx] != nullptr) {
+        primaryInput = slotArrayCache_[primarySrcIdx];
+        outputSlots_[primarySrcIdx] = slotArrayCache_[primarySrcIdx];
+      }
     } else {
       int extIdx = -(primarySrcIdx + 1);
       if (extIdx < numExt) primaryInput = externalArrays[extIdx];
     }
     if (primaryInput == nullptr) {
-      sd_printf("NativeDSP::executeSlot: null primary input for fused chain head slot %d\n", stepIdx);
+      sd_printf("NativeDynamicShapePlan: NULL fused head input for slot %d (%s), primarySrcIdx=%d\n",
+                stepIdx, slot.opName.c_str(), primarySrcIdx);
       return Status::BAD_INPUT;
     }
 
@@ -2927,6 +2922,14 @@ Status NativeDynamicShapePlan::executeSlot(
     if (srcIdx >= 0) {
       // From a prior slot output
       inputs[i] = outputSlots_[srcIdx];
+      // Cross-segment recovery: if outputSlots_ was cleared (e.g., by releaseAtStep_
+      // in a previous segment or CUDA graph capture cleanup) but the array is still
+      // alive in slotArrayCache_, restore it. This happens when a segment boundary
+      // falls between a producer and its consumer.
+      if (inputs[i] == nullptr && srcIdx < totalOutputSlots_ && slotArrayCache_[srcIdx] != nullptr) {
+        inputs[i] = slotArrayCache_[srcIdx];
+        outputSlots_[srcIdx] = slotArrayCache_[srcIdx];  // Restore for downstream use
+      }
     } else {
       // From external inputs
       int extIdx = -(srcIdx + 1);
@@ -2938,8 +2941,8 @@ Status NativeDynamicShapePlan::executeSlot(
     }
 
     if (inputs[i] == nullptr) {
-      sd_printf("NativeDynamicShapePlan::executeSlot: null input %d for slot %d (%s)\n",
-                i, stepIdx, slot.opName.c_str());
+      sd_printf("NativeDynamicShapePlan: NULL input for slot %d (%s) input %d, srcIdx=%d\n",
+                stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i]);
       return Status::BAD_INPUT;
     }
   }
@@ -3070,7 +3073,7 @@ Status NativeDynamicShapePlan::executeSlot(
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
           auto order = shape::order(shapeInfo);
-          int rank = shape::rank(shapeInfo);
+          LongType rank = shape::rank(shapeInfo);
           std::vector<LongType> shape(rank);
           for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
           outputs[i] = new NDArray(order, shape, dt);
@@ -3116,7 +3119,7 @@ Status NativeDynamicShapePlan::executeSlot(
           const LongType* shapeInfo = outputShapes[i];
           auto dt = ArrayOptions::dataType(shapeInfo);
           auto order = shape::order(shapeInfo);
-          int rank = shape::rank(shapeInfo);
+          LongType rank = shape::rank(shapeInfo);
           std::vector<LongType> shape(rank);
           for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
           outputs[i] = new NDArray(order, shape, dt);
@@ -3161,7 +3164,7 @@ Status NativeDynamicShapePlan::executeSlot(
     const LongType* shapeInfo = outputShapes[i];
     auto dt = ArrayOptions::dataType(shapeInfo);
     auto order = shape::order(shapeInfo);
-    int rank = shape::rank(shapeInfo);
+    LongType rank = shape::rank(shapeInfo);
 
     // Try to reuse cached array from prior execution
     NDArray* cached = slotArrayCache_[slotIdx];
@@ -3367,7 +3370,7 @@ LongType NativeDynamicShapePlan::computeShapeKey(
   for (int i = 0; i < numInputs; i++) {
     if (inputs[i] == nullptr) continue;
     const LongType* si = inputs[i]->shapeInfo();
-    int rank = shape::rank(si);
+    LongType rank = shape::rank(si);
     mix(rank);
     for (int d = 0; d < rank; d++) {
       mix(si[d + 1]);
@@ -3431,7 +3434,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     if (arr == nullptr) return;
 
     const LongType* si = arr->shapeInfo();
-    int rank = shape::rank(si);
+    LongType rank = shape::rank(si);
     mix(rank);
     for (int d = 0; d < rank; d++) {
       mix(si[d + 1]);
@@ -4053,7 +4056,8 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   // Compile (or use cache) for this shape
   if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                               outputSlots_, totalOutputSlots_, segShapeKey)) {
+                               outputSlots_, totalOutputSlots_, segShapeKey,
+                               numSlots_)) {
     return Status::KERNEL_FAILURE;
   }
 
@@ -4085,8 +4089,13 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   // Execute via backend
   seg.shapeKey = segShapeKey;
+  // Set tl_graphExecutionActive only during actual Triton kernel execution,
+  // NOT during warmup. This prevents syncToPrimary D2H from being blocked
+  // during the kernel launch (which doesn't need host data access).
+  tl_graphExecutionActive = true;
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
+  tl_graphExecutionActive = false;
 
   if (status == Status::OK) {
     seg.executionCount++;
@@ -4173,35 +4182,69 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
 
   auto* backend = getGpuGraphBackend();
-  if (backend == nullptr) return Status::KERNEL_FAILURE;
+  if (backend == nullptr) {
+    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+    if (tf) { fprintf(tf, "FAIL: backend==nullptr\n"); fflush(tf); fclose(tf); }
+    return Status::KERNEL_FAILURE;
+  }
 
   // If compilation previously failed validation, never try again
   if (seg.captureFailed) {
+    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+    if (tf) { fprintf(tf, "FAIL: captureFailed seg[%d-%d]\n", seg.startSlot, seg.endSlot); fflush(tf); fclose(tf); }
     return Status::KERNEL_FAILURE;
   }
 
   // Check if this segment can be compiled by the Triton backend
   if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
+    if (seg.executionCount < 3) {
+      FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+      if (tf) {
+        fprintf(tf, "FAIL: canFuseSegment REJECTED seg[%d-%d] execCount=%d\n",
+                seg.startSlot, seg.endSlot, seg.executionCount);
+        // Find first unmappable op
+        for (int i = seg.startSlot; i <= seg.endSlot; i++) {
+          if (!TritonIRBuilder::isTritonMappable(slots_[i].opName)) {
+            fprintf(tf, "  unmappable: slot %d op=%s\n", i, slots_[i].opName.c_str());
+            break;
+          }
+        }
+        fflush(tf); fclose(tf);
+      }
+    }
     return Status::KERNEL_FAILURE;  // Caller will fall back to CUDA Graphs
+  }
+
+  // First execution: run slot-by-slot warmup BEFORE compilation.
+  if (seg.executionCount == 0) {
+    auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+    if (tf) { fprintf(tf, "WARMUP seg[%d-%d] done status=%d\n", seg.startSlot, seg.endSlot, static_cast<int>(warmupStatus)); fflush(tf); fclose(tf); }
+    return warmupStatus;
   }
 
   // Compute shape key for cache lookup
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
-  // Compile (or use cache) for this shape
+  // Compile (or use cache) for this shape — shapes are now available from warmup
   if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                               outputSlots_, totalOutputSlots_, segShapeKey)) {
+                               outputSlots_, totalOutputSlots_, segShapeKey,
+                               numSlots_)) {
+    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+    if (tf) { fprintf(tf, "FAIL: compileSegment FAILED seg[%d-%d]\n", seg.startSlot, seg.endSlot); fflush(tf); fclose(tf); }
     return Status::KERNEL_FAILURE;
   }
 
-  // First execution: validate compilation coverage, then run slot-by-slot
-  if (seg.executionCount == 0) {
+  // On first compilation, validate coverage
+  if (seg.executionCount == 1) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
     bool allCompiled = true;
+    int failedCount = 0;
     for (const auto& entry : audit) {
       if (!entry.wasCompiled) {
         allCompiled = false;
+        failedCount++;
         sd_printf("TRITON VALIDATION: slot %d (%s) was NOT compiled: %s\n",
                   entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
@@ -4210,18 +4253,104 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       sd_printf("TRITON VALIDATION FAILURE: segment [%d-%d] has ops not covered by Triton. "
                 "Falling back to CUDA Graphs.\n",
                 seg.startSlot, seg.endSlot);
-      // Don't set captureFailed — let CUDA Graphs try next
+      seg.captureFailed = true;
       return Status::KERNEL_FAILURE;
     }
+  }
 
-    // Warm-up: run slot-by-slot to populate outputSlots_
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+  // Pre-execution: ensure all output slots in the segment have live arrays.
+  // The Triton kernel's arg mapping references outputSlots_ for both inputs
+  // (from prior ops) and outputs (to write results). Slot-by-slot warmup may
+  // have released intermediate arrays via releaseAtStep_, leaving entries null.
+  // First restore from slotArrayCache_, then allocate any remaining nulls
+  // using cached shape info from warmup.
+  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+    NativeSlot& slot = slots_[stepIdx];
+    // Restore input slot entries that may have been released
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      if (srcIdx >= 0 && srcIdx < totalOutputSlots_ &&
+          outputSlots_[srcIdx] == nullptr && slotArrayCache_[srcIdx] != nullptr) {
+        outputSlots_[srcIdx] = slotArrayCache_[srcIdx];
+      }
+    }
+    // Restore or allocate output slot entries
+    for (int i = 0; i < slot.numOutputs; i++) {
+      int slotIdx = slot.outputSlotIndices[i];
+      if (slotIdx < 0 || slotIdx >= totalOutputSlots_) continue;
+      if (slotArrayCache_[slotIdx] != nullptr) {
+        outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
+      } else if (outputSlots_[slotIdx] == nullptr) {
+        // Allocate from cached shape info (populated during warmup)
+        const LongType* shapeInfo = nullptr;
+        if (i < static_cast<int>(slot.cachedOutputShapes.size()) && slot.cachedOutputShapes[i]) {
+          shapeInfo = slot.cachedOutputShapes[i];
+        }
+        // Fallback: for identity/view-like ops that don't cache output shapes,
+        // derive the shape from the first input source's existing array
+        if (!shapeInfo && slot.numInputs > 0) {
+          int srcIdx = slot.inputSourceIndices[0];
+          NDArray* srcArr = nullptr;
+          if (srcIdx < 0) {
+            int extIdx = -(srcIdx + 1);
+            if (extIdx < numExt) srcArr = externalArrays[extIdx];
+          } else if (srcIdx < totalOutputSlots_) {
+            srcArr = outputSlots_[srcIdx];
+            if (!srcArr) srcArr = slotArrayCache_[srcIdx];
+          }
+          if (srcArr) shapeInfo = srcArr->shapeInfo();
+        }
+        if (shapeInfo) {
+          auto dt = ArrayOptions::dataType(shapeInfo);
+          auto order = shape::order(shapeInfo);
+          LongType rank = shape::rank(shapeInfo);
+          std::vector<LongType> shapeVec(rank);
+          for (int d = 0; d < rank; d++) shapeVec[d] = shapeInfo[d + 1];
+          auto* arr = new NDArray(order, shapeVec, dt);
+          outputSlots_[slotIdx] = arr;
+          slotArrayCache_[slotIdx] = arr;
+        }
+      }
+    }
+  }
+
+  // Verify all output slots have arrays — log any that are still null
+  {
+    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+    if (tf) {
+      int nullCount = 0;
+      for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
+        for (int o = 0; o < slots_[stepIdx].numOutputs; o++) {
+          int si = slots_[stepIdx].outputSlotIndices[o];
+          if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
+            nullCount++;
+            if (nullCount <= 20) {
+              bool cacheNull = (si < totalOutputSlots_ && slotArrayCache_[si] == nullptr);
+              fprintf(tf, "STILL_NULL: outputSlot[%d] step=%d op=%s cacheNull=%d\n",
+                      si, stepIdx, slots_[stepIdx].opName.c_str(), cacheNull ? 1 : 0);
+            }
+          }
+        }
+      }
+      if (nullCount > 0) {
+        fprintf(tf, "STILL_NULL total: %d null output slots in seg[%d-%d]\n",
+                nullCount, seg.startSlot, seg.endSlot);
+      }
+      fprintf(tf, "EXECUTE seg[%d-%d] execCount=%d\n", seg.startSlot, seg.endSlot, seg.executionCount);
+      fflush(tf); fclose(tf);
+    }
   }
 
   // Execute via Triton backend
   seg.shapeKey = segShapeKey;
+  tl_graphExecutionActive = true;
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
+  tl_graphExecutionActive = false;
+  {
+    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
+    if (tf) { fprintf(tf, "EXECUTE seg[%d-%d] RESULT status=%d\n", seg.startSlot, seg.endSlot, static_cast<int>(status)); fflush(tf); fclose(tf); }
+  }
 
   if (status == Status::OK) {
     seg.executionCount++;
