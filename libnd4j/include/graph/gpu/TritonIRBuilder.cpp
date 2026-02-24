@@ -4086,10 +4086,22 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Fill with 1.0 / 1
         opResult = splatConstantF32(builder, loc, tensorType, 1.0f);
       } else if (opLower == "create" || opLower == "set_scalar") {
-        // create/set_scalar: produce zeros (or scalar value from args)
+        // create/set_scalar: produce constant fill value.
+        // Try tArgs first, then fall back to reading from the warmup output array.
         float fillVal = 0.0f;
+        bool foundVal = false;
         if (slot.numTArgs > 0 && slot.tArgs) {
           fillVal = static_cast<float>(slot.tArgs[0]);
+          foundVal = true;
+        }
+        if (!foundVal && slot.numOutputs > 0) {
+          int outIdx = slot.outputSlotIndices[0];
+          auto* arr = resolveArr(outIdx);
+          if (arr && arr->lengthOf() > 0) {
+            arr->syncToHost();
+            fillVal = arr->e<float>(0);
+            foundVal = true;
+          }
         }
         opResult = splatConstantF32(builder, loc, tensorType, fillVal);
       } else if (opLower == "range") {
@@ -4124,15 +4136,41 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         opResult = builder.create<mlir::arith::AddFOp>(loc, startSplat, scaled);
         opResult = castTo(builder, loc, opResult, elemType);
       } else if (opLower == "shape_of") {
-        // shape_of: produces shape metadata. In 1D kernel context, forward input.
-        if (slot.numInputs >= 1) {
-          int inputSrc = slot.inputSourceIndices[0];
-          auto inputIt = ssaValues.find(inputSrc);
-          if (inputIt != ssaValues.end()) {
-            opResult = inputIt->second;
+        // shape_of(x): output = shape dimensions of x as a tensor.
+        // Read the pre-computed values from the warmup output array and use
+        // broadcast-safe indexing (offsets % outputLen) since the output is tiny.
+        bool emitted = false;
+        if (slot.numOutputs > 0) {
+          int outIdx = slot.outputSlotIndices[0];
+          auto* arr = resolveArr(outIdx);
+          if (arr && arr->lengthOf() > 0) {
+            arr->syncToHost();
+            int outLen = static_cast<int>(arr->lengthOf());
+            // Emit the shape values as: load from constant index within [0, outLen)
+            // Use the same broadcast-safe pattern as range: offsets % outLen
+            auto i32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getI32Type());
+            auto outLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, outLen, 32);
+            auto splatOutLen = builder.create<mlir::triton::SplatOp>(loc, i32TensorTy, outLenConst);
+            auto modOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatOutLen);
+
+            // Build a lookup table: for each dimension d, shape_val[d]
+            // Since outLen is small (typically 2-6), use chained selects
+            auto f32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getF32Type());
+            opResult = splatConstantF32(builder, loc, f32TensorTy, 0.0f);
+            for (int d = outLen - 1; d >= 0; d--) {
+              float dimVal = static_cast<float>(arr->e<float>(d));
+              auto dimConst = builder.create<mlir::arith::ConstantIntOp>(loc, d, 32);
+              auto splatDim = builder.create<mlir::triton::SplatOp>(loc, i32TensorTy, dimConst);
+              auto cmp = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq,
+                                                               modOffsets, splatDim);
+              auto dimValSplat = splatConstantF32(builder, loc, f32TensorTy, dimVal);
+              opResult = builder.create<mlir::arith::SelectOp>(loc, cmp, dimValSplat, opResult);
+            }
+            opResult = castTo(builder, loc, opResult, elemType);
+            emitted = true;
           }
         }
-        if (!opResult) {
+        if (!emitted) {
           opResult = splatConstantF32(builder, loc, tensorType, 0.0f);
         }
       } else {
