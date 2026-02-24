@@ -250,7 +250,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     slot.isFusedChainTail = false;
     std::memset(slot.fusedChainOpCodes, 0, sizeof(slot.fusedChainOpCodes));
     std::memset(slot.fusedChainSlots, 0, sizeof(slot.fusedChainSlots));
-    std::memset(slot.fusedChainSecondaryInputSources, 0, sizeof(slot.fusedChainSecondaryInputSources));
+    std::fill(std::begin(slot.fusedChainSecondaryInputSources), std::end(slot.fusedChainSecondaryInputSources), INT32_MIN);
 
     // Build input wiring from inputPaired
     auto* inputPaired = node->inputPaired();

@@ -65,6 +65,7 @@ static std::unordered_set<std::string> binaryElementwiseOps = {
     "atan2", "reversedivide", "reversesubtract",
     "squaredsubtract", "multiply_no_nan",
     "min_pairwise", "max_pairwise", "mod",
+    "swish_mul",
     // Comparison ops
     "greater", "greater_equal", "less", "less_equal",
     "equals", "not_equals",
@@ -502,6 +503,84 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
+    // Pass 6: Detect softmax compound patterns (reduce_max → sub → exp → reduce_sum → div)
+    for (int i = 0; i < numSlots - 4; i++) {
+        if (fused[i]) continue;
+        std::string op0 = getOpName(slots[i]);
+        if (op0 != "reduce_max") continue;
+        if (slots[i].numOutputs != 1) continue;
+
+        int out0 = slots[i].outputSlotIndices[0];
+        // Find sub consuming reduce_max output
+        int subSlot = -1;
+        for (int j = i + 1; j < numSlots; j++) {
+            if (fused[j]) continue;
+            std::string opJ = getOpName(slots[j]);
+            if (opJ != "subtract") continue;
+            for (int k = 0; k < slots[j].numInputs; k++) {
+                if (slots[j].inputSourceIndices[k] == out0) { subSlot = j; break; }
+            }
+            if (subSlot >= 0) break;
+        }
+        if (subSlot < 0) continue;
+
+        int outSub = slots[subSlot].outputSlotIndices[0];
+        // Find exp consuming sub output
+        int expSlot = -1;
+        for (int j = subSlot + 1; j < numSlots; j++) {
+            if (fused[j]) continue;
+            std::string opJ = getOpName(slots[j]);
+            if (opJ != "exp") continue;
+            if (slots[j].numInputs >= 1 && slots[j].inputSourceIndices[0] == outSub) {
+                expSlot = j; break;
+            }
+        }
+        if (expSlot < 0) continue;
+
+        int outExp = slots[expSlot].outputSlotIndices[0];
+        // Find reduce_sum consuming exp output
+        int sumSlot = -1;
+        for (int j = expSlot + 1; j < numSlots; j++) {
+            if (fused[j]) continue;
+            std::string opJ = getOpName(slots[j]);
+            if (opJ != "reduce_sum") continue;
+            if (slots[j].numInputs >= 1 && slots[j].inputSourceIndices[0] == outExp) {
+                sumSlot = j; break;
+            }
+        }
+        if (sumSlot < 0) continue;
+
+        int outSum = slots[sumSlot].outputSlotIndices[0];
+        // Find div consuming exp and sum outputs
+        int divSlot = -1;
+        for (int j = sumSlot + 1; j < numSlots; j++) {
+            if (fused[j]) continue;
+            std::string opJ = getOpName(slots[j]);
+            if (opJ != "divide") continue;
+            bool hasExp = false, hasSum = false;
+            for (int k = 0; k < slots[j].numInputs; k++) {
+                if (slots[j].inputSourceIndices[k] == outExp) hasExp = true;
+                if (slots[j].inputSourceIndices[k] == outSum) hasSum = true;
+            }
+            if (hasExp && hasSum) { divSlot = j; break; }
+        }
+        if (divSlot < 0) continue;
+
+        // Found softmax compound pattern!
+        std::vector<int> chain = {i, subSlot, expSlot, sumSlot, divSlot};
+        FusionCandidate candidate;
+        candidate.startSlot = chain.front();
+        candidate.endSlot = chain.back();
+        candidate.type = FusionCandidate::ELEMENTWISE_CHAIN;
+        candidate.slotIndices = chain;
+        candidate.chainLength = static_cast<int>(chain.size());
+        candidates.push_back(candidate);
+        for (int idx : chain) fused[idx] = true;
+
+        sd_printf("FusionPass: detected softmax compound pattern, slots %d-%d\n",
+                  chain.front(), chain.back());
+    }
+
     // Sort by startSlot for deterministic ordering
     std::sort(candidates.begin(), candidates.end(),
               [](const FusionCandidate& a, const FusionCandidate& b) {
@@ -576,7 +655,7 @@ int FusionPass::applyFusions(
 
                             // For binary ops, find the secondary input source
                             // (the one that does NOT come from the previous chain slot)
-                            secondarySources[ci] = -1;  // -1 = unary, no secondary
+                            secondarySources[ci] = INT32_MIN;  // INT32_MIN = unary, no secondary (-1 is external input 0!)
                             if (binaryElementwiseOps.count(name) > 0 && slots[si].numInputs == 2) {
                                 int prevOutputSlotIdx = -1;
                                 if (ci > 0) {

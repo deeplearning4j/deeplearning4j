@@ -501,7 +501,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     slot.isFusedChainTail = false;
     std::memset(slot.fusedChainOpCodes, 0, sizeof(slot.fusedChainOpCodes));
     std::memset(slot.fusedChainSlots, 0, sizeof(slot.fusedChainSlots));
-    std::memset(slot.fusedChainSecondaryInputSources, 0, sizeof(slot.fusedChainSecondaryInputSources));
+    std::fill(std::begin(slot.fusedChainSecondaryInputSources), std::end(slot.fusedChainSecondaryInputSources), INT32_MIN);
   }
 
   // Read release schedule
@@ -2664,7 +2664,7 @@ Status NativeDynamicShapePlan::executeSlot(
 
     // For binary head ops, the secondary input source tells us which input is secondary.
     // The primary (chain) input is the OTHER one.
-    bool headIsBinary = (slot.fusedChainSecondaryInputSources[0] != -1);
+    bool headIsBinary = (slot.fusedChainSecondaryInputSources[0] != INT32_MIN);
     if (headIsBinary && slot.numInputs == 2) {
       int secSrc = slot.fusedChainSecondaryInputSources[0];
       // Find which of the two inputs matches the secondary source
@@ -2692,7 +2692,7 @@ Status NativeDynamicShapePlan::executeSlot(
       fusedOps[ci] = static_cast<sd::ops::helpers::FusedElemOp>(slot.fusedChainOpCodes[ci]);
 
       int secSrc = slot.fusedChainSecondaryInputSources[ci];
-      if (secSrc != -1) {
+      if (secSrc != INT32_MIN) {
         // Resolve secondary input
         if (secSrc >= 0) {
           secondaryInputs[ci] = outputSlots_[secSrc];
