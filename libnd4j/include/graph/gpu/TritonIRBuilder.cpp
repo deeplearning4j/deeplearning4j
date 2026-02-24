@@ -1330,6 +1330,12 @@ mlir::Value TritonIRBuilder::splatConstantF32(mlir::OpBuilder& builder, mlir::Lo
   return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
 }
 
+mlir::Value TritonIRBuilder::splatConstantI32(mlir::OpBuilder& builder, mlir::Location loc,
+                                               mlir::RankedTensorType tensorType, int val) {
+  auto scalar = builder.create<mlir::arith::ConstantIntOp>(loc, val, 32);
+  return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
+}
+
 // ─── Type classification helpers ────────────────────────────────────────────
 
 static mlir::Type getElementType(mlir::Value val) {
@@ -3517,46 +3523,159 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
     } else if (cat == TritonOpCategory::REDUCTION) {
-      // Reduction: load input from SSA, call emitReductionOp, store result
+      // Segmented reduction: for each output element, accumulate over the reduction axis.
+      // Unlike elementwise ops, reduction changes tensor size, so we can't use the SSA value
+      // (which was loaded using output offsets). Instead, directly load from input buffer.
       if (slot.numInputs < 1) {
         sd_printf("TritonIRBuilder: reduction op '%s' at slot %d has no inputs\n",
                   slot.opName.c_str(), si);
         continue;
       }
       int inputSrc = slot.inputSourceIndices[0];
-      auto inputIt = ssaValues.find(inputSrc);
-      if (inputIt == ssaValues.end()) {
-        sd_printf("TritonIRBuilder: missing SSA value for reduction op '%s' at slot %d\n",
-                  slot.opName.c_str(), si);
+      // Get reduction axis from iArgs
+      int reductionAxis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : -1;
+
+      // Resolve input shape
+      auto inputShape = resolveShapeLocal(inputSrc);
+      int inputRank = static_cast<int>(inputShape.size());
+      if (inputRank == 0) {
+        sd_printf("TritonIRBuilder: reduction op '%s' has no input shape info\n", slot.opName.c_str());
         continue;
       }
-      // In the 1D kernel skeleton, all tensors are rank-1 (tensor<BLOCK>).
-      // The original reduction axis from the multi-dimensional op is irrelevant —
-      // we always reduce along axis 0 (the only axis in the 1D tensor).
-      // Using the original axis would index out of bounds in tensorTy.getShape().
-      int reductionAxis = 0;
-      // Get output type from output slot shape
-      auto outSlotIdx = slot.outputSlotIndices[0];
-      mlir::RankedTensorType outputType;
-      {
-        auto outShape = resolveShapeLocal(outSlotIdx);
-        if (!outShape.empty()) {
-          auto elemType = getElementType(inputIt->second);
-          std::vector<int64_t> outShape64;
-          for (auto d : outShape) outShape64.push_back(static_cast<int64_t>(d));
-          outputType = mlir::RankedTensorType::get(outShape64, elemType);
+      // Handle negative axis
+      if (reductionAxis < 0) reductionAxis += inputRank;
+      if (reductionAxis < 0 || reductionAxis >= inputRank) reductionAxis = inputRank - 1;
+
+      int reductionSize = static_cast<int>(inputShape[reductionAxis]);
+
+      // Compute input strides (row-major)
+      std::vector<int> inStrides(inputRank, 1);
+      for (int d = inputRank - 2; d >= 0; d--)
+        inStrides[d] = inStrides[d + 1] * static_cast<int>(inputShape[d + 1]);
+
+      // Compute output shape (input shape with reduction axis removed)
+      std::vector<int> outShape;
+      for (int d = 0; d < inputRank; d++)
+        if (d != reductionAxis) outShape.push_back(static_cast<int>(inputShape[d]));
+      int outRank = static_cast<int>(outShape.size());
+      if (outRank == 0) { outShape.push_back(1); outRank = 1; } // scalar output
+
+      // Compute output strides (row-major)
+      std::vector<int> outStrides(outRank, 1);
+      for (int d = outRank - 2; d >= 0; d--)
+        outStrides[d] = outStrides[d + 1] * outShape[d + 1];
+
+      // Find the input arg for this input source
+      auto inputArgIt = slotToArgIdx.find(inputSrc);
+      if (inputArgIt == slotToArgIdx.end()) {
+        sd_printf("TritonIRBuilder: reduction input slot %d not found in kernel args\n", inputSrc);
+        // Fall back to SSA value if available
+        auto ssaIt = ssaValues.find(inputSrc);
+        if (ssaIt != ssaValues.end()) {
+          auto opResult = emitReductionOp(builder, loc, slot.opName, ssaIt->second, 0,
+              mlir::RankedTensorType());
+          if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
+            auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
+            opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
+          }
+          for (int o = 0; o < slot.numOutputs; o++)
+            ssaValues[slot.outputSlotIndices[o]] = opResult;
         }
+        continue;
       }
-      auto opResult = emitReductionOp(builder, loc, slot.opName, inputIt->second, reductionAxis, outputType);
-      // tt.reduce on a rank-1 tensor produces a scalar (not a tensor).
-      // Downstream element-wise ops expect RankedTensorType inputs.
-      // Splat the scalar result back to a block-sized tensor so the SSA
-      // value chain remains homogeneous (all tensors, no scalars).
+      int argIdx = inputArgIt->second;
+      auto inputPtrArg = getBufferArg(argIdx);
+
+      auto elemType = getMLIRType(builder, inputArgs[argIdx].dtype);
+      auto f32Type = builder.getF32Type();
+      auto f32TensorType = mlir::RankedTensorType::get({blockSize}, f32Type);
+      auto ptrType = mlir::triton::PointerType::get(elemType, 1);
+      auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+
+      // Segmented reduction: for each output offset i (from the block's offsets vector),
+      // accumulate: acc = identity_val; for k=0..reductionSize-1: acc = combine(acc, input[inputOffset(i, k)])
+      // Where inputOffset(i, k) unravels i to output ND coords, inserts k at reductionAxis, ravels to flat.
+
+      // Determine reduction identity value and combine op
+      std::string opLower = slot.opName;
+      std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+      bool isMean = (opLower == "reduce_mean" || opLower == "mean");
+      bool isMax = (opLower == "reduce_max" || opLower == "max");
+      bool isMin = (opLower == "reduce_min" || opLower == "min");
+      bool isProd = (opLower == "reduce_prod" || opLower == "prod");
+
+      float identityVal = 0.0f;
+      if (isMax) identityVal = -3.4028235e+38f;
+      else if (isMin) identityVal = 3.4028235e+38f;
+      else if (isProd) identityVal = 1.0f;
+
+      mlir::Value acc = splatConstantF32(builder, loc, f32TensorType, identityVal);
+
+      // Loop over reduction axis
+      for (int k = 0; k < reductionSize; k++) {
+        // Compute input flat offset for each output position with reduction index k
+        // Unravel offsets (output flat idx) to output coords, map to input coords
+        mlir::Value inputOffset = splatConstantI32(builder, loc, i32TensorType, 0);
+        mlir::Value rem = offsets;
+        int inputDimIdx = 0;
+        for (int d = 0; d < inputRank; d++) {
+          if (d == reductionAxis) {
+            // Add k * inputStride[reductionAxis]
+            auto contrib = splatConstantI32(builder, loc, i32TensorType, k * inStrides[d]);
+            inputOffset = builder.create<mlir::arith::AddIOp>(loc, inputOffset, contrib);
+          } else {
+            // Get output coord for this dimension
+            auto oStrideConst = splatConstantI32(builder, loc, i32TensorType, outStrides[inputDimIdx]);
+            auto coord = builder.create<mlir::arith::DivSIOp>(loc, rem, oStrideConst);
+            if (inputDimIdx < outRank - 1)
+              rem = builder.create<mlir::arith::RemSIOp>(loc, rem, oStrideConst);
+            // Map to input flat offset
+            auto inStrideConst = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+            auto contrib = builder.create<mlir::arith::MulIOp>(loc, coord, inStrideConst);
+            inputOffset = builder.create<mlir::arith::AddIOp>(loc, inputOffset, contrib);
+            inputDimIdx++;
+          }
+        }
+
+        // Load input at computed offsets
+        auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, inputPtrArg);
+        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, inputOffset);
+        auto loaded = builder.create<mlir::triton::LoadOp>(loc,
+            ptrs.getResult(), mask.getResult(), mlir::Value(),
+            mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+        // Cast to f32 for accumulation
+        mlir::Value val = castTo(builder, loc, loaded, f32Type);
+
+        // Combine
+        if (isMax)
+          acc = builder.create<mlir::arith::MaximumFOp>(loc, acc, val);
+        else if (isMin)
+          acc = builder.create<mlir::arith::MinimumFOp>(loc, acc, val);
+        else if (isProd)
+          acc = builder.create<mlir::arith::MulFOp>(loc, acc, val);
+        else // sum, mean
+          acc = builder.create<mlir::arith::AddFOp>(loc, acc, val);
+      }
+
+      // For mean: divide by reduction size
+      if (isMean && reductionSize > 0) {
+        auto countSplat = splatConstantF32(builder, loc, f32TensorType,
+            static_cast<float>(reductionSize));
+        acc = builder.create<mlir::arith::DivFOp>(loc, acc, countSplat);
+      }
+
+      // Cast back to output element type
+      auto outSlotIdx = slot.outputSlotIndices[0];
+      auto outDtype = resolveDtypeLocal(outSlotIdx);
+      auto outElemType = getMLIRType(builder, outDtype);
+      mlir::Value opResult = castTo(builder, loc, acc, outElemType);
+
+      // Ensure result is a tensor (should be, since acc was a tensor)
       if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
-        auto splatElemType = opResult.getType();
-        auto splatTensorType = mlir::RankedTensorType::get({blockSize}, splatElemType);
-        opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);
+        auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
+        opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
       }
+
       for (int o = 0; o < slot.numOutputs; o++) {
         ssaValues[slot.outputSlotIndices[o]] = opResult;
       }
@@ -6346,21 +6465,56 @@ void TritonIRBuilder::emitSliceSection(mlir::OpBuilder& builder, mlir::Location 
   auto mask = builder.create<mlir::arith::CmpIOp>(
       loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-  // For 1D slice: result = load(input + begin + offsets * stride)
-  int begin = begins.empty() ? 0 : begins[0];
-  int stride = strides.empty() ? 1 : strides[0];
+  // ND strided slice: for each output flat index, unravel to output ND coords,
+  // compute input ND coords as: in_coord[d] = begin[d] + out_coord[d] * stride[d],
+  // then ravel to input flat offset.
+  int rank = static_cast<int>(inputShape.size());
 
-  auto beginConst = builder.create<mlir::arith::ConstantIntOp>(loc, begin, 32);
-  auto splatBegin = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, beginConst);
+  // Compute output shape per dimension: ceil((end[d] - begin[d]) / stride[d])
+  std::vector<int> outShape(rank);
+  for (int d = 0; d < rank; d++) {
+    int b = (d < static_cast<int>(begins.size())) ? begins[d] : 0;
+    int e = (d < static_cast<int>(ends.size())) ? ends[d] : static_cast<int>(inputShape[d]);
+    int s = (d < static_cast<int>(strides.size())) ? strides[d] : 1;
+    if (s == 0) s = 1;
+    outShape[d] = (e - b + s - 1) / s;  // ceil division
+    if (outShape[d] <= 0) outShape[d] = 1;
+  }
 
-  mlir::Value srcOffsets;
-  if (stride == 1) {
-    srcOffsets = builder.create<mlir::arith::AddIOp>(loc, offsets, splatBegin);
-  } else {
-    auto strideConst = builder.create<mlir::arith::ConstantIntOp>(loc, stride, 32);
-    auto splatStride = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, strideConst);
-    auto strided = builder.create<mlir::arith::MulIOp>(loc, offsets, splatStride);
-    srcOffsets = builder.create<mlir::arith::AddIOp>(loc, strided, splatBegin);
+  // Compute output strides (row-major)
+  std::vector<int> outStrides(rank, 1);
+  for (int d = rank - 2; d >= 0; d--)
+    outStrides[d] = outStrides[d + 1] * outShape[d + 1];
+
+  // Compute input strides (row-major)
+  std::vector<int> inStrides(rank, 1);
+  for (int d = rank - 2; d >= 0; d--)
+    inStrides[d] = inStrides[d + 1] * static_cast<int>(inputShape[d + 1]);
+
+  // Unravel output flat offset to ND coords, apply begin+stride, ravel to input offset
+  mlir::Value srcOffsets = splatConstantI32(builder, loc, i32TensorType, 0);
+  mlir::Value remaining = offsets;
+  for (int d = 0; d < rank; d++) {
+    auto oStrideConst = splatConstantI32(builder, loc, i32TensorType, outStrides[d]);
+    auto coord = builder.create<mlir::arith::DivSIOp>(loc, remaining, oStrideConst);
+    if (d < rank - 1)
+      remaining = builder.create<mlir::arith::RemSIOp>(loc, remaining, oStrideConst);
+    // input_coord = begin[d] + coord * stride[d]
+    int b = (d < static_cast<int>(begins.size())) ? begins[d] : 0;
+    int s = (d < static_cast<int>(strides.size())) ? strides[d] : 1;
+    mlir::Value inCoord;
+    if (s == 1) {
+      auto beginSplat = splatConstantI32(builder, loc, i32TensorType, b);
+      inCoord = builder.create<mlir::arith::AddIOp>(loc, coord, beginSplat);
+    } else {
+      auto strideSplat = splatConstantI32(builder, loc, i32TensorType, s);
+      auto scaled = builder.create<mlir::arith::MulIOp>(loc, coord, strideSplat);
+      auto beginSplat = splatConstantI32(builder, loc, i32TensorType, b);
+      inCoord = builder.create<mlir::arith::AddIOp>(loc, scaled, beginSplat);
+    }
+    auto inStrideSplat = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+    auto contrib = builder.create<mlir::arith::MulIOp>(loc, inCoord, inStrideSplat);
+    srcOffsets = builder.create<mlir::arith::AddIOp>(loc, srcOffsets, contrib);
   }
 
   // Derive pointer types from actual arguments (NOT hardcoded f32)
@@ -6406,14 +6560,11 @@ void TritonIRBuilder::emitTileSection(mlir::OpBuilder& builder, mlir::Location l
   auto mask = builder.create<mlir::arith::CmpIOp>(
       loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-  // Tile: result = load(input + (offsets % input_size))
-  int inputSize = 1;
-  for (auto dim : inputShape) inputSize *= static_cast<int>(dim);
-  if (inputSize == 0) inputSize = 1;
-
-  auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, inputSize, 32);
-  auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
-  auto modOffsets = builder.create<mlir::arith::RemSIOp>(loc, offsets, splatInputSize);
+  // Tile: for each output flat index, unravel to ND output coords,
+  // apply modulo per-dimension (coord_d % inputShape[d]) to get input coords,
+  // then ravel to input flat offset.
+  // outputShape[d] = inputShape[d] * repeats[d]
+  int rank = static_cast<int>(inputShape.size());
 
   // Derive pointer types from actual arguments (NOT hardcoded f32)
   auto inPtrType = mlir::cast<mlir::triton::PointerType>(inputPtr.getType());
@@ -6421,8 +6572,41 @@ void TritonIRBuilder::emitTileSection(mlir::OpBuilder& builder, mlir::Location l
   auto inPtrTensorType = mlir::RankedTensorType::get({blockSize}, inPtrType);
   auto outPtrTensorType = mlir::RankedTensorType::get({blockSize}, outPtrType);
 
+  // Compute output shape = inputShape * repeats
+  std::vector<int> outShape(rank);
+  for (int d = 0; d < rank; d++) {
+    int rep = (d < static_cast<int>(repeats.size())) ? repeats[d] : 1;
+    outShape[d] = static_cast<int>(inputShape[d]) * rep;
+  }
+
+  // Compute output strides (row-major)
+  std::vector<int> outStrides(rank, 1);
+  for (int d = rank - 2; d >= 0; d--)
+    outStrides[d] = outStrides[d + 1] * outShape[d + 1];
+
+  // Compute input strides (row-major)
+  std::vector<int> inStrides(rank, 1);
+  for (int d = rank - 2; d >= 0; d--)
+    inStrides[d] = inStrides[d + 1] * static_cast<int>(inputShape[d + 1]);
+
+  // Unravel output flat offset, mod each coord by inputShape[d], ravel to input offset
+  mlir::Value srcOffsets = splatConstantI32(builder, loc, i32TensorType, 0);
+  mlir::Value remaining = offsets;
+  for (int d = 0; d < rank; d++) {
+    auto strideConst = splatConstantI32(builder, loc, i32TensorType, outStrides[d]);
+    auto coord = builder.create<mlir::arith::DivSIOp>(loc, remaining, strideConst);
+    if (d < rank - 1)
+      remaining = builder.create<mlir::arith::RemSIOp>(loc, remaining, strideConst);
+    // Wrap to input dimension
+    auto inDimConst = splatConstantI32(builder, loc, i32TensorType, static_cast<int>(inputShape[d]));
+    auto wrappedCoord = builder.create<mlir::arith::RemSIOp>(loc, coord, inDimConst);
+    auto inStrideConst = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+    auto contrib = builder.create<mlir::arith::MulIOp>(loc, wrappedCoord, inStrideConst);
+    srcOffsets = builder.create<mlir::arith::AddIOp>(loc, srcOffsets, contrib);
+  }
+
   auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
-  auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, modOffsets);
+  auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, srcOffsets);
   auto loaded = builder.create<mlir::triton::LoadOp>(loc,
       inPtrs.getResult(), mask.getResult(), mlir::Value(),
       mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
@@ -6473,35 +6657,57 @@ void TritonIRBuilder::emitShapeManipulationSection(mlir::OpBuilder& builder, mli
   bool isPermute = (opLower == "permute" || opLower == "transpose");
 
   if (isPermute && !permutation.empty() && inputShape.size() >= 2) {
-    if (inputShape.size() == 2 && permutation.size() == 2 &&
-        permutation[0] == 1 && permutation[1] == 0) {
-      int rows = static_cast<int>(inputShape[0]);
-      int cols = static_cast<int>(inputShape[1]);
+    // General ND permute: for each output flat offset, unravel to output coords,
+    // apply inverse permutation to get input coords, ravel to input flat offset.
+    // output[d0,d1,...] = input[d_perm[0], d_perm[1], ...]
+    // For output flat index: unravel with outputShape strides, then
+    // srcOffset = sum(coord[perm[i]] * inputStride[i])
+    int rank = static_cast<int>(inputShape.size());
 
-      auto rowsConst = builder.create<mlir::arith::ConstantIntOp>(loc, rows, 32);
-      auto colsConst = builder.create<mlir::arith::ConstantIntOp>(loc, cols, 32);
-      auto splatRows = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, rowsConst);
-      auto splatCols = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, colsConst);
+    // Compute output strides (row-major): stride[i] = product of outputShape[i+1..rank-1]
+    std::vector<int> outStrides(rank, 1);
+    for (int d = rank - 2; d >= 0; d--)
+      outStrides[d] = outStrides[d + 1] * static_cast<int>(outputShape[d + 1]);
 
-      auto rOut = builder.create<mlir::arith::DivSIOp>(loc, offsets, splatRows);
-      auto cOut = builder.create<mlir::arith::RemSIOp>(loc, offsets, splatRows);
-      auto cTimesInputCols = builder.create<mlir::arith::MulIOp>(loc, cOut, splatCols);
-      auto srcOffsets = builder.create<mlir::arith::AddIOp>(loc, cTimesInputCols, rOut);
+    // Compute input strides (row-major): stride[i] = product of inputShape[i+1..rank-1]
+    std::vector<int> inStrides(rank, 1);
+    for (int d = rank - 2; d >= 0; d--)
+      inStrides[d] = inStrides[d + 1] * static_cast<int>(inputShape[d + 1]);
 
-      auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
-      auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, srcOffsets);
-      auto loaded = builder.create<mlir::triton::LoadOp>(loc,
-          inPtrs.getResult(), mask.getResult(), mlir::Value(),
-          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-
-      mlir::Value storeVal = castTo(builder, loc, loaded, outPtrType.getPointeeType());
-      auto splatOutPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outputPtr);
-      auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, splatOutPtr, offsets);
-      builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, mask,
-                                             mlir::triton::CacheModifier::NONE,
-                                             mlir::triton::EvictionPolicy::NORMAL);
-      return;
+    // Unravel output flat offset into ND coords, then compute input flat offset
+    // srcOffset = 0
+    // for each output dim d: coord_d = (flat / outStride[d]) % outShape[d]
+    //   srcOffset += coord_d * inStride[perm[d]]
+    mlir::Value srcOffsets = splatConstantI32(builder, loc, i32TensorType, 0);
+    mlir::Value remaining = offsets;
+    for (int d = 0; d < rank; d++) {
+      // coord_d = remaining / outStride[d]
+      auto strideConst = splatConstantI32(builder, loc, i32TensorType, outStrides[d]);
+      auto coord = builder.create<mlir::arith::DivSIOp>(loc, remaining, strideConst);
+      if (d < rank - 1) {
+        // remaining = remaining % outStride[d]  (for next dimension)
+        remaining = builder.create<mlir::arith::RemSIOp>(loc, remaining, strideConst);
+      }
+      // coord_d in output corresponds to perm[d] in input
+      int inputDim = permutation[d];
+      auto inStrideConst = splatConstantI32(builder, loc, i32TensorType, inStrides[inputDim]);
+      auto contrib = builder.create<mlir::arith::MulIOp>(loc, coord, inStrideConst);
+      srcOffsets = builder.create<mlir::arith::AddIOp>(loc, srcOffsets, contrib);
     }
+
+    auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
+    auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, srcOffsets);
+    auto loaded = builder.create<mlir::triton::LoadOp>(loc,
+        inPtrs.getResult(), mask.getResult(), mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+    mlir::Value storeVal = castTo(builder, loc, loaded, outPtrType.getPointeeType());
+    auto splatOutPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outputPtr);
+    auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, splatOutPtr, offsets);
+    builder.create<mlir::triton::StoreOp>(loc, outPtrs, storeVal, mask,
+                                           mlir::triton::CacheModifier::NONE,
+                                           mlir::triton::EvictionPolicy::NORMAL);
+    return;
   }
 
   // Default: straight copy (reshape, flatten, expand_dims, squeeze, or general permute fallback)
