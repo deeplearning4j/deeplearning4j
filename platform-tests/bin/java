@@ -136,11 +136,18 @@ fi
 
 # if test_runner_prefix is not empty and contains "compute-sanitizer"
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; then
-    TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX  --print-limit=0  --show-backtrace=yes"
+    # Generate output filename with timestamp
+    sanitizer_output="/tmp/compute_sanitizer_$(date +%Y%m%d_%H%M%S).log"
+
+    TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX  --print-limit=0  --show-backtrace=yes --log-file=${sanitizer_output}"
     # add jvm option to disable jit compilation to help with debugging
     java_call="${java_call}  -Djava.compiler=none"
 
     echo "running with cuda compute-sanitizer"
+    echo "compute-sanitizer output will be written to: ${sanitizer_output}"
+
+    # Store output path for post-run message
+    SANITIZER_OUTPUT="${sanitizer_output}"
 fi
 
 # if test_runner_prefix is not empty and contains "nsys" (NVIDIA Nsight Systems)
@@ -256,6 +263,15 @@ if [[ -n $NSYS_OUTPUT ]]; then
     echo "Memory ops:   nsys stats --report cuda_mem_time_sum ${NSYS_OUTPUT}.nsys-rep"
     echo "API calls:    nsys stats --report cuda_api_sum ${NSYS_OUTPUT}.nsys-rep"
     echo "GUI:          nsys-ui ${NSYS_OUTPUT}.nsys-rep"
+    echo "====================================================="
+fi
+
+# if compute-sanitizer was used, print output location
+if [[ -n $SANITIZER_OUTPUT ]]; then
+    echo ""
+    echo "====================================================="
+    echo "CUDA compute-sanitizer output written to: ${SANITIZER_OUTPUT}"
+    echo "View results: cat ${SANITIZER_OUTPUT}"
     echo "====================================================="
 fi
 
