@@ -3238,8 +3238,22 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   for (auto& oarg : outputArgs) {
     LongType oElems = 1;
     for (auto d : oarg.shape) oElems *= d;
+    sd_printf("TritonIRBuilder::buildModule: output arg slot %d shape=[", oarg.slotIndex);
+    for (size_t dd = 0; dd < oarg.shape.size(); dd++) sd_printf("%lld%s", oarg.shape[dd], dd+1<oarg.shape.size()?",":"");
+    sd_printf("] elems=%lld\n", oElems);
     if (oElems > maxOutputElements) maxOutputElements = oElems;
   }
+  // Fallback: if output shapes are unavailable (empty), use max input element count
+  // This ensures broadcast indexing works even when output shapes aren't populated at compile time
+  if (maxOutputElements <= 1) {
+    for (auto& iarg : inputArgs) {
+      LongType iElems = 1;
+      for (auto d : iarg.shape) iElems *= d;
+      if (iElems > maxOutputElements) maxOutputElements = iElems;
+    }
+  }
+  sd_printf("TritonIRBuilder::buildModule: maxOutputElements=%lld, numInputArgs=%d\n",
+            maxOutputElements, (int)inputArgs.size());
 
   for (int a = 0; a < static_cast<int>(inputArgs.size()); a++) {
     auto& arg = inputArgs[a];
@@ -3253,6 +3267,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     // Compute this input's total element count for broadcast-aware indexing
     LongType inputElements = 1;
     for (auto d : arg.shape) inputElements *= d;
+    sd_printf("TritonIRBuilder::buildModule: input arg %d slot %d shape=[", a, arg.slotIndex);
+    for (size_t dd = 0; dd < arg.shape.size(); dd++) sd_printf("%lld%s", arg.shape[dd], dd+1<arg.shape.size()?",":"");
+    sd_printf("] elems=%lld vs maxOutput=%lld\n", inputElements, maxOutputElements);
 
     // If input is smaller than output, use modular indexing: offsets % inputSize
     // This handles broadcasting (e.g., [1,8] broadcast to [2,8])
@@ -4230,9 +4247,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               result.kernelName.c_str(), (endSlot - startSlot + 1),
               static_cast<int>(inputArgs.size()), static_cast<int>(outputArgs.size()),
               blockSize);
-    // Write TTIR to file for indirect-args kernels (large output)
-    if (useIndirectArgs) {
-      FILE* df = fopen("/tmp/triton_ttir_indirect.mlir", "w");
+    // Write TTIR to file for all kernels
+    {
+      const char* fname = useIndirectArgs ? "/tmp/triton_ttir_indirect.mlir" : "/tmp/triton_ttir_direct.mlir";
+      FILE* df = fopen(fname, "w");
       if (df) {
         fprintf(df, "%s\n", ttirDump.c_str());
         fflush(df); fclose(df);
