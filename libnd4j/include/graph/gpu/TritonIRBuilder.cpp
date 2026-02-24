@@ -3260,9 +3260,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   for (auto& oarg : outputArgs) {
     LongType oElems = 1;
     for (auto d : oarg.shape) oElems *= d;
-    sd_printf("TritonIRBuilder::buildModule: output arg slot %d shape=[", oarg.slotIndex);
-    for (size_t dd = 0; dd < oarg.shape.size(); dd++) sd_printf("%lld%s", oarg.shape[dd], dd+1<oarg.shape.size()?",":"");
-    sd_printf("] elems=%lld\n", oElems);
     if (oElems > maxOutputElements) maxOutputElements = oElems;
   }
   // Fallback: if output shapes are unavailable (empty), use max input element count
@@ -3274,9 +3271,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       if (iElems > maxOutputElements) maxOutputElements = iElems;
     }
   }
-  sd_printf("TritonIRBuilder::buildModule: maxOutputElements=%lld, numInputArgs=%d\n",
-            maxOutputElements, (int)inputArgs.size());
-
   for (int a = 0; a < static_cast<int>(inputArgs.size()); a++) {
     auto& arg = inputArgs[a];
     auto funcArg = getBufferArg(a);  // tt.ptr<elemType>
@@ -3289,9 +3283,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     // Compute this input's total element count for broadcast-aware indexing
     LongType inputElements = 1;
     for (auto d : arg.shape) inputElements *= d;
-    sd_printf("TritonIRBuilder::buildModule: input arg %d slot %d shape=[", a, arg.slotIndex);
-    for (size_t dd = 0; dd < arg.shape.size(); dd++) sd_printf("%lld%s", arg.shape[dd], dd+1<arg.shape.size()?",":"");
-    sd_printf("] elems=%lld vs maxOutput=%lld\n", inputElements, maxOutputElements);
 
     // If input is smaller than output, use modular indexing: offsets % inputSize
     // This handles broadcasting (e.g., [1,8] broadcast to [2,8])
@@ -3302,10 +3293,6 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
       // offsets_mod = offsets % inputSize (unsigned remainder for non-negative indices)
       loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
-      // Mask still uses original offsets vs n_elements (output bounds), not input bounds
-      sd_printf("TritonIRBuilder::buildModule: input arg %d (slot %d) uses broadcast indexing: "
-                "%lld elements -> %lld output elements\n",
-                a, arg.slotIndex, inputElements, maxOutputElements);
     }
 
     auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
@@ -4969,7 +4956,33 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         auto mask = builder.create<mlir::arith::CmpIOp>(
             loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-        // Load inputs that aren't already in SSA map
+        // Load inputs that aren't already in SSA map, with broadcast indexing
+        // Compute max output elements for this section (for broadcast detection)
+        LongType secMaxOutputElements = 0;
+        for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+          for (int o = 0; o < slots[si].numOutputs; o++) {
+            int outIdx = slots[si].outputSlotIndices[o];
+            auto outShape = resolveShape(outIdx);
+            LongType oElems = 1;
+            for (auto d : outShape) oElems *= d;
+            if (oElems > secMaxOutputElements) secMaxOutputElements = oElems;
+          }
+        }
+        // Fallback: if output shapes unavailable, use max input elements
+        if (secMaxOutputElements <= 1) {
+          for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+            for (int inp = 0; inp < slots[si].numInputs; inp++) {
+              int srcIdx = slots[si].inputSourceIndices[inp];
+              auto argIt = slotToArgIdx.find(srcIdx);
+              if (argIt == slotToArgIdx.end()) continue;
+              auto& argDesc = result.args[argIt->second];
+              LongType iElems = 1;
+              for (auto d : argDesc.shape) iElems *= d;
+              if (iElems > secMaxOutputElements) secMaxOutputElements = iElems;
+            }
+          }
+        }
+
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           for (int inp = 0; inp < slots[si].numInputs; inp++) {
             int srcIdx = slots[si].inputSourceIndices[inp];
@@ -4981,8 +4994,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto elemType = getMLIRType(builder, argDesc.dtype);
             auto ptrType = mlir::triton::PointerType::get(elemType, 1);
             auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+
+            // Broadcast indexing: if input is smaller than max output, use modular offsets
+            LongType inputElements = 1;
+            for (auto d : argDesc.shape) inputElements *= d;
+            mlir::Value loadOffsets = offsets;
+            if (inputElements > 0 && inputElements < secMaxOutputElements) {
+              auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
+                  loc, static_cast<int>(inputElements), 32);
+              auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
+              loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+            }
+
             auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
-            auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
+            auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, loadOffsets);
             auto loaded = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), mask.getResult(),
                 mlir::Value(), mlir::triton::CacheModifier::NONE,
                 mlir::triton::EvictionPolicy::NORMAL, false);
