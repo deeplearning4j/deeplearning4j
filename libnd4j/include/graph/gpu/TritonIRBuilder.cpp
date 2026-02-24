@@ -4093,11 +4093,36 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
         opResult = splatConstantF32(builder, loc, tensorType, fillVal);
       } else if (opLower == "range") {
-        // range: produce sequential values [0, 1, 2, ...]
-        // Use Triton's make_range and cast to target type
+        // range(start, stop, step): produce broadcast-safe values using global offsets.
+        // The range output has rangeLen elements; when downstream ops have more elements,
+        // we use modular indexing: value[i] = start + step * (offsets % rangeLen).
+        float start = 0.0f, step = 1.0f;
+        if (slot.numTArgs >= 1 && slot.tArgs) start = static_cast<float>(slot.tArgs[0]);
+        if (slot.numTArgs >= 3 && slot.tArgs) step = static_cast<float>(slot.tArgs[2]);
+
+        // Determine range output length from the output array's shape
+        int rangeLen = blockSize;
+        if (slot.numOutputs > 0) {
+          int outIdx = slot.outputSlotIndices[0];
+          auto* arr = resolveArr(outIdx);
+          if (arr) rangeLen = static_cast<int>(arr->lengthOf());
+        }
+
         auto i32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getI32Type());
-        auto rangeVal = builder.create<mlir::triton::MakeRangeOp>(loc, i32TensorTy, 0, blockSize);
-        opResult = castTo(builder, loc, rangeVal, elemType);
+        auto f32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getF32Type());
+
+        // offsets % rangeLen → position within the range (broadcast-safe)
+        auto rangeLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, rangeLen, 32);
+        auto splatRangeLen = builder.create<mlir::triton::SplatOp>(loc, i32TensorTy, rangeLenConst);
+        auto modOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatRangeLen);
+
+        // start + step * modOffsets
+        auto floatOffsets = builder.create<mlir::arith::SIToFPOp>(loc, f32TensorTy, modOffsets);
+        auto startSplat = splatConstantF32(builder, loc, f32TensorTy, start);
+        auto stepSplat = splatConstantF32(builder, loc, f32TensorTy, step);
+        auto scaled = builder.create<mlir::arith::MulFOp>(loc, floatOffsets, stepSplat);
+        opResult = builder.create<mlir::arith::AddFOp>(loc, startSplat, scaled);
+        opResult = castTo(builder, loc, opResult, elemType);
       } else if (opLower == "shape_of") {
         // shape_of: produces shape metadata. In 1D kernel context, forward input.
         if (slot.numInputs >= 1) {

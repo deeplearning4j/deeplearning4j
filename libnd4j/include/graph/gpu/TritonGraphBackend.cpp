@@ -494,6 +494,18 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     totalKernelLaunches_++;
   }
 
+#ifdef SD_CUDA
+  // Synchronize the execution stream to ensure all Triton kernels complete
+  // before the caller reads output buffers. Without this, Java-side copyBuffer
+  // on a different stream races with the async kernel, producing stale output.
+  // NOTE: stream is void** (pointer to cudaStream_t*), must dereference.
+  if (stream) {
+    void* actualStream = *static_cast<void**>(stream);
+    if (actualStream) {
+      cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
+    }
+  }
+#endif
 
   return Status::OK;
 }
