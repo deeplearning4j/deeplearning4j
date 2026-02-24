@@ -3047,10 +3047,26 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
   // Outputs: only externally-visible outputs need kernel args.
   // Purely internal intermediates are SSA-forwarded — no global store needed.
+  // EXCEPTION: internal intermediates that are inputs to REDUCTION ops within this
+  // segment need a buffer (SSA tensors can't be randomly indexed for segmented reduction).
   // Deduplicate: same output slot written by multiple ops only needs one kernel arg.
   auto externalOutputs = computeExternallyVisibleOutputs(
       slots, startSlot, endSlot, totalSlots,
       requestedOutputSlotIndices, numRequestedOutputs);
+
+  // Find internal intermediates consumed by reduction ops
+  std::unordered_set<int> reductionInputSlots;
+  for (int i = startSlot; i <= endSlot; i++) {
+    auto cat = getOpCategory(slots[i].opName);
+    if (cat == TritonOpCategory::REDUCTION) {
+      for (int inp = 0; inp < slots[i].numInputs; inp++) {
+        int srcIdx = slots[i].inputSourceIndices[inp];
+        if (srcIdx >= 0 && internalSlotOutputs.count(srcIdx) && !externalOutputs.count(srcIdx)) {
+          reductionInputSlots.insert(srcIdx);
+        }
+      }
+    }
+  }
 
   std::vector<TritonKernelArg> outputArgs;
   {
@@ -3062,7 +3078,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         if (outIdx < 0 || outIdx >= totalOutputSlots) continue;
         if (seenOutputSlots.count(outIdx)) continue;  // Deduplicate
         seenOutputSlots.insert(outIdx);
-        if (!externalOutputs.count(outIdx)) {
+        if (!externalOutputs.count(outIdx) && !reductionInputSlots.count(outIdx)) {
           skippedInternal++;
           continue;  // Purely internal — SSA forwarded
         }
@@ -3565,23 +3581,43 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       for (int d = outRank - 2; d >= 0; d--)
         outStrides[d] = outStrides[d + 1] * outShape[d + 1];
 
-      // Find the input arg for this input source
+      // Find the input arg for this input source.
+      // If the input is an internal intermediate with a forced output buffer
+      // (reductionInputSlots), store the SSA value to the buffer first.
       auto inputArgIt = slotToArgIdx.find(inputSrc);
       if (inputArgIt == slotToArgIdx.end()) {
-        sd_printf("TritonIRBuilder: reduction input slot %d not found in kernel args\n", inputSrc);
-        // Fall back to SSA value if available
+        sd_printf("TritonIRBuilder: reduction input slot %d not found in kernel args — cannot compile segmented reduction\n", inputSrc);
+        continue;
+      }
+      // If this is a reduction input slot (internal intermediate forced to have a buffer),
+      // store the SSA value to the buffer NOW so we can load from it with proper offsets
+      if (reductionInputSlots.count(inputSrc)) {
         auto ssaIt = ssaValues.find(inputSrc);
         if (ssaIt != ssaValues.end()) {
-          auto opResult = emitReductionOp(builder, loc, slot.opName, ssaIt->second, 0,
-              mlir::RankedTensorType());
-          if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
-            auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
-            opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
-          }
-          for (int o = 0; o < slot.numOutputs; o++)
-            ssaValues[slot.outputSlotIndices[o]] = opResult;
+          int midArgIdx = inputArgIt->second;
+          auto midFuncArg = getBufferArg(midArgIdx);
+          auto midDtype = resolveDtypeLocal(inputSrc);
+          auto midElemType = getMLIRType(builder, midDtype);
+          auto midPtrType = mlir::triton::PointerType::get(midElemType, 1);
+          auto midPtrTensorType = mlir::RankedTensorType::get({blockSize}, midPtrType);
+          auto midSplatPtr = builder.create<mlir::triton::SplatOp>(loc, midPtrTensorType, midFuncArg);
+          auto midPtrs = builder.create<mlir::triton::AddPtrOp>(loc, midPtrTensorType, midSplatPtr, offsets);
+          mlir::Value midStoreVal = castTo(builder, loc, ssaIt->second, midElemType);
+          builder.create<mlir::triton::StoreOp>(loc, midPtrs, midStoreVal, mask,
+              mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+          sd_printf("TritonIRBuilder: stored reduction input slot %d to buffer for segmented reduction\n", inputSrc);
+          // Memory fence + block barrier to ensure all threads' stores are visible
+          // before any thread loads from the buffer for reduction
+          auto dummyType = builder.getI32Type();
+          auto dummyTensorType = mlir::RankedTensorType::get({blockSize}, dummyType);
+          auto dummyIn = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+          auto dummyInTensor = builder.create<mlir::triton::SplatOp>(loc, dummyTensorType, dummyIn);
+          builder.create<mlir::triton::ElementwiseInlineAsmOp>(
+              loc, mlir::TypeRange{dummyTensorType},
+              "membar.gl; bar.sync 0;",
+              "", /*isPure=*/false,
+              /*pack=*/1, mlir::ValueRange{dummyInTensor});
         }
-        continue;
       }
       int argIdx = inputArgIt->second;
       auto inputPtrArg = getBufferArg(argIdx);
@@ -3674,6 +3710,111 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
         auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
         opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
+      }
+
+      // Broadcast expansion: only needed when downstream fused ops consume the result
+      // at input-sized offsets. For standalone reduction (no downstream consumer), the
+      // output-indexed result is stored directly and no broadcast is needed.
+      int nInputElements = 1;
+      for (auto d : inputShape) nInputElements *= static_cast<int>(d);
+      int nOutputElements = 1;
+      for (auto d : outShape) nOutputElements *= static_cast<int>(d);
+
+      bool hasDownstreamConsumer = false;
+      for (int si2 = si + 1; si2 <= endSlot; si2++) {
+        for (int inp2 = 0; inp2 < slots[si2].numInputs; inp2++) {
+          for (int o = 0; o < slot.numOutputs; o++) {
+            if (slots[si2].inputSourceIndices[inp2] == slot.outputSlotIndices[o])
+              hasDownstreamConsumer = true;
+          }
+        }
+      }
+      if (hasDownstreamConsumer && nInputElements > nOutputElements && nOutputElements > 0) {
+        // Build mapping: for each position in [0, blockSize), compute the output index
+        // that should be broadcast to that position.
+        // outIdx[i] = (i / (product of dims after reductionAxis in input)) % nOutputElements
+        // For axis=last: outIdx = i / reductionSize
+        // For axis=first: outIdx = i % (product of remaining dims)
+        // General: unravel i with input strides, skip reduction axis, ravel with output strides
+        mlir::Value broadcastIdx = splatConstantI32(builder, loc, i32TensorType, 0);
+        mlir::Value rem2 = offsets;
+        int oDimIdx = 0;
+        for (int d = 0; d < inputRank; d++) {
+          auto iStrConst = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+          auto coord2 = builder.create<mlir::arith::DivSIOp>(loc, rem2, iStrConst);
+          if (d < inputRank - 1)
+            rem2 = builder.create<mlir::arith::RemSIOp>(loc, rem2, iStrConst);
+          if (d != reductionAxis) {
+            auto oStrConst = splatConstantI32(builder, loc, i32TensorType, outStrides[oDimIdx]);
+            auto contrib2 = builder.create<mlir::arith::MulIOp>(loc, coord2, oStrConst);
+            broadcastIdx = builder.create<mlir::arith::AddIOp>(loc, broadcastIdx, contrib2);
+            oDimIdx++;
+          }
+        }
+        // Now gather from the reduction result using broadcastIdx
+        // opResult[broadcastIdx[i]] → broadcast value
+        // Since opResult is stored at output positions 0..nOut-1, we need to
+        // store the reduction result to a buffer, then reload with broadcast indices.
+        // But we don't have a buffer. Instead, recompute: the reduction already produced
+        // correct values at positions 0..nOut-1 in the tensor. We need to shuffle them.
+        // Alternative: re-emit the accumulation with input-sized offsets.
+        // Simplest approach: the result at position outIdx should be at position broadcastIdx.
+        // We can use the broadcastIdx to re-index: for each thread, re-accumulate from scratch.
+        // But that's wasteful. Better: store result to output buffer, then reload with broadcast.
+        // Actually, since we're in SSA-land, the cleanest approach is to just redo the
+        // reduction indexed by input offsets: for input position i, the reduced value
+        // is sum(input[outIdx * reductionSize + k]) for the right k range.
+
+        // Re-compute with input-indexed offsets
+        mlir::Value broadcastAcc = splatConstantF32(builder, loc, f32TensorType, identityVal);
+        for (int k = 0; k < reductionSize; k++) {
+          mlir::Value inputOff = splatConstantI32(builder, loc, i32TensorType, 0);
+          mlir::Value rem3 = offsets;
+          int oIdx = 0;
+          for (int d = 0; d < inputRank; d++) {
+            if (d == reductionAxis) {
+              auto contrib3 = splatConstantI32(builder, loc, i32TensorType, k * inStrides[d]);
+              inputOff = builder.create<mlir::arith::AddIOp>(loc, inputOff, contrib3);
+            } else {
+              auto iStrConst3 = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+              auto coord3 = builder.create<mlir::arith::DivSIOp>(loc, rem3, iStrConst3);
+              if (d < inputRank - 1)
+                rem3 = builder.create<mlir::arith::RemSIOp>(loc, rem3, iStrConst3);
+              auto contrib3 = builder.create<mlir::arith::MulIOp>(loc, coord3, iStrConst3);
+              inputOff = builder.create<mlir::arith::AddIOp>(loc, inputOff, contrib3);
+              oIdx++;
+            }
+          }
+          auto splatPtr2 = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, inputPtrArg);
+          auto ptrs2 = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr2, inputOff);
+          // Use mask based on input element count (not output)
+          auto nInputConst = builder.create<mlir::arith::ConstantIntOp>(loc, nInputElements, 32);
+          auto splatNInput = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, nInputConst);
+          auto inputMask = builder.create<mlir::arith::CmpIOp>(
+              loc, mlir::arith::CmpIPredicate::slt, offsets, splatNInput);
+          auto loaded2 = builder.create<mlir::triton::LoadOp>(loc,
+              ptrs2.getResult(), inputMask.getResult(), mlir::Value(),
+              mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+          mlir::Value val2 = castTo(builder, loc, loaded2, f32Type);
+          if (isMax)
+            broadcastAcc = builder.create<mlir::arith::MaximumFOp>(loc, broadcastAcc, val2);
+          else if (isMin)
+            broadcastAcc = builder.create<mlir::arith::MinimumFOp>(loc, broadcastAcc, val2);
+          else if (isProd)
+            broadcastAcc = builder.create<mlir::arith::MulFOp>(loc, broadcastAcc, val2);
+          else
+            broadcastAcc = builder.create<mlir::arith::AddFOp>(loc, broadcastAcc, val2);
+        }
+        if (isMean && reductionSize > 0) {
+          auto countSplat2 = splatConstantF32(builder, loc, f32TensorType,
+              static_cast<float>(reductionSize));
+          broadcastAcc = builder.create<mlir::arith::DivFOp>(loc, broadcastAcc, countSplat2);
+        }
+        opResult = castTo(builder, loc, broadcastAcc, outElemType);
+        if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
+          auto splatTy = mlir::RankedTensorType::get({blockSize}, opResult.getType());
+          opResult = builder.create<mlir::triton::SplatOp>(loc, splatTy, opResult);
+        }
       }
 
       for (int o = 0; o < slot.numOutputs; o++) {
@@ -3871,11 +4012,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           for (int d = 0; d < inArr->rankOf(); d++) inputShape.push_back(inArr->sizeAt(d));
           for (int d = 0; d < outArr->rankOf(); d++) outputShape.push_back(outArr->sizeAt(d));
 
-          // Derive permutation from input/output shapes
-          // Default: reverse dims (transpose)
+          // Get permutation from iArgs; fall back to reverse if not provided
           std::vector<int> permutation;
-          for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; d--) {
-            permutation.push_back(d);
+          if (slot.numIArgs > 0 && slot.iArgs) {
+            for (int d = 0; d < slot.numIArgs; d++)
+              permutation.push_back(static_cast<int>(slot.iArgs[d]));
+          }
+          if (permutation.empty()) {
+            for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; d--)
+              permutation.push_back(d);
           }
 
           int nElements = 1;
@@ -5287,8 +5432,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto inputShape = resolveShape(inputSrc);
           auto outputShape = resolveShape(outSlot);
           if (inPtr && outPtr && !inputShape.empty() && !outputShape.empty()) {
+            // Get permutation from iArgs; fall back to reverse if not provided
             std::vector<int> permutation;
-            for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; d--) permutation.push_back(d);
+            if (slot.numIArgs > 0 && slot.iArgs) {
+              for (int d = 0; d < slot.numIArgs; d++)
+                permutation.push_back(static_cast<int>(slot.iArgs[d]));
+            }
+            if (permutation.empty()) {
+              for (int d = static_cast<int>(inputShape.size()) - 1; d >= 0; d--)
+                permutation.push_back(d);
+            }
             int nElements = static_cast<int>(shapeLength(outputShape));
             std::string opLower = slot.opName;
             std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
