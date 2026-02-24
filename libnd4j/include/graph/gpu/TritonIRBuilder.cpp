@@ -4117,7 +4117,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         if (allValid && !inPtrs.empty()) {
           int nElements = static_cast<int>(outArr->lengthOf());
-          int axis = 0;
+          int axis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
 
           emitConcatSection(builder, loc, pid, blockSize,
                             inPtrs, outPtr, axis, inShapes, nElements);
@@ -5359,8 +5359,59 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             else allValid = false;
           }
           if (allValid && !outPtrs.empty()) {
-            int nElements = static_cast<int>(shapeLength(dataShape));
-            emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, 0, slot.numOutputs, dataShape, nElements);
+            int rank = static_cast<int>(dataShape.size());
+
+            std::string opLower = slot.opName;
+            std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+            bool isSplitV = (opLower.find("split_v") != std::string::npos ||
+                             opLower.find("splitv") != std::string::npos);
+
+            int splitAxis = 0;
+            if (isSplitV) {
+              // SplitV iArgs: [splitDim, numSplit]
+              if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+            } else {
+              // Split iArgs: [numSplit, splitDim] (most common) or [splitDim]
+              if (slot.numIArgs > 1 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[1]);
+              else if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+            }
+            if (splitAxis < 0) splitAxis += rank;
+            if (splitAxis < 0 || splitAxis >= rank) splitAxis = 0;
+
+            if (isSplitV && slot.numInputs >= 2) {
+              // SplitV: variable chunk sizes stored in input[1] (a constant int tensor)
+              int sizesSrc = slot.inputSourceIndices[1];
+              NDArray* sizesArr = resolveArr(sizesSrc);
+              if (sizesArr && !dataShape.empty()) {
+                // Build per-output slice with variable axis sizes
+                int axisOffset = 0;
+                for (int o = 0; o < slot.numOutputs && o < static_cast<int>(outPtrs.size()); o++) {
+                  int chunkAxisSize = (o < static_cast<int>(sizesArr->lengthOf()))
+                      ? static_cast<int>(sizesArr->e<int>(o)) : 1;
+                  std::vector<int> begins(rank, 0);
+                  std::vector<int> ends;
+                  for (int d = 0; d < rank; d++) ends.push_back(static_cast<int>(dataShape[d]));
+                  begins[splitAxis] = axisOffset;
+                  ends[splitAxis] = axisOffset + chunkAxisSize;
+                  std::vector<int> strides(rank, 1);
+                  int chunkTotalElements = 1;
+                  for (int d = 0; d < rank; d++)
+                    chunkTotalElements *= (d == splitAxis) ? chunkAxisSize : static_cast<int>(dataShape[d]);
+                  emitSliceSection(builder, loc, pid, blockSize, dataPtr, outPtrs[o],
+                                   begins, ends, strides, dataShape, chunkTotalElements);
+                  axisOffset += chunkAxisSize;
+                }
+              } else {
+                // Fallback: equal splits if sizes not available
+                int nElements = static_cast<int>(shapeLength(dataShape));
+                emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, splitAxis, slot.numOutputs, dataShape, nElements);
+              }
+            } else {
+              // Equal split
+              int nElements = static_cast<int>(shapeLength(dataShape));
+              emitSplitSection(builder, loc, pid, blockSize, dataPtr, outPtrs, splitAxis, slot.numOutputs, dataShape, nElements);
+            }
+
             for (int o = 0; o < slot.numOutputs; o++) {
               int oSlot = slot.outputSlotIndices[o];
               DataType dt = resolveDtype(oSlot);
@@ -5585,14 +5636,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto filterShape = resolveShape(filterSrc);
             auto outputShape = resolveShape(outSlot);
             if (inPtr && filterPtr && outPtr && !inputShape.empty() && !filterShape.empty() && !outputShape.empty()) {
-              // Extract stride/padding from iArgs: [strideH, strideW, padH, padW, ...]
-              int strideH = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
-              int strideW = (slot.numIArgs > 1 && slot.iArgs) ? static_cast<int>(slot.iArgs[1]) : 1;
-              int padH = (slot.numIArgs > 2 && slot.iArgs) ? static_cast<int>(slot.iArgs[2]) : 0;
-              int padW = (slot.numIArgs > 3 && slot.iArgs) ? static_cast<int>(slot.iArgs[3]) : 0;
+              // Conv2D iArgs: [kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat, weightsFormat]
+              int strideH = (slot.numIArgs > 2 && slot.iArgs) ? static_cast<int>(slot.iArgs[2]) : 1;
+              int strideW = (slot.numIArgs > 3 && slot.iArgs) ? static_cast<int>(slot.iArgs[3]) : 1;
+              int padH = (slot.numIArgs > 4 && slot.iArgs) ? static_cast<int>(slot.iArgs[4]) : 0;
+              int padW = (slot.numIArgs > 5 && slot.iArgs) ? static_cast<int>(slot.iArgs[5]) : 0;
+              int wFormat = (slot.numIArgs > 10 && slot.iArgs) ? static_cast<int>(slot.iArgs[10]) : 0;
+
               int nElements = static_cast<int>(shapeLength(outputShape));
               emitConvolutionSection(builder, loc, pid, blockSize, inPtr, filterPtr, outPtr,
-                                      inputShape, filterShape, outputShape, strideH, strideW, padH, padW, nElements);
+                                      inputShape, filterShape, outputShape, strideH, strideW, padH, padW, nElements, wFormat);
               auto loaded = loadBlock(outSlot, resolveDtype(outSlot));
               if (loaded) for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
             }
@@ -6159,6 +6212,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
                currentSection.type == KernelSectionType::CONVOLUTION) {
       // After a non-element-wise section, start a new one
       startNewSection = true;
+    } else if (!canMergeWithElementwise(currentSection.type)) {
+      // After any non-mergeable section (DATA_MOVEMENT: concat, gather, split, etc.)
+      // always start a new section so the DATA_MOVEMENT output gets its own buffer
+      // as a cross-section intermediate that downstream ops can load from.
+      startNewSection = true;
     } else if (!canMergeWithElementwise(sectionType) && currentSection.type != sectionType) {
       // Data movement ops that don't merge with element-wise
       startNewSection = true;
@@ -6539,6 +6597,15 @@ void TritonIRBuilder::emitGatherSection(mlir::OpBuilder& builder, mlir::Location
 }
 
 // ─── Concat section emitter ─────────────────────────────────────────────────
+//
+// Concatenates inputs along `axis` into output.  Supports N-D arrays.
+//
+// Strategy: For each output element at linear index `out_off`:
+//   1. Unravel out_off into N-D coordinates using the output shape.
+//   2. Determine which input owns this element by inspecting the concat axis coordinate.
+//   3. Compute the corresponding input linear index and load from that input.
+//
+// This is fully unrolled across inputs (no ForOp) to avoid Triton compiler bugs.
 
 void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location loc,
                                          mlir::Value pid, int blockSize,
@@ -6546,10 +6613,12 @@ void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location
                                          mlir::Value outputPtr, int axis,
                                          const std::vector<std::vector<LongType>>& inputShapes,
                                          int nElements) {
+  if (inputPtrs.empty() || inputShapes.empty()) return;
+
   auto i32Type = builder.getI32Type();
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
 
-  // Derive element type from the output pointer (NOT hardcoded f32)
+  // Derive element type from the output pointer
   auto outPtrType = mlir::cast<mlir::triton::PointerType>(outputPtr.getType());
   auto elemType = outPtrType.getPointeeType();
   auto elemTensorType = mlir::RankedTensorType::get({blockSize}, elemType);
@@ -6565,49 +6634,124 @@ void TritonIRBuilder::emitConcatSection(mlir::OpBuilder& builder, mlir::Location
   auto mask = builder.create<mlir::arith::CmpIOp>(
       loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-  // For concat along axis=0 (flattened), just copy sequentially from each input.
-  // Start with zeros, then conditionally select from each input
+  // Compute output shape from input shapes
+  int ndim = static_cast<int>(inputShapes[0].size());
+  // Normalize axis to positive
+  int normAxis = (axis < 0) ? (ndim + axis) : axis;
+  if (normAxis < 0 || normAxis >= ndim) normAxis = 0;  // fallback
+
+  // Compute output shape
+  std::vector<int> outShape(ndim);
+  for (int d = 0; d < ndim; d++) outShape[d] = static_cast<int>(inputShapes[0][d]);
+  for (size_t inp = 1; inp < inputShapes.size(); inp++) {
+    outShape[normAxis] += static_cast<int>(inputShapes[inp][normAxis]);
+  }
+
+  // Compute output strides (C-order: stride[d] = product(outShape[d+1..ndim-1]))
+  std::vector<int> outStrides(ndim, 1);
+  for (int d = ndim - 2; d >= 0; d--) outStrides[d] = outStrides[d + 1] * outShape[d + 1];
+
+  // Unravel out linear index to N-D coordinates
+  // coord[d] = (offsets / outStrides[d]) % outShape[d]
+  std::vector<mlir::Value> coords(ndim);
+  mlir::Value rem = offsets;
+  for (int d = 0; d < ndim; d++) {
+    if (outStrides[d] > 1) {
+      auto strideConst = builder.create<mlir::arith::ConstantIntOp>(loc, outStrides[d], 32);
+      auto strideSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, strideConst);
+      coords[d] = builder.create<mlir::arith::DivSIOp>(loc, rem, strideSplat);
+      rem = builder.create<mlir::arith::RemSIOp>(loc, rem, strideSplat);
+    } else {
+      // Last dimension: coord = rem
+      coords[d] = rem;
+    }
+    if (d < ndim - 1 && outShape[d] > 0) {
+      // Clamp/mod to outShape[d] (for safety, in case blockSize padding elements are out of range)
+      auto shapeConst = builder.create<mlir::arith::ConstantIntOp>(loc, outShape[d], 32);
+      auto shapeSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, shapeConst);
+      coords[d] = builder.create<mlir::arith::RemSIOp>(loc, coords[d], shapeSplat);
+    }
+  }
+
+  // For each input, compute: is this output element from this input?
+  // The concat axis coordinate tells us: cumAxisStart[i] <= coord[normAxis] < cumAxisEnd[i]
+  // If yes, compute the input linear index and load from input[i].
   mlir::Value result = splatConstantF32(builder, loc, elemTensorType, 0.0f);
 
-  int cumulativeOffset = 0;
+  int cumAxisOffset = 0;
   for (size_t inp = 0; inp < inputPtrs.size(); inp++) {
-    int inputLen = 1;
-    if (inp < inputShapes.size()) {
-      inputLen = 1;
-      for (auto dim : inputShapes[inp]) inputLen *= static_cast<int>(dim);
-    }
+    if (inp >= inputShapes.size()) break;
+    const auto& inShape = inputShapes[inp];
+    int inAxisSize = static_cast<int>(inShape[normAxis]);
 
-    auto startConst = builder.create<mlir::arith::ConstantIntOp>(loc, cumulativeOffset, 32);
-    auto endConst = builder.create<mlir::arith::ConstantIntOp>(loc, cumulativeOffset + inputLen, 32);
+    // Compute input strides (C-order)
+    std::vector<int> inStrides(ndim, 1);
+    for (int d = ndim - 2; d >= 0; d--) inStrides[d] = inStrides[d + 1] * static_cast<int>(inShape[d + 1]);
+
+    // Determine if this element belongs to input[inp]:
+    // cumAxisOffset <= coord[normAxis] < cumAxisOffset + inAxisSize
+    auto startConst = builder.create<mlir::arith::ConstantIntOp>(loc, cumAxisOffset, 32);
+    auto endConst = builder.create<mlir::arith::ConstantIntOp>(loc, cumAxisOffset + inAxisSize, 32);
     auto splatStart = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, startConst);
     auto splatEnd = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, endConst);
-
     auto geStart = builder.create<mlir::arith::CmpIOp>(
-        loc, mlir::arith::CmpIPredicate::sge, offsets, splatStart);
+        loc, mlir::arith::CmpIPredicate::sge, coords[normAxis], splatStart);
     auto ltEnd = builder.create<mlir::arith::CmpIOp>(
-        loc, mlir::arith::CmpIPredicate::slt, offsets, splatEnd);
+        loc, mlir::arith::CmpIPredicate::slt, coords[normAxis], splatEnd);
     auto inRange = builder.create<mlir::arith::AndIOp>(loc, geStart, ltEnd);
     auto loadMask = builder.create<mlir::arith::AndIOp>(loc, mask, inRange);
 
-    // Compute local offset within this input
-    auto localOffsets = builder.create<mlir::arith::SubIOp>(loc, offsets, splatStart);
+    // Compute the local axis coordinate within input[inp]
+    // localAxisCoord = coord[normAxis] - cumAxisOffset
+    mlir::Value localAxisCoord;
+    if (cumAxisOffset == 0) {
+      localAxisCoord = coords[normAxis];
+    } else {
+      auto startSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, startConst);
+      localAxisCoord = builder.create<mlir::arith::SubIOp>(loc, coords[normAxis], startSplat);
+    }
 
-    // Derive pointer type from each input (may differ from output type)
+    // Compute input linear offset: sum over dims of coord[d] * inStrides[d]
+    // Use localAxisCoord for normAxis dimension
+    mlir::Value inOffset = nullptr;
+    for (int d = 0; d < ndim; d++) {
+      mlir::Value coordD = (d == normAxis) ? localAxisCoord : coords[d];
+      if (inStrides[d] == 0) continue;
+      mlir::Value contribution;
+      if (inStrides[d] == 1) {
+        contribution = coordD;
+      } else {
+        auto strideConst = builder.create<mlir::arith::ConstantIntOp>(loc, inStrides[d], 32);
+        auto strideSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, strideConst);
+        contribution = builder.create<mlir::arith::MulIOp>(loc, coordD, strideSplat);
+      }
+      if (!inOffset) {
+        inOffset = contribution;
+      } else {
+        inOffset = builder.create<mlir::arith::AddIOp>(loc, inOffset, contribution);
+      }
+    }
+    if (!inOffset) {
+      auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+      inOffset = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, zero);
+    }
+
+    // Load from input[inp] at inOffset (using loadMask so out-of-range elements load zeros)
     auto inPtrType = mlir::cast<mlir::triton::PointerType>(inputPtrs[inp].getType());
     auto inPtrTensorType = mlir::RankedTensorType::get({blockSize}, inPtrType);
     auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtrs[inp]);
-    auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, localOffsets);
+    auto inPtrsOp = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, inOffset);
     auto loaded = builder.create<mlir::triton::LoadOp>(loc,
-        inPtrs.getResult(), loadMask.getResult(), mlir::Value(),
+        inPtrsOp.getResult(), loadMask.getResult(), mlir::Value(),
         mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
 
-    // Cast to output element type if input type differs
+    // Cast to output element type
     mlir::Value castLoaded = castTo(builder, loc, loaded, elemType);
 
-    // Select: if in range, use loaded value; otherwise keep current result
+    // Select: if this element belongs to input[inp], use loaded; otherwise keep current result
     result = builder.create<mlir::arith::SelectOp>(loc, inRange, castLoaded, result);
 
-    cumulativeOffset += inputLen;
+    cumAxisOffset += inAxisSize;
   }
 
   // Store result
@@ -7303,21 +7447,33 @@ void TritonIRBuilder::emitSplitSection(mlir::OpBuilder& builder, mlir::Location 
                                         int axis, int numSplits,
                                         const std::vector<LongType>& inputShape,
                                         int nElements) {
-  // Split is the inverse of concat: partition input into N equal chunks
-  // For now, handle as N separate copy operations
-  // Each output gets inputSize / numSplits elements
+  // Split input along `axis` into numSplits equal chunks.
+  // Each chunk s gets a slice: begin[axis]=s*chunkAlongAxis, end[axis]=(s+1)*chunkAlongAxis.
   if (numSplits <= 0 || inputShape.empty()) return;
+  int rank = static_cast<int>(inputShape.size());
+  if (axis < 0) axis += rank;
+  if (axis < 0 || axis >= rank) axis = 0;
 
-  int totalInputSize = 1;
-  for (auto dim : inputShape) totalInputSize *= static_cast<int>(dim);
-  int chunkSize = totalInputSize / numSplits;
+  int axisSize = static_cast<int>(inputShape[axis]);
+  int chunkAlongAxis = axisSize / numSplits;
+  if (chunkAlongAxis <= 0) chunkAlongAxis = 1;
+
+  // Compute per-chunk output size
+  int chunkTotalElements = 1;
+  for (int d = 0; d < rank; d++) {
+    chunkTotalElements *= (d == axis) ? chunkAlongAxis : static_cast<int>(inputShape[d]);
+  }
 
   for (int s = 0; s < numSplits && s < static_cast<int>(outputPtrs.size()); s++) {
-    std::vector<int> begins = {s * chunkSize};
-    std::vector<int> ends = {(s + 1) * chunkSize};
-    std::vector<int> strides = {1};
+    // Build begins/ends: only the axis dimension differs
+    std::vector<int> begins(rank, 0);
+    std::vector<int> ends;
+    for (int d = 0; d < rank; d++) ends.push_back(static_cast<int>(inputShape[d]));
+    begins[axis] = s * chunkAlongAxis;
+    ends[axis] = (s + 1) * chunkAlongAxis;
+    std::vector<int> strides(rank, 1);
     emitSliceSection(builder, loc, pid, blockSize, inputPtr, outputPtrs[s],
-                     begins, ends, strides, inputShape, chunkSize);
+                     begins, ends, strides, inputShape, chunkTotalElements);
   }
 }
 
@@ -7493,12 +7649,13 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
                                               const std::vector<LongType>& outputShape,
                                               int strideH, int strideW,
                                               int padH, int padW,
-                                              int nElements) {
+                                              int nElements, int wFormat) {
   // Direct conv2d: each output element independently computes its value by
   // iterating over the filter spatial dimensions and input channels.
   //
-  // Input shape: [N, IC, IH, IW]
-  // Filter shape: [OC, IC, KH, KW]
+  // Input shape: [N, IC, IH, IW] (NCHW)
+  // Filter shape: depends on wFormat:
+  //   0=[kH,kW,iC,oC], 1=[oC,iC,kH,kW], 2=[oC,kH,kW,iC]
   // Output shape: [N, OC, OH, OW]
   //
   // out[n,oc,oh,ow] = sum_{ic,kh,kw} input[n,ic,oh*sH-pH+kh,ow*sW-pW+kw] * filter[oc,ic,kh,kw]
@@ -7513,9 +7670,26 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
   int IC = static_cast<int>(inputShape[1]);
   int IH = static_cast<int>(inputShape[2]);
   int IW = static_cast<int>(inputShape[3]);
-  int OC = static_cast<int>(filterShape[0]);
-  int KH = static_cast<int>(filterShape[2]);
-  int KW = static_cast<int>(filterShape[3]);
+
+  // Extract OC, KH, KW based on weight format
+  int OC, KH, KW;
+  if (wFormat == 1) {
+    // [oC, iC, kH, kW]
+    OC = static_cast<int>(filterShape[0]);
+    KH = static_cast<int>(filterShape[2]);
+    KW = static_cast<int>(filterShape[3]);
+  } else if (wFormat == 2) {
+    // [oC, kH, kW, iC]
+    OC = static_cast<int>(filterShape[0]);
+    KH = static_cast<int>(filterShape[1]);
+    KW = static_cast<int>(filterShape[2]);
+  } else {
+    // wFormat == 0: [kH, kW, iC, oC]
+    KH = static_cast<int>(filterShape[0]);
+    KW = static_cast<int>(filterShape[1]);
+    OC = static_cast<int>(filterShape[3]);
+  }
+
   int OH = static_cast<int>(outputShape[2]);
   int OW = static_cast<int>(outputShape[3]);
 
@@ -7544,11 +7718,13 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
   auto mask = builder.create<mlir::arith::CmpIOp>(
       loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-  // Unravel linear index to (n, oc, oh, ow):
-  //   ow = offsets % OW
-  //   oh = (offsets / OW) % OH
-  //   oc = (offsets / (OW * OH)) % OC
-  //   n  = offsets / (OW * OH * OC)
+  // Unravel linear index to (n, oc, oh, ow).
+  // ND4J NCHW conv2d output uses OH as the INNER (faster-varying) spatial dimension
+  // and OW as the OUTER spatial dimension. So:
+  //   oh = offsets % OH          (inner / fast)
+  //   ow = (offsets / OH) % OW   (outer / slow)
+  //   oc = (offsets / (OH * OW)) % OC
+  //   n  = offsets / (OH * OW * OC)
   auto owConst = builder.create<mlir::arith::ConstantIntOp>(loc, OW, 32);
   auto ohConst = builder.create<mlir::arith::ConstantIntOp>(loc, OH, 32);
   auto ocConst = builder.create<mlir::arith::ConstantIntOp>(loc, OC, 32);
@@ -7556,10 +7732,10 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
   auto ohSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ohConst);
   auto ocSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ocConst);
 
-  auto ow_idx = builder.create<mlir::arith::RemSIOp>(loc, offsets, owSplat);
-  auto tmp1 = builder.create<mlir::arith::DivSIOp>(loc, offsets, owSplat);
-  auto oh_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp1.getResult(), ohSplat);
-  auto tmp2 = builder.create<mlir::arith::DivSIOp>(loc, tmp1.getResult(), ohSplat);
+  auto oh_idx = builder.create<mlir::arith::RemSIOp>(loc, offsets, ohSplat);
+  auto tmp1 = builder.create<mlir::arith::DivSIOp>(loc, offsets, ohSplat);
+  auto ow_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp1.getResult(), owSplat);
+  auto tmp2 = builder.create<mlir::arith::DivSIOp>(loc, tmp1.getResult(), owSplat);
   auto oc_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp2.getResult(), ocSplat);
   auto n_idx = builder.create<mlir::arith::DivSIOp>(loc, tmp2.getResult(), ocSplat);
 
@@ -7581,125 +7757,115 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
       builder.create<mlir::arith::MulIOp>(loc, ow_idx, sWSplat), pWSplat);
 
   // Initialize accumulator to 0.0
-  auto accInit = splatConstantF32(builder, loc, f32TensorType, 0.0f);
+  mlir::Value acc = splatConstantF32(builder, loc, f32TensorType, 0.0f);
 
-  // Triple nested loop: for ic in [0, IC): for kh in [0, KH): for kw in [0, KW):
+  // Fully unrolled convolution loop: eliminates scf::ForOp entirely to avoid
+  // Triton compiler pass pipeline bugs that corrupt accumulator element ordering.
+  // Each iteration is emitted as independent SSA operations.
+  int totalIters = IC * KH * KW;
+
   auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
-  auto one = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 32);
-  auto icEnd = builder.create<mlir::arith::ConstantIntOp>(loc, IC, 32);
-  auto khEnd = builder.create<mlir::arith::ConstantIntOp>(loc, KH, 32);
-  auto kwEnd = builder.create<mlir::arith::ConstantIntOp>(loc, KW, 32);
-
-  // Outer loop: ic
-  auto icLoop = builder.create<mlir::scf::ForOp>(
-      loc, zero, icEnd, one, mlir::ValueRange{accInit});
-  builder.setInsertionPointToStart(icLoop.getBody());
-  auto ic_val = icLoop.getInductionVar();
-  auto acc_ic = icLoop.getBody()->getArgument(1);
-
-  // Middle loop: kh
-  auto khLoop = builder.create<mlir::scf::ForOp>(
-      loc, zero, khEnd, one, mlir::ValueRange{acc_ic});
-  builder.setInsertionPointToStart(khLoop.getBody());
-  auto kh_val = khLoop.getInductionVar();
-  auto acc_kh = khLoop.getBody()->getArgument(1);
-
-  // Inner loop: kw
-  auto kwLoop = builder.create<mlir::scf::ForOp>(
-      loc, zero, kwEnd, one, mlir::ValueRange{acc_kh});
-  builder.setInsertionPointToStart(kwLoop.getBody());
-  auto kw_val = kwLoop.getInductionVar();
-  auto acc_kw = kwLoop.getBody()->getArgument(1);
-
-  // Compute input position: h_in = oh_base + kh, w_in = ow_base + kw
-  auto khSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kh_val);
-  auto kwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kw_val);
-  auto h_in = builder.create<mlir::arith::AddIOp>(loc, oh_base, khSplat);
-  auto w_in = builder.create<mlir::arith::AddIOp>(loc, ow_base, kwSplat);
-
-  // Bounds check: 0 <= h_in < IH && 0 <= w_in < IW
   auto ihConst = builder.create<mlir::arith::ConstantIntOp>(loc, IH, 32);
   auto iwConst = builder.create<mlir::arith::ConstantIntOp>(loc, IW, 32);
   auto ihSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ihConst);
   auto iwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, iwConst);
   auto zeroSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, zero);
-
-  auto h_ge_0 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, h_in, zeroSplat);
-  auto h_lt_IH = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, h_in, ihSplat);
-  auto w_ge_0 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, w_in, zeroSplat);
-  auto w_lt_IW = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, w_in, iwSplat);
-  auto h_valid = builder.create<mlir::arith::AndIOp>(loc, h_ge_0, h_lt_IH);
-  auto w_valid = builder.create<mlir::arith::AndIOp>(loc, w_ge_0, w_lt_IW);
-  auto in_bounds = builder.create<mlir::arith::AndIOp>(loc, h_valid, w_valid);
-
-  // Input offset: n * IC*IH*IW + ic * IH*IW + h_in * IW + w_in
   auto icIhIw = builder.create<mlir::arith::ConstantIntOp>(loc, IC * IH * IW, 32);
   auto ihIw = builder.create<mlir::arith::ConstantIntOp>(loc, IH * IW, 32);
   auto icIhIwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, icIhIw);
   auto ihIwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ihIw);
-  auto icSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ic_val);
 
-  auto inOffset = builder.create<mlir::arith::AddIOp>(loc,
-      builder.create<mlir::arith::AddIOp>(loc,
-          builder.create<mlir::arith::MulIOp>(loc, n_idx, icIhIwSplat),
-          builder.create<mlir::arith::MulIOp>(loc, icSplat, ihIwSplat)),
-      builder.create<mlir::arith::AddIOp>(loc,
-          builder.create<mlir::arith::MulIOp>(loc, h_in, iwSplat),
-          w_in));
+  for (int iter = 0; iter < totalIters; iter++) {
+    int ic_i = iter / (KH * KW);
+    int kh_i = (iter / KW) % KH;
+    int kw_i = iter % KW;
 
-  // Load input value (masked by bounds check AND element mask)
-  auto combinedMask = builder.create<mlir::arith::AndIOp>(loc, in_bounds, mask);
-  auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
-  auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, inOffset);
-  auto inLoaded = builder.create<mlir::triton::LoadOp>(loc,
-      inPtrs.getResult(), combinedMask.getResult(), mlir::Value(),
-      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-  auto inVal = castTo(builder, loc, inLoaded, f32Type);
+    auto kh_val = builder.create<mlir::arith::ConstantIntOp>(loc, kh_i, 32);
+    auto kw_val = builder.create<mlir::arith::ConstantIntOp>(loc, kw_i, 32);
+    auto khSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kh_val);
+    auto kwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kw_val);
 
-  // Filter offset: oc * IC*KH*KW + ic * KH*KW + kh * KW + kw
-  auto icKhKw = builder.create<mlir::arith::ConstantIntOp>(loc, IC * KH * KW, 32);
-  auto khKw = builder.create<mlir::arith::ConstantIntOp>(loc, KH * KW, 32);
-  auto icKhKwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, icKhKw);
-  auto khKwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, khKw);
+    // Compute input position: h_in = oh_base + kh, w_in = ow_base + kw
+    auto h_in = builder.create<mlir::arith::AddIOp>(loc, oh_base, khSplat);
+    auto w_in = builder.create<mlir::arith::AddIOp>(loc, ow_base, kwSplat);
 
-  // kh * KW needs KW as a tensor splat (kwEnd is a scalar constant for KW)
-  auto kwConstSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, kwEnd);
+    // Bounds check: 0 <= h_in < IH && 0 <= w_in < IW
+    auto h_ge_0 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, h_in, zeroSplat);
+    auto h_lt_IH = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, h_in, ihSplat);
+    auto w_ge_0 = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, w_in, zeroSplat);
+    auto w_lt_IW = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, w_in, iwSplat);
+    auto h_valid = builder.create<mlir::arith::AndIOp>(loc, h_ge_0, h_lt_IH);
+    auto w_valid = builder.create<mlir::arith::AndIOp>(loc, w_ge_0, w_lt_IW);
+    auto in_bounds = builder.create<mlir::arith::AndIOp>(loc, h_valid, w_valid);
 
-  auto filterOffset = builder.create<mlir::arith::AddIOp>(loc,
-      builder.create<mlir::arith::AddIOp>(loc,
-          builder.create<mlir::arith::MulIOp>(loc, oc_idx, icKhKwSplat),
-          builder.create<mlir::arith::MulIOp>(loc, icSplat, khKwSplat)),
-      builder.create<mlir::arith::AddIOp>(loc,
-          builder.create<mlir::arith::MulIOp>(loc, khSplat, kwConstSplat),
-          kwSplat));
+    // Input offset: n * IC*IH*IW + ic * IH*IW + h_in * IW + w_in
+    auto ic_val = builder.create<mlir::arith::ConstantIntOp>(loc, ic_i, 32);
+    auto icSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ic_val);
 
-  // Load filter value (masked by element mask only, filter is always in bounds)
-  auto splatFilterPtr = builder.create<mlir::triton::SplatOp>(loc, filtPtrTensorType, filterPtr);
-  auto filterPtrs = builder.create<mlir::triton::AddPtrOp>(loc, filtPtrTensorType, splatFilterPtr, filterOffset);
-  auto filterLoaded = builder.create<mlir::triton::LoadOp>(loc,
-      filterPtrs.getResult(), mask.getResult(), mlir::Value(),
-      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-  auto filterVal = castTo(builder, loc, filterLoaded, f32Type);
+    auto inOffset = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::AddIOp>(loc,
+            builder.create<mlir::arith::MulIOp>(loc, n_idx, icIhIwSplat),
+            builder.create<mlir::arith::MulIOp>(loc, icSplat, ihIwSplat)),
+        builder.create<mlir::arith::AddIOp>(loc,
+            builder.create<mlir::arith::MulIOp>(loc, h_in, iwSplat),
+            w_in));
 
-  // Accumulate: acc += input * filter (zero out-of-bounds input)
-  // inVal is already zero for out-of-bounds due to masked load default
-  auto prod = builder.create<mlir::arith::MulFOp>(loc, inVal, filterVal);
-  auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc_kw, prod);
+    // Load input value (masked by bounds check AND element mask)
+    auto combinedMask = builder.create<mlir::arith::AndIOp>(loc, in_bounds, mask);
+    auto splatInPtr = builder.create<mlir::triton::SplatOp>(loc, inPtrTensorType, inputPtr);
+    auto inPtrs = builder.create<mlir::triton::AddPtrOp>(loc, inPtrTensorType, splatInPtr, inOffset);
+    auto inLoaded = builder.create<mlir::triton::LoadOp>(loc,
+        inPtrs.getResult(), combinedMask.getResult(), mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto inVal = castTo(builder, loc, inLoaded, f32Type);
 
-  // Yield from inner loop
-  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+    // Filter offset depends on weight format:
+    // wFormat 0: [kH,kW,iC,oC] → kh*kW*iC*oC + kw*iC*oC + ic*oC + oc
+    // wFormat 1: [oC,iC,kH,kW] → oc*iC*kH*kW + ic*kH*kW + kh*kW + kw
+    // wFormat 2: [oC,kH,kW,iC] → oc*kH*kW*iC + kh*kW*iC + kw*iC + ic
+    mlir::Value filterOffset;
+    if (wFormat == 0) {
+      // [kH, kW, iC, oC]
+      int fOff = kh_i * KW * IC * OC + kw_i * IC * OC + ic_i * OC;
+      auto fOffConst = builder.create<mlir::arith::ConstantIntOp>(loc, fOff, 32);
+      auto fOffSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, fOffConst);
+      filterOffset = builder.create<mlir::arith::AddIOp>(loc, fOffSplat, oc_idx);
+    } else if (wFormat == 2) {
+      // [oC, kH, kW, iC]
+      int fOff = kh_i * KW * IC + kw_i * IC + ic_i;
+      auto fOffConst = builder.create<mlir::arith::ConstantIntOp>(loc, fOff, 32);
+      auto fOffSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, fOffConst);
+      // oc_idx * KH * KW * IC + fOff
+      auto khKwIc = builder.create<mlir::arith::ConstantIntOp>(loc, KH * KW * IC, 32);
+      auto khKwIcSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, khKwIc);
+      filterOffset = builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, oc_idx, khKwIcSplat), fOffSplat);
+    } else {
+      // wFormat 1: [oC, iC, kH, kW]
+      // oc * IC*KH*KW + (ic*KH*KW + kh*KW + kw) — ic/kh/kw are compile-time constants
+      int fOff = ic_i * KH * KW + kh_i * KW + kw_i;
+      auto fOffConst = builder.create<mlir::arith::ConstantIntOp>(loc, fOff, 32);
+      auto fOffSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, fOffConst);
+      auto icKhKw = builder.create<mlir::arith::ConstantIntOp>(loc, IC * KH * KW, 32);
+      auto icKhKwSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, icKhKw);
+      filterOffset = builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, oc_idx, icKhKwSplat), fOffSplat);
+    }
 
-  // Yield from middle loop
-  builder.setInsertionPointAfter(kwLoop);
-  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{kwLoop.getResult(0)});
+    // Load filter value (masked by element mask only, filter is always in bounds)
+    auto splatFilterPtr = builder.create<mlir::triton::SplatOp>(loc, filtPtrTensorType, filterPtr);
+    auto filterPtrs = builder.create<mlir::triton::AddPtrOp>(loc, filtPtrTensorType, splatFilterPtr, filterOffset);
+    auto filterLoaded = builder.create<mlir::triton::LoadOp>(loc,
+        filterPtrs.getResult(), mask.getResult(), mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto filterVal = castTo(builder, loc, filterLoaded, f32Type);
 
-  // Yield from outer loop
-  builder.setInsertionPointAfter(khLoop);
-  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{khLoop.getResult(0)});
+    // Accumulate: acc += input * filter (zero out-of-bounds input)
+    auto prod = builder.create<mlir::arith::MulFOp>(loc, inVal, filterVal);
+    acc = builder.create<mlir::arith::AddFOp>(loc, acc, prod);
+  }
 
-  // Store result
-  builder.setInsertionPointAfter(icLoop);
-  auto finalAcc = icLoop.getResult(0);
+  auto finalAcc = acc;
 
   mlir::Value outStoreVal = castTo(builder, loc, finalAcc, outPtrType.getPointeeType());
   auto splatOutPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outputPtr);

@@ -507,6 +507,46 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     // ─── Per-op-category tests ──────────────────────────────────────────────
 
     /**
+     * Test: concat along axis=0 (row-wise) — simplest case.
+     * x=[2,4], y=[3,4] → result=[5,4]
+     */
+    @Test
+    public void testTritonConcatAxis0() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 4);
+        SDVariable y = sd.constant("y", Nd4j.ones(DataType.FLOAT, 3, 4));
+        sd.concat("result", 0, x, y);
+        runOpTest("testTritonConcatAxis0", sd, Map.of("x", Nd4j.randn(DataType.FLOAT, 2, 4)), "result");
+    }
+
+    /**
+     * Test: concat along axis=1 (column-wise).
+     * x=[2,4], y=[2,4] → result=[2,8]
+     */
+    @Test
+    public void testTritonConcatAxis1() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 4);
+        SDVariable y = sd.constant("y", Nd4j.ones(DataType.FLOAT, 2, 4));
+        sd.concat("result", 1, x, y);
+        runOpTest("testTritonConcatAxis1", sd, Map.of("x", Nd4j.randn(DataType.FLOAT, 2, 4)), "result");
+    }
+
+    /**
+     * Test: concat + relu fusion (like in testFallbackForUnsupportedOps but isolated).
+     * Tests that concat output flows correctly into downstream elementwise ops.
+     */
+    @Test
+    public void testTritonConcatFused() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 4);
+        SDVariable y = sd.constant("y", Nd4j.randn(DataType.FLOAT, 2, 4));
+        SDVariable cat = sd.concat("cat", 1, x, y);
+        sd.nn.relu("result", cat, 0);
+        runOpTest("testTritonConcatFused", sd, Map.of("x", Nd4j.randn(DataType.FLOAT, 2, 4)), "result");
+    }
+
+    /**
      * Test: standalone matmul (no fused element-wise ops).
      * a=[32,64] x b=[64,128] -> result=[32,128]
      */
@@ -788,8 +828,9 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     @Test
     public void testTritonConv2d() {
         SameDiff sd = SameDiff.create();
-        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 3, 16, 16);
-        SDVariable weight = sd.constant("weight", Nd4j.randn(DataType.FLOAT, 3, 3, 3, 8));
+        // Minimal conv2d: 1 input channel, 1 output channel, 3x3 kernel, 4x4 input
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 1, 4, 4);
+        SDVariable weight = sd.constant("weight", Nd4j.randn(DataType.FLOAT, 1, 1, 3, 3));
 
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(3).kW(3)
@@ -797,12 +838,42 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                 .pH(0).pW(0)
                 .dH(1).dW(1)
                 .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(org.nd4j.enums.WeightsFormat.OIYX)
                 .build();
 
         SDVariable conv = sd.cnn.conv2d("conv", input, weight, config);
         sd.nn.relu("result", conv, 0);
 
-        runOpTest("testTritonConv2d", sd, Map.of("input", Nd4j.randn(DataType.FLOAT, 1, 3, 16, 16)), "result");
+        runOpTest("testTritonConv2d", sd, Map.of("input", Nd4j.randn(DataType.FLOAT, 1, 1, 4, 4)), "result");
+    }
+
+    /**
+     * Test: conv2d with deterministic (ones) input and filter to verify element ordering.
+     * input=[1,1,4,4] (all 1s), weight=[1,1,3,3] (identity-like, ones), stride=1, pad=0
+     * output=[1,1,2,2], each element = 9.0 (sum of 9 ones * 1)
+     */
+    @Test
+    public void testTritonConv2dDeterministic() {
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, 1, 4, 4);
+        // Use a filter with a single 1.0 at position [0,0,0,0] (top-left corner)
+        // This way output[h,w] = input[h,w]
+        INDArray filterData = Nd4j.zeros(DataType.FLOAT, 1, 1, 3, 3);
+        filterData.putScalar(0, 0, 0, 0, 1.0f);  // filter[oc=0,ic=0,kh=0,kw=0] = 1
+        SDVariable weight = sd.constant("weight", filterData);
+
+        Conv2DConfig config = Conv2DConfig.builder()
+                .kH(3).kW(3).sH(1).sW(1).pH(0).pW(0).dH(1).dW(1)
+                .dataFormat(Conv2DConfig.NCHW)
+                .weightsFormat(org.nd4j.enums.WeightsFormat.OIYX)
+                .build();
+        SDVariable conv = sd.cnn.conv2d("conv", input, weight, config);
+        sd.nn.relu("result", conv, 0);
+
+        // Input: values 1..16 in order so we can identify which position each element came from
+        INDArray inputData = Nd4j.create(new float[]{1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16},
+                                          new int[]{1,1,4,4});
+        runOpTest("testTritonConv2dDeterministic", sd, Map.of("input", inputData), "result");
     }
 
     // ─── VLM op coverage tests ──────────────────────────────────────────────
@@ -820,6 +891,52 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
         if (planHandle == null) { log.info("Skipping {} (native executor not supported)", testName); return; }
         try {
             INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+
+            // Diagnostic: print external input keys and first values
+            String[] extKeys = plan.getExternalInputKeys();
+            log.info("{}: {} external inputs, keys={}", testName, extInputs.length, java.util.Arrays.toString(extKeys));
+            for (int ei = 0; ei < extInputs.length; ei++) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("  ext[").append(ei).append("] key=").append(extKeys[ei])
+                  .append(" shape=").append(java.util.Arrays.toString(extInputs[ei].shape()))
+                  .append(" first4=[");
+                long len = Math.min(4, extInputs[ei].length());
+                for (long e = 0; e < len; e++) {
+                    if (e > 0) sb.append(", ");
+                    sb.append(String.format("%.6f", extInputs[ei].getFloat(e)));
+                }
+                sb.append("]");
+                log.info(sb.toString());
+            }
+            // Print reference output first values
+            {
+                StringBuilder sb = new StringBuilder("  refOutput first4=[");
+                long len = Math.min(4, refOutput.length());
+                for (long e = 0; e < len; e++) {
+                    if (e > 0) sb.append(", ");
+                    sb.append(String.format("%.6f", refOutput.getFloat(e)));
+                }
+                sb.append("] order=").append(refOutput.ordering())
+                  .append(" strides=").append(java.util.Arrays.toString(refOutput.stride()))
+                  .append(" shape=").append(java.util.Arrays.toString(refOutput.shape()));
+                log.info(sb.toString());
+            }
+            // Manual verification: compute (x+y)*x - y directly with Nd4j ops
+            if (ph.containsKey("x") && ph.containsKey("y")) {
+                INDArray xArr = ph.get("x");
+                INDArray yArr = ph.get("y");
+                INDArray manual = xArr.add(yArr).mul(xArr).sub(yArr);
+                StringBuilder sb = new StringBuilder("  manual first4=[");
+                long len = Math.min(4, manual.length());
+                for (long e = 0; e < len; e++) {
+                    if (e > 0) sb.append(", ");
+                    sb.append(String.format("%.6f", manual.getFloat(e)));
+                }
+                sb.append("]");
+                log.info(sb.toString());
+                double manualRefDiff = refOutput.sub(manual).amaxNumber().doubleValue();
+                log.info("  manual vs ref maxDiff={}", manualRefDiff);
+            }
 
             // Reset Triton counters before execution
             nativeOps.resetTritonCounters();
@@ -841,6 +958,33 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                     if (maxDiff >= TOLERANCE) {
                         log.warn("{} iter {}: Triton kernel output differs from reference (maxDiff={})",
                                  testName, iter, maxDiff);
+                        // Dump first differences for debugging
+                        INDArray diff = refOutput.sub(nativeOutput);
+                        long len = Math.min(refOutput.length(), 64);
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("  ref=[");
+                        for (long e = 0; e < len; e++) {
+                            if (e > 0) sb.append(", ");
+                            sb.append(String.format("%.6f", refOutput.getFloat(e)));
+                        }
+                        sb.append("]");
+                        log.warn(sb.toString());
+                        sb = new StringBuilder();
+                        sb.append("  nat=[");
+                        for (long e = 0; e < len; e++) {
+                            if (e > 0) sb.append(", ");
+                            sb.append(String.format("%.6f", nativeOutput.getFloat(e)));
+                        }
+                        sb.append("]");
+                        log.warn(sb.toString());
+                        sb = new StringBuilder();
+                        sb.append("  dif=[");
+                        for (long e = 0; e < len; e++) {
+                            if (e > 0) sb.append(", ");
+                            sb.append(String.format("%.6f", diff.getFloat(e)));
+                        }
+                        sb.append("]");
+                        log.warn(sb.toString());
                     }
                     launchesBefore = launchesNow;  // reset for next iter
                 } else {

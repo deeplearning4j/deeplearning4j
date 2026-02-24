@@ -981,14 +981,10 @@ Status NativeDynamicShapePlan::execute(
         auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
         if (status == Status::OK) { tritonHandled = true; segUsedGraph = true; }
         else if (executeCount_ < 5) {
-          FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-          if (tf) {
-            fprintf(tf, "exec%d seg[%d-%d]: triton FAILED status=%d executionCount=%d captureFailed=%d\n",
-                    executeCount_, segment.startSlot, segment.endSlot,
-                    static_cast<int>(status), segment.executionCount,
-                    static_cast<int>(segment.captureFailed));
-            fflush(tf); fclose(tf);
-          }
+          sd_printf("exec%d seg[%d-%d]: triton FAILED status=%d executionCount=%d captureFailed=%d\n",
+                  executeCount_, segment.startSlot, segment.endSlot,
+                  static_cast<int>(status), segment.executionCount,
+                  static_cast<int>(segment.captureFailed));
         }
       }
 
@@ -4183,44 +4179,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
   auto* backend = getGpuGraphBackend();
   if (backend == nullptr) {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) { fprintf(tf, "FAIL: backend==nullptr\n"); fflush(tf); fclose(tf); }
     return Status::KERNEL_FAILURE;
   }
 
   // If compilation previously failed validation, never try again
   if (seg.captureFailed) {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) { fprintf(tf, "FAIL: captureFailed seg[%d-%d]\n", seg.startSlot, seg.endSlot); fflush(tf); fclose(tf); }
     return Status::KERNEL_FAILURE;
   }
 
   // Check if this segment can be compiled by the Triton backend
   if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
-    if (seg.executionCount < 3) {
-      FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-      if (tf) {
-        fprintf(tf, "FAIL: canFuseSegment REJECTED seg[%d-%d] execCount=%d\n",
-                seg.startSlot, seg.endSlot, seg.executionCount);
-        // Find first unmappable op
-        for (int i = seg.startSlot; i <= seg.endSlot; i++) {
-          if (!TritonIRBuilder::isTritonMappable(slots_[i].opName)) {
-            fprintf(tf, "  unmappable: slot %d op=%s\n", i, slots_[i].opName.c_str());
-            break;
-          }
-        }
-        fflush(tf); fclose(tf);
-      }
-    }
     return Status::KERNEL_FAILURE;  // Caller will fall back to CUDA Graphs
   }
 
   // First execution: run slot-by-slot warmup BEFORE compilation.
   if (seg.executionCount == 0) {
-    auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) { fprintf(tf, "WARMUP seg[%d-%d] done status=%d\n", seg.startSlot, seg.endSlot, static_cast<int>(warmupStatus)); fflush(tf); fclose(tf); }
-    return warmupStatus;
+    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   // Compute shape key for cache lookup
@@ -4230,8 +4204,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                outputSlots_, totalOutputSlots_, segShapeKey,
                                numSlots_)) {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) { fprintf(tf, "FAIL: compileSegment FAILED seg[%d-%d]\n", seg.startSlot, seg.endSlot); fflush(tf); fclose(tf); }
     return Status::KERNEL_FAILURE;
   }
 
@@ -4314,43 +4286,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     }
   }
 
-  // Verify all output slots have arrays — log any that are still null
-  {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) {
-      int nullCount = 0;
-      for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-        for (int o = 0; o < slots_[stepIdx].numOutputs; o++) {
-          int si = slots_[stepIdx].outputSlotIndices[o];
-          if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] == nullptr) {
-            nullCount++;
-            if (nullCount <= 20) {
-              bool cacheNull = (si < totalOutputSlots_ && slotArrayCache_[si] == nullptr);
-              fprintf(tf, "STILL_NULL: outputSlot[%d] step=%d op=%s cacheNull=%d\n",
-                      si, stepIdx, slots_[stepIdx].opName.c_str(), cacheNull ? 1 : 0);
-            }
-          }
-        }
-      }
-      if (nullCount > 0) {
-        fprintf(tf, "STILL_NULL total: %d null output slots in seg[%d-%d]\n",
-                nullCount, seg.startSlot, seg.endSlot);
-      }
-      fprintf(tf, "EXECUTE seg[%d-%d] execCount=%d\n", seg.startSlot, seg.endSlot, seg.executionCount);
-      fflush(tf); fclose(tf);
-    }
-  }
-
   // Execute via Triton backend
   seg.shapeKey = segShapeKey;
   tl_graphExecutionActive = true;
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
   tl_graphExecutionActive = false;
-  {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) { fprintf(tf, "EXECUTE seg[%d-%d] RESULT status=%d\n", seg.startSlot, seg.endSlot, static_cast<int>(status)); fflush(tf); fclose(tf); }
-  }
 
   if (status == Status::OK) {
     seg.executionCount++;

@@ -620,7 +620,7 @@ class TritonIRBuilder {
                                      const std::vector<LongType>& outputShape,
                                      int strideH, int strideW,
                                      int padH, int padW,
-                                     int nElements);
+                                     int nElements, int wFormat = 1);
 
   // im2col: rearrange image patches to columns
   // Input: [bS, iC, iH, iW] (4D) → Output: [bS, iC, kH, kW, oH, oW] (6D)

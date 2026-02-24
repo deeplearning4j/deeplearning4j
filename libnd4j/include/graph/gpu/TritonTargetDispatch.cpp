@@ -77,6 +77,10 @@
 #include <mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h>
 #include <mlir/Conversion/IndexToLLVM/IndexToLLVM.h>
 #include <mlir/Conversion/ArithToLLVM/ArithToLLVM.h>
+#include <mlir/Conversion/MathToLLVM/MathToLLVM.h>
+#include <mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h>
+#include <mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h>
+#include <mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h>
 
 // LLVM backend for PTX generation
 #include <llvm/IR/LLVMContext.h>
@@ -90,6 +94,11 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/ADT/SmallString.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Linker/Linker.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Bitcode/BitcodeReader.h>
 
 
 // Triton dialect passes — TTIR -> TTGIR -> LLVM
@@ -311,6 +320,47 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
   }
 
+  // ── SIGABRT protection for ALL compilation phases ──
+  // Triton/LLVM passes can call abort() on assertion failures (e.g., unsupported ops,
+  // invalid tensor encodings). We install a SIGABRT handler with setjmp/longjmp to
+  // recover gracefully instead of crashing the JVM.
+  static thread_local jmp_buf tritonJmpBuf;
+  static thread_local bool tritonInProtectedRegion = false;
+
+  struct sigaction oldSigabrt;
+  struct sigaction newSigabrt;
+  memset(&newSigabrt, 0, sizeof(newSigabrt));
+  newSigabrt.sa_handler = [](int) {
+    if (tritonInProtectedRegion) {
+      longjmp(tritonJmpBuf, 1);
+    }
+  };
+  sigemptyset(&newSigabrt.sa_mask);
+  newSigabrt.sa_flags = 0;
+  sigaction(SIGABRT, &newSigabrt, &oldSigabrt);
+
+  // Capture TTIR module text before any passes (for diagnostics on compilation failure)
+  std::string preDump;
+  {
+    llvm::raw_string_ostream os(preDump);
+    moduleOp->print(os);
+  }
+
+  tritonInProtectedRegion = true;
+  if (setjmp(tritonJmpBuf) != 0) {
+    // longjmp from SIGABRT handler — assertion failed in some compilation phase
+    tritonInProtectedRegion = false;
+    sigaction(SIGABRT, &oldSigabrt, nullptr);
+    // Clear any sticky CUDA errors that may have been set during the failed compilation.
+    // Without this, ALL subsequent CUDA runtime calls fail (e.g., cudaMemGetInfo returns total=0).
+#ifdef SD_CUDA
+    cudaGetLastError();
+#endif
+    sd_printf("TritonTargetDispatch::compile: compilation hit assertion failure "
+              "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s\n", preDump.c_str());
+    return result;
+  }
+
   // Phase 1-2: TTIR -> TTGIR
   {
     mlir::PassManager pm(moduleOp->getContext());
@@ -324,36 +374,95 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     pm.addPass(mlir::triton::createConvertTritonToTritonGPUPass(
         targetStr, numWarps, /*threadsPerWarp=*/32, /*numCTAs=*/1));
 
-    // Phase 3: TTGIR optimizations
+    // Phase 3: Full TTGIR optimization pipeline (Triton NVIDIA backend)
     pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
-    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::triton::gpu::createTritonGPUF32DotTC());
+    pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
+    pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeThreadLocality());
+    pm.addPass(mlir::triton::gpu::createTritonGPUAccelerateMatmul());
+    pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
+    {
+      mlir::triton::gpu::TritonGPUOptimizeDotOperandsOptions dotOpts;
+      dotOpts.hoistLayoutConversion = true;
+      pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeDotOperands(dotOpts));
+    }
     pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeAccumulatorInit());
+    {
+      mlir::triton::gpu::TritonGPUPipelineOptions pipeOpts;
+      pipeOpts.numStages = numStages;
+      pm.addPass(mlir::triton::gpu::createTritonGPUPipeline(pipeOpts));
+    }
+    pm.addPass(mlir::triton::gpu::createTritonGPUPrefetch());
+    {
+      mlir::triton::gpu::TritonGPUOptimizeDotOperandsOptions dotOpts2;
+      dotOpts2.hoistLayoutConversion = true;
+      pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeDotOperands(dotOpts2));
+    }
+    pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
+    pm.addPass(mlir::triton::gpu::createTritonGPUReduceDataDuplication());
+    pm.addPass(mlir::triton::gpu::createTritonGPUReorderInstructions());
+    pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::createSymbolDCEPass());
+    pm.addPass(mlir::createCanonicalizerPass());
 
     if (mlir::failed(pm.run(*moduleOp))) {
-      sd_printf("TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed\n", "");
+      tritonInProtectedRegion = false;
+      sigaction(SIGABRT, &oldSigabrt, nullptr);
+#ifdef SD_CUDA
+      cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
+#endif
+      // Dump full TTIR to file for diagnosis
+      FILE* diagFile = fopen("/tmp/triton_ttir_dump.txt", "w");
+      if (diagFile) {
+        fprintf(diagFile, "%s", preDump.c_str());
+        fclose(diagFile);
+      }
+      sd_printf("TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
+                "TTIR dumped to /tmp/triton_ttir_dump.txt (%d bytes)\n",
+                static_cast<int>(preDump.size()));
       return result;
     }
+
   }
 
   // Phase 4: TTGIR -> LLVM MLIR dialect
+  // Pass order matches Triton NVIDIA backend (compiler.py lines 265-283)
   {
     mlir::PassManager pm(moduleOp->getContext());
 
-    // Shared memory allocation (required before LLVM lowering)
-    pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
-
-    // Backend-specific TTGIR -> LLVM conversion
-    //
-    // In Triton v3.2.0, TTGIR -> LLVM lowering is handled by backend-specific
-    // third-party libraries (e.g., TritonNVIDIAGPUToLLVM for NVIDIA).
-    // The core Triton library does NOT provide a generic createConvertTritonGPUToLLVMPass.
     bool hasBackendLowering = false;
     switch (target) {
       case TritonGpuTarget::NVIDIA: {
 #ifdef HAVE_TRITON_NVIDIA_PASSES
+        // 1. Decompose unsupported layout conversions
         pm.addPass(mlir::triton::NVIDIA::createDecomposeUnsupportedConversionsPass());
+        // 1b. Combine tensor select and if (matches Triton compiler.py line 274)
+        pm.addPass(mlir::triton::gpu::createTritonGPUCombineTensorSelectAndIf());
+        // 2. SCF -> CF (must come BEFORE AllocateSharedMemory — membar needs cf dialect)
+        pm.addPass(mlir::createConvertSCFToCFPass());
+        // 3. Index -> LLVM
+        pm.addPass(mlir::createConvertIndexToLLVMPass());
+        // 4. Shared memory allocation (after SCF lowering)
+        pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
+        // 5. TritonGPU -> LLVM
         pm.addPass(mlir::triton::createConvertTritonGPUToLLVMPass(computeCapability));
+        // 6. NVGPU -> LLVM
         pm.addPass(mlir::triton::createConvertNVGPUToLLVMPass());
+        // 7. Arith -> LLVM
+        pm.addPass(mlir::createArithToLLVMConversionPass());
+        // 8. Math -> LLVM (lowering remaining math ops like exp, log, etc.)
+        pm.addPass(mlir::createConvertMathToLLVMPass());
+        // 9. ControlFlow -> LLVM (lowering remaining cf.br, cf.cond_br, etc.)
+        pm.addPass(mlir::createConvertControlFlowToLLVMPass());
+        // 10. Func -> LLVM (lowering remaining func.func, func.call, etc.)
+        pm.addPass(mlir::createConvertFuncToLLVMPass());
+        // 11. Reconcile unrealized casts (resolves leftover builtin.unrealized_conversion_cast)
+        pm.addPass(mlir::createReconcileUnrealizedCastsPass());
+        // 12. Final cleanup
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createSymbolDCEPass());
         hasBackendLowering = true;
 #else
         sd_printf("TritonTargetDispatch::compile: NVIDIA backend passes not available "
@@ -374,20 +483,31 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     }
 
     if (!hasBackendLowering) {
+      tritonInProtectedRegion = false;
+      sigaction(SIGABRT, &oldSigabrt, nullptr);
+#ifdef SD_CUDA
+      cudaGetLastError();
+#endif
       sd_printf("TritonTargetDispatch::compile: no backend lowering passes available for target\n", "");
       return result;
     }
 
-    // Standard MLIR -> LLVM lowering passes
-    pm.addPass(mlir::createConvertSCFToCFPass());
-    pm.addPass(mlir::createConvertIndexToLLVMPass());
-    pm.addPass(mlir::createArithToLLVMConversionPass());
-    pm.addPass(mlir::createCanonicalizerPass());
-    pm.addPass(mlir::createCSEPass());
-    pm.addPass(mlir::createSymbolDCEPass());
-
     if (mlir::failed(pm.run(*moduleOp))) {
-      sd_printf("TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed\n", "");
+      tritonInProtectedRegion = false;
+      sigaction(SIGABRT, &oldSigabrt, nullptr);
+#ifdef SD_CUDA
+      cudaGetLastError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
+#endif
+      std::string mlirDump;
+      llvm::raw_string_ostream mlirOS(mlirDump);
+      moduleOp->print(mlirOS);
+      FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+      if (diagFile) {
+        fprintf(diagFile, "=== PHASE 4 FAILED ===\n%s\n=== END ===\n", mlirDump.c_str());
+        fclose(diagFile);
+      }
+      fprintf(stderr, "TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed. "
+              "Module dumped to /tmp/triton_mlir_dump.txt\n");
       return result;
     }
   }
@@ -395,6 +515,11 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   // Phase 5: MLIR LLVM dialect -> LLVM IR module
   // Verify the MLIR module before attempting LLVM translation
   if (mlir::failed(mlir::verify(*moduleOp))) {
+    tritonInProtectedRegion = false;
+    sigaction(SIGABRT, &oldSigabrt, nullptr);
+#ifdef SD_CUDA
+    cudaGetLastError();
+#endif
     sd_printf("TritonTargetDispatch::compile: MLIR module verification failed after lowering\n", "");
     return result;
   }
@@ -405,42 +530,81 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   moduleOp->getContext()->appendDialectRegistry(registry);
   llvm::LLVMContext llvmCtx;
 
-  // LLVM debug builds call abort() on assertion failures (e.g., invalid cast).
-  // We install a SIGABRT handler with setjmp/longjmp to recover gracefully.
-  // fork() cannot be used because CUDA contexts break on fork.
-  static thread_local jmp_buf tritonJmpBuf;
-  static thread_local bool tritonInProtectedRegion = false;
-
-  struct sigaction oldSigabrt;
-  struct sigaction newSigabrt;
-  memset(&newSigabrt, 0, sizeof(newSigabrt));
-  newSigabrt.sa_handler = [](int) {
-    if (tritonInProtectedRegion) {
-      longjmp(tritonJmpBuf, 1);
-    }
-  };
-  sigemptyset(&newSigabrt.sa_mask);
-  newSigabrt.sa_flags = 0;
-  sigaction(SIGABRT, &newSigabrt, &oldSigabrt);
-
-  tritonInProtectedRegion = true;
   std::unique_ptr<llvm::Module> llvmModule;
-
-  if (setjmp(tritonJmpBuf) != 0) {
-    // longjmp from SIGABRT handler — LLVM assertion failed
-    tritonInProtectedRegion = false;
-    sigaction(SIGABRT, &oldSigabrt, nullptr);
-    sd_printf("TritonTargetDispatch::compile: MLIR->LLVM translation hit assertion failure "
-              "(recovered via SIGABRT handler)\n", "");
-    return result;
-  }
 
   llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
   tritonInProtectedRegion = false;
   sigaction(SIGABRT, &oldSigabrt, nullptr);
   if (!llvmModule) {
-    sd_printf("TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed (parent retry)\n", "");
+#ifdef SD_CUDA
+    cudaGetLastError();  // Clear sticky CUDA errors from failed translation
+#endif
+    std::string postLowerDump;
+    llvm::raw_string_ostream postOS(postLowerDump);
+    moduleOp->print(postOS);
+    // Write to file since sd_printf may be swallowed by surefire
+    FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+    if (diagFile) {
+      fprintf(diagFile, "=== TRANSLATION FAILED ===\n%s\n=== END ===\n", postLowerDump.c_str());
+      fclose(diagFile);
+    }
+    fprintf(stderr, "TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed. "
+            "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
     return result;
+  }
+
+  // Phase 5b: Link libdevice for NVIDIA math intrinsics (__nv_sqrtf, __nv_expf, etc.)
+  // The math-to-LLVM pass lowers math.sqrt/exp/log/etc. to calls to __nv_* functions
+  // which are defined in NVIDIA's libdevice bitcode library.
+  if (target == TritonGpuTarget::NVIDIA) {
+    // Search for libdevice.10.bc in common locations
+    std::vector<std::string> libdevicePaths = {
+      "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.9/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.6/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.4/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.2/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.0/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-11.8/nvvm/libdevice/libdevice.10.bc",
+    };
+
+    // Also check CUDA_PATH environment variable
+    if (const char* cudaPath = std::getenv("CUDA_PATH")) {
+      libdevicePaths.insert(libdevicePaths.begin(),
+          std::string(cudaPath) + "/nvvm/libdevice/libdevice.10.bc");
+    }
+
+    bool linked = false;
+    for (const auto& path : libdevicePaths) {
+      auto bufOrErr = llvm::MemoryBuffer::getFile(path);
+      if (!bufOrErr) continue;
+
+      auto libdeviceModOrErr = llvm::parseBitcodeFile(
+          bufOrErr.get()->getMemBufferRef(), llvmCtx);
+      if (!libdeviceModOrErr) {
+        llvm::consumeError(libdeviceModOrErr.takeError());
+        continue;
+      }
+
+      // Set target triple to match the main module
+      (*libdeviceModOrErr)->setTargetTriple(llvmModule->getTargetTriple());
+      (*libdeviceModOrErr)->setDataLayout(llvmModule->getDataLayout());
+
+      if (llvm::Linker::linkModules(*llvmModule, std::move(*libdeviceModOrErr),
+                                     llvm::Linker::Flags::LinkOnlyNeeded)) {
+        sd_printf("TritonTargetDispatch::compile: failed to link libdevice from %s\n", path.c_str());
+        continue;
+      }
+
+      sd_printf("TritonTargetDispatch::compile: linked libdevice from %s\n", path.c_str());
+      linked = true;
+      break;
+    }
+
+    if (!linked) {
+      sd_printf("TritonTargetDispatch::compile: WARNING — libdevice.10.bc not found, "
+                "math intrinsics (__nv_sqrtf etc.) will be unresolved\n", "");
+    }
   }
 
   // Verify the LLVM module
@@ -546,15 +710,44 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
 
     case TritonGpuTarget::NVIDIA: {
 #ifdef SD_CUDA
-      // NVIDIA: CUDA Driver API for PTX loading.
-      // Works for both native CUDA and ZLUDA (if target was somehow NVIDIA).
+      // NVIDIA: CUDA Driver API for PTX loading with JIT error logging.
       CUmodule module = nullptr;
-      CUresult res = cuModuleLoadDataEx(&module, binary.data, 0, nullptr, nullptr);
+      char jitErrorLog[4096] = {0};
+      char jitInfoLog[4096] = {0};
+      CUjit_option jitOptions[] = {
+        CU_JIT_ERROR_LOG_BUFFER,
+        CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
+        CU_JIT_INFO_LOG_BUFFER,
+        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES
+      };
+      void* jitOptionValues[] = {
+        jitErrorLog,
+        reinterpret_cast<void*>(sizeof(jitErrorLog)),
+        jitInfoLog,
+        reinterpret_cast<void*>(sizeof(jitInfoLog))
+      };
+      CUresult res = cuModuleLoadDataEx(&module, binary.data,
+                                         4, jitOptions, jitOptionValues);
       if (res != CUDA_SUCCESS) {
         const char* errStr = nullptr;
         cuGetErrorString(res, &errStr);
-        sd_printf("TritonTargetDispatch::loadModule: cuModuleLoadDataEx failed: %s\n",
-                  errStr ? errStr : "unknown");
+        sd_printf("TritonTargetDispatch::loadModule: cuModuleLoadDataEx failed: %s\n"
+                  "  JIT error: %s\n  JIT info: %s\n  PTX (first 2000 chars): %.2000s\n",
+                  errStr ? errStr : "unknown", jitErrorLog, jitInfoLog,
+                  static_cast<const char*>(binary.data));
+        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
+        if (df) {
+          fprintf(df, "cuModuleLoadDataEx_FAIL: res=%d err=%s jitErr=%s jitInfo=%s binarySize=%zu\n",
+                  (int)res, errStr ? errStr : "unknown", jitErrorLog, jitInfoLog, binary.size);
+          fflush(df);
+          fclose(df);
+        }
+        // Dump full PTX for debugging
+        FILE* ptxDump = fopen("/tmp/triton_ptx_dump.ptx", "w");
+        if (ptxDump) {
+          fwrite(binary.data, 1, binary.size, ptxDump);
+          fclose(ptxDump);
+        }
         return nullptr;
       }
       return static_cast<void*>(module);
@@ -731,8 +924,17 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
       if (res != CUDA_SUCCESS) {
         const char* errStr = nullptr;
         cuGetErrorString(res, &errStr);
-        sd_printf("TritonTargetDispatch::launchKernel: cuLaunchKernel failed: %s\n",
-                  errStr ? errStr : "unknown");
+        sd_printf("TritonTargetDispatch::launchKernel: cuLaunchKernel failed: %s (code=%d) "
+                  "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
+        if (df) {
+          fprintf(df, "STD_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+          fflush(df); fclose(df);
+        }
         return false;
       }
       return true;
@@ -792,6 +994,69 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
 
     default:
       sd_printf("TritonTargetDispatch::launchKernel: unsupported target %d\n",
+                static_cast<int>(target));
+      return false;
+  }
+}
+
+// ─── Cooperative kernel launch ───────────────────────────────────────────────
+
+bool TritonTargetDispatch::launchCooperativeKernel(void* kernelFunc,
+                                                    unsigned int gridX, unsigned int gridY, unsigned int gridZ,
+                                                    unsigned int blockX, unsigned int blockY, unsigned int blockZ,
+                                                    unsigned int sharedMemBytes,
+                                                    void* stream,
+                                                    void** args, int numArgs) {
+  if (!kernelFunc) return false;
+
+  auto target = detectTarget();
+  switch (target) {
+
+    case TritonGpuTarget::NVIDIA: {
+#ifdef SD_CUDA
+      // cudaLaunchCooperativeKernel requires a void* function pointer (host symbol).
+      // We have a CUfunction (driver API handle). Use the driver API equivalent:
+      // cuLaunchCooperativeKernel (CUDA 9.0+).
+      CUresult res = cuLaunchCooperativeKernel(
+          static_cast<CUfunction>(kernelFunc),
+          gridX, gridY, gridZ,
+          blockX, blockY, blockZ,
+          sharedMemBytes,
+          static_cast<CUstream>(stream),
+          args);
+      if (res != CUDA_SUCCESS) {
+        const char* errStr = nullptr;
+        cuGetErrorString(res, &errStr);
+        sd_printf("TritonTargetDispatch::launchCooperativeKernel: cuLaunchCooperativeKernel failed: %s (code=%d) "
+                  "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
+        if (df) {
+          fprintf(df, "COOP_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+          fflush(df); fclose(df);
+        }
+        return false;
+      }
+      return true;
+#else
+      return false;
+#endif
+    }
+
+    case TritonGpuTarget::AMD:
+    case TritonGpuTarget::INTEL:
+      // Cooperative launch not supported on AMD/Intel via this path.
+      // Fall back to standard launch (no grid sync barriers).
+      sd_printf("TritonTargetDispatch::launchCooperativeKernel: cooperative launch not supported on "
+                "target %d, falling back to standard launch\n", static_cast<int>(target));
+      return launchKernel(kernelFunc, gridX, gridY, gridZ, blockX, blockY, blockZ,
+                          sharedMemBytes, stream, args, numArgs);
+
+    default:
+      sd_printf("TritonTargetDispatch::launchCooperativeKernel: unsupported target %d\n",
                 static_cast<int>(target));
       return false;
   }

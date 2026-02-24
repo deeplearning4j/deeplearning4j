@@ -199,17 +199,6 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
     compiled.startSlot_ = subStart;
     compiled.endSlot_ = subEnd;
-    {
-      FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-      if (tf) {
-        fprintf(tf, "COMPILED: sub[%d-%d] %d ops, %d args, indirect=%d, numWarps=%d, blockX=%d\n",
-                subStart, subEnd, subOps,
-                (int)compiled.argSlotMapping.size(),
-                compiled.useIndirectArgs ? 1 : 0,
-                compiled.numWarps, compiled.blockX);
-        fflush(tf); fclose(tf);
-      }
-    }
     compiledSeg.audit.insert(compiledSeg.audit.end(),
                               compiled.audit.begin(), compiled.audit.end());
     compiledSeg.subKernels.push_back(std::move(compiled));
@@ -263,13 +252,6 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
                 "(sub-segment [%d-%d], length=%lld, dtype=%d)\n",
                 argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_,
                 (long long)arr->lengthOf(), static_cast<int>(arr->dataType()));
-      FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-      if (tf) {
-        fprintf(tf, "NULL_SBUF: slot %d sub[%d-%d] isOutput=%d\n",
-                argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_,
-                argMapping.isOutput ? 1 : 0);
-        fflush(tf); fclose(tf);
-      }
       return Status::KERNEL_FAILURE;
     }
     bufferPtrs.push_back(sbuf);
@@ -287,6 +269,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
   }
   int nElem32 = static_cast<int>(nElements);
+
 
   // Compute grid size
   unsigned int actualGridX = (nElements + compiled.blockX - 1) / compiled.blockX;
@@ -342,46 +325,6 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     kernelArgs.push_back(&nElem32);
   }
 
-  // Diagnostic: dump key info for indirect arg launches
-  if (compiled.useIndirectArgs) {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) {
-      fprintf(tf, "PRE_LAUNCH_INDIRECT: [%d-%d] argTableDevice=%p nElem=%d grid=%ux%ux%u block=%ux%ux%u nBufArgs=%d\n",
-              compiled.startSlot_, compiled.endSlot_, argTableDevice, nElem32,
-              actualGridX, actualGridY, actualGridZ,
-              compiled.numWarps * 32, compiled.blockY, compiled.blockZ, numBufferArgs);
-      // Check for null buffer pointers and dump any found
-      int nullCount = 0;
-      for (int i = 0; i < numBufferArgs; i++) {
-        if (!bufferPtrs[i]) {
-          fprintf(tf, "  NULL_BUF[%d] slot=%d isOutput=%d\n",
-                  i, compiled.argSlotMapping[i].slotIndex,
-                  compiled.argSlotMapping[i].isOutput ? 1 : 0);
-          nullCount++;
-        }
-      }
-      if (nullCount > 0) {
-        fprintf(tf, "  TOTAL_NULL_BUFS: %d of %d\n", nullCount, numBufferArgs);
-      }
-      // First 3 and last 3 for quick reference
-      for (int i = 0; i < numBufferArgs && i < 3; i++) {
-        fprintf(tf, "  bufPtr[%d] = %p (slot %d)\n",
-                i, bufferPtrs[i], compiled.argSlotMapping[i].slotIndex);
-      }
-      // Non-blocking stream check
-#ifdef SD_CUDA
-      auto peekErr = cudaPeekAtLastError();
-      if (peekErr != cudaSuccess) {
-        fprintf(tf, "  peekErr=%d (%s)\n", (int)peekErr, cudaGetErrorString(peekErr));
-      }
-      int curDevice = -1;
-      cudaGetDevice(&curDevice);
-      fprintf(tf, "  curDevice=%d, actualStream=%p\n", curDevice, actualStream);
-#endif
-      fflush(tf); fclose(tf);
-    }
-  }
-
   // Launch
   bool ok;
   if (compiled.useCooperativeLaunch) {
@@ -414,21 +357,6 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
               actualGridX, actualGridY, actualGridZ,
               compiled.numWarps * 32, compiled.blockY, compiled.blockZ,
               compiled.sharedMemBytes);
-    {
-      FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-      if (tf) {
-        fprintf(tf, "LAUNCH_FAIL: [%d-%d] nElem=%lld grid=%ux%ux%u block=%ux%ux%u shMem=%u nArgs=%d coop=%d\n",
-                compiled.startSlot_, compiled.endSlot_, (long long)nElements,
-                actualGridX, actualGridY, actualGridZ,
-                compiled.numWarps * 32, compiled.blockY, compiled.blockZ,
-                compiled.sharedMemBytes, (int)kernelArgs.size(), compiled.useCooperativeLaunch ? 1 : 0);
-#ifdef SD_CUDA
-        auto err = cudaGetLastError();
-        fprintf(tf, "  cudaErr=%d (%s)\n", (int)err, cudaGetErrorString(err));
-#endif
-        fflush(tf); fclose(tf);
-      }
-    }
 #ifdef SD_CUDA
     if (argTableDevice) cudaFreeAsync(argTableDevice, static_cast<cudaStream_t>(actualStream));
 #endif
@@ -438,6 +366,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 #ifdef SD_CUDA
   // Free the indirect arg table after kernel launch (async — kernel reads it before free executes)
   if (argTableDevice) cudaFreeAsync(argTableDevice, static_cast<cudaStream_t>(actualStream));
+
 #endif
 
   return Status::OK;
@@ -464,14 +393,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   // Execute all sub-kernels in sequence on the same stream.
-  {
-    FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-    if (tf) {
-      fprintf(tf, "executeSegment: seg[%d-%d] %d sub-kernels\n",
-              seg.startSlot, seg.endSlot, (int)compiledSeg->subKernels.size());
-      fflush(tf); fclose(tf);
-    }
-  }
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
     auto& subKernel = compiledSeg->subKernels[i];
     auto status = executeSingleKernel(subKernel, slots,
@@ -482,13 +403,6 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       sd_printf("TritonGraphBackend::executeSegment: sub-kernel %d/%d [%d-%d] failed\n",
                 i + 1, (int)compiledSeg->subKernels.size(),
                 subKernel.startSlot_, subKernel.endSlot_);
-      FILE* tf = fopen("/tmp/triton_trace.txt", "a");
-      if (tf) {
-        fprintf(tf, "SUB_KERNEL_FAIL: %d/%d [%d-%d]\n",
-                i + 1, (int)compiledSeg->subKernels.size(),
-                subKernel.startSlot_, subKernel.endSlot_);
-        fflush(tf); fclose(tf);
-      }
       return status;
     }
     totalKernelLaunches_++;
@@ -505,6 +419,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
     }
   }
+
 #endif
 
   return Status::OK;
@@ -580,17 +495,6 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       delete mod;
     }
     return result;
-  }
-
-  // Dump PTX for indirect-args kernels (diagnostic)
-  if (irModule.useIndirectArgs && binary.data && binary.size > 0) {
-    FILE* pf = fopen("/tmp/triton_ptx_indirect.ptx", "w");
-    if (pf) {
-      fprintf(pf, "// Indirect-args kernel [%d-%d], %d args\n",
-              startSlot, endSlot, static_cast<int>(irModule.args.size()));
-      fwrite(binary.data, 1, binary.size, pf);
-      fflush(pf); fclose(pf);
-    }
   }
 
   // Load binary into driver module
