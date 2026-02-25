@@ -32,6 +32,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -169,11 +170,25 @@ class TritonGraphBackend : public GraphBackend {
   // Minimum number of mappable ops for Triton to be worthwhile
   static constexpr int MIN_MAPPABLE_OPS = 1;
 
+  // Default max parallel compilations
+  static constexpr int DEFAULT_MAX_PARALLEL_COMPILATIONS = 4;
+
+  // Configurable max parallel compilations (set via ND4J_TRITON_BUILD_THREADS env var)
+  static int maxParallelCompilations_;
+  static std::mutex configMtx_;
+
  public:
   // Maximum number of ops that can be compiled into a single Triton kernel.
   // Larger segments exceed register limits (441K virtual regs for 3840 ops).
   // Segments exceeding this are split into sub-segments automatically.
   static constexpr int MAX_COMPILABLE_OPS = 512;
+
+  // Maximum number of sub-kernels to compile in parallel.
+  // Limited to avoid excessive memory usage during LLVM compilation.
+  // Each parallel compilation uses ~1-2GB RAM.
+  // Set via environment variable ND4J_TRITON_BUILD_THREADS (default: 4)
+  static int getMaxParallelCompilations();
+  static void setMaxParallelCompilations(int maxThreads);
 
   // Check if all ops in a range are Triton-mappable (without size limit check).
   // Used by sub-segment splitting to verify individual sub-segments.
@@ -186,6 +201,21 @@ class TritonGraphBackend : public GraphBackend {
                                     int totalSlots,
                                     NDArray** externalInputs, int numExternalInputs,
                                     NDArray** outputSlots, int totalOutputSlots);
+
+  // Disk cache helpers for compiled PTX
+  std::string getDiskCacheDir() const;
+  bool ensureDiskCacheDir(const std::string& cacheDir) const;
+  std::string computeDiskCacheHash(int startSlot, int endSlot,
+                                   const std::string& ttirText,
+                                   int numWarps, int numStages) const;
+  bool loadBinaryFromDiskCache(int startSlot, int endSlot,
+                               const std::string& cacheHash,
+                               const TritonIRModule& irModule,
+                               TritonCompiledBinary& binary) const;
+  void writeBinaryToDiskCache(int startSlot, int endSlot,
+                              const std::string& cacheHash,
+                              const TritonIRModule& irModule,
+                              const TritonCompiledBinary& binary) const;
 
   // Execute a single compiled sub-kernel
   Status executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,

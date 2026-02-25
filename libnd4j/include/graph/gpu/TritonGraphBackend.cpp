@@ -31,8 +31,319 @@
 // MLIR core for ModuleOp used in compileToGpuBinary cleanup
 #include <mlir/IR/BuiltinOps.h>
 
+// Disk cache for compiled PTX
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <sstream>
+#include <vector>
+
+#include <llvm/Support/raw_ostream.h>
+
 namespace sd {
 namespace graph {
+
+namespace {
+
+constexpr uint64_t FNV1A64_OFFSET_BASIS = 1469598103934665603ULL;
+constexpr uint64_t FNV1A64_PRIME = 1099511628211ULL;
+
+inline void mixFNV1a(uint64_t& hash, const void* data, size_t size) {
+  const auto* bytes = static_cast<const unsigned char*>(data);
+  for (size_t i = 0; i < size; i++) {
+    hash ^= static_cast<uint64_t>(bytes[i]);
+    hash *= FNV1A64_PRIME;
+  }
+}
+
+bool parseIntValue(const std::string& text, int& value) {
+  char* endPtr = nullptr;
+  long parsed = std::strtol(text.c_str(), &endPtr, 10);
+  if (endPtr == text.c_str()) return false;
+  value = static_cast<int>(parsed);
+  return true;
+}
+
+}  // namespace
+
+// Static member initialization
+int TritonGraphBackend::maxParallelCompilations_ = DEFAULT_MAX_PARALLEL_COMPILATIONS;
+std::mutex TritonGraphBackend::configMtx_;
+
+// ─── Parallel compilation configuration ─────────────────────────────────────────
+
+int TritonGraphBackend::getMaxParallelCompilations() {
+  std::lock_guard<std::mutex> lock(configMtx_);
+  
+  // Read from environment variable on first call
+  static bool initialized = false;
+  if (!initialized) {
+    initialized = true;
+    // Check ND4J_TRITON_BUILD_THREADS env var
+    const char* envVal = std::getenv("ND4J_TRITON_BUILD_THREADS");
+    if (envVal) {
+      int envThreads = std::atoi(envVal);
+      if (envThreads > 0 && envThreads <= 16) {
+        maxParallelCompilations_ = envThreads;
+        sd_printf("TritonGraphBackend: Using %d parallel compilation threads (from ND4J_TRITON_BUILD_THREADS)\n",
+                  maxParallelCompilations_);
+      } else if (envThreads > 0) {
+        sd_printf("TritonGraphBackend: ND4J_TRITON_BUILD_THREADS=%d exceeds max (16), using default %d\n",
+                  envThreads, DEFAULT_MAX_PARALLEL_COMPILATIONS);
+      }
+    } else {
+      sd_printf("TritonGraphBackend: Using %d parallel compilation threads (default)\n",
+                maxParallelCompilations_);
+    }
+  }
+  return maxParallelCompilations_;
+}
+
+void TritonGraphBackend::setMaxParallelCompilations(int maxThreads) {
+  std::lock_guard<std::mutex> lock(configMtx_);
+  if (maxThreads > 0 && maxThreads <= 16) {
+    maxParallelCompilations_ = maxThreads;
+    sd_printf("TritonGraphBackend: Set max parallel compilations to %d\n", maxThreads);
+  } else {
+    sd_printf("TritonGraphBackend: Invalid maxThreads=%d (must be 1-16), keeping %d\n",
+              maxThreads, maxParallelCompilations_);
+  }
+}
+
+std::string TritonGraphBackend::getDiskCacheDir() const {
+  const char* home = std::getenv("HOME");
+  if (home && home[0] != '\0') {
+    return std::string(home) + "/.nd4j/triton_cache";
+  }
+  return ".nd4j/triton_cache";
+}
+
+bool TritonGraphBackend::ensureDiskCacheDir(const std::string& cacheDir) const {
+  if (cacheDir.empty()) return false;
+
+  std::string currentPath;
+  size_t start = 0;
+  if (cacheDir[0] == '/') {
+    currentPath = "/";
+    start = 1;
+  }
+
+  while (start <= cacheDir.size()) {
+    size_t slashPos = cacheDir.find('/', start);
+    std::string part = (slashPos == std::string::npos)
+                           ? cacheDir.substr(start)
+                           : cacheDir.substr(start, slashPos - start);
+    start = (slashPos == std::string::npos) ? (cacheDir.size() + 1) : (slashPos + 1);
+    if (part.empty()) continue;
+
+    if (!currentPath.empty() && currentPath.back() != '/') currentPath += "/";
+    currentPath += part;
+
+    struct stat st;
+    if (stat(currentPath.c_str(), &st) == 0) {
+      if (!S_ISDIR(st.st_mode)) {
+        sd_printf("TritonGraphBackend: cache path exists but is not a directory: %s\n",
+                  currentPath.c_str());
+        return false;
+      }
+      continue;
+    }
+
+    if (errno != ENOENT) {
+      sd_printf("TritonGraphBackend: stat failed for cache path %s (errno=%d)\n",
+                currentPath.c_str(), errno);
+      return false;
+    }
+
+    if (mkdir(currentPath.c_str(), 0755) != 0 && errno != EEXIST) {
+      sd_printf("TritonGraphBackend: mkdir failed for cache path %s (errno=%d)\n",
+                currentPath.c_str(), errno);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+std::string TritonGraphBackend::computeDiskCacheHash(int startSlot, int endSlot,
+                                                     const std::string& ttirText,
+                                                     int numWarps, int numStages) const {
+  uint64_t hash = FNV1A64_OFFSET_BASIS;
+  mixFNV1a(hash, &startSlot, sizeof(startSlot));
+  mixFNV1a(hash, &endSlot, sizeof(endSlot));
+  mixFNV1a(hash, &numWarps, sizeof(numWarps));
+  mixFNV1a(hash, &numStages, sizeof(numStages));
+  mixFNV1a(hash, ttirText.data(), ttirText.size());
+
+  const std::string arch = TritonTargetDispatch::getTargetArch();
+  if (!arch.empty()) {
+    mixFNV1a(hash, arch.data(), arch.size());
+  }
+
+  std::ostringstream oss;
+  oss << std::hex << std::setw(16) << std::setfill('0') << hash;
+  return oss.str();
+}
+
+bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
+                                                 const std::string& cacheHash,
+                                                 const TritonIRModule& irModule,
+                                                 TritonCompiledBinary& binary) const {
+  if (cacheHash.empty()) return false;
+
+  const std::string cacheDir = getDiskCacheDir();
+  std::ostringstream name;
+  name << "seg_" << startSlot << "_" << endSlot << "_" << cacheHash;
+  const std::string basePath = cacheDir + "/" + name.str();
+  const std::string ptxPath = basePath + ".ptx";
+  const std::string metaPath = basePath + ".meta";
+
+  std::ifstream ptxFile(ptxPath, std::ios::binary);
+  if (!ptxFile.good()) return false;
+
+  std::ifstream metaFile(metaPath);
+  if (!metaFile.good()) return false;
+
+  std::string ptxText((std::istreambuf_iterator<char>(ptxFile)),
+                      std::istreambuf_iterator<char>());
+  if (ptxText.empty()) return false;
+  if (ptxText.back() != '\0') ptxText.push_back('\0');
+
+  int metaNumWarps = irModule.numWarps;
+  int metaSharedMem = 0;
+  std::string metaKernelName;
+  std::string line;
+  while (std::getline(metaFile, line)) {
+    size_t eqPos = line.find('=');
+    if (eqPos == std::string::npos) continue;
+
+    const std::string key = line.substr(0, eqPos);
+    const std::string value = line.substr(eqPos + 1);
+    if (key == "numWarps") {
+      parseIntValue(value, metaNumWarps);
+    } else if (key == "sharedMemBytes") {
+      parseIntValue(value, metaSharedMem);
+    } else if (key == "kernelName") {
+      metaKernelName = value;
+    }
+  }
+
+  if (!metaKernelName.empty() && metaKernelName != irModule.kernelName) {
+    return false;
+  }
+
+  binary.data = new char[ptxText.size()];
+  std::memcpy(binary.data, ptxText.data(), ptxText.size());
+  binary.size = ptxText.size() - 1;  // Excludes null terminator
+  binary.target = TritonTargetDispatch::detectTarget();
+  binary.targetArch = TritonTargetDispatch::getTargetArch();
+  binary.numWarps = metaNumWarps;
+  binary.sharedMemBytes = metaSharedMem;
+
+  sd_printf("TritonGraphBackend: disk cache HIT for sub-segment [%d-%d] (%zu bytes)\n",
+            startSlot, endSlot, binary.size);
+  return true;
+}
+
+void TritonGraphBackend::writeBinaryToDiskCache(int startSlot, int endSlot,
+                                                const std::string& cacheHash,
+                                                const TritonIRModule& irModule,
+                                                const TritonCompiledBinary& binary) const {
+  if (cacheHash.empty() || binary.data == nullptr || binary.size == 0) return;
+
+  const std::string cacheDir = getDiskCacheDir();
+  if (!ensureDiskCacheDir(cacheDir)) return;
+
+  std::ostringstream name;
+  name << "seg_" << startSlot << "_" << endSlot << "_" << cacheHash;
+  const std::string basePath = cacheDir + "/" + name.str();
+  const std::string ptxPath = basePath + ".ptx";
+  const std::string metaPath = basePath + ".meta";
+
+  const auto tidHash = std::hash<std::thread::id>()(std::this_thread::get_id());
+  std::ostringstream suffix;
+  suffix << ".tmp." << static_cast<long long>(::getpid()) << "." << tidHash;
+  const std::string ptxTmp = ptxPath + suffix.str();
+  const std::string metaTmp = metaPath + suffix.str();
+
+  {
+    std::ofstream out(ptxTmp, std::ios::binary | std::ios::trunc);
+    if (!out.good()) {
+      sd_printf("TritonGraphBackend: failed to open PTX cache temp file %s\n", ptxTmp.c_str());
+      return;
+    }
+    out.write(static_cast<const char*>(binary.data), static_cast<std::streamsize>(binary.size));
+    out.flush();
+    if (!out.good()) {
+      sd_printf("TritonGraphBackend: failed to write PTX cache temp file %s\n", ptxTmp.c_str());
+      out.close();
+      std::remove(ptxTmp.c_str());
+      return;
+    }
+  }
+
+  if (std::rename(ptxTmp.c_str(), ptxPath.c_str()) != 0) {
+    sd_printf("TritonGraphBackend: failed to finalize PTX cache file %s (errno=%d)\n",
+              ptxPath.c_str(), errno);
+    std::remove(ptxTmp.c_str());
+    return;
+  }
+
+  std::ostringstream meta;
+  meta << "numWarps=" << binary.numWarps << "\n";
+  meta << "sharedMemBytes=" << binary.sharedMemBytes << "\n";
+  meta << "kernelName=" << irModule.kernelName << "\n";
+  meta << "gridX=" << irModule.gridX << "\n";
+  meta << "gridY=" << irModule.gridY << "\n";
+  meta << "gridZ=" << irModule.gridZ << "\n";
+  meta << "blockX=" << irModule.blockX << "\n";
+  meta << "blockY=" << irModule.blockY << "\n";
+  meta << "blockZ=" << irModule.blockZ << "\n";
+  meta << "useIndirectArgs=" << (irModule.useIndirectArgs ? 1 : 0) << "\n";
+  meta << "argSlotMapping=";
+  for (size_t i = 0; i < irModule.args.size(); i++) {
+    if (i > 0) meta << ";";
+    const auto& arg = irModule.args[i];
+    meta << arg.slotIndex << "," << arg.outputIndex << ","
+         << (arg.isOutput ? 1 : 0) << "," << static_cast<int>(arg.dtype);
+  }
+  meta << "\n";
+
+  {
+    std::ofstream out(metaTmp, std::ios::trunc);
+    if (!out.good()) {
+      sd_printf("TritonGraphBackend: failed to open metadata cache temp file %s\n", metaTmp.c_str());
+      std::remove(metaTmp.c_str());
+      return;
+    }
+    out << meta.str();
+    out.flush();
+    if (!out.good()) {
+      sd_printf("TritonGraphBackend: failed to write metadata cache temp file %s\n", metaTmp.c_str());
+      out.close();
+      std::remove(metaTmp.c_str());
+      return;
+    }
+  }
+
+  if (std::rename(metaTmp.c_str(), metaPath.c_str()) != 0) {
+    sd_printf("TritonGraphBackend: failed to finalize metadata cache file %s (errno=%d)\n",
+              metaPath.c_str(), errno);
+    std::remove(metaTmp.c_str());
+    return;
+  }
+
+  sd_printf("TritonGraphBackend: disk cache STORED for sub-segment [%d-%d] (%zu bytes)\n",
+            startSlot, endSlot, binary.size);
+}
 
 // ─── Singleton ──────────────────────────────────────────────────────────────
 
@@ -40,6 +351,7 @@ TritonGraphBackend& TritonGraphBackend::getInstance() {
   static TritonGraphBackend instance;
   return instance;
 }
+
 
 TritonGraphBackend::TritonGraphBackend() = default;
 
@@ -129,19 +441,22 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   sd_printf("TritonGraphBackend: segment [%d-%d] has %d ops, %d sections\n",
             seg.startSlot, seg.endSlot, segmentOps, static_cast<int>(sections.size()));
 
-  // Compile each section as its own sub-kernel.
-  // Compatible adjacent sections (all element-wise) can be merged.
+  // ── Step 1: Collect all sub-segment ranges to compile ──
+  struct SubSegmentRange {
+    int startSlot;
+    int endSlot;
+    int opsCount;
+  };
+  std::vector<SubSegmentRange> subSegmentsToCompile;
+
   for (int i = 0; i < static_cast<int>(sections.size()); i++) {
     int subStart = sections[i].startSlot;
     int subEnd = sections[i].endSlot;
 
     // Merge consecutive element-wise-compatible sections into one sub-kernel
-    // (they share the same grid/block pattern and can fuse).
-    // Cap merged size so the kernel arg count stays within CUDA's 4KB param limit
-    // (~500 pointer args). Each op contributes ~1-2 unique buffer args on average.
     while (i + 1 < static_cast<int>(sections.size())) {
       int mergedOps = subEnd - subStart + 1 + (sections[i + 1].endSlot - sections[i + 1].startSlot + 1);
-      if (mergedOps > MAX_COMPILABLE_OPS) break;  // Would exceed register/arg limits
+      if (mergedOps > MAX_COMPILABLE_OPS) break;
       auto nextType = sections[i + 1].type;
       auto curType = sections[i].type;
       bool curMergeable = (curType == KernelSectionType::ELEMENTWISE ||
@@ -165,7 +480,10 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     int subOps = subEnd - subStart + 1;
-    if (subOps < MIN_MAPPABLE_OPS) {
+    if (subOps >= MIN_MAPPABLE_OPS) {
+      subSegmentsToCompile.push_back({subStart, subEnd, subOps});
+    } else {
+      // Small segments: just add audit entries without compilation
       for (int s = subStart; s <= subEnd; s++) {
         CompilationAuditEntry entry;
         entry.slotIndex = s;
@@ -173,39 +491,94 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
         entry.wasCompiled = true;
         compiledSeg.audit.push_back(entry);
       }
-      continue;
     }
-
-    sd_printf("TritonGraphBackend: compiling sub-segment %d [%d-%d] (%d ops)\n",
-              static_cast<int>(compiledSeg.subKernels.size()) + 1, subStart, subEnd, subOps);
-
-    auto compiled = compileToGpuBinary(slots, subStart, subEnd,
-                                        totalSlots,
-                                        externalInputs, numExternalInputs,
-                                        outputSlots, totalOutputSlots);
-
-    if (!compiled.gpuModule || !compiled.kernelFunction) {
-#ifdef SD_CUDA
-      cudaGetLastError();
-#endif
-      sd_printf("TritonGraphBackend: sub-segment [%d-%d] compilation FAILED\n", subStart, subEnd);
-      for (auto& prev : compiledSeg.subKernels) {
-        if (prev.gpuModule) {
-          TritonTargetDispatch::unloadModule(prev.gpuModule);
-        }
-      }
-      return false;
-    }
-
-    compiled.startSlot_ = subStart;
-    compiled.endSlot_ = subEnd;
-    compiledSeg.audit.insert(compiledSeg.audit.end(),
-                              compiled.audit.begin(), compiled.audit.end());
-    compiledSeg.subKernels.push_back(std::move(compiled));
   }
 
-  sd_printf("TritonGraphBackend: compiled segment [%d-%d] into %d sub-kernels\n",
-            seg.startSlot, seg.endSlot, static_cast<int>(compiledSeg.subKernels.size()));
+  if (subSegmentsToCompile.empty()) {
+    sd_printf("TritonGraphBackend: no sub-segments to compile for segment [%d-%d]\n",
+              seg.startSlot, seg.endSlot);
+    lastCompilationAudit_ = compiledSeg.audit;
+    {
+      std::lock_guard<std::mutex> lock(cacheMtx_);
+      cache_[key] = std::move(compiledSeg);
+    }
+    return true;
+  }
+
+  // ── Step 2: Parallel compilation ──
+  int numToCompile = static_cast<int>(subSegmentsToCompile.size());
+  int numParallel = std::min(getMaxParallelCompilations(), numToCompile);
+  
+  sd_printf("TritonGraphBackend: compiling %d sub-segments (%d parallel)\n",
+            numToCompile, numParallel);
+
+  // Vector to store compiled kernels
+  std::vector<CompiledKernel> compiledKernels(numToCompile);
+  std::vector<bool> compileSuccess(numToCompile, false);
+
+  // Lambda for parallel compilation
+  auto compileWorker = [&](int workerId) {
+    for (int idx = workerId; idx < numToCompile; idx += numParallel) {
+      const auto& range = subSegmentsToCompile[idx];
+      sd_printf("TritonGraphBackend: worker %d compiling sub-segment [%d-%d] (%d ops)\n",
+                workerId, range.startSlot, range.endSlot, range.opsCount);
+      
+      compiledKernels[idx] = compileToGpuBinary(slots, range.startSlot, range.endSlot,
+                                                 totalSlots,
+                                                 externalInputs, numExternalInputs,
+                                                 outputSlots, totalOutputSlots);
+      
+      if (compiledKernels[idx].gpuModule && compiledKernels[idx].kernelFunction) {
+        compileSuccess[idx] = true;
+        compiledKernels[idx].startSlot_ = range.startSlot;
+        compiledKernels[idx].endSlot_ = range.endSlot;
+      } else {
+#ifdef SD_CUDA
+        cudaGetLastError();
+#endif
+        sd_printf("TritonGraphBackend: worker %d sub-segment [%d-%d] compilation FAILED\n",
+                  workerId, range.startSlot, range.endSlot);
+      }
+    }
+  };
+
+  // Launch parallel compilation
+  if (numParallel > 1 && numToCompile > 1) {
+    std::vector<std::thread> threads;
+    threads.reserve(numParallel);
+    for (int t = 0; t < numParallel; t++) {
+      threads.emplace_back(compileWorker, t);
+    }
+    for (auto& t : threads) {
+      t.join();
+    }
+  } else {
+    // Single thread fallback
+    compileWorker(0);
+  }
+
+  // ── Step 3: Merge results and check for failures ──
+  bool anyFailed = false;
+  for (int idx = 0; idx < numToCompile; idx++) {
+    if (!compileSuccess[idx]) {
+      anyFailed = true;
+      break;
+    }
+    compiledSeg.audit.insert(compiledSeg.audit.end(),
+                              compiledKernels[idx].audit.begin(),
+                              compiledKernels[idx].audit.end());
+    compiledSeg.subKernels.push_back(std::move(compiledKernels[idx]));
+  }
+
+  if (anyFailed) {
+    sd_printf("TritonGraphBackend: one or more sub-segments failed to compile\n");
+    for (auto& kernel : compiledSeg.subKernels) {
+      if (kernel.gpuModule) {
+        TritonTargetDispatch::unloadModule(kernel.gpuModule);
+      }
+    }
+    return false;
+  }
 
   lastCompilationAudit_ = compiledSeg.audit;
 
@@ -461,6 +834,15 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
                                           totalSlots,
                                           externalInputs, numExternalInputs,
                                           outputSlots, totalOutputSlots);
+  auto cleanupModule = [&irModule]() {
+    if (irModule.mlirModule) {
+      auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
+      mod->erase();
+      delete mod;
+      irModule.mlirModule = nullptr;
+    }
+  };
+
   if (!irModule.valid) {
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors from failed IR build
@@ -481,19 +863,32 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     result.audit.push_back(entry);
   }
 
-  // Compile MLIR -> GPU binary
-  auto binary = TritonTargetDispatch::compile(irModule.mlirModule, irModule.numWarps, irModule.numStages);
+  // Capture TTIR text for deterministic cache-key generation.
+  std::string ttirText;
+  {
+    auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
+    llvm::raw_string_ostream os(ttirText);
+    mod->print(os);
+  }
+
+  const std::string cacheHash = computeDiskCacheHash(startSlot, endSlot, ttirText,
+                                                      irModule.numWarps, irModule.numStages);
+
+  TritonCompiledBinary binary = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", irModule.numWarps, 0};
+  bool loadedFromDiskCache = loadBinaryFromDiskCache(startSlot, endSlot, cacheHash, irModule, binary);
+  if (!loadedFromDiskCache) {
+    binary = TritonTargetDispatch::compile(irModule.mlirModule, irModule.numWarps, irModule.numStages);
+    if (binary.data) {
+      writeBinaryToDiskCache(startSlot, endSlot, cacheHash, irModule, binary);
+    }
+  }
+
   if (!binary.data) {
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors from failed compilation
 #endif
     sd_printf("TritonGraphBackend: Triton compilation failed for segment [%d-%d]\n", startSlot, endSlot);
-    // Clean up MLIR module
-    if (irModule.mlirModule) {
-      auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
-      mod->erase();
-      delete mod;
-    }
+    cleanupModule();
     return result;
   }
 
@@ -505,6 +900,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 #endif
     sd_printf("TritonGraphBackend: module load failed for segment [%d-%d]\n", startSlot, endSlot);
     delete[] static_cast<char*>(binary.data);
+    cleanupModule();
     return result;
   }
 
@@ -518,6 +914,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     TritonTargetDispatch::unloadModule(result.gpuModule);
     result.gpuModule = nullptr;
     delete[] static_cast<char*>(binary.data);
+    cleanupModule();
     return result;
   }
 
@@ -536,11 +933,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
   // Clean up
   delete[] static_cast<char*>(binary.data);
-  if (irModule.mlirModule) {
-    auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
-    mod->erase();
-    delete mod;
-  }
+  cleanupModule();
 
   return result;
 }
