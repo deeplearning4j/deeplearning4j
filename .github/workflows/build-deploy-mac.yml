@@ -35,7 +35,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: macos-10.15
+        default: macos-13
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -112,6 +112,14 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+
+      - name: Setup ccache
+        id: setup-ccache
+        uses: ./.github/actions/setup-ccache-macos
+        with:
+          cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
+          max-size: '5G'
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
@@ -165,7 +173,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install gpg1 gnu-sed unzip gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup libnd4j home if a download url is specified
@@ -227,5 +235,17 @@ jobs:
                   eval "${COMMAND}"
           fi
 
-    
+      - name: Show ccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats after build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
 

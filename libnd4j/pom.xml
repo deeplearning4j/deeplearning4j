@@ -48,7 +48,7 @@
         <libnd4j.types.show.impact>true</libnd4j.types.show.impact>
 
         <!-- Debug type configuration -->
-        <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
+        <libnd4j.debug.types.profile></libnd4j.debug.types.profile>
         <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
         <libnd4j.debug.auto.reduce>false</libnd4j.debug.auto.reduce>
 
@@ -73,8 +73,8 @@
 
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
         <libnd4j.outputPath>${project.basedir}/blasbuild/${libnd4j.chip}</libnd4j.outputPath>
-        <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version>
+        <cuda.version>12.9</cuda.version>
+        <cudnn.version>9.10</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>
         <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
@@ -83,7 +83,24 @@
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
+        <!-- Single helper (legacy, still supported) -->
         <libnd4j.helper></libnd4j.helper>
+        <!-- Multi-helper support: comma-separated list of helpers to enable -->
+        <!-- Available helpers: onednn, cudnn, armcompute, mlir, mps, accelerate, miopen, pjrt -->
+        <!-- Example: -Dlibnd4j.helpers=onednn,cudnn -->
+        <libnd4j.helpers></libnd4j.helpers>
+        <!-- Triton toggle (independent of helper selection) -->
+        <libnd4j.triton>OFF</libnd4j.triton>
+
+        <!-- Dynamic Kernel Selection Configuration -->
+        <libnd4j.dynamic.kernel.selection>ON</libnd4j.dynamic.kernel.selection>
+        <libnd4j.kernel.strategy>fastest</libnd4j.kernel.strategy>
+        <libnd4j.kernel.autotuning>OFF</libnd4j.kernel.autotuning>
+        <libnd4j.kernel.caching>ON</libnd4j.kernel.caching>
+        <!-- Helper priority order (comma-separated, highest priority first) -->
+        <!-- Example: -Dlibnd4j.helper.priority=cudnn,onednn,cpu -->
+        <libnd4j.helper.priority></libnd4j.helper.priority>
+
         <libnd4j.buildprogram>bash</libnd4j.buildprogram>
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
@@ -93,11 +110,26 @@
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
+        <!-- MKL configuration for VML (Vector Math Library) support -->
+        <mkl.artifactId></mkl.artifactId>
+        <mkl.classifier></mkl.classifier>
+        <!-- BLAS implementation selection: 'openblas', 'mkl', or empty for auto-detect -->
+        <!-- When using oneDNN helper, defaults to MKL. Set to 'openblas' to override. -->
+        <!-- Example: -Dlibnd4j.blas=openblas -->
+        <libnd4j.blas></libnd4j.blas>
         <libnd4j.calltrace>OFF</libnd4j.calltrace>
         <libnd4j.lto>OFF</libnd4j.lto>
+        <!-- CUDA Parallel Compilation (CUDA 11.2+): can reduce build times by 50% -->
+        <!-- libnd4j.cuda.lto: Device LTO (better runtime perf, longer link) -->
+        <libnd4j.cuda.lto>OFF</libnd4j.cuda.lto>
+        <!-- libnd4j.cuda.threads: nvcc threads flag (0=auto, parallelizes multi-arch) -->
+        <libnd4j.cuda.threads>0</libnd4j.cuda.threads>
+        <!-- libnd4j.cuda.splitcompile: nvcc split-compile (0=auto, parallel optimization) -->
+        <libnd4j.cuda.splitcompile>0</libnd4j.cuda.splitcompile>
         <libnd4j.vectorization>OFF</libnd4j.vectorization>
         <libnd4j.cpu.compile.skip>false</libnd4j.cpu.compile.skip>
         <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
+        <libnd4j.tpu.compile.skip>true</libnd4j.tpu.compile.skip>
         <libnd4j.test.filter>none</libnd4j.test.filter>
         <libnd4j.log>none</libnd4j.log>
         <libnd4j.test.runner></libnd4j.test.runner>
@@ -109,13 +141,46 @@
         <cpu.core.count></cpu.core.count>
         <libnd4j.preprocess>OFF</libnd4j.preprocess>
         <libnd4j.build.ppstep>OFF</libnd4j.build.ppstep>
-    <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
+        <libnd4j.extract.instantiations>OFF</libnd4j.extract.instantiations>
         <libnd4j.generate.fix.files>OFF</libnd4j.generate.fix.files>
         <libnd4j.instantiation.report>OFF</libnd4j.instantiation.report>
         <libnd4j.instantiation.verbose>OFF</libnd4j.instantiation.verbose>
         <libnd4j.analyze.templates>OFF</libnd4j.analyze.templates>
-        
- </properties>
+        <libnd4j.cmake.only>OFF</libnd4j.cmake.only>
+        <libnd4j.compiler></libnd4j.compiler>
+        <libnd4j.link.only>OFF</libnd4j.link.only>
+        <libnd4j.dry.run>OFF</libnd4j.dry.run>
+
+        <!-- OOM Killer Configuration (cross-platform: Linux, macOS, Windows/MSYS2) -->
+        <!-- Monitors memory usage during native build and terminates if threshold exceeded -->
+        <!-- The OOM killer monitors THREE conditions (any triggers a kill): -->
+        <!--   1. System memory threshold exceeded (libnd4j.oom.memory.threshold) -->
+        <!--   2. Process tree memory limit exceeded (libnd4j.oom.process.max.mb) -->
+        <!--   3. Rapid memory growth detected (libnd4j.oom.velocity.threshold) -->
+        <!-- Example: mvn compile -Dlibnd4j.oom.killer=ON -Dlibnd4j.oom.process.max.mb=32000 -->
+        <libnd4j.oom.killer>ON</libnd4j.oom.killer>
+        <libnd4j.oom.memory.threshold>85</libnd4j.oom.memory.threshold>
+        <libnd4j.oom.monitor.interval>1</libnd4j.oom.monitor.interval>
+        <!-- Process tree memory limit in MB (0=disabled). Tracks build process + all child compilers -->
+        <libnd4j.oom.process.max.mb>0</libnd4j.oom.process.max.mb>
+        <!-- Velocity threshold: kill if memory grows faster than this % per 5 seconds -->
+        <libnd4j.oom.velocity.threshold>8</libnd4j.oom.velocity.threshold>
+
+        <!-- JNI Configuration for Java stack trace capture in lifecycle tracking -->
+        <libnd4j.build.with.java>ON</libnd4j.build.with.java>
+
+        <!-- MLIR Configuration -->
+        <libnd4j.mlir>OFF</libnd4j.mlir>
+        <libnd4j.mlir.version>18</libnd4j.mlir.version>
+        <libnd4j.mlir.gpu>OFF</libnd4j.mlir.gpu>
+
+        <!-- Build Isolation Configuration -->
+        <!-- When true, 'mvn clean' removes ALL backends (blasbuild/*) -->
+        <!-- When false (default), 'mvn clean' only removes the current backend (blasbuild/${libnd4j.chip}) -->
+        <!-- This allows parallel builds of different backends without interference -->
+        <libnd4j.clean.all>false</libnd4j.clean.all>
+
+    </properties>
 
     <dependencies>
         <dependency>
@@ -210,6 +275,10 @@
                 </executions>
             </plugin>
 
+            <!-- Backend-Isolated Clean Plugin Configuration -->
+            <!-- By default, only cleans the current backend (blasbuild/${libnd4j.chip}) -->
+            <!-- This allows parallel builds of CPU and CUDA without interference -->
+            <!-- Use -Dlibnd4j.clean.all=true to clean all backends -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
@@ -223,8 +292,9 @@
                         </goals>
                         <configuration>
                             <filesets>
+                                <!-- Only clean the current backend's build directory -->
                                 <fileset>
-                                    <directory>blasbuild</directory>
+                                    <directory>blasbuild/${libnd4j.chip}</directory>
                                 </fileset>
                             </filesets>
                         </configuration>
@@ -253,6 +323,45 @@
     </build>
 
     <profiles>
+
+        <!-- Clean All Backends Profile -->
+        <!-- Activated with -Dlibnd4j.clean.all=true -->
+        <!-- Cleans ALL backend build directories (blasbuild/*) instead of just the current one -->
+        <profile>
+            <id>clean-all-backends</id>
+            <activation>
+                <property>
+                    <name>libnd4j.clean.all</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-clean-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-clean-all</id>
+                                <phase>clean</phase>
+                                <goals>
+                                    <goal>clean</goal>
+                                </goals>
+                                <configuration>
+                                    <filesets>
+                                        <!-- Clean ALL backend build directories -->
+                                        <fileset>
+                                            <directory>blasbuild</directory>
+                                        </fileset>
+                                    </filesets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>compat-profile</id>
@@ -333,6 +442,246 @@
                 <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}-${cuda.version}
                 </libnd4j.classifier>
             </properties>
+        </profile>
+
+        <!-- MKL profile - explicitly enabled with -Dlibnd4j.blas=mkl -->
+        <!-- Provides MKL VML (Vector Math Library) for optimized math functions like vsErf/vdErf -->
+        <!-- Use this when you want MKL BLAS and VML functions -->
+        <profile>
+            <id>mkl-explicit</id>
+            <activation>
+                <property>
+                    <name>libnd4j.blas</name>
+                    <value>mkl</value>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>${javacpp.platform}</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>${mkl.classifier}</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/${javacpp.platform}/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/${javacpp.platform}/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/${javacpp.platform}/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/${javacpp.platform}/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- OpenBLAS explicit profile - use -Dlibnd4j.blas=openblas to force OpenBLAS even with oneDNN -->
+        <!-- This overrides the default MKL behavior when using oneDNN helper -->
+        <profile>
+            <id>openblas-explicit</id>
+            <activation>
+                <property>
+                    <name>libnd4j.blas</name>
+                    <value>openblas</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Explicitly disable MKL when OpenBLAS is requested -->
+                <mkl.artifactId></mkl.artifactId>
+                <mkl.classifier></mkl.classifier>
+            </properties>
+        </profile>
+
+        <!-- MKL default profile for x86_64 Linux - enables MKL VML when oneDNN is likely used -->
+        <!-- This profile activates by default on x86_64 Linux unless libnd4j.blas=openblas -->
+        <!-- MKL provides optimized VML functions (vsErf, vdErf, etc.) for oneDNN platform helpers -->
+        <!-- Note: MKL headers are in the -redist JAR, not the platform JAR -->
+        <profile>
+            <id>mkl-default-linux-x86_64</id>
+            <activation>
+                <os>
+                    <name>Linux</name>
+                    <arch>amd64</arch>
+                </os>
+                <!-- Only activate if libnd4j.blas is not explicitly set -->
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>linux-x86_64</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>linux-x86_64</classifier>
+                            </dependency>
+                            <!-- Redist JAR contains the actual headers and libraries -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>linux-x86_64-redist</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/linux-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/linux-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/linux-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/linux-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- MKL default profile for Windows x86_64 -->
+        <profile>
+            <id>mkl-default-windows-x86_64</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                    <arch>amd64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>windows-x86_64</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>windows-x86_64</classifier>
+                            </dependency>
+                            <!-- Redist JAR contains the actual headers and libraries -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>windows-x86_64-redist</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/windows-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/windows-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/windows-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/windows-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- MKL default profile for macOS x86_64 -->
+        <profile>
+            <id>mkl-default-macosx-x86_64</id>
+            <activation>
+                <os>
+                    <name>Mac OS X</name>
+                    <arch>x86_64</arch>
+                </os>
+                <property>
+                    <name>!libnd4j.blas</name>
+                </property>
+            </activation>
+            <properties>
+                <mkl.artifactId>mkl</mkl.artifactId>
+                <mkl.classifier>macosx-x86_64</mkl.classifier>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>macosx-x86_64</classifier>
+                            </dependency>
+                            <!-- Redist JAR contains the actual headers and libraries -->
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>mkl</artifactId>
+                                <version>${mkl.version}-${javacpp-presets.version}</version>
+                                <classifier>macosx-x86_64-redist</classifier>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <buildResources>
+                                <buildResource>/org/bytedeco/mkl/macosx-x86_64/</buildResource>
+                            </buildResources>
+                            <includeResources>
+                                <includeResource>/org/bytedeco/mkl/macosx-x86_64/include/</includeResource>
+                            </includeResources>
+                            <linkResources>
+                                <linkResource>/org/bytedeco/mkl/macosx-x86_64/</linkResource>
+                                <linkResource>/org/bytedeco/mkl/macosx-x86_64/lib/</linkResource>
+                            </linkResources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <!-- Add these profiles to pom.xml for each platform -->
@@ -504,6 +853,9 @@
 
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
@@ -526,6 +878,18 @@
                                         <argument>${libnd4j.buildthreads}</argument>
                                         <argument>-h</argument>
                                         <argument>${libnd4j.helper}</argument>
+                                        <argument>--helpers</argument>
+                                        <argument>${libnd4j.helpers}</argument>
+                                        <argument>--dynamic-kernel-selection</argument>
+                                        <argument>${libnd4j.dynamic.kernel.selection}</argument>
+                                        <argument>--kernel-strategy</argument>
+                                        <argument>${libnd4j.kernel.strategy}</argument>
+                                        <argument>--kernel-autotuning</argument>
+                                        <argument>${libnd4j.kernel.autotuning}</argument>
+                                        <argument>--kernel-caching</argument>
+                                        <argument>${libnd4j.kernel.caching}</argument>
+                                        <argument>--helper-priority</argument>
+                                        <argument>${libnd4j.helper.priority}</argument>
                                         <argument>--operations</argument>
                                         <argument>${libnd4j.operations}</argument>
                                         <argument>--datatypes</argument>
@@ -536,6 +900,12 @@
                                         <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
@@ -555,8 +925,8 @@
                                         <argument>--debug-custom-types</argument>
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
-                                         <argument>${libnd4j.debug.auto.reduce}</argument>
-                                         <argument>--ppstep</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                        <argument>--ppstep</argument>
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
@@ -566,6 +936,32 @@
                                         <argument>${libnd4j.instantiation.report}</argument>
                                         <argument>--instantiation-verbose</argument>
                                         <argument>${libnd4j.instantiation.verbose}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -597,6 +993,152 @@
             </build>
         </profile>
 
+        <profile>
+            <id>tpu</id>
+            <activation>
+                <property>
+                    <name>libnd4j.tpu</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
+                <libnd4j.cuda.compile.skip>true</libnd4j.cuda.compile.skip>
+                <libnd4j.tpu.compile.skip>false</libnd4j.tpu.compile.skip>
+                <libnd4j.chip>tpu</libnd4j.chip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-compile-tpu</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${libnd4j.tpu.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
+                                    <buildCommand>
+                                        <program>${libnd4j.buildprogram}</program>
+                                        <argument>buildnativeoperations.sh</argument>
+                                        <argument>--output-path</argument>
+                                        <argument>${libnd4j.outputPath}</argument>
+                                        <argument>--build-type</argument>
+                                        <argument>${libnd4j.build}</argument>
+                                        <argument>--chip</argument>
+                                        <argument>tpu</argument>
+                                        <argument>--platform</argument>
+                                        <argument>${libnd4j.platform}</argument>
+                                        <argument>--chip-extension</argument>
+                                        <argument>${libnd4j.extension}</argument>
+                                        <argument>${libnd4j.tests}</argument>
+                                        <argument>-j</argument>
+                                        <argument>${libnd4j.buildthreads}</argument>
+                                        <argument>-h</argument>
+                                        <argument>pjrt</argument>
+                                        <argument>--operations</argument>
+                                        <argument>${libnd4j.operations}</argument>
+                                        <argument>--datatypes</argument>
+                                        <argument>${libnd4j.datatypes}</argument>
+                                        <argument>--sanitize</argument>
+                                        <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
+                                        <argument>--use_lto</argument>
+                                        <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
+                                        <argument>--functrace</argument>
+                                        <argument>${libnd4j.calltrace}</argument>
+                                        <argument>--log-output</argument>
+                                        <argument>${libnd4j.log}</argument>
+                                        <argument>--optimization-level</argument>
+                                        <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
+                                        <argument>--print-math</argument>
+                                        <argument>${libnd4j.printmath}</argument>
+                                        <argument>--preprocess</argument>
+                                        <argument>${libnd4j.preprocess}</argument>
+                                        <argument>--generate-flatc</argument>
+                                        <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+                                        <argument>--ppstep</argument>
+                                        <argument>${libnd4j.build.ppstep}</argument>
+                                        <argument>--extract-instantiations</argument>
+                                        <argument>${libnd4j.extract.instantiations}</argument>
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                    </buildCommand>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-package-tpu</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-tpu.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
         <profile>
             <id>build-cpu</id>
@@ -659,6 +1201,9 @@
                                 </goals>
                                 <configuration>
                                     <skip>${libnd4j.cpu.compile.skip}</skip>
+                                    <environmentVariables>
+                                        <BUILD_WITH_JAVA>${libnd4j.build.with.java}</BUILD_WITH_JAVA>
+                                    </environmentVariables>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
@@ -683,6 +1228,18 @@
                                         <argument>${libnd4j.buildthreads}</argument>
                                         <argument>-h</argument>
                                         <argument>${libnd4j.helper}</argument>
+                                        <argument>--helpers</argument>
+                                        <argument>${libnd4j.helpers}</argument>
+                                        <argument>--dynamic-kernel-selection</argument>
+                                        <argument>${libnd4j.dynamic.kernel.selection}</argument>
+                                        <argument>--kernel-strategy</argument>
+                                        <argument>${libnd4j.kernel.strategy}</argument>
+                                        <argument>--kernel-autotuning</argument>
+                                        <argument>${libnd4j.kernel.autotuning}</argument>
+                                        <argument>--kernel-caching</argument>
+                                        <argument>${libnd4j.kernel.caching}</argument>
+                                        <argument>--helper-priority</argument>
+                                        <argument>${libnd4j.helper.priority}</argument>
                                         <argument>--operations</argument>
                                         <argument>${libnd4j.operations}</argument>
                                         <argument>--datatypes</argument>
@@ -695,6 +1252,12 @@
                                         <argument>${libnd4j.arch}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
+                                        <argument>--cuda-lto</argument>
+                                        <argument>${libnd4j.cuda.lto}</argument>
+                                        <argument>--cuda-threads</argument>
+                                        <argument>${libnd4j.cuda.threads}</argument>
+                                        <argument>--cuda-split-compile</argument>
+                                        <argument>${libnd4j.cuda.splitcompile}</argument>
                                         <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
@@ -717,11 +1280,37 @@
                                         <argument>${libnd4j.debug.types.custom}</argument>
                                         <argument>--debug-auto-reduce</argument>
                                         <argument>${libnd4j.debug.auto.reduce}</argument>
-                                       <argument>--ppstep</argument>
+                                        <argument>--ppstep</argument>
                                         <argument>${libnd4j.build.ppstep}</argument>
                                         <argument>--extract-instantiations</argument>
                                         <argument>${libnd4j.extract.instantiations}</argument>
-                                
+                                        <argument>--cmake-only</argument>
+                                        <argument>${libnd4j.cmake.only}</argument>
+                                        <argument>--compiler</argument>
+                                        <argument>${libnd4j.compiler}</argument>
+                                        <argument>--link-only</argument>
+                                        <argument>${libnd4j.link.only}</argument>
+                                        <argument>--dry-run</argument>
+                                        <argument>${libnd4j.dry.run}</argument>
+                                        <argument>--mlir</argument>
+                                        <argument>${libnd4j.mlir}</argument>
+                                        <argument>--mlir-version</argument>
+                                        <argument>${libnd4j.mlir.version}</argument>
+                                        <argument>--mlir-gpu</argument>
+                                        <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
+                                        <argument>--oom-killer</argument>
+                                        <argument>${libnd4j.oom.killer}</argument>
+                                        <argument>--oom-memory-threshold</argument>
+                                        <argument>${libnd4j.oom.memory.threshold}</argument>
+                                        <argument>--oom-monitor-interval</argument>
+                                        <argument>${libnd4j.oom.monitor.interval}</argument>
+                                        <argument>--oom-process-max-mb</argument>
+                                        <argument>${libnd4j.oom.process.max.mb}</argument>
+                                        <argument>--oom-velocity-threshold</argument>
+                                        <argument>${libnd4j.oom.velocity.threshold}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -779,6 +1368,37 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <!-- MLIR JIT Compilation Profile -->
+        <profile>
+            <id>mlir</id>
+            <activation>
+                <property>
+                    <name>libnd4j.mlir</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.mlir>ON</libnd4j.mlir>
+                <!-- MLIR requires LLVM 18+ -->
+                <libnd4j.mlir.version>18</libnd4j.mlir.version>
+            </properties>
+        </profile>
+
+        <!-- MLIR with GPU Support Profile -->
+        <profile>
+            <id>mlir-gpu</id>
+            <activation>
+                <property>
+                    <name>libnd4j.mlir.gpu</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.mlir>ON</libnd4j.mlir>
+                <libnd4j.mlir.gpu>ON</libnd4j.mlir.gpu>
+            </properties>
         </profile>
 
     </profiles>

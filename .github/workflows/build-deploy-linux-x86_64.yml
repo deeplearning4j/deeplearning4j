@@ -26,11 +26,6 @@ on:
         required: false
         default: central
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default: ''
-
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
@@ -95,10 +90,6 @@ jobs:
           - server_id: ${{ github.event.inputs.serverId }}
             experimental: true
             name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: Release repository id
 
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -213,23 +204,30 @@ jobs:
 
       - uses: ./.github/actions/update-deps-linux
 
+      - name: Setup ccache
+        id: setup-ccache
+        uses: ./.github/actions/setup-ccache-linux
+        with:
+          cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
+          max-size: '5G'
+
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-cmake-
+            ${{ runner.os }}-${{ runner.arch }}-cmake-
 
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ runner.arch }}-protobuf-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-protobuf-
+            ${{ runner.os }}-${{ runner.arch }}-protobuf-
 
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
@@ -327,6 +325,20 @@ jobs:
                        eval "${COMMAND}"
           fi
 
+      - name: Show ccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats after build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
+
       - name: Show memory usage summary
         if: always()
         shell: bash
@@ -335,14 +347,14 @@ jobs:
           if [ -n "$MONITOR_PID" ]; then
             kill $MONITOR_PID 2>/dev/null || true
           fi
-          
+
           echo "=== Final memory status ==="
           free -h
           if swapon --show | grep -q "/"; then
             echo "=== Swap usage ==="
             swapon --show
           fi
-          
+
           echo "=== Memory usage during build ==="
           if [ -f memory_monitor.log ]; then
             cat memory_monitor.log
