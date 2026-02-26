@@ -74,7 +74,14 @@ public enum DataType {
     UINT64,
     UNKNOWN,
     UTF16,
-    UTF32;
+    UTF32,
+
+    /**
+     * FP8 E4M3 format (4-bit exponent, 3-bit mantissa).
+     * Used for quantized inference on SM 89+ (Ada Lovelace / Hopper).
+     * Range: ~±448, Precision: ~3 significant digits.
+     */
+    FLOAT8;
 
     public static final DataType FLOAT16 = DataType.HALF;
     public static final DataType INT32 = DataType.INT;
@@ -82,6 +89,7 @@ public enum DataType {
     public static final DataType INT16 = DataType.SHORT;
     public static final DataType INT8 = DataType.BYTE;
     public static final DataType UINT8 = DataType.UBYTE;
+    public static final DataType FP8 = DataType.FLOAT8;
 
 
     /**
@@ -93,7 +101,7 @@ public enum DataType {
     public static DataType fromInt(int type) {
         switch (type) {
             case 1: return BOOL;
-            case 2: return FLOAT;
+            case 2: return FLOAT8;
             case 3: return HALF;
             case 4: return HALF;
             case 5: return FLOAT;
@@ -130,6 +138,7 @@ public enum DataType {
             case UINT32: return 13;
             case UINT64: return 14;
             case BFLOAT16: return 17;
+            case FLOAT8: return 2;
             case UTF8: return 50;
             case UTF16: return 51;
             case UTF32: return 52;
@@ -141,7 +150,7 @@ public enum DataType {
      * @return Returns true if the datatype is a floating point type (double, float or half precision)
      */
     public boolean isFPType(){
-        return this == FLOAT || this == DOUBLE || this == HALF || this == BFLOAT16;
+        return this == FLOAT || this == DOUBLE || this == HALF || this == BFLOAT16 || this == FLOAT8;
     }
 
     /**
@@ -173,6 +182,7 @@ public enum DataType {
             case SHORT:
             case BYTE:
             case BFLOAT16:
+            case FLOAT8:
                 return true;
             case UBYTE:
             case BOOL:
@@ -202,6 +212,8 @@ public enum DataType {
                 return 5;
             case BFLOAT16:
                 return 4;
+            case FLOAT8:
+                return 2;
             case LONG:
             case INT:
             case SHORT:
@@ -242,6 +254,7 @@ public enum DataType {
             case UBYTE:
             case BYTE:
             case BOOL:
+            case FLOAT8:
                 return 1;
             case UTF8:
             case UTF16:

@@ -302,6 +302,210 @@ public interface Environment {
      */
     void setFuncTraceForAllocate(boolean reallyTrace);
 
+    /**
+     * Returns whether NDArray lifecycle tracking is enabled.
+     * When enabled (and libnd4j is compiled with SD_GCC_FUNCTRACE), tracks all NDArray
+     * allocations and deallocations with stack traces for leak detection.
+     * Automatically generates flamegraphs and leak reports at program exit.
+     *
+     * @return true if lifecycle tracking is enabled
+     */
+    boolean isLifecycleTracking();
+
+    /**
+     * Enable or disable NDArray lifecycle tracking.
+     * Requires libnd4j to be compiled with SD_GCC_FUNCTRACE.
+     * When enabled, tracks allocations/deallocations and generates leak reports.
+     *
+     * @param enabled true to enable tracking
+     */
+    void setLifecycleTracking(boolean enabled);
+
+    /**
+     * Returns whether view wrapper tracking is enabled.
+     * Views share the underlying buffer but create new NDArray objects.
+     * Tracking views can help identify wrapper leaks.
+     *
+     * @return true if view tracking is enabled
+     */
+    boolean isTrackViews();
+
+    /**
+     * Enable or disable tracking of view wrappers.
+     *
+     * @param track true to track views
+     */
+    void setTrackViews(boolean track);
+
+    /**
+     * Returns whether deletion stack trace tracking is enabled.
+     * Useful for analyzing where deallocations happen and generating deletion flamegraphs.
+     *
+     * @return true if deletion tracking is enabled
+     */
+    boolean isTrackDeletions();
+
+    /**
+     * Enable or disable deletion stack trace tracking.
+     *
+     * @param track true to track deletions
+     */
+    void setTrackDeletions(boolean track);
+
+    /**
+     * Returns the stack trace depth for lifecycle tracking.
+     * Deeper stacks provide more context but use more memory.
+     *
+     * @return stack depth (1-64), default 32
+     */
+    int getStackDepth();
+
+    /**
+     * Set the stack trace depth for allocation/deallocation tracking.
+     *
+     * @param depth stack depth (1-64)
+     */
+    void setStackDepth(int depth);
+
+    /**
+     * Returns the periodic report interval in seconds.
+     * The lifecycle tracker prints statistics to stderr at this interval.
+     *
+     * @return interval in seconds, default 300 (5 minutes)
+     */
+    int getReportInterval();
+
+    /**
+     * Set the periodic report interval.
+     *
+     * @param seconds interval in seconds
+     */
+    void setReportInterval(int seconds);
+
+    /**
+     * Returns the maximum number of deletion records to keep in history.
+     * Used for generating deletion flamegraphs.
+     *
+     * @return maximum deletion records, default 10000
+     */
+    long getMaxDeletionHistory();
+
+    /**
+     * Set the maximum deletion history size.
+     *
+     * @param max maximum records
+     */
+    void setMaxDeletionHistory(long max);
+
+    /**
+     * Returns whether periodic file-based snapshots are enabled.
+     * When enabled, lifecycle tracker writes timestamped snapshot files
+     * (not just stderr output) at each report interval.
+     * Files are named: ndarray_snapshot_pid<PID>_<timestamp>_<sequence>.txt
+     *
+     * @return true if file snapshots are enabled
+     */
+    boolean isSnapshotFiles();
+
+    /**
+     * Enable or disable periodic file-based snapshots.
+     * When enabled, snapshots are written to SD_LIFECYCLE_LOG_DIR (or /tmp if not set).
+     *
+     * @param enabled true to enable file snapshots
+     */
+    void setSnapshotFiles(boolean enabled);
+
+    /**
+     * Returns whether operation name tracking is enabled.
+     * When enabled, tracks which operations (Conv2D, MatMul, etc.) are leaking.
+     * Reports show top 20 leaking operations by memory.
+     *
+     * @return true if operation tracking is enabled
+     */
+    boolean isTrackOperations();
+
+    /**
+     * Enable or disable operation name tracking.
+     * Useful for identifying which operations contribute most to leaks.
+     *
+     * @param enabled true to enable operation tracking
+     */
+    void setTrackOperations(boolean enabled);
+
+    /**
+     * Returns whether NDArray lifecycle tracking is enabled.
+     * This controls the NDArrayLifecycleTracker specifically.
+     *
+     * @return true if NDArray tracking is enabled
+     */
+    boolean isNDArrayTracking();
+
+    /**
+     * Enable or disable NDArray lifecycle tracking.
+     *
+     * @param enabled true to enable NDArray tracking
+     */
+    void setNDArrayTracking(boolean enabled);
+
+    /**
+     * Returns whether DataBuffer lifecycle tracking is enabled.
+     * This controls the DataBufferLifecycleTracker specifically.
+     *
+     * @return true if DataBuffer tracking is enabled
+     */
+    boolean isDataBufferTracking();
+
+    /**
+     * Enable or disable DataBuffer lifecycle tracking.
+     *
+     * @param enabled true to enable DataBuffer tracking
+     */
+    void setDataBufferTracking(boolean enabled);
+
+    /**
+     * Returns whether TAD cache lifecycle tracking is enabled.
+     * This controls the TADCacheLifecycleTracker specifically.
+     *
+     * @return true if TAD cache tracking is enabled
+     */
+    boolean isTADCacheTracking();
+
+    /**
+     * Enable or disable TAD cache lifecycle tracking.
+     *
+     * @param enabled true to enable TAD cache tracking
+     */
+    void setTADCacheTracking(boolean enabled);
+
+    /**
+     * Returns whether shape cache lifecycle tracking is enabled.
+     * This controls the ShapeCacheLifecycleTracker specifically.
+     *
+     * @return true if shape cache tracking is enabled
+     */
+    boolean isShapeCacheTracking();
+
+    /**
+     * Enable or disable shape cache lifecycle tracking.
+     *
+     * @param enabled true to enable shape cache tracking
+     */
+    void setShapeCacheTracking(boolean enabled);
+
+    /**
+     * Returns whether OpContext lifecycle tracking is enabled.
+     * This controls the OpContextLifecycleTracker specifically.
+     *
+     * @return true if OpContext tracking is enabled
+     */
+    boolean isOpContextTracking();
+
+    /**
+     * Enable or disable OpContext lifecycle tracking.
+     *
+     * @param enabled true to enable OpContext tracking
+     */
+    void setOpContextTracking(boolean enabled);
 
     /**
      * This method returns whether to delete cpu side (host side in gpu terms)
@@ -329,6 +533,24 @@ public interface Environment {
      * @param reallyDelete
      */
     void setDeleteSpecial(boolean reallyDelete);
+
+    /**
+     * Returns whether variable origin tracing is enabled for debugging import issues.
+     * When enabled, operations will trace variable resolution attempts to help debug
+     * "unknown array" issues during ONNX graph import.
+     * This defaults to false and should only be enabled for debugging purposes.
+     * @return true if variable tracing is enabled
+     */
+    boolean isVariableTracingEnabled();
+
+    /**
+     * Set whether to enable variable origin tracing for debugging import issues.
+     * When enabled, operations will trace variable resolution attempts which helps
+     * debug "unknown array" issues during ONNX graph import by showing exactly
+     * where variables come from and why they might be missing.
+     * @param enabled true to enable tracing
+     */
+    void setVariableTracingEnabled(boolean enabled);
     
     // CUDA specific methods
     
@@ -409,9 +631,16 @@ public interface Environment {
     
     /** Returns the caching allocator limit in MB */
     int cudaCachingAllocatorLimit();
-    
+
     /** Set the caching allocator limit in MB */
     void setCudaCachingAllocatorLimit(int limitInMB);
+
+    /** Returns the pinned host memory limit in MB (default 8192 = 8 GB) */
+    long cudaPinnedHostLimit();
+
+    /** Set the pinned host memory limit in MB. Controls the maximum host memory
+     *  used as fallback when GPU memory is exhausted. */
+    void setCudaPinnedHostLimit(long limitInMB);
     
     /** Returns whether unified memory is used */
     boolean cudaUseUnifiedMemory();
@@ -498,4 +727,279 @@ public interface Environment {
      * @return status code (0 for success, non-zero for failure)
      */
     int setCudaDeviceLimit(int limitType, long value);
+    
+    // ============== Triton GPU Settings ==============
+    
+    /**
+     * Returns the number of parallel threads for Triton kernel compilation.
+     * Higher values compile more sub-kernels concurrently but use more memory (~1-2GB per thread).
+     * @return number of parallel compilation threads (default: 1)
+     */
+    default int tritonBuildThreads() {
+        return 1;
+    }
+    
+    /**
+     * Set the number of parallel threads for Triton kernel compilation.
+     * @param threads number of parallel compilation threads (1-16)
+     */
+    default void setTritonBuildThreads(int threads) {}
+    
+    /**
+     * Returns whether Triton disk cache is enabled for compiled kernels.
+     * @return true if cache enabled, false otherwise
+     */
+    default boolean tritonCacheEnabled() {
+        return true;
+    }
+    
+    /**
+     * Set whether Triton disk cache is enabled.
+     * @param enabled true to enable cache, false to disable
+     */
+    default void setTritonCacheEnabled(boolean enabled) {}
+
+    /**
+     * Returns the cooperative-launch target grid size (in blocks) for Triton sectioned kernels.
+     * Value {@code 0} means auto (device-dependent default).
+     * @return cooperative launch target blocks
+     */
+    default int tritonCoopTargetBlocks() {
+        return 0;
+    }
+
+    /**
+     * Set the cooperative-launch target grid size (in blocks) for Triton sectioned kernels.
+     * Use {@code 0} for auto.
+     * @param blocks target number of cooperative blocks (0 = auto)
+     */
+    default void setTritonCoopTargetBlocks(int blocks) {}
+
+    /**
+     * Returns the adaptive Triton sub-segment op cap. {@code 0} means auto/adaptive.
+     */
+    default int tritonMaxSubsegmentOps() {
+        return 0;
+    }
+
+    /**
+     * Set adaptive Triton sub-segment op cap. Use {@code 0} for auto/adaptive behavior.
+     */
+    default void setTritonMaxSubsegmentOps(int ops) {}
+
+    /**
+     * Returns the adaptive Triton sub-segment section cap. {@code 0} means auto/adaptive.
+     */
+    default int tritonMaxSubsegmentSections() {
+        return 0;
+    }
+
+    /**
+     * Set adaptive Triton sub-segment section cap. Use {@code 0} for auto/adaptive behavior.
+     */
+    default void setTritonMaxSubsegmentSections(int sections) {}
+
+    /**
+     * Returns whether verbose Triton diagnostics are enabled.
+     */
+    default boolean tritonVerbose() {
+        return false;
+    }
+
+    /**
+     * Enable or disable verbose Triton diagnostics.
+     */
+    default void setTritonVerbose(boolean verbose) {}
+
+    /**
+     * Returns whether section diagnostics dump is enabled.
+     */
+    default boolean tritonDumpSections() {
+        return false;
+    }
+
+    /**
+     * Enable or disable section diagnostics dump.
+     */
+    default void setTritonDumpSections(boolean dumpSections) {}
+
+    /**
+     * Returns whether argument mapping diagnostics dump is enabled.
+     */
+    default boolean tritonDumpArgs() {
+        return false;
+    }
+
+    /**
+     * Enable or disable argument mapping diagnostics dump.
+     */
+    default void setTritonDumpArgs(boolean dumpArgs) {}
+
+    /**
+     * Returns whether all Triton pattern matches are logged.
+     */
+    default boolean tritonLogAllPatterns() {
+        return false;
+    }
+
+    /**
+     * Enable or disable full Triton pattern logging.
+     */
+    default void setTritonLogAllPatterns(boolean logAllPatterns) {}
+
+    /**
+     * Returns whether Triton always recompiles kernels (bypassing disk-cache lookup).
+     */
+    default boolean tritonAlwaysCompile() {
+        return false;
+    }
+
+    /**
+     * Enable or disable always-compile mode for Triton.
+     */
+    default void setTritonAlwaysCompile(boolean alwaysCompile) {}
+
+    /**
+     * Returns whether Triton kernel artifact dumping is enabled.
+     */
+    default boolean tritonKernelDump() {
+        return false;
+    }
+
+    /**
+     * Enable or disable Triton kernel artifact dumping.
+     */
+    default void setTritonKernelDump(boolean kernelDump) {}
+
+    /**
+     * Returns whether Triton kernel override loading is enabled.
+     */
+    default boolean tritonKernelOverride() {
+        return false;
+    }
+
+    /**
+     * Enable or disable Triton kernel override loading.
+     */
+    default void setTritonKernelOverride(boolean kernelOverride) {}
+
+    /**
+     * Returns explicit Triton warp override (0 means auto).
+     */
+    default int tritonNumWarps() {
+        return 0;
+    }
+
+    /**
+     * Set explicit Triton warp override (0 means auto).
+     */
+    default void setTritonNumWarps(int numWarps) {}
+
+    /**
+     * Returns explicit Triton pipeline stage override (0 means auto).
+     */
+    default int tritonNumStages() {
+        return 0;
+    }
+
+    /**
+     * Set explicit Triton pipeline stage override (0 means auto).
+     */
+    default void setTritonNumStages(int numStages) {}
+
+    /**
+     * Returns Triton cluster CTA override used during TTIR->TTGIR conversion.
+     */
+    default int tritonNumCTAs() {
+        return 1;
+    }
+
+    /**
+     * Set Triton cluster CTA override used during TTIR->TTGIR conversion.
+     */
+    default void setTritonNumCTAs(int numCTAs) {}
+
+    /**
+     * Returns Triton max register override (0 means unset).
+     */
+    default int tritonMaxNreg() {
+        return 0;
+    }
+
+    /**
+     * Set Triton max register override (0 means unset).
+     */
+    default void setTritonMaxNreg(int maxNreg) {}
+
+    /**
+     * Returns whether LLVM floating-point fusion is enabled for Triton compilation.
+     */
+    default boolean tritonEnableFpFusion() {
+        return true;
+    }
+
+    /**
+     * Enable or disable LLVM floating-point fusion for Triton compilation.
+     */
+    default void setTritonEnableFpFusion(boolean enableFpFusion) {}
+
+    /**
+     * Returns whether line-info generation is disabled for CUDA JIT module load.
+     */
+    default boolean tritonDisableLineInfo() {
+        return false;
+    }
+
+    /**
+     * Enable or disable line-info generation for CUDA JIT module load.
+     */
+    default void setTritonDisableLineInfo(boolean disableLineInfo) {}
+
+    /**
+     * Returns Triton disk cache directory override, or empty string if unset.
+     */
+    default String tritonCacheDir() {
+        return "";
+    }
+
+    /**
+     * Set Triton disk cache directory override.
+     */
+    default void setTritonCacheDir(String cacheDir) {}
+
+    /**
+     * Returns Triton artifact dump directory override, or empty string if unset.
+     */
+    default String tritonDumpDir() {
+        return "";
+    }
+
+    /**
+     * Set Triton artifact dump directory override.
+     */
+    default void setTritonDumpDir(String dumpDir) {}
+
+    /**
+     * Returns Triton kernel override directory, or empty string if unset.
+     */
+    default String tritonOverrideDir() {
+        return "";
+    }
+
+    /**
+     * Set Triton kernel override directory.
+     */
+    default void setTritonOverrideDir(String overrideDir) {}
+
+    /**
+     * Returns Triton target architecture override, or empty string if unset.
+     */
+    default String tritonOverrideArch() {
+        return "";
+    }
+
+    /**
+     * Set Triton target architecture override.
+     */
+    default void setTritonOverrideArch(String overrideArch) {}
 }

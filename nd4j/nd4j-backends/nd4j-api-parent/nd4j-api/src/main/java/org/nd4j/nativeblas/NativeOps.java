@@ -21,6 +21,7 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.annotation.NoDeallocator;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -75,6 +76,7 @@ public interface NativeOps {
 
 
 
+ @NoDeallocator
  OpaqueNDArray create(OpaqueDataBuffer shapeInfo,
                       OpaqueDataBuffer buffer,
                       OpaqueDataBuffer specialBuffer,
@@ -94,6 +96,13 @@ public interface NativeOps {
  LongPointer getShape(OpaqueShapeList list, long i);
  boolean checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements);
  OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, OpaqueContext context);
+
+ /**
+  * Same as calculateOutputShapes2 but skips forceSyncToHost() on input arrays.
+  * Use for ops whose shape function only reads shape info (not array values).
+  * Avoids expensive CUDA D2H synchronization for shape-only ops.
+  */
+ OpaqueShapeList calculateOutputShapesNoSync(PointerPointer extraPointers, long hash, OpaqueContext context);
 
  void dbPrintAllocationTrace(org.nd4j.nativeblas.OpaqueDataBuffer db);
  int numIntermediateResults(org.nd4j.nativeblas.OpaqueContext contextPointer);
@@ -237,11 +246,71 @@ public interface NativeOps {
  Pointer mallocDevice(long memorySize, int deviceId, int flags);
  int freeHost(Pointer pointer);
  int freeDevice(Pointer pointer, int deviceId);
+
+ /**
+  * Check if CUDA memory pools are enabled.
+  * CUDA memory pools (cudaMallocAsync/cudaFreeAsync) provide efficient memory reuse
+  * without explicit caching. Only effective on CUDA 11.2+ with compatible devices.
+  * @return true if memory pools are enabled and supported, false otherwise
+  */
+ boolean isMemoryPoolEnabled();
+
+ /**
+  * Enable or disable CUDA memory pools.
+  * When disabled, falls back to regular cudaMalloc/cudaFree.
+  * @param enabled true to enable memory pools, false to disable
+  */
+ void setMemoryPoolEnabled(boolean enabled);
+
+ /**
+  * Get memory pool statistics for a device.
+  * @param deviceId The device to query
+  * @param usedBytes Output pointer for currently used bytes in the pool
+  * @param reservedBytes Output pointer for total reserved bytes in the pool
+  */
+ void getMemoryPoolStats(int deviceId, LongPointer usedBytes, LongPointer reservedBytes);
+
+ /**
+  * Trim unused memory from the pool.
+  * Releases cached memory back to the system.
+  * @param deviceId The device whose pool to trim
+  */
+ void trimMemoryPool(int deviceId);
+
+ /**
+  * Trim unused memory from the pool, syncing the specified stream.
+  * Use when frees were issued on a specific execution stream.
+  * @param deviceId The device whose pool to trim
+  * @param stream The CUDA stream to synchronize before trimming
+  */
+ void trimMemoryPoolOnStream(int deviceId, org.bytedeco.javacpp.Pointer stream);
+
+ /**
+  * Get current pinned host memory usage from failover allocations.
+  * @return bytes currently allocated in pinned host memory
+  */
+ long getPinnedHostBytesUsed();
+
+ /**
+  * Get pinned host memory limit for failover allocations.
+  * @return max bytes, or 0 for unlimited
+  */
+ long getPinnedHostBytesLimit();
+
+ /**
+  * Set pinned host memory limit for failover allocations.
+  * When exceeded, allocations will fail instead of consuming unbounded host memory.
+  * Set to 0 for unlimited (default).
+  * @param maxBytes maximum bytes allowed for pinned host failover
+  */
+ void setPinnedHostBytesLimit(long maxBytes);
+
  Pointer createContext();
  Pointer createStream();
  Pointer createEvent();
  int registerEvent(Pointer event, Pointer stream);
  int setDevice(int deviceId);
+ void setAvailableDevices(IntPointer devices, int size);
  OpaqueConstantDataBuffer constantBufferLong(int dtype, LongPointer data, int length);
  String getDeviceName(int device);
  long getDeviceFreeMemoryDefault();
@@ -255,6 +324,7 @@ public interface NativeOps {
  int streamSynchronize(Pointer stream);
  int eventSynchronize(Pointer event);
  int getAvailableDevices();
+ boolean isPeerAccessSupported(int srcDevice, int dstDevice);
  void enableDebugMode(boolean reallyEnable);
  void setGridLimit(int gridSize);
  int ompGetMaxThreads();
@@ -392,7 +462,9 @@ public interface NativeOps {
  String getConstantShapeBufferStackTrace(org.nd4j.nativeblas.OpaqueConstantShapeBuffer buffer);
 
  void markGraphContextInplace(OpaqueContext ptr, boolean reallyInplace);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueNDArray getOutputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueNDArray getInputArrayNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
  long dataTypeNativeAt(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
  boolean bArgAtNative(org.nd4j.nativeblas.OpaqueContext ptr, int idx);
@@ -444,8 +516,10 @@ public interface NativeOps {
  Pointer lcBlasHandle(org.nd4j.nativeblas.OpaqueLaunchContext lc);
  Pointer lcSolverHandle(org.nd4j.nativeblas.OpaqueLaunchContext lc);
  int lastErrorCode();
+ void clearLastError();
  void ctxShapeFunctionOverride(org.nd4j.nativeblas.OpaqueContext ptr, boolean reallyOverride);
  void ctxPurge(org.nd4j.nativeblas.OpaqueContext ptr);
+ void ctxPurgeNoSync(org.nd4j.nativeblas.OpaqueContext ptr);
  int binaryLevel();
  int optimalLevel();
  boolean isMinimalRequirementsMet();
@@ -463,18 +537,68 @@ public interface NativeOps {
  int dbUseCount(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbForceSyncToPrimary(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbForceSyncToSpecial(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbMigrate(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickHostWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickDeviceRead(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbTickDeviceWrite(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbExpand(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, long elements);
  void dbClose(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbFreeBuffersOnly(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbFreeBuffersOnStream(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, org.bytedeco.javacpp.Pointer stream);
+ boolean dbIsOwner(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ void dbCloseGetDiagnostics(org.bytedeco.javacpp.LongPointer outStats);
+ void dbCloseResetDiagnostics();
  int dbDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
  void dbSetDeviceId(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, int deviceId);
  int dbLocality(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer dbCreateView(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, long length);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(long elements, int dataType, boolean allocateBoth);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
+
+ /**
+  * Create an externalized data buffer that is ALREADY marked as constant.
+  * This is critical for preventing race conditions where the Java GC can
+  * finalize the buffer before setConstant() is called.
+  *
+  * The constant flag is set IN NATIVE CODE before returning to Java,
+  * eliminating the race window between buffer creation and marking constant.
+  *
+  * Use this instead of dbCreateExternalDataBuffer() + setConstant() for constant buffers.
+  *
+  * @param elements Number of elements
+  * @param dataType Data type integer
+  * @param primary Primary (host) pointer
+  * @param special Special (device) pointer
+  * @return Buffer that is already marked as constant and will never be deallocated
+  */
+ @NoDeallocator
+ org.nd4j.nativeblas.OpaqueDataBuffer dbCreateConstantExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
+
+ /**
+  * Set the constant flag on an OpaqueDataBuffer.
+  * Constant buffers (like shape info) should never be freed by the deallocator.
+  * This propagates the flag from Java to the native InteropDataBuffer.
+  * @param dataBuffer The buffer to mark
+  * @param isConstant True to mark as constant (will not be freed)
+  * @return true if the flag was successfully set, false if the buffer was invalid
+  *         (already closed or freed by GC). If false is returned, the buffer has
+  *         been deallocated and should not be used.
+  */
+ boolean dbSetConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer, boolean isConstant);
+
+ /**
+  * Check if a buffer is marked as constant.
+  * @param dataBuffer The buffer to check
+  * @return True if the buffer is marked as constant
+  */
+ boolean dbIsConstant(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);
+
  void setShapeBuffer(LongPointer inputShapeData, int dt, LongPointer bufferToSet, char order, int elementWiseStride, boolean isEmpty, boolean isView);
 
  org.nd4j.nativeblas.OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(long[] shapeInfo);
@@ -482,6 +606,7 @@ public interface NativeOps {
 
  org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras);
 
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(long elements, int dataType, boolean allocateBoth);
  Pointer numpyHeaderForNd4j(Pointer data, Pointer shapeBuffer, long wordSize, LongPointer headerSize);
  Pointer numpyHeaderForNd4j(Pointer data, Pointer shapeBuffer, long wordSize, LongBuffer headerSize);
@@ -514,6 +639,7 @@ public interface NativeOps {
  PointerPointer intermediateResultsShapeInfo(org.nd4j.nativeblas.OpaqueContext contextPointer);
  void setIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, int index, org.nd4j.nativeblas.OpaqueDataBuffer buffer, org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, long dataOffset);
  void pushIntermediateResult(org.nd4j.nativeblas.OpaqueContext contextPointer, org.nd4j.nativeblas.OpaqueDataBuffer buffer, org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo, long offset);
+ @NoDeallocator
  org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
  LongPointer intermediateResultShapeInfoAt(int index, org.nd4j.nativeblas.OpaqueContext contextPointer);
  String lastErrorMessage();
@@ -766,7 +892,7 @@ public interface NativeOps {
 
  /**
   * Marks that shutdown is in progress.
-  * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+  * Call this early in JVM shutdown (e.g., from a shutdown hook)
   * to prevent SIGSEGV crashes during cache cleanup.
   *
   * During JVM/static destruction, memory allocators may have been destroyed,
@@ -787,8 +913,25 @@ public interface NativeOps {
  /**
   * Clears all cached shape buffers to prevent memory leaks.
   * This is called during application shutdown to free accumulated cache memory.
+  * NOTE: Will return early without action if setShapeCacheShutdownInProgress(true) was called.
   */
  void clearShapeCache();
+
+ /**
+  * Marks that shutdown is in progress for the shape cache.
+  * When set to true, clearShapeCache() becomes a no-op to avoid segfaults
+  * during JVM shutdown when buffers may still have external references.
+  *
+  * @param inProgress true to mark shutdown in progress, false otherwise
+  */
+ void setShapeCacheShutdownInProgress(boolean inProgress);
+
+ /**
+  * Check if shape cache shutdown is in progress.
+  *
+  * @return true if setShapeCacheShutdownInProgress(true) was called
+  */
+ boolean isShapeCacheShutdownInProgress();
 
  /**
   * Get the total number of cached shape buffer entries.
@@ -1017,4 +1160,802 @@ public interface NativeOps {
   * @param javaStackTrace The full Java stack trace as a string
   */
  void updateAllocationJavaStackTrace(OpaqueNDArray array, String javaStackTrace);
+
+ // ===============================
+ // Op Timing Tracker API
+ // Low-overhead op execution timing with phase breakdown,
+ // histograms, and export capabilities
+ // ===============================
+
+ /**
+  * Enable op timing tracker.
+  * @param enabled 1 to enable, 0 to disable
+  * @param detailed 1 for phase-level timing, 0 for total-only
+  */
+ void setOpTimingEnabled(int enabled, int detailed);
+
+ /**
+  * Enable op timing with Chrome trace export.
+  * @param detailed 1 for phase-level timing, 0 for total-only
+  */
+ void setOpTimingEnabledWithTrace(int detailed);
+
+ /**
+  * Check if op timing is enabled.
+  * @return 1 if enabled, 0 if disabled
+  */
+ int isOpTimingEnabled();
+
+ /**
+  * Flush ring buffer to aggregated stats.
+  * Call before reading any stats.
+  */
+ void flushOpTiming();
+
+ /**
+  * Print top N ops by total time to stdout.
+  * @param topN number of ops to show
+  */
+ void printOpTimingStats(int topN);
+
+ /**
+  * Print phase breakdown for a specific op to stdout.
+  * @param opName name of the op to analyze
+  */
+ void printOpTimingBreakdown(String opName);
+
+ /**
+  * Print timing histogram for a specific op to stdout.
+  * @param opName name of the op to analyze
+  */
+ void printOpTimingHistogram(String opName);
+
+ /**
+  * Print per-thread timing statistics to stdout.
+  */
+ void printOpTimingThreadStats();
+
+ /**
+  * Reset all timing data.
+  */
+ void resetOpTiming();
+
+ /**
+  * Get number of unique ops tracked.
+  * @return number of unique ops
+  */
+ int getOpTimingNumOps();
+
+ /**
+  * Get total number of op executions tracked.
+  * @return total execution count
+  */
+ long getOpTimingTotalExecutions();
+
+ /**
+  * Export timing data to Chrome trace JSON format.
+  * Visualizable in chrome://tracing or Perfetto.
+  * @param filename output file path
+  * @return 1 on success, 0 on failure
+  */
+ int exportOpTimingChromeTrace(String filename);
+
+ /**
+  * Export timing data to CSV format.
+  * @param filename output file path
+  * @return 1 on success, 0 on failure
+  */
+ int exportOpTimingCSV(String filename);
+
+ // ========================
+ // Workspace Management API
+ // ========================
+
+ /**
+  * Create a native workspace for bump-allocated memory.
+  * @param initialSize initial allocation in bytes
+  * @return opaque workspace pointer
+  */
+ Pointer createNativeWorkspace(long initialSize);
+
+ /**
+  * Destroy a native workspace and free all memory.
+  */
+ void destroyNativeWorkspace(Pointer workspace);
+
+ /**
+  * Enter workspace scope - resets offsets for new allocation cycle.
+  */
+ void workspaceScopeIn(Pointer workspace);
+
+ /**
+  * Exit workspace scope - resets offsets, making memory reusable.
+  */
+ void workspaceScopeOut(Pointer workspace);
+
+ /**
+  * Attach a workspace to an op execution context.
+  */
+ void attachWorkspaceToContext(OpaqueContext ctx, Pointer workspace);
+
+ /**
+  * Detach workspace from context.
+  */
+ void detachWorkspaceFromContext(OpaqueContext ctx);
+
+ /**
+  * Get the current used size (offset) of the workspace.
+  */
+ long getWorkspaceCurrentOffset(Pointer workspace);
+
+ /**
+  * Get the total allocated size of the workspace.
+  */
+ long getWorkspaceAllocatedSize(Pointer workspace);
+
+ // ========================
+ // Multi-Backend Workspace API
+ // ========================
+
+ /**
+  * Create a multi-backend workspace with device awareness.
+  */
+ Pointer createNativeMultiBackendWorkspace(long initialSize, int primaryDeviceType, int primaryDeviceIndex);
+
+ /**
+  * Destroy a multi-backend workspace.
+  */
+ void destroyNativeMultiBackendWorkspace(Pointer handle);
+
+ /**
+  * Allocate bytes from multi-backend workspace on primary device.
+  */
+ Pointer nativeMbwAllocateBytes(Pointer handle, long numBytes);
+
+ /**
+  * Multi-backend workspace scope in.
+  */
+ void nativeMbwScopeIn(Pointer handle);
+
+ /**
+  * Multi-backend workspace scope out.
+  */
+ void nativeMbwScopeOut(Pointer handle);
+
+ /**
+  * Transfer data between devices in multi-backend workspace.
+  */
+ void nativeMbwTransferTo(Pointer handle, int srcDeviceType, int srcDeviceIndex,
+                          int dstDeviceType, int dstDeviceIndex);
+
+ /**
+  * Get coherence state for a device.
+  */
+ int nativeMbwGetCoherenceState(Pointer handle, int deviceType, int deviceIndex);
+
+ /**
+  * Get total allocated size across all devices.
+  */
+ long nativeMbwGetTotalAllocatedSize(Pointer handle);
+
+ /**
+  * Allocate bytes on a specific device in a multi-backend workspace.
+  * @param handle multi-backend workspace handle
+  * @param numBytes bytes to allocate
+  * @param deviceType device type (0=CPU, 1=CUDA)
+  * @param deviceIndex device index
+  * @return pointer to allocated memory, or null on failure
+  */
+ default Pointer nativeMbwAllocateBytesOnDevice(Pointer handle, long numBytes, int deviceType, int deviceIndex) {
+     throw new UnsupportedOperationException("nativeMbwAllocateBytesOnDevice not implemented in this backend");
+ }
+
+ /**
+  * Sync a specific device (e.g., cudaDeviceSynchronize for CUDA devices).
+  */
+ default void nativeMbwSyncDevice(Pointer handle, int deviceType, int deviceIndex) {
+     throw new UnsupportedOperationException("nativeMbwSyncDevice not implemented in this backend");
+ }
+
+ /**
+  * Sync all devices in the workspace.
+  */
+ default void nativeMbwSyncAllDevices(Pointer handle) {
+     throw new UnsupportedOperationException("nativeMbwSyncAllDevices not implemented in this backend");
+ }
+
+ /**
+  * Get the allocated size on a specific device.
+  */
+ default long nativeMbwGetAllocatedSizeOnDevice(Pointer handle, int deviceType, int deviceIndex) {
+     throw new UnsupportedOperationException("nativeMbwGetAllocatedSizeOnDevice not implemented in this backend");
+ }
+
+ /**
+  * Get the current workspace offset on the primary device.
+  */
+ default long nativeMbwGetCurrentOffset(Pointer handle) {
+     throw new UnsupportedOperationException("nativeMbwGetCurrentOffset not implemented in this backend");
+ }
+
+ // ─── Native Graph Executor (DynamicShapePlan) ────────────────────────────
+
+ /**
+  * Compile a serialized DynamicShapePlan into a native C++ executor.
+  * @param serializedPlan pointer to the serialized plan bytes
+  * @param planSize size of the serialized plan in bytes
+  * @return opaque handle to the compiled plan, or null on failure
+  */
+ default Pointer compileDynamicShapePlan(Pointer serializedPlan, long planSize) {
+     throw new UnsupportedOperationException("compileDynamicShapePlan not implemented in this backend");
+ }
+
+ /**
+  * Execute a compiled native plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param opContext OpaqueContext with inputs/outputs set via setGraphContextInputArray/setGraphContextOutputArray
+  * @param stream CUDA stream pointer (null for CPU)
+  * @return 0 on success, non-zero on failure
+  */
+ default int executeDynamicShapePlan(Pointer planHandle,
+                                     OpaqueContext opContext,
+                                     Pointer stream) {
+     throw new UnsupportedOperationException("executeDynamicShapePlan not implemented in this backend");
+ }
+
+ /**
+  * Free a compiled native plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void freeDynamicShapePlan(Pointer planHandle) {
+     throw new UnsupportedOperationException("freeDynamicShapePlan not implemented in this backend");
+ }
+
+ /**
+  * Clear shape caches in a compiled plan. Must be called on session reset.
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void clearDynamicShapePlanCaches(Pointer planHandle) {
+     throw new UnsupportedOperationException("clearDynamicShapePlanCaches not implemented in this backend");
+ }
+
+ /**
+  * Force-clear ALL shape caches unconditionally (including static slots).
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void clearAllDynamicShapePlanCachesForce(Pointer planHandle) {
+     throw new UnsupportedOperationException("clearAllDynamicShapePlanCachesForce not implemented in this backend");
+ }
+
+ /**
+  * Returns true if Triton backend support is compiled and available at runtime.
+  */
+ default boolean isTritonAvailable() {
+     return false;
+ }
+
+ /**
+  * Get the total number of Triton kernel launches since the backend was initialized.
+  * Returns 0 if Triton is not available. Used by tests to verify Triton execution.
+  */
+ default long getTritonKernelLaunchCount() {
+     return 0;
+ }
+
+ /**
+  * Get the total number of Triton PTX cache hits since the backend was initialized.
+  * Returns 0 if Triton is not available.
+  */
+ default long getTritonCacheHitCount() {
+     return 0;
+ }
+
+ /**
+  * Reset all Triton execution counters to zero.
+  */
+ default void resetTritonCounters() {}
+
+ /**
+  * Invalidate all cached Triton compiled kernels (frees CUmodule GPU memory).
+  */
+ default void invalidateTritonCache() {}
+
+ /**
+  * Configure KV cache retention for a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param mappings flat int array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
+  * @param numMappings number of mappings
+  * @param maxKvLen maximum KV cache length
+  * @param initialPos initial write position (prefillLen)
+  */
+ default void configurePlanKvCacheRetention(Pointer planHandle, IntPointer mappings,
+                                            int numMappings, int maxKvLen, int initialPos) {
+     throw new UnsupportedOperationException("configurePlanKvCacheRetention not implemented in this backend");
+ }
+
+ /**
+  * Advance KV cache write position by 1.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return new position
+  */
+ default int advancePlanKvCachePosition(Pointer planHandle) {
+     throw new UnsupportedOperationException("advancePlanKvCachePosition not implemented in this backend");
+ }
+
+ /**
+  * Reset KV cache write position.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param newPos new position
+  */
+ default void resetPlanKvCachePosition(Pointer planHandle, int newPos) {
+     throw new UnsupportedOperationException("resetPlanKvCachePosition not implemented in this backend");
+ }
+
+ /**
+  * Load a model from an SDZ or SDNB file entirely in C++.
+  * @param filePath path to the .sdz or .sdnb file
+  * @return opaque handle to the loaded model, or null on failure
+  */
+ default Pointer loadModelFromFile(String filePath) {
+     throw new UnsupportedOperationException("loadModelFromFile not implemented in this backend");
+ }
+
+ /**
+  * Compile a loaded model into a native execution plan.
+  * @param modelHandle handle from loadModelFromFile()
+  * @param requestedOutputNames array of output variable name strings
+  * @param numOutputs number of requested outputs
+  * @return opaque plan handle, or null on failure
+  */
+ default Pointer compileModelPlan(Pointer modelHandle, String[] requestedOutputNames, int numOutputs) {
+     throw new UnsupportedOperationException("compileModelPlan not implemented in this backend");
+ }
+
+ /**
+  * Free a loaded model.
+  * @param modelHandle handle from loadModelFromFile()
+  */
+ default void freeLoadedModel(Pointer modelHandle) {
+     throw new UnsupportedOperationException("freeLoadedModel not implemented in this backend");
+ }
+
+ /**
+  * Get the number of external inputs required by a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of external inputs, or -1 on error
+  */
+ default int getPlanNumExternalInputs(Pointer planHandle) {
+     throw new UnsupportedOperationException("getPlanNumExternalInputs not implemented in this backend");
+ }
+
+ /**
+  * Get the number of requested outputs in a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of requested outputs, or -1 on error
+  */
+ default int getPlanNumRequestedOutputs(Pointer planHandle) {
+     throw new UnsupportedOperationException("getPlanNumRequestedOutputs not implemented in this backend");
+ }
+
+ /**
+  * Get the number of slots (ops) in a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of slots, or -1 on error
+  */
+ default int getPlanNumSlots(Pointer planHandle) {
+     throw new UnsupportedOperationException("getPlanNumSlots not implemented in this backend");
+ }
+
+ /**
+  * Enable or disable CUDA Graphs for a compiled plan.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param enabled true to enable CUDA Graph capture/replay
+  */
+ default void setPlanCudaGraphsEnabled(Pointer planHandle, boolean enabled) {
+     // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
+  * Set the minimum segment size for CUDA graph capture.
+  * Segments smaller than this are executed slot-by-slot. Default: 10.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param minSize minimum number of slots (clamped to >=1)
+  */
+ default void setPlanMinCaptureSegmentSize(Pointer planHandle, int minSize) {
+     // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
+  * Set maximum segment size for CUDA graph capture to prevent OOM during capture.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param maxSize maximum slots per capture segment (0 for unlimited)
+  */
+ default void setPlanMaxCaptureSegmentSize(Pointer planHandle, int maxSize) {
+     // No-op on backends that don't support CUDA Graphs
+ }
+
+ /**
+  * Enable/disable "shapes frozen" mode for a compiled plan.
+  * When frozen, shape inference and cache clearing are skipped between executions.
+  * Use during static KV decode where external input shapes are guaranteed constant.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param frozen true to enable, false to disable
+  */
+ default void setPlanShapesFrozen(Pointer planHandle, boolean frozen) {
+     // No-op by default
+ }
+
+  /**
+   * Enable/disable execution timing breakdown logging for a compiled plan.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param enabled true to enable timing, false to disable
+   */
+  default void setPlanExecutionTimingEnabled(Pointer planHandle, boolean enabled) {
+      // No-op by default
+  }
+
+  /**
+   * Enable/disable trace logging for DSP execution decisions.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param enabled true to enable trace, false to disable
+   */
+  default void setPlanTraceEnabled(Pointer planHandle, boolean enabled) {
+      // No-op by default
+  }
+
+  /**
+   * Set the JIT compilation mode for DSP segment execution.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param mode 0 = GRAPH_ONLY (default), 1 = JIT_ONLY, 2 = GRAPH_PLUS_JIT
+   */
+  default void setPlanJitMode(Pointer planHandle, int mode) {
+      // No-op on backends that don't support JIT compilation
+  }
+
+  /**
+   * Set the graph execution mode for DSP execution.
+   * Controls which backend is used for segment execution.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param mode 0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+   */
+  default void setPlanGraphExecutionMode(Pointer planHandle, int mode) {
+      // No-op on backends that don't support graph execution mode
+  }
+
+  /**
+   * Set maximum sizes for specific output slots (KV cache pre-allocation).
+   * When set, these slots will be pre-allocated at the specified maximum size,
+   * keeping buffer addresses stable across all subsequent steps.
+   * This enables CUDA graph capture for models with growing KV caches.
+   * 
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param numSlots number of slot entries
+   * @param slotIndicesBuffer pointer to int[] of output slot indices
+   * @param maxSizesBuffer pointer to long[] of maximum sizes (in number of elements)
+   */
+  default void setPlanOutputSlotMaxSizes(Pointer planHandle, long numSlots,
+                                          Pointer slotIndicesBuffer, Pointer maxSizesBuffer) {
+      // No-op by default
+  }
+
+  /**
+   * Typed overload: accepts primitive arrays directly, matching the native binding signatures.
+   */
+  default void setPlanOutputSlotMaxSizes(Pointer planHandle, long numSlots,
+                                          int[] slotIndices, long[] maxSizes) {
+      // No-op by default
+  }
+
+  /**
+   * Set the KV cache sequence position (for slice-based KV cache access).
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param pos current sequence position (where new KV entries will be written)
+   */
+  default void setPlanKvCachePosition(Pointer planHandle, int pos) {
+      // No-op by default
+  }
+
+  /**
+   * Set the maximum KV cache length (for pre-allocated attention outputs).
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @param maxLen maximum sequence length for KV cache
+   */
+  default void setPlanMaxKvCacheLength(Pointer planHandle, int maxLen) {
+      // No-op by default
+  }
+
+  /**
+   * Get the number of graph segments in a compiled plan.
+   * @param planHandle handle from compileDynamicShapePlan()
+   * @return number of segments, or -1 on error
+   */
+  default int getPlanNumSegments(Pointer planHandle) {
+     return -1;
+ }
+
+ /**
+  * Get the number of segments captured as CUDA graphs.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return number of captured segments
+  */
+ default int getPlanNumCapturedGraphSegments(Pointer planHandle) {
+     return 0;
+ }
+
+ /**
+  * Get the total number of CUDA graph replays across all segments.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return total replay count
+  */
+ default int getPlanTotalGraphReplays(Pointer planHandle) {
+     return 0;
+ }
+
+ /**
+  * Validate that the captured CUDA graph covers all ops in the plan segment.
+  * Must be called AFTER at least one execution with CUDA graphs enabled
+  * and debug/verbose mode active (so the capture audit was collected).
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return true if all ops contributed at least one CUDA graph node,
+  *         false if any ops are host-only (their work won't replay)
+  */
+ default boolean validatePlanCapturedGraph(Pointer planHandle) {
+     return true;  // Non-CUDA backends always "pass"
+ }
+
+ /**
+  * Get the number of host-only ops detected during the last CUDA graph capture.
+  * Host-only ops do work during capture but produce zero CUDA graph nodes,
+  * meaning their results will be STALE on graph replay.
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return count of host-only ops, or 0 if no audit data
+  */
+ default int getPlanNumHostOnlyOps(Pointer planHandle) {
+     return 0;
+ }
+
+ /**
+  * Get the names of host-only ops from the last CUDA graph capture audit,
+  * as a pipe-delimited string (e.g. "shape_of|reduce_sum").
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @return pipe-delimited op names, or empty string if none
+  */
+ default String getPlanHostOnlyOpNames(Pointer planHandle) {
+     return "";
+ }
+
+ /**
+  * Print the full CUDA graph contents and capture audit to stderr.
+  * Shows per-node details (kernel names, memcpy sizes) and per-op
+  * CUDA node contribution. Flags host-only ops with warnings.
+  *
+  * @param planHandle handle from compileDynamicShapePlan()
+  */
+ default void printPlanCapturedGraphDebug(Pointer planHandle) {
+     // No-op on non-CUDA backends
+ }
+
+  /**
+   * Get detailed capture statistics as a formatted string.
+   * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
+   *
+   * @param planHandle  Handle from compileDynamicShapePlan()
+   * @return Thread-local static buffer with stats string
+   */
+  default String getPlanCaptureStats(Pointer planHandle) {
+      return "";
+  }
+
+  /**
+   * Export the CUDA graph visualization to Chrome trace format.
+   * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
+   * Similar to PyTorch's torch.cuda.CUDAGraph.debug_dump() functionality.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @param outputPath Output file path (should end with .json)
+   * @return true on success
+   */
+  default boolean exportPlanCudaGraphChromeTrace(Pointer planHandle, String outputPath) {
+      return false;
+  }
+
+  /**
+   * Export the CUDA graph visualization to HTML format.
+   * Creates a standalone HTML file with interactive visualization.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @param outputPath Output HTML file path
+   * @return true on success
+   */
+  default boolean exportPlanCudaGraphHtml(Pointer planHandle, String outputPath) {
+      return false;
+  }
+
+  /**
+   * Dump all CUDA graph debug files (DOT, JSON, HTML, nodes JSON).
+   * Creates: {outputPath}.dot, {outputPath}.json, {outputPath}.html, {outputPath}_nodes.json
+   * PyTorch-style debug dump similar to torch.cuda.CUDAGraph.debug_dump().
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @param outputPath Base path for output files (without extension)
+   * @return true on success
+   */
+  default boolean debugDumpPlanCudaGraph(Pointer planHandle, String outputPath) {
+      return false;
+  }
+
+  /**
+   * Get the CUDA graph execution timeline as a JSON string in Chrome trace format.
+   * For programmatic access to the timeline data.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   * @return JSON string, or empty string if no graph data
+   */
+  default String getPlanCudaGraphChromeTraceJson(Pointer planHandle) {
+      return "";
+  }
+
+  /**
+   * Clear the CUDA graph execution timeline history.
+   * Useful to reset timing data between profiling sessions.
+   *
+   * @param planHandle Handle from compileDynamicShapePlan()
+   */
+  default void clearPlanCudaGraphTimeline(Pointer planHandle) {
+      // No-op on non-CUDA backends
+  }
+
+  // ==========================================================================
+  // NCCL Collective Communication Operations
+  // ==========================================================================
+
+  /**
+   * Initialize an NCCL communicator for a group of GPUs (single-process).
+   *
+   * @param numRanks  number of ranks (GPUs) in the communicator
+   * @param rankId    this process's rank (0-indexed)
+   * @param deviceId  CUDA device ID for this rank
+   * @return opaque handle to the NCCL communicator, or null on failure
+   */
+  default Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
+      return null;
+  }
+
+  /**
+   * Initialize an NCCL communicator from a unique ID (multi-process).
+   *
+   * @param numRanks  number of ranks
+   * @param rankId    this process's rank
+   * @param uniqueId  pointer to ncclUniqueId (128 bytes)
+   * @return opaque handle to the NCCL communicator
+   */
+  default Pointer ncclCommInitWithId(int numRanks, int rankId, Pointer uniqueId) {
+      return null;
+  }
+
+  /**
+   * Generate a unique NCCL ID for multi-process initialization.
+   *
+   * @return pointer to a newly allocated ncclUniqueId
+   */
+  default Pointer ncclGetUniqueId() {
+      return null;
+  }
+
+  /**
+   * Destroy an NCCL communicator and release resources.
+   *
+   * @param commHandle handle from ncclCommInit
+   */
+  default void ncclCommDestroy(Pointer commHandle) {
+  }
+
+  /**
+   * AllReduce: sum all tensors across ranks, result available on all ranks.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer pointer (device memory)
+   * @param recvBuf      receive buffer pointer (can be same as sendBuf for in-place)
+   * @param numElements  number of elements
+   * @param dataType     data type ordinal (sd.DataType)
+   * @param reduceOp     0=SUM, 1=PROD, 2=MAX, 3=MIN, 4=AVG
+   * @param stream       CUDA stream pointer (null for default)
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoAllReduce(Pointer commHandle,
+                               Pointer sendBuf, Pointer recvBuf,
+                               long numElements, int dataType,
+                               int reduceOp, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * AllGather: gather data from all ranks, result available on all ranks.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer (this rank's data)
+   * @param recvBuf      receive buffer (numRanks * sendCount elements)
+   * @param sendCount    number of elements per rank
+   * @param dataType     data type ordinal
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoAllGather(Pointer commHandle,
+                               Pointer sendBuf, Pointer recvBuf,
+                               long sendCount, int dataType,
+                               Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * ReduceScatter: reduce then scatter result across ranks.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer
+   * @param recvBuf      receive buffer (this rank's shard)
+   * @param recvCount    number of elements per rank after scatter
+   * @param dataType     data type ordinal
+   * @param reduceOp     reduction operation
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoReduceScatter(Pointer commHandle,
+                                   Pointer sendBuf, Pointer recvBuf,
+                                   long recvCount, int dataType,
+                                   int reduceOp, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * Send data to a specific peer rank.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param sendBuf      send buffer
+   * @param numElements  number of elements
+   * @param dataType     data type ordinal
+   * @param peerRank     destination rank
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoSend(Pointer commHandle,
+                          Pointer sendBuf, long numElements,
+                          int dataType, int peerRank, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * Receive data from a specific peer rank.
+   *
+   * @param commHandle   NCCL communicator handle
+   * @param recvBuf      receive buffer
+   * @param numElements  number of elements
+   * @param dataType     data type ordinal
+   * @param peerRank     source rank
+   * @param stream       CUDA stream pointer
+   * @return 0 on success, non-zero on failure
+   */
+  default int ncclDoRecv(Pointer commHandle,
+                          Pointer recvBuf, long numElements,
+                          int dataType, int peerRank, Pointer stream) {
+      return -1;
+  }
+
+  /**
+   * Begin a group of NCCL operations (for fusing multiple collectives).
+   * @return 0 on success
+   */
+  default int ncclGroupStart() {
+      return -1;
+  }
+
+  /**
+   * End a group of NCCL operations.
+   * @return 0 on success
+   */
+  default int ncclGroupEnd() {
+      return -1;
+  }
 }

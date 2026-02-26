@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.nd4j.linalg.jcublas;
 
+import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 
@@ -41,7 +42,8 @@ public class CudaEnvironment implements Environment {
     protected boolean funcTracePrintJavaOnly = false;
     protected boolean workspaceTrackOpenClose = false;
     protected int numEventsToKeep = -1;
-    
+    protected boolean truncateNDArrayLongStrings = false;
+
     // Variable origin tracing flag for debugging import issues
     protected boolean variableTracingEnabled = false;
 
@@ -106,12 +108,12 @@ public class CudaEnvironment implements Environment {
 
     @Override
     public boolean isTruncateNDArrayLogStrings() {
-        return false;
+        return truncateNDArrayLongStrings;
     }
 
     @Override
     public void setTruncateLogStrings(boolean truncateLogStrings) {
-
+        this.truncateNDArrayLongStrings = truncateLogStrings;
     }
 
     @Override
@@ -493,6 +495,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public long cudaPinnedHostLimit() {
+        return e.cudaPinnedHostLimit();
+    }
+
+    @Override
+    public void setCudaPinnedHostLimit(long limitInMB) {
+        e.setCudaPinnedHostLimit(limitInMB);
+    }
+
+    @Override
     public boolean cudaUseUnifiedMemory() {
         return e.cudaUseUnifiedMemory();
     }
@@ -712,5 +724,300 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setMaxDeletionHistory(long max) {
         e.setMaxDeletionHistory(max);
+    }
+
+    @Override
+    public boolean isSnapshotFiles() {
+        return e.isSnapshotFiles();
+    }
+
+    @Override
+    public void setSnapshotFiles(boolean enabled) {
+        e.setSnapshotFiles(enabled);
+    }
+
+    @Override
+    public boolean isTrackOperations() {
+        return e.isTrackOperations();
+    }
+
+    @Override
+    public void setTrackOperations(boolean enabled) {
+        e.setTrackOperations(enabled);
+    }
+
+    @Override
+    public boolean isNDArrayTracking() {
+        return e.isNDArrayTracking();
+    }
+
+    @Override
+    public void setNDArrayTracking(boolean enabled) {
+        e.setNDArrayTracking(enabled);
+    }
+
+    @Override
+    public boolean isDataBufferTracking() {
+        return e.isDataBufferTracking();
+    }
+
+    @Override
+    public void setDataBufferTracking(boolean enabled) {
+        e.setDataBufferTracking(enabled);
+    }
+
+    @Override
+    public boolean isTADCacheTracking() {
+        return e.isTADCacheTracking();
+    }
+
+    @Override
+    public void setTADCacheTracking(boolean enabled) {
+        e.setTADCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isShapeCacheTracking() {
+        return e.isShapeCacheTracking();
+    }
+
+    @Override
+    public void setShapeCacheTracking(boolean enabled) {
+        e.setShapeCacheTracking(enabled);
+    }
+
+    @Override
+    public boolean isOpContextTracking() {
+        return e.isOpContextTracking();
+    }
+
+    @Override
+    public void setOpContextTracking(boolean enabled) {
+        e.setOpContextTracking(enabled);
+    }
+
+    // Triton GPU settings
+    @Override
+    public int tritonBuildThreads() {
+        return e.tritonBuildThreads();
+    }
+
+    @Override
+    public void setTritonBuildThreads(int threads) {
+        e.setTritonBuildThreads(threads);
+    }
+
+    @Override
+    public boolean tritonCacheEnabled() {
+        return e.tritonCacheEnabled();
+    }
+
+    @Override
+    public void setTritonCacheEnabled(boolean enabled) {
+        e.setTritonCacheEnabled(enabled);
+    }
+
+    @Override
+    public int tritonCoopTargetBlocks() {
+        return e.tritonCoopTargetBlocks();
+    }
+
+    @Override
+    public void setTritonCoopTargetBlocks(int blocks) {
+        e.setTritonCoopTargetBlocks(blocks);
+    }
+
+    @Override
+    public int tritonMaxSubsegmentOps() {
+        return e.tritonMaxSubsegmentOps();
+    }
+
+    @Override
+    public void setTritonMaxSubsegmentOps(int ops) {
+        e.setTritonMaxSubsegmentOps(ops);
+    }
+
+    @Override
+    public int tritonMaxSubsegmentSections() {
+        return e.tritonMaxSubsegmentSections();
+    }
+
+    @Override
+    public void setTritonMaxSubsegmentSections(int sections) {
+        e.setTritonMaxSubsegmentSections(sections);
+    }
+
+    @Override
+    public boolean tritonVerbose() {
+        return e.tritonVerbose();
+    }
+
+    @Override
+    public void setTritonVerbose(boolean verbose) {
+        e.setTritonVerbose(verbose);
+    }
+
+    @Override
+    public boolean tritonDumpSections() {
+        return e.tritonDumpSections();
+    }
+
+    @Override
+    public void setTritonDumpSections(boolean dumpSections) {
+        e.setTritonDumpSections(dumpSections);
+    }
+
+    @Override
+    public boolean tritonDumpArgs() {
+        return e.tritonDumpArgs();
+    }
+
+    @Override
+    public void setTritonDumpArgs(boolean dumpArgs) {
+        e.setTritonDumpArgs(dumpArgs);
+    }
+
+    @Override
+    public boolean tritonLogAllPatterns() {
+        return e.tritonLogAllPatterns();
+    }
+
+    @Override
+    public void setTritonLogAllPatterns(boolean logAllPatterns) {
+        e.setTritonLogAllPatterns(logAllPatterns);
+    }
+
+    @Override
+    public boolean tritonAlwaysCompile() {
+        return e.tritonAlwaysCompile();
+    }
+
+    @Override
+    public void setTritonAlwaysCompile(boolean alwaysCompile) {
+        e.setTritonAlwaysCompile(alwaysCompile);
+    }
+
+    @Override
+    public boolean tritonKernelDump() {
+        return e.tritonKernelDump();
+    }
+
+    @Override
+    public void setTritonKernelDump(boolean kernelDump) {
+        e.setTritonKernelDump(kernelDump);
+    }
+
+    @Override
+    public boolean tritonKernelOverride() {
+        return e.tritonKernelOverride();
+    }
+
+    @Override
+    public void setTritonKernelOverride(boolean kernelOverride) {
+        e.setTritonKernelOverride(kernelOverride);
+    }
+
+    @Override
+    public int tritonNumWarps() {
+        return e.tritonNumWarps();
+    }
+
+    @Override
+    public void setTritonNumWarps(int numWarps) {
+        e.setTritonNumWarps(numWarps);
+    }
+
+    @Override
+    public int tritonNumStages() {
+        return e.tritonNumStages();
+    }
+
+    @Override
+    public void setTritonNumStages(int numStages) {
+        e.setTritonNumStages(numStages);
+    }
+
+    @Override
+    public int tritonNumCTAs() {
+        return e.tritonNumCTAs();
+    }
+
+    @Override
+    public void setTritonNumCTAs(int numCTAs) {
+        e.setTritonNumCTAs(numCTAs);
+    }
+
+    @Override
+    public int tritonMaxNreg() {
+        return e.tritonMaxNreg();
+    }
+
+    @Override
+    public void setTritonMaxNreg(int maxNreg) {
+        e.setTritonMaxNreg(maxNreg);
+    }
+
+    @Override
+    public boolean tritonEnableFpFusion() {
+        return e.tritonEnableFpFusion();
+    }
+
+    @Override
+    public void setTritonEnableFpFusion(boolean enableFpFusion) {
+        e.setTritonEnableFpFusion(enableFpFusion);
+    }
+
+    @Override
+    public boolean tritonDisableLineInfo() {
+        return e.tritonDisableLineInfo();
+    }
+
+    @Override
+    public void setTritonDisableLineInfo(boolean disableLineInfo) {
+        e.setTritonDisableLineInfo(disableLineInfo);
+    }
+
+    @Override
+    public String tritonCacheDir() {
+        BytePointer p = e.tritonCacheDir();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonCacheDir(String cacheDir) {
+        e.setTritonCacheDir(cacheDir);
+    }
+
+    @Override
+    public String tritonDumpDir() {
+        BytePointer p = e.tritonDumpDir();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonDumpDir(String dumpDir) {
+        e.setTritonDumpDir(dumpDir);
+    }
+
+    @Override
+    public String tritonOverrideDir() {
+        BytePointer p = e.tritonOverrideDir();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonOverrideDir(String overrideDir) {
+        e.setTritonOverrideDir(overrideDir);
+    }
+
+    @Override
+    public String tritonOverrideArch() {
+        BytePointer p = e.tritonOverrideArch();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonOverrideArch(String overrideArch) {
+        e.setTritonOverrideArch(overrideArch);
     }
 }

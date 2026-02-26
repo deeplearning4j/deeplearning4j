@@ -55,14 +55,24 @@ import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
+import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspace;
+import org.nd4j.linalg.api.memory.MultiBackendWorkspaceManager;
+import org.nd4j.linalg.api.memory.conf.DeviceAwareWorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.*;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.executioner.DefaultMultiBackendExecutioner;
+import org.nd4j.linalg.api.ops.executioner.KernelPluginManager;
+import org.nd4j.linalg.api.ops.executioner.KernelSelectionConfig;
+import org.nd4j.linalg.api.ops.executioner.KernelSelector;
+import org.nd4j.linalg.api.ops.executioner.MultiBackendExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
@@ -234,6 +244,9 @@ public class Nd4j {
     private static BLASLapackDelegator BLAS_HANDLER;
 
     private static INDArrayStatisticsProvider STATS_PROVIDER;
+
+    private static KernelSelector KERNEL_SELECTOR_INSTANCE;
+    private static KernelPluginManager KERNEL_PLUGIN_MANAGER_INSTANCE;
 
     private static AtomicBoolean fallbackMode;
 
@@ -468,8 +481,8 @@ public class Nd4j {
         Preconditions.checkState(shape[dimension] == 1, String.format("Squeeze: Only dimension of size 1 can be squeezed. " +
                 "Attempted to squeeze dimension %d of array with shape %s (size %d).", dimension, ArrayUtils.toString(shape), shape[dimension]));
 
-        long[] newShape = ArrayUtil.removeIndex(shape, dimension);
-        return input.reshape(input.ordering(), newShape);
+        org.nd4j.linalg.api.ops.impl.shape.Squeeze squeeze = new org.nd4j.linalg.api.ops.impl.shape.Squeeze(input, dimension);
+        return getExecutioner().exec(squeeze)[0];
     }
 
     /**
@@ -674,9 +687,40 @@ public class Nd4j {
     /**
      * Get the operation executioner instance.
      *
-     * @return the operation executioner instance.
+     * <p>When multi-backend mode is enabled (via {@link #enableMultiBackend()}),
+     * returns a routing executioner that automatically determines the execution
+     * device based on where the input arrays reside. This is data-dependent routing:
+     * <ul>
+     *   <li>If inputs are on GPU, the op executes on GPU</li>
+     *   <li>If inputs are on CPU, the op executes on CPU</li>
+     *   <li>If inputs are on different devices, data is transferred based on routing policy</li>
+     * </ul>
+     *
+     * <p>When multi-backend mode is disabled, returns the default backend executioner.</p>
+     *
+     * @return the operation executioner instance
      */
     public static OpExecutioner getExecutioner() {
+        // If multi-backend mode is enabled, use the routing executioner
+        // which routes ops based on input data location
+        if (multiBackendMode && MULTI_BACKEND_EXECUTIONER != null) {
+            return MULTI_BACKEND_EXECUTIONER;
+        }
+
+        // Fall back to default
+        return OP_EXECUTIONER_INSTANCE;
+    }
+
+    /**
+     * Get the default operation executioner instance without any context-awareness.
+     * This always returns the primary backend's executioner regardless of
+     * multi-backend mode or thread-local device context.
+     *
+     * <p>Use this when you explicitly need the default executioner without routing.</p>
+     *
+     * @return the default operation executioner instance
+     */
+    public static OpExecutioner getDefaultExecutioner() {
         return OP_EXECUTIONER_INSTANCE;
     }
 
@@ -687,6 +731,104 @@ public class Nd4j {
      */
     public static DeviceIDProvider getDeviceIdProvider() {
         return DEVICE_ID_PROVIDER;
+    }
+
+    /**
+     * Get the kernel selector for configuring kernel selection and auto-tuning.
+     * <p>
+     * The kernel selector allows you to:
+     * <ul>
+     *   <li>Configure auto-tuning to find the fastest kernel implementations</li>
+     *   <li>Force specific backends (CUDA, oneDNN, etc.)</li>
+     *   <li>Disable certain engines</li>
+     *   <li>View performance statistics</li>
+     * </ul>
+     * </p>
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * KernelSelector selector = Nd4j.getKernelSelector();
+     * selector.setAutoTuneEnabled(true);
+     * selector.setStrategy(KernelSelectionConfig.Strategy.FASTEST);
+     * }</pre>
+     * </p>
+     *
+     * @return the kernel selector instance, or null if not supported by backend
+     */
+    public static KernelSelector getKernelSelector() {
+        return KERNEL_SELECTOR_INSTANCE;
+    }
+
+    /**
+     * Set the kernel selector instance (used by backend initialization).
+     *
+     * @param kernelSelector the kernel selector instance
+     */
+    public static void setKernelSelector(KernelSelector kernelSelector) {
+        KERNEL_SELECTOR_INSTANCE = kernelSelector;
+    }
+
+    /**
+     * Get the kernel plugin manager for loading custom kernel plugins.
+     * <p>
+     * The plugin manager allows you to:
+     * <ul>
+     *   <li>Load custom kernel implementations from shared libraries</li>
+     *   <li>Hot-reload plugins during development</li>
+     *   <li>Query available plugins and kernels</li>
+     * </ul>
+     * </p>
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * KernelPluginManager manager = Nd4j.getKernelPluginManager();
+     * manager.loadPlugin("/path/to/my_kernels.so");
+     * }</pre>
+     * </p>
+     *
+     * @return the kernel plugin manager instance, or null if not supported
+     */
+    public static KernelPluginManager getKernelPluginManager() {
+        return KERNEL_PLUGIN_MANAGER_INSTANCE;
+    }
+
+    /**
+     * Set the kernel plugin manager instance (used by backend initialization).
+     *
+     * @param pluginManager the kernel plugin manager instance
+     */
+    public static void setKernelPluginManager(KernelPluginManager pluginManager) {
+        KERNEL_PLUGIN_MANAGER_INSTANCE = pluginManager;
+    }
+
+    /**
+     * Configure kernel selection with the specified configuration.
+     * Convenience method equivalent to {@code getKernelSelector().configure(config)}.
+     *
+     * @param config the kernel selection configuration
+     * @throws IllegalStateException if kernel selector is not available
+     */
+    public static void configureKernelSelection(KernelSelectionConfig config) {
+        if (KERNEL_SELECTOR_INSTANCE == null) {
+            throw new IllegalStateException("Kernel selector not available for this backend");
+        }
+        KERNEL_SELECTOR_INSTANCE.configure(config);
+    }
+
+    /**
+     * Load a kernel plugin from a shared library.
+     * Convenience method equivalent to {@code getKernelPluginManager().loadPlugin(path)}.
+     *
+     * @param path path to the shared library
+     * @return true if plugin was loaded successfully
+     * @throws KernelPluginManager.KernelPluginException if loading fails
+     * @throws IllegalStateException if kernel plugin manager is not available
+     */
+    public static boolean loadKernelPlugin(String path) throws KernelPluginManager.KernelPluginException {
+        if (KERNEL_PLUGIN_MANAGER_INSTANCE == null) {
+            throw new IllegalStateException("Kernel plugin manager not available for this backend");
+        }
+        return KERNEL_PLUGIN_MANAGER_INSTANCE.loadPlugin(path);
     }
 
     /**
@@ -859,9 +1001,19 @@ public class Nd4j {
                 .build();
 
         List<DataBuffer> l = op.calculateOutputShape();
-        INDArray out = Nd4j.createFromDescriptor(l.get(0));
-        op.addOutputArgument(out);
-        Nd4j.exec(op);
+        INDArray out = null;
+        boolean firstBufferUsed = false;
+        try {
+            // First buffer is OWNED by the created array (stored as its shape info)
+            out = Nd4j.createFromDescriptor(l.get(0));
+            firstBufferUsed = true;
+            op.addOutputArgument(out);
+            Nd4j.exec(op);
+        } finally {
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs.
+        }
 
         return out;
     }
@@ -1245,6 +1397,8 @@ public class Nd4j {
             return  Nd4j.create(Nd4j.createBuffer(pointer,length,dataTypeForPointer(pointer))).castTo(dataType).data();
         }
         Pointer nPointer = getPointer(pointer, dataType);
+        // Set the capacity so the indexer knows the buffer size
+        nPointer.capacity(length);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
@@ -1260,6 +1414,8 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(@NonNull Pointer pointer,  Pointer devicePointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = getPointer(pointer, dataType);
+        // Set the capacity so the indexer knows the buffer size
+        nPointer.capacity(length);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, devicePointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
@@ -1468,6 +1624,23 @@ public class Nd4j {
         return getDataBufferFactory().createBuffer(buffer, type, length);
     }
 
+    /**
+     * Create a buffer from a ByteBuffer with CPU-only allocation for lazy GPU migration.
+     * On GPU backends, this allocates only the host (CPU) buffer and defers GPU allocation
+     * until the data is actually needed on the device during execution.
+     *
+     * This is particularly useful for model loading where weights can be loaded to CPU
+     * first and lazily transferred to GPU as needed, reducing initial load time and
+     * memory pressure.
+     *
+     * @param buffer the underlying buffer to create from
+     * @param type the data type
+     * @param length the number of elements
+     * @return a DataBuffer with CPU-only allocation (GPU allocation deferred)
+     */
+    public static DataBuffer createBufferCpuOnly(ByteBuffer buffer, DataType type, long length) {
+        return getDataBufferFactory().createBufferCpuOnly(buffer, type, length);
+    }
 
     /**
      * Create a buffer equal of length prod(shape)
@@ -3163,20 +3336,6 @@ public class Nd4j {
         return rand(ret, min, max, rng);
     }
 
-    /**
-     * Generates a random matrix between min and max
-     *
-     * @param rows    the number of rows of the matrix
-     * @param columns the number of columns in the matrix
-     * @param min     the minimum number
-     * @param max     the maximum number
-     * @param rng     the rng to use
-     * @return a drandom matrix of the specified shape and range
-     */
-    /*public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = createUninitialized(rows, columns);
-        return rand(ret, min, max, rng);
-    }*/
 
     /**
      * Fill the given ndarray with random numbers drawn from a normal distribution
@@ -3892,6 +4051,11 @@ public class Nd4j {
         if(EMPTY_ARRAYS[type.ordinal()] == null) {
             try(MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 val ret = INSTANCE.empty(type);
+                if (ret.shapeInfoDataBuffer() != null) {
+                    ret.shapeInfoDataBuffer().setConstant(true);
+                }
+                // Mark the array as not closeable since it's a cached singleton
+                ret.setCloseable(false);
                 EMPTY_ARRAYS[type.ordinal()] = ret;
             }
         }
@@ -4477,7 +4641,15 @@ public class Nd4j {
         if(shape.length == 0) {
             return scalar(dataType, 0.0);
         }
-        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape, Nd4j.getStrides(shape, ordering), 0, ordering, dataType, false);
+        // Check if any dimension is 0 - if so, the array is empty
+        boolean isEmpty = false;
+        for (long dim : shape) {
+            if (dim == 0) {
+                isEmpty = true;
+                break;
+            }
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape, Nd4j.getStrides(shape, ordering), 0, ordering, dataType, isEmpty);
         return INSTANCE.create(descriptor);
     }
 
@@ -5116,6 +5288,95 @@ public class Nd4j {
         return scalar(DataType.LONG, value);
     }
 
+    // =========================================================================
+    // CONSTANT SCALAR FACTORY METHODS
+    // =========================================================================
+
+    /**
+     * Create a constant scalar NDArray with the specified value and datatype.
+     * The buffer is marked as constant immediately during allocation, preventing
+     * premature deallocation by GC.
+     *
+     * @param dataType Data type for the scalar
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray that will never be deallocated by GC
+     */
+    public static INDArray constantScalar(DataType dataType, Number value) {
+        INDArray arr;
+        try (MemoryWorkspace ws = getMemoryManager().scopeOutOfWorkspaces()) {
+            arr = getDeallocatorService().registerPendingConstant(scalar(dataType, value));
+        }
+        try {
+            // Mark as constant immediately
+            if (arr.data() != null) {
+                arr.data().setConstant(true);
+            }
+            if (arr.shapeInfoDataBuffer() != null) {
+                arr.shapeInfoDataBuffer().setConstant(true);
+            }
+            arr.setCloseable(false);
+        } finally {
+            // Release from pending constants - array is now protected by constant flag
+            getDeallocatorService().releasePendingConstant(arr);
+        }
+        return arr;
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified double value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(double value) {
+        return constantScalar(DataType.DOUBLE, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified float value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(float value) {
+        return constantScalar(DataType.FLOAT, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified int value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(int value) {
+        return constantScalar(DataType.INT, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified long value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(long value) {
+        return constantScalar(DataType.LONG, value);
+    }
+
+    /**
+     * Create a constant scalar NDArray with the specified boolean value.
+     * The buffer is marked as constant immediately during allocation.
+     *
+     * @param value The value of the scalar
+     * @return A constant scalar INDArray
+     */
+    public static INDArray constantScalar(boolean value) {
+        return constantScalar(DataType.BOOL, value ? 1 : 0);
+    }
+
     /**
      * Get the strides for the given order and shape
      *
@@ -5195,6 +5456,10 @@ public class Nd4j {
             Nd4jBackend backend = Nd4jBackend.load();
             if(backend != null)
                 initWithBackend(backend);
+
+            // Auto-initialize multi-backend support
+            // This detects all available backends/devices and configures routing
+            BackendManager.getInstance().autoInitialize();
         } catch (NoAvailableBackendException e) {
             throw new RuntimeException(e);
         }
@@ -5218,14 +5483,25 @@ public class Nd4j {
                 return;
             }
 
+            if(Nd4j.backend != null) {
+                return;
+            }
+
             Nd4j.backend = backend;
             updateNd4jContext();
             props = Nd4jContext.getInstance().getConf();
             PropertyParser pp = new PropertyParser(props);
 
+            System.out.println("=== ND4J Property Loading Debug Information ===");
+            System.out.println("Total properties loaded: " + props.size());
+
+            // Debug DTYPE configuration
             String otherDtype = pp.toString(ND4JSystemProperties.DTYPE);
+            System.out.println("DTYPE property: " + ND4JSystemProperties.DTYPE + " = " + otherDtype);
+
             dtype = otherDtype.equalsIgnoreCase("float") ? DataType.FLOAT
                     : otherDtype.equalsIgnoreCase("half") ? DataType.HALF : DataType.DOUBLE;
+            System.out.println("Resolved DataType: " + dtype);
 
             if (dtype == DataType.HALF && backend.getClass().getName().equals("CpuBackend")) {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
@@ -5236,73 +5512,234 @@ public class Nd4j {
             }
 
             compressDebug = pp.toBoolean(COMPRESSION_DEBUG);
+            System.out.println("Compression debug: " + COMPRESSION_DEBUG + " = " + compressDebug);
+
             char ORDER = pp.toChar(ORDER_KEY, NDArrayFactory.C);
+            System.out.println("Array order: " + ORDER_KEY + " = " + ORDER);
 
+            // Debug Affinity Manager
+            String affinityManagerName = pp.toString(AFFINITY_MANAGER);
+            System.out.println("Affinity Manager property: " + AFFINITY_MANAGER + " = " + affinityManagerName);
             Class<? extends BasicAffinityManager> affinityManagerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(AFFINITY_MANAGER));
-            if(affinityManagerClazz != null)
+                    .loadClassByName(affinityManagerName);
+            System.out.println("Affinity Manager class loaded: " + (affinityManagerClazz != null ? affinityManagerClazz.getName() : "null"));
+            if(affinityManagerClazz != null) {
                 affinityManager = affinityManagerClazz.newInstance();
+                System.out.println("Affinity Manager instance created: " + affinityManager.getClass().getName());
+            }
+
+            // Debug NDArray Factory
+            String ndArrayFactoryName = pp.toString(NDARRAY_FACTORY_CLASS);
+            System.out.println("NDArray Factory property: " + NDARRAY_FACTORY_CLASS + " = " + ndArrayFactoryName);
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(NDARRAY_FACTORY_CLASS));
+                    .loadClassByName(ndArrayFactoryName);
+            System.out.println("NDArray Factory class loaded: " + (ndArrayFactoryClazz != null ? ndArrayFactoryClazz.getName() : "null"));
+
+            // Debug Convolution Instance
+            String convolutionInstanceName = pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName());
+            System.out.println("Convolution Instance property: " + CONVOLUTION_OPS + " = " + convolutionInstanceName);
+            System.out.println("Convolution Instance default fallback: " + DefaultConvolutionInstance.class.getName());
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+                    .loadClassByName(convolutionInstanceName);
+            System.out.println("Convolution Instance class loaded: " + (convolutionInstanceClazz != null ? convolutionInstanceClazz.getName() : "null"));
+
+            // Debug Data Buffer Factory
             String defaultName = pp.toString(DATA_BUFFER_OPS, "org.nd4j.linalg.cpu.nativecpu.buffer.DefaultDataBufferFactory");
+            System.out.println("Data Buffer Factory property: " + DATA_BUFFER_OPS + " = " + defaultName);
             Class<? extends DataBufferFactory> dataBufferFactoryClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(DATA_BUFFER_OPS, defaultName));
+                    .loadClassByName(defaultName);
+            System.out.println("Data Buffer Factory class loaded: " + (dataBufferFactoryClazz != null ? dataBufferFactoryClazz.getName() : "null"));
+
+            // Debug Shape Info Provider
+            String shapeInfoProviderName = pp.toString(SHAPEINFO_PROVIDER);
+            System.out.println("Shape Info Provider property: " + SHAPEINFO_PROVIDER + " = " + shapeInfoProviderName);
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(SHAPEINFO_PROVIDER));
+                    .loadClassByName(shapeInfoProviderName);
+            System.out.println("Shape Info Provider class loaded: " + (shapeInfoProviderClazz != null ? shapeInfoProviderClazz.getName() : "null"));
 
+            // Debug Constant Provider
+            String constantProviderName = pp.toString(CONSTANT_PROVIDER);
+            System.out.println("Constant Provider property: " + CONSTANT_PROVIDER + " = " + constantProviderName);
             Class<? extends BasicConstantHandler> constantProviderClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(CONSTANT_PROVIDER));
+                    .loadClassByName(constantProviderName);
+            System.out.println("Constant Provider class loaded: " + (constantProviderClazz != null ? constantProviderClazz.getName() : "null"));
 
+            // Debug Memory Manager
+            String memoryManagerName = pp.toString(MEMORY_MANAGER);
+            System.out.println("Memory Manager property: " + MEMORY_MANAGER + " = " + memoryManagerName);
             Class<? extends BasicMemoryManager> memoryManagerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(MEMORY_MANAGER));
+                    .loadClassByName(memoryManagerName);
+            System.out.println("Memory Manager class loaded: " + (memoryManagerClazz != null ? memoryManagerClazz.getName() : "null"));
 
             allowsOrder = backend.allowsOrder();
+            System.out.println("Backend allows order: " + allowsOrder);
+
+            // Debug Random Provider
             String rand = pp.toString(RANDOM_PROVIDER, DefaultRandom.class.getName());
+            System.out.println("Random Provider property: " + RANDOM_PROVIDER + " = " + rand);
+            System.out.println("Random Provider default fallback: " + DefaultRandom.class.getName());
             Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz = ND4JClassLoading.loadClassByName(rand);
+            System.out.println("Random Provider class loaded: " + (randomClazz != null ? randomClazz.getName() : "null"));
             randomFactory = new RandomFactory(randomClazz);
+
+            // Debug Device ID Provider
+            String deviceIDProviderName = pp.toString(DEVICE_ID_PROVDER_KEY);
+            System.out.println("Device ID Provider property: " + DEVICE_ID_PROVDER_KEY + " = " + deviceIDProviderName);
             Class<? extends DeviceIDProvider> deviceIDProviderClass = ND4JClassLoading
-                    .loadClassByName(pp.toString(DEVICE_ID_PROVDER_KEY));
-            DEVICE_ID_PROVIDER = deviceIDProviderClass.newInstance();
+                    .loadClassByName(deviceIDProviderName);
+            System.out.println("Device ID Provider class loaded: " + (deviceIDProviderClass != null ? deviceIDProviderClass.getName() : "null"));
+            if(deviceIDProviderClass != null) {
+                DEVICE_ID_PROVIDER = deviceIDProviderClass.newInstance();
+                System.out.println("Device ID Provider instance created: " + DEVICE_ID_PROVIDER.getClass().getName());
+            }
 
+            // Debug Workspace Manager
+            String workspaceManagerName = pp.toString(WORKSPACE_MANAGER);
+            System.out.println("Workspace Manager property: " + WORKSPACE_MANAGER + " = " + workspaceManagerName);
             Class<? extends MemoryWorkspaceManager> workspaceManagerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(WORKSPACE_MANAGER));
+                    .loadClassByName(workspaceManagerName);
+            System.out.println("Workspace Manager class loaded: " + (workspaceManagerClazz != null ? workspaceManagerClazz.getName() : "null"));
 
-            Class<? extends BlasWrapper> blasWrapperClazz = ND4JClassLoading.loadClassByName(pp.toString(BLAS_OPS));
+            // Debug BLAS Wrapper
+            String blasWrapperName = pp.toString(BLAS_OPS);
+            System.out.println("BLAS Wrapper property: " + BLAS_OPS + " = " + blasWrapperName);
+            Class<? extends BlasWrapper> blasWrapperClazz = ND4JClassLoading.loadClassByName(blasWrapperName);
+            System.out.println("BLAS Wrapper class loaded: " + (blasWrapperClazz != null ? blasWrapperClazz.getName() : "null"));
+
+            // Debug Distribution Factory
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
+            System.out.println("Distribution Factory property: " + DISTRIBUTION + " = " + clazzName);
+            System.out.println("Distribution Factory default fallback: " + DefaultDistributionFactory.class.getName());
             Class<? extends DistributionFactory> distributionFactoryClazz = ND4JClassLoading.loadClassByName(clazzName);
+            System.out.println("Distribution Factory class loaded: " + (distributionFactoryClazz != null ? distributionFactoryClazz.getName() : "null"));
 
+            System.out.println("\n=== Instance Creation Phase ===");
 
-            memoryManager = memoryManagerClazz.newInstance();
-            constantHandler = constantProviderClazz.newInstance();
-            if(shapeInfoProviderClazz != null)
-                shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            if(workspaceManagerClazz != null)
-                workspaceManager = workspaceManagerClazz.newInstance();
+            // Create instances with debug info
+            try {
+                memoryManager = memoryManagerClazz.newInstance();
+                System.out.println("Memory Manager instance created: " + memoryManager.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Memory Manager instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
+            try {
+                constantHandler = constantProviderClazz.newInstance();
+                System.out.println("Constant Handler instance created: " + constantHandler.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Constant Handler instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            if(shapeInfoProviderClazz != null) {
+                try {
+                    shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+                    System.out.println("Shape Info Provider instance created: " + shapeInfoProvider.getClass().getName());
+                } catch (Exception e) {
+                    System.err.println("Failed to create Shape Info Provider instance: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            if(workspaceManagerClazz != null) {
+                try {
+                    workspaceManager = workspaceManagerClazz.newInstance();
+                    System.out.println("Workspace Manager instance created: " + workspaceManager.getClass().getName());
+                } catch (Exception e) {
+                    System.err.println("Failed to create Workspace Manager instance: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            // Debug Op Executioner
+            String opExecutionerName = pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName());
+            System.out.println("Op Executioner property: " + OP_EXECUTIONER + " = " + opExecutionerName);
+            System.out.println("Op Executioner default fallback: " + DefaultOpExecutioner.class.getName());
             Class<? extends OpExecutioner> opExecutionerClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+                    .loadClassByName(opExecutionerName);
+            System.out.println("Op Executioner class loaded: " + (opExecutionerClazz != null ? opExecutionerClazz.getName() : "null"));
 
-
+            // Debug BLAS Lapack Delegator
+            String blasLapackDelegatorName = pp.toString(BLAS_LAPACK_DELEGATOR);
+            System.out.println("BLAS Lapack Delegator property: " + BLAS_LAPACK_DELEGATOR + " = " + blasLapackDelegatorName);
             Class<? extends BLASLapackDelegator> blasLapackDelegator = ND4JClassLoading
-                    .loadClassByName(pp.toString(BLAS_LAPACK_DELEGATOR));
-            BLAS_HANDLER = blasLapackDelegator.newInstance();
+                    .loadClassByName(blasLapackDelegatorName);
+            System.out.println("BLAS Lapack Delegator class loaded: " + (blasLapackDelegator != null ? blasLapackDelegator.getName() : "null"));
 
+            try {
+                BLAS_HANDLER = blasLapackDelegator.newInstance();
+                System.out.println("BLAS Handler instance created: " + BLAS_HANDLER.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create BLAS Handler instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
+            // Debug Array Stats Provider
+            String arrayStatsProviderName = pp.toString(STATS_PROVIDER_KEY);
+            System.out.println("Array Stats Provider property: " + STATS_PROVIDER_KEY + " = " + arrayStatsProviderName);
             Class<? extends INDArrayStatisticsProvider> arrayStatsProviderClazz = ND4JClassLoading
-                    .loadClassByName(pp.toString(STATS_PROVIDER_KEY));
-            STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
+                    .loadClassByName(arrayStatsProviderName);
+            System.out.println("Array Stats Provider class loaded: " + (arrayStatsProviderClazz != null ? arrayStatsProviderClazz.getName() : "null"));
 
-            OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
-            Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
-            INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-            CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
-            BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-            DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
+            try {
+                STATS_PROVIDER = arrayStatsProviderClazz.newInstance();
+                System.out.println("Stats Provider instance created: " + STATS_PROVIDER.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Stats Provider instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
-            DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
+            try {
+                OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
+                System.out.println("Op Executioner instance created: " + OP_EXECUTIONER_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Op Executioner instance: " + e.getMessage());
+                e.printStackTrace();
+            }
 
+            try {
+                Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
+                INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
+                System.out.println("NDArray Factory instance created: " + INSTANCE.getClass().getName() + " with dtype=" + dtype + ", order=" + ORDER);
+            } catch (Exception e) {
+                System.err.println("Failed to create NDArray Factory instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
+                System.out.println("Convolution Instance created: " + CONVOLUTION_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Convolution Instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
+                System.out.println("BLAS Wrapper instance created: " + BLAS_WRAPPER_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create BLAS Wrapper instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
+                System.out.println("Data Buffer Factory instance created: " + DATA_BUFFER_FACTORY_INSTANCE.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Data Buffer Factory instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            try {
+                DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
+                System.out.println("Distribution Factory instance created: " + DISTRIBUTION_FACTORY.getClass().getName());
+            } catch (Exception e) {
+                System.err.println("Failed to create Distribution Factory instance: " + e.getMessage());
+                e.printStackTrace();
+            }
+
+            System.out.println("=== ND4J Property Loading Complete ===");
             if (isFallback()) {
                 fallbackMode.set(true);
                 showAttractiveMessage(getMessageForFallback());
@@ -5315,23 +5752,16 @@ public class Nd4j {
                 OP_EXECUTIONER_INSTANCE.printEnvironmentInformation();
             }
 
-            val actions = ND4JClassLoading.loadService(EnvironmentalAction.class);
-            val mappedActions = new HashMap<String, EnvironmentalAction>();
-            for (val a: actions) {
-                if (!mappedActions.containsKey(a.targetVariable()))
-                    mappedActions.put(a.targetVariable(), a);
-            }
+            // Automatic multi-backend initialization
+            // When GPU backend is primary and CPU backend is available, automatically set up
+            // multi-backend execution so ops can run on CPU when data spills to host memory
+            initializeMultiBackendIfAvailable();
 
-            for (val e: mappedActions.keySet()) {
-                val action = mappedActions.get(e);
-                val value = System.getenv(e);
-                if (value != null) {
-                    try {
-                        action.process(value);
-                    } catch (Exception e2) {
-                        logger.info("Failed to process env variable [" + e + "], got exception: " + e2);
-                    }
-                }
+            // Force early native shape cache initialization before any NDArray allocations occur
+            try {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().initializeShapeCache();
+            } catch (Throwable t) {
+                log.warn("Unable to initialize native shape cache early; continuing with lazy init", t);
             }
 
 
@@ -5527,12 +5957,804 @@ public class Nd4j {
     }
 
     /**
+     * Clear the TAD (Tensor Along Dimension) cache to free memory.
+     * <p>
+     * The TAD cache stores dimension-based tensor slices to avoid recomputation.
+     * During long-running operations or when processing multiple graphs, this cache
+     * can accumulate significant memory. Call this method periodically to release
+     * cached TAD packs that are no longer needed.
+     * </p>
+     * <p>
+     * This is safe to call at any time. It will clear all cached TAD packs for all devices.
+     * The cache will be repopulated automatically as needed for subsequent operations.
+     * </p>
+     * <p>
+     * <b>Thread Safety:</b> This method is synchronized to prevent concurrent access
+     * from multiple threads. The native TAD cache uses per-stripe locking, but the
+     * tree traversal during clear() can race with concurrent operations, leading to
+     * memory corruption (SIGSEGV or "free(): invalid pointer" errors).
+     * </p>
+     * <p>
+     * <b>Recommended usage:</b> Call after completing a batch of inferences or after
+     * processing a SameDiff graph to prevent memory accumulation.
+     * </p>
+     *
+     * @since 1.0.0-SNAPSHOT
+     */
+    public static void clearTADCache() {
+        synchronized (TAD_CACHE_LOCK) {
+            try {
+                NativeOpsHolder.getInstance().getDeviceNativeOps().clearTADCache();
+            } catch (Exception e) {
+                log.warn("Failed to clear TAD cache", e);
+            }
+        }
+    }
+
+    /**
      * This method returns WorkspaceManager implementation to be used within this JVM process
      *
      * @return WorkspaceManager
      */
     public static MemoryWorkspaceManager getWorkspaceManager() {
         return workspaceManager;
+    }
+
+    // ========================
+    // Multi-Backend Workspace APIs
+    // ========================
+
+    /**
+     * Get the multi-backend workspace manager for device-aware workspace management.
+     *
+     * @return the multi-backend workspace manager
+     */
+    public static MultiBackendWorkspaceManager getMultiBackendWorkspaceManager() {
+        return MultiBackendWorkspaceManager.getInstance();
+    }
+
+    /**
+     * Create a multi-backend workspace with GPU preference.
+     *
+     * @param initialSize initial workspace size
+     * @param id the workspace ID
+     * @return the created workspace
+     */
+    public static MultiBackendWorkspace createGpuPreferredWorkspace(long initialSize, String id) {
+        return getMultiBackendWorkspaceManager().createWorkspace(
+                DeviceAwareWorkspaceConfiguration.gpuPreferred(initialSize), id);
+    }
+
+    /**
+     * Create a CPU-only multi-backend workspace.
+     *
+     * @param initialSize initial workspace size
+     * @param id the workspace ID
+     * @return the created workspace
+     */
+    public static MultiBackendWorkspace createCpuOnlyWorkspace(long initialSize, String id) {
+        return getMultiBackendWorkspaceManager().createWorkspace(
+                DeviceAwareWorkspaceConfiguration.cpuOnly(initialSize), id);
+    }
+
+    /**
+     * Create a mirrored multi-backend workspace (data on both CPU and GPU).
+     *
+     * @param initialSize initial workspace size
+     * @param id the workspace ID
+     * @return the created workspace
+     */
+    public static MultiBackendWorkspace createMirroredWorkspace(long initialSize, String id) {
+        return getMultiBackendWorkspaceManager().createWorkspace(
+                DeviceAwareWorkspaceConfiguration.mirrored(initialSize), id);
+    }
+
+    /**
+     * Get or create a multi-backend workspace.
+     *
+     * @param configuration the workspace configuration
+     * @param id the workspace ID
+     * @return the workspace
+     */
+    public static MultiBackendWorkspace getOrCreateMultiBackendWorkspace(
+            DeviceAwareWorkspaceConfiguration configuration, String id) {
+        return getMultiBackendWorkspaceManager().getOrCreateWorkspace(configuration, id);
+    }
+
+    /**
+     * Get and activate a multi-backend workspace (enter scope).
+     *
+     * @param configuration the workspace configuration
+     * @param id the workspace ID
+     * @return the activated workspace
+     */
+    public static MultiBackendWorkspace getAndActivateMultiBackendWorkspace(
+            DeviceAwareWorkspaceConfiguration configuration, String id) {
+        return getMultiBackendWorkspaceManager().getAndActivateWorkspace(configuration, id);
+    }
+
+    // ========================
+    // Multi-Backend Executioner APIs
+    // ========================
+
+    // Static field for multi-backend executioner (lazily initialized)
+    private static volatile MultiBackendExecutioner MULTI_BACKEND_EXECUTIONER;
+    private static volatile boolean multiBackendMode = false;
+    private static final Object MULTI_BACKEND_LOCK = new Object();
+
+    // Lock for TAD cache operations to prevent concurrent access from multiple threads
+    // The native TAD cache has per-stripe locking but the tree traversal during clear()
+    // can still race with other operations. This lock serializes clearTADCache() calls.
+    private static final Object TAD_CACHE_LOCK = new Object();
+
+    /**
+     * Automatic multi-backend initialization during Nd4j startup.
+     * Called automatically when Nd4j initializes if multi-backend is enabled via properties.
+     *
+     * <p>Configuration options:
+     * <ul>
+     *   <li>{@code nd4j.multibackend.enabled=true} - Enable multi-backend execution</li>
+     *   <li>{@code nd4j.backend.secondary.properties=nd4j-native.properties} - Secondary backend properties file(s)</li>
+     *   <li>{@code nd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.CpuBackend} - Secondary backend class(es)</li>
+     * </ul>
+     *
+     * <p>This enables true multi-backend execution where:
+     * <ul>
+     *   <li>Arrays are processed by the backend matching their device location</li>
+     *   <li>CPU fallback for spillover data when GPU memory is constrained</li>
+     * </ul>
+     */
+    private static void initializeMultiBackendIfAvailable() {
+        try {
+            // Check if multi-backend is explicitly disabled
+            String disabledStr = System.getProperty(ND4JSystemProperties.MULTI_BACKEND_DISABLED, "false");
+            if (Boolean.parseBoolean(disabledStr)) {
+                log.debug("Multi-backend explicitly disabled via {}", ND4JSystemProperties.MULTI_BACKEND_DISABLED);
+                return;
+            }
+
+            // Auto-discover all available backends via ServiceLoader
+            ServiceLoader<Nd4jBackend> loader = ND4JClassLoading.loadService(Nd4jBackend.class);
+            List<Nd4jBackend> availableBackends = new ArrayList<>();
+
+            for (Nd4jBackend backend : loader) {
+                try {
+                    if (backend.isAvailable()) {
+                        availableBackends.add(backend);
+                        log.debug("Discovered available backend: {} (priority {})",
+                            backend.getClass().getSimpleName(), backend.getPriority());
+                    }
+                } catch (Exception e) {
+                    log.debug("Backend {} not available: {}", backend.getClass().getSimpleName(), e.getMessage());
+                }
+            }
+
+            // Need at least 2 backends for multi-backend mode
+            if (availableBackends.size() < 2) {
+                log.debug("Single backend mode: only {} backend(s) available", availableBackends.size());
+                return;
+            }
+
+            // Sort by priority (highest first) - first one is primary, rest are secondary
+            availableBackends.sort((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
+
+            Nd4jBackend primaryBackend = availableBackends.get(0);
+            List<Nd4jBackend> secondaryBackends = availableBackends.subList(1, availableBackends.size());
+
+            log.info("Multi-backend mode: {} backends available", availableBackends.size());
+            log.info("  Primary: {} (priority {})", primaryBackend.getClass().getSimpleName(), primaryBackend.getPriority());
+
+            // Create the device-aware wrapper around the primary executioner
+            org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner deviceAwareExec =
+                new org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner(OP_EXECUTIONER_INSTANCE);
+
+            int registeredCount = 0;
+
+            // Load each secondary backend
+            for (Nd4jBackend backend : secondaryBackends) {
+                try {
+                    org.nd4j.linalg.api.ops.executioner.OpExecutioner secondaryExec = loadExecutionerFromBackend(backend);
+                    DeviceType deviceType = getDeviceTypeForBackend(backend);
+
+                    if (secondaryExec != null && deviceType != null) {
+                        deviceAwareExec.registerBackendExecutioner(deviceType, secondaryExec);
+                        registeredCount++;
+                        log.info("  Secondary: {} -> {} (priority {})",
+                                deviceType, backend.getClass().getSimpleName(), backend.getPriority());
+                    }
+                } catch (Exception e) {
+                    log.debug("Failed to load secondary backend {}: {}",
+                        backend.getClass().getSimpleName(), e.getMessage());
+                }
+            }
+
+            if (registeredCount > 0) {
+                // Replace the global executioner with the device-aware wrapper
+                OP_EXECUTIONER_INSTANCE = deviceAwareExec;
+                log.info("Multi-backend initialized: ops route based on data device location");
+            }
+
+        } catch (Exception e) {
+            log.debug("Multi-backend auto-initialization skipped: {}", e.getMessage());
+            // Continue with single-backend mode - this is not an error
+        }
+    }
+
+    /**
+     * Load properties from a classpath resource.
+     */
+    private static Properties loadPropertiesFromClasspath(String resourceName) {
+        try {
+            java.io.InputStream is = Nd4j.class.getClassLoader().getResourceAsStream(resourceName);
+            if (is == null) {
+                log.debug("Properties file not found on classpath: {}", resourceName);
+                return null;
+            }
+            Properties props = new Properties();
+            try {
+                props.load(is);
+            } finally {
+                is.close();
+            }
+            return props;
+        } catch (Exception e) {
+            log.debug("Failed to load properties file {}: {}", resourceName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Load an OpExecutioner from a Properties object.
+     */
+    private static org.nd4j.linalg.api.ops.executioner.OpExecutioner loadExecutionerFromProperties(
+            Properties props) {
+        try {
+            String executionerClassName = props.getProperty("opexec");
+            if (executionerClassName == null || executionerClassName.trim().isEmpty()) {
+                return null;
+            }
+            executionerClassName = executionerClassName.trim();
+
+            String nativeOpsClassName = props.getProperty("native.ops");
+
+            Class<?> execClass = ND4JClassLoading.loadClassByName(executionerClassName);
+            if (execClass == null) {
+                return null;
+            }
+
+            // Try to instantiate with NativeOps if available
+            if (nativeOpsClassName != null && !nativeOpsClassName.trim().isEmpty()) {
+                try {
+                    Class<?> nativeOpsClass = ND4JClassLoading.loadClassByName(nativeOpsClassName.trim());
+                    if (nativeOpsClass != null) {
+                        org.nd4j.nativeblas.NativeOps nativeOps =
+                            (org.nd4j.nativeblas.NativeOps) nativeOpsClass.getDeclaredConstructor().newInstance();
+                        try {
+                            nativeOps.initializeDevicesAndFunctions();
+                        } catch (Exception e) {
+                            log.debug("NativeOps initialization warning: {}", e.getMessage());
+                        }
+
+                        try {
+                            java.lang.reflect.Constructor<?> ctor = execClass.getConstructor(
+                                org.nd4j.nativeblas.NativeOps.class, boolean.class);
+                            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                                ctor.newInstance(nativeOps, true);
+                        } catch (NoSuchMethodException e) {
+                            // Fall through
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not load NativeOps: {}", e.getMessage());
+                }
+            }
+
+            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                execClass.getDeclaredConstructor().newInstance();
+
+        } catch (Exception e) {
+            log.debug("Failed to load executioner from properties: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get DeviceType from a Properties object.
+     */
+    private static DeviceType getDeviceTypeFromProperties(Properties props) {
+        String deviceTypeStr = props.getProperty("device.type");
+        if (deviceTypeStr == null || deviceTypeStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return DeviceType.valueOf(deviceTypeStr.trim());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid device.type value: {}", deviceTypeStr);
+            return null;
+        }
+    }
+
+    /**
+     * Load an OpExecutioner from a backend's properties file.
+     * Reads the 'opexec' property from the backend's configuration resource.
+     */
+    private static org.nd4j.linalg.api.ops.executioner.OpExecutioner loadExecutionerFromBackend(
+            Nd4jBackend backend) {
+        try {
+            // Load properties from the backend's configuration resource
+            Properties props = new Properties();
+            try (java.io.InputStream is = backend.getConfigurationResource().getInputStream()) {
+                props.load(is);
+            }
+
+            // Get the executioner class name from 'opexec' property
+            String executionerClassName = props.getProperty("opexec");
+            if (executionerClassName == null || executionerClassName.trim().isEmpty()) {
+                log.debug("No 'opexec' property in backend {}", backend.getClass().getSimpleName());
+                return null;
+            }
+
+            executionerClassName = executionerClassName.trim();
+
+            // Also load the NativeOps class from 'native.ops' property
+            String nativeOpsClassName = props.getProperty("native.ops");
+
+            // Load the executioner class
+            Class<?> execClass = ND4JClassLoading.loadClassByName(executionerClassName);
+            if (execClass == null) {
+                log.debug("Could not load executioner class: {}", executionerClassName);
+                return null;
+            }
+
+            // Try to instantiate with NativeOps and isSecondary flag if possible
+            if (nativeOpsClassName != null && !nativeOpsClassName.trim().isEmpty()) {
+                try {
+                    Class<?> nativeOpsClass = ND4JClassLoading.loadClassByName(nativeOpsClassName.trim());
+                    if (nativeOpsClass != null) {
+                        org.nd4j.nativeblas.NativeOps nativeOps =
+                            (org.nd4j.nativeblas.NativeOps) nativeOpsClass.getDeclaredConstructor().newInstance();
+
+                        // Initialize the native ops
+                        try {
+                            nativeOps.initializeDevicesAndFunctions();
+                        } catch (Throwable e) {
+                            log.debug("NativeOps initialization warning: {}", e.getMessage());
+                        }
+
+                        // Try constructor with NativeOps and isSecondary flag
+                        try {
+                            java.lang.reflect.Constructor<?> ctor = execClass.getConstructor(
+                                org.nd4j.nativeblas.NativeOps.class, boolean.class);
+                            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                                ctor.newInstance(nativeOps, true);
+                        } catch (NoSuchMethodException e) {
+                            // Fall through to default constructor
+                        }
+                    }
+                } catch (Throwable e) {
+                    // Catch Throwable to handle NoClassDefFoundError when native libraries are missing
+                    log.debug("Could not load NativeOps for secondary backend: {}", e.getMessage());
+                }
+            }
+
+            // Fall back to default constructor
+            return (org.nd4j.linalg.api.ops.executioner.OpExecutioner)
+                execClass.getDeclaredConstructor().newInstance();
+
+        } catch (Throwable e) {
+            // Catch Throwable to handle NoClassDefFoundError when native libraries are missing
+            log.debug("Failed to load executioner from backend {}: {}",
+                    backend.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Determine the DeviceType for a backend from its 'device.type' property.
+     * The property value must match a DeviceType enum value exactly.
+     */
+    private static DeviceType getDeviceTypeForBackend(Nd4jBackend backend) {
+        try {
+            Properties props = new Properties();
+            try (java.io.InputStream is = backend.getConfigurationResource().getInputStream()) {
+                props.load(is);
+            }
+
+            String deviceTypeStr = props.getProperty("device.type");
+            if (deviceTypeStr == null || deviceTypeStr.trim().isEmpty()) {
+                log.debug("No 'device.type' property in backend {}", backend.getClass().getSimpleName());
+                return null;
+            }
+
+            // Parse the DeviceType enum directly - no string matching
+            return DeviceType.valueOf(deviceTypeStr.trim());
+
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid 'device.type' value in backend {}: {}",
+                    backend.getClass().getSimpleName(), e.getMessage());
+            return null;
+        } catch (Exception e) {
+            log.debug("Could not determine device type for backend {}: {}",
+                    backend.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get the DeviceType for the current primary backend.
+     * This reads the 'device.type' property from the backend's configuration.
+     *
+     * @return the DeviceType of the current backend, or null if not determinable
+     */
+    public static DeviceType getBackendDeviceType() {
+        return getDeviceTypeForBackend(backend);
+    }
+
+    /**
+     * Get a list of all available backends with their device types.
+     * This discovers all backends on the classpath via ServiceLoader.
+     *
+     * @return list of available backends with their device types
+     */
+    public static List<Map.Entry<Nd4jBackend, DeviceType>> getAvailableBackends() {
+        List<Map.Entry<Nd4jBackend, DeviceType>> result = new ArrayList<>();
+        ServiceLoader<Nd4jBackend> loader = ND4JClassLoading.loadService(Nd4jBackend.class);
+
+        for (Nd4jBackend backend : loader) {
+            try {
+                if (backend.isAvailable()) {
+                    DeviceType deviceType = getDeviceTypeForBackend(backend);
+                    result.add(new java.util.AbstractMap.SimpleEntry<>(backend, deviceType));
+                }
+            } catch (Exception e) {
+                log.debug("Backend {} not available: {}", backend.getClass().getSimpleName(), e.getMessage());
+            }
+        }
+
+        // Sort by priority (highest first)
+        result.sort((a, b) -> Integer.compare(b.getKey().getPriority(), a.getKey().getPriority()));
+        return result;
+    }
+
+    /**
+     * Check if a specific DeviceType backend is available on the classpath.
+     *
+     * @param deviceType the device type to check for
+     * @return true if a backend for that device type is available
+     */
+    public static boolean isBackendAvailable(DeviceType deviceType) {
+        for (Map.Entry<Nd4jBackend, DeviceType> entry : getAvailableBackends()) {
+            if (entry.getValue() == deviceType) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Enable multi-backend mode for seamless device routing.
+     * When enabled, operations will automatically route to the appropriate
+     * backend based on input data location and routing policy.
+     *
+     * @return true if multi-backend was successfully enabled
+     */
+    public static boolean enableMultiBackend() {
+        synchronized (MULTI_BACKEND_LOCK) {
+            if (multiBackendMode && MULTI_BACKEND_EXECUTIONER != null) {
+                return true;
+            }
+
+            // Initialize the backend registry
+            BackendRegistry.getInstance().initialize();
+
+            // Create the multi-backend executioner wrapping the current one
+            MULTI_BACKEND_EXECUTIONER = new DefaultMultiBackendExecutioner(OP_EXECUTIONER_INSTANCE);
+            multiBackendMode = true;
+
+            log.info("Multi-backend mode enabled with {} backends and {} devices",
+                    BackendRegistry.getInstance().getBackends().size(),
+                    BackendRegistry.getInstance().getAllDevices().size());
+
+            return true;
+        }
+    }
+
+    /**
+     * Disable multi-backend mode.
+     */
+    public static void disableMultiBackend() {
+        synchronized (MULTI_BACKEND_LOCK) {
+            multiBackendMode = false;
+        }
+    }
+
+    /**
+     * Check if multi-backend mode is enabled.
+     *
+     * @return true if multi-backend is enabled
+     */
+    public static boolean isMultiBackendEnabled() {
+        return multiBackendMode;
+    }
+
+    // Default device for array creation (null = use backend's default)
+    private static volatile DeviceDescriptor defaultCreationDevice = null;
+
+    /**
+     * Set the default device for array creation.
+     * All subsequent calls to {@code Nd4j.create()} will allocate arrays on this device
+     * unless overridden by a scoped context or explicit device parameter.
+     *
+     * <p>This is similar to PyTorch's {@code torch.set_default_device()}.</p>
+     *
+     * <pre>{@code
+     * // Set GPU as default for all new arrays
+     * Nd4j.setDefaultDevice(DeviceDescriptor.cuda(0));
+     *
+     * // Now all creates go to GPU
+     * INDArray a = Nd4j.create(100, 100);  // on GPU
+     * }</pre>
+     *
+     * @param device the default device, or null to use backend's default
+     */
+    public static void setDefaultDevice(DeviceDescriptor device) {
+        defaultCreationDevice = device;
+    }
+
+    /**
+     * Get the current default device for array creation.
+     *
+     * <p>Priority order:
+     * <ol>
+     *   <li>Thread-local scoped context ({@link #withDevice})</li>
+     *   <li>Global default device ({@link #setDefaultDevice})</li>
+     *   <li>Backend's default (typically first GPU if available, else CPU)</li>
+     * </ol>
+     *
+     * @return the effective default device for array creation
+     */
+    public static DeviceDescriptor getDefaultDevice() {
+        // Check thread-local scope first
+        DeviceDescriptor scoped = MultiBackendContext.currentDevice();
+        if (scoped != null) {
+            return scoped;
+        }
+
+        // Check global default
+        if (defaultCreationDevice != null) {
+            return defaultCreationDevice;
+        }
+
+        // Fall back to backend registry default (prefers GPU if available)
+        return BackendRegistry.getInstance().getDefaultDevice();
+    }
+
+    /**
+     * Set default device to first available GPU, or CPU if no GPU available.
+     * Convenience method equivalent to PyTorch's default behavior.
+     */
+    public static void setDefaultDeviceToGpuIfAvailable() {
+        DeviceDescriptor gpu = BackendRegistry.getInstance().getDefaultGpuDevice();
+        if (gpu != null) {
+            setDefaultDevice(gpu);
+        } else {
+            setDefaultDevice(BackendRegistry.getInstance().getDefaultCpuDevice());
+        }
+    }
+
+    /**
+     * Get the multi-backend executioner.
+     * This executioner routes operations to the appropriate backend
+     * based on input data location and routing policy.
+     *
+     * @return the multi-backend executioner, or null if multi-backend is not enabled
+     */
+    public static MultiBackendExecutioner getMultiBackendExecutioner() {
+        if (!multiBackendMode) {
+            return null;
+        }
+        return MULTI_BACKEND_EXECUTIONER;
+    }
+
+    /**
+     * Get the operation executioner for a specific device.
+     * This allows explicit execution on a particular device.
+     *
+     * @param device the target device
+     * @return the executioner for that device
+     */
+    public static OpExecutioner getExecutioner(DeviceDescriptor device) {
+        if (device == null) {
+            return OP_EXECUTIONER_INSTANCE;
+        }
+        return BackendRegistry.getInstance().getExecutioner(device);
+    }
+
+    /**
+     * Get the operation executioner for a specific device type.
+     *
+     * @param deviceType the device type (CPU, CUDA_GPU, etc.)
+     * @return the executioner for that device type
+     */
+    public static OpExecutioner getExecutioner(DeviceType deviceType) {
+        if (deviceType == null) {
+            return OP_EXECUTIONER_INSTANCE;
+        }
+
+        // Get the first device of this type
+        java.util.List<DeviceDescriptor> devices = BackendRegistry.getInstance().getDevices(deviceType);
+        if (devices != null && !devices.isEmpty()) {
+            return BackendRegistry.getInstance().getExecutioner(devices.get(0));
+        }
+
+        return OP_EXECUTIONER_INSTANCE;
+    }
+
+    /**
+     * Get the backend registry for advanced multi-backend operations.
+     *
+     * @return the backend registry
+     */
+    public static BackendRegistry getBackendRegistry() {
+        return BackendRegistry.getInstance();
+    }
+
+    /**
+     * Get all available devices across all backends.
+     *
+     * @return list of all devices
+     */
+    public static java.util.List<DeviceDescriptor> getAllDevices() {
+        return BackendRegistry.getInstance().getAllDevices();
+    }
+
+    /**
+     * Get the default GPU device if available.
+     *
+     * @return the default GPU, or null if none available
+     */
+    public static DeviceDescriptor getDefaultGpu() {
+        return BackendRegistry.getInstance().getDefaultGpuDevice();
+    }
+
+    /**
+     * Get the default CPU device.
+     *
+     * @return the default CPU device
+     */
+    public static DeviceDescriptor getDefaultCpu() {
+        return BackendRegistry.getInstance().getDefaultCpuDevice();
+    }
+
+    /**
+     * Check if any GPU devices are available.
+     *
+     * @return true if GPUs are available
+     */
+    public static boolean hasGpu() {
+        return BackendRegistry.getInstance().hasGpu();
+    }
+
+    /**
+     * Execute code within a specific device context for array creation.
+     * New arrays created via {@code Nd4j.create()} within the supplier will
+     * be allocated on the specified device.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * Operations still execute where their input data resides. This context
+     * only affects where NEW arrays are created.</p>
+     *
+     * <pre>{@code
+     * // Create arrays on GPU 0
+     * INDArray gpuArray = Nd4j.withDevice(DeviceDescriptor.cuda(0), () -> {
+     *     return Nd4j.create(new float[]{1, 2, 3});
+     * });
+     * }</pre>
+     *
+     * @param device the device where new arrays should be created
+     * @param supplier the code to execute
+     * @param <T> the return type
+     * @return the result
+     */
+    public static <T> T withDevice(DeviceDescriptor device, java.util.function.Supplier<T> supplier) {
+        return MultiBackendContext.withDevice(device, supplier);
+    }
+
+    /**
+     * Execute code within a specific device context for array creation.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * See {@link #withDevice(DeviceDescriptor, java.util.function.Supplier)} for details.</p>
+     *
+     * @param device the device where new arrays should be created
+     * @param runnable the code to execute
+     */
+    public static void withDevice(DeviceDescriptor device, Runnable runnable) {
+        MultiBackendContext.withDevice(device, runnable);
+    }
+
+    /**
+     * Execute code with new arrays created on GPU (if available).
+     * Falls back to default device if no GPU is available.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * Operations still execute where their input data resides.</p>
+     *
+     * @param supplier the code to execute
+     * @param <T> the return type
+     * @return the result
+     */
+    public static <T> T onGpu(java.util.function.Supplier<T> supplier) {
+        DeviceDescriptor gpu = getDefaultGpu();
+        if (gpu != null) {
+            return withDevice(gpu, supplier);
+        }
+        return supplier.get();
+    }
+
+    /**
+     * Execute code with new arrays created on CPU.
+     *
+     * <p><b>Note:</b> This does NOT override data-dependent operation routing.
+     * Operations still execute where their input data resides.</p>
+     *
+     * @param supplier the code to execute
+     * @param <T> the return type
+     * @return the result
+     */
+    public static <T> T onCpu(java.util.function.Supplier<T> supplier) {
+        DeviceDescriptor cpu = getDefaultCpu();
+        if (cpu != null) {
+            return withDevice(cpu, supplier);
+        }
+        return supplier.get();
+    }
+
+    // ========================
+    // Unified Backend Manager API
+    // ========================
+
+    /**
+     * Get the unified backend manager for multi-backend configuration.
+     *
+     * <p>The BackendManager provides a single entry point for:</p>
+     * <ul>
+     *   <li>Configuring device priority and memory limits</li>
+     *   <li>Querying available backends and devices</li>
+     *   <li>Monitoring memory usage across devices</li>
+     *   <li>Scoped device forcing for specific code blocks</li>
+     * </ul>
+     *
+     * <p>Basic usage - everything works automatically:</p>
+     * <pre>{@code
+     * // Arrays are allocated on the best available device (GPU if present)
+     * INDArray a = Nd4j.create(100, 100);
+     *
+     * // Check what's available
+     * Nd4j.backends().info();
+     * }</pre>
+     *
+     * <p>Configuration via fluent API:</p>
+     * <pre>{@code
+     * Nd4j.backends()
+     *     .priority(DeviceType.CUDA_GPU, DeviceType.CPU)  // GPU first, CPU fallback
+     *     .gpuMemoryFraction(0.9)                         // Use 90% of GPU memory
+     *     .memoryFallback(true)                           // Auto-fallback on OOM
+     *     .apply();
+     * }</pre>
+     *
+     * <p>Scoped device forcing:</p>
+     * <pre>{@code
+     * try (var scope = Nd4j.backends().forceDevice(DeviceType.CPU)) {
+     *     INDArray cpuArray = Nd4j.create(100, 100);  // Forced to CPU
+     * }
+     * }</pre>
+     *
+     * @return the BackendManager instance
+     * @see BackendManager
+     */
+    public static BackendManager backends() {
+        return BackendManager.getInstance();
     }
 
     /**
@@ -5685,22 +6907,31 @@ public class Nd4j {
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
 
-        long rank = outShapes.get(0).getLong(0);
-        if(x == null && (outShapes.get(0) == null || rank == 0L || rank == 0L)) {
-            //Empty: no conditions match
-            for( int i = 0 ; i < outputs.length; i++) {
-                outputs[i]  = Nd4j.empty();
+        // Track how many shape buffers were successfully used by output arrays
+        int buffersUsed = 0;
+        try {
+            long rank = outShapes.get(0).getLong(0);
+            if(x == null && (outShapes.get(0) == null || rank == 0L || rank == 0L)) {
+                //Empty: no conditions match - shape buffers NOT used by arrays
+                for( int i = 0 ; i < outputs.length; i++) {
+                    outputs[i]  = Nd4j.empty();
+                }
+                return outputs;
             }
+
+            for(int i = 0; i < outputs.length; i++) {
+                outputs[i] = Nd4j.createFromDescriptor(outShapes.get(i));
+                buffersUsed++;  // Track successful usage
+            }
+            op.addOutputs(outputs);
+
+            Nd4j.getExecutioner().execAndReturn(op.build());
             return outputs;
+        } finally {
+            // NOTE: Shape buffers returned by calculateOutputShape() are CACHED by ConstantShapeHelper
+            // and must NOT be closed here - they are shared across operations.
+            // Closing them would corrupt the shape cache, leading to use-after-free bugs.
         }
-
-        for(int i = 0; i < outputs.length; i++) {
-            outputs[i] = Nd4j.createFromDescriptor(outShapes.get(i));
-        }
-        op.addOutputs(outputs);
-
-        Nd4j.getExecutioner().execAndReturn(op.build());
-        return outputs;
     }
 
 
@@ -5881,13 +7112,27 @@ public class Nd4j {
      * For more on the format, see: https://docs.scipy.org/doc/numpy-1.14.0/neps/npy-format.html
      */
     public static byte[] toNpyByteArray(INDArray input) {
-        DataBuffer asNumpy = convertToNumpy(input);
-        long len = input.length() * input.data().getElementSize();
-        Pointer pointer = asNumpy.addressPointer();
-        pointer.limit(len);
-        ByteBuffer directBuffer = pointer.asByteBuffer();
+        // Ensure data is on host before serialization (critical for CUDA)
+        Nd4j.getAffinityManager().ensureLocation(input, AffinityManager.Location.HOST);
 
-        byte[] ret = new byte[directBuffer.capacity()];
+        // Get header length and calculate total size
+        long headerLen = Nd4j.getNativeOps().numpyHeaderLength(
+            input.data().opaqueBuffer(),
+            input.shapeInfoDataBuffer().pointer());
+        long totalLen = headerLen + input.length() * input.data().getElementSize();
+
+        // Get the numpy data directly from native without going through DataBuffer
+        // This avoids CUDA addressPointer() returning a different pointer
+        Pointer numpyPointer = Nd4j.getNativeOps().numpyFromNd4j(
+            input.data().addressPointer(),
+            input.shapeInfoDataBuffer().pointer(),
+            input.data().getElementSize());
+
+        numpyPointer.capacity(totalLen);
+        numpyPointer.limit(totalLen);
+        ByteBuffer directBuffer = numpyPointer.asByteBuffer();
+
+        byte[] ret = new byte[(int) totalLen];
         directBuffer.get(ret);
         return ret;
     }
@@ -5922,97 +7167,28 @@ public class Nd4j {
                 "Cannot create INDArray from FlatArray with UNKNOWN or COMPRESSED DataType: %s", dtype);
 
 
+        int shapeInfoLength = array.shapeLength();
+        long[] shapeBuffer = new long[shapeInfoLength];
+        for(int i = 0; i < shapeInfoLength; i++) {
+            shapeBuffer[i] = array.shape(i);
+        }
+        long[] shape = new long[(int) shapeBuffer[0]];
         // --- 2. Extract Rank and Shape ---
-        int rank = array.shapeLength();
-        Preconditions.checkState(rank >= 0 && rank <= Shape.MAX_RANK, // Check lower bound too
-                "Rank from FlatArray (%s) is invalid or exceeds maximum allowed rank (%s)", rank, Shape.MAX_RANK);
-
-        long[] shape = new long[rank];
-        for (int i = 0; i < rank; i++) {
-            shape[i] = array.shape(i);
-            Preconditions.checkState(shape[i] >= 0, "Invalid shape dimension size: shape[%s] = %s", i, shape[i]);
+        long rank = shapeBuffer[0];
+        long length = 1;
+        for(int i = 0; i < rank; i++) {
+            length *= shapeBuffer[i + 1];
+            shape[i] = shapeBuffer[i + 1];
         }
-
-        // --- 3. Determine isEmpty based on shape ---
-        boolean isEmpty = false;
-        if (rank > 0) { // Scalars (rank 0) have length 1, not empty by shape check
-            for (long dim : shape) {
-                if (dim == 0) {
-                    isEmpty = true;
-                    break;
-                }
-            }
-        }
-        long length = isEmpty ? 0 : ArrayUtil.prodLong(shape); // Correct length calculation
-        if (rank == 0) length = 1; // Scalar length is 1
-
-
-        // --- 4. Handle Empty Array Case ---
-        if (isEmpty) {
-            // Return an empty INDArray with the correct shape and dtype
-            return Nd4j.empty(dtype).reshape(shape);
-        }
-
-        // --- 5. Determine Order, Calculate Strides & EWS ---
-        char ordering = 'c'; // Default C order, as FlatArray doesn't store layout order
-        long[] strides = Nd4j.getStrides(shape, ordering); // Empty for rank 0
-        long ews = (rank == 0) ? 1 : Shape.elementWiseStride(shape, strides, ordering == 'f');
-
-        // --- 6. Calculate Extras ---
-        long extras = 0L;
-        extras = ArrayOptionsHelper.setDataType(extras, dtype); // Set ONLY data type bits initially
-        // Set other flags to false defaults for a new array from buffer
-        // extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.IS_VIEW, false); // Example if needed
 
         // --- 7. Create ND4J Shape Info Buffer ---
-        DataBuffer shapeInfoBuffer;
-        int shapeInfoLength = Shape.shapeInfoLength(rank);
+        DataBuffer shapeInfoBuffer = Nd4j.createBufferDetached(shapeBuffer);
 
-        if (rank == 0) {
-            // ** Manual creation for scalar (rank 0) **
-            shapeInfoBuffer = Nd4j.getDataBufferFactory().createLong(shapeInfoLength); // Length is 4
-            shapeInfoBuffer.put(0, 0);   // Rank
-            shapeInfoBuffer.put(1, ews); // EWS (1 for scalar)
-            shapeInfoBuffer.put(2, (int)ordering); // Order ('c')
-            shapeInfoBuffer.put(3, extras); // Set calculated extras
-        } else {
-            // ** Standard creation for non-scalars **
-            long[] shapeInfoArray = new long[shapeInfoLength];
-            shapeInfoArray[0] = rank;
-            System.arraycopy(shape, 0, shapeInfoArray, 1, rank);
-            System.arraycopy(strides, 0, shapeInfoArray, 1 + rank, rank);
-            shapeInfoArray[shapeInfoLength - 3] = ews;
-            shapeInfoArray[shapeInfoLength - 2] = (int) ordering;
-            shapeInfoArray[shapeInfoLength - 1] = extras;
-
-            try {
-                Pair<DataBuffer, long[]> siPair = Nd4j.getShapeInfoProvider().createShapeInformation(shapeInfoArray);
-                shapeInfoBuffer = siPair.getFirst();
-            } catch (Exception e) {
-                log.error("Error during ShapeInfoProvider creation for rank {}. Calculated shapeInfoArray: {}", rank, Arrays.toString(shapeInfoArray), e);
-                throw new RuntimeException("Failed to create shape information buffer for rank " + rank, e);
-            }
-        }
-
-        // --- 8. Sanity check the created shape info buffer's extras/dataType ---
-        long extrasFromBuffer = shapeInfoBuffer.getLong(shapeInfoLength - 1);
-        DataType dtFromBuffer = DataType.UNKNOWN;
-        boolean checkFailed = false;
-        try {
-            dtFromBuffer = ArrayOptionsHelper.dataType(extrasFromBuffer);
-            if (dtFromBuffer != dtype) {
-                log.error("POST ShapeInfoBuffer Creation: DataType MISMATCH. Expected: {}, From Buffer Extras ({}): {}. ShapeInfoBuffer content: {}",
-                        dtype, extrasFromBuffer, dtFromBuffer, Arrays.toString(shapeInfoBuffer.asLong()));
-                checkFailed = true;
-            }
-        } catch (ND4JUnknownDataTypeException e) {
-            log.error("POST ShapeInfoBuffer Creation: ND4JUnknownDataTypeException reading DataType. Extras value read from buffer: {}. ShapeInfoBuffer content: {}",
-                    extrasFromBuffer, Arrays.toString(shapeInfoBuffer.asLong()), e);
-            checkFailed = true;
-        }
-        if(checkFailed){
-            // This indicates a deeper issue, likely in the native layer or buffer provider if the manual creation path was used.
-            throw new IllegalStateException("Failed to create or validate INDArray shape information buffer. Extras value mismatch or unreadable.");
+        // --- 8. Check for empty array ---
+        // Empty arrays are serialized with buffer = 0 and have the empty flag in shape info
+        if (Shape.isEmpty(shapeBuffer)) {
+            // Return an empty array of the correct data type
+            return Nd4j.empty(dtype);
         }
 
         // --- 9. Get and Process Data Buffer ---
@@ -6025,20 +7201,93 @@ public class Nd4j {
         } else {
             java.nio.ByteOrder dataByteBufferOrder = FlatBuffersMapper.getOrderFromByte(array.byteOrder());
             int bytesPerElement = Nd4j.sizeOfDataType(dtype);
-            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : bb.remaining();
+            int bufLen = array.bufferLength();
+            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : bufLen;
 
-            if (bb.remaining() < expectedBytes) {
-                log.warn("FlatArray buffer remaining bytes ({}) is less than expected ({}) for shape {} and dtype {}. Data may be incomplete.",
-                        bb.remaining(), expectedBytes, Arrays.toString(shape), dtype);
+            if (bufLen < expectedBytes) {
+                log.warn("FlatArray buffer length ({}) is less than expected ({}) for shape {} and dtype {}. Data may be incomplete.",
+                        bufLen, expectedBytes, Arrays.toString(shape), dtype);
             }
 
-            // Ensure we read from the beginning of the buffer content
-            bb.order(dataByteBufferOrder);
-            if(bb.position() != 0) bb.position(0); // Reset position
+            // Read bytes from the FlatBuffer source buffer
+            // FlatBuffer's bufferAsByteBuffer returns a slice with position=0, limit=bufLen
+            // Use bufLen as the authoritative size
+            byte[] bytes = new byte[bufLen];
+            if (bb.remaining() >= bufLen) {
+                bb.get(bytes, 0, bufLen);
+            } else {
+                // Buffer might have wrong position, try resetting
+                bb.position(0);
+                if (bb.remaining() >= bufLen) {
+                    bb.get(bytes, 0, bufLen);
+                } else {
+                    // Read whatever is available
+                    int available = bb.remaining();
+                    bb.get(bytes, 0, available);
+                    log.warn("FlatBuffer bb.remaining() ({}) is less than bufLen ({}). Read {} bytes.", available, bufLen, available);
+                }
+            }
 
-            // Create DataBuffer by copying data
+            // Create a direct buffer in native order for the native code
+            java.nio.ByteBuffer direct = ByteBuffer.allocateDirect(bufLen);
+            direct.order(java.nio.ByteOrder.nativeOrder());  // Native order for native code
+
+            // If byte orders differ, we need to convert the data
+            if (dataByteBufferOrder != java.nio.ByteOrder.nativeOrder()) {
+                // Read values in source order and write in native order
+                java.nio.ByteBuffer srcBuf = java.nio.ByteBuffer.wrap(bytes).order(dataByteBufferOrder);
+                switch (dtype) {
+                    case DOUBLE:
+                        java.nio.DoubleBuffer srcDouble = srcBuf.asDoubleBuffer();
+                        java.nio.DoubleBuffer dstDouble = direct.asDoubleBuffer();
+                        while (srcDouble.hasRemaining()) {
+                            dstDouble.put(srcDouble.get());
+                        }
+                        break;
+                    case FLOAT:
+                        java.nio.FloatBuffer srcFloat = srcBuf.asFloatBuffer();
+                        java.nio.FloatBuffer dstFloat = direct.asFloatBuffer();
+                        while (srcFloat.hasRemaining()) {
+                            dstFloat.put(srcFloat.get());
+                        }
+                        break;
+                    case LONG:
+                        java.nio.LongBuffer srcLong = srcBuf.asLongBuffer();
+                        java.nio.LongBuffer dstLong = direct.asLongBuffer();
+                        while (srcLong.hasRemaining()) {
+                            dstLong.put(srcLong.get());
+                        }
+                        break;
+                    case INT:
+                        java.nio.IntBuffer srcInt = srcBuf.asIntBuffer();
+                        java.nio.IntBuffer dstInt = direct.asIntBuffer();
+                        while (srcInt.hasRemaining()) {
+                            dstInt.put(srcInt.get());
+                        }
+                        break;
+                    case SHORT:
+                    case HALF:
+                    case BFLOAT16:
+                        java.nio.ShortBuffer srcShort = srcBuf.asShortBuffer();
+                        java.nio.ShortBuffer dstShort = direct.asShortBuffer();
+                        while (srcShort.hasRemaining()) {
+                            dstShort.put(srcShort.get());
+                        }
+                        break;
+                    default:
+                        // For single-byte types, byte order doesn't matter
+                        direct.put(bytes);
+                        break;
+                }
+            } else {
+                // Same byte order, just copy
+                direct.put(bytes);
+            }
+            direct.rewind();
+
+            // Create DataBuffer from the direct buffer
             try {
-                dataBuffer = Nd4j.createBuffer(bb, dtype, (int) length); // Use createBuffer(ByteBuffer, ...)
+                dataBuffer = Nd4j.createBuffer(direct, dtype, (int) length);
             } catch (Exception e) {
                 log.error("Error creating DataBuffer from ByteBuffer for dtype {} shape {}", dtype, Arrays.toString(shape), e);
                 throw new RuntimeException("Failed to create data buffer from FlatArray ByteBuffer", e);
@@ -6762,22 +8011,73 @@ public class Nd4j {
 
 
     /**
-     * Execute the operation and return the result
+     * Execute the operation and return the result.
+     * If a GraphScope is active on this thread, the op will be recorded
+     * into the hidden SameDiff graph instead of being executed eagerly.
      *
      * @param op the operation to execute
      */
     public static INDArray[] exec(CustomOp op) {
+        GraphScope scope = GraphScope.active();
+        if (scope != null) {
+            return scope.recordOp(op);
+        }
         return getExecutioner().exec(op);
     }
 
     /**
-     * Execute the operation and return the result
+     * Execute the operation and return the result.
+     * If a GraphScope is active on this thread, the op will be recorded
+     * into the hidden SameDiff graph instead of being executed eagerly.
      *
      * @param op the operation to execute
      */
     public static INDArray[] exec(CustomOp op, OpContext context) {
+        GraphScope scope = GraphScope.active();
+        if (scope != null) {
+            return scope.recordOp(op);
+        }
         return getExecutioner().exec(op, context);
     }
 
+    /**
+     * Create a new GraphScope for tracing Nd4j operations into a compiled graph.
+     *
+     * Usage:
+     * <pre>
+     * try (GraphScope scope = Nd4j.graphScope()) {
+     *     scope.begin();
+     *     INDArray mm = Nd4j.matmul(a, b);
+     *     INDArray out = Nd4j.nn.relu(mm);
+     *     scope.end();
+     * }
+     * </pre>
+     *
+     * @return a new GraphScope
+     */
+    public static GraphScope graphScope() {
+        return new GraphScope();
+    }
+
+    /**
+     * Compile a reusable graph function. The function is traced on first execution,
+     * compiled into a DSP plan, and replayed on subsequent calls.
+     *
+     * Usage:
+     * <pre>
+     * CompiledGraphFunction fn = Nd4j.compile(2, inputs -> {
+     *     INDArray mm = Nd4j.matmul(inputs[0], inputs[1]);
+     *     return new INDArray[]{Nd4j.nn.relu(mm)};
+     * });
+     * INDArray[] result = fn.execute(a, b);
+     * </pre>
+     *
+     * @param numInputs the number of input arrays the function expects
+     * @param fn the graph function to compile
+     * @return a compiled graph function that can be executed repeatedly
+     */
+    public static CompiledGraphFunction compile(int numInputs, GraphFunction fn) {
+        return new CompiledGraphFunction(fn, numInputs);
+    }
 
 }
