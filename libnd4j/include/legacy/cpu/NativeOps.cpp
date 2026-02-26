@@ -40,6 +40,8 @@
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/transforms.h>
+#include <graph/NativeDynamicShapePlan.h>
+#include <memory/MultiBackendWorkspace.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -2718,37 +2720,37 @@ sd::LongType getWorkspaceAllocatedSize(OpaqueWorkspace workspace) {
 
 OpaqueMultiBackendWorkspace createNativeMultiBackendWorkspace(
     sd::LongType initialSize, int primaryDeviceType, int primaryDeviceIndex) {
-    return createMultiBackendWorkspace(initialSize, primaryDeviceType, primaryDeviceIndex);
+    return sd::memory::createMultiBackendWorkspace(initialSize, primaryDeviceType, primaryDeviceIndex);
 }
 
 void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle) {
-    destroyMultiBackendWorkspace(handle);
+    sd::memory::destroyMultiBackendWorkspace(handle);
 }
 
 void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes) {
-    return mbwAllocateBytes(handle, numBytes);
+    return sd::memory::mbwAllocateBytes(handle, numBytes);
 }
 
 void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle) {
-    mbwScopeIn(handle);
+    sd::memory::mbwScopeIn(handle);
 }
 
 void nativeMbwScopeOut(OpaqueMultiBackendWorkspace handle) {
-    mbwScopeOut(handle);
+    sd::memory::mbwScopeOut(handle);
 }
 
 void nativeMbwTransferTo(OpaqueMultiBackendWorkspace handle,
     int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex) {
-    mbwTransferTo(handle, srcDeviceType, srcDeviceIndex, dstDeviceType, dstDeviceIndex);
+    sd::memory::mbwTransferTo(handle, srcDeviceType, srcDeviceIndex, dstDeviceType, dstDeviceIndex);
 }
 
 int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
     int deviceType, int deviceIndex) {
-    return mbwGetCoherenceState(handle, deviceType, deviceIndex);
+    return sd::memory::mbwGetCoherenceState(handle, deviceType, deviceIndex);
 }
 
 sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle) {
-    return mbwGetTotalAllocatedSize(handle);
+    return sd::memory::mbwGetTotalAllocatedSize(handle);
 }
 
 // Dynamic Shape Plan configuration methods (CPU implementations)
