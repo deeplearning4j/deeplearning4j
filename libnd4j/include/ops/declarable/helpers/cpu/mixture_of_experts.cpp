@@ -231,11 +231,6 @@ void mixtureOfExperts(sd::LaunchContext* context,
     }
 }
 
-BUILD_SINGLE_TEMPLATE(void mixtureOfExpertsSimple_,
-                      (sd::LaunchContext* context, NDArray* input, NDArray* gatingWeights,
-                       NDArray* expertWeights, NDArray* expertBias, NDArray* output,
-                       int numExperts, int topK),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

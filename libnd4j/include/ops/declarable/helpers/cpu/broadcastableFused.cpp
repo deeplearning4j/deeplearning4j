@@ -161,16 +161,6 @@ void fusedMultiply1DLast(NDArray& x, NDArray& y, NDArray& z) {
   BUILD_SINGLE_SELECTOR(x.dataType(), multiply1DLast_, (x.buffer(), y.buffer(), z.buffer(), numRows, lastDim), SD_COMMON_TYPES);
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Template instantiations
-
-BUILD_SINGLE_TEMPLATE(void addContiguous_, (const void*, const void*, void*, sd::LongType), SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(void subtractContiguous_, (const void*, const void*, void*, sd::LongType), SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(void multiplyContiguous_, (const void*, const void*, void*, sd::LongType), SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(void divideContiguous_, (const void*, const void*, void*, sd::LongType), SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(void add1DLast_, (const void*, const void*, void*, sd::LongType, sd::LongType), SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(void multiply1DLast_, (const void*, const void*, void*, sd::LongType, sd::LongType), SD_COMMON_TYPES);
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

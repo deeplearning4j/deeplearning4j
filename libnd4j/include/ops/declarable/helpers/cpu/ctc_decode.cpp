@@ -153,11 +153,6 @@ void ctcGreedyDecode(sd::LaunchContext* context,
                           SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
-BUILD_DOUBLE_TEMPLATE(void ctcGreedyDecode_,
-                      (sd::LaunchContext* context, NDArray* logits, NDArray* sequenceLength,
-                       NDArray* decoded, NDArray* logProb, sd::LongType blankIndex, bool mergeRepeated),
-                      SD_FLOAT_TYPES, SD_INDEXING_TYPES);
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

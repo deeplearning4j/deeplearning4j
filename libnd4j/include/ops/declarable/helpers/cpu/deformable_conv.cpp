@@ -245,12 +245,6 @@ void deformableConv2d(sd::LaunchContext* context,
                           SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(void deformableConv2d_,
-                      (sd::LaunchContext* context, NDArray* input, NDArray* weights,
-                       NDArray* offset, NDArray* bias, NDArray* mask, NDArray* output,
-                       int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW,
-                       int groups, int offsetGroups),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

@@ -203,12 +203,6 @@ void windowedAttention(sd::LaunchContext* context,
                           SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(void windowedAttention_,
-                      (sd::LaunchContext* context, NDArray* query, NDArray* key,
-                       NDArray* value, NDArray* relativePositionBias, NDArray* attentionMask,
-                       NDArray* output, NDArray* attentionWeights, int windowSize, int numHeads,
-                       int shiftSize, double scale, bool returnWeights),
-                      SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

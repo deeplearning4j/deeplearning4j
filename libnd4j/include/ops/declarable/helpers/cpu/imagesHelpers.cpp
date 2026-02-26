@@ -34,7 +34,7 @@ namespace helpers {
  * Check if an NDArray is C-order contiguous by verifying strides.
  * Replaces ews()==1 checks which can be unreliable for views.
  */
-static bool isCContiguous(const NDArray& arr) {
+static bool isCContiguous(NDArray& arr) {
   auto rank = arr.rankOf();
   auto shape = arr.shapeOf();
   auto strides = arr.stridesOf();

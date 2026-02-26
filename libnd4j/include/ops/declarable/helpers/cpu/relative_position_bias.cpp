@@ -191,10 +191,6 @@ void relativePositionBias(sd::LaunchContext* context,
                           SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(void relativePositionBias_,
-                      (sd::LaunchContext* context, NDArray* biasTable, NDArray* relativePositionIndex,
-                       NDArray* output, int numHeads, int windowSize, bool useAlibi),
-                      SD_FLOAT_TYPES);
 
 // Explicit instantiations for computeAlibiSlopes
 template std::vector<float> computeAlibiSlopes<float>(int numHeads);

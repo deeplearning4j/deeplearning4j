@@ -77,8 +77,6 @@ void rmsNormCpu(NDArray* input, NDArray* gamma, NDArray* output, float epsilon) 
     output->syncToDevice();
 }
 
-BUILD_SINGLE_TEMPLATE(template void rmsNormCpu_, (NDArray*, NDArray*, NDArray*, float), SD_FLOAT_TYPES);
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
