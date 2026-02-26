@@ -134,6 +134,7 @@ jobs:
             libc6-dev-arm64-cross
 
       - name: Set up Java for publishing
+        id: setup-java
         uses: actions/setup-java@v4
         with:
           java-version: 11
@@ -224,8 +225,12 @@ jobs:
         run: |
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
-          export JAVA_HOME="/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/x64"
-          find /opt -name java
+          export JAVA_HOME="${JAVA_HOME:-${{ steps.setup-java.outputs.path }}}"
+          if [ -z "${JAVA_HOME}" ]; then
+            echo "JAVA_HOME was not set by actions/setup-java"
+            exit 1
+          fi
+          echo "✅ Using JAVA_HOME at: ${JAVA_HOME}"
           echo "✅ Using Android NDK at: ${ANDROID_NDK}"
           echo "✅ Cross-compiling from Intel x86_64 to ARM64"
           

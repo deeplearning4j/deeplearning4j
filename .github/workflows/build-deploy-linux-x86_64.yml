@@ -204,6 +204,12 @@ jobs:
 
       - uses: ./.github/actions/update-deps-linux
 
+      - name: Install DWARF headers for stack trace support
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libdw-dev libelf-dev
+
       - name: Setup ccache
         id: setup-ccache
         uses: ./.github/actions/setup-ccache-linux

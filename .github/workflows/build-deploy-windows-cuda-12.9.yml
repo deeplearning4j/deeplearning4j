@@ -246,19 +246,53 @@ jobs:
         if: steps.cache-cuda-129.outputs.cache-hit != 'true'
         shell: powershell
         env:
-          CUDA_VERSION: "12.9"
+          CUDA_VERSION: "12.9.0"
+          CUDA_INSTALLER_URL: "https://developer.download.nvidia.com/compute/cuda/12.9.0/network_installers/cuda_12.9.0_windows_network.exe"
+          CUDNN_URL: "https://github.com/KonduitAI/dl4j-artifacts/releases/download/1.0.0-M3/cudnn-windows-x86_64-9.5.0.50_cuda12-archive.zip"
         run: |
-          $scriptUrl = "https://raw.githubusercontent.com/KonduitAI/cuda-install/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1"
-          $scriptPath = ".\install_cuda_windows.ps1"
-          Write-Host "Downloading CUDA install script from $scriptUrl..."
-          Invoke-WebRequest $scriptUrl -OutFile $scriptPath -UseBasicParsing
-          if (Test-Path $scriptPath) {
-            Write-Host "Download complete. Executing script with CUDA_VERSION=$($env:CUDA_VERSION)..."
-            & $scriptPath
-          } else {
-            Write-Error "Failed to download CUDA install script!"
+          $cudaInstaller = "cuda_12.9.0_windows_network.exe"
+          $cudaPackages = "nvcc_12.9 visual_studio_integration_12.9 curand_dev_12.9 nvrtc_dev_12.9 cudart_12.9"
+
+          Write-Host "Downloading CUDA installer from $env:CUDA_INSTALLER_URL..."
+          Invoke-WebRequest $env:CUDA_INSTALLER_URL -OutFile $cudaInstaller -UseBasicParsing
+          if (-not (Test-Path $cudaInstaller)) {
+            Write-Error "CUDA installer download failed."
             exit 1
           }
+
+          Write-Host "Installing CUDA $env:CUDA_VERSION with packages: $cudaPackages"
+          $installProcess = Start-Process -FilePath ".\$cudaInstaller" -ArgumentList "-s $cudaPackages" -Wait -PassThru -ErrorAction Stop
+          if ($installProcess.ExitCode -ne 0) {
+            Write-Error "CUDA installer failed with exit code $($installProcess.ExitCode)"
+            exit 1
+          }
+
+          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.9"
+          if (-not (Test-Path $cudaPath)) {
+            Write-Error "CUDA path not found after install: $cudaPath"
+            exit 1
+          }
+
+          $cudnnZip = "cudnn.zip"
+          $cudnnExtractDir = ".\cudnn_extracted"
+
+          Write-Host "Downloading cuDNN archive from $env:CUDNN_URL..."
+          Invoke-WebRequest $env:CUDNN_URL -OutFile $cudnnZip -UseBasicParsing
+
+          if (Test-Path $cudnnExtractDir) {
+            Remove-Item -Recurse -Force $cudnnExtractDir
+          }
+          Expand-Archive -Path $cudnnZip -DestinationPath $cudnnExtractDir -Force
+
+          $cudnnRoot = Get-ChildItem -Path $cudnnExtractDir -Directory | Select-Object -First 1
+          if (-not $cudnnRoot) {
+            Write-Error "Failed to locate extracted cuDNN directory."
+            exit 1
+          }
+
+          Copy-Item -Path (Join-Path $cudnnRoot.FullName "*") -Destination $cudaPath -Recurse -Force
+          "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "CUDA 12.9 installation complete."
 
 
 

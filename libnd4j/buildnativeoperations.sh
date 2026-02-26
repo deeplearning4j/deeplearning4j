@@ -528,7 +528,22 @@ fi
 # Add load average limiting to prevent memory exhaustion
 # -l flag: only start new job if load average < limit
 # Load limit = 75% of available cores (24 for 32 cores)
-LOAD_LIMIT=$(($(nproc) * 3 / 4))
+CPU_COUNT=1
+if command -v nproc >/dev/null 2>&1; then
+    CPU_COUNT="$(nproc)"
+elif [[ "$(uname -s)" == "Darwin" ]] && command -v sysctl >/dev/null 2>&1; then
+    CPU_COUNT="$(sysctl -n hw.ncpu 2>/dev/null || echo 1)"
+fi
+
+if ! [[ "${CPU_COUNT}" =~ ^[0-9]+$ ]] || [[ "${CPU_COUNT}" -lt 1 ]]; then
+    CPU_COUNT=1
+fi
+
+LOAD_LIMIT=$((CPU_COUNT * 3 / 4))
+if [[ "${LOAD_LIMIT}" -lt 1 ]]; then
+    LOAD_LIMIT=1
+fi
+export LOAD_LIMIT
 export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
 export MAKE_ARGUMENTS=
 echo eval $CMAKE_COMMAND

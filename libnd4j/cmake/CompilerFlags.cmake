@@ -36,7 +36,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"
     # This is a DIFFERENT approach from session #310's global-dynamic alone
     # Supported on x86-64 by GCC and Clang 15+ (requires glibc 2.10+, widely available)
     # Note: -mtls-dialect=gnu2 is NOT supported by Clang < 15
-    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
+    if(NOT ANDROID AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
         # Check if compiler supports -mtls-dialect=gnu2
         # GCC supports it, Clang only from version 15+
         set(_supports_gnu2_tls TRUE)
