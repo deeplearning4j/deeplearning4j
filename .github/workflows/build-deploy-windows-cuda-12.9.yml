@@ -57,37 +57,37 @@ jobs:
         helper: [ cudnn,"" ]
         extension: [ "" ]
         include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+          - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          - debug_enabled: ${{ github.event.inputs.debug_enabled || 'false' }}
             experimental: true
             name: Debug enabled
-          - runs_on: ${{ github.event.inputs.runsOn }}
+          - runs_on: ${{ github.event.inputs.runsOn || 'windows-2022' }}
             experimental: true
             name: OS to run on
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl || '' }}
             experimental: true
             name: OS to run on
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging || '0' }}
             experimental: true
             name: Whether to deploy to release staging or not
-          - release_version: ${{ github.event.inputs.releaseVersion }}
+          - release_version: ${{ github.event.inputs.releaseVersion || '1.0.0-M3' }}
             experimental: true
             name: Release version
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion || '1.0.0-SNAPSHOT' }}
             experimental: true
             name: Snapshot version
-          - server_id: ${{ github.event.inputs.serverId }}
+          - server_id: ${{ github.event.inputs.serverId || 'central' }}
             experimental: true
             name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId || '' }}
             experimental: true
             name: The release repository to run on
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+          - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -197,7 +197,7 @@ jobs:
             $modules=":nd4j-cuda-12.9-preset,:nd4j-cuda-12.9,libnd4j,:nd4j-cuda-12.9-platform"
            }
           
-          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads || '4' }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
           
           if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
                 $mvn_ext=" -Dlibnd4j.chip=cuda -Dlibnd4j.classifier=windows-x86_64-cuda-12.9-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
@@ -267,7 +267,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
+          server-id: ${{ github.event.inputs.serverId || 'central' }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
