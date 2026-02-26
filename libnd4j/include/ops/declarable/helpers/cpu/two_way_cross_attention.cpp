@@ -49,17 +49,20 @@ static void applySoftmax2D(NDArray& matrix) {
     }
 }
 
+// Helper: scale all elements of matrix by a scalar value
+static void scaleMatrix(NDArray& matrix, double scale) {
+    auto len = matrix.lengthOf();
+    for (sd::LongType i = 0; i < len; i++) {
+        matrix.p(i, matrix.e<double>(i) * scale);
+    }
+}
+
 // Helper: compute dL/dLogits given dL/dOutput, values, and attention weights (softmax output)
-// dL/dLogits[i,j] = sum_k(dLdOut[i,k] * V[j,k]) ... but also need softmax backward
-// Full: dL/d(pre-softmax logits) where attnWeights = softmax(logits)
-// dL/dLogits = attnWeights * (dL/dAttnWeights - rowwise_sum(dL/dAttnWeights * attnWeights))
-// where dL/dAttnWeights = dL/dOutput @ V^T
 static void softmaxBackward(NDArray& attnWeights, NDArray& dLdAttnWeights, NDArray& dLdLogits) {
     auto rows = attnWeights.sizeAt(0);
     auto cols = attnWeights.sizeAt(1);
 
     for (sd::LongType r = 0; r < rows; r++) {
-        // Compute dot product: sum(dLdAttnWeights[r,:] * attnWeights[r,:])
         double dot = 0.0;
         for (sd::LongType c = 0; c < cols; c++) {
             dot += dLdAttnWeights.e<double>(r, c) * attnWeights.e<double>(r, c);
@@ -77,30 +80,26 @@ void twoWayCrossAttention(NDArray* tokenQuery, NDArray* tokenKey,
                               NDArray* imageKey, NDArray* imageValue,
                               NDArray* tokenOutput, NDArray* imageOutput,
                               double scale, LaunchContext* context) {
-    // Two-way cross attention:
-    // Direction 1 (token-to-image): tokenOut = softmax(tokenQ @ imageK^T * scale) @ imageV
-    // Direction 2 (image-to-token): imageOut = softmax(imageQ @ tokenK^T * scale) @ tokenV
-    //
-    // All inputs are 2D: [seqLen, dim]
-
     // Direction 1: token attends to image
     {
-        auto imageKT = imageKey->transpose();
-        NDArray logits('c', {tokenQuery->sizeAt(0), imageKey->sizeAt(0)},
-                       tokenQuery->dataType(), context);
-        MmulHelper::mmul(tokenQuery, &imageKT, &logits);
-        logits *= scale;
+        NDArray* imageKT = imageKey->transpose();
+        std::vector<sd::LongType> logitsShape = {tokenQuery->sizeAt(0), imageKey->sizeAt(0)};
+        NDArray logits('c', logitsShape, tokenQuery->dataType());
+        MmulHelper::mmul(tokenQuery, imageKT, &logits);
+        delete imageKT;
+        scaleMatrix(logits, scale);
         applySoftmax2D(logits);
         MmulHelper::mmul(&logits, imageValue, tokenOutput);
     }
 
     // Direction 2: image attends to token
     {
-        auto tokenKT = tokenKey->transpose();
-        NDArray logits('c', {imageQuery->sizeAt(0), tokenKey->sizeAt(0)},
-                       imageQuery->dataType(), context);
-        MmulHelper::mmul(imageQuery, &tokenKT, &logits);
-        logits *= scale;
+        NDArray* tokenKT = tokenKey->transpose();
+        std::vector<sd::LongType> logitsShape = {imageQuery->sizeAt(0), tokenKey->sizeAt(0)};
+        NDArray logits('c', logitsShape, imageQuery->dataType());
+        MmulHelper::mmul(imageQuery, tokenKT, &logits);
+        delete tokenKT;
+        scaleMatrix(logits, scale);
         applySoftmax2D(logits);
         MmulHelper::mmul(&logits, tokenValue, imageOutput);
     }
@@ -116,79 +115,85 @@ void twoWayCrossAttentionBp(
 
     // ---- Direction 1 backward: tokenOut = softmax(tokenQ @ imageK^T * scale) @ imageV ----
     {
-        // Recompute forward
-        auto imageKT = imageKey->transpose();
-        NDArray logits1('c', {tokenQuery->sizeAt(0), imageKey->sizeAt(0)},
-                        tokenQuery->dataType(), context);
-        MmulHelper::mmul(tokenQuery, &imageKT, &logits1);
-        logits1 *= scale;
+        NDArray* imageKT = imageKey->transpose();
+        std::vector<sd::LongType> logitsShape = {tokenQuery->sizeAt(0), imageKey->sizeAt(0)};
+        NDArray logits1('c', logitsShape, tokenQuery->dataType());
+        MmulHelper::mmul(tokenQuery, imageKT, &logits1);
+        delete imageKT;
+        scaleMatrix(logits1, scale);
 
         NDArray attnWeights1(logits1.shapeInfo(), logits1.dataType(), false, context);
         attnWeights1.assign(logits1);
         applySoftmax2D(attnWeights1);
 
         // dL/dAttnWeights1 = gradTokenOut @ imageV^T
-        auto imageVT = imageValue->transpose();
-        NDArray dLdAttn1('c', {tokenQuery->sizeAt(0), imageKey->sizeAt(0)},
-                         tokenQuery->dataType(), context);
-        MmulHelper::mmul(gradTokenOut, &imageVT, &dLdAttn1);
+        NDArray* imageVT = imageValue->transpose();
+        std::vector<sd::LongType> attnShape = {tokenQuery->sizeAt(0), imageKey->sizeAt(0)};
+        NDArray dLdAttn1('c', attnShape, tokenQuery->dataType());
+        MmulHelper::mmul(gradTokenOut, imageVT, &dLdAttn1);
+        delete imageVT;
 
         // dL/dImageValue += attnWeights1^T @ gradTokenOut
-        auto attnWeights1T = attnWeights1.transpose();
-        MmulHelper::mmul(&attnWeights1T, gradTokenOut, dLdImageValue);
+        NDArray* attnWeights1T = attnWeights1.transpose();
+        MmulHelper::mmul(attnWeights1T, gradTokenOut, dLdImageValue);
+        delete attnWeights1T;
 
         // dL/dLogits1 through softmax backward
         NDArray dLdLogits1(dLdAttn1.shapeInfo(), dLdAttn1.dataType(), false, context);
         softmaxBackward(attnWeights1, dLdAttn1, dLdLogits1);
-        dLdLogits1 *= scale;
+        scaleMatrix(dLdLogits1, scale);
 
         // dL/dTokenQuery += dLdLogits1 @ imageKey
         MmulHelper::mmul(&dLdLogits1, imageKey, dLdTokenQuery);
 
         // dL/dImageKey += dLdLogits1^T @ tokenQuery
-        auto dLdLogits1T = dLdLogits1.transpose();
-        NDArray dLdImageKeyContrib('c', {imageKey->sizeAt(0), imageKey->sizeAt(1)},
-                                    imageKey->dataType(), context);
-        MmulHelper::mmul(&dLdLogits1T, tokenQuery, &dLdImageKeyContrib);
+        NDArray* dLdLogits1T = dLdLogits1.transpose();
+        std::vector<sd::LongType> ikShape = {imageKey->sizeAt(0), imageKey->sizeAt(1)};
+        NDArray dLdImageKeyContrib('c', ikShape, imageKey->dataType());
+        MmulHelper::mmul(dLdLogits1T, tokenQuery, &dLdImageKeyContrib);
+        delete dLdLogits1T;
         dLdImageKey->assign(dLdImageKeyContrib);
     }
 
     // ---- Direction 2 backward: imageOut = softmax(imageQ @ tokenK^T * scale) @ tokenV ----
     {
-        // Recompute forward
-        auto tokenKT = tokenKey->transpose();
-        NDArray logits2('c', {imageQuery->sizeAt(0), tokenKey->sizeAt(0)},
-                        imageQuery->dataType(), context);
-        MmulHelper::mmul(imageQuery, &tokenKT, &logits2);
-        logits2 *= scale;
+        NDArray* tokenKT = tokenKey->transpose();
+        std::vector<sd::LongType> logitsShape = {imageQuery->sizeAt(0), tokenKey->sizeAt(0)};
+        NDArray logits2('c', logitsShape, imageQuery->dataType());
+        MmulHelper::mmul(imageQuery, tokenKT, &logits2);
+        delete tokenKT;
+        scaleMatrix(logits2, scale);
 
         NDArray attnWeights2(logits2.shapeInfo(), logits2.dataType(), false, context);
         attnWeights2.assign(logits2);
         applySoftmax2D(attnWeights2);
 
         // dL/dAttnWeights2 = gradImageOut @ tokenV^T
-        auto tokenVT = tokenValue->transpose();
-        NDArray dLdAttn2('c', {imageQuery->sizeAt(0), tokenKey->sizeAt(0)},
-                         imageQuery->dataType(), context);
-        MmulHelper::mmul(gradImageOut, &tokenVT, &dLdAttn2);
+        NDArray* tokenVT = tokenValue->transpose();
+        std::vector<sd::LongType> attnShape = {imageQuery->sizeAt(0), tokenKey->sizeAt(0)};
+        NDArray dLdAttn2('c', attnShape, imageQuery->dataType());
+        MmulHelper::mmul(gradImageOut, tokenVT, &dLdAttn2);
+        delete tokenVT;
 
         // dL/dTokenValue += attnWeights2^T @ gradImageOut
-        auto attnWeights2T = attnWeights2.transpose();
-        MmulHelper::mmul(&attnWeights2T, gradImageOut, dLdTokenValue);
+        NDArray* attnWeights2T = attnWeights2.transpose();
+        MmulHelper::mmul(attnWeights2T, gradImageOut, dLdTokenValue);
+        delete attnWeights2T;
 
         // dL/dLogits2 through softmax backward
         NDArray dLdLogits2(dLdAttn2.shapeInfo(), dLdAttn2.dataType(), false, context);
         softmaxBackward(attnWeights2, dLdAttn2, dLdLogits2);
-        dLdLogits2 *= scale;
+        scaleMatrix(dLdLogits2, scale);
 
         // dL/dImageQuery += dLdLogits2 @ tokenKey
         MmulHelper::mmul(&dLdLogits2, tokenKey, dLdImageQuery);
 
         // dL/dTokenKey += dLdLogits2^T @ imageQuery
-        auto dLdLogits2T = dLdLogits2.transpose();
-        NDArray dLdTokenKeyContrib('c', {tokenKey->sizeAt(0), tokenKey->sizeAt(1)},
-                                    tokenKey->dataType(), context);
-        MmulHelper::mmul(&dLdLogits2T, imageQuery, &dLdTokenKeyContrib);
+        NDArray* dLdLogits2T = dLdLogits2.transpose();
+        std::vector<sd::LongType> tkShape = {tokenKey->sizeAt(0), tokenKey->sizeAt(1)};
+        NDArray dLdTokenKeyContrib('c', tkShape, tokenKey->dataType());
+        MmulHelper::mmul(dLdLogits2T, imageQuery, &dLdTokenKeyContrib);
+        delete dLdLogits2T;
         dLdTokenKey->assign(dLdTokenKeyContrib);
     }
 }
