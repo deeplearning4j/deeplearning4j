@@ -31,6 +31,8 @@
 //
 // Hidden visibility ensures these replacements are scoped to libnd4j.so
 // and do not leak into the host JVM or other shared libraries.
+// On Android, the NDK libc++ declares operator new/delete with "default"
+// visibility — using "hidden" here causes a visibility mismatch error.
 //
 
 #include <cstdlib>
@@ -39,57 +41,63 @@
 // 4KB padding — enough to absorb any realistic op overrun
 static constexpr size_t GLOBAL_NEW_PADDING = 4096;
 
-__attribute__((visibility("hidden")))
+#if defined(__ANDROID__)
+#define SD_ALLOC_VIS
+#else
+#define SD_ALLOC_VIS SD_ALLOC_VIS
+#endif
+
+SD_ALLOC_VIS
 void* operator new(size_t size) {
   void* p = std::malloc(size + GLOBAL_NEW_PADDING);
   if (!p) throw std::bad_alloc();
   return p;
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void* operator new[](size_t size) {
   void* p = std::malloc(size + GLOBAL_NEW_PADDING);
   if (!p) throw std::bad_alloc();
   return p;
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void* operator new(size_t size, const std::nothrow_t&) noexcept {
   return std::malloc(size + GLOBAL_NEW_PADDING);
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void* operator new[](size_t size, const std::nothrow_t&) noexcept {
   return std::malloc(size + GLOBAL_NEW_PADDING);
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void operator delete(void* ptr) noexcept {
   std::free(ptr);
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void operator delete[](void* ptr) noexcept {
   std::free(ptr);
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void operator delete(void* ptr, const std::nothrow_t&) noexcept {
   std::free(ptr);
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void operator delete[](void* ptr, const std::nothrow_t&) noexcept {
   std::free(ptr);
 }
 
 // Sized delete variants (C++14)
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void operator delete(void* ptr, size_t) noexcept {
   std::free(ptr);
 }
 
-__attribute__((visibility("hidden")))
+SD_ALLOC_VIS
 void operator delete[](void* ptr, size_t) noexcept {
   std::free(ptr);
 }
