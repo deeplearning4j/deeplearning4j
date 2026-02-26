@@ -19,7 +19,8 @@ option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
 
 # Only proceed if we have ccache and smart mode is enabled
 # Skip on Windows: the wrapper is a bash script that cannot be executed via CreateProcess
-if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT WIN32)
+# Use CMAKE_HOST_SYSTEM_NAME because WIN32 may not be set under MSYS2/MinGW cmake
+if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT WIN32 AND NOT MSVC AND NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     # Check if the launcher is ccache
     get_filename_component(LAUNCHER_NAME "${CMAKE_CXX_COMPILER_LAUNCHER}" NAME)
     if(LAUNCHER_NAME MATCHES "ccache")

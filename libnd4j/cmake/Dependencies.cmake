@@ -249,11 +249,11 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to host build if available
-        # Use quotes to handle paths with spaces and prevent list expansion issues
-        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        # Skip .sh wrappers — bash scripts can't run as Win32 processes
+        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND HOST_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND HOST_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
         endif()
 
@@ -285,10 +285,11 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to target build if available
-        if(CMAKE_C_COMPILER_LAUNCHER)
+        # Skip .sh wrappers — bash scripts can't run as Win32 processes
+        if(CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND TARGET_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER)
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND TARGET_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
         endif()
 
@@ -395,11 +396,11 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to native build if available
-        # Skip on Windows — smart_ccache.sh is a bash script that can't run as a Win32 process
-        if(CMAKE_C_COMPILER_LAUNCHER AND NOT WIN32)
+        # Skip .sh wrappers on Windows — bash scripts can't run as Win32 processes
+        if(CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT WIN32)
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
         endif()
 
@@ -552,13 +553,12 @@ function(setup_onednn)
     )
 
     # Pass compiler launcher (ccache/sccache) to OneDNN build if available
-    # Use quotes to handle paths with spaces and prevent list expansion issues
-    # Also verify the launcher exists (it could be the smart_ccache.sh wrapper)
-    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+    # Skip .sh wrappers — bash scripts can't run as Win32 processes
+    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
         list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
         message(STATUS "   Passing C compiler launcher to OneDNN: ${CMAKE_C_COMPILER_LAUNCHER}")
     endif()
-    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
         list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
         message(STATUS "   Passing CXX compiler launcher to OneDNN: ${CMAKE_CXX_COMPILER_LAUNCHER}")
     endif()
@@ -1202,11 +1202,12 @@ function(setup_triton)
         endif()
 
         # Pass SmartCcache / compiler launcher to LLVM build
-        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+        # Skip .sh wrappers — bash scripts can't run as Win32 processes
+        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
             message(STATUS "   Passing C compiler launcher to LLVM build: ${CMAKE_C_COMPILER_LAUNCHER}")
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
             message(STATUS "   Passing CXX compiler launcher to LLVM build: ${CMAKE_CXX_COMPILER_LAUNCHER}")
         endif()
@@ -1310,10 +1311,11 @@ function(setup_triton)
     endif()
 
     # Pass compiler launcher if available
-    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
+    # Skip .sh wrappers — bash scripts can't run as Win32 processes
+    if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
     endif()
-    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
+    if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
     endif()
 
