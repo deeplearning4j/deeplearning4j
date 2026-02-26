@@ -1942,35 +1942,52 @@ SD_INLINE SD_HOST_DEVICE sd::LongType _rotate_right(sd::LongType value, sd::Long
 
 
 
+// On macOS ARM64, unsigned long != uint64_t (unsigned long long), so we need
+// a specialization for unsigned long that doesn't conflict with the template.
+// On Linux ARM64/x86_64, unsigned long == uint64_t so this is the uint64_t specialization.
+#if defined(SD_APPLE_BUILD) && defined(SD_ARM_BUILD)
+// macOS ARM64: uint64_t is unsigned long long, provide unsigned long as separate specialization
+template <>
+SD_INLINE SD_HOST_DEVICE unsigned long _rotate_left(unsigned long value, unsigned long shift) {
+ unsigned long result = value << shift | value >> (64 - shift);
+ SD_PRINT_MATH_FUNC("_rotate_left<unsigned long>", value, result, unsigned long);
+ return result;
+}
+
+template <>
+SD_INLINE SD_HOST_DEVICE unsigned long _rotate_right(unsigned long value, unsigned long shift) {
+ unsigned long result = value >> shift | value << (64 - shift);
+ SD_PRINT_MATH_FUNC("_rotate_right<unsigned long>", value, result, unsigned long);
+ return result;
+}
+#else
+// Linux/other: unsigned long == uint64_t, this IS the uint64_t specialization
 template <>
 SD_INLINE SD_HOST_DEVICE uint64_t _rotate_left(unsigned long value, unsigned long shift) {
 #ifdef SD_ARM_BUILD
- // TODO: eventually remove this once gcc fixes the bug
  sd::LongType val =
      _rotate_left<sd::LongType>(*reinterpret_cast<sd::LongType *>(&value), *reinterpret_cast<sd::LongType *>(&shift));
  uint64_t result = *reinterpret_cast<uint64_t *>(&val);
 #else
  uint64_t result = value << shift | value >> (64 - shift);
 #endif
- SD_PRINT_MATH_FUNC("_rotate_left<uint64_t>", value, result,unsigned long);
+ SD_PRINT_MATH_FUNC("_rotate_left<uint64_t>", value, result, unsigned long);
  return result;
 }
-
-
 
 template <>
 SD_INLINE SD_HOST_DEVICE unsigned long _rotate_right(unsigned long value, unsigned long shift) {
 #ifdef SD_ARM_BUILD
- // TODO: eventually remove this once gcc fixes the bug
  sd::LongType val =
      _rotate_right<sd::LongType>(*reinterpret_cast<sd::LongType *>(&value), *reinterpret_cast<sd::LongType *>(&shift));
  uint64_t result = *reinterpret_cast<uint64_t *>(&val);
 #else
  uint64_t result = value >> shift | value << (64 - shift);
 #endif
- SD_PRINT_MATH_FUNC("_rotate_right<uint64_t>", value, result,unsigned long);
+ SD_PRINT_MATH_FUNC("_rotate_right<uint64_t>", value, result, unsigned long);
  return result;
 }
+#endif
 
 // Add specializations for unsigned long long (sd::UnsignedLong typedef)
 template <>
