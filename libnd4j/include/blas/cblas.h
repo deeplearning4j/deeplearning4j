@@ -35,14 +35,14 @@
 #define CBLAS_H
 #endif
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && HAVE_MKL
 // When MKL is available, prefer MKL's CBLAS (included via mkl_cblas.h)
 // Do NOT include OpenBLAS cblas.h to avoid conflicts
 #ifndef CBLAS_H
 #include <mkl_cblas.h>
 #define CBLAS_H
 #endif
-#elif defined(HAVE_OPENBLAS)
+#elif defined(HAVE_OPENBLAS) && HAVE_OPENBLAS
 // include CBLAS from OpenBLAS
 #ifdef __GNUC__
 #include <cblas.h>
