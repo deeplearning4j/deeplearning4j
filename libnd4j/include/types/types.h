@@ -39,13 +39,38 @@
 // ============================================================================
 // DATATYPE ALIASES
 // ============================================================================
-// The DataType enum values (BOOL, INT8, etc.) are already in namespace sd
-// via the unscoped enum in DataType.h. Files with `using namespace sd;`
-// (which is most of the codebase) get these names automatically.
-// No additional aliases needed — they would either:
-//   - Clash with Windows SDK typedefs at global scope, or
-//   - Clash with the DataType enum values inside namespace sd (MSVC C2365).
+// On non-Windows platforms, provide global constexpr aliases for the DataType
+// enum values. The macro system (TTYPE_*, BUILD_SINGLE_SELECTOR, etc.) relies
+// on these bare names being available as C++ identifiers.
+// On Windows, these clash with Windows SDK typedefs (BOOL, INT8, UINT16, etc.)
+// from minwindef.h and basetsd.h, so they are omitted. The macro system still
+// works on Windows because it uses qualified sd::DataType::NAME access.
 // ============================================================================
+#if !defined(_WIN32)
+  static constexpr auto INHERIT = sd::DataType::INHERIT;
+  static constexpr auto BOOL = sd::DataType::BOOL;
+  static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
+  static constexpr auto HALF = sd::DataType::HALF;
+  static constexpr auto HALF2 = sd::DataType::HALF2;
+  static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
+  static constexpr auto DOUBLE = sd::DataType::DOUBLE;
+  static constexpr auto INT8 = sd::DataType::INT8;
+  static constexpr auto INT16 = sd::DataType::INT16;
+  static constexpr auto INT32 = sd::DataType::INT32;
+  static constexpr auto INT64 = sd::DataType::INT64;
+  static constexpr auto UINT8 = sd::DataType::UINT8;
+  static constexpr auto UINT16 = sd::DataType::UINT16;
+  static constexpr auto UINT32 = sd::DataType::UINT32;
+  static constexpr auto UINT64 = sd::DataType::UINT64;
+  static constexpr auto QINT8 = sd::DataType::QINT8;
+  static constexpr auto QINT16 = sd::DataType::QINT16;
+  static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
+  static constexpr auto UTF8 = sd::DataType::UTF8;
+  static constexpr auto UTF16 = sd::DataType::UTF16;
+  static constexpr auto UTF32 = sd::DataType::UTF32;
+  static constexpr auto ANY = sd::DataType::ANY;
+  static constexpr auto AUTO = sd::DataType::AUTO;
+#endif
 
   using LongType = sd::LongType;
   using UnsignedLong = sd::UnsignedLong;
