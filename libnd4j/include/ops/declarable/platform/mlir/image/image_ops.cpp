@@ -47,7 +47,7 @@ PLATFORM_IMPL(resize_bilinear, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input, size};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("resize_bilinear", block, inputs, outputs);
+    auto status = executeMlirEx("resize_bilinear", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR resize_bilinear failed");
@@ -63,9 +63,7 @@ PLATFORM_CHECK(resize_bilinear, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 4, "Input rank == 4") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -87,7 +85,7 @@ PLATFORM_IMPL(resize_nearest_neighbor, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input, size};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("resize_nearest_neighbor", block, inputs, outputs);
+    auto status = executeMlirEx("resize_nearest_neighbor", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR resize_nearest_neighbor failed");
@@ -102,8 +100,7 @@ PLATFORM_CHECK(resize_nearest_neighbor, ENGINE_CPU) {
     Requirements req("MLIR RESIZE_NEAREST_NEIGHBOR");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16, INT32, INT64}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 4, "Input rank == 4") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -126,7 +123,7 @@ PLATFORM_IMPL(resize_bicubic, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input, size};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("resize_bicubic", block, inputs, outputs);
+    auto status = executeMlirEx("resize_bicubic", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR resize_bicubic failed");
@@ -141,8 +138,7 @@ PLATFORM_CHECK(resize_bicubic, ENGINE_CPU) {
     Requirements req("MLIR RESIZE_BICUBIC");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 4, "Input rank == 4") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -167,7 +163,7 @@ PLATFORM_IMPL(crop_and_resize, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {image, boxes, boxIndices, cropSize};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("crop_and_resize", block, inputs, outputs);
+    auto status = executeMlirEx("crop_and_resize", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR crop_and_resize failed");
@@ -183,7 +179,6 @@ PLATFORM_CHECK(crop_and_resize, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(image->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(image->rankOf() == 4, "Image rank == 4") &&
     req.expectTrue(image->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -202,7 +197,7 @@ PLATFORM_IMPL(rgb_to_hsv, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("rgb_to_hsv", block, inputs, outputs);
+    auto status = executeMlirEx("rgb_to_hsv", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR rgb_to_hsv failed");
@@ -217,8 +212,7 @@ PLATFORM_CHECK(rgb_to_hsv, ENGINE_CPU) {
     Requirements req("MLIR RGB_TO_HSV");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->sizeAt(-1) == 3, "Last dim == 3") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -237,7 +231,7 @@ PLATFORM_IMPL(hsv_to_rgb, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("hsv_to_rgb", block, inputs, outputs);
+    auto status = executeMlirEx("hsv_to_rgb", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR hsv_to_rgb failed");
@@ -252,8 +246,7 @@ PLATFORM_CHECK(hsv_to_rgb, ENGINE_CPU) {
     Requirements req("MLIR HSV_TO_RGB");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->sizeAt(-1) == 3, "Last dim == 3") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -272,7 +265,7 @@ PLATFORM_IMPL(rgb_to_grs, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("rgb_to_grayscale", block, inputs, outputs);
+    auto status = executeMlirEx("rgb_to_grayscale", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR rgb_to_grayscale failed");
@@ -288,7 +281,6 @@ PLATFORM_CHECK(rgb_to_grs, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->sizeAt(-1) == 3, "Last dim == 3") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -309,7 +301,7 @@ PLATFORM_IMPL(adjust_contrast, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("adjust_contrast", block, inputs, outputs);
+    auto status = executeMlirEx("adjust_contrast", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR adjust_contrast failed");
@@ -325,7 +317,6 @@ PLATFORM_CHECK(adjust_contrast, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() >= 3, "Image rank >= 3") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -346,7 +337,7 @@ PLATFORM_IMPL(adjust_hue, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("adjust_hue", block, inputs, outputs);
+    auto status = executeMlirEx("adjust_hue", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR adjust_hue failed");
@@ -361,8 +352,7 @@ PLATFORM_CHECK(adjust_hue, ENGINE_CPU) {
     Requirements req("MLIR ADJUST_HUE");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->sizeAt(-1) == 3, "Last dim == 3") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -383,7 +373,7 @@ PLATFORM_IMPL(adjust_saturation, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("adjust_saturation", block, inputs, outputs);
+    auto status = executeMlirEx("adjust_saturation", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR adjust_saturation failed");
@@ -398,8 +388,7 @@ PLATFORM_CHECK(adjust_saturation, ENGINE_CPU) {
     Requirements req("MLIR ADJUST_SATURATION");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->sizeAt(-1) == 3, "Last dim == 3") &&
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -424,7 +413,7 @@ PLATFORM_IMPL(image_resize, ENGINE_CPU) {
     std::vector<NDArray*> inputs = {input, size};
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("image_resize", block, inputs, outputs);
+    auto status = executeMlirEx("image_resize", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR image_resize failed");
@@ -440,7 +429,6 @@ PLATFORM_CHECK(image_resize, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() >= 3, "Image rank >= 3") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

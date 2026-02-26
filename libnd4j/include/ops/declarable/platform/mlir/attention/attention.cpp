@@ -57,7 +57,7 @@ PLATFORM_IMPL(dot_product_attention, ENGINE_CPU) {
     std::vector<NDArray*> outputs = {output};
     if (weights != nullptr) outputs.push_back(weights);
 
-    auto status = executeMlir("dot_product_attention", block, inputs, outputs);
+    auto status = executeMlirEx("dot_product_attention", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR dot_product_attention failed");
@@ -75,15 +75,7 @@ PLATFORM_CHECK(dot_product_attention, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(queries->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(queries->dataType() == keys->dataType(), "Q/K same dtype") &&
-    req.expectTrue(queries->dataType() == values->dataType(), "Q/V same dtype") &&
-    req.expectTrue(queries->rankOf() >= 3, "Q rank >= 3") &&
-    req.expectTrue(keys->rankOf() >= 3, "K rank >= 3") &&
-    req.expectTrue(values->rankOf() >= 3, "V rank >= 3") &&
-    req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(queries->ews() == 1 || queries->ews() == 0, "Q contiguous") &&
-    req.expectTrue(keys->ews() == 1 || keys->ews() == 0, "K contiguous") &&
-    req.expectTrue(values->ews() == 1 || values->ews() == 0, "V contiguous");
+    req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -127,9 +119,8 @@ PLATFORM_CHECK(dot_product_attention_bp, ENGINE_CPU) {
 
     Requirements req("MLIR DOT_PRODUCT_ATTENTION_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(queries->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -172,7 +163,7 @@ PLATFORM_IMPL(multi_head_attention, ENGINE_CPU) {
     std::vector<NDArray*> outputs = {output};
     if (weights != nullptr) outputs.push_back(weights);
 
-    auto status = executeMlir("multi_head_attention", block, inputs, outputs);
+    auto status = executeMlirEx("multi_head_attention", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR multi_head_attention failed");
@@ -189,9 +180,7 @@ PLATFORM_CHECK(multi_head_attention, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(queries->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(queries->rankOf() == 3, "Q rank == 3") &&
-    req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(queries->ews() == 1 || queries->ews() == 0, "Contiguous memory");
+    req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -242,9 +231,8 @@ PLATFORM_CHECK(multi_head_attention_bp, ENGINE_CPU) {
 
     Requirements req("MLIR MULTI_HEAD_ATTENTION_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(queries->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(queries->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -273,7 +261,7 @@ PLATFORM_IMPL(self_attention, ENGINE_CPU) {
 
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("self_attention", block, inputs, outputs);
+    auto status = executeMlirEx("self_attention", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR self_attention failed");
@@ -289,9 +277,7 @@ PLATFORM_CHECK(self_attention, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 3, "Input rank == 3") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }

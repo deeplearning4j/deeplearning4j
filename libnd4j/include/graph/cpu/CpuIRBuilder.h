@@ -251,6 +251,105 @@ class CpuIRBuilder {
                                  const std::vector<LongType>& outputShape,
                                  const LongType* iArgs, int numIArgs,
                                  mlir::Type elemType);
+
+  // ─── Additional emitters (pooling, embedding, loss) ─────────────────
+
+  /**
+   * Emit max/avg pooling 2D as nested loops over batch, channel, output spatial dims.
+   * Supports NCHW format with kernel, stride, padding, dilation parameters.
+   */
+  static void emitPooling2dOp(mlir::OpBuilder& builder, mlir::Location loc,
+                               const std::string& opName,
+                               mlir::Value inputMemref, mlir::Value outputMemref,
+                               const std::vector<LongType>& inputShape,
+                               const std::vector<LongType>& outputShape,
+                               int kH, int kW, int sH, int sW,
+                               int pH, int pW, int dH, int dW,
+                               mlir::Type elemType);
+
+  /**
+   * Emit embedding lookup: output[i,:] = table[indices[i],:]
+   */
+  static void emitEmbeddingLookup(mlir::OpBuilder& builder, mlir::Location loc,
+                                    mlir::Value tableMemref, mlir::Value indicesMemref,
+                                    mlir::Value outputMemref,
+                                    int64_t numLookups, int64_t embeddingDim,
+                                    mlir::Type elemType);
+
+  /**
+   * Emit softmax cross entropy loss: -sum(labels * log(softmax(logits)))
+   */
+  static void emitSoftmaxCrossEntropy(mlir::OpBuilder& builder, mlir::Location loc,
+                                        mlir::Value logitsMemref, mlir::Value labelsMemref,
+                                        mlir::Value outputMemref,
+                                        int64_t nElements, mlir::Type elemType);
+
+  /**
+   * Emit mean squared error loss: mean((predictions - labels)^2)
+   */
+  static void emitMSELoss(mlir::OpBuilder& builder, mlir::Location loc,
+                            mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                            mlir::Value outputMemref,
+                            int64_t nElements, mlir::Type elemType);
+
+  // ─── New emitters for extended op coverage ─────────────────────────
+
+  /**
+   * Emit slice: copy a contiguous sub-range [begin, begin+length) from input.
+   */
+  static void emitSliceOp(mlir::OpBuilder& builder, mlir::Location loc,
+                           mlir::Value inputMemref, mlir::Value outputMemref,
+                           int64_t begin, int64_t length, mlir::Type elemType);
+
+  /**
+   * Emit logical element-wise op: and, or, not, xor on float-encoded booleans.
+   */
+  static void emitLogicalOp(mlir::OpBuilder& builder, mlir::Location loc,
+                              const std::string& opName,
+                              mlir::Value lhsMemref, mlir::Value rhsMemref,
+                              mlir::Value outputMemref,
+                              int64_t nElements, mlir::Type elemType);
+
+  /**
+   * Emit Huber loss: piecewise MSE/MAE with delta threshold.
+   */
+  static void emitHuberLoss(mlir::OpBuilder& builder, mlir::Location loc,
+                              mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                              mlir::Value outputMemref,
+                              int64_t nElements, double delta, mlir::Type elemType);
+
+  /**
+   * Emit hinge loss: sum(max(0, 1 - y*t)) / n
+   */
+  static void emitHingeLoss(mlir::OpBuilder& builder, mlir::Location loc,
+                              mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                              mlir::Value outputMemref,
+                              int64_t nElements, mlir::Type elemType);
+
+  /**
+   * Emit log loss: -mean(y*log(p) + (1-y)*log(1-p))
+   */
+  static void emitLogLoss(mlir::OpBuilder& builder, mlir::Location loc,
+                            mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                            mlir::Value outputMemref,
+                            int64_t nElements, double epsilon, mlir::Type elemType);
+
+  /**
+   * Emit one-hot encoding: indices → one-hot vectors.
+   */
+  static void emitOneHot(mlir::OpBuilder& builder, mlir::Location loc,
+                           mlir::Value indicesMemref, mlir::Value outputMemref,
+                           int64_t numIndices, int64_t depth,
+                           double onValue, double offValue, mlir::Type elemType);
+
+  /**
+   * Emit xw_plus_b: matmul(x, w) + bias.
+   */
+  static void emitXWPlusB(mlir::OpBuilder& builder, mlir::Location loc,
+                            mlir::Value xMemref, mlir::Value wMemref,
+                            mlir::Value biasMemref, mlir::Value outputMemref,
+                            int64_t batch, int64_t inFeatures, int64_t outFeatures,
+                            mlir::Type elemType);
 };
 
 }  // namespace graph

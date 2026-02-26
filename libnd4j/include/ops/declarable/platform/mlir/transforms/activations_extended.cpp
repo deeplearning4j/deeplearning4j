@@ -302,9 +302,8 @@ PLATFORM_CHECK(prelu_bp, ENGINE_CPU) {
 
     Requirements req("MLIR PRELU_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }

@@ -47,6 +47,8 @@ enum class TritonOpCategory {
   DATA_MOVEMENT,          // gather, concat, split, stack, slice, tile, scatter -> data copy
   CONSTANT_GENERATION,    // shape_of, create, set_scalar, ones_as, zeros_like, range -> constant fill
   CONVOLUTION,            // conv2d, conv3d -> spatial convolution kernel
+  ROPE,                   // rope, fused_rope -> rotary position embedding
+  FUSED_LLM,              // fused_rms_norm_swiglu, fused_bias_dropout_residual -> mega-fused LLM kernels
   UNSUPPORTED             // cannot be mapped
 };
 
@@ -362,6 +364,170 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"col2im",            TritonOpCategory::CONVOLUTION},
     {"Col2im",            TritonOpCategory::CONVOLUTION},
     {"col2im_bp",         TritonOpCategory::CONVOLUTION},
+
+    // ── Pooling (convolution category) ──
+    {"maxpool2d",         TritonOpCategory::CONVOLUTION},
+    {"MaxPool2d",         TritonOpCategory::CONVOLUTION},
+    {"avgpool2d",         TritonOpCategory::CONVOLUTION},
+    {"AvgPool2d",         TritonOpCategory::CONVOLUTION},
+    {"maxpool3d",         TritonOpCategory::CONVOLUTION},
+    {"MaxPool3d",         TritonOpCategory::CONVOLUTION},
+    {"avgpool3d",         TritonOpCategory::CONVOLUTION},
+    {"AvgPool3d",         TritonOpCategory::CONVOLUTION},
+    {"conv1d",            TritonOpCategory::CONVOLUTION},
+    {"Conv1d",            TritonOpCategory::CONVOLUTION},
+    {"conv3dnew",         TritonOpCategory::CONVOLUTION},
+    {"Conv3dNew",         TritonOpCategory::CONVOLUTION},
+    {"sconv2d",           TritonOpCategory::CONVOLUTION},
+    {"deconv2d",          TritonOpCategory::CONVOLUTION},
+    {"deconv3d",          TritonOpCategory::CONVOLUTION},
+
+    // ── Loss ops (reduction category) ──
+    {"softmax_cross_entropy_loss_with_logits", TritonOpCategory::REDUCTION},
+    {"sparse_softmax_cross_entropy_loss_with_logits", TritonOpCategory::REDUCTION},
+    {"sigm_cross_entropy_loss",               TritonOpCategory::REDUCTION},
+    {"mean_sqerr_loss",                       TritonOpCategory::REDUCTION},
+    {"mean_pairwssqerr_loss",                 TritonOpCategory::REDUCTION},
+    {"huber_loss",                            TritonOpCategory::REDUCTION},
+    {"hinge_loss",                            TritonOpCategory::REDUCTION},
+    {"log_loss",                              TritonOpCategory::REDUCTION},
+    {"cosine_distance_loss",                  TritonOpCategory::REDUCTION},
+    {"ctc_loss",                              TritonOpCategory::REDUCTION},
+
+    // ── Embedding / segment ops (data movement category) ──
+    {"embedding_lookup",  TritonOpCategory::DATA_MOVEMENT},
+    {"EmbeddingLookup",   TritonOpCategory::DATA_MOVEMENT},
+    {"segment_sum",       TritonOpCategory::REDUCTION},
+    {"segment_mean",      TritonOpCategory::REDUCTION},
+    {"segment_max",       TritonOpCategory::REDUCTION},
+    {"segment_min",       TritonOpCategory::REDUCTION},
+    {"unsorted_segment_sum", TritonOpCategory::REDUCTION},
+    {"unique",            TritonOpCategory::DATA_MOVEMENT},
+    {"top_k",             TritonOpCategory::DATA_MOVEMENT},
+    {"in_top_k",          TritonOpCategory::DATA_MOVEMENT},
+
+    // ── One-hot (constant generation) ──
+    {"onehot",            TritonOpCategory::CONSTANT_GENERATION},
+    {"OneHot",            TritonOpCategory::CONSTANT_GENERATION},
+
+    // ── Attention ops ──
+    {"dot_product_attention",  TritonOpCategory::FUSED_ATTENTION},
+    {"DotProductAttention",    TritonOpCategory::FUSED_ATTENTION},
+    {"self_attention",         TritonOpCategory::FUSED_ATTENTION},
+    {"SelfAttention",          TritonOpCategory::FUSED_ATTENTION},
+
+    // ── Normalization ──
+    {"batchnorm",         TritonOpCategory::NORMALIZATION},
+    {"BatchNorm",         TritonOpCategory::NORMALIZATION},
+    {"layer_normalization", TritonOpCategory::NORMALIZATION},
+
+    // ── RNN ops (matmul category - decomposed into matmul chains) ──
+    {"lstmLayer",         TritonOpCategory::MATMUL},
+    {"gruCell",           TritonOpCategory::MATMUL},
+    {"gru",               TritonOpCategory::MATMUL},
+    {"simple_rnn",        TritonOpCategory::MATMUL},
+    {"lstmCell",          TritonOpCategory::MATMUL},
+
+    // ── Image ops (data movement category) ──
+    {"resize_bilinear",        TritonOpCategory::DATA_MOVEMENT},
+    {"resize_nearest_neighbor", TritonOpCategory::DATA_MOVEMENT},
+    {"resize_bicubic",         TritonOpCategory::DATA_MOVEMENT},
+    {"crop_and_resize",        TritonOpCategory::DATA_MOVEMENT},
+    {"rgb_to_hsv",             TritonOpCategory::UNARY_ELEMENTWISE},
+    {"hsv_to_rgb",             TritonOpCategory::UNARY_ELEMENTWISE},
+    {"rgb_to_grs",             TritonOpCategory::UNARY_ELEMENTWISE},
+    {"adjust_contrast",        TritonOpCategory::UNARY_ELEMENTWISE},
+    {"adjust_hue",             TritonOpCategory::UNARY_ELEMENTWISE},
+    {"adjust_saturation",      TritonOpCategory::UNARY_ELEMENTWISE},
+    {"image_resize",           TritonOpCategory::DATA_MOVEMENT},
+
+    // ── Extended activations (unary elementwise) ──
+    {"hardswish",         TritonOpCategory::UNARY_ELEMENTWISE},
+    {"HardSwish",         TritonOpCategory::UNARY_ELEMENTWISE},
+    {"hardsigmoid",       TritonOpCategory::UNARY_ELEMENTWISE},
+    {"HardSigmoid2",      TritonOpCategory::UNARY_ELEMENTWISE},
+    {"celu",              TritonOpCategory::UNARY_ELEMENTWISE},
+    {"Celu",              TritonOpCategory::UNARY_ELEMENTWISE},
+    {"thresholdedrelu",   TritonOpCategory::UNARY_ELEMENTWISE},
+    {"ThresholdedRelu",   TritonOpCategory::UNARY_ELEMENTWISE},
+    {"prelu",             TritonOpCategory::BINARY_ELEMENTWISE},
+    {"Prelu",             TritonOpCategory::BINARY_ELEMENTWISE},
+
+    // ── LLM: Rotary Position Embedding ──
+    {"rope",              TritonOpCategory::ROPE},
+    {"Rope",              TritonOpCategory::ROPE},
+    {"rope_bp",           TritonOpCategory::ROPE},
+    {"fused_rope",        TritonOpCategory::ROPE},
+    {"FusedRope",         TritonOpCategory::ROPE},
+    {"fused_rope_bp",     TritonOpCategory::ROPE},
+
+    // ── LLM: Attention variants ──
+    {"flash_attention",            TritonOpCategory::FUSED_ATTENTION},
+    {"FlashAttention",             TritonOpCategory::FUSED_ATTENTION},
+    {"grouped_query_attention",    TritonOpCategory::FUSED_ATTENTION},
+    {"GroupedQueryAttention",      TritonOpCategory::FUSED_ATTENTION},
+    {"sliding_window_attention",   TritonOpCategory::FUSED_ATTENTION},
+    {"SlidingWindowAttention",     TritonOpCategory::FUSED_ATTENTION},
+    {"apply_alibi",                TritonOpCategory::FUSED_ATTENTION},
+    {"ApplyAlibi",                 TritonOpCategory::FUSED_ATTENTION},
+
+    // ── LLM: KV cache management ──
+    {"kv_cache_update",   TritonOpCategory::DATA_MOVEMENT},
+    {"KvCacheUpdate",     TritonOpCategory::DATA_MOVEMENT},
+    {"kv_scatter",        TritonOpCategory::DATA_MOVEMENT},
+    {"KvScatter",         TritonOpCategory::DATA_MOVEMENT},
+
+    // ── LLM: Fused mega-kernels ──
+    {"fused_rms_norm_swiglu",      TritonOpCategory::FUSED_LLM},
+    {"FusedRmsNormSwiglu",         TritonOpCategory::FUSED_LLM},
+    {"fused_bias_dropout_residual", TritonOpCategory::FUSED_LLM},
+    {"FusedBiasDropoutResidual",   TritonOpCategory::FUSED_LLM},
+    {"fused_elementwise_chain",    TritonOpCategory::FUSED_LLM},
+    {"FusedElementwiseChain",      TritonOpCategory::FUSED_LLM},
+
+    // ── LLM: Fused activations/normalization ──
+    {"fused_gelu",        TritonOpCategory::UNARY_ELEMENTWISE},
+    {"FusedGelu",         TritonOpCategory::UNARY_ELEMENTWISE},
+    {"fused_layer_norm",  TritonOpCategory::NORMALIZATION},
+    {"FusedLayerNorm",    TritonOpCategory::NORMALIZATION},
+
+    // ── LLM: Quantized matmul ──
+    {"quantized_matmul",  TritonOpCategory::MATMUL},
+    {"QuantizedMatmul",   TritonOpCategory::MATMUL},
+
+    // ── LLM: Mean square (RMS norm building block) ──
+    {"mean_square",       TritonOpCategory::REDUCTION},
+    {"MeanSquare",        TritonOpCategory::REDUCTION},
+
+    // ── Additional data movement ops ──
+    {"repeat",            TritonOpCategory::DATA_MOVEMENT},
+    {"Repeat",            TritonOpCategory::DATA_MOVEMENT},
+    {"pad",               TritonOpCategory::DATA_MOVEMENT},
+    {"Pad",               TritonOpCategory::DATA_MOVEMENT},
+    {"slice",             TritonOpCategory::DATA_MOVEMENT},
+    {"Slice",             TritonOpCategory::DATA_MOVEMENT},
+
+    // ── Additional shape manipulation ──
+    {"transpose",         TritonOpCategory::SHAPE_MANIPULATION},
+    {"Transpose",         TritonOpCategory::SHAPE_MANIPULATION},
+    {"triu",              TritonOpCategory::SHAPE_MANIPULATION},
+    {"Triu",              TritonOpCategory::SHAPE_MANIPULATION},
+    {"tril",              TritonOpCategory::SHAPE_MANIPULATION},
+    {"Tril",              TritonOpCategory::SHAPE_MANIPULATION},
+
+    // ── Additional reductions ──
+    {"cumsum",            TritonOpCategory::REDUCTION},
+    {"Cumsum",            TritonOpCategory::REDUCTION},
+    {"cumprod",           TritonOpCategory::REDUCTION},
+    {"Cumprod",           TritonOpCategory::REDUCTION},
+
+    // ── Additional constant generation ──
+    {"eye",               TritonOpCategory::CONSTANT_GENERATION},
+    {"Eye",               TritonOpCategory::CONSTANT_GENERATION},
+    {"linspace",          TritonOpCategory::CONSTANT_GENERATION},
+    {"Linspace",          TritonOpCategory::CONSTANT_GENERATION},
+    {"fill",              TritonOpCategory::CONSTANT_GENERATION},
+    {"Fill",              TritonOpCategory::CONSTANT_GENERATION},
   };
   return table;
 }

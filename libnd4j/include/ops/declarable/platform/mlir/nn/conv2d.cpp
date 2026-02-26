@@ -62,8 +62,8 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     }
     std::vector<NDArray*> outputs = {output};
 
-    // Execute via MLIR JIT
-    auto status = executeMlir("conv2d", block, inputs, outputs);
+    // Execute via MLIR JIT with extended params (passes iArgs for stride/padding/dilation)
+    auto status = executeMlirEx("conv2d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         sd_printf("MLIR conv2d execution failed\n", "");
@@ -79,33 +79,9 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
 
     Requirements req("MLIR CONV2D");
 
-    // Check MLIR availability
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-
-    // Check supported data types
-    req.expectIn(input->dataType(),
-                 {FLOAT32, DOUBLE, HALF, BFLOAT16},
-                 "Input dtype supported by MLIR") &&
-
-    req.expectIn(weights->dataType(),
-                 {FLOAT32, DOUBLE, HALF, BFLOAT16},
-                 "Weights dtype supported by MLIR") &&
-
-    // Check matching types
-    req.expectEq(input->dataType(), weights->dataType(),
-                 "Matching input and weights dtypes") &&
-
-    // Check rank requirements
-    req.expectEq(input->rankOf(), 4, "Input is 4D [N,C,H,W] or [N,H,W,C]") &&
-    req.expectEq(weights->rankOf(), 4, "Weights is 4D") &&
-
-    // Check minimum size threshold
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE,
-                   "Tensor size above MLIR threshold") &&
-
-    // Check contiguous memory
-    req.expectTrue(input->ews() == 1 || input->ews() == 0,
-                   "Input has contiguous memory");
+    req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -146,11 +122,8 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
 
     Requirements req("MLIR CONV2D_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectEq(input->dataType(), weights->dataType(), "Matching dtypes") &&
-    req.expectEq(input->rankOf(), 4, "Input is 4D") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }

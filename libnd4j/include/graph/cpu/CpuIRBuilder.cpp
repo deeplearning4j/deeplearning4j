@@ -1851,6 +1851,575 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
   return module;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// Additional emitters: pooling, embedding, loss ops
+// ═══════════════════════════════════════════════════════════════════════════════
+
+void CpuIRBuilder::emitPooling2dOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                     const std::string& opName,
+                                     mlir::Value inputMemref, mlir::Value outputMemref,
+                                     const std::vector<LongType>& inputShape,
+                                     const std::vector<LongType>& outputShape,
+                                     int kH, int kW, int sH, int sW,
+                                     int pH, int pW, int dH, int dW,
+                                     mlir::Type elemType) {
+  // Pooling 2D: NCHW format
+  // input:  [N, C, iH, iW]
+  // output: [N, C, oH, oW]
+  if (inputShape.size() < 4 || outputShape.size() < 4) return;
+
+  int64_t batchN = inputShape[0], C = inputShape[1];
+  int64_t iH = inputShape[2], iW = inputShape[3];
+  int64_t oH = outputShape[2], oW = outputShape[3];
+
+  std::string lowerOp = opName;
+  std::transform(lowerOp.begin(), lowerOp.end(), lowerOp.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  bool isMax = (lowerOp.find("max") != std::string::npos);
+
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+
+  // Loop over N, C, oH, oW
+  auto nLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx,
+      builder.create<mlir::arith::ConstantIndexOp>(loc, batchN), oneIdx);
+  builder.setInsertionPointToStart(nLoop.getBody());
+  auto n = nLoop.getInductionVar();
+
+  auto cLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx,
+      builder.create<mlir::arith::ConstantIndexOp>(loc, C), oneIdx);
+  builder.setInsertionPointToStart(cLoop.getBody());
+  auto c = cLoop.getInductionVar();
+
+  auto ohLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx,
+      builder.create<mlir::arith::ConstantIndexOp>(loc, oH), oneIdx);
+  builder.setInsertionPointToStart(ohLoop.getBody());
+  auto oh = ohLoop.getInductionVar();
+
+  auto owLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx,
+      builder.create<mlir::arith::ConstantIndexOp>(loc, oW), oneIdx);
+  builder.setInsertionPointToStart(owLoop.getBody());
+  auto ow = owLoop.getInductionVar();
+
+  // Initialize accumulator
+  mlir::Value initVal;
+  if (isMax) {
+    initVal = builder.create<mlir::arith::ConstantOp>(
+        loc, builder.getFloatAttr(elemType, -1e38));
+  } else {
+    initVal = builder.create<mlir::arith::ConstantOp>(
+        loc, builder.getFloatAttr(elemType, 0.0));
+  }
+
+  // Kernel loops
+  auto khLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx,
+      builder.create<mlir::arith::ConstantIndexOp>(loc, kH), oneIdx,
+      mlir::ValueRange{initVal});
+  builder.setInsertionPointToStart(khLoop.getBody());
+  auto kh = khLoop.getInductionVar();
+  auto accOuter = khLoop.getRegionIterArg(0);
+
+  auto kwLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx,
+      builder.create<mlir::arith::ConstantIndexOp>(loc, kW), oneIdx,
+      mlir::ValueRange{accOuter});
+  builder.setInsertionPointToStart(kwLoop.getBody());
+  auto kw = kwLoop.getInductionVar();
+  auto acc = kwLoop.getRegionIterArg(0);
+
+  // ih = oh * sH - pH + kh * dH
+  auto sHConst = builder.create<mlir::arith::ConstantIndexOp>(loc, sH);
+  auto pHConst = builder.create<mlir::arith::ConstantIndexOp>(loc, pH);
+  auto dHConst = builder.create<mlir::arith::ConstantIndexOp>(loc, dH);
+  auto sWConst = builder.create<mlir::arith::ConstantIndexOp>(loc, sW);
+  auto pWConst = builder.create<mlir::arith::ConstantIndexOp>(loc, pW);
+  auto dWConst = builder.create<mlir::arith::ConstantIndexOp>(loc, dW);
+
+  auto ih = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::SubIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, oh, sHConst), pHConst),
+      builder.create<mlir::arith::MulIOp>(loc, kh, dHConst));
+  auto iw = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::SubIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, ow, sWConst), pWConst),
+      builder.create<mlir::arith::MulIOp>(loc, kw, dWConst));
+
+  // Bounds check: ih >= 0 && ih < iH && iw >= 0 && iw < iW
+  auto iHConst = builder.create<mlir::arith::ConstantIndexOp>(loc, iH);
+  auto iWConst = builder.create<mlir::arith::ConstantIndexOp>(loc, iW);
+  auto ihValid = builder.create<mlir::arith::AndIOp>(loc,
+      builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, ih, zeroIdx),
+      builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, ih, iHConst));
+  auto iwValid = builder.create<mlir::arith::AndIOp>(loc,
+      builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge, iw, zeroIdx),
+      builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, iw, iWConst));
+  auto valid = builder.create<mlir::arith::AndIOp>(loc, ihValid, iwValid);
+
+  // flat input index = n*C*iH*iW + c*iH*iW + ih*iW + iw
+  auto cihiw = builder.create<mlir::arith::ConstantIndexOp>(loc, C * iH * iW);
+  auto ihiw = builder.create<mlir::arith::ConstantIndexOp>(loc, iH * iW);
+
+  auto inIdx = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, n, cihiw),
+          builder.create<mlir::arith::MulIOp>(loc, c, ihiw)),
+      builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, ih, iWConst), iw));
+
+  // Conditional load and accumulate
+  auto ifOp = builder.create<mlir::scf::IfOp>(loc, mlir::TypeRange{elemType}, valid, true);
+  // Then block: valid input position
+  builder.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemref, mlir::ValueRange{inIdx});
+  mlir::Value newAcc;
+  if (isMax) {
+    newAcc = builder.create<mlir::arith::MaximumFOp>(loc, acc, val);
+  } else {
+    newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, val);
+  }
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+
+  // Else block: out of bounds, keep accumulator
+  builder.setInsertionPointToStart(&ifOp.getElseRegion().front());
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{acc});
+
+  builder.setInsertionPointAfter(ifOp);
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{ifOp.getResult(0)});
+
+  // End kw loop
+  builder.setInsertionPointAfter(kwLoop);
+  builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{kwLoop.getResult(0)});
+
+  // End kh loop
+  builder.setInsertionPointAfter(khLoop);
+  mlir::Value poolResult = khLoop.getResult(0);
+
+  // For avg pooling, divide by kernel size
+  if (!isMax) {
+    auto kernelSize = builder.create<mlir::arith::ConstantOp>(
+        loc, builder.getFloatAttr(elemType, static_cast<double>(kH * kW)));
+    poolResult = builder.create<mlir::arith::DivFOp>(loc, poolResult, kernelSize);
+  }
+
+  // Store result: flat output index = n*C*oH*oW + c*oH*oW + oh*oW + ow
+  auto cohow = builder.create<mlir::arith::ConstantIndexOp>(loc, C * oH * oW);
+  auto ohow = builder.create<mlir::arith::ConstantIndexOp>(loc, oH * oW);
+  auto oWConst = builder.create<mlir::arith::ConstantIndexOp>(loc, oW);
+
+  auto outIdx = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, n, cohow),
+          builder.create<mlir::arith::MulIOp>(loc, c, ohow)),
+      builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, oh, oWConst), ow));
+
+  builder.create<mlir::memref::StoreOp>(loc, poolResult, outputMemref, mlir::ValueRange{outIdx});
+
+  // Close all loops
+  builder.setInsertionPointAfter(owLoop);
+  builder.setInsertionPointAfter(ohLoop);
+  builder.setInsertionPointAfter(cLoop);
+  builder.setInsertionPointAfter(nLoop);
+}
+
+void CpuIRBuilder::emitEmbeddingLookup(mlir::OpBuilder& builder, mlir::Location loc,
+                                          mlir::Value tableMemref, mlir::Value indicesMemref,
+                                          mlir::Value outputMemref,
+                                          int64_t numLookups, int64_t embeddingDim,
+                                          mlir::Type elemType) {
+  // output[i*D+d] = table[indices[i]*D+d] for i in numLookups, d in D
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, numLookups);
+  auto dConst = builder.create<mlir::arith::ConstantIndexOp>(loc, embeddingDim);
+
+  auto iLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, nConst, oneIdx);
+  builder.setInsertionPointToStart(iLoop.getBody());
+  auto i = iLoop.getInductionVar();
+
+  // Load index (as integer, then cast to index)
+  auto idxVal = builder.create<mlir::memref::LoadOp>(loc, indicesMemref, mlir::ValueRange{i});
+  auto idxIndex = builder.create<mlir::arith::IndexCastOp>(
+      loc, builder.getIndexType(), idxVal);
+
+  auto dLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, dConst, oneIdx);
+  builder.setInsertionPointToStart(dLoop.getBody());
+  auto d = dLoop.getInductionVar();
+
+  // table[idx*D + d]
+  auto tableIdx = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::MulIOp>(loc, idxIndex, dConst), d);
+  auto val = builder.create<mlir::memref::LoadOp>(loc, tableMemref, mlir::ValueRange{tableIdx});
+
+  // output[i*D + d]
+  auto outIdx = builder.create<mlir::arith::AddIOp>(loc,
+      builder.create<mlir::arith::MulIOp>(loc, i, dConst), d);
+  builder.create<mlir::memref::StoreOp>(loc, val, outputMemref, mlir::ValueRange{outIdx});
+
+  builder.setInsertionPointAfter(dLoop);
+  builder.setInsertionPointAfter(iLoop);
+}
+
+void CpuIRBuilder::emitSoftmaxCrossEntropy(mlir::OpBuilder& builder, mlir::Location loc,
+                                              mlir::Value logitsMemref, mlir::Value labelsMemref,
+                                              mlir::Value outputMemref,
+                                              int64_t nElements, mlir::Type elemType) {
+  // loss = -sum(labels * log(softmax(logits)))
+  // = -sum(labels * (logits - log(sum(exp(logits)))))
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElements);
+  auto negInf = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, -1e38));
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, 0.0));
+
+  // Pass 1: find max for numerical stability
+  auto maxLoop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{negInf.getResult()});
+  {
+    builder.setInsertionPointToStart(maxLoop.getBody());
+    auto iv = maxLoop.getInductionVar();
+    auto acc = maxLoop.getRegionIterArg(0);
+    auto val = builder.create<mlir::memref::LoadOp>(loc, logitsMemref, mlir::ValueRange{iv});
+    auto newMax = builder.create<mlir::arith::MaximumFOp>(loc, acc, val);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newMax});
+  }
+  builder.setInsertionPointAfter(maxLoop);
+  auto maxVal = maxLoop.getResult(0);
+
+  // Pass 2: log(sum(exp(logits - max)))
+  auto sumLoop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{zeroF.getResult()});
+  {
+    builder.setInsertionPointToStart(sumLoop.getBody());
+    auto iv = sumLoop.getInductionVar();
+    auto acc = sumLoop.getRegionIterArg(0);
+    auto val = builder.create<mlir::memref::LoadOp>(loc, logitsMemref, mlir::ValueRange{iv});
+    auto shifted = builder.create<mlir::arith::SubFOp>(loc, val, maxVal);
+    auto expVal = builder.create<mlir::math::ExpOp>(loc, shifted);
+    auto newSum = builder.create<mlir::arith::AddFOp>(loc, acc, expVal);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newSum});
+  }
+  builder.setInsertionPointAfter(sumLoop);
+  auto logSumExp = builder.create<mlir::math::LogOp>(loc, sumLoop.getResult(0));
+
+  // Pass 3: loss = -sum(labels * (logits - max - logSumExp))
+  auto lossLoop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{zeroF.getResult()});
+  {
+    builder.setInsertionPointToStart(lossLoop.getBody());
+    auto iv = lossLoop.getInductionVar();
+    auto acc = lossLoop.getRegionIterArg(0);
+    auto logit = builder.create<mlir::memref::LoadOp>(loc, logitsMemref, mlir::ValueRange{iv});
+    auto label = builder.create<mlir::memref::LoadOp>(loc, labelsMemref, mlir::ValueRange{iv});
+    auto logSoftmax = builder.create<mlir::arith::SubFOp>(loc,
+        builder.create<mlir::arith::SubFOp>(loc, logit, maxVal), logSumExp);
+    auto term = builder.create<mlir::arith::MulFOp>(loc, label, logSoftmax);
+    auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, term);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+  }
+  builder.setInsertionPointAfter(lossLoop);
+
+  // Negate the sum
+  auto loss = builder.create<mlir::arith::NegFOp>(loc, lossLoop.getResult(0));
+
+  // Store scalar output
+  builder.create<mlir::memref::StoreOp>(loc, loss, outputMemref, mlir::ValueRange{zeroIdx});
+}
+
+void CpuIRBuilder::emitMSELoss(mlir::OpBuilder& builder, mlir::Location loc,
+                                  mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                                  mlir::Value outputMemref,
+                                  int64_t nElements, mlir::Type elemType) {
+  // MSE = mean((predictions - labels)^2)
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElements);
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, 0.0));
+
+  auto loop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{zeroF.getResult()});
+  {
+    builder.setInsertionPointToStart(loop.getBody());
+    auto iv = loop.getInductionVar();
+    auto acc = loop.getRegionIterArg(0);
+    auto pred = builder.create<mlir::memref::LoadOp>(loc, predictionsMemref, mlir::ValueRange{iv});
+    auto label = builder.create<mlir::memref::LoadOp>(loc, labelsMemref, mlir::ValueRange{iv});
+    auto diff = builder.create<mlir::arith::SubFOp>(loc, pred, label);
+    auto sq = builder.create<mlir::arith::MulFOp>(loc, diff, diff);
+    auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, sq);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+  }
+  builder.setInsertionPointAfter(loop);
+
+  auto countF = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, static_cast<double>(nElements)));
+  auto mse = builder.create<mlir::arith::DivFOp>(loc, loop.getResult(0), countF);
+  builder.create<mlir::memref::StoreOp>(loc, mse, outputMemref, mlir::ValueRange{zeroIdx});
+}
+
+// ─── New emitters ─────────────────────────────────────────────────────────
+
+void CpuIRBuilder::emitSliceOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                mlir::Value inputMemref, mlir::Value outputMemref,
+                                int64_t begin, int64_t length, mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto beginConst = builder.create<mlir::arith::ConstantIndexOp>(loc, begin);
+  auto lenConst = builder.create<mlir::arith::ConstantIndexOp>(loc, length);
+
+  auto loop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, lenConst, oneIdx);
+  builder.setInsertionPointToStart(loop.getBody());
+  auto iv = loop.getInductionVar();
+  auto srcIdx = builder.create<mlir::arith::AddIOp>(loc, iv, beginConst);
+  auto val = builder.create<mlir::memref::LoadOp>(loc, inputMemref, mlir::ValueRange{srcIdx});
+  builder.create<mlir::memref::StoreOp>(loc, val, outputMemref, mlir::ValueRange{iv});
+  builder.setInsertionPointAfter(loop);
+}
+
+void CpuIRBuilder::emitLogicalOp(mlir::OpBuilder& builder, mlir::Location loc,
+                                   const std::string& opName,
+                                   mlir::Value lhsMemref, mlir::Value rhsMemref,
+                                   mlir::Value outputMemref,
+                                   int64_t nElements, mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElements);
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0));
+  auto oneF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 1.0));
+
+  auto loop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, nConst, oneIdx);
+  builder.setInsertionPointToStart(loop.getBody());
+  auto iv = loop.getInductionVar();
+  auto lhs = builder.create<mlir::memref::LoadOp>(loc, lhsMemref, mlir::ValueRange{iv});
+  auto rhs = builder.create<mlir::memref::LoadOp>(loc, rhsMemref, mlir::ValueRange{iv});
+  auto lhsBool = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::ONE, lhs, zeroF);
+  auto rhsBool = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::ONE, rhs, zeroF);
+
+  mlir::Value boolResult;
+  if (opName.find("and") != std::string::npos) {
+    boolResult = builder.create<mlir::arith::AndIOp>(loc, lhsBool, rhsBool);
+  } else if (opName.find("or") != std::string::npos) {
+    boolResult = builder.create<mlir::arith::OrIOp>(loc, lhsBool, rhsBool);
+  } else {
+    boolResult = builder.create<mlir::arith::XOrIOp>(loc, lhsBool, rhsBool);
+  }
+
+  auto result = builder.create<mlir::arith::SelectOp>(loc, boolResult, oneF, zeroF);
+  builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{iv});
+  builder.setInsertionPointAfter(loop);
+}
+
+void CpuIRBuilder::emitHuberLoss(mlir::OpBuilder& builder, mlir::Location loc,
+                                   mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                                   mlir::Value outputMemref,
+                                   int64_t nElements, double delta, mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElements);
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0));
+  auto deltaF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, delta));
+  auto halfF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.5));
+
+  auto loop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{zeroF.getResult()});
+  {
+    builder.setInsertionPointToStart(loop.getBody());
+    auto iv = loop.getInductionVar();
+    auto acc = loop.getRegionIterArg(0);
+    auto pred = builder.create<mlir::memref::LoadOp>(loc, predictionsMemref, mlir::ValueRange{iv});
+    auto label = builder.create<mlir::memref::LoadOp>(loc, labelsMemref, mlir::ValueRange{iv});
+    auto diff = builder.create<mlir::arith::SubFOp>(loc, pred, label);
+    auto absDiff = builder.create<mlir::math::AbsFOp>(loc, diff);
+    auto isSmall = builder.create<mlir::arith::CmpFOp>(
+        loc, mlir::arith::CmpFPredicate::OLE, absDiff, deltaF);
+    // MSE path: 0.5 * diff^2
+    auto sq = builder.create<mlir::arith::MulFOp>(loc, diff, diff);
+    auto msePath = builder.create<mlir::arith::MulFOp>(loc, halfF, sq);
+    // MAE path: delta * (|diff| - 0.5 * delta)
+    auto halfDelta = builder.create<mlir::arith::MulFOp>(loc, halfF, deltaF);
+    auto maePath = builder.create<mlir::arith::MulFOp>(loc, deltaF,
+        builder.create<mlir::arith::SubFOp>(loc, absDiff, halfDelta));
+    auto loss = builder.create<mlir::arith::SelectOp>(loc, isSmall, msePath, maePath);
+    auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, loss);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+  }
+  builder.setInsertionPointAfter(loop);
+
+  auto countF = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, static_cast<double>(nElements)));
+  auto result = builder.create<mlir::arith::DivFOp>(loc, loop.getResult(0), countF);
+  builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{zeroIdx});
+}
+
+void CpuIRBuilder::emitHingeLoss(mlir::OpBuilder& builder, mlir::Location loc,
+                                   mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                                   mlir::Value outputMemref,
+                                   int64_t nElements, mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElements);
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0));
+  auto oneF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 1.0));
+
+  auto loop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{zeroF.getResult()});
+  {
+    builder.setInsertionPointToStart(loop.getBody());
+    auto iv = loop.getInductionVar();
+    auto acc = loop.getRegionIterArg(0);
+    auto pred = builder.create<mlir::memref::LoadOp>(loc, predictionsMemref, mlir::ValueRange{iv});
+    auto label = builder.create<mlir::memref::LoadOp>(loc, labelsMemref, mlir::ValueRange{iv});
+    // max(0, 1 - y*t)
+    auto yt = builder.create<mlir::arith::MulFOp>(loc, label, pred);
+    auto margin = builder.create<mlir::arith::SubFOp>(loc, oneF, yt);
+    auto loss = builder.create<mlir::arith::MaximumFOp>(loc, zeroF, margin);
+    auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, loss);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+  }
+  builder.setInsertionPointAfter(loop);
+
+  auto countF = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, static_cast<double>(nElements)));
+  auto result = builder.create<mlir::arith::DivFOp>(loc, loop.getResult(0), countF);
+  builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{zeroIdx});
+}
+
+void CpuIRBuilder::emitLogLoss(mlir::OpBuilder& builder, mlir::Location loc,
+                                 mlir::Value predictionsMemref, mlir::Value labelsMemref,
+                                 mlir::Value outputMemref,
+                                 int64_t nElements, double epsilon, mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto nConst = builder.create<mlir::arith::ConstantIndexOp>(loc, nElements);
+  auto zeroF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0));
+  auto oneF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 1.0));
+  auto epsF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, epsilon));
+
+  auto loop = builder.create<mlir::scf::ForOp>(
+      loc, zeroIdx, nConst, oneIdx, mlir::ValueRange{zeroF.getResult()});
+  {
+    builder.setInsertionPointToStart(loop.getBody());
+    auto iv = loop.getInductionVar();
+    auto acc = loop.getRegionIterArg(0);
+    auto pred = builder.create<mlir::memref::LoadOp>(loc, predictionsMemref, mlir::ValueRange{iv});
+    auto label = builder.create<mlir::memref::LoadOp>(loc, labelsMemref, mlir::ValueRange{iv});
+    // -[y*log(p+eps) + (1-y)*log(1-p+eps)]
+    auto pEps = builder.create<mlir::arith::AddFOp>(loc, pred, epsF);
+    auto logP = builder.create<mlir::math::LogOp>(loc, pEps);
+    auto term1 = builder.create<mlir::arith::MulFOp>(loc, label, logP);
+    auto oneMinusY = builder.create<mlir::arith::SubFOp>(loc, oneF, label);
+    auto oneMinusPEps = builder.create<mlir::arith::AddFOp>(loc,
+        builder.create<mlir::arith::SubFOp>(loc, oneF, pred), epsF);
+    auto logOneMinusP = builder.create<mlir::math::LogOp>(loc, oneMinusPEps);
+    auto term2 = builder.create<mlir::arith::MulFOp>(loc, oneMinusY, logOneMinusP);
+    auto loss = builder.create<mlir::arith::AddFOp>(loc, term1, term2);
+    auto negLoss = builder.create<mlir::arith::NegFOp>(loc, loss);
+    auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, negLoss);
+    builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+  }
+  builder.setInsertionPointAfter(loop);
+
+  auto countF = builder.create<mlir::arith::ConstantOp>(
+      loc, builder.getFloatAttr(elemType, static_cast<double>(nElements)));
+  auto result = builder.create<mlir::arith::DivFOp>(loc, loop.getResult(0), countF);
+  builder.create<mlir::memref::StoreOp>(loc, result, outputMemref, mlir::ValueRange{zeroIdx});
+}
+
+void CpuIRBuilder::emitOneHot(mlir::OpBuilder& builder, mlir::Location loc,
+                                mlir::Value indicesMemref, mlir::Value outputMemref,
+                                int64_t numIndices, int64_t depth,
+                                double onValue, double offValue, mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto depthConst = builder.create<mlir::arith::ConstantIndexOp>(loc, depth);
+  auto numConst = builder.create<mlir::arith::ConstantIndexOp>(loc, numIndices);
+  auto onF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, onValue));
+  auto offF = builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, offValue));
+
+  // Fill with off-value
+  auto totalLen = builder.create<mlir::arith::ConstantIndexOp>(loc, numIndices * depth);
+  auto fillLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, totalLen, oneIdx);
+  {
+    builder.setInsertionPointToStart(fillLoop.getBody());
+    builder.create<mlir::memref::StoreOp>(loc, offF, outputMemref,
+        mlir::ValueRange{fillLoop.getInductionVar()});
+  }
+  builder.setInsertionPointAfter(fillLoop);
+
+  // Set on-values at indices
+  auto iLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, numConst, oneIdx);
+  {
+    builder.setInsertionPointToStart(iLoop.getBody());
+    auto i = iLoop.getInductionVar();
+    auto idxVal = builder.create<mlir::memref::LoadOp>(loc, indicesMemref, mlir::ValueRange{i});
+    // Convert float index to integer index
+    auto idxI64 = builder.create<mlir::arith::FPToSIOp>(loc, builder.getI64Type(), idxVal);
+    auto idx = builder.create<mlir::arith::IndexCastOp>(loc, builder.getIndexType(), idxI64);
+    auto outIdx = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, i, depthConst), idx);
+    builder.create<mlir::memref::StoreOp>(loc, onF, outputMemref, mlir::ValueRange{outIdx});
+  }
+  builder.setInsertionPointAfter(iLoop);
+}
+
+void CpuIRBuilder::emitXWPlusB(mlir::OpBuilder& builder, mlir::Location loc,
+                                  mlir::Value xMemref, mlir::Value wMemref,
+                                  mlir::Value biasMemref, mlir::Value outputMemref,
+                                  int64_t batch, int64_t inFeatures, int64_t outFeatures,
+                                  mlir::Type elemType) {
+  auto zeroIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 0);
+  auto oneIdx = builder.create<mlir::arith::ConstantIndexOp>(loc, 1);
+  auto batchConst = builder.create<mlir::arith::ConstantIndexOp>(loc, batch);
+  auto inConst = builder.create<mlir::arith::ConstantIndexOp>(loc, inFeatures);
+  auto outConst = builder.create<mlir::arith::ConstantIndexOp>(loc, outFeatures);
+
+  auto iLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, batchConst, oneIdx);
+  {
+    builder.setInsertionPointToStart(iLoop.getBody());
+    auto i = iLoop.getInductionVar();
+
+    auto jLoop = builder.create<mlir::scf::ForOp>(loc, zeroIdx, outConst, oneIdx);
+    {
+      builder.setInsertionPointToStart(jLoop.getBody());
+      auto j = jLoop.getInductionVar();
+
+      // Load bias[j]
+      auto biasVal = builder.create<mlir::memref::LoadOp>(loc, biasMemref, mlir::ValueRange{j});
+
+      // Accumulate x[i,k] * w[k,j] for k in 0..inFeatures
+      auto kLoop = builder.create<mlir::scf::ForOp>(
+          loc, zeroIdx, inConst, oneIdx, mlir::ValueRange{biasVal.getResult()});
+      {
+        builder.setInsertionPointToStart(kLoop.getBody());
+        auto k = kLoop.getInductionVar();
+        auto acc = kLoop.getRegionIterArg(0);
+        // x[i*inFeatures + k]
+        auto xIdx = builder.create<mlir::arith::AddIOp>(loc,
+            builder.create<mlir::arith::MulIOp>(loc, i, inConst), k);
+        auto xVal = builder.create<mlir::memref::LoadOp>(loc, xMemref, mlir::ValueRange{xIdx});
+        // w[k*outFeatures + j]
+        auto wIdx = builder.create<mlir::arith::AddIOp>(loc,
+            builder.create<mlir::arith::MulIOp>(loc, k, outConst), j);
+        auto wVal = builder.create<mlir::memref::LoadOp>(loc, wMemref, mlir::ValueRange{wIdx});
+        auto prod = builder.create<mlir::arith::MulFOp>(loc, xVal, wVal);
+        auto newAcc = builder.create<mlir::arith::AddFOp>(loc, acc, prod);
+        builder.create<mlir::scf::YieldOp>(loc, mlir::ValueRange{newAcc});
+      }
+      builder.setInsertionPointAfter(kLoop);
+
+      // Store output[i*outFeatures + j]
+      auto outIdx = builder.create<mlir::arith::AddIOp>(loc,
+          builder.create<mlir::arith::MulIOp>(loc, i, outConst), j);
+      builder.create<mlir::memref::StoreOp>(loc, kLoop.getResult(0), outputMemref,
+          mlir::ValueRange{outIdx});
+    }
+    builder.setInsertionPointAfter(jLoop);
+  }
+  builder.setInsertionPointAfter(iLoop);
+}
+
 }  // namespace graph
 }  // namespace sd
 

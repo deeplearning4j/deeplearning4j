@@ -53,7 +53,7 @@ PLATFORM_IMPL(xw_plus_b, ENGINE_CPU) {
     // 1. Performs matmul(x, weights)
     // 2. Broadcasts and adds bias
     // All in a single kernel to minimize memory bandwidth
-    auto status = executeMlir("xw_plus_b", block, inputs, outputs);
+    auto status = executeMlirEx("xw_plus_b", block, inputs, outputs);
 
     if (status != Status::OK()) {
         sd_printf("MLIR xw_plus_b execution failed\n", "");
@@ -70,48 +70,9 @@ PLATFORM_CHECK(xw_plus_b, ENGINE_CPU) {
 
     Requirements req("MLIR XW_PLUS_B");
 
-    // Check MLIR availability
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-
-    // Check supported data types
-    req.expectIn(x->dataType(),
-                 {FLOAT32, DOUBLE, HALF, BFLOAT16},
-                 "Input X dtype supported by MLIR") &&
-
-    req.expectIn(weights->dataType(),
-                 {FLOAT32, DOUBLE, HALF, BFLOAT16},
-                 "Weights dtype supported by MLIR") &&
-
-    // Check matching types for x and weights
-    req.expectEq(x->dataType(), weights->dataType(),
-                 "Matching X and Weights dtypes") &&
-
-    // Check rank requirements
-    req.expectEq(x->rankOf(), 2,
-                 "X is 2D [batch, in_features]") &&
-
-    req.expectEq(weights->rankOf(), 2,
-                 "Weights is 2D [in_features, out_features]") &&
-
-    req.expectEq(bias->rankOf(), 1,
-                 "Bias is 1D [out_features]") &&
-
-    // Check shape compatibility
-    req.expectEq(x->sizeAt(1), weights->sizeAt(0),
-                 "X.in_features == Weights.in_features") &&
-
-    req.expectEq(weights->sizeAt(1), bias->sizeAt(0),
-                 "Weights.out_features == Bias.size") &&
-
-    // Check minimum size threshold
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE,
-                   "Tensor size above MLIR threshold") &&
-
-    // Check contiguous memory
-    req.expectTrue(x->ews() == 1 || x->ews() == 0,
-                   "Input X has contiguous memory") &&
-    req.expectTrue(weights->ews() == 1 || weights->ews() == 0,
-                   "Weights has contiguous memory");
+    req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
+    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }

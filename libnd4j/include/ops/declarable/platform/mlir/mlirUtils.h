@@ -152,7 +152,7 @@ inline bool allInputsSupportedMlirType(graph::Context& context) {
 
 #ifdef HAVE_MLIR
 
-/// Execute operation via MLIR JIT
+/// Execute operation via MLIR JIT (simple version for ops that don't need extra params)
 /// @param opName Name of the operation
 /// @param context Operation context
 /// @param inputs Input NDArrays
@@ -180,6 +180,76 @@ inline Status executeMlir(
 
     // Get or compile kernel
     auto kernel = engine.getOrCompile(opName, inputShapes, inputTypes);
+    if (!kernel || !kernel->isValid()) {
+        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to compile MLIR kernel for " + opName);
+    }
+
+    // Execute kernel
+    if (!kernel->execute(inputs, outputs)) {
+        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to execute MLIR kernel for " + opName);
+    }
+
+    return Status::OK();
+}
+
+/// Execute operation via MLIR JIT with extended params extracted from context.
+/// Use this for ops that need iArgs/tArgs/bArgs/outputShapes (convolution, shape, data movement, etc.)
+/// @param opName Name of the operation
+/// @param context Operation context (iArgs, tArgs, bArgs extracted automatically)
+/// @param inputs Input NDArrays
+/// @param outputs Output NDArrays
+/// @return Status::OK on success
+inline Status executeMlirEx(
+    const std::string& opName,
+    graph::Context& context,
+    const std::vector<NDArray*>& inputs,
+    const std::vector<NDArray*>& outputs) {
+
+    auto& engine = mlir_runtime::MLIREngine::getInstance();
+
+    if (!engine.isInitialized() && !engine.initialize()) {
+        return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to initialize MLIR engine");
+    }
+
+    // Get input shapes and types
+    std::vector<std::vector<int64_t>> inputShapes;
+    std::vector<int> inputTypes;
+    for (auto* input : inputs) {
+        inputShapes.push_back(getShape(input));
+        inputTypes.push_back(static_cast<int>(input->dataType()));
+    }
+
+    // Build extended params from context
+    mlir_runtime::MlirOpParams params;
+    params.numOutputs = static_cast<int>(outputs.size());
+
+    // Extract output shapes
+    for (auto* output : outputs) {
+        if (output != nullptr) {
+            params.outputShapes.push_back(getShape(output));
+        }
+    }
+
+    // Extract integer args
+    if (context.getIArguments() != nullptr) {
+        auto* iArgs = context.getIArguments();
+        params.iArgs.assign(iArgs->begin(), iArgs->end());
+    }
+
+    // Extract float args
+    if (context.getTArguments() != nullptr) {
+        auto* tArgs = context.getTArguments();
+        params.tArgs.assign(tArgs->begin(), tArgs->end());
+    }
+
+    // Extract boolean args
+    if (context.getBArguments() != nullptr) {
+        auto* bArgs = context.getBArguments();
+        params.bArgs.assign(bArgs->begin(), bArgs->end());
+    }
+
+    // Get or compile kernel with extended params
+    auto kernel = engine.getOrCompile(opName, inputShapes, inputTypes, params);
     if (!kernel || !kernel->isValid()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "Failed to compile MLIR kernel for " + opName);
     }

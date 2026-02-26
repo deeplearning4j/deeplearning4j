@@ -69,7 +69,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     if (hL != nullptr) outputs.push_back(hL);
     if (cL != nullptr) outputs.push_back(cL);
 
-    auto status = executeMlir("lstm_layer", block, inputs, outputs);
+    auto status = executeMlirEx("lstm_layer", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR lstmLayer failed");
@@ -80,15 +80,12 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
 PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     auto* x = INPUT_VARIABLE(0);
-    auto* Wx = INPUT_VARIABLE(1);
 
     Requirements req("MLIR LSTM_LAYER");
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(x->rankOf() == 3, "Input rank == 3") &&
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "Contiguous memory");
+    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -139,9 +136,8 @@ PLATFORM_CHECK(lstmLayer_bp, ENGINE_CPU) {
 
     Requirements req("MLIR LSTM_LAYER_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -171,7 +167,7 @@ PLATFORM_IMPL(gruCell, ENGINE_CPU) {
 
     std::vector<NDArray*> outputs = {h};
 
-    auto status = executeMlir("gru_cell", block, inputs, outputs);
+    auto status = executeMlirEx("gru_cell", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR gruCell failed");
@@ -187,8 +183,7 @@ PLATFORM_CHECK(gruCell, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(x->rankOf() == 2, "Input rank == 2") &&
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE / 4, "Size threshold");
+    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -217,7 +212,7 @@ PLATFORM_IMPL(gru, ENGINE_CPU) {
     std::vector<NDArray*> outputs = {h};
     if (hL != nullptr) outputs.push_back(hL);
 
-    auto status = executeMlir("gru", block, inputs, outputs);
+    auto status = executeMlirEx("gru", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR gru failed");
@@ -233,9 +228,7 @@ PLATFORM_CHECK(gru, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(x->rankOf() == 3, "Input rank == 3") &&
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(x->ews() == 1 || x->ews() == 0, "Contiguous memory");
+    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -277,9 +270,8 @@ PLATFORM_CHECK(gru_bp, ENGINE_CPU) {
 
     Requirements req("MLIR GRU_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(x->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -308,7 +300,7 @@ PLATFORM_IMPL(simple_rnn, ENGINE_CPU) {
     std::vector<NDArray*> outputs = {h};
     if (hL != nullptr) outputs.push_back(hL);
 
-    auto status = executeMlir("simple_rnn", block, inputs, outputs);
+    auto status = executeMlirEx("simple_rnn", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR simple_rnn failed");
@@ -324,7 +316,6 @@ PLATFORM_CHECK(simple_rnn, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(x->rankOf() == 3, "Input rank == 3") &&
     req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
@@ -355,7 +346,7 @@ PLATFORM_IMPL(lstmCell, ENGINE_CPU) {
 
     std::vector<NDArray*> outputs = {h, c};
 
-    auto status = executeMlir("lstm_cell", block, inputs, outputs);
+    auto status = executeMlirEx("lstm_cell", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR lstmCell failed");
@@ -371,8 +362,7 @@ PLATFORM_CHECK(lstmCell, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(x->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(x->rankOf() == 2, "Input rank == 2") &&
-    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE / 4, "Size threshold");
+    req.expectTrue(x->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }

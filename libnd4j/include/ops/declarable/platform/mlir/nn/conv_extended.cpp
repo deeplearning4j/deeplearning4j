@@ -53,7 +53,7 @@ PLATFORM_IMPL(conv1d, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("conv1d", block, inputs, outputs);
+    auto status = executeMlirEx("conv1d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv1d failed");
@@ -70,10 +70,7 @@ PLATFORM_CHECK(conv1d, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 3, "Input rank == 3") &&
-    req.expectTrue(weights->rankOf() == 3, "Weights rank == 3") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -111,9 +108,8 @@ PLATFORM_CHECK(conv1d_bp, ENGINE_CPU) {
 
     Requirements req("MLIR CONV1D_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -149,7 +145,7 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("conv3d", block, inputs, outputs);
+    auto status = executeMlirEx("conv3d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR conv3d failed");
@@ -166,10 +162,7 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 5, "Input rank == 5") &&
-    req.expectTrue(weights->rankOf() == 5, "Weights rank == 5") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -207,9 +200,8 @@ PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
 
     Requirements req("MLIR CONV3D_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -241,7 +233,7 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("depthwise_conv2d", block, inputs, outputs);
+    auto status = executeMlirEx("depthwise_conv2d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR depthwise_conv2d failed");
@@ -258,10 +250,7 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 4, "Input rank == 4") &&
-    req.expectTrue(weights->rankOf() == 4, "Weights rank == 4") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -299,9 +288,8 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
 
     Requirements req("MLIR DEPTHWISE_CONV2D_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -323,7 +311,7 @@ PLATFORM_IMPL(sconv2d, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("separable_conv2d", block, inputs, outputs);
+    auto status = executeMlirEx("separable_conv2d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR separable_conv2d failed");
@@ -339,9 +327,7 @@ PLATFORM_CHECK(sconv2d, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 4, "Input rank == 4") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -362,7 +348,7 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("deconv2d", block, inputs, outputs);
+    auto status = executeMlirEx("deconv2d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR deconv2d failed");
@@ -378,9 +364,7 @@ PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 4, "Input rank == 4") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -401,7 +385,7 @@ PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("deconv3d", block, inputs, outputs);
+    auto status = executeMlirEx("deconv3d", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR deconv3d failed");
@@ -417,7 +401,6 @@ PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() == 5, "Input rank == 5") &&
     req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;

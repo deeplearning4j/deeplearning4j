@@ -27,9 +27,14 @@ namespace helpers {
 void emaUpdate(NDArray* model, NDArray* shadow, NDArray* output,
                   double decay, LaunchContext* context) {
     // EMA forward: output = decay * shadow + (1 - decay) * model
-    auto temp1 = (*shadow) * decay;
-    auto temp2 = (*model) * (1.0 - decay);
-    output->assign(temp1 + temp2);
+    // output[i] = decay * shadow[i] + (1 - decay) * model[i]
+    double oneMinusDecay = 1.0 - decay;
+    auto len = output->lengthOf();
+    for (sd::LongType i = 0; i < len; i++) {
+        double s = shadow->e<double>(i);
+        double m = model->e<double>(i);
+        output->p(i, decay * s + oneMinusDecay * m);
+    }
 }
 
 void emaUpdateBp(NDArray* model, NDArray* shadow, NDArray* gradOutput,
@@ -37,8 +42,13 @@ void emaUpdateBp(NDArray* model, NDArray* shadow, NDArray* gradOutput,
                     double decay, LaunchContext* context) {
     // d(output)/d(model) = (1 - decay)
     // d(output)/d(shadow) = decay
-    dLdModel->assign((*gradOutput) * (1.0 - decay));
-    dLdShadow->assign((*gradOutput) * decay);
+    double oneMinusDecay = 1.0 - decay;
+    auto len = gradOutput->lengthOf();
+    for (sd::LongType i = 0; i < len; i++) {
+        double g = gradOutput->e<double>(i);
+        dLdModel->p(i, g * oneMinusDecay);
+        dLdShadow->p(i, g * decay);
+    }
 }
 
 }  // namespace helpers

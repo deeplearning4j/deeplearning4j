@@ -52,7 +52,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
     if (beta != nullptr) inputs.push_back(beta);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("batchnorm", block, inputs, outputs);
+    auto status = executeMlirEx("batchnorm", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR batchnorm failed");
@@ -68,9 +68,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() >= 2, "Input rank >= 2") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -109,9 +107,8 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
 
     Requirements req("MLIR BATCHNORM_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
@@ -135,7 +132,7 @@ PLATFORM_IMPL(layer_norm, ENGINE_CPU) {
     if (bias != nullptr) inputs.push_back(bias);
     std::vector<NDArray*> outputs = {output};
 
-    auto status = executeMlir("layer_norm", block, inputs, outputs);
+    auto status = executeMlirEx("layer_norm", block, inputs, outputs);
 
     if (status != Status::OK()) {
         return Status::CODE(ND4J_STATUS_BAD_ARGUMENTS, "MLIR layer_norm failed");
@@ -151,9 +148,7 @@ PLATFORM_CHECK(layer_norm, ENGINE_CPU) {
 
     req.expectTrue(mlirEnabled(), "MLIR enabled") &&
     req.expectIn(input->dataType(), {FLOAT32, DOUBLE, HALF, BFLOAT16}, "Supported dtype") &&
-    req.expectTrue(input->rankOf() >= 2, "Input rank >= 2") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold") &&
-    req.expectTrue(input->ews() == 1 || input->ews() == 0, "Contiguous memory");
+    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
 
     return req;
 }
@@ -191,9 +186,8 @@ PLATFORM_CHECK(layer_norm_bp, ENGINE_CPU) {
 
     Requirements req("MLIR LAYER_NORM_BP");
 
-    req.expectTrue(mlirEnabled(), "MLIR enabled") &&
-    req.expectIn(input->dataType(), {FLOAT32, DOUBLE}, "Supported dtype") &&
-    req.expectTrue(input->lengthOf() >= MLIR_MIN_TENSOR_SIZE, "Size threshold");
+    // Backward ops fall through to native C++ — no MLIR backward support
+    req.expectTrue(false, "Backward ops use native C++ implementation");
 
     return req;
 }
