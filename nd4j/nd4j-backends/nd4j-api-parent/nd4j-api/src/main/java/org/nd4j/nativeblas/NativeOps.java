@@ -1428,6 +1428,39 @@ public interface NativeOps {
  }
 
  /**
+  * Returns true if Triton backend support is compiled and available at runtime.
+  */
+ default boolean isTritonAvailable() {
+     return false;
+ }
+
+ /**
+  * Get the total number of Triton kernel launches since the backend was initialized.
+  * Returns 0 if Triton is not available. Used by tests to verify Triton execution.
+  */
+ default long getTritonKernelLaunchCount() {
+     return 0;
+ }
+
+ /**
+  * Get the total number of Triton PTX cache hits since the backend was initialized.
+  * Returns 0 if Triton is not available.
+  */
+ default long getTritonCacheHitCount() {
+     return 0;
+ }
+
+ /**
+  * Reset all Triton execution counters to zero.
+  */
+ default void resetTritonCounters() {}
+
+ /**
+  * Invalidate all cached Triton compiled kernels (frees CUmodule GPU memory).
+  */
+ default void invalidateTritonCache() {}
+
+ /**
   * Configure KV cache retention for a compiled plan.
   * @param planHandle handle from compileDynamicShapePlan()
   * @param mappings flat int array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples

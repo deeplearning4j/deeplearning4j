@@ -99,6 +99,13 @@ public class FusedElementwiseChain extends DynamicCustomOp {
     }
 
     /**
+     * Constructor for codegen (NDNN): single primary input, unary ops only.
+     */
+    public FusedElementwiseChain(INDArray input, int... opCodes) {
+        this(new INDArray[]{input}, null, opCodes);
+    }
+
+    /**
      * Constructor for codegen (NDNN): single primary input + optional secondary inputs array.
      */
     public FusedElementwiseChain(INDArray input, INDArray[] secondaryInputs, int[] opCodes) {
@@ -106,7 +113,14 @@ public class FusedElementwiseChain extends DynamicCustomOp {
     }
 
     /**
-     * Constructor for codegen (SDNN): SameDiff graph mode.
+     * Constructor for codegen (SDNN): SameDiff graph mode, unary ops only.
+     */
+    public FusedElementwiseChain(SameDiff sd, SDVariable input, int... opCodes) {
+        this(sd, input, (SDVariable[]) null, opCodes);
+    }
+
+    /**
+     * Constructor for codegen (SDNN): SameDiff graph mode with secondary inputs.
      */
     public FusedElementwiseChain(SameDiff sd, SDVariable input, SDVariable[] secondaryInputs, int[] opCodes) {
         super(null, sd, buildSdInputs(input, secondaryInputs), false);

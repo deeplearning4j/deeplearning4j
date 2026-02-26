@@ -276,6 +276,89 @@ public class NDBase {
   }
 
   /**
+   * Boolean AND operation: elementwise x && y. Supports broadcasting.<br>
+   *
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean AND result (BOOL type)
+   */
+  public INDArray booleanAnd(INDArray x, INDArray y) {
+    NDValidation.validateBool("booleanAnd", "x", x);
+    NDValidation.validateBool("booleanAnd", "y", y);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Boolean NOT operation: elementwise !x<br>
+   *
+   * @param x Input boolean array (BOOL type)
+   * @return output Boolean NOT result (BOOL type)
+   */
+  public INDArray booleanNot(INDArray x) {
+    NDValidation.validateBool("booleanNot", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot(x));
+  }
+
+  /**
+   * Boolean OR operation: elementwise x || y. Supports broadcasting.<br>
+   *
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean OR result (BOOL type)
+   */
+  public INDArray booleanOr(INDArray x, INDArray y) {
+    NDValidation.validateBool("booleanOr", "x", x);
+    NDValidation.validateBool("booleanOr", "y", y);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.<br>
+   *
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean XOR result (BOOL type)
+   */
+  public INDArray booleanXor(INDArray x, INDArray y) {
+    NDValidation.validateBool("booleanXor", "x", x);
+    NDValidation.validateBool("booleanXor", "y", y);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(x, y));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Cast the array to a new datatype - for example, Integer -> Float<br>
    *
    * @param arg Input variable to cast (NDARRAY type)

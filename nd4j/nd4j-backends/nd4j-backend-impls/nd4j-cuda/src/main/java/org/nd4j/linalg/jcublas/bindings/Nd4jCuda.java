@@ -1340,6 +1340,7 @@ public static final int
 // #include <types/pair.h>
 
 // #include <atomic>
+// #include <string>
 // #include <stdexcept>
 // #include <vector>
 // #include <config.h>
@@ -1631,6 +1632,60 @@ public static final int
   public native int printPrecision();
   public native void setPrintPrecision(int precision);
 
+  // Triton GPU compilation settings
+  public native int tritonBuildThreads();
+  public native void setTritonBuildThreads(int threads);
+  public native @Cast("bool") boolean tritonCacheEnabled();
+  public native void setTritonCacheEnabled(@Cast("bool") boolean enabled);
+  public native int tritonCoopTargetBlocks();
+  public native void setTritonCoopTargetBlocks(int blocks);
+  public native int tritonMaxSubsegmentOps();
+  public native void setTritonMaxSubsegmentOps(int ops);
+  public native int tritonMaxSubsegmentSections();
+  public native void setTritonMaxSubsegmentSections(int sections);
+  public native @Cast("bool") boolean tritonVerbose();
+  public native void setTritonVerbose(@Cast("bool") boolean verbose);
+  public native @Cast("bool") boolean tritonDumpSections();
+  public native void setTritonDumpSections(@Cast("bool") boolean dumpSections);
+  public native @Cast("bool") boolean tritonDumpArgs();
+  public native void setTritonDumpArgs(@Cast("bool") boolean dumpArgs);
+  public native @Cast("bool") boolean tritonLogAllPatterns();
+  public native void setTritonLogAllPatterns(@Cast("bool") boolean logAllPatterns);
+  public native @Cast("bool") boolean tritonAlwaysCompile();
+  public native void setTritonAlwaysCompile(@Cast("bool") boolean alwaysCompile);
+  public native @Cast("bool") boolean tritonKernelDump();
+  public native void setTritonKernelDump(@Cast("bool") boolean kernelDump);
+  public native @Cast("bool") boolean tritonKernelOverride();
+  public native void setTritonKernelOverride(@Cast("bool") boolean kernelOverride);
+  public native int tritonNumWarps();
+  public native void setTritonNumWarps(int warps);
+  public native int tritonNumStages();
+  public native void setTritonNumStages(int stages);
+  public native int tritonNumCTAs();
+  public native void setTritonNumCTAs(int ctas);
+  public native int tritonMaxNreg();
+  public native void setTritonMaxNreg(int maxNreg);
+  public native @Cast("bool") boolean tritonEnableFpFusion();
+  public native void setTritonEnableFpFusion(@Cast("bool") boolean enableFpFusion);
+  public native @Cast("bool") boolean tritonDisableLineInfo();
+  public native void setTritonDisableLineInfo(@Cast("bool") boolean disableLineInfo);
+  public native @StdString BytePointer tritonCacheDir();
+  public native void setTritonCacheDir(@StdString BytePointer cacheDir);
+  public native void setTritonCacheDir(@StdString String cacheDir);
+  public native @StdString BytePointer tritonDumpDir();
+  public native void setTritonDumpDir(@StdString BytePointer dumpDir);
+  public native void setTritonDumpDir(@StdString String dumpDir);
+  public native @StdString BytePointer tritonOverrideDir();
+  public native void setTritonOverrideDir(@StdString BytePointer overrideDir);
+  public native void setTritonOverrideDir(@StdString String overrideDir);
+  public native @StdString BytePointer tritonOverrideArch();
+  public native void setTritonOverrideArch(@StdString BytePointer overrideArch);
+  public native void setTritonOverrideArch(@StdString String overrideArch);
+
+  // Process environment path helpers used by native backends.
+  public native @StdString BytePointer homeDirectory();
+  public native @StdString BytePointer cudaToolkitPath();
+
   // Initialize CUDA environment settings from environment variables
   public native void initCudaEnvironment();
 
@@ -1640,6 +1695,7 @@ public static final int
   // namespace sd
 
 // #endif  // LIBND4J_ENVIRONMENT_H
+
 
 // Parsed from types/utf8string.h
 
@@ -3604,6 +3660,42 @@ public native @Cast("char*") String getPlanCudaGraphChromeTraceJson(@Cast("sd::P
 public native void clearPlanCudaGraphTimeline(@Cast("sd::Pointer") Pointer planHandle);
 
 // =============================================================================
+// Triton GPU Backend Counters
+// =============================================================================
+
+/**
+ * Returns true if Triton backend support is compiled and available at runtime.
+ */
+public native @Cast("bool") boolean isTritonAvailable();
+
+/**
+ * Get the total number of Triton kernel launches since the backend was initialized.
+ * Returns 0 if Triton is not available.
+ */
+public native @Cast("sd::LongType") long getTritonKernelLaunchCount();
+
+/**
+ * Get the total number of Triton PTX cache hits since the backend was initialized.
+ * Returns 0 if Triton is not available.
+ */
+public native @Cast("sd::LongType") long getTritonCacheHitCount();
+
+/**
+ * Reset all Triton execution counters to zero.
+ */
+public native void resetTritonCounters();
+
+/**
+ * Invalidate all cached Triton compiled kernels (frees CUmodule GPU memory).
+ */
+public native void invalidateTritonCache();
+
+/**
+ * Invalidate the Triton compiled kernel cache, unloading all GPU modules.
+ * Used by tests to free GPU memory between test methods.
+ */
+
+// =============================================================================
 // NCCL Collective Communication Operations
 // =============================================================================
 
@@ -3734,6 +3826,7 @@ public native int ncclGroupStart();
 public native int ncclGroupEnd();
 
 // #endif // NATIVEOPS_H
+
 
 // Parsed from memory/ExternalWorkspace.h
 

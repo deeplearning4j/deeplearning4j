@@ -736,6 +736,31 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Test: RMSNorm-like pattern: add + pow + reduce_mean + scalar_add + sqrt + divide + multiply.
+     * This exercises the segmented reduction path with block barrier inline ASM.
+     * x=[1,576], residual=[1,576], weight=[1,576] -> x+residual -> pow(2) -> mean -> +eps -> sqrt -> div -> mul -> result
+     */
+    @Test
+    public void testTritonRmsNormPattern() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 576);
+        SDVariable residual = sd.constant("residual", Nd4j.randn(DataType.FLOAT, 1, 576));
+        SDVariable weight = sd.constant("weight", Nd4j.ones(DataType.FLOAT, 1, 576));
+        double eps = 1e-5;
+
+        SDVariable added = x.add("add", residual);
+        SDVariable squared = added.mul("square", added);  // x^2 via x*x
+        SDVariable meanSq = sd.mean("mean", squared, true, 1);  // reduce_mean along axis 1
+        SDVariable epsConst = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, (float)eps));
+        SDVariable denom = meanSq.add("add_eps", epsConst);
+        SDVariable sqrtDenom = sd.math.sqrt("sqrt", denom);
+        SDVariable normed = added.div("div", sqrtDenom);
+        normed.mul("result", weight);
+
+        runOpTest("testTritonRmsNormPattern", sd, Map.of("x", Nd4j.randn(DataType.FLOAT, 1, 576)), "result");
+    }
+
+    /**
      * Test: cooperative element-wise -> matmul -> element-wise chain.
      * input -> add(a) -> relu -> mmul(w) -> add(b) -> tanh -> mul(s) -> sigmoid -> result
      * Tests 3 sections: EW -> matmul -> EW with grid sync barriers.

@@ -14,7 +14,10 @@ inputs:
 outputs:
   cache-hit:
     description: 'Whether there was a cache hit'
-    value: ${{ steps.ccache-cache.outputs.cache-hit }}
+    value: ${{ steps.ccache-restore.outputs.cache-hit }}
+  save-key:
+    description: 'Unique cache key used when saving ccache at end of job'
+    value: ${{ steps.ccache-keys.outputs.save-key }}
 
 runs:
   using: composite
@@ -32,6 +35,25 @@ runs:
         ccache --version
         echo "ccache location: $(which ccache)"
 
+    - name: Compute ccache keys
+      id: ccache-keys
+      shell: bash
+      run: |
+        echo "restore-key=ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+        echo "save-key=ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore ccache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ${{ steps.ccache-keys.outputs.restore-key }}
+        restore-keys: |
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-master-
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-main-
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-
+
     - name: Configure ccache
       shell: bash
       run: |
@@ -45,6 +67,8 @@ runs:
         ccache --set-config=compression_level=6
         ccache --set-config=hash_dir=false
         ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
+        ccache --set-config=compiler_check=content
+        ccache --set-config=base_dir=${GITHUB_WORKSPACE}
 
         # Show configuration
         echo "=== ccache configuration ==="
@@ -52,6 +76,8 @@ runs:
 
         # Export environment variables for subsequent steps
         echo "CCACHE_DIR=${CCACHE_DIR}" >> $GITHUB_ENV
+        echo "CCACHE_COMPILERCHECK=content" >> $GITHUB_ENV
+        echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
         echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
         echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
 
@@ -60,18 +86,6 @@ runs:
         if [ -d "$CCACHE_LIBEXEC" ]; then
           echo "$CCACHE_LIBEXEC" >> $GITHUB_PATH
         fi
-
-    - name: Restore ccache
-      id: ccache-cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.ccache
-        key: ccache-macos-${{ inputs.cache-suffix }}-${{ github.ref_name }}-${{ github.sha }}
-        restore-keys: |
-          ccache-macos-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
-          ccache-macos-${{ inputs.cache-suffix }}-master-
-          ccache-macos-${{ inputs.cache-suffix }}-main-
-          ccache-macos-${{ inputs.cache-suffix }}-
 
     - name: Show ccache stats before build
       shell: bash

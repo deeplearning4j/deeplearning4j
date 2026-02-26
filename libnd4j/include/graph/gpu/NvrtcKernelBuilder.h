@@ -23,6 +23,7 @@
 
 #include <array/NDArray.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/gpu/OpCategoryTable.h>
 #include <system/common.h>
 
 #include <string>
@@ -62,13 +63,14 @@ struct JitKernelSource {
 };
 
 /**
- * Check whether all slots in [startSlot..endSlot] are element-wise fusible
- * via NVRTC JIT compilation.
+ * Check whether all slots in [startSlot..endSlot] can be JIT-compiled
+ * via NVRTC into a fused CUDA C kernel.
  *
- * Requirements for fusibility:
- * - All non-skipped slots map to a FusedElemOp code (via opNameToFusedCode)
- * - Frozen constant and identity slots are skipped (their outputs are pre-set)
- * - All inputs/outputs share the same floating-point dtype
+ * Uses the unified TritonOpCategory system (OpCategoryTable.h) instead of
+ * the legacy FusedElemOp codes. Accepts: BINARY_ELEMENTWISE, UNARY_ELEMENTWISE,
+ * COMPARISON, LOGICAL, TERNARY, IDENTITY, CAST.
+ * Rejects: MATMUL, REDUCTION, NORMALIZATION, FUSED_ATTENTION, SHAPE_MANIPULATION,
+ * DATA_MOVEMENT, CONSTANT_GENERATION, UNSUPPORTED.
  *
  * @param slots       Array of NativeSlot descriptors
  * @param startSlot   First slot index (inclusive)

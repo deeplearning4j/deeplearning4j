@@ -37,7 +37,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: windows-2019
+        default: windows-2022
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
@@ -94,6 +94,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup ccache
+        id: setup-ccache
         uses: ./.github/actions/setup-ccache-windows
         with:
           cache-suffix: cuda-12.6-${{ matrix.helper }}
@@ -231,9 +232,9 @@ jobs:
         id: cache-cuda-126
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
-          key: ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-${{ hashFiles('**/pom.xml') }}
+          key: ${{ matrix.runs_on }}-${{ runner.arch }}-cuda-12.6-${{ matrix.helper }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
-            ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-
+            ${{ matrix.runs_on }}-${{ runner.arch }}-cuda-12.6-${{ matrix.helper }}-
 
       - name: Install CUDA 12.6 (if not cached)
         if: steps.cache-cuda-126.outputs.cache-hit != 'true'
@@ -430,3 +431,10 @@ jobs:
         run: |
           echo === ccache stats after build ===
           %USERPROFILE%\ccache\ccache.exe -sv
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}

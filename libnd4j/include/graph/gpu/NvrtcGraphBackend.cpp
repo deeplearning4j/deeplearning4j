@@ -20,7 +20,7 @@
 
 #include <graph/gpu/NvrtcGraphBackend.h>
 #include <graph/gpu/GpuKernelLauncher.h>
-#include <ops/declarable/helpers/fusedElementwiseChain.h>
+#include <graph/gpu/OpCategoryTable.h>
 #include <system/common.h>
 
 #include <cuda.h>
@@ -68,38 +68,207 @@ std::string NvrtcGraphBackend::getComputeArch() {
 bool NvrtcGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   int fusible = 0;
   for (int i = start; i <= end; i++) {
-    int code = sd::ops::helpers::opNameToFusedCode(slots[i].opName);
-    if (code >= 0) {
+    auto cat = getOpCategoryFromName(slots[i].opName);
+    if (isNvrtcJittable(cat)) {
       fusible++;
     }
   }
   return fusible >= MIN_FUSIBLE_OPS;
 }
 
-// ---- CUDA C expression generation ----
+// ---- CUDA C expression generation (category-based dispatch) ----
 
-std::string NvrtcGraphBackend::opToCudaExpr(int fusedOpCode, const std::string& in,
-                                             const std::string& sec) {
-  using namespace sd::ops::helpers;
-  switch (fusedOpCode) {
-    case FUSED_ADD:     return "(" + in + " + " + sec + ")";
-    case FUSED_SUB:     return "(" + in + " - " + sec + ")";
-    case FUSED_MUL:     return "(" + in + " * " + sec + ")";
-    case FUSED_DIV:     return "(" + in + " / " + sec + ")";
-    case FUSED_RELU:    return "(" + in + " > 0.0f ? " + in + " : 0.0f)";
-    case FUSED_SIGMOID: return "(1.0f / (1.0f + expf(-" + in + ")))";
-    case FUSED_TANH:    return "tanhf(" + in + ")";
-    case FUSED_GELU:    return "(" + in + " * 0.5f * (1.0f + erff(" + in + " * 0.7071067811865476f)))";
-    case FUSED_EXP:     return "expf(" + in + ")";
-    case FUSED_LOG:     return "logf(" + in + ")";
-    case FUSED_ABS:     return "fabsf(" + in + ")";
-    case FUSED_NEG:     return "(-" + in + ")";
-    case FUSED_SQUARE:  return "(" + in + " * " + in + ")";
-    case FUSED_SQRT:    return "sqrtf(" + in + ")";
-    case FUSED_SWISH:   return "(" + in + " / (1.0f + expf(-" + in + ")))";
-    case FUSED_SILU:    return "(" + in + " / (1.0f + expf(-" + in + ")))";
-    case FUSED_MISH:    return "(" + in + " * tanhf(logf(1.0f + expf(" + in + "))))";
-    default:            return in;  // identity fallback
+static std::string generateBinaryExpr(const std::string& opName,
+                                       const std::string& a, const std::string& b) {
+  if (opName == "add" || opName == "Add") return "(" + a + " + " + b + ")";
+  if (opName == "subtract" || opName == "Sub") return "(" + a + " - " + b + ")";
+  if (opName == "multiply" || opName == "Mul") return "(" + a + " * " + b + ")";
+  if (opName == "divide" || opName == "Div" || opName == "RealDiv")
+    return "(" + b + " != 0.0f ? " + a + " / " + b + " : 0.0f)";
+  if (opName == "minimum" || opName == "Min" || opName == "min_pairwise" || opName == "MinPairwise")
+    return "fminf(" + a + ", " + b + ")";
+  if (opName == "maximum" || opName == "Max" || opName == "max_pairwise" || opName == "MaxPairwise")
+    return "fmaxf(" + a + ", " + b + ")";
+  if (opName == "mod" || opName == "Mod" || opName == "floormod" || opName == "FloorMod")
+    return "fmodf(" + a + ", " + b + ")";
+  if (opName == "atan2" || opName == "Atan2")
+    return "atan2f(" + a + ", " + b + ")";
+  if (opName == "floordiv" || opName == "FloorDiv")
+    return "floorf(" + a + " / " + b + ")";
+  if (opName == "reversedivide" || opName == "ReverseDivide")
+    return "(" + a + " != 0.0f ? " + b + " / " + a + " : 0.0f)";
+  if (opName == "reversesubtract" || opName == "ReverseSubtract")
+    return "(" + b + " - " + a + ")";
+  if (opName == "squaredsubtract" || opName == "SquaredSubtract")
+    return "((" + a + " - " + b + ") * (" + a + " - " + b + "))";
+  if (opName == "multiply_no_nan" || opName == "MultiplyNoNan")
+    return "(" + b + " != 0.0f ? " + a + " * " + b + " : 0.0f)";
+  if (opName == "pow" || opName == "Pow")
+    return "powf(" + a + ", " + b + ")";
+  if (opName == "swish_mul" || opName == "SwishMul")
+    return "(" + a + " / (1.0f + expf(-" + a + ")) * " + b + ")";
+  // Fallback
+  return "(" + a + " + " + b + ")";
+}
+
+static std::string generateUnaryExpr(const std::string& opName, const std::string& val,
+                                      const NativeSlot& slot) {
+  if (opName == "relu" || opName == "Relu")
+    return "(" + val + " > 0.0f ? " + val + " : 0.0f)";
+  if (opName == "sigmoid" || opName == "Sigmoid")
+    return "(1.0f / (1.0f + expf(-" + val + ")))";
+  if (opName == "tanh" || opName == "Tanh")
+    return "tanhf(" + val + ")";
+  if (opName == "gelu" || opName == "Gelu")
+    return "(0.5f * " + val + " * (1.0f + tanhf(0.7978845608f * ("
+           + val + " + 0.044715f * " + val + " * " + val + " * " + val + "))))";
+  if (opName == "exp" || opName == "Exp")
+    return "expf(" + val + ")";
+  if (opName == "log" || opName == "Log")
+    return "(" + val + " > 0.0f ? logf(" + val + ") : -1e38f)";
+  if (opName == "abs" || opName == "Abs")
+    return "fabsf(" + val + ")";
+  if (opName == "neg" || opName == "Neg")
+    return "(-" + val + ")";
+  if (opName == "square" || opName == "Square")
+    return "(" + val + " * " + val + ")";
+  if (opName == "sqrt" || opName == "Sqrt")
+    return "(" + val + " >= 0.0f ? sqrtf(" + val + ") : 0.0f)";
+  if (opName == "swish" || opName == "Swish" || opName == "silu" || opName == "Silu")
+    return "(" + val + " / (1.0f + expf(-" + val + ")))";
+  if (opName == "mish" || opName == "Mish")
+    return "(" + val + " * tanhf(logf(1.0f + expf(" + val + "))))";
+  if (opName == "rsqrt" || opName == "Rsqrt")
+    return "(1.0f / sqrtf(" + val + "))";
+  if (opName == "reciprocal" || opName == "Reciprocal")
+    return "(1.0f / " + val + ")";
+  if (opName == "sign" || opName == "Sign")
+    return "(" + val + " > 0.0f ? 1.0f : (" + val + " < 0.0f ? -1.0f : 0.0f))";
+  if (opName == "erf" || opName == "Erf")
+    return "erff(" + val + ")";
+  if (opName == "erfc" || opName == "Erfc")
+    return "erfcf(" + val + ")";
+  if (opName == "log1p" || opName == "Log1p")
+    return "log1pf(" + val + ")";
+  if (opName == "ceil" || opName == "Ceil")
+    return "ceilf(" + val + ")";
+  if (opName == "floor" || opName == "Floor")
+    return "floorf(" + val + ")";
+  if (opName == "round" || opName == "Round")
+    return "rintf(" + val + ")";
+  if (opName == "sin" || opName == "Sin")
+    return "sinf(" + val + ")";
+  if (opName == "cos" || opName == "Cos")
+    return "cosf(" + val + ")";
+  if (opName == "elu" || opName == "Elu")
+    return "(" + val + " >= 0.0f ? " + val + " : (expf(" + val + ") - 1.0f))";
+  if (opName == "selu" || opName == "Selu")
+    return "(" + val + " >= 0.0f ? 1.0507009873554805f * " + val
+           + " : 1.0507009873554805f * 1.6732632423543772f * (expf(" + val + ") - 1.0f))";
+  if (opName == "softplus" || opName == "Softplus")
+    return "logf(1.0f + expf(" + val + "))";
+  if (opName == "softsign" || opName == "Softsign")
+    return "(" + val + " / (1.0f + fabsf(" + val + ")))";
+  if (opName == "hard_sigmoid" || opName == "HardSigmoid")
+    return "fminf(1.0f, fmaxf(0.0f, 0.2f * " + val + " + 0.5f))";
+  if (opName == "hardtanh" || opName == "HardTanh")
+    return "fminf(1.0f, fmaxf(-1.0f, " + val + "))";
+  if (opName == "relu6" || opName == "Relu6")
+    return "fminf(6.0f, fmaxf(0.0f, " + val + "))";
+  if (opName == "leakyrelu" || opName == "LeakyRelu") {
+    std::string alpha = "0.01f";
+    if (slot.numTArgs > 0) {
+      alpha = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    }
+    return "(" + val + " >= 0.0f ? " + val + " : " + val + " * " + alpha + ")";
+  }
+  // Scalar ops: second operand from tArgs[0]
+  if (opName == "add_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    return "(" + val + " + " + scalar + ")";
+  }
+  if (opName == "subtract_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    return "(" + val + " - " + scalar + ")";
+  }
+  if (opName == "multiply_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    return "(" + val + " * " + scalar + ")";
+  }
+  if (opName == "divide_scalar") {
+    std::string scalar = std::to_string(static_cast<float>(slot.tArgs[0])) + "f";
+    return "(" + val + " / " + scalar + ")";
+  }
+  // Fallback: identity
+  return val;
+}
+
+static std::string generateComparisonExpr(const std::string& opName,
+                                           const std::string& a, const std::string& b) {
+  if (opName == "greater" || opName == "Greater")
+    return "(" + a + " > " + b + " ? 1.0f : 0.0f)";
+  if (opName == "greater_equal" || opName == "GreaterEqual")
+    return "(" + a + " >= " + b + " ? 1.0f : 0.0f)";
+  if (opName == "less" || opName == "Less")
+    return "(" + a + " < " + b + " ? 1.0f : 0.0f)";
+  if (opName == "less_equal" || opName == "LessEqual")
+    return "(" + a + " <= " + b + " ? 1.0f : 0.0f)";
+  if (opName == "equals" || opName == "Equals")
+    return "(" + a + " == " + b + " ? 1.0f : 0.0f)";
+  if (opName == "not_equals" || opName == "NotEquals")
+    return "(" + a + " != " + b + " ? 1.0f : 0.0f)";
+  // Fallback
+  return "(" + a + " > " + b + " ? 1.0f : 0.0f)";
+}
+
+static std::string generateLogicalExpr(const std::string& opName,
+                                        const std::string& a, const std::string& b) {
+  if (opName == "boolean_and" || opName == "BooleanAnd" ||
+      opName == "logical_and" || opName == "LogicalAnd")
+    return "((" + a + " != 0.0f && " + b + " != 0.0f) ? 1.0f : 0.0f)";
+  if (opName == "boolean_or" || opName == "BooleanOr" ||
+      opName == "logical_or" || opName == "LogicalOr")
+    return "((" + a + " != 0.0f || " + b + " != 0.0f) ? 1.0f : 0.0f)";
+  if (opName == "boolean_not" || opName == "BooleanNot" ||
+      opName == "logical_not" || opName == "LogicalNot")
+    return "(" + a + " == 0.0f ? 1.0f : 0.0f)";
+  if (opName == "boolean_xor" || opName == "BooleanXor")
+    return "(((" + a + " != 0.0f) != (" + b + " != 0.0f)) ? 1.0f : 0.0f)";
+  // Fallback
+  return "((" + a + " != 0.0f && " + b + " != 0.0f) ? 1.0f : 0.0f)";
+}
+
+static std::string generateTernaryExpr(const std::string& opName,
+                                        const std::string& cond,
+                                        const std::string& trueVal,
+                                        const std::string& falseVal) {
+  return "(" + cond + " != 0.0f ? " + trueVal + " : " + falseVal + ")";
+}
+
+/**
+ * Dispatch to the appropriate expression generator based on op category.
+ */
+static std::string opToCudaExpr(TritonOpCategory cat, const std::string& opName,
+                                 const std::string& primary,
+                                 const std::string& secondary,
+                                 const std::string& tertiary,
+                                 const NativeSlot& slot) {
+  switch (cat) {
+    case TritonOpCategory::BINARY_ELEMENTWISE:
+      return generateBinaryExpr(opName, primary, secondary);
+    case TritonOpCategory::UNARY_ELEMENTWISE:
+      return generateUnaryExpr(opName, primary, slot);
+    case TritonOpCategory::COMPARISON:
+      return generateComparisonExpr(opName, primary, secondary);
+    case TritonOpCategory::LOGICAL:
+      return generateLogicalExpr(opName, primary, secondary);
+    case TritonOpCategory::TERNARY:
+      return generateTernaryExpr(opName, primary, secondary, tertiary);
+    case TritonOpCategory::CAST:
+    case TritonOpCategory::IDENTITY:
+      return primary;  // pass-through
+    default:
+      return primary;  // identity fallback
   }
 }
 
@@ -193,45 +362,35 @@ std::string NvrtcGraphBackend::generateCudaSource(
 
   for (int si = startSlot; si <= endSlot; si++) {
     auto& slot = slots[si];
-    int fusedCode = sd::ops::helpers::opNameToFusedCode(slot.opName);
+    auto cat = getOpCategoryFromName(slot.opName);
+    int inputCount = categoryInputCount(cat);
 
-    // Resolve first input
-    std::string inputVar;
-    if (slot.numInputs > 0) {
-      int srcIdx = slot.inputSourceIndices[0];
-      if (srcIdx < 0) {
-        int extIdx = -(srcIdx + 1);
-        inputVar = "ext" + std::to_string(externalInputMap[extIdx]);
-      } else {
-        // Prior slot output
-        auto it = slotOutputVars.find(srcIdx);
-        if (it != slotOutputVars.end()) {
-          inputVar = it->second;
+    // Helper to resolve an input source index to a variable name
+    auto resolveInput = [&](int inputIdx) -> std::string {
+      if (inputIdx < slot.numInputs) {
+        int srcIdx = slot.inputSourceIndices[inputIdx];
+        if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          return "ext" + std::to_string(externalInputMap[extIdx]);
         } else {
-          inputVar = "0.0f";  // should not happen
+          auto it = slotOutputVars.find(srcIdx);
+          if (it != slotOutputVars.end()) {
+            return it->second;
+          }
         }
       }
-    }
+      return "0.0f";
+    };
 
-    // Resolve second input (for binary ops)
-    std::string secVar = "0.0f";
-    if (slot.numInputs > 1 && sd::ops::helpers::isBinaryFusedOp(static_cast<sd::ops::helpers::FusedElemOp>(fusedCode))) {
-      int srcIdx = slot.inputSourceIndices[1];
-      if (srcIdx < 0) {
-        int extIdx = -(srcIdx + 1);
-        secVar = "ext" + std::to_string(externalInputMap[extIdx]);
-      } else {
-        auto it = slotOutputVars.find(srcIdx);
-        if (it != slotOutputVars.end()) {
-          secVar = it->second;
-        }
-      }
-    }
+    // Resolve inputs based on category input count
+    std::string inputVar = (slot.numInputs > 0) ? resolveInput(0) : "0.0f";
+    std::string secVar = (inputCount >= 2 && slot.numInputs > 1) ? resolveInput(1) : "0.0f";
+    std::string terVar = (inputCount >= 3 && slot.numInputs > 2) ? resolveInput(2) : "0.0f";
 
     // Emit the op
     std::string resultVar = "t" + std::to_string(si);
-    if (fusedCode >= 0) {
-      src << "    float " << resultVar << " = " << opToCudaExpr(fusedCode, inputVar, secVar) << ";\n";
+    if (isNvrtcJittable(cat)) {
+      src << "    float " << resultVar << " = " << opToCudaExpr(cat, slot.opName, inputVar, secVar, terVar, slot) << ";\n";
     } else {
       // Unsupported op: pass through input (identity)
       src << "    float " << resultVar << " = " << inputVar << ";  // unsupported: " << slot.opName << "\n";
@@ -264,7 +423,10 @@ std::string NvrtcGraphBackend::generateCudaSource(
 bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         NDArray** externalInputs, int numExternalInputs,
                                         NDArray** outputSlots, int totalOutputSlots,
-                                        LongType shapeKey) {
+                                        LongType shapeKey,
+                                        int totalSlots,
+                                        int* requestedOutputSlotIndices,
+                                        int numRequestedOutputs) {
   SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
 
   {
@@ -294,9 +456,9 @@ bool NvrtcGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     CompilationAuditEntry entry;
     entry.slotIndex = i;
     entry.opName = slots[i].opName;
-    entry.wasCompiled = (sd::ops::helpers::opNameToFusedCode(slots[i].opName) >= 0);
+    entry.wasCompiled = isNvrtcJittable(getOpCategoryFromName(slots[i].opName));
     if (!entry.wasCompiled) {
-      entry.reason = "unmappable op (not in fused elementwise table)";
+      entry.reason = "unmappable op (not in OpCategoryTable or not NVRTC-jittable)";
     }
     compiled.audit.push_back(entry);
   }

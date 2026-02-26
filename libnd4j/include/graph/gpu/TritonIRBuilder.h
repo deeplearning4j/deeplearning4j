@@ -283,6 +283,7 @@ struct TritonIRModule {
                               // and all buffer pointers are packed into a device-side i64 array.
                               // The launch code must allocate the array and pass its device pointer.
   bool useCooperativeLaunch;  // true if kernel requires cooperative launch (grid sync barriers)
+  bool useDynamicGrid;        // true only for 1D element-wise kernels where gridX is derived from n_elements at launch
   int requiredGrid;           // Maximum grid size needed across all sections
   std::vector<KernelSection> sections;  // Section breakdown of the kernel
 
@@ -290,6 +291,7 @@ struct TritonIRModule {
                      gridX(1), gridY(1), gridZ(1),
                      blockX(1), blockY(1), blockZ(1),
                      valid(false), useIndirectArgs(false), useCooperativeLaunch(false),
+                     useDynamicGrid(true),
                      requiredGrid(1) {}
 };
 
@@ -313,6 +315,11 @@ class TritonIRBuilder {
  public:
   TritonIRBuilder();
   ~TritonIRBuilder();
+
+  // Override sectioned-kernel block granularity for the next buildModule() call.
+  // Used by backend retry logic when cooperative launch capacity requires a larger tile.
+  void setSectionedBlockSizeOverride(int blockSize);
+  void clearSectionedBlockSizeOverride();
 
   /**
    * Check if a specific op can be mapped to Triton IR.
@@ -661,6 +668,9 @@ class TritonIRBuilder {
   static void dumpArgMapping(const std::vector<TritonKernelArg>& args,
                              int startSlot, int endSlot,
                              int eliminatedCount);
+
+  // Optional block-size override applied only inside buildSectionedModule().
+  int sectionedBlockSizeOverride_ = 0;
 };
 
 }  // namespace graph

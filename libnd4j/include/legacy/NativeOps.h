@@ -1818,6 +1818,43 @@ SD_LIB_EXPORT const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle
 SD_LIB_EXPORT void clearPlanCudaGraphTimeline(sd::Pointer planHandle);
 
 // =============================================================================
+// Triton GPU Backend Counters
+// =============================================================================
+
+/**
+ * Returns true if Triton backend support is compiled and available at runtime.
+ */
+SD_LIB_EXPORT bool isTritonAvailable();
+
+/**
+ * Get the total number of Triton kernel launches since the backend was initialized.
+ * Returns 0 if Triton is not available.
+ */
+SD_LIB_EXPORT sd::LongType getTritonKernelLaunchCount();
+
+/**
+ * Get the total number of Triton PTX cache hits since the backend was initialized.
+ * Returns 0 if Triton is not available.
+ */
+SD_LIB_EXPORT sd::LongType getTritonCacheHitCount();
+
+/**
+ * Reset all Triton execution counters to zero.
+ */
+SD_LIB_EXPORT void resetTritonCounters();
+
+/**
+ * Invalidate all cached Triton compiled kernels (frees CUmodule GPU memory).
+ */
+SD_LIB_EXPORT void invalidateTritonCache();
+
+/**
+ * Invalidate the Triton compiled kernel cache, unloading all GPU modules.
+ * Used by tests to free GPU memory between test methods.
+ */
+SD_LIB_EXPORT void invalidateTritonCache();
+
+// =============================================================================
 // NCCL Collective Communication Operations
 // =============================================================================
 

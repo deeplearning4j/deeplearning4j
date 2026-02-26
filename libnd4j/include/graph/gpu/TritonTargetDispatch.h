@@ -137,6 +137,22 @@ class TritonTargetDispatch {
                            void** args, int numArgs);
 
   /**
+   * Launch a compiled kernel using cooperative launch (cudaLaunchCooperativeKernel).
+   * All blocks must be co-resident on the GPU simultaneously, enabling grid-wide
+   * synchronization barriers between kernel sections.
+   *
+   * Same parameters as launchKernel, but uses cudaLaunchCooperativeKernel instead
+   * of cuLaunchKernel. Only supported on NVIDIA GPUs (CUDA 11.0+).
+   * Falls back to standard launch on AMD/Intel targets.
+   */
+  static bool launchCooperativeKernel(void* kernelFunc,
+                                      unsigned int gridX, unsigned int gridY, unsigned int gridZ,
+                                      unsigned int blockX, unsigned int blockY, unsigned int blockZ,
+                                      unsigned int sharedMemBytes,
+                                      void* stream,
+                                      void** args, int numArgs);
+
+  /**
    * Unload a previously loaded GPU module and free its resources.
    *
    * @param gpuModule  Module handle from loadModule()

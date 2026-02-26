@@ -727,4 +727,279 @@ public interface Environment {
      * @return status code (0 for success, non-zero for failure)
      */
     int setCudaDeviceLimit(int limitType, long value);
+    
+    // ============== Triton GPU Settings ==============
+    
+    /**
+     * Returns the number of parallel threads for Triton kernel compilation.
+     * Higher values compile more sub-kernels concurrently but use more memory (~1-2GB per thread).
+     * @return number of parallel compilation threads (default: 1)
+     */
+    default int tritonBuildThreads() {
+        return 1;
+    }
+    
+    /**
+     * Set the number of parallel threads for Triton kernel compilation.
+     * @param threads number of parallel compilation threads (1-16)
+     */
+    default void setTritonBuildThreads(int threads) {}
+    
+    /**
+     * Returns whether Triton disk cache is enabled for compiled kernels.
+     * @return true if cache enabled, false otherwise
+     */
+    default boolean tritonCacheEnabled() {
+        return true;
+    }
+    
+    /**
+     * Set whether Triton disk cache is enabled.
+     * @param enabled true to enable cache, false to disable
+     */
+    default void setTritonCacheEnabled(boolean enabled) {}
+
+    /**
+     * Returns the cooperative-launch target grid size (in blocks) for Triton sectioned kernels.
+     * Value {@code 0} means auto (device-dependent default).
+     * @return cooperative launch target blocks
+     */
+    default int tritonCoopTargetBlocks() {
+        return 0;
+    }
+
+    /**
+     * Set the cooperative-launch target grid size (in blocks) for Triton sectioned kernels.
+     * Use {@code 0} for auto.
+     * @param blocks target number of cooperative blocks (0 = auto)
+     */
+    default void setTritonCoopTargetBlocks(int blocks) {}
+
+    /**
+     * Returns the adaptive Triton sub-segment op cap. {@code 0} means auto/adaptive.
+     */
+    default int tritonMaxSubsegmentOps() {
+        return 0;
+    }
+
+    /**
+     * Set adaptive Triton sub-segment op cap. Use {@code 0} for auto/adaptive behavior.
+     */
+    default void setTritonMaxSubsegmentOps(int ops) {}
+
+    /**
+     * Returns the adaptive Triton sub-segment section cap. {@code 0} means auto/adaptive.
+     */
+    default int tritonMaxSubsegmentSections() {
+        return 0;
+    }
+
+    /**
+     * Set adaptive Triton sub-segment section cap. Use {@code 0} for auto/adaptive behavior.
+     */
+    default void setTritonMaxSubsegmentSections(int sections) {}
+
+    /**
+     * Returns whether verbose Triton diagnostics are enabled.
+     */
+    default boolean tritonVerbose() {
+        return false;
+    }
+
+    /**
+     * Enable or disable verbose Triton diagnostics.
+     */
+    default void setTritonVerbose(boolean verbose) {}
+
+    /**
+     * Returns whether section diagnostics dump is enabled.
+     */
+    default boolean tritonDumpSections() {
+        return false;
+    }
+
+    /**
+     * Enable or disable section diagnostics dump.
+     */
+    default void setTritonDumpSections(boolean dumpSections) {}
+
+    /**
+     * Returns whether argument mapping diagnostics dump is enabled.
+     */
+    default boolean tritonDumpArgs() {
+        return false;
+    }
+
+    /**
+     * Enable or disable argument mapping diagnostics dump.
+     */
+    default void setTritonDumpArgs(boolean dumpArgs) {}
+
+    /**
+     * Returns whether all Triton pattern matches are logged.
+     */
+    default boolean tritonLogAllPatterns() {
+        return false;
+    }
+
+    /**
+     * Enable or disable full Triton pattern logging.
+     */
+    default void setTritonLogAllPatterns(boolean logAllPatterns) {}
+
+    /**
+     * Returns whether Triton always recompiles kernels (bypassing disk-cache lookup).
+     */
+    default boolean tritonAlwaysCompile() {
+        return false;
+    }
+
+    /**
+     * Enable or disable always-compile mode for Triton.
+     */
+    default void setTritonAlwaysCompile(boolean alwaysCompile) {}
+
+    /**
+     * Returns whether Triton kernel artifact dumping is enabled.
+     */
+    default boolean tritonKernelDump() {
+        return false;
+    }
+
+    /**
+     * Enable or disable Triton kernel artifact dumping.
+     */
+    default void setTritonKernelDump(boolean kernelDump) {}
+
+    /**
+     * Returns whether Triton kernel override loading is enabled.
+     */
+    default boolean tritonKernelOverride() {
+        return false;
+    }
+
+    /**
+     * Enable or disable Triton kernel override loading.
+     */
+    default void setTritonKernelOverride(boolean kernelOverride) {}
+
+    /**
+     * Returns explicit Triton warp override (0 means auto).
+     */
+    default int tritonNumWarps() {
+        return 0;
+    }
+
+    /**
+     * Set explicit Triton warp override (0 means auto).
+     */
+    default void setTritonNumWarps(int numWarps) {}
+
+    /**
+     * Returns explicit Triton pipeline stage override (0 means auto).
+     */
+    default int tritonNumStages() {
+        return 0;
+    }
+
+    /**
+     * Set explicit Triton pipeline stage override (0 means auto).
+     */
+    default void setTritonNumStages(int numStages) {}
+
+    /**
+     * Returns Triton cluster CTA override used during TTIR->TTGIR conversion.
+     */
+    default int tritonNumCTAs() {
+        return 1;
+    }
+
+    /**
+     * Set Triton cluster CTA override used during TTIR->TTGIR conversion.
+     */
+    default void setTritonNumCTAs(int numCTAs) {}
+
+    /**
+     * Returns Triton max register override (0 means unset).
+     */
+    default int tritonMaxNreg() {
+        return 0;
+    }
+
+    /**
+     * Set Triton max register override (0 means unset).
+     */
+    default void setTritonMaxNreg(int maxNreg) {}
+
+    /**
+     * Returns whether LLVM floating-point fusion is enabled for Triton compilation.
+     */
+    default boolean tritonEnableFpFusion() {
+        return true;
+    }
+
+    /**
+     * Enable or disable LLVM floating-point fusion for Triton compilation.
+     */
+    default void setTritonEnableFpFusion(boolean enableFpFusion) {}
+
+    /**
+     * Returns whether line-info generation is disabled for CUDA JIT module load.
+     */
+    default boolean tritonDisableLineInfo() {
+        return false;
+    }
+
+    /**
+     * Enable or disable line-info generation for CUDA JIT module load.
+     */
+    default void setTritonDisableLineInfo(boolean disableLineInfo) {}
+
+    /**
+     * Returns Triton disk cache directory override, or empty string if unset.
+     */
+    default String tritonCacheDir() {
+        return "";
+    }
+
+    /**
+     * Set Triton disk cache directory override.
+     */
+    default void setTritonCacheDir(String cacheDir) {}
+
+    /**
+     * Returns Triton artifact dump directory override, or empty string if unset.
+     */
+    default String tritonDumpDir() {
+        return "";
+    }
+
+    /**
+     * Set Triton artifact dump directory override.
+     */
+    default void setTritonDumpDir(String dumpDir) {}
+
+    /**
+     * Returns Triton kernel override directory, or empty string if unset.
+     */
+    default String tritonOverrideDir() {
+        return "";
+    }
+
+    /**
+     * Set Triton kernel override directory.
+     */
+    default void setTritonOverrideDir(String overrideDir) {}
+
+    /**
+     * Returns Triton target architecture override, or empty string if unset.
+     */
+    default String tritonOverrideArch() {
+        return "";
+    }
+
+    /**
+     * Set Triton target architecture override.
+     */
+    default void setTritonOverrideArch(String overrideArch) {}
 }

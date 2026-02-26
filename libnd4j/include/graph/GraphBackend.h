@@ -88,7 +88,10 @@ class SD_LIB_EXPORT GraphBackend {
   virtual bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                               NDArray** externalInputs, int numExternalInputs,
                               NDArray** outputSlots, int totalOutputSlots,
-                              LongType shapeKey) = 0;
+                              LongType shapeKey,
+                              int totalSlots = 0,
+                              int* requestedOutputSlotIndices = nullptr,
+                              int numRequestedOutputs = 0) = 0;
 
   /**
    * Execute a previously compiled segment.

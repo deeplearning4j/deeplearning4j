@@ -25,6 +25,7 @@
 # BUILD MODE OPTIONS:
 #   --cmake-only ON        Run CMake configuration only, skip build
 #   --link-only ON         Skip compilation, only relink (requires prior build)
+#   --triton ON|OFF        Enable/disable Triton GPU compiler integration (default: OFF)
 #
 # OOM KILLER OPTIONS (cross-platform: Linux, macOS, Windows/MSYS2):
 #   --oom-killer ON|OFF              Enable/disable OOM killer (default: ON)
@@ -605,6 +606,7 @@ SD_VALIDATED_TYPES="${SD_VALIDATED_TYPES:-}"
 MLIR="${MLIR:-OFF}"
 MLIR_VERSION="${MLIR_VERSION:-18}"
 MLIR_GPU="${MLIR_GPU:-OFF}"
+TRITON="${TRITON:-OFF}"
 
 # OOM Killer configuration
 # Monitors memory usage during build and kills processes if threshold is exceeded
@@ -1425,6 +1427,23 @@ do
             if [[ "$value" == "ON" ]]; then
                 print_colored "green" "✓ MLIR GPU backend enabled"
             fi
+            shift # past argument
+            ;;
+        --triton)
+            TRITON="$value"
+            case "$value" in
+                ON)
+                    print_colored "green" "✓ Triton enabled"
+                    ;;
+                OFF)
+                    print_colored "blue" "✓ Triton disabled"
+                    ;;
+                *)
+                    print_colored "red" "❌ ERROR: Invalid Triton value '$value'"
+                    print_colored "yellow" "    Valid options: ON, OFF"
+                    exit 1
+                    ;;
+            esac
             shift # past argument
             ;;
         -o|-platform|--platform)
@@ -2459,6 +2478,7 @@ if [ "$MLIR" == "ON" ]; then
         MLIR_ARG="${MLIR_ARG} -DMLIR_ENABLE_GPU=ON"
     fi
 fi
+TRITON_CMAKE="-DSD_TRITON=${TRITON}"
 
 echo PACKAGING           = "${PACKAGING}"
 echo BUILD               = "${BUILD}"
@@ -2487,6 +2507,7 @@ echo HELPER_PRIORITY     = "$HELPER_PRIORITY"
 echo MLIR                = "$MLIR"
 echo MLIR_VERSION        = "$MLIR_VERSION"
 echo MLIR_GPU            = "$MLIR_GPU"
+echo TRITON              = "$TRITON"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
 echo USE_LTO             = "$USE_LTO"
 echo CUDA_LTO            = "$CUDA_LTO"
@@ -2526,7 +2547,7 @@ if [ -n "$COMPILER" ]; then
 fi
 
 # Configure CMake
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $MLIR_ARG $TRITON_CMAKE $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE $COMPILER_ARG $SOURCE_PATH"
 
 # Handle the PREPROCESS flag first - before any build
 if [ "$PREPROCESS" == "ON" ]; then
@@ -2548,6 +2569,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             $HELPERS_CMAKE \
             $KERNEL_CMAKE \
             $MLIR_ARG \
+            $TRITON_CMAKE \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -2579,6 +2601,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             $HELPERS_CMAKE \
             $KERNEL_CMAKE \
             $MLIR_ARG \
+            $TRITON_CMAKE \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -2644,6 +2667,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         $HELPERS_CMAKE \
         $KERNEL_CMAKE \
         $MLIR_ARG \
+        $TRITON_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -2683,6 +2707,7 @@ else
         $HELPERS_CMAKE \
         $KERNEL_CMAKE \
         $MLIR_ARG \
+        $TRITON_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -2874,6 +2899,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$BLAS_ARG" \
             "$ARCH_ARG" \
             "$NAME_ARG" \
+            $TRITON_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
             $MKL_CMAKE \
             $BLAS_CMAKE \
@@ -2885,6 +2911,7 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$BLAS_ARG" \
             "$ARCH_ARG" \
             "$NAME_ARG" \
+            $TRITON_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
             $MKL_CMAKE \
             $BLAS_CMAKE \

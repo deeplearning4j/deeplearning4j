@@ -340,7 +340,10 @@ bool AclGraphBackend::compileSegment(
     GraphSegment& seg, NativeSlot* slots,
     NDArray** externalInputs, int numExternalInputs,
     NDArray** outputSlots, int totalOutputSlots,
-    LongType shapeKey) {
+    LongType shapeKey,
+    int totalSlots,
+    int* requestedOutputSlotIndices,
+    int numRequestedOutputs) {
 
   SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
 

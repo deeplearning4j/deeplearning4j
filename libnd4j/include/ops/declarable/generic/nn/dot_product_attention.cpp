@@ -93,11 +93,13 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     }
 
     // The mask is 0 for positions we want to skip, and 1 for positions we want to keep.
-    // We compute (1 - mask) * 1e9 to get 1e9 for skip positions and 0 for keep positions.
-    // Subtracting this from weights pushes skip positions to large negative values,
+    // We compute (1 - mask) * 3.4028235e+38f to get a large value for skip positions and 0 for keep positions.
+    // Subtracting this from weights pushes skip positions to -FLT_MAX,
     // which become ~0 after softmax. Keep positions are unchanged.
+    // Using 3.4028235e+38f (-FLT_MAX when subtracted) instead of 1e9 because with many
+    // padding positions, 1e9 is insufficient and leaks residual signal through softmax.
     auto* maskComplement = new NDArray(1.0 - *reshapedMask);
-    *maskComplement *= 1e9;
+    *maskComplement *= 3.4028235e+38f;
     *weights -= *maskComplement;
     delete reshapedMask;
     delete maskComplement;
@@ -205,9 +207,11 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
 
     // Apply mask: subtract large value for positions to skip (mask=0 means skip)
     // Note: The mask convention is: 0 = skip, 1 = keep
-    // We subtract (1 - mask) * 1e9 to push skipped positions to -infinity
+    // We subtract (1 - mask) * 3.4028235e+38f to push skipped positions to -FLT_MAX
+    // Using 3.4028235e+38f instead of 1e9 because with many padding positions,
+    // 1e9 is insufficient and leaks residual signal through softmax.
     auto* maskComplement = new NDArray(1.0 - *reshapedMask);
-    *maskComplement *= 1e9;
+    *maskComplement *= 3.4028235e+38f;
     preSoftmax -= *maskComplement;
     delete maskComplement;
   }

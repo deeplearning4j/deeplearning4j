@@ -24,15 +24,19 @@ package org.nd4j.autodiff.samediff.execution;
  * Controls how the DSP (Dynamic Shape Plan) executor runs graph segments.
  * Set via {@link org.nd4j.autodiff.samediff.SameDiff#setGraphExecutionMode(GraphExecutionMode)}.
  *
- * <p>Backends are tried in priority order when AUTO is selected:
- * Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot.
- * Forcing a specific mode skips the others.</p>
+ * <p>Backends are tried in priority order when AUTO is selected.</p>
+ * <p>CUDA builds: Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot.</p>
+ * <p>Non-CUDA builds: Triton (if HIP/Level Zero available) → oneDNN/ACL CPU graph backends
+ * → slot-by-slot.</p>
+ * <p>Forcing a specific mode skips the others.</p>
  */
 public enum GraphExecutionMode {
 
     /**
      * Automatic backend selection (default). Tries GPU JIT backends first
-     * (Triton → NVRTC → PTX), then CUDA graph capture/replay, then slot-by-slot.
+     * (Triton → NVRTC → PTX), then CUDA graph capture/replay.
+     * On non-CUDA builds, AUTO tries Triton first (if available), then CPU graph
+     * backends (oneDNN/ACL), then slot-by-slot.
      */
     AUTO(0),
 
@@ -46,12 +50,15 @@ public enum GraphExecutionMode {
      * CUDA graph capture and replay. Records a sequence of kernel launches
      * into a CUDA graph on first execution, then replays the graph on
      * subsequent executions with near-zero launch overhead.
+     * On non-CUDA builds, this maps to CPU graph replay backends
+     * (oneDNN Graph / ARM ACL dynamic fusion).
      */
     CUDA_GRAPHS(2),
 
     /**
      * NVRTC JIT compilation. Generates CUDA C++ source for fusible element-wise
      * segments, compiles with NVRTC at runtime, loads and launches the fused kernel.
+     * On non-CUDA builds, this maps to TRITON.
      */
     NVRTC_JIT(3),
 
@@ -59,6 +66,7 @@ public enum GraphExecutionMode {
      * PTX template backend. Generates PTX assembly text directly for fusible
      * element-wise segments. Fastest "compilation" (string concatenation),
      * but code is less optimized than NVRTC.
+     * On non-CUDA builds, this maps to TRITON.
      */
     PTX_JIT(4),
 

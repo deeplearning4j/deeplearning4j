@@ -102,6 +102,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup ccache
+        id: setup-ccache
         uses: ./.github/actions/setup-ccache-windows
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
@@ -415,6 +416,13 @@ jobs:
         run: |
           echo === ccache stats after build ===
           %USERPROFILE%\ccache\ccache.exe -sv
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
 
       - name: Clean up
         shell: cmd

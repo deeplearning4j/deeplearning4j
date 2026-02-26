@@ -172,6 +172,8 @@ This eliminates the per-head loop and lets MKL optimize thread scheduling across
 
 **Multi-Backend**: Same API across OneDNN (CPU), cuDNN (GPU), and llama.cpp (reference), with automatic backend selection based on available hardware and helpers.
 
+**Masking Stability on Padded Inputs**: Attention masking paths use `-FLT_MAX`-equivalent suppression instead of `-1e9`, and CPU/CUDA windowed-attention helpers apply the same thresholding strategy to prevent masked-score leakage through softmax under extreme padding.
+
 ### Disadvantages
 
 **Compilation Latency**: First execution with a new shape triggers OneDNN graph compilation (~10-50ms). This is amortized over subsequent cache hits but affects first-token latency.

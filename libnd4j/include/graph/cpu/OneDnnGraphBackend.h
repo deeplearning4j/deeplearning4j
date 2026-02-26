@@ -61,7 +61,10 @@ class OneDnnGraphBackend : public GraphBackend {
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                       NDArray** externalInputs, int numExternalInputs,
                       NDArray** outputSlots, int totalOutputSlots,
-                      LongType shapeKey) override;
+                      LongType shapeKey,
+                      int totalSlots = 0,
+                      int* requestedOutputSlotIndices = nullptr,
+                      int numRequestedOutputs = 0) override;
 
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,

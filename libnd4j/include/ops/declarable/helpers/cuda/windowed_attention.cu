@@ -94,7 +94,7 @@ __global__ static void windowedAttentionKernel(
     T* softmaxScores = scores + windowSize;
 
     // Compute attention scores - each thread handles part of the window
-    T maxScore = -1e9f;
+    T maxScore = static_cast<T>(-3.4028235e+38f);
     for (int w = threadIdx.x; w < actualWindowSize; w += blockDim.x) {
         sd::LongType k = windowStart + w;
         const T* keyVec = batchKey + k * seqStride;
@@ -116,8 +116,8 @@ __global__ static void windowedAttentionKernel(
         // Apply attention mask if provided
         if (attentionMask != nullptr) {
             T maskVal = attentionMask[b * seqLen * seqLen + q * seqLen + k];
-            if (maskVal < static_cast<T>(-1e4)) {
-                score = static_cast<T>(-1e9);
+            if (maskVal < static_cast<T>(-1e30)) {
+                score = static_cast<T>(-3.4028235e+38f);
             }
         }
 

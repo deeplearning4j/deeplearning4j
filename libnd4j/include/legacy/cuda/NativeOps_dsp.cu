@@ -37,6 +37,11 @@
 #include <memory/cuda/CudaMemoryPool.h>
 #include <execution/AffinityManager.h>
 
+#include <config.h>
+#if HAVE_TRITON
+#include <graph/gpu/TritonGraphBackend.h>
+#endif
+
 #include <cstring>
 #include <string>
 #include <fstream>
@@ -172,6 +177,8 @@ int executeDynamicShapePlan(
       }
       sd_printf("%s\n", buf);
       setError(static_cast<int>(status), buf);
+      // Clear any sticky CUDA errors left by the failed execution
+      cudaGetLastError();
       return static_cast<int>(status);
     }
 
@@ -388,12 +395,38 @@ void setPlanJitMode(sd::Pointer planHandle, int mode) {
 
 void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
   if (planHandle != nullptr) {
-    auto gem = static_cast<sd::graph::GraphExecutionMode>(mode);
+    auto requested = static_cast<sd::graph::GraphExecutionMode>(mode);
+    auto gem = requested;
     // Clamp to valid range
     if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_TRITON) {
       gem = sd::graph::GraphExecutionMode::GEM_AUTO;
     }
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setGraphExecutionMode(gem);
+
+    const char* requestedName = "UNKNOWN";
+    switch (requested) {
+      case sd::graph::GraphExecutionMode::GEM_AUTO: requestedName = "AUTO"; break;
+      case sd::graph::GraphExecutionMode::GEM_SLOT_BY_SLOT: requestedName = "SLOT_BY_SLOT"; break;
+      case sd::graph::GraphExecutionMode::GEM_CUDA_GRAPHS: requestedName = "CUDA_GRAPHS"; break;
+      case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: requestedName = "NVRTC_JIT"; break;
+      case sd::graph::GraphExecutionMode::GEM_PTX_JIT: requestedName = "PTX_JIT"; break;
+      case sd::graph::GraphExecutionMode::GEM_TRITON: requestedName = "TRITON"; break;
+      default: break;
+    }
+
+    const char* appliedName = "UNKNOWN";
+    switch (gem) {
+      case sd::graph::GraphExecutionMode::GEM_AUTO: appliedName = "AUTO"; break;
+      case sd::graph::GraphExecutionMode::GEM_SLOT_BY_SLOT: appliedName = "SLOT_BY_SLOT"; break;
+      case sd::graph::GraphExecutionMode::GEM_CUDA_GRAPHS: appliedName = "CUDA_GRAPHS"; break;
+      case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: appliedName = "NVRTC_JIT"; break;
+      case sd::graph::GraphExecutionMode::GEM_PTX_JIT: appliedName = "PTX_JIT"; break;
+      case sd::graph::GraphExecutionMode::GEM_TRITON: appliedName = "TRITON"; break;
+      default: break;
+    }
+
+    sd_printf("NativeDSP::setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)\n",
+              mode, requestedName, static_cast<int>(gem), appliedName);
   }
 }
 
@@ -932,4 +965,49 @@ int ncclGroupEnd() {
 #else
     return -1;
 #endif
+}
+
+// =============================================================================
+// Triton GPU Backend Counters
+// =============================================================================
+
+bool isTritonAvailable() {
+#if HAVE_TRITON
+    return sd::graph::TritonGraphBackend::getInstance().isAvailable();
+#else
+    return false;
+#endif
+}
+
+sd::LongType getTritonKernelLaunchCount() {
+#if HAVE_TRITON
+    return sd::graph::TritonGraphBackend::getInstance().getTotalKernelLaunches();
+#else
+    return 0;
+#endif
+}
+
+sd::LongType getTritonCacheHitCount() {
+#if HAVE_TRITON
+    return sd::graph::TritonGraphBackend::getInstance().getTotalCacheHits();
+#else
+    return 0;
+#endif
+}
+
+void resetTritonCounters() {
+#if HAVE_TRITON
+    sd::graph::TritonGraphBackend::getInstance().resetCounters();
+#endif
+}
+
+void invalidateTritonCache() {
+#if HAVE_TRITON
+    sd::graph::TritonGraphBackend::getInstance().invalidateCache();
+#endif
+    // Clear any sticky CUDA errors left by failed kernel launches
+    cudaGetLastError();
+    // Synchronize to ensure all async work is complete before next test
+    cudaDeviceSynchronize();
+    cudaGetLastError();
 }

@@ -78,6 +78,40 @@ std::string normalizeOpName(const std::string& opName) {
                  [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return normalized;
 }
+
+const char* statusName(Status status) {
+  switch (status) {
+    case Status::OK: return "OK";
+    case Status::BAD_INPUT: return "BAD_INPUT";
+    case Status::BAD_SHAPE: return "BAD_SHAPE";
+    case Status::BAD_RANK: return "BAD_RANK";
+    case Status::BAD_PARAMS: return "BAD_PARAMS";
+    case Status::BAD_OUTPUT: return "BAD_OUTPUT";
+    case Status::BAD_RNG: return "BAD_RNG";
+    case Status::BAD_EPSILON: return "BAD_EPSILON";
+    case Status::BAD_GRADIENTS: return "BAD_GRADIENTS";
+    case Status::BAD_BIAS: return "BAD_BIAS";
+    case Status::VALIDATION: return "VALIDATION";
+    case Status::BAD_GRAPH: return "BAD_GRAPH";
+    case Status::BAD_LENGTH: return "BAD_LENGTH";
+    case Status::BAD_DIMENSIONS: return "BAD_DIMENSIONS";
+    case Status::BAD_ORDER: return "BAD_ORDER";
+    case Status::BAD_ARGUMENTS: return "BAD_ARGUMENTS";
+    case Status::DOUBLE_WRITE: return "DOUBLE_WRITE";
+    case Status::DOUBLE_READ: return "DOUBLE_READ";
+    case Status::KERNEL_FAILURE: return "KERNEL_FAILURE";
+    case Status::EQ_TRUE: return "EQ_TRUE";
+    case Status::EQ_FALSE: return "EQ_FALSE";
+    case Status::MAYBE: return "MAYBE";
+    default: return "UNKNOWN";
+  }
+}
+
+bool isStrictNoFallbackMode(GraphExecutionMode mode) {
+  // Strict mode is currently tied to explicit TRITON execution:
+  // fail fast instead of silently degrading to CUDA graphs/slot-by-slot.
+  return mode == GraphExecutionMode::GEM_TRITON;
+}
 }  // namespace
 
 // ─── NativeSlot move operations ───────────────────────────────────────────────
@@ -671,8 +705,21 @@ Status NativeDynamicShapePlan::execute(
   // per-slot and per-segment abstractions. The entire decoder becomes a
   // single atomic operation: copy inputs → launch graph → return outputs.
   // ═══════════════════════════════════════════════════════════════════════════
-  if (shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1 &&
-      segments_[0].cachedGraph != nullptr &&
+  bool allowFrozenGraphFastPath =
+      (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO ||
+       graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS);
+  bool frozenFastPathInputStable = true;
+  if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1) {
+    auto& seg0 = segments_[0];
+    // For Triton-captured graphs (no capture buffers), require stable input addresses.
+    // Standard CUDA-graph segments use capture buffers and are address-agnostic.
+    if (seg0.captureBuffers.empty() && seg0.capturedInputAddrKey != 0) {
+      frozenFastPathInputStable =
+          (computeSegmentInputAddrKey(seg0, externalInputs, numExternalInputs) == seg0.capturedInputAddrKey);
+    }
+  }
+  if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1 &&
+      frozenFastPathInputStable && segments_[0].cachedGraph != nullptr &&
       segments_[0].cachedGraph->getState() == cuda::GraphState::INSTANTIATED) {
     using Clock = std::chrono::high_resolution_clock;
     auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
@@ -967,11 +1014,11 @@ Status NativeDynamicShapePlan::execute(
     }
 
     if (useGraph) {
-      // Try Triton GPU compiler first (fused kernels, best perf).
-      // Under ZLUDA+AMD this uses HIP directly, bypassing ZLUDA.
+      // Try the selected GPU compiler backend (TRITON / NVRTC / PTX).
       auto* gpuBackend = getGpuGraphBackend();
-      bool tritonHandled = false;
+      bool gpuBackendHandled = false;
       if (gpuBackend) {
+        const char* backendName = gpuBackend->name();
         // NOTE: tl_graphExecutionActive is NOT set here. executeSegmentWithGpuGraph
         // may run a warmup pass (slot-by-slot) on the first execution. Setting
         // tl_graphExecutionActive would block syncToPrimary D2H transfers, causing
@@ -979,19 +1026,28 @@ Status NativeDynamicShapePlan::execute(
         // tl_graphExecutionActive is only set inside the actual Triton kernel
         // execution path (executeSegment at executionCount > 0), not during warmup.
         auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-        if (status == Status::OK) { tritonHandled = true; segUsedGraph = true; }
-        else if (executeCount_ < 5) {
-          sd_printf("exec%d seg[%d-%d]: triton FAILED status=%d executionCount=%d captureFailed=%d\n",
-                  executeCount_, segment.startSlot, segment.endSlot,
-                  static_cast<int>(status), segment.executionCount,
-                  static_cast<int>(segment.captureFailed));
+        if (status == Status::OK) {
+          gpuBackendHandled = true;
+          segUsedGraph = true;
+        } else {
+          if (traceEnabled_ || executeCount_ < 5) {
+            sd_printf("NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d(%s) executionCount=%d captureFailed=%d\n",
+                    executeCount_, segment.startSlot, segment.endSlot, backendName,
+                    static_cast<int>(status), statusName(status), segment.executionCount,
+                    static_cast<int>(segment.captureFailed));
+          }
+          if (isStrictNoFallbackMode(graphExecutionMode_)) {
+            sd_printf("NativeDSP::execute: forced backend mode active; aborting on %s failure for seg[%d-%d] status=%d(%s)\n",
+                      backendName, segment.startSlot, segment.endSlot, static_cast<int>(status), statusName(status));
+            return status;
+          }
         }
       }
 
       // Try NVRTC JIT (CUDA only, element-wise segments)
       // Skip JIT when forced to CUDA_GRAPHS or SLOT_BY_SLOT mode
       bool jitHandled = false;
-      if (!tritonHandled && jitMode_ != JitMode::GRAPH_ONLY && !segment.jitCompileFailed
+      if (!gpuBackendHandled && jitMode_ != JitMode::GRAPH_ONLY && !segment.jitCompileFailed
           && graphExecutionMode_ != GraphExecutionMode::GEM_CUDA_GRAPHS) {
         auto status = executeSegmentWithJit(segment, externalInputs, numExternalInputs, stream);
         if (status == Status::OK) {
@@ -1000,7 +1056,7 @@ Status NativeDynamicShapePlan::execute(
         }
       }
 
-      if (!tritonHandled && !jitHandled) {
+      if (!gpuBackendHandled && !jitHandled) {
         if (cudaGraphsEnabled_) {
           // Fall back to CUDA Graphs (captured replay).
           // tl_graphExecutionActive is managed inside executeSegmentWithGraph()
@@ -1098,9 +1154,7 @@ Status NativeDynamicShapePlan::execute(
       }
       if (!tritonHandled) {
         // Fall back to CPU graph backend (oneDNN/ACL)
-        tl_graphExecutionActive = true;
         auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
-        tl_graphExecutionActive = false;
         if (status != Status::OK) {
           // Fall back to slot-by-slot if CPU graph execution also fails
           status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
@@ -4009,6 +4063,20 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   if (cpuGraphBackendChecked_) return cpuGraphBackend_;
   cpuGraphBackendChecked_ = true;
 
+  // Respect explicit backend selection modes:
+  // - SLOT_BY_SLOT: disable all graph backends
+  // - TRITON/NVRTC/PTX: don't route into CPU graph backends
+  //
+  // GEM_CUDA_GRAPHS is treated as "graph replay mode" on non-CUDA builds
+  // and intentionally maps to CPU graph backends (oneDNN/ACL).
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+
 #if HAVE_ONEDNN
   auto& onednn = OneDnnGraphBackend::getInstance();
   if (onednn.isAvailable()) {
@@ -4036,62 +4104,77 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   auto* backend = getCpuGraphBackend();
   if (backend == nullptr) return Status::KERNEL_FAILURE;
+  const char* backendName = backend->name();
 
   // If compilation previously failed validation, never try again
   if (seg.captureFailed) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    return Status::KERNEL_FAILURE;
   }
 
   // Check if this segment can be compiled by the backend
   if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
+    if (traceEnabled_) {
+      sd_printf("NativeDSP::executeSegmentWithCpuGraph: backend=%s cannot fuse seg[%d-%d]\n",
+                backendName, seg.startSlot, seg.endSlot);
+    }
     return Status::KERNEL_FAILURE;  // Caller will fall back to slot-by-slot
+  }
+
+  // First execution: warmup slot-by-slot so backend wiring has concrete arrays.
+  if (seg.executionCount == 0) {
+    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   // Compute shape key for cache lookup
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
-  // Compile (or use cache) for this shape
-  if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                               outputSlots_, totalOutputSlots_, segShapeKey,
-                               numSlots_)) {
-    return Status::KERNEL_FAILURE;
+  // Compile once per stable shape; skip cache probe on steady-state replay.
+  bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
+  if (needsCompile) {
+    if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
+                                 outputSlots_, totalOutputSlots_, segShapeKey,
+                                 numSlots_)) {
+      if (traceEnabled_) {
+        sd_printf("NativeDSP::executeSegmentWithCpuGraph: backend=%s compile failed for seg[%d-%d]\n",
+                  backendName, seg.startSlot, seg.endSlot);
+      }
+      return Status::KERNEL_FAILURE;
+    }
   }
 
-  // First execution: validate compilation coverage, then run slot-by-slot
-  // to populate outputSlots_ for the backend's tensor wiring.
-  if (seg.executionCount == 0) {
-    // Validate that all ops were compiled — if any were skipped,
-    // the compiled graph will produce stale outputs on replay.
+  // On first backend compilation, validate full coverage.
+  if (seg.executionCount == 1) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
     bool allCompiled = true;
     for (const auto& entry : audit) {
       if (!entry.wasCompiled) {
         allCompiled = false;
-        sd_printf("GRAPH VALIDATION: slot %d (%s) was NOT compiled by %s backend: %s\n",
-                  entry.slotIndex, entry.opName.c_str(), backend->name(), entry.reason.c_str());
+        sd_printf("%s VALIDATION: slot %d (%s) was NOT compiled: %s\n",
+                  backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
     }
     if (!allCompiled) {
-      sd_printf("GRAPH VALIDATION FAILURE: segment [%d-%d] has ops not covered by %s backend. "
-                "Falling back to slot-by-slot to prevent stale outputs.\n",
-                seg.startSlot, seg.endSlot, backend->name());
-      seg.captureFailed = true;  // Mark as failed — never try again
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+      sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
+                "Falling back to slot-by-slot.\n",
+                backendName, seg.startSlot, seg.endSlot);
+      seg.captureFailed = true;
+      return Status::KERNEL_FAILURE;
     }
-
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   // Execute via backend
   seg.shapeKey = segShapeKey;
-  // Set tl_graphExecutionActive only during actual Triton kernel execution,
-  // NOT during warmup. This prevents syncToPrimary D2H from being blocked
-  // during the kernel launch (which doesn't need host data access).
   tl_graphExecutionActive = true;
   auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                          outputSlots_, totalOutputSlots_, stream);
   tl_graphExecutionActive = false;
+
+  if (traceEnabled_) {
+    sd_printf("NativeDSP::executeSegmentWithCpuGraph: exec%d seg[%d-%d]: backend=%s status=%d(%s)\n",
+              seg.executionCount, seg.startSlot, seg.endSlot, backendName,
+              static_cast<int>(status), statusName(status));
+  }
 
   if (status == Status::OK) {
     seg.executionCount++;
@@ -4129,12 +4212,16 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
       gpuGraphBackend_ = nullptr;
       return nullptr;
     }
+    sd_printf("NativeDynamicShapePlan: Triton unavailable in AUTO mode, trying NVRTC/PTX backends\n", "");
   }
 #else
   if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
     sd_printf("NativeDynamicShapePlan: Triton backend requested but not compiled (HAVE_TRITON=0)\n", "");
     gpuGraphBackend_ = nullptr;
     return nullptr;
+  }
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    sd_printf("NativeDynamicShapePlan: Triton not compiled (HAVE_TRITON=0); AUTO mode will try NVRTC/PTX/CUDA graphs\n", "");
   }
 #endif
 
@@ -4179,16 +4266,25 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
   auto* backend = getGpuGraphBackend();
   if (backend == nullptr) {
+    if (traceEnabled_) {
+      sd_printf("NativeDSP::executeSegmentWithGpuGraph: no GPU backend selected for seg[%d-%d]\n",
+                seg.startSlot, seg.endSlot);
+    }
     return Status::KERNEL_FAILURE;
   }
+  const char* backendName = backend->name();
 
   // If compilation previously failed validation, never try again
   if (seg.captureFailed) {
     return Status::KERNEL_FAILURE;
   }
 
-  // Check if this segment can be compiled by the Triton backend
+  // Check if this segment can be compiled by the selected GPU backend
   if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
+    if (traceEnabled_) {
+      sd_printf("NativeDSP::executeSegmentWithGpuGraph: backend=%s cannot fuse seg[%d-%d]\n",
+                backendName, seg.startSlot, seg.endSlot);
+    }
     return Status::KERNEL_FAILURE;  // Caller will fall back to CUDA Graphs
   }
 
@@ -4200,33 +4296,58 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // Compute shape key for cache lookup
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
-  // Compile (or use cache) for this shape — shapes are now available from warmup
-  if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                               outputSlots_, totalOutputSlots_, segShapeKey,
-                               numSlots_)) {
-    return Status::KERNEL_FAILURE;
+  // Compile once per stable shape; skip cache probe on steady-state replay.
+  // This keeps the hot path focused on dispatch instead of repeated compile checks.
+  bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
+  if (needsCompile) {
+    if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
+                                 outputSlots_, totalOutputSlots_, segShapeKey,
+                                 numSlots_)) {
+      sd_printf("NativeDSP::executeSegmentWithGpuGraph: backend=%s compile failed for seg[%d-%d]\n",
+                backendName, seg.startSlot, seg.endSlot);
+      return Status::KERNEL_FAILURE;
+    }
   }
 
   // On first compilation, validate coverage
   if (seg.executionCount == 1) {
     auto audit = backend->getLastCompilationAudit();
     lastCompilationAudit_ = audit;
-    bool allCompiled = true;
+    int compiledCount = 0;
     int failedCount = 0;
     for (const auto& entry : audit) {
-      if (!entry.wasCompiled) {
-        allCompiled = false;
+      if (entry.wasCompiled) {
+        compiledCount++;
+      } else {
         failedCount++;
-        sd_printf("TRITON VALIDATION: slot %d (%s) was NOT compiled: %s\n",
-                  entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
+        sd_printf("%s VALIDATION: slot %d (%s) was NOT compiled: %s\n",
+                  backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
     }
-    if (!allCompiled) {
-      sd_printf("TRITON VALIDATION FAILURE: segment [%d-%d] has ops not covered by Triton. "
-                "Falling back to CUDA Graphs.\n",
-                seg.startSlot, seg.endSlot);
+    if (compiledCount == 0) {
+      if (isStrictNoFallbackMode(graphExecutionMode_)) {
+        sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has zero compiled ops "
+                  "(failed=%d). Forced backend mode prohibits fallback.\n",
+                  backendName, seg.startSlot, seg.endSlot, failedCount);
+      } else {
+        sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has zero compiled ops "
+                  "(failed=%d). Falling back to CUDA Graphs.\n",
+                  backendName, seg.startSlot, seg.endSlot, failedCount);
+      }
       seg.captureFailed = true;
       return Status::KERNEL_FAILURE;
+    }
+    if (failedCount > 0) {
+      if (isStrictNoFallbackMode(graphExecutionMode_)) {
+        sd_printf("%s VALIDATION FAILURE: segment [%d-%d] partial compile detected "
+                  "(compiled=%d failed=%d). Forced backend mode prohibits fallback.\n",
+                  backendName, seg.startSlot, seg.endSlot, compiledCount, failedCount);
+        seg.captureFailed = true;
+        return Status::KERNEL_FAILURE;
+      }
+      sd_printf("%s VALIDATION: segment [%d-%d] partial compile accepted "
+                "(compiled=%d failed=%d); failed ranges will run slot-by-slot.\n",
+                backendName, seg.startSlot, seg.endSlot, compiledCount, failedCount);
     }
   }
 
@@ -4286,12 +4407,156 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     }
   }
 
-  // Execute via Triton backend
+  // Execute via selected GPU backend
   seg.shapeKey = segShapeKey;
-  tl_graphExecutionActive = true;
-  auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
-                                         outputSlots_, totalOutputSlots_, stream);
-  tl_graphExecutionActive = false;
+
+#ifdef SD_CUDA
+  cudaStream_t cudaStr = (stream != nullptr)
+      ? *static_cast<cudaStream_t*>(stream) : nullptr;
+  bool allowTritonCudaGraphReplay = shapesFrozen_ && (segments_.size() == 1);
+  LongType segInputAddrKey = computeSegmentInputAddrKey(seg, externalArrays, numExt);
+
+  // Triton-captured graphs use direct external buffer addresses (no capture buffers),
+  // so replay is valid only when both shape key and input-address key match.
+  if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
+      seg.cachedGraph != nullptr &&
+      seg.cachedGraph->getState() == cuda::GraphState::INSTANTIATED &&
+      seg.cachedShapeKey == segShapeKey &&
+      seg.capturedInputAddrKey == segInputAddrKey) {
+    if (seg.cachedGraph->launchAsync(cudaStr)) {
+      if (traceEnabled_) {
+        sd_printf("NativeDSP::executeSegmentWithGpuGraph: replayed %s graph seg[%d-%d]\n",
+                  backendName, seg.startSlot, seg.endSlot);
+      }
+      seg.executionCount++;
+      totalGraphReplays_++;
+      return Status::OK;
+    }
+    // Launch failed — clear stale graph and fall through to direct Triton execution.
+    seg.cachedGraph.reset();
+    seg.capturedInputAddrKey = 0;
+    cudaGetLastError();
+  }
+
+  if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
+      seg.cachedGraph != nullptr &&
+      seg.cachedShapeKey == segShapeKey &&
+      seg.capturedInputAddrKey != 0 &&
+      seg.capturedInputAddrKey != segInputAddrKey) {
+    seg.cachedGraph.reset();
+    seg.capturedInputAddrKey = 0;
+  }
+
+  if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
+      seg.cachedGraph != nullptr &&
+      seg.cachedShapeKey != segShapeKey) {
+    seg.cachedGraph.reset();
+    seg.capturedInputAddrKey = 0;
+  }
+#endif
+
+#if HAVE_TRITON
+  struct TritonFallbackGuard {
+    bool active = false;
+    ~TritonFallbackGuard() {
+      if (active) TritonGraphBackend::clearFallbackRangeExecutor();
+    }
+  } tritonFallbackGuard;
+
+  auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
+  if (tritonBackend != nullptr) {
+    TritonGraphBackend::setFallbackRangeExecutor(
+        [this, &seg, externalArrays, numExt, stream](int startSlot, int endSlot) -> Status {
+          if (startSlot > endSlot) return Status::OK;
+
+          GraphSegment gapSeg;
+          gapSeg.startSlot = startSlot;
+          gapSeg.endSlot = endSlot;
+          gapSeg.executionCount = seg.executionCount;
+          gapSeg.captureFailed = seg.captureFailed;
+
+          bool wasGraphExecutionActive = tl_graphExecutionActive;
+          tl_graphExecutionActive = false;
+          auto gapStatus = executeSegmentSlotBySlot(gapSeg, externalArrays, numExt, stream);
+          tl_graphExecutionActive = wasGraphExecutionActive;
+          return gapStatus;
+        });
+    tritonFallbackGuard.active = true;
+  }
+#endif
+
+  Status status = Status::KERNEL_FAILURE;
+  bool usedTritonGraphCapture = false;
+
+#ifdef SD_CUDA
+  // Try capturing the fused Triton launch sequence starting from the SECOND
+  // Triton execution (executionCount >= 2). executionCount=1 is the first
+  // Triton execution after slot-by-slot warmup — it serves as a Triton warmup
+  // that validates arg resolution and triggers any lazy device allocations
+  // (e.g., indirect arg tables) OUTSIDE stream capture. Attempting capture on
+  // the very first Triton execution causes cudaMallocAsync to fail with
+  // "operation not permitted when stream is capturing" if any allocation
+  // was not fully pre-allocated during compileSegment().
+  bool shouldCaptureTritonGraph = allowTritonCudaGraphReplay &&
+                                  seg.captureBuffers.empty() &&
+                                  seg.cachedGraph == nullptr &&
+                                  seg.executionCount >= 2 &&
+                                  seg.executionCount <= 4 &&
+                                  cudaStr != nullptr;
+  if (shouldCaptureTritonGraph) {
+    auto handle = std::make_shared<sd::cuda::CudaGraphHandle>();
+    bool captureOk = handle->beginCapture(cudaStr, cudaStreamCaptureModeGlobal);
+    if (captureOk) {
+      tl_graphExecutionActive = true;
+      auto captureStatus = backend->executeSegment(seg, slots_, externalArrays, numExt,
+                                                   outputSlots_, totalOutputSlots_, stream);
+      tl_graphExecutionActive = false;
+
+      bool endOk = false;
+      if (captureStatus == Status::OK) {
+        endOk = handle->endCapture(cudaStr);
+      } else if (handle->isCapturing()) {
+        // Ensure stream capture state is closed before fallback execution.
+        handle->endCapture(cudaStr);
+      }
+      bool instantiateOk = endOk && handle->instantiate();
+      bool launchOk = instantiateOk && handle->launchAsync(cudaStr);
+
+      if (launchOk) {
+        seg.cachedGraph = handle;
+        seg.cachedShapeKey = segShapeKey;
+        seg.capturedInputAddrKey = segInputAddrKey;
+        if (traceEnabled_) {
+          sd_printf("NativeDSP::executeSegmentWithGpuGraph: captured %s graph seg[%d-%d]\n",
+                    backendName, seg.startSlot, seg.endSlot);
+        }
+        status = Status::OK;
+        usedTritonGraphCapture = true;
+      } else {
+        // Capture/instantiate failed — clear sticky CUDA errors and continue with direct dispatch.
+        cudaGetLastError();
+      }
+    } else {
+      // Could not begin stream capture on this execution path — fall back to direct dispatch.
+      cudaGetLastError();
+    }
+  }
+#endif
+
+  if (!usedTritonGraphCapture) {
+    tl_graphExecutionActive = true;
+    status = backend->executeSegment(seg, slots_, externalArrays, numExt,
+                                     outputSlots_, totalOutputSlots_, stream);
+    tl_graphExecutionActive = false;
+  }
+
+  sd_printf("NativeDSP::executeSegmentWithGpuGraph: exec%d seg[%d-%d]: backend=%s %s status=%d(%s) "
+            "executionCount=%d captureFailed=%d usedCapture=%d\n",
+            seg.executionCount, seg.startSlot, seg.endSlot,
+            backendName, status == Status::OK ? "OK" : "FAILED",
+            static_cast<int>(status), statusName(status),
+            seg.executionCount,
+            seg.captureFailed ? 1 : 0, usedTritonGraphCapture ? 1 : 0);
 
   if (status == Status::OK) {
     seg.executionCount++;

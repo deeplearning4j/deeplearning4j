@@ -176,7 +176,7 @@ TTIR (Triton IR)
 ### Segment Selection Criteria
 
 `canFuseSegment()` applies conservative criteria:
-- Minimum 2 Triton-mappable ops in the segment
+- Minimum 1 Triton-mappable op in the segment (`MIN_MAPPABLE_OPS = 1`)
 - At least 50% of segment ops are Triton-mappable
 - All ops in a fusion group must be mappable (no fallback within fused kernel)
 - Non-mappable ops break the segment, creating separate fusion groups
@@ -227,9 +227,15 @@ All Triton code is guarded by `#if HAVE_TRITON ... #endif`. When Triton is not a
 
 **Compilation Caching**: Shape-keyed caching ensures kernels are compiled once and reused across decode steps. In autoregressive generation with stable shapes, compilation overhead is amortized over hundreds of steps.
 
+**Persistent Cache Reuse**: Compiled Triton PTX for sub-segments is also cached on disk, reducing repeated startup compile cost across process restarts and iterative benchmarking sessions.
+
 **Graceful Fallback**: Non-fusible segments fall back to CUDA Graphs or slot-by-slot execution. The system never crashes due to unsupported ops — it just runs them without fusion.
 
 **Compilation Audit**: Per-op audit trail makes it easy to diagnose why specific ops weren't fused, enabling targeted improvements to op coverage.
+
+**Coverage and Correctness Improvements**: Triton IR handling has been expanded for shape/index-heavy and layout-sensitive ops used in VLM decode paths (including gather, range, shape-of, set-scalar, permute/tile/strided-slice, concat/split axis handling, and conv2d sectioning).
+
+**Runtime Robustness**: Section-boundary handling and kernel synchronization paths were hardened to avoid stale outputs and intermittent CUDA runtime failures.
 
 ### Disadvantages
 

@@ -951,18 +951,15 @@ endfunction()
 # TRITON GPU COMPILER (Optional)
 # =============================================================================
 function(setup_triton)
-    # Triton is ON by default for GPU builds (CUDA or AMD).
-    # Disable explicitly with -DSD_TRITON=OFF or SD_TRITON=OFF env var.
+    # Triton is OFF by default.
+    # Enable explicitly with -DSD_TRITON=ON (or SD_TRITON=ON env var).
     # NVRTC and PTX backends are also available on CUDA builds.
     set(_triton_requested OFF)
-    # Default ON for GPU builds
-    if(SD_CUDA OR SD_HIP OR SD_LEVEL_ZERO)
-        set(_triton_requested ON)
-    endif()
-    # Explicit opt-in flags
+    # Legacy opt-in path via helper flag (kept for backward compatibility).
     if(HELPERS_triton)
         set(_triton_requested ON)
     endif()
+    # Preferred explicit opt-in flags.
     if(DEFINED SD_TRITON AND SD_TRITON)
         set(_triton_requested ON)
     endif()
@@ -1113,6 +1110,18 @@ function(setup_triton)
         message(STATUS "   LLVM targets: host, NVPTX (no AMD backend)")
     endif()
 
+    # Build-time-only SmartCcache partition key for Triton LLVM external build.
+    # This stays in CMake/source-tree scope; runtime extraction infra is separate.
+    set(_TRITON_LLVM_SHAPE_KEY_RAW "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release")
+    string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_LLVM_SHAPE_KEY "${_TRITON_LLVM_SHAPE_KEY_RAW}")
+    set(TRITON_LLVM_BUILD_COMMAND
+            ${CMAKE_COMMAND} -E env
+            "SD_SMART_CCACHE_SEGMENT=triton_llvm"
+            "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_LLVM_SHAPE_KEY}"
+            ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel 8
+    )
+    message(STATUS "   Triton LLVM smart ccache segment=triton_llvm shape=${TRITON_LLVM_SHAPE_KEY}")
+
     if(NOT EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
         message(STATUS "   Building LLVM/MLIR from Triton-pinned commit ${TRITON_LLVM_COMMIT}...")
         message(STATUS "   This is a one-time build (~15-30 min). Install dir: ${TRITON_LLVM_INSTALL_DIR}")
@@ -1159,7 +1168,7 @@ function(setup_triton)
                 BINARY_DIR        "${TRITON_LLVM_PREFIX}/build"
                 STAMP_DIR         "${TRITON_LLVM_PREFIX}/stamp"
                 CMAKE_ARGS        ${TRITON_LLVM_CMAKE_ARGS}
-                BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel 8
+                BUILD_COMMAND     ${TRITON_LLVM_BUILD_COMMAND}
                 INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config Release
                 BUILD_BYPRODUCTS
                     "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake"
@@ -1246,6 +1255,19 @@ function(setup_triton)
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
     endif()
 
+    # Build-time-only SmartCcache partition key for Triton external build.
+    # Runtime key extraction/caching infrastructure will be layered separately.
+    string(REPLACE ";" "_" _TRITON_BACKENDS_KEY "${TRITON_CODEGEN_BACKENDS}")
+    set(_TRITON_SHAPE_KEY_RAW "${TRITON_VERSION}-${_TRITON_BACKENDS_KEY}-${CMAKE_BUILD_TYPE}")
+    string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_SHAPE_KEY "${_TRITON_SHAPE_KEY_RAW}")
+    set(TRITON_BUILD_COMMAND
+            ${CMAKE_COMMAND} -E env
+            "SD_SMART_CCACHE_SEGMENT=triton"
+            "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_SHAPE_KEY}"
+            ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel 8
+    )
+    message(STATUS "   Triton smart ccache segment=triton shape=${TRITON_SHAPE_KEY}")
+
     # Triton v3.2.0's bin/RegisterTritonDialects.h unconditionally includes AMD dialect
     # headers, even when only the nvidia backend is selected via TRITON_CODEGEN_BACKENDS.
     # When the AMD backend isn't built, the .h.inc files don't get generated, causing
@@ -1272,11 +1294,39 @@ fi
 if [ -f \"$BIN_CMAKE\" ]; then
     sed -i '/MLIRGPUToROCDLTransforms/d' \"$BIN_CMAKE\"
 fi
+
+# Patch TritonToTritonGPUPass.cpp to add NegFOp and TanhOp as legal ops.
+# Triton upstream comments out NegFOp and omits TanhOp; we need both for our IR.
+TTGPU_PASS=\"$SRC/lib/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.cpp\"
+if [ -f \"$TTGPU_PASS\" ]; then
+    sed -i 's/GenericOpPattern<arith::ShRSIOp>, \\/\\/ NegFOp/GenericOpPattern<arith::ShRSIOp>, GenericOpPattern<arith::NegFOp>,/' \"$TTGPU_PASS\"
+    sed -i 's/GenericOpPattern<math::FmaOp>>/GenericOpPattern<math::FmaOp>, GenericOpPattern<math::TanhOp>>/' \"$TTGPU_PASS\"
+fi
+
+# Patch ElementwiseOpToLLVM.cpp to add NegFOp and TanhOp LLVM lowering patterns.
+ELEM_LLVM=\"$SRC/lib/Conversion/TritonGPUToLLVM/ElementwiseOpToLLVM.cpp\"
+if [ -f \"$ELEM_LLVM\" ]; then
+    sed -i '/POPULATE_UNARY_OP(arith::UIToFPOp, LLVM::UIToFPOp)/a\\  POPULATE_UNARY_OP(arith::NegFOp, LLVM::FNegOp)' \"$ELEM_LLVM\"
+    sed -i '/POPULATE_UNARY_OP(math::ExpOp, math::ExpOp)/a\\  POPULATE_UNARY_OP(math::TanhOp, math::TanhOp)' \"$ELEM_LLVM\"
+fi
 ")
         file(CHMOD "${TRITON_PATCH_SCRIPT}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
     else()
-        # AMD backend selected — no patching needed
-        file(WRITE "${TRITON_PATCH_SCRIPT}" "#!/bin/bash\n# No patching needed — AMD backend is enabled\n")
+        # AMD backend selected — still need NegFOp/TanhOp patches
+        file(WRITE "${TRITON_PATCH_SCRIPT}" "#!/bin/bash
+# AMD backend enabled — only NegFOp/TanhOp patches needed
+SRC=\"$1\"
+TTGPU_PASS=\"$SRC/lib/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.cpp\"
+if [ -f \"$TTGPU_PASS\" ]; then
+    sed -i 's/GenericOpPattern<arith::ShRSIOp>, \\/\\/ NegFOp/GenericOpPattern<arith::ShRSIOp>, GenericOpPattern<arith::NegFOp>,/' \"$TTGPU_PASS\"
+    sed -i 's/GenericOpPattern<math::FmaOp>>/GenericOpPattern<math::FmaOp>, GenericOpPattern<math::TanhOp>>/' \"$TTGPU_PASS\"
+fi
+ELEM_LLVM=\"$SRC/lib/Conversion/TritonGPUToLLVM/ElementwiseOpToLLVM.cpp\"
+if [ -f \"$ELEM_LLVM\" ]; then
+    sed -i '/POPULATE_UNARY_OP(arith::AbsFOp, arith::AbsFOp)/a\\\\  POPULATE_UNARY_OP(arith::NegFOp, arith::NegFOp)' \"$ELEM_LLVM\"
+    sed -i '/POPULATE_UNARY_OP(math::ExpOp, math::ExpOp)/a\\\\  POPULATE_UNARY_OP(math::TanhOp, math::TanhOp)' \"$ELEM_LLVM\"
+fi
+")
         file(CHMOD "${TRITON_PATCH_SCRIPT}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
     endif()
 
@@ -1291,7 +1341,7 @@ fi
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
             PATCH_COMMAND     bash "${TRITON_PATCH_SCRIPT}" <SOURCE_DIR>
             CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel 8
+            BUILD_COMMAND     ${TRITON_BUILD_COMMAND}
             # Triton v3.2.0 uses OBJECT libraries (no install() commands, no libtriton.a).
             # Custom install: archive all .o files into libtriton.a and copy headers.
             # Use a script written to CMAKE_SOURCE_DIR so it survives 'clean install'.
@@ -1611,4 +1661,3 @@ function(setup_nccl)
 
     message(STATUS "✅ NCCL setup complete (HAVE_NCCL=${HAVE_NCCL})")
 endfunction()
-

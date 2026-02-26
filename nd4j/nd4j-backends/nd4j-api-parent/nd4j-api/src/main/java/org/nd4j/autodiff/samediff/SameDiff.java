@@ -39,6 +39,7 @@ import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.*;
+import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.*;
@@ -177,6 +178,20 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     //Graph execution mode for DSP (Dynamic Shape Plan) executor
     @Getter @Setter
     private GraphExecutionMode graphExecutionMode = GraphExecutionMode.AUTO;
+
+    // If true, DSP plan compilation is allowed during execution when missing.
+    // Defaults to false: users must explicitly compile DSP plans before execution.
+    @Getter @Setter
+    private boolean dspAutoCompileEnabled = false;
+
+    // If true, native DSP plan compilation is allowed during execution when missing.
+    // Defaults to false: users must explicitly compile native DSP plans.
+    @Getter @Setter
+    private boolean dspNativeAutoCompileEnabled = false;
+
+    // When forcing TRITON mode, optionally degrade to AUTO if Triton is unavailable.
+    @Getter @Setter
+    private boolean dspFallbackToAutoIfTritonUnavailable = true;
 
     ///////////////////////////////////////
     //Fields related to training
@@ -4172,6 +4187,137 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         for (DynamicShapePlan plan : dynamicShapePlanCache.values()) {
             plan.reassignDevices();
         }
+    }
+
+    /**
+     * Apply a preset DSP/Triton compilation profile similar to PyTorch compile modes.
+     * This configures graph backend selection and Triton compiler/runtime knobs.
+     */
+    public void setDspCompilationMode(@NonNull DspCompilationMode mode) {
+        org.nd4j.linalg.factory.Environment env = Nd4j.getEnvironment();
+        switch (mode) {
+            case REDUCE_OVERHEAD:
+                // Favor quick compile path and low startup cost.
+                graphExecutionMode = GraphExecutionMode.PTX_JIT;
+                dspFallbackToAutoIfTritonUnavailable = true;
+                env.setTritonCacheEnabled(true);
+                env.setTritonAlwaysCompile(false);
+                env.setTritonBuildThreads(1);
+                env.setTritonMaxSubsegmentOps(24);
+                env.setTritonMaxSubsegmentSections(4);
+                break;
+            case SPLIT_STITCH:
+                // Split large segments into smaller Triton sections and stitch execution at runtime.
+                // This is opt-in and strict: Triton must be available or compilation fails loudly.
+                graphExecutionMode = GraphExecutionMode.TRITON;
+                dspFallbackToAutoIfTritonUnavailable = false;
+                env.setTritonCacheEnabled(true);
+                env.setTritonAlwaysCompile(false);
+                env.setTritonBuildThreads(
+                        Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2)));
+                env.setTritonMaxSubsegmentOps(192);
+                env.setTritonMaxSubsegmentSections(8);
+                env.setTritonNumWarps(4);
+                env.setTritonNumStages(2);
+                env.setTritonNumCTAs(1);
+                env.setTritonMaxNreg(0);                 // unset
+                env.setTritonCoopTargetBlocks(512);
+                env.setTritonEnableFpFusion(true);
+                env.setTritonDisableLineInfo(false);
+                break;
+            case MAX_AUTOTUNE:
+                // Favor highest steady-state throughput via Triton.
+                graphExecutionMode = GraphExecutionMode.TRITON;
+                // Strict by default: MAX_AUTOTUNE should fail loudly if Triton is unavailable.
+                dspFallbackToAutoIfTritonUnavailable = false;
+                env.setTritonCacheEnabled(true);
+                env.setTritonAlwaysCompile(false);
+                env.setTritonBuildThreads(Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors() / 2)));
+                env.setTritonMaxSubsegmentOps(0);        // auto
+                env.setTritonMaxSubsegmentSections(0);   // auto
+                env.setTritonNumWarps(0);                // auto
+                env.setTritonNumStages(0);               // auto
+                env.setTritonMaxNreg(0);                 // unset
+                env.setTritonEnableFpFusion(true);
+                env.setTritonDisableLineInfo(false);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported DSP compilation mode: " + mode);
+        }
+    }
+
+    /**
+     * Explicitly compile a DynamicShapePlan for the specified outputs.
+     * DSP execution will reuse this plan instead of compiling on first execution.
+     */
+    public DynamicShapePlan compileDynamicShapePlan(String... requestedOutputs) {
+        List<String> out = requestedOutputs == null ? null : Arrays.asList(requestedOutputs);
+        return compileDynamicShapePlan(out);
+    }
+
+    /**
+     * Explicitly compile a DynamicShapePlan for the specified outputs.
+     * DSP execution will reuse this plan instead of compiling on first execution.
+     */
+    public DynamicShapePlan compileDynamicShapePlan(Collection<String> requestedOutputs) {
+        List<String> out = normalizeCompileOutputs(requestedOutputs);
+        return getOrCreateSession().compileDynamicShapePlan(out);
+    }
+
+    /**
+     * Explicitly compile the native DSP plan handle for the specified outputs.
+     * Uses this SameDiff's configured graph execution mode and Triton fallback policy.
+     *
+     * @return the effective graph execution mode configured on the native plan
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(String... requestedOutputs) {
+        List<String> out = requestedOutputs == null ? null : Arrays.asList(requestedOutputs);
+        return compileNativeDynamicShapePlan(out, graphExecutionMode, dspFallbackToAutoIfTritonUnavailable);
+    }
+
+    /**
+     * Apply a DSP compilation profile, then compile the native DSP plan handle.
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(DspCompilationMode mode, String... requestedOutputs) {
+        List<String> out = requestedOutputs == null ? null : Arrays.asList(requestedOutputs);
+        return compileNativeDynamicShapePlan(out, mode);
+    }
+
+    /**
+     * Apply a DSP compilation profile, then compile the native DSP plan handle.
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(Collection<String> requestedOutputs,
+                                                            DspCompilationMode mode) {
+        setDspCompilationMode(mode);
+        return compileNativeDynamicShapePlan(
+                requestedOutputs, graphExecutionMode, dspFallbackToAutoIfTritonUnavailable);
+    }
+
+    /**
+     * Explicitly compile the native DSP plan handle for the specified outputs.
+     *
+     * @param requestedOutputs outputs to compile for; if empty, SameDiff configured outputs are used
+     * @param requestedMode desired graph execution mode (AUTO/TRITON/NVRTC/etc)
+     * @param fallbackToAutoIfTritonUnavailable if true, TRITON degrades to AUTO when Triton is unavailable
+     * @return the effective graph execution mode configured on the native plan
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(Collection<String> requestedOutputs,
+                                                            GraphExecutionMode requestedMode,
+                                                            boolean fallbackToAutoIfTritonUnavailable) {
+        List<String> out = normalizeCompileOutputs(requestedOutputs);
+        return getOrCreateSession().compileNativeDynamicShapePlan(
+                out, requestedMode, fallbackToAutoIfTritonUnavailable);
+    }
+
+    private List<String> normalizeCompileOutputs(Collection<String> requestedOutputs) {
+        if (requestedOutputs != null && !requestedOutputs.isEmpty()) {
+            return new ArrayList<>(requestedOutputs);
+        }
+
+        List<String> configuredOutputs = outputs();
+        Preconditions.checkState(configuredOutputs != null && !configuredOutputs.isEmpty(),
+                "No outputs were provided and SameDiff has no configured outputs");
+        return new ArrayList<>(configuredOutputs);
     }
 
     /**

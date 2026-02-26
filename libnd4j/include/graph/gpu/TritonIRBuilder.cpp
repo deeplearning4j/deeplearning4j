@@ -25,11 +25,20 @@
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/logger.h>
 #include <helpers/shape.h>
+#include <system/Environment.h>
 #include <system/common.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <limits>
 #include <sstream>
+
+#ifdef SD_CUDA
+#include <cuda_runtime.h>
+#endif
 
 // MLIR core
 #include <mlir/IR/Builders.h>
@@ -55,6 +64,144 @@ namespace graph {
 // the kernel receives (argArray* : !tt.ptr<i64>, n_elements : i32) and unpacks
 // buffer pointers with indexed loads from the array.
 static constexpr int TRITON_DIRECT_ARG_LIMIT = 200;
+
+namespace {
+
+inline int nextPow2AtLeastOne(int value) {
+  if (value <= 1) return 1;
+  int p = 1;
+  while (p < value && p < (1 << 30)) p <<= 1;
+  return p;
+}
+
+inline int clampPow2(int value, int minPow2, int maxPow2) {
+  int v = std::max(minPow2, std::min(value, maxPow2));
+  if (v & (v - 1)) {
+    int p = 1;
+    while (p < v && p < (1 << 30)) p <<= 1;
+    v = p;
+  }
+  if (v > maxPow2) v = maxPow2;
+  if (v < minPow2) v = minPow2;
+  return v;
+}
+
+inline int queryCudaSharedMemLimitBytes() {
+  // Conservative fallback when runtime limits are unavailable.
+  int limit = 49152;
+#ifdef SD_CUDA
+  int currentDevice = -1;
+  auto devErr = cudaGetDevice(&currentDevice);
+  if (devErr != cudaSuccess || currentDevice < 0) {
+    cudaGetLastError();
+    return limit;
+  }
+
+  int optIn = 0;
+  auto optErr = cudaDeviceGetAttribute(
+      &optIn, cudaDevAttrMaxSharedMemoryPerBlockOptin, currentDevice);
+  if (optErr == cudaSuccess && optIn > 0) {
+    return optIn;
+  }
+  cudaGetLastError();
+
+  int defaultLimit = 0;
+  auto defErr = cudaDeviceGetAttribute(
+      &defaultLimit, cudaDevAttrMaxSharedMemoryPerBlock, currentDevice);
+  if (defErr == cudaSuccess && defaultLimit > 0) {
+    return defaultLimit;
+  }
+  cudaGetLastError();
+#endif
+  return limit;
+}
+
+inline int estimateFusedAttentionSharedMemBytes(int headDim, int blockM, int blockN) {
+  // Approximate dominant shared-memory footprint of the current fused-attention
+  // kernel structure:
+  //   Q  tile: [BM, HD]
+  //   K  tile: [BN, HD]
+  //   V  tile: [BN, HD]
+  // plus a fixed overhead for softmax/reduction temporaries.
+  //
+  // HD is rounded to power-of-2 by emitFusedAttentionKernel().
+  constexpr int kBytesPerF32 = 4;
+  constexpr int kFixedOverheadBytes = 6144;
+  const int headDimPadded = nextPow2AtLeastOne(std::max(1, headDim));
+  long long bytes = static_cast<long long>(kBytesPerF32) * headDimPadded *
+                    (static_cast<long long>(blockM) + 2LL * blockN);
+  bytes += kFixedOverheadBytes;
+  if (bytes > static_cast<long long>(std::numeric_limits<int>::max())) {
+    return std::numeric_limits<int>::max();
+  }
+  return static_cast<int>(bytes);
+}
+
+struct AttentionTileChoice {
+  int blockM = 32;
+  int blockN = 32;
+  int estimatedSharedMemBytes = 0;
+  int sharedMemLimitBytes = 0;
+  bool adjustedForSharedMem = false;
+  bool fitsSharedMem = true;
+};
+
+inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int numHeads,
+                                                          int seqQ, int seqK, int headDim,
+                                                          int sharedMemLimitBytes = -1) {
+  (void)seqK;
+  AttentionTileChoice choice;
+  const int limit = (sharedMemLimitBytes > 0) ? sharedMemLimitBytes : queryCudaSharedMemLimitBytes();
+
+  LongType numTads = static_cast<LongType>(std::max(1, batchSize)) *
+                     std::max(1, numHeads) *
+                     std::max(1, seqQ);
+  dim3 attDims = getSoftmaxDims(numTads, static_cast<LongType>(std::max(1, headDim)));
+  int preferredM = std::max(32, (static_cast<int>(attDims.y) / 32) * 2);
+  preferredM = clampPow2(preferredM, 32, 128);
+  int preferredN = preferredM;
+
+  int chosenM = preferredM;
+  int chosenN = preferredN;
+  int chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, chosenM, chosenN);
+
+  if (chosenBytes > limit) {
+    bool found = false;
+    for (int m = preferredM; m >= 4 && !found; m >>= 1) {
+      int nStart = std::min(preferredN, m);
+      if (nStart & (nStart - 1)) {
+        int p = 1;
+        while (p < nStart && p < (1 << 30)) p <<= 1;
+        nStart = std::min(p, m);
+      }
+      for (int n = nStart; n >= 4; n >>= 1) {
+        int bytes = estimateFusedAttentionSharedMemBytes(headDim, m, n);
+        if (bytes <= limit) {
+          chosenM = m;
+          chosenN = n;
+          chosenBytes = bytes;
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found) {
+      chosenM = 4;
+      chosenN = 4;
+      chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, chosenM, chosenN);
+    }
+  }
+
+  choice.blockM = chosenM;
+  choice.blockN = chosenN;
+  choice.estimatedSharedMemBytes = chosenBytes;
+  choice.sharedMemLimitBytes = limit;
+  choice.adjustedForSharedMem = (chosenM != preferredM) || (chosenN != preferredN);
+  choice.fitsSharedMem = (chosenBytes <= limit);
+  return choice;
+}
+
+}  // namespace
 
 // ─── Op mapping table ───────────────────────────────────────────────────────
 
@@ -396,6 +543,42 @@ const std::unordered_map<std::string, TritonOpMapping>& TritonIRBuilder::getOpTa
 
 TritonIRBuilder::TritonIRBuilder() = default;
 TritonIRBuilder::~TritonIRBuilder() = default;
+
+void TritonIRBuilder::setSectionedBlockSizeOverride(int blockSize) {
+  if (blockSize <= 0) {
+    sectionedBlockSizeOverride_ = 0;
+    return;
+  }
+  int rounded = 1;
+  while (rounded < blockSize && rounded < 16384) rounded <<= 1;
+  if (rounded < 64) rounded = 64;
+  if (rounded > 16384) rounded = 16384;
+  sectionedBlockSizeOverride_ = rounded;
+}
+
+void TritonIRBuilder::clearSectionedBlockSizeOverride() {
+  sectionedBlockSizeOverride_ = 0;
+}
+
+static int getSectionedCooperativeTargetBlocks() {
+  int configured = sd::Environment::getInstance().tritonCoopTargetBlocks();
+  if (configured > 0) return configured;
+
+#ifdef SD_CUDA
+  int device = 0;
+  if (cudaGetDevice(&device) == cudaSuccess) {
+    cudaDeviceProp props;
+    if (cudaGetDeviceProperties(&props, device) == cudaSuccess &&
+        props.multiProcessorCount > 0) {
+      // One cooperative block per SM is the strictest guaranteed residency target.
+      return props.multiProcessorCount;
+    }
+  }
+#endif
+
+  // Conservative default when device query is unavailable.
+  return 128;
+}
 
 bool TritonIRBuilder::isTritonMappable(const std::string& opName) {
   const auto& table = getOpTable();
@@ -846,52 +1029,73 @@ class MegaSegmentDetector : public PatternDetector {
   }
 };
 
-// Singleton registry of pattern detectors
+// Registry of pattern detectors.
+// NOTE: libnd4j is compiled with -fno-threadsafe-statics, so function-local
+// static initialization is not synchronized. Keep this registry as a fixed
+// global object with immutable detector pointers to avoid racey lazy init.
 class PatternRegistry {
  public:
-  static PatternRegistry& instance() {
-    static PatternRegistry reg;
-    return reg;
-  }
+  PatternRegistry()
+      : detectors_{&fusedAttentionOpDetector_,
+                   &attentionPatternDetector_,
+                   &ffnBlockDetector_,
+                   &decomposedSoftmaxDetector_,
+                   &matmulEpilogueDetector_,
+                   &elementwisePatternDetector_,
+                   &megaSegmentDetector_} {}
 
-  std::vector<PatternDetector*>& detectors() { return detectors_; }
+  const std::array<PatternDetector*, 7>& detectors() const { return detectors_; }
 
  private:
-  PatternRegistry() {
-    // Order doesn't matter — matches are ranked by priority
-    detectors_.push_back(new FusedAttentionOpDetector());
-    detectors_.push_back(new AttentionPatternDetector());
-    detectors_.push_back(new FFNBlockDetector());
-    detectors_.push_back(new DecomposedSoftmaxDetector());
-    detectors_.push_back(new MatmulEpilogueDetector());
-    detectors_.push_back(new ElementwisePatternDetector());
-    detectors_.push_back(new MegaSegmentDetector());
-  }
-
-  ~PatternRegistry() {
-    for (auto* d : detectors_) delete d;
-  }
-
-  std::vector<PatternDetector*> detectors_;
+  FusedAttentionOpDetector fusedAttentionOpDetector_;
+  AttentionPatternDetector attentionPatternDetector_;
+  FFNBlockDetector ffnBlockDetector_;
+  DecomposedSoftmaxDetector decomposedSoftmaxDetector_;
+  MatmulEpilogueDetector matmulEpilogueDetector_;
+  ElementwisePatternDetector elementwisePatternDetector_;
+  MegaSegmentDetector megaSegmentDetector_;
+  std::array<PatternDetector*, 7> detectors_;
 };
+
+PatternRegistry gPatternRegistry;
 
 }  // anonymous namespace
 
 MatchedPatterns TritonIRBuilder::matchPatterns(const SegmentProfile& profile,
                                                 NativeSlot* slots, int startSlot) {
   MatchedPatterns matched;
-  auto& detectors = PatternRegistry::instance().detectors();
+  const auto& detectors = gPatternRegistry.detectors();
+  auto& env = Environment::getInstance();
+  const bool collectAllMatches = env.tritonLogAllPatterns() || env.tritonVerbose();
+  constexpr int MAX_PATTERN_PRIORITY = 100;  // FUSED_ATTENTION_OP
 
+  int bestPriority = std::numeric_limits<int>::min();
   for (auto* detector : detectors) {
     auto hits = detector->detect(profile, slots, startSlot);
-    for (auto& hit : hits) {
-      matched.matches.push_back(std::move(hit));
+
+    if (collectAllMatches) {
+      for (auto& hit : hits) {
+        if (hit.priority > bestPriority) bestPriority = hit.priority;
+        matched.matches.push_back(std::move(hit));
+      }
+    } else {
+      for (const auto& hit : hits) {
+        if (hit.priority > bestPriority) {
+          bestPriority = hit.priority;
+          matched.matches.clear();
+          matched.matches.push_back(hit);
+        }
+      }
+      // Cannot beat max priority; skip lower-priority detector passes.
+      if (bestPriority >= MAX_PATTERN_PRIORITY) break;
     }
   }
 
-  // Sort by priority (descending)
-  std::sort(matched.matches.begin(), matched.matches.end(),
-            [](const PatternMatch& a, const PatternMatch& b) { return a.priority > b.priority; });
+  if (collectAllMatches) {
+    // Sort by priority (descending)
+    std::sort(matched.matches.begin(), matched.matches.end(),
+              [](const PatternMatch& a, const PatternMatch& b) { return a.priority > b.priority; });
+  }
 
   return matched;
 }
@@ -1131,9 +1335,23 @@ SegmentAnalysis TritonIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot
             profile.categoryCounts[static_cast<int>(TritonOpCategory::IDENTITY)],
             profile.categoryCounts[static_cast<int>(TritonOpCategory::CAST)]);
 
-  for (auto& m : matched.matches) {
-    sd_printf("  pattern: %s (priority=%d, %d ops)\n",
-              m.description.c_str(), m.priority, static_cast<int>(m.localIndices.size()));
+  auto& env = Environment::getInstance();
+  const bool logAllPatterns = env.tritonLogAllPatterns() || env.tritonVerbose();
+  if (logAllPatterns) {
+    for (auto& m : matched.matches) {
+      sd_printf("  pattern: %s (priority=%d, %d ops)\n",
+                m.description.c_str(), m.priority, static_cast<int>(m.localIndices.size()));
+    }
+  } else if (!matched.matches.empty()) {
+    const auto* best = matched.bestMatch();
+    if (best != nullptr) {
+      sd_printf("  pattern(best): %s (priority=%d, %d ops)%s\n",
+                best->description.c_str(), best->priority,
+                static_cast<int>(best->localIndices.size()),
+                matched.matches.size() > 1 ? " [set ND4J_TRITON_LOG_ALL_PATTERNS=1 for full list]" : "");
+    }
+  } else {
+    sd_printf("  pattern(best): none\n", "");
   }
 
   auto analysis = classifyAndAnalyze(profile, matched, slots, startSlot, endSlot,
@@ -1232,7 +1450,11 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
     }
     dim3 dims = getSoftmaxDims(numTads, tadLen);
     blockSize = 64;  // BLOCK_M for attention tiling
-    numWarps = std::max(1, static_cast<int>(dims.y) / 32);
+    int suggestedWarps = std::max(1, static_cast<int>(dims.y) / 32);
+    // Fused attention kernels in this backend use reductions that become
+    // invalid when CTA size grows beyond 256 threads. Keep attention launch
+    // width conservative to avoid out-of-bounds shared-memory accesses.
+    numWarps = std::max(1, std::min(suggestedWarps, 8));
     numStages = 2;
   } else if (hasMatmul) {
     // Use getMMulDims for matmul — derives threads from output length
@@ -1276,6 +1498,15 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
 
 // ─── Kernel name generation ─────────────────────────────────────────────────
 
+static uint64_t hashKernelNameFNV1a(const std::string& text) {
+  uint64_t hash = 1469598103934665603ULL;  // FNV-1a 64-bit offset basis
+  for (unsigned char c : text) {
+    hash ^= static_cast<uint64_t>(c);
+    hash *= 1099511628211ULL;  // FNV prime
+  }
+  return hash;
+}
+
 std::string TritonIRBuilder::generateKernelName(NativeSlot* slots, int startSlot, int endSlot) {
   std::ostringstream ss;
   ss << "triton_fused";
@@ -1284,7 +1515,8 @@ std::string TritonIRBuilder::generateKernelName(NativeSlot* slots, int startSlot
   }
   std::string name = ss.str();
   if (name.size() > 200) {
-    name = name.substr(0, 190) + "_seg" + std::to_string(startSlot) + "_" + std::to_string(endSlot);
+    uint64_t suffixHash = hashKernelNameFNV1a(name);
+    name = name.substr(0, 176) + "_h" + std::to_string(static_cast<unsigned long long>(suffixHash));
   }
   return name;
 }
@@ -3594,16 +3826,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
               mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
           sd_printf("TritonIRBuilder: stored reduction input slot %d to buffer for segmented reduction\n", inputSrc);
           // Memory fence + block barrier to ensure all threads' stores are visible
-          // before any thread loads from the buffer for reduction
-          auto dummyType = builder.getI32Type();
-          auto dummyTensorType = mlir::RankedTensorType::get({blockSize}, dummyType);
-          auto dummyIn = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
-          auto dummyInTensor = builder.create<mlir::triton::SplatOp>(loc, dummyTensorType, dummyIn);
-          builder.create<mlir::triton::ElementwiseInlineAsmOp>(
-              loc, mlir::TypeRange{dummyTensorType},
-              "membar.gl; bar.sync 0;",
-              "", /*isPure=*/false,
-              /*pack=*/1, mlir::ValueRange{dummyInTensor});
+          // before any thread loads from the buffer for reduction.
+          // tt.elementwise_inline_asm with a tensor input runs the ASM on all threads,
+          // which is required for bar.sync 0 to not deadlock.
+          // "=r,r" declares one output register (per thread) and one input register.
+          {
+            auto dummyTensorType = mlir::RankedTensorType::get({blockSize}, builder.getI32Type());
+            auto dummyZero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+            auto dummyTensor = builder.create<mlir::triton::SplatOp>(loc, dummyTensorType, dummyZero);
+            builder.create<mlir::triton::ElementwiseInlineAsmOp>(
+                loc, mlir::TypeRange{dummyTensorType},
+                "membar.gl; bar.sync 0; mov.b32 $0, $1;",
+                "=r,r", /*isPure=*/false,
+                /*pack=*/1, mlir::ValueRange{dummyTensor});
+          }
         }
       }
       int argIdx = inputArgIt->second;
@@ -3940,8 +4176,26 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           seqK = static_cast<int>(kArr->sizeAt(1));
         }
         float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
-        int blockM = 64, blockN = 64;
-        if (headDim <= 32) { blockM = 32; blockN = 32; }
+        auto attnTile = chooseFusedAttentionTileConfig(
+            batchSize, numHeads, seqQ, seqK, headDim);
+        if (!attnTile.fitsSharedMem) {
+          std::string msg = "TritonIRBuilder: fused attention '" + slot.opName + "' at slot " +
+                            std::to_string(si) + " cannot fit shared memory (headDim=" +
+                            std::to_string(headDim) + ", BM=" + std::to_string(attnTile.blockM) +
+                            ", BN=" + std::to_string(attnTile.blockN) + ", estimated=" +
+                            std::to_string(attnTile.estimatedSharedMemBytes) + ", limit=" +
+                            std::to_string(attnTile.sharedMemLimitBytes) + ")";
+          THROW_EXCEPTION(msg.c_str());
+        }
+        int blockM = attnTile.blockM;
+        int blockN = attnTile.blockN;
+        if (attnTile.adjustedForSharedMem) {
+          sd_printf("TritonIRBuilder: adjusted fused attention tile for slot %d "
+                    "(headDim=%d, seqQ=%d, seqK=%d) -> BM=%d BN=%d (estimatedSmem=%d, limit=%d)\n",
+                    si, headDim, seqQ, seqK,
+                    blockM, blockN,
+                    attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes);
+        }
 
         auto qPtr = getSlotArgPtr(qSrc);
         auto kPtr = getSlotArgPtr(kSrc);
@@ -4487,6 +4741,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   result.mlirContext = mlirContext;  // Store for proper cleanup
   result.valid = true;
   result.useIndirectArgs = useIndirectArgs;
+  result.useDynamicGrid = false;
+  result.requiredGrid = static_cast<int>(
+      std::min<LongType>(static_cast<LongType>(result.gridX) * result.gridY,
+                         static_cast<LongType>(2147483647)));
 
   // Dump TTIR module for diagnostics (before Triton pipeline)
   {
@@ -4666,6 +4924,95 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   sd_debug("TritonIRBuilder::buildSectionedModule: %d cross-section intermediates\n",
             static_cast<int>(crossSectionIntermediates.size()));
 
+  // Pre-compute which section boundaries truly require a grid-wide barrier.
+  // Many sections share the same 1D pid mapping and can stream values block-local
+  // without cooperative synchronization.
+  std::unordered_map<int, int> producerSectionByOutput;
+  std::vector<LongType> sectionMaxOutputElements(sections.size(), 0);
+  auto computeSectionMaxOutputElements = [&](const KernelSection& sec) -> LongType {
+    LongType maxElements = 0;
+    for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+      for (int o = 0; o < slots[si].numOutputs; o++) {
+        int outIdx = slots[si].outputSlotIndices[o];
+        auto outShape = resolveShape(outIdx);
+        LongType elems = shapeLength(outShape);
+        if (elems > maxElements) maxElements = elems;
+      }
+    }
+    return maxElements;
+  };
+
+  for (size_t secIdx = 0; secIdx < sections.size(); secIdx++) {
+    sectionMaxOutputElements[secIdx] = computeSectionMaxOutputElements(sections[secIdx]);
+    for (int si = sections[secIdx].startSlot; si <= sections[secIdx].endSlot; si++) {
+      for (int o = 0; o < slots[si].numOutputs; o++) {
+        int outIdx = slots[si].outputSlotIndices[o];
+        if (internalSlotOutputs.count(outIdx)) {
+          producerSectionByOutput[outIdx] = static_cast<int>(secIdx);
+        }
+      }
+    }
+  }
+
+  auto sectionNeedsGlobalBarrier = [](KernelSectionType type) -> bool {
+    switch (type) {
+      case KernelSectionType::FUSED_ATTENTION:
+      case KernelSectionType::REDUCTION:
+      case KernelSectionType::NORMALIZATION:
+      case KernelSectionType::SCATTER_ND:
+      case KernelSectionType::SCATTER_ND_UPDATE:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  std::vector<uint8_t> sectionNeedsBarrier(sections.size(), 0);
+  for (size_t secIdx = 1; secIdx < sections.size(); secIdx++) {
+    bool needsBarrier = false;
+    const auto& consumerSection = sections[secIdx];
+    for (int si = consumerSection.startSlot; si <= consumerSection.endSlot && !needsBarrier; si++) {
+      for (int inp = 0; inp < slots[si].numInputs; inp++) {
+        int srcIdx = slots[si].inputSourceIndices[inp];
+        if (srcIdx < 0 || !crossSectionIntermediates.count(srcIdx)) continue;
+
+        auto producerIt = producerSectionByOutput.find(srcIdx);
+        if (producerIt == producerSectionByOutput.end()) continue;
+
+        int producerSectionIdx = producerIt->second;
+        if (producerSectionIdx == static_cast<int>(secIdx)) continue;
+        if (producerSectionIdx < 0 || producerSectionIdx >= static_cast<int>(sections.size())) continue;
+
+        const auto& producerSection = sections[producerSectionIdx];
+        if (sectionNeedsGlobalBarrier(producerSection.type) ||
+            sectionNeedsGlobalBarrier(consumerSection.type)) {
+          needsBarrier = true;
+          break;
+        }
+
+        LongType producedElements = shapeLength(resolveShape(srcIdx));
+        LongType consumerElements = sectionMaxOutputElements[secIdx];
+        if (producedElements <= 0 || consumerElements <= 0 || producedElements != consumerElements) {
+          needsBarrier = true;
+          break;
+        }
+      }
+    }
+
+    if (needsBarrier) {
+      sectionNeedsBarrier[secIdx] = 1;
+    }
+  }
+
+  bool needsGridSync = std::any_of(sectionNeedsBarrier.begin(), sectionNeedsBarrier.end(),
+                                   [](uint8_t v) { return v != 0; });
+  int requiredBarriers = 0;
+  for (auto v : sectionNeedsBarrier) {
+    if (v != 0) requiredBarriers++;
+  }
+  sd_debug("TritonIRBuilder::buildSectionedModule: %d/%d section boundaries require grid barriers\n",
+            requiredBarriers, std::max(0, static_cast<int>(sections.size()) - 1));
+
   // Input args: external inputs or outputs from slots BEFORE this segment
   std::vector<TritonKernelArg> inputArgs;
   std::unordered_set<int> seenInputs;
@@ -4752,7 +5099,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.args.insert(result.args.end(), outputArgs.begin(), outputArgs.end());
 
   int totalBufferArgs = static_cast<int>(result.args.size());
-  bool useIndirectArgs = (totalBufferArgs + 2) > TRITON_DIRECT_ARG_LIMIT;  // +1 n_elements, +1 sync counter
+  int extraScalarArgs = needsGridSync ? 2 : 1;  // n_elements [+ sync_counter_ptr]
+  bool useIndirectArgs = (totalBufferArgs + extraScalarArgs) > TRITON_DIRECT_ARG_LIMIT;
 
   sd_debug("TritonIRBuilder::buildSectionedModule: %d input args, %d output args, %d total buffer args%s\n",
             static_cast<int>(inputArgs.size()), static_cast<int>(outputArgs.size()),
@@ -4784,8 +5132,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     funcArgTypes.push_back(mlir::triton::PointerType::get(i64Type, 1));
   }
   funcArgTypes.push_back(i32Type);  // n_elements
-  // Sync counter pointer for grid sync barriers (only if multiple sections)
-  bool needsGridSync = sections.size() > 1;
+  // Sync counter pointer for section boundaries that require grid sync.
   if (needsGridSync) {
     funcArgTypes.push_back(mlir::triton::PointerType::get(i32Type, 1));  // sync_counter_ptr
   }
@@ -4829,12 +5176,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     syncCounterPtr = entryBlock->getArgument(syncArgIdx);
   }
 
-  // ── Step 4: Compute max section grid and tile config from segment content ──
-  int maxSectionGrid = 1;
-  for (auto& sec : sections) {
-    if (sec.gridRequirement > maxSectionGrid) maxSectionGrid = sec.gridRequirement;
-  }
-
+  // ── Step 4: Derive tile config and recompute section launch grid ──
   // Derive blockSize/numWarps/numStages from actual op categories and shapes
   // via selectTileConfig() which consults LaunchDims.h
   std::vector<TritonOpCategory> categories;
@@ -4850,6 +5192,145 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   }
   int blockSize, numWarps, numStages;
   selectTileConfig(categories, shapes, blockSize, numWarps, numStages);
+  if (sectionedBlockSizeOverride_ > 0) {
+    if (blockSize != sectionedBlockSizeOverride_) {
+      sd_debug("TritonIRBuilder::buildSectionedModule: overriding block size %d -> %d\n",
+               blockSize, sectionedBlockSizeOverride_);
+    }
+    blockSize = sectionedBlockSizeOverride_;
+  }
+  const int attentionSharedMemLimitBytes = queryCudaSharedMemLimitBytes();
+
+  auto sectionMaxElements = [&](const KernelSection& sec) -> LongType {
+    LongType maxElements = 0;
+    for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+      for (int o = 0; o < slots[si].numOutputs; o++) {
+        int outIdx = slots[si].outputSlotIndices[o];
+        auto outShape = resolveShape(outIdx);
+        LongType elems = shapeLength(outShape);
+        if (elems > maxElements) maxElements = elems;
+      }
+    }
+    if (maxElements <= 0) {
+      // Fallback for shape-only/meta ops: derive from consumed inputs.
+      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        for (int inp = 0; inp < slots[si].numInputs; inp++) {
+          int srcIdx = slots[si].inputSourceIndices[inp];
+          auto inShape = resolveShape(srcIdx);
+          LongType elems = shapeLength(inShape);
+          if (elems > maxElements) maxElements = elems;
+        }
+      }
+    }
+    return maxElements;
+  };
+
+  auto deriveAttentionGrid = [&](const KernelSection& sec) -> std::pair<int, int> {
+    int batchSize = std::max(1, sec.batchSize);
+    int numHeads = std::max(1, sec.numHeads);
+    int seqQ = std::max(1, sec.seqQ);
+    int seqK = std::max(1, sec.seqK);
+    int headDim = std::max(1, sec.headDim);
+
+    // Recover dimensions from runtime shapes when section metadata is incomplete.
+    if (sec.batchSize <= 0 || sec.numHeads <= 0 || sec.seqQ <= 0 || sec.headDim <= 0) {
+      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        auto& slot = slots[si];
+        if (getOpCategory(slot.opName) != TritonOpCategory::FUSED_ATTENTION ||
+            slot.numInputs < 1) {
+          continue;
+        }
+        auto qShape = resolveShape(slot.inputSourceIndices[0]);
+        if (qShape.size() >= 4) {
+          batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
+          numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
+          seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
+          headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
+          if (slot.numInputs >= 2) {
+            auto kShape = resolveShape(slot.inputSourceIndices[1]);
+            if (kShape.size() >= 3) {
+              seqK = static_cast<int>(std::max<LongType>(1, kShape[2]));
+            }
+          }
+        } else if (qShape.size() == 3) {
+          batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
+          numHeads = 1;
+          seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
+          headDim = static_cast<int>(std::max<LongType>(1, qShape[2]));
+          if (slot.numInputs >= 2) {
+            auto kShape = resolveShape(slot.inputSourceIndices[1]);
+            if (kShape.size() >= 2) {
+              seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
+            }
+          }
+        }
+        break;
+      }
+    }
+
+    auto attnTile = chooseFusedAttentionTileConfig(
+        batchSize, numHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
+    int blockMForAttn = std::max(1, attnTile.blockM);
+
+    int gridX = std::max(1, batchSize * numHeads);
+    int gridY = std::max(1, (seqQ + blockMForAttn - 1) / blockMForAttn);
+    return {gridX, gridY};
+  };
+
+  auto computeSectionBlocks = [&](const KernelSection& sec) -> int {
+    if (sec.type == KernelSectionType::FUSED_ATTENTION) {
+      auto attnGrid = deriveAttentionGrid(sec);
+      LongType blocks64 = static_cast<LongType>(attnGrid.first) * attnGrid.second;
+      if (blocks64 > static_cast<LongType>(2147483647)) blocks64 = static_cast<LongType>(2147483647);
+      return static_cast<int>(std::max<LongType>(1, blocks64));
+    }
+
+    LongType maxElements = sectionMaxElements(sec);
+    if (maxElements <= 0) {
+      return std::max(1, sec.gridRequirement);
+    }
+
+    LongType blocks64 = (maxElements + blockSize - 1) / blockSize;
+    if (blocks64 > static_cast<LongType>(2147483647)) blocks64 = static_cast<LongType>(2147483647);
+    return static_cast<int>(std::max<LongType>(1, blocks64));
+  };
+
+  auto recomputeSectionGridRequirements = [&]() -> int {
+    int maxGrid = 1;
+    for (auto& sec : sections) {
+      sec.gridRequirement = computeSectionBlocks(sec);
+      if (sec.gridRequirement > maxGrid) maxGrid = sec.gridRequirement;
+    }
+    return maxGrid;
+  };
+
+  int maxSectionGrid = recomputeSectionGridRequirements();
+  if (needsGridSync) {
+    const int coopTargetBlocks = std::max(1, getSectionedCooperativeTargetBlocks());
+    const int initialBlockSize = blockSize;
+    while (maxSectionGrid > coopTargetBlocks && blockSize < 16384) {
+      blockSize <<= 1;
+      maxSectionGrid = recomputeSectionGridRequirements();
+    }
+    if (blockSize != initialBlockSize) {
+      sd_printf("TritonIRBuilder::buildSectionedModule: tuned cooperative block size %d -> %d "
+                "(targetBlocks=%d, resultingGrid=%d)\n",
+                initialBlockSize, blockSize, coopTargetBlocks, maxSectionGrid);
+    }
+  }
+
+  unsigned int fixedGridX = static_cast<unsigned int>(std::max(1, maxSectionGrid));
+  unsigned int fixedGridY = 1;
+  unsigned int fixedGridZ = 1;
+  if (sections.size() == 1 && sections[0].type == KernelSectionType::FUSED_ATTENTION) {
+    auto attnGrid = deriveAttentionGrid(sections[0]);
+    fixedGridX = static_cast<unsigned int>(std::max(1, attnGrid.first));
+    fixedGridY = static_cast<unsigned int>(std::max(1, attnGrid.second));
+    LongType totalBlocks = static_cast<LongType>(fixedGridX) * fixedGridY;
+    if (totalBlocks > maxSectionGrid) {
+      maxSectionGrid = static_cast<int>(std::min<LongType>(totalBlocks, static_cast<LongType>(2147483647)));
+    }
+  }
 
   auto i32TensorType = mlir::RankedTensorType::get({blockSize}, i32Type);
 
@@ -4890,7 +5371,22 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     auto range = builder.create<mlir::triton::MakeRangeOp>(loc, i32TensorType, 0, blockSize);
     auto splatBase = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, offsetBase);
     auto offsets = builder.create<mlir::arith::AddIOp>(loc, splatBase, range);
-    auto splatN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, nElementsArg);
+
+    // Use per-slot element count when available.
+    // A global n_elements can be larger than this slot (e.g., concat/split chains),
+    // which would allow out-of-bounds loads while populating section SSA values.
+    mlir::Value slotNValue = nElementsArg;
+    auto slotShape = resolveShape(slotIdx);
+    LongType slotElements = shapeLength(slotShape);
+    if (slotElements > 0) {
+      if (slotElements > static_cast<LongType>(2147483647)) {
+        slotElements = static_cast<LongType>(2147483647);
+      }
+      slotNValue = builder.create<mlir::arith::ConstantIntOp>(
+          loc, static_cast<int>(slotElements), 32);
+    }
+
+    auto splatN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, slotNValue);
     auto mask = builder.create<mlir::arith::CmpIOp>(
         loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
     auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, argPtr);
@@ -4911,33 +5407,39 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               static_cast<int>(secIdx), static_cast<int>(sections.size()),
               static_cast<int>(sec.type), sec.startSlot, sec.endSlot);
 
-    // Before each section (except the first), insert grid sync barrier
-    // if this section reads outputs from a previous section
-    if (secIdx > 0 && needsGridSync) {
-      bool needsBarrier = false;
-      for (int i = sec.startSlot; i <= sec.endSlot; i++) {
-        for (int inp = 0; inp < slots[i].numInputs; inp++) {
-          int srcIdx = slots[i].inputSourceIndices[inp];
-          if (crossSectionIntermediates.count(srcIdx)) {
-            needsBarrier = true;
-            break;
-          }
-        }
-        if (needsBarrier) break;
+    // Before each section (except the first), insert a grid sync barrier
+    // only when dependency analysis determined it is required.
+    if (secIdx > 0 && needsGridSync && sectionNeedsBarrier[secIdx]) {
+      // Grid sync counter accumulates across barriers (never reset within a launch).
+      // Barrier N must wait for counter >= (N+1) * maxSectionGrid:
+      //   Barrier 0: all K blocks increment → counter = K, check counter >= K ✓
+      //   Barrier 1: all K blocks increment → counter = 2K, check counter >= 2K ✓
+      LongType threshold64 =
+          static_cast<LongType>(sectionBarrierCount + 1) * static_cast<LongType>(maxSectionGrid);
+      if (threshold64 > static_cast<LongType>(2147483647)) {
+        threshold64 = static_cast<LongType>(2147483647);
       }
-      if (needsBarrier) {
-        // Grid sync counter accumulates across barriers (never reset within a launch).
-        // Barrier N must wait for counter >= (N+1) * maxSectionGrid:
-        //   Barrier 0: all K blocks increment → counter = K, check counter >= K ✓
-        //   Barrier 1: all K blocks increment → counter = 2K, check counter >= 2K ✓
-        int threshold = (sectionBarrierCount + 1) * maxSectionGrid;
-        auto numBlocksVal = builder.create<mlir::arith::ConstantIntOp>(loc, threshold, 32);
-        emitGridSync(builder, loc, syncCounterPtr, numBlocksVal);
-        sectionBarrierCount++;
-        sd_debug("TritonIRBuilder::buildSectionedModule: inserted grid sync barrier before section %d\n",
-                  static_cast<int>(secIdx));
-      }
+      auto numBlocksVal = builder.create<mlir::arith::ConstantIntOp>(
+          loc, static_cast<int>(threshold64), 32);
+      emitGridSync(builder, loc, syncCounterPtr, numBlocksVal);
+      sectionBarrierCount++;
+      sd_debug("TritonIRBuilder::buildSectionedModule: inserted grid sync barrier before section %d\n",
+                static_cast<int>(secIdx));
     }
+
+    // Guard each section by its own grid requirement. The cooperative launch
+    // uses maxSectionGrid blocks; blocks outside this section's range must no-op.
+    auto secGridConst = builder.create<mlir::arith::ConstantIntOp>(
+        loc, std::max(1, sec.gridRequirement), 32);
+    auto secActive = builder.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::slt, pid, secGridConst);
+    auto secIf = builder.create<mlir::scf::IfOp>(loc, secActive, /*withElseRegion=*/false);
+    builder.setInsertionPointToStart(&secIf.getThenRegion().front());
+
+    // Section bodies are emitted in distinct scf.if regions. Values from one
+    // section region do not dominate sibling section regions, so keep this map
+    // section-local and force cross-section values through explicit buffers.
+    ssaValues.clear();
 
     // Emit section body based on type
     switch (sec.type) {
@@ -4952,9 +5454,6 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         auto range = builder.create<mlir::triton::MakeRangeOp>(loc, i32TensorType, 0, blockSize);
         auto splatBase = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, offsetBase);
         auto offsets = builder.create<mlir::arith::AddIOp>(loc, splatBase, range);
-        auto splatN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, nElementsArg);
-        auto mask = builder.create<mlir::arith::CmpIOp>(
-            loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
         // Load inputs that aren't already in SSA map, with broadcast indexing
         // Compute max output elements for this section (for broadcast detection)
@@ -4982,6 +5481,18 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           }
         }
+
+        mlir::Value sectionNValue = nElementsArg;
+        if (secMaxOutputElements > 0) {
+          if (secMaxOutputElements > static_cast<LongType>(2147483647)) {
+            secMaxOutputElements = static_cast<LongType>(2147483647);
+          }
+          sectionNValue = builder.create<mlir::arith::ConstantIntOp>(
+              loc, static_cast<int>(secMaxOutputElements), 32);
+        }
+        auto splatN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, sectionNValue);
+        auto mask = builder.create<mlir::arith::CmpIOp>(
+            loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           for (int inp = 0; inp < slots[si].numInputs; inp++) {
@@ -5165,7 +5676,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
             auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
             mlir::Value storeVal = castTo(builder, loc, ssaIt->second, elemType);
-            builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, mask,
+            mlir::Value outMask = mask;
+            auto outShape = resolveShape(outIdx);
+            LongType outElements = shapeLength(outShape);
+            if (outElements > 0) {
+              if (outElements > static_cast<LongType>(2147483647)) {
+                outElements = static_cast<LongType>(2147483647);
+              }
+              auto outN = builder.create<mlir::arith::ConstantIntOp>(
+                  loc, static_cast<int>(outElements), 32);
+              auto splatOutN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, outN);
+              outMask = builder.create<mlir::arith::CmpIOp>(
+                  loc, mlir::arith::CmpIPredicate::slt, offsets, splatOutN);
+            }
+            builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, outMask,
                                                    mlir::triton::CacheModifier::NONE,
                                                    mlir::triton::EvictionPolicy::NORMAL);
           }
@@ -5227,6 +5751,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
       case KernelSectionType::FUSED_ATTENTION: {
         // ── Attention section: emit fused attention kernel ──
+        bool loggedAttnTileAdjust = false;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
           if (getOpCategory(slot.opName) != TritonOpCategory::FUSED_ATTENTION) continue;
@@ -5253,15 +5778,27 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (kShape.size() >= 4) seqK = static_cast<int>(kShape[2]);
           else if (kShape.size() == 3) seqK = static_cast<int>(kShape[1]);
           float scale = 1.0f / std::sqrt(static_cast<float>(std::max(headDim, 1)));
-          // Derive attention tile sizes from LaunchDims softmax heuristic
-          LongType numTads = static_cast<LongType>(batchSize) * numHeads * seqQ;
-          dim3 attDims = getSoftmaxDims(numTads, static_cast<LongType>(headDim));
-          int blockM = std::max(32, static_cast<int>(attDims.y) / 32 * 2);  // round to tile
-          // Ensure power of 2 and reasonable range
-          if (blockM > 128) blockM = 128;
-          if (blockM < 32) blockM = 32;
-          if (blockM & (blockM - 1)) { int p = 1; while (p < blockM) p <<= 1; blockM = p; }
-          int blockN = blockM;  // Symmetric tiles for QK^T and P@V
+          auto attnTile = chooseFusedAttentionTileConfig(
+              batchSize, numHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
+          if (!attnTile.fitsSharedMem) {
+            std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " +
+                              std::to_string(si) + " cannot fit shared memory (headDim=" +
+                              std::to_string(headDim) + ", BM=" + std::to_string(attnTile.blockM) +
+                              ", BN=" + std::to_string(attnTile.blockN) + ", estimated=" +
+                              std::to_string(attnTile.estimatedSharedMemBytes) + ", limit=" +
+                              std::to_string(attnTile.sharedMemLimitBytes) + ")";
+            THROW_EXCEPTION(msg.c_str());
+          }
+          int blockM = attnTile.blockM;
+          int blockN = attnTile.blockN;
+          if (attnTile.adjustedForSharedMem && !loggedAttnTileAdjust) {
+            sd_printf("TritonIRBuilder::buildSectionedModule: adjusted attention tiles for section [%d-%d] "
+                      "to BM=%d BN=%d (headDim=%d, seqQ=%d, seqK=%d, estimatedSmem=%d, limit=%d)\n",
+                      sec.startSlot, sec.endSlot,
+                      blockM, blockN, headDim, seqQ, seqK,
+                      attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes);
+            loggedAttnTileAdjust = true;
+          }
 
           auto qPtr = getSlotArgPtr(qSrc);
           auto kPtr = getSlotArgPtr(kSrc);
@@ -5690,15 +6227,18 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                   static_cast<int>(sec.type));
         break;
     }
+
+    // Continue emitting after the section guard.
+    builder.setInsertionPointAfter(secIf);
   }
 
   // Return
   builder.create<mlir::triton::ReturnOp>(loc);
 
   // ── Grid and launch configuration ──
-  result.gridX = maxSectionGrid;
-  result.gridY = 1;
-  result.gridZ = 1;
+  result.gridX = fixedGridX;
+  result.gridY = fixedGridY;
+  result.gridZ = fixedGridZ;
   result.blockX = blockSize;
   result.blockY = 1;
   result.blockZ = 1;
@@ -5706,8 +6246,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.numStages = numStages;
   result.useIndirectArgs = useIndirectArgs;
   result.useCooperativeLaunch = needsGridSync;
+  result.useDynamicGrid = false;
   result.requiredGrid = maxSectionGrid;
   result.sections = sections;
+
+  dumpSectionBreakdown(sections, startSlot, endSlot, maxSectionGrid, needsGridSync);
 
   result.mlirModule = new mlir::ModuleOp(moduleOp);
   result.mlirContext = mlirContext;
@@ -6213,10 +6756,9 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       // After a non-element-wise section, start a new one
       startNewSection = true;
     } else if (!canMergeWithElementwise(currentSection.type)) {
-      // After any non-mergeable section (DATA_MOVEMENT: concat, gather, split, etc.)
-      // always start a new section so the DATA_MOVEMENT output gets its own buffer
-      // as a cross-section intermediate that downstream ops can load from.
-      startNewSection = true;
+      // Non-mergeable section types can still absorb consecutive ops of the SAME type.
+      // This reduces section/barrier count without changing per-op emission semantics.
+      startNewSection = (sectionType != currentSection.type);
     } else if (!canMergeWithElementwise(sectionType) && currentSection.type != sectionType) {
       // Data movement ops that don't merge with element-wise
       startNewSection = true;
@@ -6322,9 +6864,16 @@ int TritonIRBuilder::computeSectionGrid(const KernelSection& section, int blockS
       return gridM * gridN;
     }
     case KernelSectionType::FUSED_ATTENTION: {
-      int batchHeads = section.batchSize * section.numHeads;
-      int blockM = 64;
-      int gridQ = (section.seqQ + blockM - 1) / blockM;
+      int batchSize = std::max(1, section.batchSize);
+      int numHeads = std::max(1, section.numHeads);
+      int seqQ = std::max(1, section.seqQ);
+      int seqK = std::max(1, section.seqK);
+      int headDim = std::max(1, section.headDim);
+      auto attnTile = chooseFusedAttentionTileConfig(
+          batchSize, numHeads, seqQ, seqK, headDim);
+      int batchHeads = batchSize * numHeads;
+      int blockM = std::max(1, attnTile.blockM);
+      int gridQ = (seqQ + blockM - 1) / blockM;
       return batchHeads * gridQ;
     }
     case KernelSectionType::ELEMENTWISE:
@@ -6345,9 +6894,9 @@ int TritonIRBuilder::computeSectionGrid(const KernelSection& section, int blockS
     case KernelSectionType::SCATTER_ND_UPDATE:
     case KernelSectionType::CONVOLUTION:
     default:
-      // 1D grid — estimate from output element count
-      // Conservative: assume largest output in the section
-      return 256;  // Will be recomputed at launch time based on actual n_elements
+      // Placeholder. buildSectionedModule() recomputes launch grid from resolved
+      // section shapes after tile selection.
+      return 1;
   }
 }
 
@@ -7356,7 +7905,8 @@ void TritonIRBuilder::emitMatmulSection(mlir::OpBuilder& builder, mlir::Location
 void TritonIRBuilder::dumpSectionBreakdown(const std::vector<KernelSection>& sections,
                                             int startSlot, int endSlot,
                                             int maxSectionGrid, bool cooperativeLaunch) {
-  static bool dumpEnabled = getenv("ND4J_TRITON_DUMP_SECTIONS") || getenv("ND4J_TRITON_VERBOSE");
+  auto& env = Environment::getInstance();
+  const bool dumpEnabled = env.tritonDumpSections() || env.tritonVerbose();
   if (!dumpEnabled) return;
 
   sd_printf("=== Triton Kernel: seg[%d-%d] ===\n", startSlot, endSlot);
@@ -7404,7 +7954,8 @@ void TritonIRBuilder::dumpSectionBreakdown(const std::vector<KernelSection>& sec
 void TritonIRBuilder::dumpArgMapping(const std::vector<TritonKernelArg>& args,
                                       int startSlot, int endSlot,
                                       int eliminatedCount) {
-  static bool dumpEnabled = getenv("ND4J_TRITON_DUMP_ARGS") || getenv("ND4J_TRITON_VERBOSE");
+  auto& env = Environment::getInstance();
+  const bool dumpEnabled = env.tritonDumpArgs() || env.tritonVerbose();
   if (!dumpEnabled) return;
 
   sd_printf("=== Arg Mapping: seg[%d-%d] ===\n", startSlot, endSlot);
@@ -7428,16 +7979,25 @@ void TritonIRBuilder::emitAttentionSection(mlir::OpBuilder& builder, mlir::Locat
                                             mlir::Value pid, const KernelSection& section,
                                             mlir::Value qPtr, mlir::Value kPtr,
                                             mlir::Value vPtr, mlir::Value outPtr) {
+  (void)pid;
   // Delegate to the existing emitFusedAttentionKernel, which creates its own
   // GetProgramIdOp. For the sectioned kernel, this is called within an scf.if
   // guard so only blocks in the attention section's pid range execute it.
   // Note: emitFusedAttentionKernel uses its own pid0/pid1 from GetProgramIdOp.
   // In the cooperative kernel, we remap pid to the attention section's range.
+  auto attnTile = chooseFusedAttentionTileConfig(
+      std::max(1, section.batchSize),
+      std::max(1, section.numHeads),
+      std::max(1, section.seqQ),
+      std::max(1, section.seqK),
+      std::max(1, section.headDim));
+  int blockM = attnTile.blockM;
+  int blockN = attnTile.blockN;
   emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                             section.batchSize, section.numHeads,
                             section.seqQ, section.seqK,
                             section.headDim, section.attentionScale,
-                            64, 64);
+                            blockM, blockN);
 }
 
 void TritonIRBuilder::emitSplitSection(mlir::OpBuilder& builder, mlir::Location loc,

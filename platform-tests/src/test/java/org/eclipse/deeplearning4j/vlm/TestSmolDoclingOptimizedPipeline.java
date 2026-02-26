@@ -38,6 +38,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -114,6 +116,8 @@ public class TestSmolDoclingOptimizedPipeline {
     @DisplayName("Optimized SmolDocling: GraphOptimizer fusions + tok/s measurement")
     public void testOptimizedDoclingPipeline() throws Exception {
         // ==================== STEP 1: Download Models ====================
+        Nd4j.getEnvironment().setTritonBuildThreads(4);
+
         log.info("STEP 1: Downloading models...");
         var visionResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_VISION_ENCODER);
         var decoderResult = VLMModelDownloader.download(VLMModelDownloader.VLMModel.SMOLDOCLING_DECODER);
@@ -149,7 +153,7 @@ public class TestSmolDoclingOptimizedPipeline {
         SameDiff visionEncoder = models[0];
         SameDiff decoder = models[1];
         SameDiff embedTokens = models[2];
-
+        
         long importTime = System.currentTimeMillis() - step3Start;
 
         // Log the optimized decoder stats
@@ -169,6 +173,30 @@ public class TestSmolDoclingOptimizedPipeline {
         }
 
         log.info("STEP 3 DONE: {}ms", importTime);
+
+        // Explicit DSP/native compilation for all models (no lazy compile during decode).
+        String dspModeProp = System.getProperty("vlm.test.dsp.compilation.mode", "MAX_AUTOTUNE");
+        String dspModeCanonical = normalizePropertyToken(dspModeProp);
+        DspCompilationMode dspMode;
+        try {
+            dspMode = DspCompilationMode.valueOf(dspModeCanonical);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Invalid vlm.test.dsp.compilation.mode='" + dspModeProp + "' (normalized='" + dspModeCanonical +
+                            "'). Expected one of: " + Arrays.toString(DspCompilationMode.values()), e);
+        }
+        String tritonProfile = configureTritonCompileProfile(dspMode);
+        if (Nd4j.getNativeOps().isTritonAvailable()) {
+            Nd4j.getNativeOps().resetTritonCounters();
+        }
+        log.info("STEP 3b: DSP/native precompile all models (requestedMode='{}', normalized='{}', selectedMode={}, tritonProfile={})",
+                dspModeProp, dspModeCanonical, dspMode, tritonProfile);
+        logTritonKnobs("Environment before precompile");
+        logTritonCounters("before-precompile");
+        precompileModelForPipeline(visionEncoder, "vision encoder", dspMode);
+        precompileModelForPipeline(decoder, "decoder", dspMode);
+        precompileModelForPipeline(embedTokens, "embed tokens", dspMode);
+        logTritonCounters("after-precompile");
 
         // ==================== STEP 4: Load, Tile, and Preprocess Image ====================
         log.info("STEP 4: Loading and tiling image...");
@@ -304,6 +332,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 .build();
 
         GenerationResult result = decodeLoop.decode(inputsEmbeds, promptTokenIds);
+        logTritonCounters("after-decode");
 
         String generatedText = result.getText();
         long totalDecodeMs = result.getGenerationTimeMs();
@@ -504,5 +533,163 @@ public class TestSmolDoclingOptimizedPipeline {
         }
         Nd4j.getExecutioner().commit();
         log.info("  Freed {} {} arrays ({}MB)", closedArrays, label, closedBytes / (1024 * 1024));
+    }
+
+    private String configureTritonCompileProfile(DspCompilationMode mode) {
+        String defaultProfile = "BALANCED";
+        String rawProfile = System.getProperty("vlm.test.triton.profile", defaultProfile);
+        String profile = normalizePropertyToken(rawProfile);
+
+        if ("DEBUG_FAST".equals(profile)) {
+            // Fast startup profile for validating Triton execution in debug runs.
+            Nd4j.getEnvironment().setTritonBuildThreads(intProp("vlm.test.triton.buildThreads", 1));
+            Nd4j.getEnvironment().setTritonCacheEnabled(boolProp("vlm.test.triton.cacheEnabled", true));
+            Nd4j.getEnvironment().setTritonAlwaysCompile(boolProp("vlm.test.triton.alwaysCompile", false));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentOps(intProp("vlm.test.triton.maxSubsegmentOps", 8));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentSections(intProp("vlm.test.triton.maxSubsegmentSections", 2));
+            Nd4j.getEnvironment().setTritonNumWarps(intProp("vlm.test.triton.numWarps", 2));
+            Nd4j.getEnvironment().setTritonNumStages(intProp("vlm.test.triton.numStages", 2));
+            Nd4j.getEnvironment().setTritonNumCTAs(intProp("vlm.test.triton.numCTAs", 1));
+            Nd4j.getEnvironment().setTritonMaxNreg(intProp("vlm.test.triton.maxNreg", 64));
+            Nd4j.getEnvironment().setTritonEnableFpFusion(boolProp("vlm.test.triton.enableFpFusion", false));
+            Nd4j.getEnvironment().setTritonDisableLineInfo(boolProp("vlm.test.triton.disableLineInfo", true));
+            Nd4j.getEnvironment().setTritonVerbose(boolProp("vlm.test.triton.verbose", true));
+            Nd4j.getEnvironment().setTritonDumpSections(boolProp("vlm.test.triton.dumpSections", true));
+            Nd4j.getEnvironment().setTritonDumpArgs(boolProp("vlm.test.triton.dumpArgs", false));
+            Nd4j.getEnvironment().setTritonKernelDump(boolProp("vlm.test.triton.kernelDump", false));
+            Nd4j.getEnvironment().setTritonLogAllPatterns(boolProp("vlm.test.triton.logAllPatterns", false));
+            Nd4j.getEnvironment().setTritonCoopTargetBlocks(intProp("vlm.test.triton.coopTargetBlocks", 1));
+            return profile;
+        }
+
+        if ("BALANCED".equals(profile)) {
+            // Balanced profile: ~90%-style runtime throughput with significantly lower compile latency.
+            // MAX / all-in-one fused kernel reference (set via system properties when needed):
+            //   vlm.test.triton.maxSubsegmentOps=0
+            //   vlm.test.triton.maxSubsegmentSections=0
+            //   vlm.test.triton.coopTargetBlocks=0
+            //   vlm.test.triton.numWarps=8
+            //   vlm.test.triton.numStages=2
+            //   vlm.test.triton.buildThreads=4
+            // Keep MAX values out of defaults so runtime behavior stays user-controlled.
+            Nd4j.getEnvironment().setTritonBuildThreads(intProp("vlm.test.triton.buildThreads", 4));
+            Nd4j.getEnvironment().setTritonCacheEnabled(boolProp("vlm.test.triton.cacheEnabled", true));
+            Nd4j.getEnvironment().setTritonAlwaysCompile(boolProp("vlm.test.triton.alwaysCompile", false));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentOps(intProp("vlm.test.triton.maxSubsegmentOps", 192));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentSections(intProp("vlm.test.triton.maxSubsegmentSections", 8));
+            Nd4j.getEnvironment().setTritonNumWarps(intProp("vlm.test.triton.numWarps", 4));
+            Nd4j.getEnvironment().setTritonNumStages(intProp("vlm.test.triton.numStages", 2));
+            Nd4j.getEnvironment().setTritonNumCTAs(intProp("vlm.test.triton.numCTAs", 1));
+            Nd4j.getEnvironment().setTritonMaxNreg(intProp("vlm.test.triton.maxNreg", 0));
+            Nd4j.getEnvironment().setTritonEnableFpFusion(boolProp("vlm.test.triton.enableFpFusion", true));
+            Nd4j.getEnvironment().setTritonDisableLineInfo(boolProp("vlm.test.triton.disableLineInfo", true));
+            Nd4j.getEnvironment().setTritonVerbose(boolProp("vlm.test.triton.verbose", true));
+            Nd4j.getEnvironment().setTritonDumpSections(boolProp("vlm.test.triton.dumpSections", false));
+            Nd4j.getEnvironment().setTritonDumpArgs(boolProp("vlm.test.triton.dumpArgs", false));
+            Nd4j.getEnvironment().setTritonKernelDump(boolProp("vlm.test.triton.kernelDump", false));
+            Nd4j.getEnvironment().setTritonLogAllPatterns(boolProp("vlm.test.triton.logAllPatterns", false));
+            Nd4j.getEnvironment().setTritonCoopTargetBlocks(intProp("vlm.test.triton.coopTargetBlocks", 512));
+            return profile;
+        }
+
+        if ("MAX_PERF".equals(profile) || "MAX_AUTOTUNE".equals(profile)) {
+            Nd4j.getEnvironment().setTritonVerbose(boolProp("vlm.test.triton.verbose", false));
+            Nd4j.getEnvironment().setTritonDumpSections(boolProp("vlm.test.triton.dumpSections", false));
+            Nd4j.getEnvironment().setTritonDumpArgs(boolProp("vlm.test.triton.dumpArgs", false));
+            Nd4j.getEnvironment().setTritonKernelDump(boolProp("vlm.test.triton.kernelDump", false));
+            Nd4j.getEnvironment().setTritonLogAllPatterns(boolProp("vlm.test.triton.logAllPatterns", false));
+            return profile;
+        }
+
+        throw new IllegalArgumentException(
+                "Invalid vlm.test.triton.profile='" + rawProfile + "' (normalized='" + profile +
+                        "'). Expected one of: DEBUG_FAST, BALANCED, MAX_PERF");
+    }
+
+    private void logTritonKnobs(String prefix) {
+        log.info("  {}: tritonBuildThreads={}, tritonCacheEnabled={}, tritonAlwaysCompile={}, tritonMaxSubsegmentOps={}, tritonMaxSubsegmentSections={}, tritonNumWarps={}, tritonNumStages={}, tritonNumCTAs={}, tritonMaxNreg={}, tritonCoopTargetBlocks={}, tritonEnableFpFusion={}, tritonDisableLineInfo={}, tritonVerbose={}, tritonDumpSections={}, tritonDumpArgs={}, tritonKernelDump={}, tritonLogAllPatterns={}",
+                prefix,
+                Nd4j.getEnvironment().tritonBuildThreads(),
+                Nd4j.getEnvironment().tritonCacheEnabled(),
+                Nd4j.getEnvironment().tritonAlwaysCompile(),
+                Nd4j.getEnvironment().tritonMaxSubsegmentOps(),
+                Nd4j.getEnvironment().tritonMaxSubsegmentSections(),
+                Nd4j.getEnvironment().tritonNumWarps(),
+                Nd4j.getEnvironment().tritonNumStages(),
+                Nd4j.getEnvironment().tritonNumCTAs(),
+                Nd4j.getEnvironment().tritonMaxNreg(),
+                Nd4j.getEnvironment().tritonCoopTargetBlocks(),
+                Nd4j.getEnvironment().tritonEnableFpFusion(),
+                Nd4j.getEnvironment().tritonDisableLineInfo(),
+                Nd4j.getEnvironment().tritonVerbose(),
+                Nd4j.getEnvironment().tritonDumpSections(),
+                Nd4j.getEnvironment().tritonDumpArgs(),
+                Nd4j.getEnvironment().tritonKernelDump(),
+                Nd4j.getEnvironment().tritonLogAllPatterns());
+    }
+
+    private void logTritonCounters(String stage) {
+        boolean available = Nd4j.getNativeOps().isTritonAvailable();
+        long launches = Nd4j.getNativeOps().getTritonKernelLaunchCount();
+        long cacheHits = Nd4j.getNativeOps().getTritonCacheHitCount();
+        log.info("  Triton counters [{}]: available={} kernelLaunches={} cacheHits={}",
+                stage, available, launches, cacheHits);
+    }
+
+    private String normalizePropertyToken(String raw) {
+        return raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+    }
+
+    private static int intProp(String key, int defaultValue) {
+        return Integer.getInteger(key, defaultValue);
+    }
+
+    private static boolean boolProp(String key, boolean defaultValue) {
+        return Boolean.parseBoolean(System.getProperty(key, Boolean.toString(defaultValue)));
+    }
+
+    private void precompileModelForPipeline(SameDiff model, String label, DspCompilationMode mode) {
+        List<String> modelOutputs = model.outputs() == null ? Collections.emptyList() : new ArrayList<>(model.outputs());
+        log.info("  Precompiling {}: outputs={} ops={}", label, modelOutputs, model.getOps().size());
+        log.debug("    {} compile inputs: {}", label, model.inputs());
+
+        model.setDspAutoCompileEnabled(false);
+        model.setDspNativeAutoCompileEnabled(false);
+        model.setDspFallbackToAutoIfTritonUnavailable(false);
+        boolean tritonAvailable = Nd4j.getNativeOps().isTritonAvailable();
+        log.info("    {} compile controls: autoCompile={} nativeAutoCompile={} fallbackToAuto={} tritonAvailable={}",
+                label,
+                model.isDspAutoCompileEnabled(),
+                model.isDspNativeAutoCompileEnabled(),
+                model.isDspFallbackToAutoIfTritonUnavailable(),
+                tritonAvailable);
+        if (mode == DspCompilationMode.MAX_AUTOTUNE && !tritonAvailable) {
+            throw new IllegalStateException("MAX_AUTOTUNE requested for " + label + " but Triton is unavailable");
+        }
+        log.debug("    {} triton config: buildThreads={} cacheEnabled={} alwaysCompile={} maxSubsegmentOps={} maxSubsegmentSections={} numWarps={} numStages={} numCTAs={} maxNreg={} fpFusion={} disableLineInfo={}",
+                label,
+                Nd4j.getEnvironment().tritonBuildThreads(),
+                Nd4j.getEnvironment().tritonCacheEnabled(),
+                Nd4j.getEnvironment().tritonAlwaysCompile(),
+                Nd4j.getEnvironment().tritonMaxSubsegmentOps(),
+                Nd4j.getEnvironment().tritonMaxSubsegmentSections(),
+                Nd4j.getEnvironment().tritonNumWarps(),
+                Nd4j.getEnvironment().tritonNumStages(),
+                Nd4j.getEnvironment().tritonNumCTAs(),
+                Nd4j.getEnvironment().tritonMaxNreg(),
+                Nd4j.getEnvironment().tritonEnableFpFusion(),
+                Nd4j.getEnvironment().tritonDisableLineInfo());
+
+        long start = System.currentTimeMillis();
+        var effectiveMode = modelOutputs.isEmpty()
+                ? model.compileNativeDynamicShapePlan(mode)
+                : model.compileNativeDynamicShapePlan(modelOutputs, mode);
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("  {} precompile complete: requestedMode={} effectiveMode={} [{}ms]",
+                label, mode, effectiveMode, elapsed);
+        if (mode == DspCompilationMode.MAX_AUTOTUNE && effectiveMode != GraphExecutionMode.TRITON) {
+            throw new IllegalStateException("MAX_AUTOTUNE requested for " + label +
+                    " but effective mode resolved to " + effectiveMode + " (fallback disabled)");
+        }
     }
 }

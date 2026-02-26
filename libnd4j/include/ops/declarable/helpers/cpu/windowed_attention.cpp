@@ -114,7 +114,7 @@ static void windowedAttention_(sd::LaunchContext* context,
                 int actualWindowSize = static_cast<int>(windowEnd - windowStart);
 
                 // Compute attention scores within window
-                T maxScore = -1e9f;
+                T maxScore = static_cast<T>(-3.4028235e+38f);
                 for (int w = 0; w < actualWindowSize; w++) {
                     sd::LongType k = windowStart + w;
                     const T* keyVec = batchKey + k * seqStride;
@@ -139,8 +139,8 @@ static void windowedAttention_(sd::LaunchContext* context,
                     if (maskBuffer != nullptr) {
                         // Assume mask shape compatible with attention
                         T maskVal = maskBuffer[b * seqLen * seqLen + q * seqLen + k];
-                        if (maskVal < static_cast<T>(-1e4)) {
-                            score = static_cast<T>(-1e9);
+                        if (maskVal < static_cast<T>(-1e30)) {
+                            score = static_cast<T>(-3.4028235e+38f);
                         }
                     }
 

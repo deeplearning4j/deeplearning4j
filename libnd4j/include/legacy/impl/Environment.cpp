@@ -1027,7 +1027,7 @@ void Environment::initCudaEnvironment() {
 #endif
  }
 #endif
- const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
+const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
 #ifdef SD_CUDA
  if (cudaDeviceScheduleVar != nullptr) {
 #ifdef __cpp_exceptions
@@ -1046,6 +1046,262 @@ void Environment::initCudaEnvironment() {
    if (schedule >= 0 && schedule <= 3) {
      _cudaDeviceSchedule.store(schedule);
    }
+#endif
+ }
+
+ const char* tritonBuildThreadsVar = std::getenv("ND4J_TRITON_BUILD_THREADS");
+ if (tritonBuildThreadsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string threadsStr(tritonBuildThreadsVar);
+     int threads = std::stoi(threadsStr);
+     setTritonBuildThreads(threads);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string threadsStr(tritonBuildThreadsVar);
+   int threads = std::stoi(threadsStr);
+   setTritonBuildThreads(threads);
+#endif
+ }
+
+ const char* tritonCacheEnabledVar = std::getenv("ND4J_TRITON_CACHE_ENABLE");
+ if (tritonCacheEnabledVar != nullptr) {
+   std::string cacheStr(tritonCacheEnabledVar);
+   if (cacheStr == "false" || cacheStr == "0" || cacheStr == "no") {
+     setTritonCacheEnabled(false);
+   } else {
+     setTritonCacheEnabled(true);
+   }
+ }
+
+ const char* tritonCoopTargetBlocksVar = std::getenv("ND4J_TRITON_COOP_TARGET_BLOCKS");
+ if (tritonCoopTargetBlocksVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string blocksStr(tritonCoopTargetBlocksVar);
+     int blocks = std::stoi(blocksStr);
+     setTritonCoopTargetBlocks(blocks);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string blocksStr(tritonCoopTargetBlocksVar);
+   int blocks = std::stoi(blocksStr);
+   setTritonCoopTargetBlocks(blocks);
+#endif
+ }
+
+ const char* tritonMaxSubsegmentOpsVar = std::getenv("ND4J_TRITON_MAX_SUBSEGMENT_OPS");
+ if (tritonMaxSubsegmentOpsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string opsStr(tritonMaxSubsegmentOpsVar);
+     int ops = std::stoi(opsStr);
+     setTritonMaxSubsegmentOps(ops);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string opsStr(tritonMaxSubsegmentOpsVar);
+   int ops = std::stoi(opsStr);
+   setTritonMaxSubsegmentOps(ops);
+#endif
+ }
+
+ const char* tritonMaxSubsegmentSectionsVar = std::getenv("ND4J_TRITON_MAX_SUBSEGMENT_SECTIONS");
+ if (tritonMaxSubsegmentSectionsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string sectionsStr(tritonMaxSubsegmentSectionsVar);
+     int sections = std::stoi(sectionsStr);
+     setTritonMaxSubsegmentSections(sections);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string sectionsStr(tritonMaxSubsegmentSectionsVar);
+   int sections = std::stoi(sectionsStr);
+   setTritonMaxSubsegmentSections(sections);
+#endif
+ }
+
+ const char* tritonVerboseVar = std::getenv("ND4J_TRITON_VERBOSE");
+ if (tritonVerboseVar != nullptr) {
+   std::string verboseStr(tritonVerboseVar);
+   if (verboseStr == "false" || verboseStr == "0" || verboseStr == "no") {
+     setTritonVerbose(false);
+   } else {
+     setTritonVerbose(true);
+   }
+ }
+
+ const char* tritonDumpSectionsVar = std::getenv("ND4J_TRITON_DUMP_SECTIONS");
+ if (tritonDumpSectionsVar != nullptr) {
+   std::string dumpSectionsStr(tritonDumpSectionsVar);
+   if (dumpSectionsStr == "false" || dumpSectionsStr == "0" || dumpSectionsStr == "no") {
+     setTritonDumpSections(false);
+   } else {
+     setTritonDumpSections(true);
+   }
+ }
+
+ const char* tritonDumpArgsVar = std::getenv("ND4J_TRITON_DUMP_ARGS");
+ if (tritonDumpArgsVar != nullptr) {
+   std::string dumpArgsStr(tritonDumpArgsVar);
+   if (dumpArgsStr == "false" || dumpArgsStr == "0" || dumpArgsStr == "no") {
+     setTritonDumpArgs(false);
+   } else {
+     setTritonDumpArgs(true);
+   }
+ }
+
+ const char* tritonLogAllPatternsVar = std::getenv("ND4J_TRITON_LOG_ALL_PATTERNS");
+ if (tritonLogAllPatternsVar != nullptr) {
+   std::string patternsStr(tritonLogAllPatternsVar);
+   if (patternsStr == "false" || patternsStr == "0" || patternsStr == "no") {
+     setTritonLogAllPatterns(false);
+   } else {
+     setTritonLogAllPatterns(true);
+   }
+ }
+
+ const char* tritonCacheDirVar = std::getenv("ND4J_TRITON_CACHE_DIR");
+ if (tritonCacheDirVar != nullptr) {
+   setTritonCacheDir(std::string(tritonCacheDirVar));
+ }
+
+ const char* tritonDumpDirVar = std::getenv("ND4J_TRITON_DUMP_DIR");
+ if (tritonDumpDirVar != nullptr) {
+   setTritonDumpDir(std::string(tritonDumpDirVar));
+ }
+
+ const char* tritonOverrideDirVar = std::getenv("ND4J_TRITON_OVERRIDE_DIR");
+ if (tritonOverrideDirVar != nullptr) {
+   setTritonOverrideDir(std::string(tritonOverrideDirVar));
+ }
+
+ const char* tritonOverrideArchVar = std::getenv("ND4J_TRITON_OVERRIDE_ARCH");
+ if (tritonOverrideArchVar != nullptr) {
+   setTritonOverrideArch(std::string(tritonOverrideArchVar));
+ }
+
+ const char* tritonAlwaysCompileVar = std::getenv("ND4J_TRITON_ALWAYS_COMPILE");
+ if (tritonAlwaysCompileVar != nullptr) {
+   std::string alwaysCompileStr(tritonAlwaysCompileVar);
+   if (alwaysCompileStr == "false" || alwaysCompileStr == "0" || alwaysCompileStr == "no") {
+     setTritonAlwaysCompile(false);
+   } else {
+     setTritonAlwaysCompile(true);
+   }
+ }
+
+ const char* tritonKernelDumpVar = std::getenv("ND4J_TRITON_KERNEL_DUMP");
+ if (tritonKernelDumpVar != nullptr) {
+   std::string kernelDumpStr(tritonKernelDumpVar);
+   if (kernelDumpStr == "false" || kernelDumpStr == "0" || kernelDumpStr == "no") {
+     setTritonKernelDump(false);
+   } else {
+     setTritonKernelDump(true);
+   }
+ }
+
+ const char* tritonKernelOverrideVar = std::getenv("ND4J_TRITON_KERNEL_OVERRIDE");
+ if (tritonKernelOverrideVar != nullptr) {
+   std::string kernelOverrideStr(tritonKernelOverrideVar);
+   if (kernelOverrideStr == "false" || kernelOverrideStr == "0" || kernelOverrideStr == "no") {
+     setTritonKernelOverride(false);
+   } else {
+     setTritonKernelOverride(true);
+   }
+ }
+
+ const char* tritonEnableFpFusionVar = std::getenv("ND4J_TRITON_ENABLE_FP_FUSION");
+ if (tritonEnableFpFusionVar != nullptr) {
+   std::string fpFusionStr(tritonEnableFpFusionVar);
+   if (fpFusionStr == "false" || fpFusionStr == "0" || fpFusionStr == "no") {
+     setTritonEnableFpFusion(false);
+   } else {
+     setTritonEnableFpFusion(true);
+   }
+ }
+
+ const char* tritonDisableLineInfoVar = std::getenv("ND4J_TRITON_DISABLE_LINE_INFO");
+ if (tritonDisableLineInfoVar != nullptr) {
+   std::string lineInfoStr(tritonDisableLineInfoVar);
+   if (lineInfoStr == "false" || lineInfoStr == "0" || lineInfoStr == "no") {
+     setTritonDisableLineInfo(false);
+   } else {
+     setTritonDisableLineInfo(true);
+   }
+ }
+
+ const char* tritonNumWarpsVar = std::getenv("ND4J_TRITON_NUM_WARPS");
+ if (tritonNumWarpsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string warpsStr(tritonNumWarpsVar);
+     int warps = std::stoi(warpsStr);
+     setTritonNumWarps(warps);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string warpsStr(tritonNumWarpsVar);
+   int warps = std::stoi(warpsStr);
+   setTritonNumWarps(warps);
+#endif
+ }
+
+ const char* tritonNumStagesVar = std::getenv("ND4J_TRITON_NUM_STAGES");
+ if (tritonNumStagesVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string stagesStr(tritonNumStagesVar);
+     int stages = std::stoi(stagesStr);
+     setTritonNumStages(stages);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string stagesStr(tritonNumStagesVar);
+   int stages = std::stoi(stagesStr);
+   setTritonNumStages(stages);
+#endif
+ }
+
+ const char* tritonNumCTAsVar = std::getenv("ND4J_TRITON_NUM_CTAS");
+ if (tritonNumCTAsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string ctasStr(tritonNumCTAsVar);
+     int ctas = std::stoi(ctasStr);
+     setTritonNumCTAs(ctas);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string ctasStr(tritonNumCTAsVar);
+   int ctas = std::stoi(ctasStr);
+   setTritonNumCTAs(ctas);
+#endif
+ }
+
+ const char* tritonMaxNregVar = std::getenv("ND4J_TRITON_MAXNREG");
+ if (tritonMaxNregVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string maxNregStr(tritonMaxNregVar);
+     int maxNreg = std::stoi(maxNregStr);
+     setTritonMaxNreg(maxNreg);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string maxNregStr(tritonMaxNregVar);
+   int maxNreg = std::stoi(maxNregStr);
+   setTritonMaxNreg(maxNreg);
 #endif
  }
 }
@@ -1109,6 +1365,30 @@ void Environment::setOpenBlasThreads(int threads) {
  Environment &Environment::getInstance() {
    static Environment instance;
    return instance;
+ }
+
+ std::string Environment::homeDirectory() const {
+#ifdef _WIN32
+   const char* homeDrive = std::getenv("HOMEDRIVE");
+   const char* homePath = std::getenv("HOMEPATH");
+   if (homeDrive != nullptr && homePath != nullptr && homeDrive[0] != '\0' &&
+       homePath[0] != '\0') {
+     return std::string(homeDrive) + std::string(homePath);
+   }
+#endif
+   const char* home = std::getenv("HOME");
+   if (home != nullptr && home[0] != '\0') {
+     return std::string(home);
+   }
+   return "";
+ }
+
+ std::string Environment::cudaToolkitPath() const {
+   const char* cudaPath = std::getenv("CUDA_PATH");
+   if (cudaPath != nullptr && cudaPath[0] != '\0') {
+     return std::string(cudaPath);
+   }
+   return "";
  }
 
  bool Environment::isVerbose() { return _verbose.load(); }
@@ -1331,9 +1611,121 @@ void Environment::setOpenBlasThreads(int threads) {
    }
  }
 
- void Environment::setPrintPrecision(int precision) {
-   if (precision >= 0 && precision <= 20) {
-     _printPrecision.store(precision);
-   }
- }
+  void Environment::setPrintPrecision(int precision) {
+    if (precision >= 0 && precision <= 20) {
+      _printPrecision.store(precision);
+    }
+  }
+
+  // Triton GPU compilation settings
+  void Environment::setTritonBuildThreads(int threads) {
+    if (threads > 0 && threads <= 16) {
+      _tritonBuildThreads.store(threads);
+    }
+  }
+
+  void Environment::setTritonCacheEnabled(bool enabled) {
+    _tritonCacheEnabled.store(enabled);
+  }
+
+  void Environment::setTritonCoopTargetBlocks(int blocks) {
+    if (blocks < 0) {
+      blocks = 0;
+    }
+    _tritonCoopTargetBlocks.store(blocks);
+  }
+
+  void Environment::setTritonMaxSubsegmentOps(int ops) {
+    if (ops < 0) {
+      ops = 0;
+    }
+    _tritonMaxSubsegmentOps.store(ops);
+  }
+
+  void Environment::setTritonMaxSubsegmentSections(int sections) {
+    if (sections < 0) {
+      sections = 0;
+    }
+    _tritonMaxSubsegmentSections.store(sections);
+  }
+
+  void Environment::setTritonVerbose(bool verbose) {
+    _tritonVerbose.store(verbose);
+  }
+
+  void Environment::setTritonDumpSections(bool dumpSections) {
+    _tritonDumpSections.store(dumpSections);
+  }
+
+  void Environment::setTritonDumpArgs(bool dumpArgs) {
+    _tritonDumpArgs.store(dumpArgs);
+  }
+
+  void Environment::setTritonLogAllPatterns(bool logAllPatterns) {
+    _tritonLogAllPatterns.store(logAllPatterns);
+  }
+
+  void Environment::setTritonAlwaysCompile(bool alwaysCompile) {
+    _tritonAlwaysCompile.store(alwaysCompile);
+  }
+
+  void Environment::setTritonKernelDump(bool kernelDump) {
+    _tritonKernelDump.store(kernelDump);
+  }
+
+  void Environment::setTritonKernelOverride(bool kernelOverride) {
+    _tritonKernelOverride.store(kernelOverride);
+  }
+
+  void Environment::setTritonNumWarps(int warps) {
+    if (warps < 0) {
+      warps = 0;
+    }
+    _tritonNumWarps.store(warps);
+  }
+
+  void Environment::setTritonNumStages(int stages) {
+    if (stages < 0) {
+      stages = 0;
+    }
+    _tritonNumStages.store(stages);
+  }
+
+  void Environment::setTritonNumCTAs(int ctas) {
+    if (ctas < 1) {
+      ctas = 1;
+    }
+    _tritonNumCTAs.store(ctas);
+  }
+
+  void Environment::setTritonMaxNreg(int maxNreg) {
+    if (maxNreg < 0) {
+      maxNreg = 0;
+    }
+    _tritonMaxNreg.store(maxNreg);
+  }
+
+  void Environment::setTritonEnableFpFusion(bool enableFpFusion) {
+    _tritonEnableFpFusion.store(enableFpFusion);
+  }
+
+  void Environment::setTritonDisableLineInfo(bool disableLineInfo) {
+    _tritonDisableLineInfo.store(disableLineInfo);
+  }
+
+  void Environment::setTritonCacheDir(const std::string& cacheDir) {
+    _tritonCacheDir = cacheDir;
+  }
+
+  void Environment::setTritonDumpDir(const std::string& dumpDir) {
+    _tritonDumpDir = dumpDir;
+  }
+
+  void Environment::setTritonOverrideDir(const std::string& overrideDir) {
+    _tritonOverrideDir = overrideDir;
+  }
+
+  void Environment::setTritonOverrideArch(const std::string& overrideArch) {
+    _tritonOverrideArch = overrideArch;
+  }
 }

@@ -44,7 +44,7 @@
     </modules>
 
     <properties>
-        <javacpp.version>1.5.11</javacpp.version>
+        <javacpp.version>1.5.13</javacpp.version>
     </properties>
 
     <dependencyManagement>

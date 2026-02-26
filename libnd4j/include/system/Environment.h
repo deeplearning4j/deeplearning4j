@@ -26,6 +26,7 @@
 #include <types/pair.h>
 
 #include <atomic>
+#include <string>
 #include <stdexcept>
 #include <vector>
 #include <config.h>
@@ -140,6 +141,30 @@ class SD_LIB_EXPORT Environment {
   std::atomic<size_t> _cudaDevRuntimePendingLaunchCount{0}; // cudaLimitDevRuntimePendingLaunchCount
   std::atomic<size_t> _cudaMaxL2FetchGranularity{0}; // cudaLimitMaxL2FetchGranularity
   std::atomic<size_t> _cudaPersistingL2CacheSize{0}; // cudaLimitPersistingL2CacheSize
+
+  // Triton GPU compilation settings
+  std::atomic<int> _tritonBuildThreads{1};
+  std::atomic<bool> _tritonCacheEnabled{true};
+  std::atomic<int> _tritonCoopTargetBlocks{0};  // 0 = auto
+  std::atomic<int> _tritonMaxSubsegmentOps{0};       // 0 = auto/adaptive
+  std::atomic<int> _tritonMaxSubsegmentSections{0};  // 0 = auto/adaptive
+  std::atomic<bool> _tritonVerbose{false};
+  std::atomic<bool> _tritonDumpSections{false};
+  std::atomic<bool> _tritonDumpArgs{false};
+  std::atomic<bool> _tritonLogAllPatterns{false};
+  std::atomic<bool> _tritonAlwaysCompile{false};
+  std::atomic<bool> _tritonKernelDump{false};
+  std::atomic<bool> _tritonKernelOverride{false};
+  std::atomic<int> _tritonNumWarps{0};    // 0 = auto
+  std::atomic<int> _tritonNumStages{0};   // 0 = auto
+  std::atomic<int> _tritonNumCTAs{1};     // 1 = default (non-clustered)
+  std::atomic<int> _tritonMaxNreg{0};     // 0 = unset
+  std::atomic<bool> _tritonEnableFpFusion{true};
+  std::atomic<bool> _tritonDisableLineInfo{false};
+  std::string _tritonCacheDir;
+  std::string _tritonDumpDir;
+  std::string _tritonOverrideDir;
+  std::string _tritonOverrideArch;
 
   Environment();
 
@@ -424,6 +449,56 @@ class SD_LIB_EXPORT Environment {
   void setPrintLineWidth(int lineWidth);
   int printPrecision() { return _printPrecision.load(); }
   void setPrintPrecision(int precision);
+
+  // Triton GPU compilation settings
+  int tritonBuildThreads() { return _tritonBuildThreads.load(); }
+  void setTritonBuildThreads(int threads);
+  bool tritonCacheEnabled() { return _tritonCacheEnabled.load(); }
+  void setTritonCacheEnabled(bool enabled);
+  int tritonCoopTargetBlocks() { return _tritonCoopTargetBlocks.load(); }
+  void setTritonCoopTargetBlocks(int blocks);
+  int tritonMaxSubsegmentOps() { return _tritonMaxSubsegmentOps.load(); }
+  void setTritonMaxSubsegmentOps(int ops);
+  int tritonMaxSubsegmentSections() { return _tritonMaxSubsegmentSections.load(); }
+  void setTritonMaxSubsegmentSections(int sections);
+  bool tritonVerbose() { return _tritonVerbose.load(); }
+  void setTritonVerbose(bool verbose);
+  bool tritonDumpSections() { return _tritonDumpSections.load(); }
+  void setTritonDumpSections(bool dumpSections);
+  bool tritonDumpArgs() { return _tritonDumpArgs.load(); }
+  void setTritonDumpArgs(bool dumpArgs);
+  bool tritonLogAllPatterns() { return _tritonLogAllPatterns.load(); }
+  void setTritonLogAllPatterns(bool logAllPatterns);
+  bool tritonAlwaysCompile() { return _tritonAlwaysCompile.load(); }
+  void setTritonAlwaysCompile(bool alwaysCompile);
+  bool tritonKernelDump() { return _tritonKernelDump.load(); }
+  void setTritonKernelDump(bool kernelDump);
+  bool tritonKernelOverride() { return _tritonKernelOverride.load(); }
+  void setTritonKernelOverride(bool kernelOverride);
+  int tritonNumWarps() { return _tritonNumWarps.load(); }
+  void setTritonNumWarps(int warps);
+  int tritonNumStages() { return _tritonNumStages.load(); }
+  void setTritonNumStages(int stages);
+  int tritonNumCTAs() { return _tritonNumCTAs.load(); }
+  void setTritonNumCTAs(int ctas);
+  int tritonMaxNreg() { return _tritonMaxNreg.load(); }
+  void setTritonMaxNreg(int maxNreg);
+  bool tritonEnableFpFusion() { return _tritonEnableFpFusion.load(); }
+  void setTritonEnableFpFusion(bool enableFpFusion);
+  bool tritonDisableLineInfo() { return _tritonDisableLineInfo.load(); }
+  void setTritonDisableLineInfo(bool disableLineInfo);
+  std::string tritonCacheDir() const { return _tritonCacheDir; }
+  void setTritonCacheDir(const std::string& cacheDir);
+  std::string tritonDumpDir() const { return _tritonDumpDir; }
+  void setTritonDumpDir(const std::string& dumpDir);
+  std::string tritonOverrideDir() const { return _tritonOverrideDir; }
+  void setTritonOverrideDir(const std::string& overrideDir);
+  std::string tritonOverrideArch() const { return _tritonOverrideArch; }
+  void setTritonOverrideArch(const std::string& overrideArch);
+
+  // Process environment path helpers used by native backends.
+  std::string homeDirectory() const;
+  std::string cudaToolkitPath() const;
 
   // Initialize CUDA environment settings from environment variables
   void initCudaEnvironment();

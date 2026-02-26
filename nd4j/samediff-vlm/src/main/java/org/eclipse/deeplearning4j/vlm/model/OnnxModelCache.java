@@ -349,19 +349,34 @@ public class OnnxModelCache {
      */
     private static int selectPrimaryDevice() {
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-        if (numDevices <= 1) return 0;
+        // Always query ALL physical GPUs (cudaGetDeviceCount), not just the ND4J-visible list.
+        // The ND4J affinity manager may restrict devices, but for model loading we want the
+        // biggest GPU regardless.
+        int physicalDevices = Nd4j.getNativeOps().getAvailableDevices();
+        log.info("selectPrimaryDevice: affinityManager reports {} devices, native reports {} physical GPUs",
+                numDevices, physicalDevices);
+
+        // Use the max of ND4J visible and physical device count to search ALL GPUs
+        int searchCount = Math.max(numDevices, physicalDevices);
+        if (searchCount <= 1) {
+            log.info("selectPrimaryDevice: single device system, using device 0");
+            return 0;
+        }
 
         int bestDevice = 0;
         long bestTotal = 0;
-        for (int d = 0; d < numDevices; d++) {
+        for (int d = 0; d < searchCount; d++) {
             long totalMem = Nd4j.getNativeOps().getDeviceTotalMemory(d);
+            long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(d);
+            log.info("selectPrimaryDevice: device {} - total={} MB, free={} MB",
+                    d, totalMem / (1024 * 1024), freeMem / (1024 * 1024));
             if (totalMem > bestTotal) {
                 bestTotal = totalMem;
                 bestDevice = d;
             }
         }
-        log.info("Primary device for model loading: device {} ({} MB total)",
-                bestDevice, bestTotal / (1024 * 1024));
+        log.info("Primary device for model loading: device {} ({} MB total, {} devices searched)",
+                bestDevice, bestTotal / (1024 * 1024), searchCount);
         return bestDevice;
     }
 

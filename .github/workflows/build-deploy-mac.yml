@@ -35,7 +35,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: macos-10.15
+        default: macos-13
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -114,6 +114,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup ccache
+        id: setup-ccache
         uses: ./.github/actions/setup-ccache-macos
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
@@ -241,4 +242,10 @@ jobs:
           echo "=== ccache stats after build ==="
           ccache --show-stats --verbose || ccache -sv || ccache -s
 
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
 

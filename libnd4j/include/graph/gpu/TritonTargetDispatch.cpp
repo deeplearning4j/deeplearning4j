@@ -22,11 +22,22 @@
 
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
 #include <system/common.h>
 
 #include <cstring>
 #include <csignal>
+#include <algorithm>
+#include <atomic>
+#include <cctype>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <mutex>
 #include <setjmp.h>
+#include <thread>
 
 // ─── Platform GPU headers ───────────────────────────────────────────────────
 //
@@ -67,9 +78,14 @@
 #endif
 
 // MLIR core infrastructure
+#include <mlir/IR/BuiltinAttributes.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Verifier.h>
 #include <mlir/Pass/PassManager.h>
+#if __has_include(<mlir/Pass/PassInstrumentation.h>)
+#include <mlir/Pass/PassInstrumentation.h>
+#define SD_TRITON_HAS_PASS_INSTRUMENTATION 1
+#endif
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/All.h>
@@ -114,8 +130,219 @@
 #define HAVE_TRITON_NVIDIA_PASSES 1
 #endif
 
+// AMD backend passes (when building with AMD codegen backend)
+#if __has_include(<TritonAMDGPUToLLVM/Passes.h>)
+#include <TritonAMDGPUToLLVM/Passes.h>
+#define HAVE_TRITON_AMD_PASSES 1
+#endif
+
 namespace sd {
 namespace graph {
+
+namespace {
+
+std::string canonicalizeAmdArch(const std::string& arch) {
+  if (arch.empty()) return arch;
+  size_t suffixPos = arch.find(':');
+  if (suffixPos == std::string::npos) return arch;
+  return arch.substr(0, suffixPos);
+}
+
+int getModuleSharedMemoryBytes(mlir::ModuleOp* moduleOp) {
+  if (moduleOp == nullptr || !*moduleOp) return 0;
+
+  auto sharedAttr =
+      moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("triton_gpu.shared");
+  if (!sharedAttr) return 0;
+
+  int64_t sharedBytes = sharedAttr.getInt();
+  if (sharedBytes <= 0) return 0;
+  if (sharedBytes > static_cast<int64_t>(std::numeric_limits<int>::max())) {
+    return std::numeric_limits<int>::max();
+  }
+  return static_cast<int>(sharedBytes);
+}
+
+const char* tritonTargetName(TritonGpuTarget target) {
+  switch (target) {
+    case TritonGpuTarget::NVIDIA:
+      return "NVIDIA";
+    case TritonGpuTarget::AMD:
+      return "AMD";
+    case TritonGpuTarget::INTEL:
+      return "INTEL";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+long long nextTritonCompileId() {
+  static std::atomic<long long> nextId{0};
+  return nextId.fetch_add(1) + 1;
+}
+
+long long elapsedMsSince(const std::chrono::steady_clock::time_point& start) {
+  return static_cast<long long>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::steady_clock::now() - start).count());
+}
+
+#ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
+class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation {
+ public:
+  TritonPassProgressInstrumentation(long long compileId, const char* pipelineTag)
+      : compileId_(compileId), pipelineTag_(pipelineTag) {
+    heartbeatThread_ = std::thread([this]() {
+      std::unique_lock<std::mutex> lock(heartbeatMutex_);
+      while (!stopHeartbeat_) {
+        heartbeatCv_.wait_for(lock, std::chrono::seconds(heartbeatIntervalSec_));
+        if (stopHeartbeat_ || !passRunning_) continue;
+        const long long passCounter = passCounter_;
+        const std::string passName = currentPassName_;
+        const auto passStart = currentPassStart_;
+        lock.unlock();
+        sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld HEARTBEAT %s elapsedMs=%lld\n",
+                  compileId_, pipelineTag_, passCounter, passName.c_str(),
+                  elapsedMsSince(passStart));
+        lock.lock();
+      }
+    });
+  }
+
+  ~TritonPassProgressInstrumentation() override {
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      stopHeartbeat_ = true;
+    }
+    heartbeatCv_.notify_all();
+    if (heartbeatThread_.joinable()) {
+      heartbeatThread_.join();
+    }
+  }
+
+  void runBeforePass(mlir::Pass* pass, mlir::Operation*) override {
+    if (pass == nullptr) return;
+    long long passCounter = 0;
+    std::string passName;
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      passCounter_++;
+      currentPassName_ = pass->getName().str();
+      currentPassStart_ = std::chrono::steady_clock::now();
+      passRunning_ = true;
+      passCounter = passCounter_;
+      passName = currentPassName_;
+    }
+    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld START %s\n",
+              compileId_, pipelineTag_, passCounter, passName.c_str());
+  }
+
+  void runAfterPass(mlir::Pass* pass, mlir::Operation*) override {
+    if (pass == nullptr) return;
+    long long passCounter = 0;
+    std::string passName;
+    std::chrono::steady_clock::time_point passStart;
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      passCounter = passCounter_;
+      passName = currentPassName_;
+      passStart = currentPassStart_;
+      passRunning_ = false;
+    }
+    heartbeatCv_.notify_all();
+    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld DONE %s elapsedMs=%lld\n",
+              compileId_, pipelineTag_, passCounter, passName.c_str(),
+              elapsedMsSince(passStart));
+  }
+
+  void runAfterPassFailed(mlir::Pass* pass, mlir::Operation*) override {
+    if (pass == nullptr) return;
+    long long passCounter = 0;
+    std::string passName;
+    std::chrono::steady_clock::time_point passStart;
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      passCounter = passCounter_;
+      passName = currentPassName_;
+      passStart = currentPassStart_;
+      passRunning_ = false;
+    }
+    heartbeatCv_.notify_all();
+    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld FAILED %s elapsedMs=%lld\n",
+              compileId_, pipelineTag_, passCounter, passName.c_str(),
+              elapsedMsSince(passStart));
+  }
+
+ private:
+  long long compileId_;
+  const char* pipelineTag_;
+  static constexpr int heartbeatIntervalSec_ = 30;
+  std::thread heartbeatThread_;
+  std::mutex heartbeatMutex_;
+  std::condition_variable heartbeatCv_;
+  bool stopHeartbeat_ = false;
+  bool passRunning_ = false;
+  long long passCounter_ = 0;
+  std::string currentPassName_;
+  std::chrono::steady_clock::time_point currentPassStart_;
+};
+#endif
+
+static thread_local jmp_buf tritonJmpBuf;
+static thread_local bool tritonInProtectedRegion = false;
+
+void tritonSigabrtHandler(int) {
+  if (tritonInProtectedRegion) {
+    longjmp(tritonJmpBuf, 1);
+  }
+}
+
+std::mutex& tritonSigabrtMutex() {
+  static std::mutex mtx;
+  return mtx;
+}
+
+int& tritonSigabrtRefCount() {
+  static int refCount = 0;
+  return refCount;
+}
+
+struct sigaction& tritonSigabrtPreviousAction() {
+  static struct sigaction action {};
+  return action;
+}
+
+class TritonSigabrtInstallGuard {
+ public:
+  TritonSigabrtInstallGuard() {
+    std::lock_guard<std::mutex> lock(tritonSigabrtMutex());
+    int& refCount = tritonSigabrtRefCount();
+    if (refCount == 0) {
+      struct sigaction newSigabrt;
+      std::memset(&newSigabrt, 0, sizeof(newSigabrt));
+      newSigabrt.sa_handler = tritonSigabrtHandler;
+      sigemptyset(&newSigabrt.sa_mask);
+      newSigabrt.sa_flags = 0;
+      sigaction(SIGABRT, &newSigabrt, &tritonSigabrtPreviousAction());
+    }
+    refCount++;
+  }
+
+  ~TritonSigabrtInstallGuard() {
+    std::lock_guard<std::mutex> lock(tritonSigabrtMutex());
+    int& refCount = tritonSigabrtRefCount();
+    if (refCount <= 0) return;
+    refCount--;
+    if (refCount == 0) {
+      sigaction(SIGABRT, &tritonSigabrtPreviousAction(), nullptr);
+    }
+  }
+
+  TritonSigabrtInstallGuard(const TritonSigabrtInstallGuard&) = delete;
+  TritonSigabrtInstallGuard& operator=(const TritonSigabrtInstallGuard&) = delete;
+};
+
+}  // namespace
 
 // Static member initialization
 TritonGpuTarget TritonTargetDispatch::cachedTarget_ = TritonGpuTarget::UNKNOWN;
@@ -130,6 +357,8 @@ bool TritonTargetDispatch::isReady() {
 }
 
 TritonGpuTarget TritonTargetDispatch::detectTarget() {
+  static std::mutex detectTargetMutex;
+  std::lock_guard<std::mutex> lock(detectTargetMutex);
   if (targetDetected_) return cachedTarget_;
   targetDetected_ = true;
 
@@ -153,7 +382,7 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
       hipGetDeviceProperties(&props, 0);
 
       // gcnArchName is the canonical arch string (e.g., "gfx1100", "gfx90a")
-      std::string archName = props.gcnArchName;
+      std::string archName = canonicalizeAmdArch(props.gcnArchName);
       if (!archName.empty() && archName.find("gfx") != std::string::npos) {
         cachedArch_ = archName;
         cachedTarget_ = TritonGpuTarget::AMD;
@@ -270,21 +499,49 @@ std::string TritonTargetDispatch::getTargetArch() {
 
 TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarps, int numStages) {
   TritonCompiledBinary result = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", 0, 0};
+  auto& env = sd::Environment::getInstance();
+  const bool tritonVerbose = env.tritonVerbose();
+  const long long compileId = nextTritonCompileId();
+  const auto compileStart = std::chrono::steady_clock::now();
 
   auto target = detectTarget();
   if (target == TritonGpuTarget::UNKNOWN) {
-    sd_printf("TritonTargetDispatch::compile: no GPU target available\n", "");
+    sd_printf("TritonTargetDispatch::compile[%lld]: no GPU target available\n", compileId);
     return result;
   }
 
+  const std::string archOverride = env.tritonOverrideArch();
+  std::string targetArch = cachedArch_;
+  if (!archOverride.empty()) {
+    targetArch = archOverride;
+    sd_printf("TritonTargetDispatch::compile: using architecture override '%s'\n",
+              targetArch.c_str());
+  }
+  if (target == TritonGpuTarget::AMD) {
+    targetArch = canonicalizeAmdArch(targetArch);
+  }
+
+  int numCTAs = std::max(1, env.tritonNumCTAs());
+  int maxNreg = std::max(0, env.tritonMaxNreg());
+
+  sd_printf("TritonTargetDispatch::compile[%lld]: START target=%s arch=%s "
+            "warps=%d stages=%d numCTAs=%d maxNreg=%d verbose=%d\n",
+            compileId, tritonTargetName(target), targetArch.c_str(),
+            numWarps, numStages, numCTAs, maxNreg, tritonVerbose ? 1 : 0);
+
   result.target = target;
-  result.targetArch = cachedArch_;
+  result.targetArch = targetArch;
   result.numWarps = numWarps;
 
   auto moduleOp = static_cast<mlir::ModuleOp*>(mlirModule);
   if (!moduleOp || !*moduleOp) {
     sd_printf("TritonTargetDispatch::compile: null MLIR module\n", "");
     return result;
+  }
+  if (maxNreg > 0) {
+    auto i32Type = mlir::IntegerType::get(moduleOp->getContext(), 32);
+    moduleOp->getOperation()->setAttr("ttg.maxnreg",
+                                      mlir::IntegerAttr::get(i32Type, maxNreg));
   }
 
   // ── Pass pipeline: TTIR -> TTGIR -> LLVM dialect -> LLVM IR -> target ISA ──
@@ -302,18 +559,43 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   switch (target) {
     case TritonGpuTarget::NVIDIA: {
-      if (cachedArch_.size() > 3) {
-        computeCapability = std::stoi(cachedArch_.substr(3));
+      std::string digits;
+      for (char c : targetArch) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+          digits.push_back(c);
+        }
+      }
+      if (digits.empty()) {
+        for (char c : cachedArch_) {
+          if (std::isdigit(static_cast<unsigned char>(c))) {
+            digits.push_back(c);
+          }
+        }
+      }
+      if (!digits.empty()) {
+        computeCapability = std::stoi(digits);
+      }
+      if (computeCapability <= 0) {
+        sd_printf("TritonTargetDispatch::compile: failed to derive NVIDIA compute capability "
+                  "from targetArch='%s'\n",
+                  targetArch.c_str());
+        return result;
+      }
+      if (numCTAs > 1 && computeCapability < 90) {
+        sd_printf("TritonTargetDispatch::compile: numCTAs=%d requested on sm_%d; "
+                  "clamping to 1 (multi-CTA requires SM90+)\n",
+                  numCTAs, computeCapability);
+        numCTAs = 1;
       }
       targetStr = "cuda:" + std::to_string(computeCapability);
       break;
     }
     case TritonGpuTarget::AMD: {
-      targetStr = "hip:" + cachedArch_;
+      targetStr = "hip:" + targetArch;
       break;
     }
     case TritonGpuTarget::INTEL: {
-      targetStr = "xpu:" + cachedArch_;
+      targetStr = "xpu:" + targetArch;
       break;
     }
     default:
@@ -322,22 +604,9 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   // ── SIGABRT protection for ALL compilation phases ──
   // Triton/LLVM passes can call abort() on assertion failures (e.g., unsupported ops,
-  // invalid tensor encodings). We install a SIGABRT handler with setjmp/longjmp to
-  // recover gracefully instead of crashing the JVM.
-  static thread_local jmp_buf tritonJmpBuf;
-  static thread_local bool tritonInProtectedRegion = false;
-
-  struct sigaction oldSigabrt;
-  struct sigaction newSigabrt;
-  memset(&newSigabrt, 0, sizeof(newSigabrt));
-  newSigabrt.sa_handler = [](int) {
-    if (tritonInProtectedRegion) {
-      longjmp(tritonJmpBuf, 1);
-    }
-  };
-  sigemptyset(&newSigabrt.sa_mask);
-  newSigabrt.sa_flags = 0;
-  sigaction(SIGABRT, &newSigabrt, &oldSigabrt);
+  // invalid tensor encodings). Install a process-level handler while compiles are active
+  // so multiple compile workers can run in parallel without restoring handlers out of order.
+  TritonSigabrtInstallGuard sigabrtGuard;
 
   // Capture TTIR module text before any passes (for diagnostics on compilation failure)
   std::string preDump;
@@ -350,20 +619,28 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   if (setjmp(tritonJmpBuf) != 0) {
     // longjmp from SIGABRT handler — assertion failed in some compilation phase
     tritonInProtectedRegion = false;
-    sigaction(SIGABRT, &oldSigabrt, nullptr);
     // Clear any sticky CUDA errors that may have been set during the failed compilation.
     // Without this, ALL subsequent CUDA runtime calls fail (e.g., cudaMemGetInfo returns total=0).
 #ifdef SD_CUDA
     cudaGetLastError();
 #endif
-    sd_printf("TritonTargetDispatch::compile: compilation hit assertion failure "
-              "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s\n", preDump.c_str());
+    sd_printf("TritonTargetDispatch::compile[%lld]: compilation hit assertion failure "
+              "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s\n",
+              compileId, preDump.c_str());
     return result;
   }
 
   // Phase 1-2: TTIR -> TTGIR
+  const auto phase12Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR START\n", compileId);
   {
     mlir::PassManager pm(moduleOp->getContext());
+    if (tritonVerbose) {
+#ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
+      pm.addInstrumentation(
+          std::make_unique<TritonPassProgressInstrumentation>(compileId, "TTIR_TO_TTGIR"));
+#endif
+    }
 
     // Phase 1: TTIR optimizations
     pm.addPass(mlir::createInlinerPass());
@@ -372,7 +649,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
     // Phase 2: TTIR -> TTGIR
     pm.addPass(mlir::triton::createConvertTritonToTritonGPUPass(
-        targetStr, numWarps, /*threadsPerWarp=*/32, /*numCTAs=*/1));
+        targetStr, numWarps, /*threadsPerWarp=*/32, /*numCTAs=*/numCTAs));
 
     // Phase 3: Full TTGIR optimization pipeline (Triton NVIDIA backend)
     pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
@@ -408,7 +685,6 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
     if (mlir::failed(pm.run(*moduleOp))) {
       tritonInProtectedRegion = false;
-      sigaction(SIGABRT, &oldSigabrt, nullptr);
 #ifdef SD_CUDA
       cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
 #endif
@@ -425,11 +701,21 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     }
 
   }
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase12Start));
 
   // Phase 4: TTGIR -> LLVM MLIR dialect
   // Pass order matches Triton NVIDIA backend (compiler.py lines 265-283)
+  const auto phase4Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START\n", compileId);
   {
     mlir::PassManager pm(moduleOp->getContext());
+    if (tritonVerbose) {
+#ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
+      pm.addInstrumentation(
+          std::make_unique<TritonPassProgressInstrumentation>(compileId, "TTGIR_TO_LLVM_DIALECT"));
+#endif
+    }
 
     bool hasBackendLowering = false;
     switch (target) {
@@ -470,10 +756,33 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 #endif
         break;
       }
-      case TritonGpuTarget::AMD:
+      case TritonGpuTarget::AMD: {
+#ifdef HAVE_TRITON_AMD_PASSES
+        // Phase order mirrors Triton's AMD backend make_llir() flow.
+        const bool hipFtz = true;
+        pm.addPass(mlir::triton::AMD::createDecomposeUnsupportedConversionsPass(targetArch));
+        pm.addPass(mlir::triton::AMD::createOptimizeLDSUsagePass(targetArch, 0));
+        pm.addPass(mlir::createConvertSCFToCFPass());
+        pm.addPass(mlir::createConvertIndexToLLVMPass());
+        pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
+        pm.addPass(mlir::triton::createConvertTritonAMDGPUToLLVMPass(targetArch, hipFtz));
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createConvertControlFlowToLLVMPass());
+        pm.addPass(mlir::createArithToLLVMConversionPass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createSymbolDCEPass());
+        pm.addPass(mlir::triton::createConvertBuiltinFuncToLLVMPass(hipFtz));
+        pm.addPass(mlir::createConvertFuncToLLVMPass());
+        pm.addPass(mlir::createReconcileUnrealizedCastsPass());
+        hasBackendLowering = true;
+#else
         sd_printf("TritonTargetDispatch::compile: AMD backend TTGIR->LLVM lowering "
-                  "not yet integrated (requires TritonAMDGPUToLLVM)\n", "");
+                  "not available (TritonAMDGPUToLLVM headers not found)\n", "");
+#endif
         break;
+      }
       case TritonGpuTarget::INTEL:
         sd_printf("TritonTargetDispatch::compile: Intel backend TTGIR->LLVM lowering "
                   "not yet integrated (requires TritonIntelGPUToLLVM)\n", "");
@@ -484,7 +793,6 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
     if (!hasBackendLowering) {
       tritonInProtectedRegion = false;
-      sigaction(SIGABRT, &oldSigabrt, nullptr);
 #ifdef SD_CUDA
       cudaGetLastError();
 #endif
@@ -494,7 +802,6 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
     if (mlir::failed(pm.run(*moduleOp))) {
       tritonInProtectedRegion = false;
-      sigaction(SIGABRT, &oldSigabrt, nullptr);
 #ifdef SD_CUDA
       cudaGetLastError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
 #endif
@@ -511,12 +818,17 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
     }
   }
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase4Start));
+
+  // Triton's AllocateSharedMemory pass stores kernel shared memory usage
+  // in the module attribute "triton_gpu.shared".
+  result.sharedMemBytes = getModuleSharedMemoryBytes(moduleOp);
 
   // Phase 5: MLIR LLVM dialect -> LLVM IR module
   // Verify the MLIR module before attempting LLVM translation
   if (mlir::failed(mlir::verify(*moduleOp))) {
     tritonInProtectedRegion = false;
-    sigaction(SIGABRT, &oldSigabrt, nullptr);
 #ifdef SD_CUDA
     cudaGetLastError();
 #endif
@@ -532,9 +844,10 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   std::unique_ptr<llvm::Module> llvmModule;
 
+  const auto phase5Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR START\n", compileId);
   llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
   tritonInProtectedRegion = false;
-  sigaction(SIGABRT, &oldSigabrt, nullptr);
   if (!llvmModule) {
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors from failed translation
@@ -552,6 +865,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
             "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
     return result;
   }
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase5Start));
 
   // Phase 5b: Link libdevice for NVIDIA math intrinsics (__nv_sqrtf, __nv_expf, etc.)
   // The math-to-LLVM pass lowers math.sqrt/exp/log/etc. to calls to __nv_* functions
@@ -560,6 +875,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     // Search for libdevice.10.bc in common locations
     std::vector<std::string> libdevicePaths = {
       "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-13.1/nvvm/libdevice/libdevice.10.bc",
       "/usr/local/cuda-12.9/nvvm/libdevice/libdevice.10.bc",
       "/usr/local/cuda-12.6/nvvm/libdevice/libdevice.10.bc",
       "/usr/local/cuda-12.4/nvvm/libdevice/libdevice.10.bc",
@@ -568,10 +884,11 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       "/usr/local/cuda-11.8/nvvm/libdevice/libdevice.10.bc",
     };
 
-    // Also check CUDA_PATH environment variable
-    if (const char* cudaPath = std::getenv("CUDA_PATH")) {
+    // Also check CUDA toolkit path from Environment.
+    const std::string cudaPath = sd::Environment::getInstance().cudaToolkitPath();
+    if (!cudaPath.empty()) {
       libdevicePaths.insert(libdevicePaths.begin(),
-          std::string(cudaPath) + "/nvvm/libdevice/libdevice.10.bc");
+          cudaPath + "/nvvm/libdevice/libdevice.10.bc");
     }
 
     bool linked = false;
@@ -617,6 +934,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   // Phase 6: LLVM IR -> target ISA
   // Initialize LLVM targets
+  const auto phase6Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM START\n", compileId);
   llvm::InitializeAllTargets();
   llvm::InitializeAllTargetMCs();
   llvm::InitializeAllAsmPrinters();
@@ -632,7 +951,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       break;
     case TritonGpuTarget::AMD:
       triple = "amdgcn-amd-amdhsa";
-      proc = cachedArch_;
+      proc = result.targetArch;
       break;
     case TritonGpuTarget::INTEL:
       triple = "spir64-unknown-unknown";
@@ -653,6 +972,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   }
 
   llvm::TargetOptions targetOptions;
+  targetOptions.AllowFPOpFusion =
+      env.tritonEnableFpFusion() ? llvm::FPOpFusion::Fast : llvm::FPOpFusion::Strict;
   auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
       llvmTarget->createTargetMachine(triple, proc, features,
                                        targetOptions, llvm::Reloc::PIC_));
@@ -680,7 +1001,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::string asmOutput(asmBuffer.begin(), asmBuffer.end());
 
   if (asmOutput.empty()) {
-    sd_printf("TritonTargetDispatch::compile: empty output for %s\n", cachedArch_.c_str());
+    sd_printf("TritonTargetDispatch::compile: empty output for %s\n", result.targetArch.c_str());
     return result;
   }
 
@@ -689,8 +1010,12 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::memcpy(result.data, asmOutput.data(), result.size);
   static_cast<char*>(result.data)[result.size] = '\0';
 
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase6Start));
   sd_printf("TritonTargetDispatch::compile: generated %zu bytes for %s (%s)\n",
-            result.size, cachedArch_.c_str(), triple.c_str());
+            result.size, result.targetArch.c_str(), triple.c_str());
+  sd_printf("TritonTargetDispatch::compile[%lld]: DONE totalElapsedMs=%lld\n",
+            compileId, elapsedMsSince(compileStart));
 
   return result;
 }
@@ -710,24 +1035,48 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
 
     case TritonGpuTarget::NVIDIA: {
 #ifdef SD_CUDA
+      // cuModuleLoadDataEx requires a current CUDA context on this thread.
+      // Worker threads used by TritonGraphBackend may not have bound one yet.
+      int currentDevice = 0;
+      cudaError_t getDeviceErr = cudaGetDevice(&currentDevice);
+      if (getDeviceErr != cudaSuccess) {
+        sd_printf("TritonTargetDispatch::loadModule: cudaGetDevice failed before "
+                  "cuModuleLoadDataEx: %s\n",
+                  cudaGetErrorString(getDeviceErr));
+        cudaGetLastError();
+        return nullptr;
+      }
+      cudaError_t setDeviceErr = cudaSetDevice(currentDevice);
+      if (setDeviceErr != cudaSuccess) {
+        sd_printf("TritonTargetDispatch::loadModule: cudaSetDevice(%d) failed before "
+                  "cuModuleLoadDataEx: %s\n",
+                  currentDevice, cudaGetErrorString(setDeviceErr));
+        cudaGetLastError();
+        return nullptr;
+      }
+
       // NVIDIA: CUDA Driver API for PTX loading with JIT error logging.
       CUmodule module = nullptr;
       char jitErrorLog[4096] = {0};
       char jitInfoLog[4096] = {0};
+      int generateLineInfo =
+          sd::Environment::getInstance().tritonDisableLineInfo() ? 0 : 1;
       CUjit_option jitOptions[] = {
         CU_JIT_ERROR_LOG_BUFFER,
         CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
         CU_JIT_INFO_LOG_BUFFER,
-        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES
+        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES,
+        CU_JIT_GENERATE_LINE_INFO
       };
       void* jitOptionValues[] = {
         jitErrorLog,
         reinterpret_cast<void*>(sizeof(jitErrorLog)),
         jitInfoLog,
-        reinterpret_cast<void*>(sizeof(jitInfoLog))
+        reinterpret_cast<void*>(sizeof(jitInfoLog)),
+        reinterpret_cast<void*>(static_cast<uintptr_t>(generateLineInfo))
       };
       CUresult res = cuModuleLoadDataEx(&module, binary.data,
-                                         4, jitOptions, jitOptionValues);
+                                         5, jitOptions, jitOptionValues);
       if (res != CUDA_SUCCESS) {
         const char* errStr = nullptr;
         cuGetErrorString(res, &errStr);

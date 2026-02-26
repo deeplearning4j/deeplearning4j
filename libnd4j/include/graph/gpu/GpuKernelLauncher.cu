@@ -26,6 +26,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cstdio>
+#include <cstdint>
+#include <cstring>
 
 namespace sd {
 namespace graph {
@@ -35,12 +37,43 @@ void* loadPtxModule(const char* ptxText, size_t ptxSize) {
   if (!ptxText || ptxSize == 0) return nullptr;
 
   CUmodule module = nullptr;
-  CUresult res = cuModuleLoadDataEx(&module, ptxText, 0, nullptr, nullptr);
+  char jitErr[8192];
+  char jitInfo[8192];
+  std::memset(jitErr, 0, sizeof(jitErr));
+  std::memset(jitInfo, 0, sizeof(jitInfo));
+
+  CUjit_option options[] = {
+      CU_JIT_ERROR_LOG_BUFFER,
+      CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
+      CU_JIT_INFO_LOG_BUFFER,
+      CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES
+  };
+  void* optionValues[] = {
+      jitErr,
+      reinterpret_cast<void*>(static_cast<uintptr_t>(sizeof(jitErr))),
+      jitInfo,
+      reinterpret_cast<void*>(static_cast<uintptr_t>(sizeof(jitInfo)))
+  };
+
+  CUresult res = cuModuleLoadDataEx(
+      &module, ptxText, static_cast<unsigned int>(sizeof(options) / sizeof(options[0])),
+      options, optionValues);
   if (res != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(res, &errStr);
-    fprintf(stderr,"GpuKernelLauncher::loadPtxModule: cuModuleLoadDataEx failed: %s\n",
-              errStr ? errStr : "unknown");
+    fprintf(stderr,
+            "GpuKernelLauncher::loadPtxModule: cuModuleLoadDataEx failed: %s\n"
+            "  PTX size: %zu bytes\n"
+            "  JIT error log: %s\n"
+            "  JIT info log: %s\n",
+            errStr ? errStr : "unknown",
+            ptxSize,
+            jitErr[0] ? jitErr : "<empty>",
+            jitInfo[0] ? jitInfo : "<empty>");
+
+    size_t previewLen = ptxSize < 512 ? ptxSize : 512;
+    fprintf(stderr, "  PTX preview (%zu bytes):\n%.*s\n",
+            previewLen, static_cast<int>(previewLen), ptxText);
     return nullptr;
   }
   return static_cast<void*>(module);

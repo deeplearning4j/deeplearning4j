@@ -832,6 +832,44 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   *
+   * @param input Primary input array (NUMERIC type)
+   * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
+   * @param opCodes Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu (Size: AtLeast(min=1))
+   * @return output Result of applying the fused element-wise chain (NUMERIC type)
+   */
+  public SDVariable fusedElementwiseChain(SDVariable input, SDVariable[] secondaryInputs,
+      int[] opCodes) {
+    SDValidation.validateNumerical("fusedElementwiseChain", "input", input);
+    SDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
+    Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
+    Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(sd,input, secondaryInputs, opCodes).outputVariable();
+  }
+
+  /**
+   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Primary input array (NUMERIC type)
+   * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
+   * @param opCodes Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu (Size: AtLeast(min=1))
+   * @return output Result of applying the fused element-wise chain (NUMERIC type)
+   */
+  public SDVariable fusedElementwiseChain(String name, SDVariable input,
+      SDVariable[] secondaryInputs, int[] opCodes) {
+    SDValidation.validateNumerical("fusedElementwiseChain", "input", input);
+    SDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
+    Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
+    Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(sd,input, secondaryInputs, opCodes).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units<br>
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
    * This method uses the sigmoid approximation<br>

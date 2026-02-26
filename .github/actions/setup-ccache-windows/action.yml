@@ -14,7 +14,10 @@ inputs:
 outputs:
   cache-hit:
     description: 'Whether there was a cache hit'
-    value: ${{ steps.ccache-cache.outputs.cache-hit }}
+    value: ${{ steps.ccache-restore.outputs.cache-hit }}
+  save-key:
+    description: 'Unique cache key used when saving ccache at end of job'
+    value: ${{ steps.ccache-keys.outputs.save-key }}
 
 runs:
   using: composite
@@ -33,6 +36,27 @@ runs:
         )
         echo ccache installed successfully
 
+    - name: Compute ccache keys
+      id: ccache-keys
+      shell: pwsh
+      run: |
+        $restoreKey = "ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}"
+        $saveKey = "$restoreKey-${{ github.run_id }}-${{ github.run_attempt }}"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "restore-key=$restoreKey"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "save-key=$saveKey"
+
+    - name: Restore ccache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ${{ steps.ccache-keys.outputs.restore-key }}
+        restore-keys: |
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-master-
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-main-
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-
+
     - name: Configure ccache
       shell: cmd
       run: |
@@ -46,6 +70,7 @@ runs:
         echo compression_level = 6>> "%CCACHE_CONFIGPATH%"
         echo hash_dir = false>> "%CCACHE_CONFIGPATH%"
         echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed>> "%CCACHE_CONFIGPATH%"
+        echo compiler_check = content>> "%CCACHE_CONFIGPATH%"
         echo run_second_cpp = true>> "%CCACHE_CONFIGPATH%"
 
         echo === ccache configuration ===
@@ -62,23 +87,13 @@ runs:
 
         # Add to GITHUB_ENV
         Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
+        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
+        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
         Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=ccache"
         Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
         # Verify ccache is accessible
         & "$ccachePath\ccache.exe" --version
-
-    - name: Restore ccache
-      id: ccache-cache
-      uses: actions/cache@v4
-      with:
-        path: ~/.ccache
-        key: ccache-windows-${{ inputs.cache-suffix }}-${{ github.ref_name }}-${{ github.sha }}
-        restore-keys: |
-          ccache-windows-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
-          ccache-windows-${{ inputs.cache-suffix }}-master-
-          ccache-windows-${{ inputs.cache-suffix }}-main-
-          ccache-windows-${{ inputs.cache-suffix }}-
 
     - name: Show ccache stats before build
       shell: cmd

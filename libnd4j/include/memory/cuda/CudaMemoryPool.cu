@@ -395,7 +395,15 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   if (prevDev != currentDeviceId) {
     cudaSetDevice(currentDeviceId);
   }
-  cudaMemGetInfo(&currentFreeMem, &currentTotalMem);
+  // Clear any sticky CUDA error before querying memory — a pending error causes
+  // cudaMemGetInfo to fail and return total=0, masking the real memory state.
+  cudaGetLastError();
+  auto memInfoErr = cudaMemGetInfo(&currentFreeMem, &currentTotalMem);
+  if (memInfoErr != cudaSuccess) {
+    sd_printf("CudaMemoryPool::allocateFailover: cudaMemGetInfo FAILED on device %d: %s (error %d)\n",
+              currentDeviceId, cudaGetErrorString(memInfoErr), static_cast<int>(memInfoErr));
+    cudaGetLastError();  // Clear the error from the failed cudaMemGetInfo call itself
+  }
 
   // Diagnostic: show pool stats alongside cudaMemGetInfo so we can distinguish
   // "pool holds reserved memory" from "GPU genuinely full"

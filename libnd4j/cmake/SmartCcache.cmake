@@ -119,17 +119,32 @@ extract_cuda_arch() {
 # Determine the architecture suffix for cache file
 CUDA_ARCH=\"\$(extract_cuda_arch \"\$@\")\"
 
-# Select the appropriate hash cache file based on architecture
+# Optional segment + shape partitioning for smarter metadata granularity.
+# External projects (like Triton/LLVM) can set:
+#   SD_SMART_CCACHE_SEGMENT=triton_llvm|triton|...
+#   SD_SMART_CCACHE_SHAPE_KEY=<stable-build-shape-key>
+# ccache still owns object-level hashing; this only scopes our change-tracking files.
+SEGMENT_KEY=\"\${SD_SMART_CCACHE_SEGMENT:-default}\"
+SHAPE_KEY=\"\${SD_SMART_CCACHE_SHAPE_KEY:-base}\"
+
+# Keep file names portable/safe
+SEGMENT_KEY=\"\${SEGMENT_KEY//[^A-Za-z0-9_.-]/_}\"
+SHAPE_KEY=\"\${SHAPE_KEY//[^A-Za-z0-9_.-]/_}\"
+
+# Select hash cache file based on segment + shape + architecture
 if [[ -n \"\$CUDA_ARCH\" ]]; then
-    # CUDA compilation - use architecture-specific cache
-    HASH_CACHE=\"\${HASH_CACHE_DIR}/cuda_sm_\${CUDA_ARCH}\"
-    if [[ \"\$DEBUG\" == \"ON\" ]]; then
-        echo \"[SMART_CCACHE] CUDA architecture detected: sm_\${CUDA_ARCH}\" >&2
-        echo \"[SMART_CCACHE] Using arch-specific cache: \$HASH_CACHE\" >&2
-    fi
+    HASH_CACHE=\"\${HASH_CACHE_DIR}/\${SEGMENT_KEY}__\${SHAPE_KEY}__cuda_sm_\${CUDA_ARCH}\"
 else
-    # Non-CUDA compilation - use default cache
-    HASH_CACHE=\"\${HASH_CACHE_DIR}/default\"
+    HASH_CACHE=\"\${HASH_CACHE_DIR}/\${SEGMENT_KEY}__\${SHAPE_KEY}__default\"
+fi
+
+if [[ \"\$DEBUG\" == \"ON\" ]]; then
+    if [[ -n \"\$CUDA_ARCH\" ]]; then
+        echo \"[SMART_CCACHE] CUDA architecture detected: sm_\${CUDA_ARCH}\" >&2
+    fi
+    echo \"[SMART_CCACHE] Segment key: \$SEGMENT_KEY\" >&2
+    echo \"[SMART_CCACHE] Shape key: \$SHAPE_KEY\" >&2
+    echo \"[SMART_CCACHE] Hash cache file: \$HASH_CACHE\" >&2
 fi
 
 # Ensure cache directory exists

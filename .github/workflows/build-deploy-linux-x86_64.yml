@@ -205,6 +205,7 @@ jobs:
       - uses: ./.github/actions/update-deps-linux
 
       - name: Setup ccache
+        id: setup-ccache
         uses: ./.github/actions/setup-ccache-linux
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
@@ -215,18 +216,18 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-cmake-
+            ${{ runner.os }}-${{ runner.arch }}-cmake-
 
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
+          key: ${{ runner.os }}-${{ runner.arch }}-protobuf-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-protobuf-
+            ${{ runner.os }}-${{ runner.arch }}-protobuf-
 
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
@@ -330,6 +331,13 @@ jobs:
         run: |
           echo "=== ccache stats after build ==="
           ccache --show-stats --verbose || ccache -sv || ccache -s
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
 
       - name: Show memory usage summary
         if: always()

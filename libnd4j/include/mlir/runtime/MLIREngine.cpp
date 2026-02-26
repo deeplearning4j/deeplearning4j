@@ -19,31 +19,107 @@
 
 #ifdef HAVE_MLIR
 
+#if __has_include("mlir/Dialect/Affine/IR/AffineOps.h")
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#define SD_MLIR_HAS_AFFINE_DIALECT 1
+#endif
+#if __has_include("mlir/Dialect/Affine/Passes.h")
+#include "mlir/Dialect/Affine/Passes.h"
+#define SD_MLIR_HAS_AFFINE_PASSES 1
+#endif
+
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#if __has_include("mlir/Dialect/ArmNeon/ArmNeonDialect.h")
+#include "mlir/Dialect/ArmNeon/ArmNeonDialect.h"
+#define SD_MLIR_HAS_ARMNEON_DIALECT 1
+#endif
+#if __has_include("mlir/Dialect/ArmSVE/IR/ArmSVEDialect.h")
+#include "mlir/Dialect/ArmSVE/IR/ArmSVEDialect.h"
+#define SD_MLIR_HAS_ARMSVE_DIALECT 1
+#endif
+#if __has_include("mlir/Dialect/ArmSME/IR/ArmSME.h")
+#include "mlir/Dialect/ArmSME/IR/ArmSME.h"
+#define SD_MLIR_HAS_ARMSME_DIALECT 1
+#endif
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+
+#if __has_include("mlir/Dialect/X86Vector/X86VectorDialect.h")
+#include "mlir/Dialect/X86Vector/X86VectorDialect.h"
+#define SD_MLIR_HAS_X86VECTOR_DIALECT 1
+#endif
+#if __has_include("mlir/Dialect/AMX/AMXDialect.h")
+#include "mlir/Dialect/AMX/AMXDialect.h"
+#define SD_MLIR_HAS_AMX_DIALECT 1
+#endif
+#if __has_include("mlir/Dialect/AMX/Transforms.h")
+#include "mlir/Dialect/AMX/Transforms.h"
+#define SD_MLIR_HAS_AMX_TRANSFORMS 1
+#endif
+
+#if __has_include("mlir/Conversion/AffineToStandard/AffineToStandard.h")
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#define SD_MLIR_HAS_AFFINE_TO_STANDARD 1
+#endif
+#if __has_include("mlir/Conversion/ArmNeon2dToIntr/ArmNeon2dToIntr.h")
+#include "mlir/Conversion/ArmNeon2dToIntr/ArmNeon2dToIntr.h"
+#define SD_MLIR_HAS_ARMNEON2D_TO_INTR_PASS 1
+#endif
+#if __has_include("mlir/Conversion/ArmSMEToLLVM/ArmSMEToLLVM.h")
+#include "mlir/Conversion/ArmSMEToLLVM/ArmSMEToLLVM.h"
+#define SD_MLIR_HAS_ARMSME_TO_LLVM_PASS 1
+#endif
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#if __has_include("mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h")
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h"
+#define SD_MLIR_HAS_VECTOR_TO_LLVM_PASS 1
+#endif
+#if __has_include("mlir/Conversion/VectorToArmSME/VectorToArmSME.h")
+#include "mlir/Conversion/VectorToArmSME/VectorToArmSME.h"
+#define SD_MLIR_HAS_VECTOR_TO_ARMSME_PASS 1
+#endif
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/DialectRegistry.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OwningOpRef.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#if __has_include("mlir/Target/LLVMIR/Dialect/X86Vector/X86VectorToLLVMIRTranslation.h")
+#include "mlir/Target/LLVMIR/Dialect/X86Vector/X86VectorToLLVMIRTranslation.h"
+#define SD_MLIR_HAS_X86VECTOR_TRANSLATION 1
+#endif
+#if __has_include("mlir/Target/LLVMIR/Dialect/ArmNeon/ArmNeonToLLVMIRTranslation.h")
+#include "mlir/Target/LLVMIR/Dialect/ArmNeon/ArmNeonToLLVMIRTranslation.h"
+#define SD_MLIR_HAS_ARMNEON_TRANSLATION 1
+#endif
+#if __has_include("mlir/Target/LLVMIR/Dialect/ArmSVE/ArmSVEToLLVMIRTranslation.h")
+#include "mlir/Target/LLVMIR/Dialect/ArmSVE/ArmSVEToLLVMIRTranslation.h"
+#define SD_MLIR_HAS_ARMSVE_TRANSLATION 1
+#endif
+#if __has_include("mlir/Target/LLVMIR/Dialect/ArmSME/ArmSMEToLLVMIRTranslation.h")
+#include "mlir/Target/LLVMIR/Dialect/ArmSME/ArmSMEToLLVMIRTranslation.h"
+#define SD_MLIR_HAS_ARMSME_TRANSLATION 1
+#endif
+#if __has_include("mlir/Target/LLVMIR/Dialect/AMX/AMXToLLVMIRTranslation.h")
+#include "mlir/Target/LLVMIR/Dialect/AMX/AMXToLLVMIRTranslation.h"
+#define SD_MLIR_HAS_AMX_TRANSLATION 1
+#endif
 #include "mlir/Transforms/Passes.h"
 
 #ifdef MLIR_ENABLE_GPU
@@ -58,6 +134,18 @@
 
 namespace sd {
 namespace mlir_runtime {
+
+namespace {
+
+bool isArmHostCompilationTarget() {
+#if defined(__aarch64__) || defined(__arm__) || defined(_M_ARM64) || defined(_M_ARM)
+    return true;
+#else
+    return false;
+#endif
+}
+
+}  // namespace
 
 //===----------------------------------------------------------------------===//
 // CompiledKernel Implementation
@@ -127,6 +215,13 @@ bool MLIREngine::initialize() {
     // Create MLIR context with all required dialects
     _context = std::make_unique<mlir::MLIRContext>();
 
+#ifdef SD_MLIR_HAS_AMX_TRANSFORMS
+    // Register AMX conversion interface so generic LLVM conversion can lower AMX ops.
+    mlir::DialectRegistry amxRegistry;
+    mlir::registerConvertAMXToLLVMInterface(amxRegistry);
+    _context->appendDialectRegistry(amxRegistry);
+#endif
+
     // Load required dialects
     _context->loadDialect<mlir::arith::ArithDialect>();
     _context->loadDialect<mlir::func::FuncDialect>();
@@ -137,13 +232,45 @@ bool MLIREngine::initialize() {
     _context->loadDialect<mlir::vector::VectorDialect>();
     _context->loadDialect<mlir::LLVM::LLVMDialect>();
     _context->loadDialect<mlir::bufferization::BufferizationDialect>();
+#ifdef SD_MLIR_HAS_AFFINE_DIALECT
+    _context->loadDialect<mlir::affine::AffineDialect>();
+#endif
+#ifdef SD_MLIR_HAS_X86VECTOR_DIALECT
+    _context->loadDialect<mlir::x86vector::X86VectorDialect>();
+#endif
+#ifdef SD_MLIR_HAS_AMX_DIALECT
+    _context->loadDialect<mlir::amx::AMXDialect>();
+#endif
+#ifdef SD_MLIR_HAS_ARMNEON_DIALECT
+    _context->loadDialect<mlir::arm_neon::ArmNeonDialect>();
+#endif
+#ifdef SD_MLIR_HAS_ARMSVE_DIALECT
+    _context->loadDialect<mlir::arm_sve::ArmSVEDialect>();
+#endif
+#ifdef SD_MLIR_HAS_ARMSME_DIALECT
+    _context->loadDialect<mlir::arm_sme::ArmSMEDialect>();
+#endif
 
 #ifdef MLIR_ENABLE_GPU
     _context->loadDialect<mlir::gpu::GPUDialect>();
 #endif
 
-    // Register LLVM IR translation
     mlir::registerLLVMDialectTranslation(*_context);
+#ifdef SD_MLIR_HAS_X86VECTOR_TRANSLATION
+    mlir::registerX86VectorDialectTranslation(*_context);
+#endif
+#ifdef SD_MLIR_HAS_ARMNEON_TRANSLATION
+    mlir::registerArmNeonDialectTranslation(*_context);
+#endif
+#ifdef SD_MLIR_HAS_ARMSVE_TRANSLATION
+    mlir::registerArmSVEDialectTranslation(*_context);
+#endif
+#ifdef SD_MLIR_HAS_ARMSME_TRANSLATION
+    mlir::registerArmSMEDialectTranslation(*_context);
+#endif
+#ifdef SD_MLIR_HAS_AMX_TRANSLATION
+    mlir::registerAMXDialectTranslation(*_context);
+#endif
 
     _initialized = true;
     return true;
@@ -262,25 +389,47 @@ void MLIREngine::buildCPUPipeline(mlir::PassManager& pm,
 
     // Linalg optimizations
     if (options.enableOptimizations) {
-        // Tiling
-        // pm.addNestedPass<mlir::func::FuncOp>(
-        //     mlir::linalg::createLinalgTilingPass(
-        //         mlir::linalg::LinalgTilingOptions()
-        //             .setTileSizes({options.tileSize, options.tileSize})));
-
-        // Vectorization
-        if (options.enableVectorization) {
-            // pm.addNestedPass<mlir::func::FuncOp>(
-            //     mlir::linalg::createLinalgVectorizePass());
+#ifdef SD_MLIR_HAS_AFFINE_PASSES
+        if (options.enableAffineOptimizations) {
+            pm.addNestedPass<mlir::func::FuncOp>(
+                mlir::affine::createSimplifyAffineStructuresPass());
+            pm.addPass(mlir::affine::createLoopFusionPass());
+            pm.addNestedPass<mlir::func::FuncOp>(
+                mlir::affine::createAffineLoopNormalizePass());
+            pm.addNestedPass<mlir::func::FuncOp>(
+                mlir::affine::createAffineLoopInvariantCodeMotionPass());
         }
+#endif
     }
 
     // Bufferization (tensor -> memref)
     pm.addPass(mlir::bufferization::createOneShotBufferizePass());
 
+#ifdef SD_MLIR_HAS_AFFINE_TO_STANDARD
+    if (options.enableAffineOptimizations) {
+        pm.addPass(mlir::createLowerAffinePass());
+    }
+#endif
+
     // Lower to LLVM
     pm.addPass(mlir::createConvertSCFToCFPass());
+#ifdef SD_MLIR_HAS_ARMNEON2D_TO_INTR_PASS
+    if (options.enableVectorization && options.enableArmNeon && isArmHostCompilationTarget()) {
+        pm.addPass(mlir::createConvertArmNeon2dToIntrPass());
+    }
+#endif
+#if defined(SD_MLIR_HAS_VECTOR_TO_ARMSME_PASS) && defined(SD_MLIR_HAS_ARMSME_TO_LLVM_PASS)
+    if (options.enableVectorization && options.enableArmSME && isArmHostCompilationTarget()) {
+        pm.addPass(mlir::createConvertVectorToArmSMEPass());
+        pm.addPass(mlir::createConvertArmSMEToLLVMPass(/*dumpTileLiveRanges=*/false));
+    }
+#endif
     pm.addPass(mlir::createConvertLinalgToLLVMPass());
+#ifdef SD_MLIR_HAS_VECTOR_TO_LLVM_PASS
+    if (options.enableVectorization && options.enableX86Vector) {
+        pm.addPass(mlir::createConvertVectorToLLVMPass());
+    }
+#endif
     pm.addPass(mlir::createConvertFuncToLLVMPass());
     pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
     pm.addPass(mlir::createConvertControlFlowToLLVMPass());
@@ -338,6 +487,12 @@ std::string MLIREngine::generateCacheKey(
     // Add relevant options
     ss << options.optLevel << "_"
        << options.enableVectorization << "_"
+       << options.enableAffineOptimizations << "_"
+       << options.enableX86Vector << "_"
+       << options.enableAMX << "_"
+       << options.enableArmNeon << "_"
+       << options.enableArmSVE << "_"
+       << options.enableArmSME << "_"
        << options.enableGPU;
 
     return ss.str();

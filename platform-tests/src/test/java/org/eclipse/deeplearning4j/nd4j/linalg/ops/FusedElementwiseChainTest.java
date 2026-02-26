@@ -328,7 +328,7 @@ public class FusedElementwiseChainTest extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.nn().sigmoid(x.dup());
 
         // Use codegen API: just unary ops, no secondary inputs
-        INDArray output = Nd4j.nn().fusedElementwiseChain(x, FusedElementwiseChain.OP_SIGMOID);
+        INDArray output = Nd4j.nn().fusedElementwiseChain(x, new INDArray[0], new int[]{FusedElementwiseChain.OP_SIGMOID});
 
         double maxDiff = expected.sub(output).amaxNumber().doubleValue();
         assertTrue(maxDiff < TOL,

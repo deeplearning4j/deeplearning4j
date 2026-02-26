@@ -29,11 +29,14 @@
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 
+#include <functional>
+#include <cstddef>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace sd {
@@ -82,6 +85,9 @@ class TritonGraphBackend : public GraphBackend {
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
   static TritonGraphBackend& getInstance();
+  using FallbackRangeExecutor = std::function<Status(int, int)>;
+  static void setFallbackRangeExecutor(FallbackRangeExecutor executor);
+  static void clearFallbackRangeExecutor();
 
   // Counters for diagnostics and testing
   LongType getTotalKernelLaunches() const { return totalKernelLaunches_; }
@@ -100,6 +106,7 @@ class TritonGraphBackend : public GraphBackend {
     unsigned int sharedMemBytes;
     int numWarps;
     bool useCooperativeLaunch;  // true if kernel needs cuLaunchCooperativeKernel
+    bool useDynamicGrid;        // true for simple 1D kernels that derive gridX from n_elements
     bool useIndirectArgs;       // true if kernel uses indirect arg table (>200 buffer args)
 
     // Sub-segment range (absolute slot indices)
@@ -112,21 +119,44 @@ class TritonGraphBackend : public GraphBackend {
     // Compilation audit
     std::vector<CompilationAuditEntry> audit;
 
+#ifdef SD_CUDA
+    // Persistent launch workspace to avoid per-launch cudaMalloc/cudaFree churn.
+    // These buffers are reused across executions for the same compiled kernel.
+    void* cachedArgTableDevice;
+    size_t cachedArgTableBytes;
+    int cachedArgTableDeviceId;
+    void* cachedSyncCounterDevice;
+    int cachedSyncCounterDeviceId;
+#endif
+
     CompiledKernel()
         : gpuModule(nullptr), kernelFunction(nullptr),
           gridX(1), gridY(1), gridZ(1),
           blockX(1), blockY(1), blockZ(1),
           sharedMemBytes(0), numWarps(4),
           useCooperativeLaunch(false),
+          useDynamicGrid(true),
           useIndirectArgs(false),
-          startSlot_(-1), endSlot_(-1) {}
+          startSlot_(-1), endSlot_(-1)
+#ifdef SD_CUDA
+          , cachedArgTableDevice(nullptr), cachedArgTableBytes(0),
+            cachedArgTableDeviceId(-1), cachedSyncCounterDevice(nullptr),
+            cachedSyncCounterDeviceId(-1)
+#endif
+    {}
   };
 
   // A compiled segment may contain multiple sub-kernels when the original
   // segment exceeds MAX_COMPILABLE_OPS. Each sub-kernel covers a contiguous
   // range of slots and is executed sequentially.
+  struct SlotRange {
+    int startSlot;
+    int endSlot;
+  };
+
   struct CompiledSegment {
     std::vector<CompiledKernel> subKernels;
+    std::vector<SlotRange> fallbackRanges;   // Slot ranges that must run slot-by-slot
     std::vector<CompilationAuditEntry> audit;  // Combined audit across all sub-kernels
 
     bool isValid() const {
@@ -156,13 +186,13 @@ class TritonGraphBackend : public GraphBackend {
   };
 
   std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
+  // Negative cache: segment/shape keys that previously failed Triton compilation.
+  // This avoids repeating expensive compile attempts for known-bad shapes.
+  std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   std::mutex cacheMtx_;
 
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
-
-  // IR builder for constructing Triton MLIR
-  TritonIRBuilder irBuilder_;
 
   // Minimum fraction of mappable ops required to attempt Triton compilation
   static constexpr float MIN_MAPPABLE_FRACTION = 0.5f;
@@ -176,6 +206,7 @@ class TritonGraphBackend : public GraphBackend {
   // Configurable max parallel compilations (set via ND4J_TRITON_BUILD_THREADS env var)
   static int maxParallelCompilations_;
   static std::mutex configMtx_;
+  static thread_local FallbackRangeExecutor fallbackRangeExecutor_;
 
  public:
   // Maximum number of ops that can be compiled into a single Triton kernel.
@@ -198,6 +229,7 @@ class TritonGraphBackend : public GraphBackend {
 
   // Compile TTIR module to GPU binary, load, and extract kernel
   CompiledKernel compileToGpuBinary(NativeSlot* slots, int startSlot, int endSlot,
+                                    LongType segmentShapeKey,
                                     int totalSlots,
                                     NDArray** externalInputs, int numExternalInputs,
                                     NDArray** outputSlots, int totalOutputSlots);
@@ -206,6 +238,7 @@ class TritonGraphBackend : public GraphBackend {
   std::string getDiskCacheDir() const;
   bool ensureDiskCacheDir(const std::string& cacheDir) const;
   std::string computeDiskCacheHash(int startSlot, int endSlot,
+                                   LongType segmentShapeKey,
                                    const std::string& ttirText,
                                    int numWarps, int numStages) const;
   bool loadBinaryFromDiskCache(int startSlot, int endSlot,

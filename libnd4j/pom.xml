@@ -89,6 +89,8 @@
         <!-- Available helpers: onednn, cudnn, armcompute, mlir, mps, accelerate, miopen, pjrt -->
         <!-- Example: -Dlibnd4j.helpers=onednn,cudnn -->
         <libnd4j.helpers></libnd4j.helpers>
+        <!-- Triton toggle (independent of helper selection) -->
+        <libnd4j.triton>OFF</libnd4j.triton>
 
         <!-- Dynamic Kernel Selection Configuration -->
         <libnd4j.dynamic.kernel.selection>ON</libnd4j.dynamic.kernel.selection>
@@ -948,6 +950,8 @@
                                         <argument>${libnd4j.mlir.version}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
                                         <argument>--oom-killer</argument>
                                         <argument>${libnd4j.oom.killer}</argument>
                                         <argument>--oom-memory-threshold</argument>
@@ -1095,6 +1099,8 @@
                                         <argument>${libnd4j.mlir.version}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
                                         <argument>--oom-killer</argument>
                                         <argument>${libnd4j.oom.killer}</argument>
                                         <argument>--oom-memory-threshold</argument>
@@ -1292,6 +1298,8 @@
                                         <argument>${libnd4j.mlir.version}</argument>
                                         <argument>--mlir-gpu</argument>
                                         <argument>${libnd4j.mlir.gpu}</argument>
+                                        <argument>--triton</argument>
+                                        <argument>${libnd4j.triton}</argument>
                                         <argument>--oom-killer</argument>
                                         <argument>${libnd4j.oom.killer}</argument>
                                         <argument>--oom-memory-threshold</argument>

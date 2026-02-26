@@ -114,6 +114,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Setup ccache
+        id: setup-ccache
         uses: ./.github/actions/setup-ccache-macos
         with:
           cache-suffix: arm64-${{ matrix.helper }}-${{ matrix.extension }}
@@ -232,3 +233,10 @@ jobs:
         run: |
           echo "=== ccache stats after build ==="
           ccache --show-stats --verbose || ccache -sv || ccache -s
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}

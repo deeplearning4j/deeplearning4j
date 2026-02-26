@@ -77,6 +77,12 @@ private:
 struct MLIRCompileOptions {
     bool enableOptimizations = true;
     bool enableVectorization = true;
+    bool enableAffineOptimizations = true;
+    bool enableX86Vector = true;
+    bool enableAMX = true;
+    bool enableArmNeon = true;
+    bool enableArmSVE = true;
+    bool enableArmSME = true;
     bool enableParallelization = false;
     bool enableGPU = false;
     int optLevel = 2;  // 0-3

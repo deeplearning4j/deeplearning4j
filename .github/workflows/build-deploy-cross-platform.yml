@@ -56,15 +56,15 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-${{ runner.arch }}-protobuf
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux

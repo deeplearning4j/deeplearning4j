@@ -150,6 +150,10 @@ Reused arrays from `slotArrayCache_` must be zeroed before reuse. Some ops marke
 
 **Predictable Allocation**: Index-based slot architecture has zero HashMap overhead. Array indexing is O(1) vs O(1) amortized for HashMap (but with better constants — no hashing, no collision handling, no boxing).
 
+**Replay Path Optimizations**: Runtime replay now includes direct C++ KV-scatter execution (avoiding repeated JNI crossings), frozen-constant detection for value-independent ops, and copy skipping for unchanged graph-capture buffers.
+
+**Allocation and Mode Control Improvements**: Decode-heavy workloads benefit from additional zero-copy view reuse and tighter output pre-allocation behavior, while explicit DSP compilation/execution modes allow safer fallback and targeted performance tuning.
+
 ### Disadvantages
 
 **No Control Flow Support**: Graphs with Switch/Merge/Enter/Exit operations must fall back to interpreted execution. This limits DSP to feedforward models (which covers most inference workloads).

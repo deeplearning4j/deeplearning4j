@@ -42,6 +42,7 @@ import org.nd4j.autodiff.samediff.execution.PlanExecutor;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -217,7 +218,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // When enabled, pre-compiles graph wiring (input/output index mapping, liveness schedule) once,
     // then executes using flat array-indexed slots instead of string-keyed HashMaps.
     // Unlike static ExecutionPlan, this handles shapes that change every step (e.g., growing KV cache).
-    // Enabled by default for 57% faster inference. Disable with -Dorg.nd4j.inference.dynamicShapePlan=false
+    // Execution can auto-compile plans only if SameDiff.dspAutoCompileEnabled is true.
+    // Disable this path entirely with -Dorg.nd4j.inference.dynamicShapePlan=false.
     private static volatile boolean DYNAMIC_SHAPE_PLAN_ENABLED = Boolean.parseBoolean(
             System.getProperty(ND4JSystemProperties.DYNAMIC_SHAPE_PLAN_ENABLED, "true"));
 
@@ -278,6 +280,49 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      */
     public DynamicShapePlanExecutor getDynamicShapePlanExecutor() {
         return dynamicShapePlanExecutorTl.get();
+    }
+
+    /**
+     * Explicitly compile (or reuse) a DynamicShapePlan for the given outputs.
+     * This does not execute the graph.
+     */
+    public DynamicShapePlan compileDynamicShapePlan(@NonNull List<String> requestedOutputs) {
+        List<String> outputs = resolveRequestedOutputs(requestedOutputs);
+        Set<String> allRequired = new LinkedHashSet<>(outputs);
+        ForwardExecutionDAG dag = dagCache.getOrCompute(allRequired, () -> {
+            ForwardExecutionDAGBuilder builder = new ForwardExecutionDAGBuilder(sameDiff);
+            return builder.buildForwardDAG(allRequired);
+        });
+
+        DynamicShapePlan plan = getOrCompileDynamicShapePlan(dag, outputs, true);
+        if (plan == null) {
+            throw new IllegalStateException("DynamicShapePlan compilation failed (control flow or unsupported graph)");
+        }
+        dynamicShapePlan = plan;
+        return plan;
+    }
+
+    /**
+     * Explicitly compile a native DSP plan handle and configure graph execution mode.
+     *
+     * @return effective graph execution mode configured on the native plan
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(@NonNull List<String> requestedOutputs,
+                                                            GraphExecutionMode requestedMode,
+                                                            boolean fallbackToAutoIfTritonUnavailable) {
+        DynamicShapePlan plan = compileDynamicShapePlan(requestedOutputs);
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        if (executor == null) {
+            executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
+            dynamicShapePlanExecutorTl.set(executor);
+        }
+
+        GraphExecutionMode effectiveMode = executor.compileNativePlan(
+                plan, requestedMode, fallbackToAutoIfTritonUnavailable);
+        if (!executor.isNativePlanCompiled(plan)) {
+            throw new IllegalStateException("Native DSP plan compilation failed");
+        }
+        return effectiveMode;
     }
 
     /**
@@ -883,10 +928,67 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return sdResults;
     }
 
+    private List<String> resolveRequestedOutputs(List<String> requestedOutputs) {
+        if (requestedOutputs != null && !requestedOutputs.isEmpty()) {
+            return requestedOutputs;
+        }
+
+        List<String> configuredOutputs = sameDiff.outputs();
+        Preconditions.checkState(configuredOutputs != null && !configuredOutputs.isEmpty(),
+                "No outputs were provided and SameDiff has no configured outputs");
+        return configuredOutputs;
+    }
+
+    private DynamicShapePlan getOrCompileDynamicShapePlan(ForwardExecutionDAG dag,
+                                                          List<String> requestedOutputs,
+                                                          boolean allowCompile) {
+        Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
+
+        DynamicShapePlan plan = dynamicShapePlan;
+        if (plan != null) {
+            Set<String> existingOutputs = new LinkedHashSet<>(plan.getRequestedOutputs());
+            if (!existingOutputs.equals(outputSet)) {
+                plan = null;
+            }
+        }
+
+        if (plan == null) {
+            plan = sameDiff.getCachedDynamicShapePlan(outputSet);
+            if (plan != null) {
+                dynamicShapePlan = plan;
+                return plan;
+            }
+
+            if (!allowCompile) {
+                return null;
+            }
+
+            log.debug("Compiling DynamicShapePlan for {} outputs", outputSet.size());
+            plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
+            if (plan == null) {
+                log.debug("DynamicShapePlan compilation returned null (control flow detected)");
+                return null;
+            }
+            if (plan.isHasControlFlowOps()) {
+                log.debug("DynamicShapePlan has control flow ops");
+                plan.close();
+                return null;
+            }
+
+            plan.assignDevices();
+            sameDiff.cacheDynamicShapePlan(outputSet, plan);
+            log.debug("DynamicShapePlan compiled: {}", plan.getSummary());
+        }
+
+        dynamicShapePlan = plan;
+        return plan;
+    }
+
     /**
      * Execute using DynamicShapePlan-based path: pre-compile graph wiring once, then execute
      * with flat array-indexed slots and per-slot shape cache. Handles dynamic shapes (e.g.,
      * growing KV cache in autoregressive generation).
+     * Compilation is explicit unless SameDiff.dspAutoCompileEnabled is true.
      *
      * @return results as SDValue map, or null if DynamicShapePlan execution is not possible
      */
@@ -903,33 +1005,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
 
-        // Compile plan on first call (or if cleared)
-        DynamicShapePlan plan = dynamicShapePlan;
+        DynamicShapePlan plan = getOrCompileDynamicShapePlan(
+                dag, requestedOutputs, sameDiff.isDspAutoCompileEnabled());
         if (plan == null) {
-            Set<String> outputSet = new LinkedHashSet<>(requestedOutputs);
-            // Check SameDiff-level cache first (survives session resets)
-            plan = sameDiff.getCachedDynamicShapePlan(outputSet);
-            if (plan == null) {
-                log.debug("Compiling DynamicShapePlan for {} outputs", allRequired.size());
-                plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
-                if (plan == null) {
-                    log.debug("DynamicShapePlan compilation returned null (control flow detected), using standard path");
-                    return null;
-                }
-                if (plan.isHasControlFlowOps()) {
-                    log.debug("DynamicShapePlan has control flow ops, using standard path");
-                    plan.close();
-                    return null;
-                }
-                // Auto-distribute ops across GPUs if multiple are available
-                plan.assignDevices();
-                // Cache at SameDiff level so it survives session resets
-                sameDiff.cacheDynamicShapePlan(outputSet, plan);
-                log.debug("DynamicShapePlan compiled: {}", plan.getSummary());
-            } else {
-                log.debug("DynamicShapePlan reused from SameDiff cache for {} outputs", outputSet.size());
-            }
-            dynamicShapePlan = plan;
+            log.debug("DynamicShapePlan not available (auto-compile disabled or compilation unsupported), using standard path");
+            return null;
         }
 
         // Get or create DynamicShapePlanExecutor (ThreadLocal per InferenceSession).
@@ -939,6 +1019,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (executor == null) {
             executor = new DynamicShapePlanExecutor(sameDiff, mmgr);
             dynamicShapePlanExecutorTl.set(executor);
+        }
+
+        if (sameDiff.isDspNativeAutoCompileEnabled() && !executor.isNativePlanCompiled(plan)) {
+            executor.compileNativePlan(plan, null, sameDiff.isDspFallbackToAutoIfTritonUnavailable());
         }
 
         // Execute

@@ -483,9 +483,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   void setGraphExecutionMode(GraphExecutionMode mode) {
     graphExecutionMode_ = mode;
-    // Reset cached backend so getGpuGraphBackend() re-evaluates with new mode
+    // Reset cached backends so mode changes take effect immediately.
     gpuGraphBackendChecked_ = false;
     gpuGraphBackend_ = nullptr;
+    cpuGraphBackendChecked_ = false;
+    cpuGraphBackend_ = nullptr;
     // Enable CUDA graphs as fallback for all modes except SLOT_BY_SLOT.
     // JIT backends (Triton/NVRTC/PTX) need CUDA graph fallback when they
     // can't handle a segment (unsupported ops, etc).

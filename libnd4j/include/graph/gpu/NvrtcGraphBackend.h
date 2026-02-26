@@ -53,7 +53,10 @@ class NvrtcGraphBackend : public GraphBackend {
   bool compileSegment(GraphSegment& seg, NativeSlot* slots,
                       NDArray** externalInputs, int numExternalInputs,
                       NDArray** outputSlots, int totalOutputSlots,
-                      LongType shapeKey) override;
+                      LongType shapeKey,
+                      int totalSlots = 0,
+                      int* requestedOutputSlotIndices = nullptr,
+                      int numRequestedOutputs = 0) override;
 
   Status executeSegment(GraphSegment& seg, NativeSlot* slots,
                         NDArray** externalInputs, int numExternalInputs,
@@ -115,10 +118,6 @@ class NvrtcGraphBackend : public GraphBackend {
                                   NDArray** externalInputs, int numExternalInputs,
                                   NDArray** outputSlots, int totalOutputSlots,
                                   CompiledKernel& result);
-
-  // Get the CUDA C expression for a fused op
-  static std::string opToCudaExpr(int fusedOpCode, const std::string& inputVar,
-                                   const std::string& secondaryVar);
 
   // Get compute capability string for current device
   static std::string getComputeArch();

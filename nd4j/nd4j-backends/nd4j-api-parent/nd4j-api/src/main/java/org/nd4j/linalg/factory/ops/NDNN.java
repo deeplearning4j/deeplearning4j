@@ -569,6 +569,34 @@ public class NDNN {
   }
 
   /**
+   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   *
+   * @param input Primary input array (NUMERIC type)
+   * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
+   * @param opCodes Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu (Size: AtLeast(min=1))
+   * @return output Result of applying the fused element-wise chain (NUMERIC type)
+   */
+  public INDArray fusedElementwiseChain(INDArray input, INDArray[] secondaryInputs, int[] opCodes) {
+    NDValidation.validateNumerical("fusedElementwiseChain", "input", input);
+    NDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
+    Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
+    Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(input, secondaryInputs, opCodes));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units<br>
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
    * This method uses the sigmoid approximation<br>
@@ -1864,31 +1892,5 @@ public class NDNN {
         }
       }
     }
-  }
-
-  public INDArray fusedElementwiseChain(INDArray input, int... opCodes) {
-    return fusedElementwiseChain(input, null, opCodes);
-  }
-
-  public INDArray fusedElementwiseChain(INDArray input, INDArray[] secondaryInputs, int[] opCodes) {
-    INDArray output = Nd4j.createUninitialized(input.dataType(), input.shape());
-    org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.ChainBuilder builder =
-            org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.builder().input(input);
-    int secIdx = 0;
-    for (int code : opCodes) {
-      if (code < 10) {
-        // binary op — needs secondary input
-        if (secondaryInputs != null && secIdx < secondaryInputs.length) {
-          builder.addOp(code, secondaryInputs[secIdx++]);
-        } else {
-          throw new IllegalArgumentException("Binary op code " + code + " requires a secondary input");
-        }
-      } else {
-        builder.addOp(code);
-      }
-    }
-    builder.output(output);
-    Nd4j.exec(builder.build());
-    return output;
   }
 }

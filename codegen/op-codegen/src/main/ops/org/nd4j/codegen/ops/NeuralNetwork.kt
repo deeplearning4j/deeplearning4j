@@ -1047,4 +1047,28 @@ fun NN() = Namespace("NN") {
     }
 
     Alias(Math(), "tanh")
+
+    Op("fusedElementwiseChain") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedElementwiseChain"
+
+        Input(NUMERIC, "input") { description = "Primary input array" }
+        Input(NUMERIC, "secondaryInputs") {
+            count = AtLeast(0)
+            description = "Optional secondary input arrays for binary ops (add, sub, mul, div)"
+        }
+        Arg(INT, "opCodes") {
+            count = AtLeast(1)
+            description = "Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu"
+        }
+
+        Output(NUMERIC, "output"){ description = "Result of applying the fused element-wise chain" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Executes a fused chain of element-wise operations in a single kernel pass.
+                Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.
+            """.trimIndent()
+        }
+    }
 }

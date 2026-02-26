@@ -299,6 +299,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  the native handle must be recompiled. */
     private DynamicShapePlan nativePlanSource;
 
+    /** Graph execution mode currently configured on the native plan handle. */
+    private GraphExecutionMode configuredGraphExecutionMode = GraphExecutionMode.AUTO;
+
     /** If native compilation fails, disable native execution for this executor instance
      *  to avoid repeated failure overhead. */
     private boolean nativeExecutorFailed;
@@ -587,6 +590,173 @@ public class DynamicShapePlanExecutor implements Closeable {
     }
 
     /**
+     * Whether a native plan handle is already compiled for the given plan.
+     */
+    public boolean isNativePlanCompiled(DynamicShapePlan plan) {
+        return nativePlanHandle != null && !nativePlanHandle.isNull() && nativePlanSource == plan;
+    }
+
+    /**
+     * The graph execution mode currently configured on the native plan handle.
+     */
+    public GraphExecutionMode getConfiguredGraphExecutionMode() {
+        return configuredGraphExecutionMode;
+    }
+
+    /**
+     * Compile (or reuse) the native plan handle and configure graph execution mode.
+     *
+     * @param plan the DynamicShapePlan to compile
+     * @param requestedMode desired graph execution mode, or null to use SameDiff/system property
+     * @param fallbackToAutoIfTritonUnavailable if true, TRITON mode degrades to AUTO when Triton is unavailable
+     * @return the effective mode configured on the native plan
+     */
+    public GraphExecutionMode compileNativePlan(DynamicShapePlan plan,
+                                                GraphExecutionMode requestedMode,
+                                                boolean fallbackToAutoIfTritonUnavailable) {
+        if (currentPlan != plan) {
+            initialize(plan);
+        }
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        boolean planChanged = nativePlanSource != null && nativePlanSource != plan;
+
+        if (nativePlanHandle == null || nativePlanSource != plan) {
+            if (planChanged && cudaGraphsFailed) {
+                log.info("Native executor: resetting cudaGraphsFailed on plan recompilation");
+                cudaGraphsFailed = false;
+            }
+
+            freeNativePlanHandle();
+
+            byte[] serialized = plan.serialize();
+            if (serialized == null || serialized.length == 0) {
+                log.warn("Native executor: plan serialization returned empty, cannot compile native plan");
+                nativeExecutorFailed = true;
+                return GraphExecutionMode.AUTO;
+            }
+
+            BytePointer planBytes = new BytePointer(serialized);
+            try {
+                nativePlanHandle = nativeOps.compileDynamicShapePlan(planBytes, serialized.length);
+            } catch (UnsupportedOperationException e) {
+                log.debug("Native executor: backend does not support compileDynamicShapePlan");
+                nativeExecutorFailed = true;
+                return GraphExecutionMode.AUTO;
+            } finally {
+                planBytes.close();
+            }
+
+            if (nativePlanHandle == null || nativePlanHandle.isNull()) {
+                log.warn("Native executor: compileDynamicShapePlan returned null handle");
+                nativePlanHandle = null;
+                nativeExecutorFailed = true;
+                return GraphExecutionMode.AUTO;
+            }
+
+            boolean cudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
+                    System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
+            if (cudaGraphsEnabled) {
+                try {
+                    nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // CPU backend doesn't support CUDA graphs
+                }
+            }
+
+            String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
+            if (!"graph".equalsIgnoreCase(jitModeStr)) {
+                int jitModeInt = 0;  // GRAPH_ONLY
+                if ("jit".equalsIgnoreCase(jitModeStr)) {
+                    jitModeInt = 1;  // JIT_ONLY
+                } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
+                    jitModeInt = 2;  // GRAPH_PLUS_JIT
+                }
+                try {
+                    nativeOps.setPlanJitMode(nativePlanHandle, jitModeInt);
+                    log.info("Native executor: JIT mode set to {} ({})", jitModeStr, jitModeInt);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support JIT
+                }
+            }
+
+            boolean execTiming = "true".equalsIgnoreCase(
+                    System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
+            if (execTiming) {
+                try {
+                    nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support timing
+                }
+            }
+
+            if (System.getProperty(ND4JSystemProperties.DSP_TRACE) != null) {
+                try {
+                    nativeOps.setPlanTraceEnabled(nativePlanHandle, true);
+                } catch (UnsupportedOperationException e) {
+                    // Backend doesn't support trace
+                }
+            }
+
+            nativePlanSource = plan;
+            nativeExecutorFailed = false;
+            log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
+                    plan.getSlots().length, plan.getExternalInputKeys().length,
+                    plan.getRequestedOutputs().size(), cudaGraphsEnabled, false);
+        }
+
+        GraphExecutionMode resolvedMode = resolveRequestedGraphExecutionMode(requestedMode);
+        boolean tritonAvailable = isTritonAvailable(nativeOps);
+        GraphExecutionMode effectiveMode = resolvedMode;
+        if (effectiveMode == GraphExecutionMode.TRITON &&
+                fallbackToAutoIfTritonUnavailable &&
+                !tritonAvailable) {
+            log.warn("Native executor: TRITON mode requested but Triton is unavailable; falling back to AUTO");
+            effectiveMode = GraphExecutionMode.AUTO;
+        }
+
+        try {
+            nativeOps.setPlanGraphExecutionMode(nativePlanHandle, effectiveMode.getNativeCode());
+            configuredGraphExecutionMode = effectiveMode;
+            log.info("Native executor: mode resolution requested={} resolved={} effective={} tritonAvailable={} fallbackToAuto={}",
+                    requestedMode, resolvedMode, effectiveMode, tritonAvailable, fallbackToAutoIfTritonUnavailable);
+        } catch (UnsupportedOperationException e) {
+            configuredGraphExecutionMode = GraphExecutionMode.AUTO;
+        }
+
+        return effectiveMode;
+    }
+
+    private GraphExecutionMode resolveRequestedGraphExecutionMode(GraphExecutionMode requestedMode) {
+        if (requestedMode != null) {
+            return requestedMode;
+        }
+
+        GraphExecutionMode gem = sd.getGraphExecutionMode();
+        String gemStr = System.getProperty(ND4JSystemProperties.DSP_GRAPH_EXECUTION_MODE);
+        if (gemStr != null) {
+            try {
+                try {
+                    gem = GraphExecutionMode.valueOf(gemStr.toUpperCase());
+                } catch (IllegalArgumentException nameEx) {
+                    gem = GraphExecutionMode.fromNativeCode(Integer.parseInt(gemStr));
+                }
+            } catch (Exception e) {
+                log.warn("Invalid graph execution mode '{}', using {}", gemStr, gem);
+            }
+        }
+        return gem;
+    }
+
+    private boolean isTritonAvailable(NativeOps nativeOps) {
+        try {
+            return nativeOps.isTritonAvailable();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Configure max-allocation for KV cache output slots.
      * Called after the first execution step when actual output shapes are known.
      * Finds present_key/present_value outputs and configures C++ to pre-allocate
@@ -656,6 +826,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         // This executes the entire plan in C++ via a single JNI call, avoiding
         // per-op Java→JNI→C++ round-trips (~15-20μs each × 1962 ops = ~30ms overhead).
         if (NATIVE_EXECUTOR_ENABLED && !nativeExecutorFailed) {
+            if (!isNativePlanCompiled(plan) && sd.isDspNativeAutoCompileEnabled()) {
+                compileNativePlan(plan, null, sd.isDspFallbackToAutoIfTritonUnavailable());
+            }
             try {
                 Map<String, INDArray> nativeResult = executeNative(plan, placeholderArrays);
                 if (nativeResult != null) {
@@ -3849,10 +4022,9 @@ public class DynamicShapePlanExecutor implements Closeable {
     /**
      * Execute the plan entirely in C++ via a single JNI call.
      *
-     * <p>On first call, serializes the plan and compiles it into a native C++ executor.
-     * Subsequent calls reuse the compiled handle. External inputs are resolved and
-     * passed as OpaqueNDArray pointers. C++ handles shape inference, memory allocation,
-     * op execution, and release scheduling internally.</p>
+     * <p>Requires a previously compiled native plan handle (via {@link #compileNativePlan(DynamicShapePlan, GraphExecutionMode, boolean)}
+     * or session-level auto-compile). External inputs are resolved and passed as OpaqueNDArray pointers.
+     * C++ handles shape inference, memory allocation, op execution, and release scheduling internally.</p>
      *
      * @return output map if native execution succeeded, or null if native execution
      *         is not available (e.g., backend doesn't support it)
@@ -3861,123 +4033,11 @@ public class DynamicShapePlanExecutor implements Closeable {
     private Map<String, INDArray> executeNative(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        // Compile native plan handle on first call or when plan changes
-        if (nativePlanHandle == null || nativePlanSource != plan) {
-            freeNativePlanHandle();
-
-            // Reset cudaGraphsFailed when plan changes — the new plan has different shapes/ops,
-            // so graph capture that failed for the old plan (e.g. large prefill) may succeed
-            // for the new plan (e.g. smaller single-token decode with static KV cache).
-            if (cudaGraphsFailed && nativePlanSource != null) {
-                log.info("Native executor: resetting cudaGraphsFailed on plan recompilation");
-                cudaGraphsFailed = false;
-            }
-
-            byte[] serialized = plan.serialize();
-            if (serialized == null || serialized.length == 0) {
-                log.debug("Native executor: plan serialization returned empty, skipping");
-                return null;
-            }
-
-            // Copy serialized bytes to native memory for the C++ side
-            BytePointer planBytes = new BytePointer(serialized);
-            try {
-                nativePlanHandle = nativeOps.compileDynamicShapePlan(planBytes, serialized.length);
-            } catch (UnsupportedOperationException e) {
-                // Backend doesn't support native execution
-                log.debug("Native executor: backend does not support compileDynamicShapePlan");
-                nativeExecutorFailed = true;
-                return null;
-            } finally {
-                planBytes.close();
-            }
-
-            if (nativePlanHandle == null || nativePlanHandle.isNull()) {
-                log.warn("Native executor: compileDynamicShapePlan returned null handle");
-                nativePlanHandle = null;
-                nativeExecutorFailed = true;
-                return null;
-            }
-
-            // Enable CUDA graphs by default for the native plan (unless previously failed)
-            boolean cudaGraphsEnabled = !cudaGraphsFailed && !"false".equalsIgnoreCase(
-                    System.getProperty(ND4JSystemProperties.DSP_CUDA_GRAPHS_ENABLED, "true"));
-            if (cudaGraphsEnabled) {
-                try {
-                    nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
-                } catch (UnsupportedOperationException e) {
-                    // CPU backend doesn't support CUDA graphs
-                }
-            }
-
-            // Note: shapes-frozen mode is NOT enabled automatically via system property.
-            // It must be enabled programmatically via setShapesFrozen(true) AFTER the first
-            // successful execution populates the shape cache. Using a system property would
-            // apply to ALL plans (including prefill) which have different shapes.
-            boolean shapesFrozen = false;
-
-            // Configure JIT mode if system property set
-            String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
-            if (!"graph".equalsIgnoreCase(jitModeStr)) {
-                int jitModeInt = 0;  // GRAPH_ONLY
-                if ("jit".equalsIgnoreCase(jitModeStr)) {
-                    jitModeInt = 1;  // JIT_ONLY
-                } else if ("graph+jit".equalsIgnoreCase(jitModeStr)) {
-                    jitModeInt = 2;  // GRAPH_PLUS_JIT
-                }
-                try {
-                    nativeOps.setPlanJitMode(nativePlanHandle, jitModeInt);
-                    log.info("Native executor: JIT mode set to {} ({})", jitModeStr, jitModeInt);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support JIT
-                }
-            }
-
-            // Configure graph execution mode from SameDiff or system property
-            GraphExecutionMode gem = sd.getGraphExecutionMode();
-            // System property overrides SameDiff setting
-            String gemStr = System.getProperty(ND4JSystemProperties.DSP_GRAPH_EXECUTION_MODE);
-            if (gemStr != null) {
-                try {
-                    gem = GraphExecutionMode.valueOf(gemStr.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    log.warn("Invalid graph execution mode '{}', using {}", gemStr, gem);
-                }
-            }
-            if (gem != GraphExecutionMode.AUTO) {
-                try {
-                    nativeOps.setPlanGraphExecutionMode(nativePlanHandle, gem.getNativeCode());
-                    log.info("Native executor: graph execution mode set to {}", gem);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support graph execution mode
-                }
-            }
-
-            // Enable execution timing if system property set
-            boolean execTiming = "true".equalsIgnoreCase(
-                    System.getProperty(ND4JSystemProperties.DSP_EXECUTION_TIMING, "false"));
-            if (execTiming) {
-                try {
-                    nativeOps.setPlanExecutionTimingEnabled(nativePlanHandle, true);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support timing
-                }
-            }
-
-            // Enable trace logging if system property set (presence is sufficient)
-            if (System.getProperty(ND4JSystemProperties.DSP_TRACE) != null) {
-                try {
-                    nativeOps.setPlanTraceEnabled(nativePlanHandle, true);
-                } catch (UnsupportedOperationException e) {
-                    // Backend doesn't support trace
-                }
-            }
-
-             nativePlanSource = plan;
-             log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
-                     plan.getSlots().length, plan.getExternalInputKeys().length,
-                     plan.getRequestedOutputs().size(), cudaGraphsEnabled, shapesFrozen);
-         }
+        // Native plan compilation is explicit (or controlled by InferenceSession auto-compile).
+        if (!isNativePlanCompiled(plan)) {
+            log.debug("Native executor: plan not precompiled for native execution");
+            return null;
+        }
          
          // Resolve external inputs (constants, variables, placeholders)
         // When frozen, cache constant/variable arrays and only re-resolve placeholders
@@ -4291,6 +4351,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         nativePlanHandle = null;
         nativePlanSource = null;
+        configuredGraphExecutionMode = GraphExecutionMode.AUTO;
         cachedInputOpaques = null;
         cachedInputArrays = null;
         inputIsPlaceholder = null;
