@@ -214,11 +214,22 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE _mlir_cpu_sources
             ./include/graph/cpu/MlirCpu*.cpp
             ./include/graph/cpu/CpuIRBuilder.cpp
+            ./include/graph/cpu/ArmHybridGraphBackend.cpp
         )
         if(_mlir_cpu_sources)
             list(REMOVE_ITEM GRAPH_SOURCES ${_mlir_cpu_sources})
             list(LENGTH _mlir_cpu_sources _mlir_count)
             message(STATUS "Excluded ${_mlir_count} MLIR CPU backend files (HAVE_MLIR=OFF)")
+        endif()
+    endif()
+    # Exclude NNAPI backend files when not on Android (requires <android/NeuralNetworks.h>)
+    if(NOT HAVE_NNAPI)
+        file(GLOB_RECURSE _nnapi_sources
+            ./include/graph/cpu/NnapiGraphBackend.cpp
+        )
+        if(_nnapi_sources)
+            list(REMOVE_ITEM GRAPH_SOURCES ${_nnapi_sources})
+            message(STATUS "Excluded NNAPI backend files (HAVE_NNAPI=OFF)")
         endif()
     endif()
     # Exclude MLX CPU backend files when MLX is not available (they require MLX headers + C++20)
@@ -506,6 +517,26 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "✅ Added debug libraries for SD_GCC_FUNCTRACE (using libgcc_s for unwinding, JVM compatible)")
     endif()
 
+    # On macOS, Homebrew's libomp is keg-only and not found by default.
+    # Set hints so find_package(OpenMP) can locate it.
+    if(APPLE AND EXISTS "/opt/homebrew/opt/libomp")
+        set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
+        set(OpenMP_C_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_C_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_omp_LIBRARY "/opt/homebrew/opt/libomp/lib/libomp.dylib" CACHE FILEPATH "" FORCE)
+        include_directories("/opt/homebrew/opt/libomp/include")
+    elseif(APPLE AND EXISTS "/usr/local/opt/libomp")
+        set(OpenMP_ROOT "/usr/local/opt/libomp")
+        set(OpenMP_C_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_FLAGS "-Xclang -fopenmp" CACHE STRING "" FORCE)
+        set(OpenMP_C_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_CXX_LIB_NAMES "omp" CACHE STRING "" FORCE)
+        set(OpenMP_omp_LIBRARY "/usr/local/opt/libomp/lib/libomp.dylib" CACHE FILEPATH "" FORCE)
+        include_directories("/usr/local/opt/libomp/include")
+    endif()
+
     find_package(OpenMP)
     if(OpenMP_CXX_FOUND)
         target_link_libraries(${main_target_name} PUBLIC OpenMP::OpenMP_CXX)
@@ -514,12 +545,15 @@ function(configure_cpu_linking main_target_name)
         if(NOT WIN32 AND OpenMP_omp_LIBRARY AND EXISTS "${OpenMP_omp_LIBRARY}")
             message(STATUS "📦 Bundling OpenMP library: ${OpenMP_omp_LIBRARY}")
             add_custom_command(TARGET ${main_target_name} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenMP_omp_LIBRARY}" "${CMAKE_BINARY_DIR}/libomp.so"
-                COMMENT "Copying libomp.so to output directory for bundling"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OpenMP_omp_LIBRARY}" "${CMAKE_BINARY_DIR}/libomp.dylib"
+                COMMENT "Copying libomp to output directory for bundling"
             )
         endif()
-    else()
+    elseif(NOT APPLE)
+        # Only use -fopenmp fallback on non-Apple platforms (Apple Clang rejects it)
         target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
+    else()
+        message(WARNING "⚠️ OpenMP not found on macOS — building without OpenMP support")
     endif()
 endfunction()
 
