@@ -1,4 +1,10 @@
 on:
+  push:
+    branches:
+      - ag_new_release_updates_2
+    paths:
+      - '.github/workflows/build-deploy-linux-cuda-12.9.yml'
+      - '.github/workflows/build-deploy-windows-cuda-12.9.yml'
   workflow_dispatch:
     inputs:
       buildThreads:
