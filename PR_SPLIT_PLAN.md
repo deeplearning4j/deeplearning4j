@@ -2,44 +2,33 @@
 
 ## Scope
 
-- Source branch: `ag_new_release_updates_2`
-- Snapshot basis: local changes + commits ahead of `origin/ag_new_release_updates_2`
-- Excluded from split/commit by default: `sample-compilation.txt`, `session-openclaw.md` (session/log scratch files)
+- Source branch: ag_new_release_updates_2
+- Source snapshot commit: b5893454f08c91e7bafb47478757c84a5f1cab04
+- Split strategy: feature-oriented branches (runtime/backend/API/build/docs/tests), replacing generic module buckets.
+- Excluded from commit/split: sample-compilation.txt, session-openclaw.md (session/log scratch files).
 
-## Existing Open PRs Referenced
+## Active Split PRs (Feature-Oriented)
 
-- #10229 (`ag_new_release_updates_2` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10229
-- #10370 (`pr/adrs-documentation` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10370
-- #10371 (`pr/build-system` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10371
-- #10375 (`pr/libnd4j-core` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10375
-- #10376 (`pr/libnd4j-graph-ops` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10376
-- #10377 (`pr/java-ops-factory` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10377
-- #10378 (`pr/nd4j-common` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10378
-- #10379 (`pr/tests` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10379
-- #10380 (`pr/contrib-tools` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10380
-- #10381 (`pr/java-core-infra` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10381
-- #10382 (`pr/onnx-runtime` -> `master`): https://github.com/deeplearning4j/deeplearning4j/pull/10382
+| Branch | PR | Commit | Files | URL |
+|---|---:|---|---:|---|
+| `pr/docs-adr-snapshot` | #10418 | `d11386a4c191` | 5 | https://github.com/deeplearning4j/deeplearning4j/pull/10418 |
+| `pr/build-and-packaging` | #10419 | `e98ee0387584` | 37 | https://github.com/deeplearning4j/deeplearning4j/pull/10419 |
+| `pr/triton-backend-kernels` | #10420 | `b81722e3e6fb` | 43 | https://github.com/deeplearning4j/deeplearning4j/pull/10420 |
+| `pr/dsp-runtime-execution` | #10421 | `4a097968e3b3` | 57 | https://github.com/deeplearning4j/deeplearning4j/pull/10421 |
+| `pr/java-op-api-surface` | #10422 | `ee3817882c75` | 23 | https://github.com/deeplearning4j/deeplearning4j/pull/10422 |
+| `pr/onnx-runtime-vlm-cache` | #10423 | `c36d2d3eb0a7` | 4 | https://github.com/deeplearning4j/deeplearning4j/pull/10423 |
+| `pr/tests-dsp-triton-vlm` | #10424 | `ae57909eedb8` | 10 | https://github.com/deeplearning4j/deeplearning4j/pull/10424 |
 
-## Push Status
+## Legacy Open PRs Observed
 
-| Branch | PR | File Count | Status |
-|---|---:|---:|---|
-| `pr/adrs-documentation` | #10370 | 5 | `pending` |
-| `pr/build-system` | #10371 | 34 | `pending` |
-| `pr/contrib-tools` | #10380 | 3 | `pending` |
-| `pr/libnd4j-core` | #10375 | 16 | `pending` |
-| `pr/libnd4j-graph-ops` | #10376 | 46 | `pending` |
-| `pr/java-core-infra` | #10381 | 36 | `pending` |
-| `pr/java-ops-factory` | #10377 | 23 | `pending` |
-| `pr/nd4j-common` | #10378 | 2 | `pending` |
-| `pr/onnx-runtime` | #10382 | 4 | `pending` |
-| `pr/tests` | #10379 | 10 | `pending` |
+The earlier generic split PRs are still open in the repository history (for example pr/java-core-infra, pr/libnd4j-core, pr/build-system, etc.).
+This plan tracks the new feature-oriented split above as the current snapshot path.
 
 ## Branch File Mapping
 
-### pr/adrs-documentation (PR #10370)
+### pr/docs-adr-snapshot (PR #10418)
 
-ADR updates, optimization notes, and split-plan tracking.
+ADR updates, optimization journal, and split execution plan tracking.
 
 Files (5):
 - `ADRs/0061 - DynamicShapePlan Execution.md`
@@ -48,11 +37,11 @@ Files (5):
 - `PR_SPLIT_PLAN.md`
 - `optimization-journal.md`
 
-### pr/build-system (PR #10371)
+### pr/build-and-packaging (PR #10419)
 
-GitHub workflows, build scripts, CMake/build plumbing, and root/build POM alignment.
+CI workflows, CMake/build scripts, and packaging/version alignment.
 
-Files (34):
+Files (37):
 - `.github/actions/setup-ccache-linux/action.yml`
 - `.github/actions/setup-ccache-macos/action.yml`
 - `.github/actions/setup-ccache-windows/action.yml`
@@ -72,6 +61,9 @@ Files (34):
 - `.github/workflows/run-gpu-tests-sanity-checks.yml`
 - `.github/workflows/test_multiple_arch.yaml`
 - `change-cuda-versions.sh`
+- `codegen/blas-lapack-generator/pom.xml`
+- `contrib/benchmarking_nd4j/pom.xml`
+- `contrib/blas-lapack-generator/pom.xml`
 - `libnd4j/buildnativeoperations.sh`
 - `libnd4j/cmake/CudaCleanup.cmake`
 - `libnd4j/cmake/CudaConfiguration.cmake`
@@ -88,45 +80,13 @@ Files (34):
 - `nd4j/nd4j-tvm/pom.xml`
 - `pom.xml`
 
-### pr/contrib-tools (PR #10380)
+### pr/triton-backend-kernels (PR #10420)
 
-Contrib and codegen support module build updates.
+Triton/NVRTC/PTX graph backend and kernel-surface correctness updates.
 
-Files (3):
-- `codegen/blas-lapack-generator/pom.xml`
-- `contrib/benchmarking_nd4j/pom.xml`
-- `contrib/blas-lapack-generator/pom.xml`
-
-### pr/libnd4j-core (PR #10375)
-
-Core runtime/memory/environment/native infrastructure changes in libnd4j.
-
-Files (16):
-- `libnd4j/include/array/DataBuffer.h`
-- `libnd4j/include/array/NDArray.hXX`
-- `libnd4j/include/array/cpu/DataBuffer.cpp`
-- `libnd4j/include/array/cuda/DataBuffer.cu`
-- `libnd4j/include/execution/cuda/CudaGraphScheduler.h`
-- `libnd4j/include/helpers/MmulHelper.h`
-- `libnd4j/include/helpers/cuda/MmulHelper.cu`
-- `libnd4j/include/helpers/cuda/PointersManager.cu`
-- `libnd4j/include/legacy/NativeOps.h`
-- `libnd4j/include/legacy/cpu/NativeOps_dsp.cpp`
-- `libnd4j/include/legacy/cuda/NativeOps_dsp.cu`
-- `libnd4j/include/legacy/impl/Environment.cpp`
-- `libnd4j/include/memory/cuda/CudaMemoryPool.cu`
-- `libnd4j/include/mlir/runtime/MLIREngine.cpp`
-- `libnd4j/include/mlir/runtime/MLIREngine.h`
-- `libnd4j/include/system/Environment.h`
-
-### pr/libnd4j-graph-ops (PR #10376)
-
-Graph backend, Triton/NVRTC/PTX, and graph/ops execution correctness updates.
-
-Files (46):
+Files (43):
 - `libnd4j/include/graph/FusionPass.h`
 - `libnd4j/include/graph/GraphBackend.h`
-- `libnd4j/include/graph/NativeDynamicShapePlan.h`
 - `libnd4j/include/graph/cpu/AclGraphBackend.cpp`
 - `libnd4j/include/graph/cpu/AclGraphBackend.h`
 - `libnd4j/include/graph/cpu/OneDnnGraphBackend.cpp`
@@ -150,8 +110,6 @@ Files (46):
 - `libnd4j/include/graph/gpu/TritonTargetDispatch.h`
 - `libnd4j/include/graph/impl/Context.cpp`
 - `libnd4j/include/graph/impl/FusionPass.cpp`
-- `libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp`
-- `libnd4j/include/graph/impl/NativePlanCompiler.cpp`
 - `libnd4j/include/ops/declarable/generic/nn/dora_matmul.cpp`
 - `libnd4j/include/ops/declarable/generic/nn/dot_product_attention.cpp`
 - `libnd4j/include/ops/declarable/generic/nn/fused_elementwise_chain.cpp`
@@ -171,11 +129,30 @@ Files (46):
 - `libnd4j/include/ops/declarable/impl/DeclarableOp.cpp`
 - `libnd4j/include/system/op_boilerplate.h`
 
-### pr/java-core-infra (PR #10381)
+### pr/dsp-runtime-execution (PR #10421)
 
-SameDiff execution/runtime core infrastructure and CUDA backend bindings.
+DynamicShapePlan runtime execution changes across native and Java layers.
 
-Files (36):
+Files (57):
+- `libnd4j/include/array/DataBuffer.h`
+- `libnd4j/include/array/NDArray.hXX`
+- `libnd4j/include/array/cpu/DataBuffer.cpp`
+- `libnd4j/include/array/cuda/DataBuffer.cu`
+- `libnd4j/include/execution/cuda/CudaGraphScheduler.h`
+- `libnd4j/include/graph/NativeDynamicShapePlan.h`
+- `libnd4j/include/graph/impl/NativeDynamicShapePlan.cpp`
+- `libnd4j/include/graph/impl/NativePlanCompiler.cpp`
+- `libnd4j/include/helpers/MmulHelper.h`
+- `libnd4j/include/helpers/cuda/MmulHelper.cu`
+- `libnd4j/include/helpers/cuda/PointersManager.cu`
+- `libnd4j/include/legacy/NativeOps.h`
+- `libnd4j/include/legacy/cpu/NativeOps_dsp.cpp`
+- `libnd4j/include/legacy/cuda/NativeOps_dsp.cu`
+- `libnd4j/include/legacy/impl/Environment.cpp`
+- `libnd4j/include/memory/cuda/CudaMemoryPool.cu`
+- `libnd4j/include/mlir/runtime/MLIREngine.cpp`
+- `libnd4j/include/mlir/runtime/MLIREngine.h`
+- `libnd4j/include/system/Environment.h`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/SameDiff.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/CollectiveCommunicator.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff/samediff/execution/CollectiveCommunicatorFactory.java`
@@ -205,6 +182,8 @@ Files (36):
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/nativeblas/NativeOps.java`
 - `nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/linalg/jcublas/CudaEnvironment.java`
 - `nd4j/nd4j-backends/nd4j-backend-impls/nd4j-cuda/src/main/java/org/nd4j/linalg/jcublas/bindings/Nd4jCuda.java`
+- `nd4j/nd4j-common/src/main/java/org/nd4j/common/config/ND4JEnvironmentVars.java`
+- `nd4j/nd4j-common/src/main/java/org/nd4j/common/config/ND4JSystemProperties.java`
 - `nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/generation/DecoderUtils.java`
 - `nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/generation/DraftModelSpeculator.java`
 - `nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/generation/KVCacheHostOffloader.java`
@@ -213,9 +192,9 @@ Files (36):
 - `nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/generation/StaticKvCacheDecodeLoop.java`
 - `nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/llm/generation/TreeAttentionVerifier.java`
 
-### pr/java-ops-factory (PR #10377)
+### pr/java-op-api-surface (PR #10422)
 
-Java op wrappers/factories and codegen op surface updates.
+Java SameDiff/ND op API surface and codegen wrapper updates.
 
 Files (23):
 - `codegen/op-codegen/src/main/ops/org/nd4j/codegen/ops/NeuralNetwork.kt`
@@ -242,17 +221,9 @@ Files (23):
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/factory/ops/NDBase.java`
 - `nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/factory/ops/NDNN.java`
 
-### pr/nd4j-common (PR #10378)
+### pr/onnx-runtime-vlm-cache (PR #10423)
 
-Shared ND4J configuration constants/properties.
-
-Files (2):
-- `nd4j/nd4j-common/src/main/java/org/nd4j/common/config/ND4JEnvironmentVars.java`
-- `nd4j/nd4j-common/src/main/java/org/nd4j/common/config/ND4JSystemProperties.java`
-
-### pr/onnx-runtime (PR #10382)
-
-ONNX runtime/import integration and VLM ONNX cache updates.
+ONNX runtime/import integration and VLM ONNX cache changes.
 
 Files (4):
 - `nd4j/nd4j-onnxruntime/pom.xml`
@@ -260,9 +231,9 @@ Files (4):
 - `nd4j/samediff-import/samediff-import-onnx/src/main/kotlin/org/nd4j/samediff/frameworkimport/onnx/definitions/implementations/SimplifiedLayerNormalization.kt`
 - `nd4j/samediff-vlm/src/main/java/org/eclipse/deeplearning4j/vlm/model/OnnxModelCache.java`
 
-### pr/tests (PR #10379)
+### pr/tests-dsp-triton-vlm (PR #10424)
 
-Platform test updates for DSP/Triton/VLM behavior.
+Platform tests covering DSP/Triton/VLM/runtime behavior.
 
 Files (10):
 - `platform-tests/bin/java`
