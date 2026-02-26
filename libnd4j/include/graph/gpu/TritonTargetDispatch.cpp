@@ -1,0 +1,1451 @@
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+#include <config.h>
+
+#if HAVE_TRITON
+
+#include <graph/gpu/TritonTargetDispatch.h>
+#include <helpers/logger.h>
+#include <system/Environment.h>
+#include <system/common.h>
+
+#include <cstring>
+#include <csignal>
+#include <algorithm>
+#include <atomic>
+#include <cctype>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <setjmp.h>
+#include <thread>
+
+// ─── Platform GPU headers ───────────────────────────────────────────────────
+//
+// CRITICAL: Under ZLUDA builds, SD_CUDA is defined even though the real GPU
+// may be AMD (HIP) or Intel (Level Zero). ZLUDA intercepts CUDA API calls
+// and translates them, but it expects PTX for cuModuleLoadDataEx.
+//
+// Triton produces NATIVE binaries for each target:
+//   NVIDIA → PTX text   (compatible with cuModuleLoadDataEx)
+//   AMD    → AMDGCN ELF (requires hipModuleLoadData, NOT cuModuleLoadDataEx)
+//   Intel  → SPIR-V     (requires zeModuleCreate, NOT cuModuleLoadDataEx)
+//
+// Therefore:
+//   - NVIDIA target: always use CUDA Driver API
+//   - AMD target:    always use HIP directly (bypass ZLUDA for Triton kernels)
+//   - Intel target:  always use Level Zero directly (bypass ZLUDA for Triton kernels)
+//
+// The switch is on binary.target / detectTarget() result, not on build flags.
+// Build flags only gate which headers and APIs are available.
+
+#ifdef SD_CUDA
+#include <cuda.h>
+#include <cuda_runtime.h>
+#endif
+
+// HIP headers: available in native ROCm builds AND ZLUDA+AMD builds.
+// ZLUDA+AMD sets HAVE_MIOPEN=1 and includes ROCm in the build.
+#if defined(ZLUDA_TARGET_AMD) || defined(HAVE_MIOPEN) || defined(SD_HIP)
+#define TRITON_HAS_HIP 1
+#include <hip/hip_runtime.h>
+#include <hip/hiprtc.h>
+#endif
+
+// Level Zero headers: available in native Intel builds and ZLUDA+Intel builds.
+#if defined(ZLUDA_TARGET_INTEL) || defined(SD_LEVEL_ZERO)
+#define TRITON_HAS_LEVEL_ZERO 1
+#include <level_zero/ze_api.h>
+#endif
+
+// MLIR core infrastructure
+#include <mlir/IR/BuiltinAttributes.h>
+#include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Verifier.h>
+#include <mlir/Pass/PassManager.h>
+#if __has_include(<mlir/Pass/PassInstrumentation.h>)
+#include <mlir/Pass/PassInstrumentation.h>
+#define SD_TRITON_HAS_PASS_INSTRUMENTATION 1
+#endif
+#include <mlir/Transforms/Passes.h>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Dialect/All.h>
+#include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h>
+#include <mlir/Conversion/IndexToLLVM/IndexToLLVM.h>
+#include <mlir/Conversion/ArithToLLVM/ArithToLLVM.h>
+#include <mlir/Conversion/MathToLLVM/MathToLLVM.h>
+#include <mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h>
+#include <mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h>
+#include <mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h>
+
+// LLVM backend for PTX generation
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/ErrorHandling.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
+#include <llvm/ADT/SmallString.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Linker/Linker.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Bitcode/BitcodeReader.h>
+
+
+// Triton dialect passes — TTIR -> TTGIR -> LLVM
+#include <triton/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.h>
+#include <triton/Conversion/TritonGPUToLLVM/Passes.h>
+#include <triton/Dialect/TritonGPU/Transforms/Passes.h>
+#include <triton/Target/LLVMIR/Passes.h>
+
+// NVIDIA backend passes (when building with NVIDIA codegen backend)
+#if __has_include(<TritonNVIDIAGPUToLLVM/Passes.h>)
+#include <TritonNVIDIAGPUToLLVM/Passes.h>
+#include <NVGPUToLLVM/NVGPUToLLVMPass.h>
+#define HAVE_TRITON_NVIDIA_PASSES 1
+#endif
+
+// AMD backend passes (when building with AMD codegen backend)
+#if __has_include(<TritonAMDGPUToLLVM/Passes.h>)
+#include <TritonAMDGPUToLLVM/Passes.h>
+#define HAVE_TRITON_AMD_PASSES 1
+#endif
+
+namespace sd {
+namespace graph {
+
+namespace {
+
+std::string canonicalizeAmdArch(const std::string& arch) {
+  if (arch.empty()) return arch;
+  size_t suffixPos = arch.find(':');
+  if (suffixPos == std::string::npos) return arch;
+  return arch.substr(0, suffixPos);
+}
+
+int getModuleSharedMemoryBytes(mlir::ModuleOp* moduleOp) {
+  if (moduleOp == nullptr || !*moduleOp) return 0;
+
+  auto sharedAttr =
+      moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("triton_gpu.shared");
+  if (!sharedAttr) return 0;
+
+  int64_t sharedBytes = sharedAttr.getInt();
+  if (sharedBytes <= 0) return 0;
+  if (sharedBytes > static_cast<int64_t>(std::numeric_limits<int>::max())) {
+    return std::numeric_limits<int>::max();
+  }
+  return static_cast<int>(sharedBytes);
+}
+
+const char* tritonTargetName(TritonGpuTarget target) {
+  switch (target) {
+    case TritonGpuTarget::NVIDIA:
+      return "NVIDIA";
+    case TritonGpuTarget::AMD:
+      return "AMD";
+    case TritonGpuTarget::INTEL:
+      return "INTEL";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+long long nextTritonCompileId() {
+  static std::atomic<long long> nextId{0};
+  return nextId.fetch_add(1) + 1;
+}
+
+long long elapsedMsSince(const std::chrono::steady_clock::time_point& start) {
+  return static_cast<long long>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::steady_clock::now() - start).count());
+}
+
+#ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
+class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation {
+ public:
+  TritonPassProgressInstrumentation(long long compileId, const char* pipelineTag)
+      : compileId_(compileId), pipelineTag_(pipelineTag) {
+    heartbeatThread_ = std::thread([this]() {
+      std::unique_lock<std::mutex> lock(heartbeatMutex_);
+      while (!stopHeartbeat_) {
+        heartbeatCv_.wait_for(lock, std::chrono::seconds(heartbeatIntervalSec_));
+        if (stopHeartbeat_ || !passRunning_) continue;
+        const long long passCounter = passCounter_;
+        const std::string passName = currentPassName_;
+        const auto passStart = currentPassStart_;
+        lock.unlock();
+        sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld HEARTBEAT %s elapsedMs=%lld\n",
+                  compileId_, pipelineTag_, passCounter, passName.c_str(),
+                  elapsedMsSince(passStart));
+        lock.lock();
+      }
+    });
+  }
+
+  ~TritonPassProgressInstrumentation() override {
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      stopHeartbeat_ = true;
+    }
+    heartbeatCv_.notify_all();
+    if (heartbeatThread_.joinable()) {
+      heartbeatThread_.join();
+    }
+  }
+
+  void runBeforePass(mlir::Pass* pass, mlir::Operation*) override {
+    if (pass == nullptr) return;
+    long long passCounter = 0;
+    std::string passName;
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      passCounter_++;
+      currentPassName_ = pass->getName().str();
+      currentPassStart_ = std::chrono::steady_clock::now();
+      passRunning_ = true;
+      passCounter = passCounter_;
+      passName = currentPassName_;
+    }
+    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld START %s\n",
+              compileId_, pipelineTag_, passCounter, passName.c_str());
+  }
+
+  void runAfterPass(mlir::Pass* pass, mlir::Operation*) override {
+    if (pass == nullptr) return;
+    long long passCounter = 0;
+    std::string passName;
+    std::chrono::steady_clock::time_point passStart;
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      passCounter = passCounter_;
+      passName = currentPassName_;
+      passStart = currentPassStart_;
+      passRunning_ = false;
+    }
+    heartbeatCv_.notify_all();
+    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld DONE %s elapsedMs=%lld\n",
+              compileId_, pipelineTag_, passCounter, passName.c_str(),
+              elapsedMsSince(passStart));
+  }
+
+  void runAfterPassFailed(mlir::Pass* pass, mlir::Operation*) override {
+    if (pass == nullptr) return;
+    long long passCounter = 0;
+    std::string passName;
+    std::chrono::steady_clock::time_point passStart;
+    {
+      std::lock_guard<std::mutex> lock(heartbeatMutex_);
+      passCounter = passCounter_;
+      passName = currentPassName_;
+      passStart = currentPassStart_;
+      passRunning_ = false;
+    }
+    heartbeatCv_.notify_all();
+    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld FAILED %s elapsedMs=%lld\n",
+              compileId_, pipelineTag_, passCounter, passName.c_str(),
+              elapsedMsSince(passStart));
+  }
+
+ private:
+  long long compileId_;
+  const char* pipelineTag_;
+  static constexpr int heartbeatIntervalSec_ = 30;
+  std::thread heartbeatThread_;
+  std::mutex heartbeatMutex_;
+  std::condition_variable heartbeatCv_;
+  bool stopHeartbeat_ = false;
+  bool passRunning_ = false;
+  long long passCounter_ = 0;
+  std::string currentPassName_;
+  std::chrono::steady_clock::time_point currentPassStart_;
+};
+#endif
+
+static thread_local jmp_buf tritonJmpBuf;
+static thread_local bool tritonInProtectedRegion = false;
+
+void tritonSigabrtHandler(int) {
+  if (tritonInProtectedRegion) {
+    longjmp(tritonJmpBuf, 1);
+  }
+}
+
+std::mutex& tritonSigabrtMutex() {
+  static std::mutex mtx;
+  return mtx;
+}
+
+int& tritonSigabrtRefCount() {
+  static int refCount = 0;
+  return refCount;
+}
+
+struct sigaction& tritonSigabrtPreviousAction() {
+  static struct sigaction action {};
+  return action;
+}
+
+class TritonSigabrtInstallGuard {
+ public:
+  TritonSigabrtInstallGuard() {
+    std::lock_guard<std::mutex> lock(tritonSigabrtMutex());
+    int& refCount = tritonSigabrtRefCount();
+    if (refCount == 0) {
+      struct sigaction newSigabrt;
+      std::memset(&newSigabrt, 0, sizeof(newSigabrt));
+      newSigabrt.sa_handler = tritonSigabrtHandler;
+      sigemptyset(&newSigabrt.sa_mask);
+      newSigabrt.sa_flags = 0;
+      sigaction(SIGABRT, &newSigabrt, &tritonSigabrtPreviousAction());
+    }
+    refCount++;
+  }
+
+  ~TritonSigabrtInstallGuard() {
+    std::lock_guard<std::mutex> lock(tritonSigabrtMutex());
+    int& refCount = tritonSigabrtRefCount();
+    if (refCount <= 0) return;
+    refCount--;
+    if (refCount == 0) {
+      sigaction(SIGABRT, &tritonSigabrtPreviousAction(), nullptr);
+    }
+  }
+
+  TritonSigabrtInstallGuard(const TritonSigabrtInstallGuard&) = delete;
+  TritonSigabrtInstallGuard& operator=(const TritonSigabrtInstallGuard&) = delete;
+};
+
+}  // namespace
+
+// Static member initialization
+TritonGpuTarget TritonTargetDispatch::cachedTarget_ = TritonGpuTarget::UNKNOWN;
+std::string TritonTargetDispatch::cachedArch_;
+bool TritonTargetDispatch::targetDetected_ = false;
+
+// ─── Target detection ───────────────────────────────────────────────────────
+
+bool TritonTargetDispatch::isReady() {
+  auto target = detectTarget();
+  return target != TritonGpuTarget::UNKNOWN;
+}
+
+TritonGpuTarget TritonTargetDispatch::detectTarget() {
+  static std::mutex detectTargetMutex;
+  std::lock_guard<std::mutex> lock(detectTargetMutex);
+  if (targetDetected_) return cachedTarget_;
+  targetDetected_ = true;
+
+  // Detection priority:
+  //   1. HIP (most accurate for AMD — gives gcnArchName)
+  //   2. Level Zero (most accurate for Intel — gives device properties)
+  //   3. CUDA (for native NVIDIA, or ZLUDA fallback)
+  //
+  // Under ZLUDA+AMD: both SD_CUDA and HAVE_MIOPEN are defined.
+  // HIP gives us the real gcnArchName (e.g., "gfx1100"), while CUDA
+  // would require guessing the arch from the device name string.
+  // So we try HIP first.
+
+#if TRITON_HAS_HIP
+  // Try HIP detection first — preferred for AMD because gcnArchName is exact
+  {
+    int deviceCount = 0;
+    auto err = hipGetDeviceCount(&deviceCount);
+    if (err == hipSuccess && deviceCount > 0) {
+      hipDeviceProp_t props;
+      hipGetDeviceProperties(&props, 0);
+
+      // gcnArchName is the canonical arch string (e.g., "gfx1100", "gfx90a")
+      std::string archName = canonicalizeAmdArch(props.gcnArchName);
+      if (!archName.empty() && archName.find("gfx") != std::string::npos) {
+        cachedArch_ = archName;
+        cachedTarget_ = TritonGpuTarget::AMD;
+        sd_printf("TritonTargetDispatch: detected AMD GPU '%s' via HIP, arch=%s\n",
+                  props.name, cachedArch_.c_str());
+        return cachedTarget_;
+      }
+    }
+  }
+#endif
+
+#if TRITON_HAS_LEVEL_ZERO
+  // Try Level Zero detection — preferred for Intel
+  {
+    ze_result_t res = zeInit(0);
+    if (res == ZE_RESULT_SUCCESS) {
+      uint32_t driverCount = 0;
+      zeDriverGet(&driverCount, nullptr);
+      if (driverCount > 0) {
+        std::vector<ze_driver_handle_t> drivers(driverCount);
+        zeDriverGet(&driverCount, drivers.data());
+
+        uint32_t deviceCount = 0;
+        zeDeviceGet(drivers[0], &deviceCount, nullptr);
+        if (deviceCount > 0) {
+          std::vector<ze_device_handle_t> devices(deviceCount);
+          zeDeviceGet(drivers[0], &deviceCount, devices.data());
+
+          ze_device_properties_t deviceProps = {};
+          deviceProps.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES;
+          zeDeviceGetProperties(devices[0], &deviceProps);
+
+          if (deviceProps.type == ZE_DEVICE_TYPE_GPU) {
+            cachedArch_ = "pvc";  // Default; refine based on deviceId
+            std::string devName(deviceProps.name);
+            if (devName.find("Arc") != std::string::npos) {
+              cachedArch_ = "xehpg";  // Alchemist (Arc A-series)
+            }
+            if (devName.find("Max") != std::string::npos ||
+                devName.find("Ponte Vecchio") != std::string::npos) {
+              cachedArch_ = "pvc";  // Data Center Max
+            }
+            cachedTarget_ = TritonGpuTarget::INTEL;
+            sd_printf("TritonTargetDispatch: detected Intel GPU '%s' via Level Zero, arch=%s\n",
+                      deviceProps.name, cachedArch_.c_str());
+            return cachedTarget_;
+          }
+        }
+      }
+    }
+  }
+#endif
+
+#ifdef SD_CUDA
+  // CUDA detection — for native NVIDIA GPUs (or ZLUDA fallback)
+  {
+    int deviceCount = 0;
+    auto err = cudaGetDeviceCount(&deviceCount);
+    if (err == cudaSuccess && deviceCount > 0) {
+      cudaDeviceProp props;
+      cudaGetDeviceProperties(&props, 0);
+
+      std::string deviceName(props.name);
+
+      // If we get here under ZLUDA, the HIP/Level Zero detection above
+      // didn't match (unusual). Check the device name as a fallback.
+#ifdef HAVE_ZLUDA
+      // AMD GPU behind ZLUDA but HIP detection didn't work
+      if (deviceName.find("AMD") != std::string::npos ||
+          deviceName.find("Radeon") != std::string::npos ||
+          deviceName.find("gfx") != std::string::npos) {
+        // Best-effort arch from compute capability (imprecise)
+        cachedArch_ = "gfx" + std::to_string(props.major * 100 + props.minor * 10);
+        cachedTarget_ = TritonGpuTarget::AMD;
+        sd_printf("TritonTargetDispatch: detected AMD GPU '%s' via CUDA (ZLUDA fallback), arch=%s\n",
+                  props.name, cachedArch_.c_str());
+        return cachedTarget_;
+      }
+
+      // Intel GPU behind ZLUDA but Level Zero detection didn't work
+      if (deviceName.find("Intel") != std::string::npos ||
+          deviceName.find("Arc") != std::string::npos) {
+        cachedArch_ = "xehp";
+        if (deviceName.find("Arc") != std::string::npos) cachedArch_ = "xehpg";
+        if (deviceName.find("Max") != std::string::npos) cachedArch_ = "pvc";
+        cachedTarget_ = TritonGpuTarget::INTEL;
+        sd_printf("TritonTargetDispatch: detected Intel GPU '%s' via CUDA (ZLUDA fallback), arch=%s\n",
+                  props.name, cachedArch_.c_str());
+        return cachedTarget_;
+      }
+#endif
+
+      // Native NVIDIA GPU
+      cachedArch_ = "sm_" + std::to_string(props.major * 10 + props.minor);
+      cachedTarget_ = TritonGpuTarget::NVIDIA;
+      sd_printf("TritonTargetDispatch: detected NVIDIA GPU '%s', arch=%s\n",
+                props.name, cachedArch_.c_str());
+      return cachedTarget_;
+    }
+  }
+#endif
+
+  sd_printf("TritonTargetDispatch: no supported GPU target detected\n", "");
+  cachedTarget_ = TritonGpuTarget::UNKNOWN;
+  return cachedTarget_;
+}
+
+std::string TritonTargetDispatch::getTargetArch() {
+  detectTarget();
+  return cachedArch_;
+}
+
+// ─── Compilation ────────────────────────────────────────────────────────────
+
+TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarps, int numStages) {
+  TritonCompiledBinary result = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", 0, 0};
+  auto& env = sd::Environment::getInstance();
+  const bool tritonVerbose = env.tritonVerbose();
+  const long long compileId = nextTritonCompileId();
+  const auto compileStart = std::chrono::steady_clock::now();
+
+  auto target = detectTarget();
+  if (target == TritonGpuTarget::UNKNOWN) {
+    sd_printf("TritonTargetDispatch::compile[%lld]: no GPU target available\n", compileId);
+    return result;
+  }
+
+  const std::string archOverride = env.tritonOverrideArch();
+  std::string targetArch = cachedArch_;
+  if (!archOverride.empty()) {
+    targetArch = archOverride;
+    sd_printf("TritonTargetDispatch::compile: using architecture override '%s'\n",
+              targetArch.c_str());
+  }
+  if (target == TritonGpuTarget::AMD) {
+    targetArch = canonicalizeAmdArch(targetArch);
+  }
+
+  int numCTAs = std::max(1, env.tritonNumCTAs());
+  int maxNreg = std::max(0, env.tritonMaxNreg());
+
+  sd_printf("TritonTargetDispatch::compile[%lld]: START target=%s arch=%s "
+            "warps=%d stages=%d numCTAs=%d maxNreg=%d verbose=%d\n",
+            compileId, tritonTargetName(target), targetArch.c_str(),
+            numWarps, numStages, numCTAs, maxNreg, tritonVerbose ? 1 : 0);
+
+  result.target = target;
+  result.targetArch = targetArch;
+  result.numWarps = numWarps;
+
+  auto moduleOp = static_cast<mlir::ModuleOp*>(mlirModule);
+  if (!moduleOp || !*moduleOp) {
+    sd_printf("TritonTargetDispatch::compile: null MLIR module\n", "");
+    return result;
+  }
+  if (maxNreg > 0) {
+    auto i32Type = mlir::IntegerType::get(moduleOp->getContext(), 32);
+    moduleOp->getOperation()->setAttr("ttg.maxnreg",
+                                      mlir::IntegerAttr::get(i32Type, maxNreg));
+  }
+
+  // ── Pass pipeline: TTIR -> TTGIR -> LLVM dialect -> LLVM IR -> target ISA ──
+  //
+  // Phase 1: TTIR optimizations (inliner, canonicalizer, CSE)
+  // Phase 2: TTIR -> TTGIR conversion (adds GPU-specific tensor encoding)
+  // Phase 3: TTGIR optimizations (coalesce)
+  // Phase 4: TTGIR -> LLVM MLIR dialect (backend-specific lowering)
+  // Phase 5: LLVM MLIR -> LLVM IR module
+  // Phase 6: LLVM IR -> target ISA (PTX/AMDGCN/SPIR-V)
+
+  // Determine target-specific parameters
+  std::string targetStr;
+  int computeCapability = 0;
+
+  switch (target) {
+    case TritonGpuTarget::NVIDIA: {
+      std::string digits;
+      for (char c : targetArch) {
+        if (std::isdigit(static_cast<unsigned char>(c))) {
+          digits.push_back(c);
+        }
+      }
+      if (digits.empty()) {
+        for (char c : cachedArch_) {
+          if (std::isdigit(static_cast<unsigned char>(c))) {
+            digits.push_back(c);
+          }
+        }
+      }
+      if (!digits.empty()) {
+        computeCapability = std::stoi(digits);
+      }
+      if (computeCapability <= 0) {
+        sd_printf("TritonTargetDispatch::compile: failed to derive NVIDIA compute capability "
+                  "from targetArch='%s'\n",
+                  targetArch.c_str());
+        return result;
+      }
+      if (numCTAs > 1 && computeCapability < 90) {
+        sd_printf("TritonTargetDispatch::compile: numCTAs=%d requested on sm_%d; "
+                  "clamping to 1 (multi-CTA requires SM90+)\n",
+                  numCTAs, computeCapability);
+        numCTAs = 1;
+      }
+      targetStr = "cuda:" + std::to_string(computeCapability);
+      break;
+    }
+    case TritonGpuTarget::AMD: {
+      targetStr = "hip:" + targetArch;
+      break;
+    }
+    case TritonGpuTarget::INTEL: {
+      targetStr = "xpu:" + targetArch;
+      break;
+    }
+    default:
+      return result;
+  }
+
+  // ── SIGABRT protection for ALL compilation phases ──
+  // Triton/LLVM passes can call abort() on assertion failures (e.g., unsupported ops,
+  // invalid tensor encodings). Install a process-level handler while compiles are active
+  // so multiple compile workers can run in parallel without restoring handlers out of order.
+  TritonSigabrtInstallGuard sigabrtGuard;
+
+  // Capture TTIR module text before any passes (for diagnostics on compilation failure)
+  std::string preDump;
+  {
+    llvm::raw_string_ostream os(preDump);
+    moduleOp->print(os);
+  }
+
+  tritonInProtectedRegion = true;
+  if (setjmp(tritonJmpBuf) != 0) {
+    // longjmp from SIGABRT handler — assertion failed in some compilation phase
+    tritonInProtectedRegion = false;
+    // Clear any sticky CUDA errors that may have been set during the failed compilation.
+    // Without this, ALL subsequent CUDA runtime calls fail (e.g., cudaMemGetInfo returns total=0).
+#ifdef SD_CUDA
+    cudaGetLastError();
+#endif
+    sd_printf("TritonTargetDispatch::compile[%lld]: compilation hit assertion failure "
+              "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s\n",
+              compileId, preDump.c_str());
+    return result;
+  }
+
+  // Phase 1-2: TTIR -> TTGIR
+  const auto phase12Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR START\n", compileId);
+  {
+    mlir::PassManager pm(moduleOp->getContext());
+    if (tritonVerbose) {
+#ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
+      pm.addInstrumentation(
+          std::make_unique<TritonPassProgressInstrumentation>(compileId, "TTIR_TO_TTGIR"));
+#endif
+    }
+
+    // Phase 1: TTIR optimizations
+    pm.addPass(mlir::createInlinerPass());
+    pm.addPass(mlir::createCanonicalizerPass());
+    pm.addPass(mlir::createCSEPass());
+
+    // Phase 2: TTIR -> TTGIR
+    pm.addPass(mlir::triton::createConvertTritonToTritonGPUPass(
+        targetStr, numWarps, /*threadsPerWarp=*/32, /*numCTAs=*/numCTAs));
+
+    // Phase 3: Full TTGIR optimization pipeline (Triton NVIDIA backend)
+    pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
+    pm.addPass(mlir::triton::gpu::createTritonGPUF32DotTC());
+    pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
+    pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeThreadLocality());
+    pm.addPass(mlir::triton::gpu::createTritonGPUAccelerateMatmul());
+    pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
+    {
+      mlir::triton::gpu::TritonGPUOptimizeDotOperandsOptions dotOpts;
+      dotOpts.hoistLayoutConversion = true;
+      pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeDotOperands(dotOpts));
+    }
+    pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeAccumulatorInit());
+    {
+      mlir::triton::gpu::TritonGPUPipelineOptions pipeOpts;
+      pipeOpts.numStages = numStages;
+      pm.addPass(mlir::triton::gpu::createTritonGPUPipeline(pipeOpts));
+    }
+    pm.addPass(mlir::triton::gpu::createTritonGPUPrefetch());
+    {
+      mlir::triton::gpu::TritonGPUOptimizeDotOperandsOptions dotOpts2;
+      dotOpts2.hoistLayoutConversion = true;
+      pm.addPass(mlir::triton::gpu::createTritonGPUOptimizeDotOperands(dotOpts2));
+    }
+    pm.addPass(mlir::triton::gpu::createTritonGPURemoveLayoutConversions());
+    pm.addPass(mlir::triton::gpu::createTritonGPUReduceDataDuplication());
+    pm.addPass(mlir::triton::gpu::createTritonGPUReorderInstructions());
+    pm.addPass(mlir::createCSEPass());
+    pm.addPass(mlir::createSymbolDCEPass());
+    pm.addPass(mlir::createCanonicalizerPass());
+
+    if (mlir::failed(pm.run(*moduleOp))) {
+      tritonInProtectedRegion = false;
+#ifdef SD_CUDA
+      cudaGetLastError();  // Clear sticky CUDA errors from failed pass pipeline
+#endif
+      // Dump full TTIR to file for diagnosis
+      FILE* diagFile = fopen("/tmp/triton_ttir_dump.txt", "w");
+      if (diagFile) {
+        fprintf(diagFile, "%s", preDump.c_str());
+        fclose(diagFile);
+      }
+      sd_printf("TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
+                "TTIR dumped to /tmp/triton_ttir_dump.txt (%d bytes)\n",
+                static_cast<int>(preDump.size()));
+      return result;
+    }
+
+  }
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase12Start));
+
+  // Phase 4: TTGIR -> LLVM MLIR dialect
+  // Pass order matches Triton NVIDIA backend (compiler.py lines 265-283)
+  const auto phase4Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START\n", compileId);
+  {
+    mlir::PassManager pm(moduleOp->getContext());
+    if (tritonVerbose) {
+#ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
+      pm.addInstrumentation(
+          std::make_unique<TritonPassProgressInstrumentation>(compileId, "TTGIR_TO_LLVM_DIALECT"));
+#endif
+    }
+
+    bool hasBackendLowering = false;
+    switch (target) {
+      case TritonGpuTarget::NVIDIA: {
+#ifdef HAVE_TRITON_NVIDIA_PASSES
+        // 1. Decompose unsupported layout conversions
+        pm.addPass(mlir::triton::NVIDIA::createDecomposeUnsupportedConversionsPass());
+        // 1b. Combine tensor select and if (matches Triton compiler.py line 274)
+        pm.addPass(mlir::triton::gpu::createTritonGPUCombineTensorSelectAndIf());
+        // 2. SCF -> CF (must come BEFORE AllocateSharedMemory — membar needs cf dialect)
+        pm.addPass(mlir::createConvertSCFToCFPass());
+        // 3. Index -> LLVM
+        pm.addPass(mlir::createConvertIndexToLLVMPass());
+        // 4. Shared memory allocation (after SCF lowering)
+        pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
+        // 5. TritonGPU -> LLVM
+        pm.addPass(mlir::triton::createConvertTritonGPUToLLVMPass(computeCapability));
+        // 6. NVGPU -> LLVM
+        pm.addPass(mlir::triton::createConvertNVGPUToLLVMPass());
+        // 7. Arith -> LLVM
+        pm.addPass(mlir::createArithToLLVMConversionPass());
+        // 8. Math -> LLVM (lowering remaining math ops like exp, log, etc.)
+        pm.addPass(mlir::createConvertMathToLLVMPass());
+        // 9. ControlFlow -> LLVM (lowering remaining cf.br, cf.cond_br, etc.)
+        pm.addPass(mlir::createConvertControlFlowToLLVMPass());
+        // 10. Func -> LLVM (lowering remaining func.func, func.call, etc.)
+        pm.addPass(mlir::createConvertFuncToLLVMPass());
+        // 11. Reconcile unrealized casts (resolves leftover builtin.unrealized_conversion_cast)
+        pm.addPass(mlir::createReconcileUnrealizedCastsPass());
+        // 12. Final cleanup
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createSymbolDCEPass());
+        hasBackendLowering = true;
+#else
+        sd_printf("TritonTargetDispatch::compile: NVIDIA backend passes not available "
+                  "(TritonNVIDIAGPUToLLVM not found at build time)\n", "");
+#endif
+        break;
+      }
+      case TritonGpuTarget::AMD: {
+#ifdef HAVE_TRITON_AMD_PASSES
+        // Phase order mirrors Triton's AMD backend make_llir() flow.
+        const bool hipFtz = true;
+        pm.addPass(mlir::triton::AMD::createDecomposeUnsupportedConversionsPass(targetArch));
+        pm.addPass(mlir::triton::AMD::createOptimizeLDSUsagePass(targetArch, 0));
+        pm.addPass(mlir::createConvertSCFToCFPass());
+        pm.addPass(mlir::createConvertIndexToLLVMPass());
+        pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
+        pm.addPass(mlir::triton::createConvertTritonAMDGPUToLLVMPass(targetArch, hipFtz));
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createConvertControlFlowToLLVMPass());
+        pm.addPass(mlir::createArithToLLVMConversionPass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createSymbolDCEPass());
+        pm.addPass(mlir::triton::createConvertBuiltinFuncToLLVMPass(hipFtz));
+        pm.addPass(mlir::createConvertFuncToLLVMPass());
+        pm.addPass(mlir::createReconcileUnrealizedCastsPass());
+        hasBackendLowering = true;
+#else
+        sd_printf("TritonTargetDispatch::compile: AMD backend TTGIR->LLVM lowering "
+                  "not available (TritonAMDGPUToLLVM headers not found)\n", "");
+#endif
+        break;
+      }
+      case TritonGpuTarget::INTEL:
+        sd_printf("TritonTargetDispatch::compile: Intel backend TTGIR->LLVM lowering "
+                  "not yet integrated (requires TritonIntelGPUToLLVM)\n", "");
+        break;
+      default:
+        break;
+    }
+
+    if (!hasBackendLowering) {
+      tritonInProtectedRegion = false;
+#ifdef SD_CUDA
+      cudaGetLastError();
+#endif
+      sd_printf("TritonTargetDispatch::compile: no backend lowering passes available for target\n", "");
+      return result;
+    }
+
+    if (mlir::failed(pm.run(*moduleOp))) {
+      tritonInProtectedRegion = false;
+#ifdef SD_CUDA
+      cudaGetLastError();  // Clear sticky CUDA errors from failed TTGIR->LLVM lowering
+#endif
+      std::string mlirDump;
+      llvm::raw_string_ostream mlirOS(mlirDump);
+      moduleOp->print(mlirOS);
+      FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+      if (diagFile) {
+        fprintf(diagFile, "=== PHASE 4 FAILED ===\n%s\n=== END ===\n", mlirDump.c_str());
+        fclose(diagFile);
+      }
+      fprintf(stderr, "TritonTargetDispatch::compile: TTGIR->LLVM pass pipeline failed. "
+              "Module dumped to /tmp/triton_mlir_dump.txt\n");
+      return result;
+    }
+  }
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase4Start));
+
+  // Triton's AllocateSharedMemory pass stores kernel shared memory usage
+  // in the module attribute "triton_gpu.shared".
+  result.sharedMemBytes = getModuleSharedMemoryBytes(moduleOp);
+
+  // Phase 5: MLIR LLVM dialect -> LLVM IR module
+  // Verify the MLIR module before attempting LLVM translation
+  if (mlir::failed(mlir::verify(*moduleOp))) {
+    tritonInProtectedRegion = false;
+#ifdef SD_CUDA
+    cudaGetLastError();
+#endif
+    sd_printf("TritonTargetDispatch::compile: MLIR module verification failed after lowering\n", "");
+    return result;
+  }
+
+  // Register ALL dialect translation interfaces — builtin.module, NVVM, GPU, etc.
+  mlir::DialectRegistry registry;
+  mlir::registerAllToLLVMIRTranslations(registry);
+  moduleOp->getContext()->appendDialectRegistry(registry);
+  llvm::LLVMContext llvmCtx;
+
+  std::unique_ptr<llvm::Module> llvmModule;
+
+  const auto phase5Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR START\n", compileId);
+  llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
+  tritonInProtectedRegion = false;
+  if (!llvmModule) {
+#ifdef SD_CUDA
+    cudaGetLastError();  // Clear sticky CUDA errors from failed translation
+#endif
+    std::string postLowerDump;
+    llvm::raw_string_ostream postOS(postLowerDump);
+    moduleOp->print(postOS);
+    // Write to file since sd_printf may be swallowed by surefire
+    FILE* diagFile = fopen("/tmp/triton_mlir_dump.txt", "a");
+    if (diagFile) {
+      fprintf(diagFile, "=== TRANSLATION FAILED ===\n%s\n=== END ===\n", postLowerDump.c_str());
+      fclose(diagFile);
+    }
+    fprintf(stderr, "TritonTargetDispatch::compile: MLIR -> LLVM IR translation failed. "
+            "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
+    return result;
+  }
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase5Start));
+
+  // Phase 5b: Link libdevice for NVIDIA math intrinsics (__nv_sqrtf, __nv_expf, etc.)
+  // The math-to-LLVM pass lowers math.sqrt/exp/log/etc. to calls to __nv_* functions
+  // which are defined in NVIDIA's libdevice bitcode library.
+  if (target == TritonGpuTarget::NVIDIA) {
+    // Search for libdevice.10.bc in common locations
+    std::vector<std::string> libdevicePaths = {
+      "/usr/local/cuda/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-13.1/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.9/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.6/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.4/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.2/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-12.0/nvvm/libdevice/libdevice.10.bc",
+      "/usr/local/cuda-11.8/nvvm/libdevice/libdevice.10.bc",
+    };
+
+    // Also check CUDA toolkit path from Environment.
+    const std::string cudaPath = sd::Environment::getInstance().cudaToolkitPath();
+    if (!cudaPath.empty()) {
+      libdevicePaths.insert(libdevicePaths.begin(),
+          cudaPath + "/nvvm/libdevice/libdevice.10.bc");
+    }
+
+    bool linked = false;
+    for (const auto& path : libdevicePaths) {
+      auto bufOrErr = llvm::MemoryBuffer::getFile(path);
+      if (!bufOrErr) continue;
+
+      auto libdeviceModOrErr = llvm::parseBitcodeFile(
+          bufOrErr.get()->getMemBufferRef(), llvmCtx);
+      if (!libdeviceModOrErr) {
+        llvm::consumeError(libdeviceModOrErr.takeError());
+        continue;
+      }
+
+      // Set target triple to match the main module
+      (*libdeviceModOrErr)->setTargetTriple(llvmModule->getTargetTriple());
+      (*libdeviceModOrErr)->setDataLayout(llvmModule->getDataLayout());
+
+      if (llvm::Linker::linkModules(*llvmModule, std::move(*libdeviceModOrErr),
+                                     llvm::Linker::Flags::LinkOnlyNeeded)) {
+        sd_printf("TritonTargetDispatch::compile: failed to link libdevice from %s\n", path.c_str());
+        continue;
+      }
+
+      sd_printf("TritonTargetDispatch::compile: linked libdevice from %s\n", path.c_str());
+      linked = true;
+      break;
+    }
+
+    if (!linked) {
+      sd_printf("TritonTargetDispatch::compile: WARNING — libdevice.10.bc not found, "
+                "math intrinsics (__nv_sqrtf etc.) will be unresolved\n", "");
+    }
+  }
+
+  // Verify the LLVM module
+  std::string verifyErr;
+  llvm::raw_string_ostream verifyOS(verifyErr);
+  if (llvm::verifyModule(*llvmModule, &verifyOS)) {
+    sd_printf("TritonTargetDispatch::compile: LLVM module verification failed: %s\n", verifyErr.c_str());
+    return result;
+  }
+
+  // Phase 6: LLVM IR -> target ISA
+  // Initialize LLVM targets
+  const auto phase6Start = std::chrono::steady_clock::now();
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM START\n", compileId);
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmPrinters();
+
+  std::string triple;
+  std::string proc;
+  std::string features;
+
+  switch (target) {
+    case TritonGpuTarget::NVIDIA:
+      triple = "nvptx64-nvidia-cuda";
+      proc = (computeCapability == 90) ? "sm_90a" : ("sm_" + std::to_string(computeCapability));
+      break;
+    case TritonGpuTarget::AMD:
+      triple = "amdgcn-amd-amdhsa";
+      proc = result.targetArch;
+      break;
+    case TritonGpuTarget::INTEL:
+      triple = "spir64-unknown-unknown";
+      proc = "";
+      break;
+    default:
+      return result;
+  }
+
+  llvmModule->setTargetTriple(triple);
+
+  std::string lookupError;
+  auto* llvmTarget = llvm::TargetRegistry::lookupTarget(triple, lookupError);
+  if (!llvmTarget) {
+    sd_printf("TritonTargetDispatch::compile: LLVM target lookup failed for '%s': %s\n",
+              triple.c_str(), lookupError.c_str());
+    return result;
+  }
+
+  llvm::TargetOptions targetOptions;
+  targetOptions.AllowFPOpFusion =
+      env.tritonEnableFpFusion() ? llvm::FPOpFusion::Fast : llvm::FPOpFusion::Strict;
+  auto targetMachine = std::unique_ptr<llvm::TargetMachine>(
+      llvmTarget->createTargetMachine(triple, proc, features,
+                                       targetOptions, llvm::Reloc::PIC_));
+  if (!targetMachine) {
+    sd_printf("TritonTargetDispatch::compile: failed to create TargetMachine for %s/%s\n",
+              triple.c_str(), proc.c_str());
+    return result;
+  }
+
+  llvmModule->setDataLayout(targetMachine->createDataLayout());
+
+  // Emit assembly (PTX text for NVIDIA, assembly for AMD)
+  llvm::SmallString<0> asmBuffer;
+  llvm::raw_svector_ostream asmStream(asmBuffer);
+  llvm::legacy::PassManager codegenPM;
+
+  if (targetMachine->addPassesToEmitFile(codegenPM, asmStream, nullptr,
+                                          llvm::CodeGenFileType::AssemblyFile)) {
+    sd_printf("TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s\n",
+              triple.c_str());
+    return result;
+  }
+
+  codegenPM.run(*llvmModule);
+  std::string asmOutput(asmBuffer.begin(), asmBuffer.end());
+
+  if (asmOutput.empty()) {
+    sd_printf("TritonTargetDispatch::compile: empty output for %s\n", result.targetArch.c_str());
+    return result;
+  }
+
+  result.size = asmOutput.size();
+  result.data = new char[result.size + 1];
+  std::memcpy(result.data, asmOutput.data(), result.size);
+  static_cast<char*>(result.data)[result.size] = '\0';
+
+  sd_printf("TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM DONE elapsedMs=%lld\n",
+            compileId, elapsedMsSince(phase6Start));
+  sd_printf("TritonTargetDispatch::compile: generated %zu bytes for %s (%s)\n",
+            result.size, result.targetArch.c_str(), triple.c_str());
+  sd_printf("TritonTargetDispatch::compile[%lld]: DONE totalElapsedMs=%lld\n",
+            compileId, elapsedMsSince(compileStart));
+
+  return result;
+}
+
+// ─── Module loading ─────────────────────────────────────────────────────────
+//
+// CRITICAL DESIGN: Each target loads its native binary through the correct API.
+// Under ZLUDA+AMD, we use hipModuleLoadData (NOT cuModuleLoadDataEx) because:
+//   - Triton compiles to AMDGCN ELF for AMD targets
+//   - ZLUDA's cuModuleLoadDataEx expects PTX, not AMDGCN
+//   - HIP is always available in ZLUDA+AMD builds (ROCm is installed)
+
+void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
+  if (!binary.data || binary.size == 0) return nullptr;
+
+  switch (binary.target) {
+
+    case TritonGpuTarget::NVIDIA: {
+#ifdef SD_CUDA
+      // cuModuleLoadDataEx requires a current CUDA context on this thread.
+      // Worker threads used by TritonGraphBackend may not have bound one yet.
+      int currentDevice = 0;
+      cudaError_t getDeviceErr = cudaGetDevice(&currentDevice);
+      if (getDeviceErr != cudaSuccess) {
+        sd_printf("TritonTargetDispatch::loadModule: cudaGetDevice failed before "
+                  "cuModuleLoadDataEx: %s\n",
+                  cudaGetErrorString(getDeviceErr));
+        cudaGetLastError();
+        return nullptr;
+      }
+      cudaError_t setDeviceErr = cudaSetDevice(currentDevice);
+      if (setDeviceErr != cudaSuccess) {
+        sd_printf("TritonTargetDispatch::loadModule: cudaSetDevice(%d) failed before "
+                  "cuModuleLoadDataEx: %s\n",
+                  currentDevice, cudaGetErrorString(setDeviceErr));
+        cudaGetLastError();
+        return nullptr;
+      }
+
+      // NVIDIA: CUDA Driver API for PTX loading with JIT error logging.
+      CUmodule module = nullptr;
+      char jitErrorLog[4096] = {0};
+      char jitInfoLog[4096] = {0};
+      int generateLineInfo =
+          sd::Environment::getInstance().tritonDisableLineInfo() ? 0 : 1;
+      CUjit_option jitOptions[] = {
+        CU_JIT_ERROR_LOG_BUFFER,
+        CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES,
+        CU_JIT_INFO_LOG_BUFFER,
+        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES,
+        CU_JIT_GENERATE_LINE_INFO
+      };
+      void* jitOptionValues[] = {
+        jitErrorLog,
+        reinterpret_cast<void*>(sizeof(jitErrorLog)),
+        jitInfoLog,
+        reinterpret_cast<void*>(sizeof(jitInfoLog)),
+        reinterpret_cast<void*>(static_cast<uintptr_t>(generateLineInfo))
+      };
+      CUresult res = cuModuleLoadDataEx(&module, binary.data,
+                                         5, jitOptions, jitOptionValues);
+      if (res != CUDA_SUCCESS) {
+        const char* errStr = nullptr;
+        cuGetErrorString(res, &errStr);
+        sd_printf("TritonTargetDispatch::loadModule: cuModuleLoadDataEx failed: %s\n"
+                  "  JIT error: %s\n  JIT info: %s\n  PTX (first 2000 chars): %.2000s\n",
+                  errStr ? errStr : "unknown", jitErrorLog, jitInfoLog,
+                  static_cast<const char*>(binary.data));
+        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
+        if (df) {
+          fprintf(df, "cuModuleLoadDataEx_FAIL: res=%d err=%s jitErr=%s jitInfo=%s binarySize=%zu\n",
+                  (int)res, errStr ? errStr : "unknown", jitErrorLog, jitInfoLog, binary.size);
+          fflush(df);
+          fclose(df);
+        }
+        // Dump full PTX for debugging
+        FILE* ptxDump = fopen("/tmp/triton_ptx_dump.ptx", "w");
+        if (ptxDump) {
+          fwrite(binary.data, 1, binary.size, ptxDump);
+          fclose(ptxDump);
+        }
+        return nullptr;
+      }
+      return static_cast<void*>(module);
+#else
+      sd_printf("TritonTargetDispatch::loadModule: NVIDIA target requires SD_CUDA\n", "");
+      return nullptr;
+#endif
+    }
+
+    case TritonGpuTarget::AMD: {
+#if TRITON_HAS_HIP
+      // AMD: HIP for AMDGCN/HSACO loading.
+      // This code path is active for BOTH:
+      //   - Native ROCm/HIP builds (SD_HIP defined, SD_CUDA not defined)
+      //   - ZLUDA+AMD builds (SD_CUDA defined, ZLUDA_TARGET_AMD defined, HAVE_MIOPEN defined)
+      // In ZLUDA+AMD builds, we bypass ZLUDA's CUDA interception and use HIP directly.
+      hipModule_t module = nullptr;
+      hipError_t res = hipModuleLoadData(&module, binary.data);
+      if (res != hipSuccess) {
+        sd_printf("TritonTargetDispatch::loadModule: hipModuleLoadData failed: %s\n",
+                  hipGetErrorString(res));
+        return nullptr;
+      }
+      return static_cast<void*>(module);
+#else
+      sd_printf("TritonTargetDispatch::loadModule: AMD target requires HIP (HAVE_MIOPEN/SD_HIP/ZLUDA_TARGET_AMD)\n", "");
+      return nullptr;
+#endif
+    }
+
+    case TritonGpuTarget::INTEL: {
+#if TRITON_HAS_LEVEL_ZERO
+      // Intel: Level Zero for SPIR-V module loading.
+      // Active for both native Level Zero builds and ZLUDA+Intel builds.
+      uint32_t driverCount = 1;
+      ze_driver_handle_t driver;
+      zeDriverGet(&driverCount, &driver);
+
+      uint32_t deviceCount = 1;
+      ze_device_handle_t device;
+      zeDeviceGet(driver, &deviceCount, &device);
+
+      // Create context
+      ze_context_desc_t ctxDesc = {};
+      ctxDesc.stype = ZE_STRUCTURE_TYPE_CONTEXT_DESC;
+      ze_context_handle_t context;
+      zeContextCreate(driver, &ctxDesc, &context);
+
+      // Create module from SPIR-V binary
+      ze_module_desc_t moduleDesc = {};
+      moduleDesc.stype = ZE_STRUCTURE_TYPE_MODULE_DESC;
+      moduleDesc.format = ZE_MODULE_FORMAT_IL_SPIRV;
+      moduleDesc.inputSize = binary.size;
+      moduleDesc.pInputModule = static_cast<const uint8_t*>(binary.data);
+
+      ze_module_handle_t module = nullptr;
+      ze_module_build_log_handle_t buildLog = nullptr;
+      ze_result_t res = zeModuleCreate(context, device, &moduleDesc, &module, &buildLog);
+
+      if (res != ZE_RESULT_SUCCESS) {
+        if (buildLog) {
+          size_t logSize = 0;
+          zeModuleBuildLogGetString(buildLog, &logSize, nullptr);
+          if (logSize > 0) {
+            std::string logStr(logSize, '\0');
+            zeModuleBuildLogGetString(buildLog, &logSize, &logStr[0]);
+            sd_printf("TritonTargetDispatch::loadModule: zeModuleCreate failed: %s\n", logStr.c_str());
+          }
+          zeModuleBuildLogDestroy(buildLog);
+        }
+        return nullptr;
+      }
+      if (buildLog) zeModuleBuildLogDestroy(buildLog);
+      return static_cast<void*>(module);
+#else
+      sd_printf("TritonTargetDispatch::loadModule: Intel target requires Level Zero (SD_LEVEL_ZERO/ZLUDA_TARGET_INTEL)\n", "");
+      return nullptr;
+#endif
+    }
+
+    default:
+      sd_printf("TritonTargetDispatch::loadModule: unsupported target %d\n",
+                static_cast<int>(binary.target));
+      return nullptr;
+  }
+}
+
+// ─── Kernel function lookup ─────────────────────────────────────────────────
+
+void* TritonTargetDispatch::getKernelFunction(void* gpuModule, const std::string& kernelName) {
+  if (!gpuModule) return nullptr;
+
+  auto target = detectTarget();
+  switch (target) {
+
+    case TritonGpuTarget::NVIDIA: {
+#ifdef SD_CUDA
+      CUfunction func = nullptr;
+      CUresult res = cuModuleGetFunction(&func, static_cast<CUmodule>(gpuModule), kernelName.c_str());
+      if (res != CUDA_SUCCESS) {
+        const char* errStr = nullptr;
+        cuGetErrorString(res, &errStr);
+        sd_printf("TritonTargetDispatch::getKernelFunction: cuModuleGetFunction failed: %s\n",
+                  errStr ? errStr : "unknown");
+        return nullptr;
+      }
+      return static_cast<void*>(func);
+#else
+      return nullptr;
+#endif
+    }
+
+    case TritonGpuTarget::AMD: {
+#if TRITON_HAS_HIP
+      hipFunction_t func = nullptr;
+      hipError_t res = hipModuleGetFunction(&func, static_cast<hipModule_t>(gpuModule), kernelName.c_str());
+      if (res != hipSuccess) {
+        sd_printf("TritonTargetDispatch::getKernelFunction: hipModuleGetFunction failed: %s\n",
+                  hipGetErrorString(res));
+        return nullptr;
+      }
+      return static_cast<void*>(func);
+#else
+      return nullptr;
+#endif
+    }
+
+    case TritonGpuTarget::INTEL: {
+#if TRITON_HAS_LEVEL_ZERO
+      ze_kernel_desc_t kernelDesc = {};
+      kernelDesc.stype = ZE_STRUCTURE_TYPE_KERNEL_DESC;
+      kernelDesc.pKernelName = kernelName.c_str();
+
+      ze_kernel_handle_t kernel = nullptr;
+      ze_result_t res = zeKernelCreate(static_cast<ze_module_handle_t>(gpuModule), &kernelDesc, &kernel);
+      if (res != ZE_RESULT_SUCCESS) {
+        sd_printf("TritonTargetDispatch::getKernelFunction: zeKernelCreate failed for '%s'\n",
+                  kernelName.c_str());
+        return nullptr;
+      }
+      return static_cast<void*>(kernel);
+#else
+      return nullptr;
+#endif
+    }
+
+    default:
+      return nullptr;
+  }
+}
+
+// ─── Kernel launch ──────────────────────────────────────────────────────────
+
+bool TritonTargetDispatch::launchKernel(void* kernelFunc,
+                                        unsigned int gridX, unsigned int gridY, unsigned int gridZ,
+                                        unsigned int blockX, unsigned int blockY, unsigned int blockZ,
+                                        unsigned int sharedMemBytes,
+                                        void* stream,
+                                        void** args, int numArgs) {
+  if (!kernelFunc) return false;
+
+  auto target = detectTarget();
+  switch (target) {
+
+    case TritonGpuTarget::NVIDIA: {
+#ifdef SD_CUDA
+      CUresult res = cuLaunchKernel(
+          static_cast<CUfunction>(kernelFunc),
+          gridX, gridY, gridZ,
+          blockX, blockY, blockZ,
+          sharedMemBytes,
+          static_cast<CUstream>(stream),
+          args, nullptr);
+      if (res != CUDA_SUCCESS) {
+        const char* errStr = nullptr;
+        cuGetErrorString(res, &errStr);
+        sd_printf("TritonTargetDispatch::launchKernel: cuLaunchKernel failed: %s (code=%d) "
+                  "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
+        if (df) {
+          fprintf(df, "STD_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+          fflush(df); fclose(df);
+        }
+        return false;
+      }
+      return true;
+#else
+      return false;
+#endif
+    }
+
+    case TritonGpuTarget::AMD: {
+#if TRITON_HAS_HIP
+      // Launch via HIP directly. Under ZLUDA+AMD this bypasses ZLUDA's
+      // CUDA interception and uses the real HIP runtime.
+      hipError_t res = hipModuleLaunchKernel(
+          static_cast<hipFunction_t>(kernelFunc),
+          gridX, gridY, gridZ,
+          blockX, blockY, blockZ,
+          sharedMemBytes,
+          static_cast<hipStream_t>(stream),
+          args, nullptr);
+      if (res != hipSuccess) {
+        sd_printf("TritonTargetDispatch::launchKernel: hipModuleLaunchKernel failed: %s\n",
+                  hipGetErrorString(res));
+        return false;
+      }
+      return true;
+#else
+      return false;
+#endif
+    }
+
+    case TritonGpuTarget::INTEL: {
+#if TRITON_HAS_LEVEL_ZERO
+      auto kernel = static_cast<ze_kernel_handle_t>(kernelFunc);
+
+      // Set group size
+      zeKernelSetGroupSize(kernel, blockX, blockY, blockZ);
+
+      // Set kernel arguments
+      for (int i = 0; i < numArgs; i++) {
+        zeKernelSetArgumentValue(kernel, i, sizeof(void*), args[i]);
+      }
+
+      // Launch on the command list (passed as stream)
+      ze_group_count_t groupCount = {gridX, gridY, gridZ};
+      auto cmdList = static_cast<ze_command_list_handle_t>(stream);
+      ze_result_t res = zeCommandListAppendLaunchKernel(
+          cmdList, kernel, &groupCount, nullptr, 0, nullptr);
+      if (res != ZE_RESULT_SUCCESS) {
+        sd_printf("TritonTargetDispatch::launchKernel: zeCommandListAppendLaunchKernel failed\n", "");
+        return false;
+      }
+      return true;
+#else
+      return false;
+#endif
+    }
+
+    default:
+      sd_printf("TritonTargetDispatch::launchKernel: unsupported target %d\n",
+                static_cast<int>(target));
+      return false;
+  }
+}
+
+// ─── Cooperative kernel launch ───────────────────────────────────────────────
+
+bool TritonTargetDispatch::launchCooperativeKernel(void* kernelFunc,
+                                                    unsigned int gridX, unsigned int gridY, unsigned int gridZ,
+                                                    unsigned int blockX, unsigned int blockY, unsigned int blockZ,
+                                                    unsigned int sharedMemBytes,
+                                                    void* stream,
+                                                    void** args, int numArgs) {
+  if (!kernelFunc) return false;
+
+  auto target = detectTarget();
+  switch (target) {
+
+    case TritonGpuTarget::NVIDIA: {
+#ifdef SD_CUDA
+      // cudaLaunchCooperativeKernel requires a void* function pointer (host symbol).
+      // We have a CUfunction (driver API handle). Use the driver API equivalent:
+      // cuLaunchCooperativeKernel (CUDA 9.0+).
+      CUresult res = cuLaunchCooperativeKernel(
+          static_cast<CUfunction>(kernelFunc),
+          gridX, gridY, gridZ,
+          blockX, blockY, blockZ,
+          sharedMemBytes,
+          static_cast<CUstream>(stream),
+          args);
+      if (res != CUDA_SUCCESS) {
+        const char* errStr = nullptr;
+        cuGetErrorString(res, &errStr);
+        sd_printf("TritonTargetDispatch::launchCooperativeKernel: cuLaunchCooperativeKernel failed: %s (code=%d) "
+                  "grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+        FILE* df = fopen("/tmp/triton_launch_diag.txt", "a");
+        if (df) {
+          fprintf(df, "COOP_LAUNCH_FAIL: %s (code=%d) grid=(%u,%u,%u) block=(%u,%u,%u) sharedMem=%u\n",
+                  errStr ? errStr : "unknown", (int)res,
+                  gridX, gridY, gridZ, blockX, blockY, blockZ, sharedMemBytes);
+          fflush(df); fclose(df);
+        }
+        return false;
+      }
+      return true;
+#else
+      return false;
+#endif
+    }
+
+    case TritonGpuTarget::AMD:
+    case TritonGpuTarget::INTEL:
+      // Cooperative launch not supported on AMD/Intel via this path.
+      // Fall back to standard launch (no grid sync barriers).
+      sd_printf("TritonTargetDispatch::launchCooperativeKernel: cooperative launch not supported on "
+                "target %d, falling back to standard launch\n", static_cast<int>(target));
+      return launchKernel(kernelFunc, gridX, gridY, gridZ, blockX, blockY, blockZ,
+                          sharedMemBytes, stream, args, numArgs);
+
+    default:
+      sd_printf("TritonTargetDispatch::launchCooperativeKernel: unsupported target %d\n",
+                static_cast<int>(target));
+      return false;
+  }
+}
+
+// ─── Module unload ──────────────────────────────────────────────────────────
+
+void TritonTargetDispatch::unloadModule(void* gpuModule) {
+  if (!gpuModule) return;
+
+  auto target = detectTarget();
+  switch (target) {
+
+    case TritonGpuTarget::NVIDIA: {
+#ifdef SD_CUDA
+      cuModuleUnload(static_cast<CUmodule>(gpuModule));
+#endif
+      break;
+    }
+
+    case TritonGpuTarget::AMD: {
+#if TRITON_HAS_HIP
+      hipModuleUnload(static_cast<hipModule_t>(gpuModule));
+#endif
+      break;
+    }
+
+    case TritonGpuTarget::INTEL: {
+#if TRITON_HAS_LEVEL_ZERO
+      zeModuleDestroy(static_cast<ze_module_handle_t>(gpuModule));
+#endif
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
+}  // namespace graph
+}  // namespace sd
+
+#endif  // HAVE_TRITON

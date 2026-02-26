@@ -75,8 +75,6 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
     LongType imOffset;
     COORDS2INDEX(imRank, imStride, coords, imOffset);
 
-    const auto bSiCoffset = coords[0] * colShape[7] + coords[1] * colShape[8];
-
     const LongType imH = coords[2] + pH;
     const LongType imW = coords[3] + pW;
 
@@ -86,22 +84,32 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
     const LongType colHend = sd::math::sd_min<LongType>(imH / sH + 1, oH);
     const LongType colWend = sd::math::sd_min<LongType>(imW / sW + 1, oW);
 
+    // Save batch and channel coords (not modified by inner loop)
+    const LongType bCoord = coords[0];
+    const LongType cCoord = coords[1];
+
     T val = static_cast<T>(0);
 
     for (coords[4] = colHstart; coords[4] < colHend; ++coords[4]) {
       coords[2] = imH - coords[4] * sH;
       if (coords[2] % dH != 0) continue;
+      coords[2] /= dH;  // Convert dilated offset to non-dilated kernel index
 
       for (coords[5] = colWstart; coords[5] < colWend; ++coords[5]) {
         coords[3] = imW - coords[5] * sW;
         if (coords[3] % dW != 0) continue;
+        coords[3] /= dW;  // Convert dilated offset to non-dilated kernel index
 
         LongType colOffset;
         COORDS2INDEX(colRank, colStride, coords, colOffset);
 
-        val += col[bSiCoffset + colOffset];
+        val += col[colOffset];
       }
     }
+
+    // Restore coords for next iteration's INDEX2COORDS
+    coords[0] = bCoord;
+    coords[1] = cCoord;
     im[imOffset] = val;
   }
 }
@@ -126,12 +134,12 @@ void col2im(LaunchContext& context,  NDArray* input, NDArray* output, const Long
   PointersManager manager(&context, "col2im");
   dim3 dims = getCol2imLaunchParams(*input,*output);
 
-  NDArray::prepareSpecialUse({input}, {output});
+  NDArray::prepareSpecialUse({output}, {input});
   BUILD_SINGLE_SELECTOR(input->dataType(), col2imCudaLauncher,
-                        (dims.x, dims.y, dims.z, context.getCudaStream(), output->specialBuffer(),
-                         output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), sH, sW, pH, pW, dH, dW),
+                        (dims.x, dims.y, dims.z, context.getCudaStream(), input->specialBuffer(),
+                         input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW),
                         SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({input}, {output});
+  NDArray::registerSpecialUse({output}, {input});
 
   manager.synchronize();
 }
