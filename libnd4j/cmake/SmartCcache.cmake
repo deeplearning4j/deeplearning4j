@@ -18,7 +18,8 @@ option(SD_SMART_CCACHE "Enable smart ccache wrapper that detects file changes" O
 option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
 
 # Only proceed if we have ccache and smart mode is enabled
-if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
+# Skip on Windows: the wrapper is a bash script that cannot be executed via CreateProcess
+if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT WIN32)
     # Check if the launcher is ccache
     get_filename_component(LAUNCHER_NAME "${CMAKE_CXX_COMPILER_LAUNCHER}" NAME)
     if(LAUNCHER_NAME MATCHES "ccache")
