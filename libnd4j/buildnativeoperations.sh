@@ -2050,6 +2050,14 @@ if [[ -z "$OPENBLAS_PATH" ]]; then
                 JAR_PATTERNS=("openblas-*-linux-arm64.jar" "openblas-*-linux-aarch64.jar")
                 OPENBLAS_SUBPATHS=("linux-arm64" "linux-aarch64")
                 ;;
+            macosx-arm64)
+                JAR_PATTERNS=("openblas-*-macosx-arm64.jar")
+                OPENBLAS_SUBPATHS=("macosx-arm64")
+                ;;
+            macosx-x86_64)
+                JAR_PATTERNS=("openblas-*-macosx-x86_64.jar")
+                OPENBLAS_SUBPATHS=("macosx-x86_64")
+                ;;
             *)
                 JAR_PATTERNS=("openblas-*-linux-x86_64.jar")
                 OPENBLAS_SUBPATHS=("linux-x86_64")

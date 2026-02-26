@@ -171,18 +171,16 @@ jobs:
              brew install gnu-sed unzip gcc swig autoconf-archive automake libomp libtool libusb ant maven nasm xz pkg-config sdl bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
-      - name: Setup libnd4j home if a download url is specified
+      - name: Setup OpenBLAS for macOS ARM64
         shell: bash
         run: |
-            mkdir "${GITHUB_WORKSPACE}/openblas_home"
+            mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-macosx-arm64.jar
-            unzip openblas-0.3.28-1.5.11-macosx-arm64.jar
+            wget -q https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-macosx-arm64.jar
+            unzip -q -o openblas-0.3.28-1.5.11-macosx-arm64.jar
             cd ..
             cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.dylib
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/" >> "$GITHUB_ENV"
-
-        if: ${{ matrix.libnd4j_file_download != '' }}
 
       - name: Build and install
         shell: bash

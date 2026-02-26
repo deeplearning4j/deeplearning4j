@@ -161,6 +161,8 @@ function(setup_blas)
     foreach(lib_candidate
             "${OPENBLAS_PATH}/lib/libopenblas.so"
             "${OPENBLAS_PATH}/libopenblas.so"
+            "${OPENBLAS_PATH}/lib/libopenblas.dylib"
+            "${OPENBLAS_PATH}/libopenblas.dylib"
             "${OPENBLAS_PATH}/lib/libopenblas.a"
             "${OPENBLAS_PATH}/libopenblas.a")
         if(EXISTS "${lib_candidate}" AND NOT OPENBLAS_LIB_FOUND)
@@ -1019,7 +1021,9 @@ function(setup_triton)
         endif()
         if(NOT TARGET triton_interface)
             add_library(triton_interface INTERFACE)
-            target_include_directories(triton_interface INTERFACE
+            # Use SYSTEM to prevent Triton/LLVM headers from conflicting
+            # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
+            target_include_directories(triton_interface SYSTEM INTERFACE
                 "${TRITON_INSTALL_DIR}/include"
                 "${TRITON_LLVM_INSTALL_DIR}/include"
             )
@@ -1383,7 +1387,9 @@ function(setup_triton)
     )
 
     add_library(triton_interface INTERFACE)
-    target_include_directories(triton_interface INTERFACE
+    # Use SYSTEM to prevent Triton/LLVM headers from conflicting
+    # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
+    target_include_directories(triton_interface SYSTEM INTERFACE
         "${TRITON_INSTALL_DIR}/include"
         "${TRITON_LLVM_INSTALL_DIR}/include"
     )
