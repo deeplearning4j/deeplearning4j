@@ -100,10 +100,10 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
   X threshold = thresholdScalar.e<X>(0);
   auto buff = input.bufferAsT<X>();
   uint8_t* outBuff = output.bufferAsT<uint8_t>();
-  auto isContiguous = [](const NDArray& arr) {
-    auto rank = arr.rankOf();
-    auto shape = arr.shapeOf();
-    auto strides = arr.stridesOf();
+  auto isContiguous = [](NDArray* arr) -> bool {
+    int rank = arr->rankOf();
+    sd::LongType* shape = arr->shapeOf();
+    sd::LongType* strides = arr->stridesOf();
     sd::LongType expected = 1;
     for (int i = rank - 1; i >= 0; --i) {
       if (shape[i] == 1) continue;
@@ -112,7 +112,7 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
     }
     return true;
   };
-  if (input.ordering() == 'c' && output.ordering() == 'c' && isContiguous(input) && isContiguous(output)) {
+  if (input.ordering() == 'c' && output.ordering() == 'c' && isContiguous(&input) && isContiguous(&output)) {
     FUNC_1D func = [buff, outBuff, threshold](uint64_t thread_id, int64_t start, int64_t stop,
                                               int64_t increment) -> void {
       auto outBuffPart = outBuff + start;
