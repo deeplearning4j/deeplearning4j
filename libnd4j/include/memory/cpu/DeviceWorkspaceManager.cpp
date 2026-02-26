@@ -80,7 +80,7 @@ ThreadWorkspaceEntry* DeviceWorkspaceManager::getThreadEntry() {
 
     // Try read lock first
     {
-        std::shared_lock<std::shared_mutex> readLock(_threadWorkspacesMutex);
+        std::lock_guard<std::mutex> readLock(_threadWorkspacesMutex);
         auto it = _threadWorkspaces.find(threadId);
         if (it != _threadWorkspaces.end()) {
             return it->second.get();
@@ -88,7 +88,7 @@ ThreadWorkspaceEntry* DeviceWorkspaceManager::getThreadEntry() {
     }
 
     // Need to create - upgrade to write lock
-    std::unique_lock<std::shared_mutex> writeLock(_threadWorkspacesMutex);
+    std::unique_lock<std::mutex> writeLock(_threadWorkspacesMutex);
     auto it = _threadWorkspaces.find(threadId);
     if (it != _threadWorkspaces.end()) {
         return it->second.get();
@@ -270,7 +270,7 @@ void DeviceWorkspaceManager::destroyAllWorkspaces() {
     }
 
     // Then destroy all thread-local workspaces
-    std::unique_lock<std::shared_mutex> writeLock(_threadWorkspacesMutex);
+    std::unique_lock<std::mutex> writeLock(_threadWorkspacesMutex);
 
     for (auto& threadPair : _threadWorkspaces) {
         std::lock_guard<std::mutex> lock(threadPair.second->mutex);
@@ -345,7 +345,7 @@ std::vector<std::string> DeviceWorkspaceManager::getWorkspaceIdsForCurrentThread
 sd::LongType DeviceWorkspaceManager::getTotalMemoryUsage() {
     sd::LongType total = 0;
 
-    std::shared_lock<std::shared_mutex> readLock(_threadWorkspacesMutex);
+    std::lock_guard<std::mutex> readLock(_threadWorkspacesMutex);
     for (const auto& threadPair : _threadWorkspaces) {
         std::lock_guard<std::mutex> lock(threadPair.second->mutex);
         for (const auto& wsPair : threadPair.second->workspaces) {
@@ -360,7 +360,7 @@ sd::LongType DeviceWorkspaceManager::getTotalMemoryUsage() {
 std::unordered_map<std::string, sd::LongType> DeviceWorkspaceManager::getMemoryUsagePerDevice() {
     std::unordered_map<std::string, sd::LongType> usage;
 
-    std::shared_lock<std::shared_mutex> readLock(_threadWorkspacesMutex);
+    std::lock_guard<std::mutex> readLock(_threadWorkspacesMutex);
     for (const auto& threadPair : _threadWorkspaces) {
         std::lock_guard<std::mutex> lock(threadPair.second->mutex);
         for (const auto& wsPair : threadPair.second->workspaces) {

@@ -28,7 +28,7 @@
 
 #include <atomic>
 #include <mutex>
-#include <shared_mutex>
+#include <mutex>
 #include <unordered_map>
 #include <thread>
 #include <string>
@@ -59,7 +59,7 @@ private:
 
     // Thread-local workspace storage: threadId -> workspaces
     std::unordered_map<std::thread::id, std::unique_ptr<ThreadWorkspaceEntry>> _threadWorkspaces;
-    mutable std::shared_mutex _threadWorkspacesMutex;
+    mutable std::mutex _threadWorkspacesMutex;
 
     // Global workspace registry (cross-thread accessible)
     std::unordered_map<std::string, MultiBackendWorkspace*> _globalWorkspaces;
