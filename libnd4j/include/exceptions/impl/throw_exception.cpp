@@ -3,9 +3,11 @@
 //
 #include <system/op_boilerplate.h>
 #include <execution/LaunchContext.h>
-#include <exceptions/backward.hpp>
 
+#if defined(SD_GCC_FUNCTRACE)
+#include <exceptions/backward.hpp>
 using namespace backward;
+#endif
 
 // Helper function to safely check if LaunchContext is initialized
 // Returns true if it's safe to use LaunchContext, false otherwise
