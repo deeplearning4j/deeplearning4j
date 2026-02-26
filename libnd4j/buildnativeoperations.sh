@@ -2413,10 +2413,11 @@ mkbuilddir() {
     # File locking to prevent concurrent builds of the same backend
     LOCK_FILE="$BUILD_DIR/.build.lock"
     exec 200>"$LOCK_FILE"
-    if ! flock -n 200 2>/dev/null; then
+    LOCK_WAIT_SECONDS="${LOCK_WAIT_SECONDS:-1200}"
+    if ! flock -w "$LOCK_WAIT_SECONDS" 200 2>/dev/null; then
         print_colored "red" "ERROR: Another build is already running for backend '$CHIP'"
         print_colored "yellow" "Lock file: $LOCK_FILE"
-        print_colored "yellow" "If no other build is running, remove the lock file manually"
+        print_colored "yellow" "Waited ${LOCK_WAIT_SECONDS}s for lock. If no other build is running, remove the lock file manually"
         exit 1
     fi
     # Lock will be released when script exits (fd 200 closes)

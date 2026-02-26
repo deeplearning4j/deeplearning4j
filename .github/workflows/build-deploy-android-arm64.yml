@@ -131,7 +131,9 @@ jobs:
             llvm-dev \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
-            libc6-dev-arm64-cross
+            libc6-dev-arm64-cross \
+            libdw-dev \
+            libelf-dev
 
       - name: Set up Java for publishing
         id: setup-java

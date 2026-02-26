@@ -164,6 +164,12 @@ jobs:
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
 
+      - name: Install DWARF headers for stack trace support
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libdw-dev libelf-dev
+
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake-install
