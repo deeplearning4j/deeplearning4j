@@ -21,14 +21,8 @@
 package org.nd4j.autodiff.samediff;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.SneakyThrows;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
 import org.apache.commons.collections4.trie.PatriciaTrie;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -45,6 +39,9 @@ import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.*;
+import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -127,6 +124,17 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
+    // Default for plan-based execution applied to newly created sessions
+    private volatile boolean planBasedExecutionDefault = false;
+
+    /**
+     * SameDiff-level cache for compiled DynamicShapePlans. Survives InferenceSession
+     * resets (resetSession()) so that repeated calls don't recompile the plan.
+     * Keyed by output set hash to support different output configurations.
+     */
+    private final Map<Set<String>, DynamicShapePlan> dynamicShapePlanCache = new ConcurrentHashMap<>();
+
+
     @Getter
     private Map<String, SameDiff> sameDiffFunctionInstances;
 
@@ -165,6 +173,25 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Getter
     @Setter
     private boolean enableCache = true;
+
+    ///////////////////////////////////////
+    //Graph execution mode for DSP (Dynamic Shape Plan) executor
+    @Getter @Setter
+    private GraphExecutionMode graphExecutionMode = GraphExecutionMode.AUTO;
+
+    // If true, DSP plan compilation is allowed during execution when missing.
+    // Defaults to false: users must explicitly compile DSP plans before execution.
+    @Getter @Setter
+    private boolean dspAutoCompileEnabled = false;
+
+    // If true, native DSP plan compilation is allowed during execution when missing.
+    // Defaults to false: users must explicitly compile native DSP plans.
+    @Getter @Setter
+    private boolean dspNativeAutoCompileEnabled = false;
+
+    // When forcing TRITON mode, optionally degrade to AUTO if Triton is unavailable.
+    @Getter @Setter
+    private boolean dspFallbackToAutoIfTritonUnavailable = true;
 
     ///////////////////////////////////////
     //Fields related to training
@@ -218,6 +245,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Op creator object for linalg operations
      */
     public final SDLinalg linalg = new SDLinalg(this);
+
+    /**
+     * Op creator object for signal processing operations
+     */
+    public final SDSignal signal = new SDSignal(this);
 
     public final static String INFERENCE_FACTORY_CLASS = "inferencefactory.class";
     private static InferenceFactory INFERENCE_FACTORY;
@@ -366,6 +398,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         return linalg;
     }
 
+    /**
+     * Op creator object for signal processing operations
+     */
+    public SDSignal signal(){
+        return signal;
+    }
+
 
 
     // flag, shows if graph was already registered with libnd4j
@@ -420,16 +459,36 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public static InferenceFactory getInferenceFactory() {
         if (INFERENCE_FACTORY == null){
-
             synchronized(SameDiff.class){
                 if(INFERENCE_FACTORY == null) {
-                    //bind default one
-                    INFERENCE_FACTORY = new DefaultInferenceFactory();
+                    // Auto-enable workspace mode for CUDA backends unless disabled via system property
+                    boolean autoWorkspace = Boolean.parseBoolean(
+                            System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO, "true"));
+                    if (autoWorkspace && isCudaBackend()) {
+                        long wsSize = Long.parseLong(
+                                System.getProperty(org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_SIZE, "268435456"));
+                        INFERENCE_FACTORY = new WorkspaceInferenceFactory(wsSize);
+                        log.info("SameDiff: Auto-enabled workspace mode for CUDA backend (size={}MB). " +
+                                "Disable with -D{}=false", wsSize / (1024 * 1024),
+                                org.nd4j.common.config.ND4JSystemProperties.SAMEDIFF_WORKSPACE_AUTO);
+                    } else {
+                        INFERENCE_FACTORY = new DefaultInferenceFactory();
+                    }
                 }
             }
-
         }
         return INFERENCE_FACTORY;
+    }
+
+    /**
+     * Check if the current backend is CUDA-based.
+     */
+    private static boolean isCudaBackend() {
+        try {
+            return Nd4j.getBackend().getClass().getSimpleName().contains("Cuda");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**
@@ -462,6 +521,72 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             return new InferenceSession(sameDiff);
         }
     };
+
+    /**
+     * An InferenceFactory that creates InferenceSessions backed by a workspace
+     * for bump-allocated intermediate arrays. Output arrays are heap-allocated
+     * and survive workspace cycling.
+     */
+    public static class WorkspaceInferenceFactory implements InferenceFactory {
+        private final long workspaceSize;
+
+        public WorkspaceInferenceFactory(long workspaceSize) {
+            this.workspaceSize = workspaceSize;
+        }
+
+        @Override
+        public InferenceSession create(SameDiff sameDiff) {
+            return new InferenceSession(sameDiff,
+                new org.nd4j.autodiff.samediff.internal.memory.WorkspaceSessionMemMgr(workspaceSize));
+        }
+    }
+
+    /**
+     * Enable workspace-backed memory for inference. Intermediate arrays are bump-allocated
+     * from a reusable workspace, avoiding per-op malloc/free overhead. Output arrays returned
+     * to the caller are heap-allocated and survive workspace cycling.
+     *
+     * Beneficial for autoregressive inference with repeated same-sized forward passes.
+     *
+     * @param workspaceBytes Initial workspace size in bytes
+     */
+    public void enableWorkspaceMode(long workspaceBytes) {
+        closeAllSessions();
+        bindInferenceFactory(new WorkspaceInferenceFactory(workspaceBytes));
+    }
+
+    /**
+     * Disable workspace-backed memory and revert to default heap allocation for inference.
+     */
+    public void disableWorkspaceMode() {
+        closeAllSessions();
+        bindInferenceFactory(new DefaultInferenceFactory());
+    }
+
+    /**
+     * Enable multi-GPU workspace mode. Threads are assigned to GPUs in round-robin fashion,
+     * each with its own workspace for bump allocation.
+     *
+     * @param workspaceBytesPerGpu workspace size per GPU in bytes
+     */
+    public void enableMultiGpuWorkspaceMode(long workspaceBytesPerGpu) {
+        closeAllSessions();
+        int numGpus;
+        try {
+            numGpus = Nd4j.getAffinityManager().getNumberOfDevices();
+        } catch (Exception e) {
+            numGpus = 1;
+        }
+        final int gpuCount = numGpus;
+        bindInferenceFactory(new InferenceFactory() {
+            @Override
+            public InferenceSession create(SameDiff sameDiff) {
+                return new InferenceSession(sameDiff,
+                    new org.nd4j.autodiff.samediff.internal.memory.MultiGpuWorkspaceSessionMemMgr(
+                        workspaceBytesPerGpu, gpuCount));
+            }
+        });
+    }
 
     static {
         // try to set the inferenceFactory using the config
@@ -979,7 +1104,19 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         SDVariable v = getVariable(varName);
         if (v.isConstant()) {
-            constantArrays.setArray(varName, arr);
+            arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+            try {
+                if (arr.data() != null) {
+                    arr.data().setConstant(true);
+                }
+                if (arr.shapeInfoDataBuffer() != null) {
+                    arr.shapeInfoDataBuffer().setConstant(true);
+                }
+                arr.setCloseable(false);
+                constantArrays.setArray(varName, arr);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(arr);
+            }
         } else if (v.getVariableType() == VariableType.VARIABLE) {
             variablesArrays.setArray(varName, arr);
         } else if (v.isPlaceHolder()) {
@@ -1139,6 +1276,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 variablesArrays.setArray(variable.name(), arr);
                 break;
             case CONSTANT:
+                arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+                try {
+                    if (arr.data() != null) {
+                        arr.data().setConstant(true);
+                    }
+                    if (arr.shapeInfoDataBuffer() != null) {
+                        arr.shapeInfoDataBuffer().setConstant(true);
+                    }
+                    arr.setCloseable(false);
+                } finally {
+                    Nd4j.getDeallocatorService().releasePendingConstant(arr);
+                }
                 constantArrays.setArray(variable.name(), arr);
                 break;
             case ARRAY:
@@ -1195,6 +1344,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         if(variable.getVariableType() == VariableType.VARIABLE ){
             variablesArrays.setArray(variable.name(), arr);
         } else {
+            arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+            try {
+                if (arr.data() != null) {
+                    arr.data().setConstant(true);
+                }
+                if (arr.shapeInfoDataBuffer() != null) {
+                    arr.shapeInfoDataBuffer().setConstant(true);
+                }
+                arr.setCloseable(false);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(arr);
+            }
             constantArrays.setArray(variable.name(), arr);
         }
     }
@@ -1803,6 +1964,52 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public void setTrainingConfig(TrainingConfig trainingConfig) {
         this.trainingConfig = trainingConfig;
+    }
+
+    /**
+     * Get a kernel configuration object for this SameDiff instance.
+     * <p>
+     * The kernel configuration allows fine-grained control over which backend implementations
+     * (CPU, CUDA, oneDNN, cuDNN, MPS, etc.) are used for each operation.
+     * </p>
+     *
+     * <h3>Example Usage:</h3>
+     * <pre>{@code
+     * SameDiff sd = SameDiff.create();
+     *
+     * // Configure kernels for this model
+     * sd.kernelConfiguration()
+     *     .preferCuda()                              // Use CUDA when available
+     *     .forConvolutions().useCudnn()              // Use cuDNN for convolutions
+     *     .forLinearAlgebra().useOneDnn()            // Use oneDNN for matmul
+     *     .apply();
+     *
+     * // Or use presets
+     * sd.kernelConfiguration()
+     *     .usePreset(KernelConfiguration.Preset.GPU_OPTIMIZED)
+     *     .apply();
+     *
+     * // Query available kernels
+     * String summary = sd.kernelConfiguration().getSummary();
+     * }</pre>
+     *
+     * @return a KernelConfiguration object for configuring backend kernels
+     */
+    public KernelConfiguration kernelConfiguration() {
+        return new KernelConfiguration(this);
+    }
+
+    /**
+     * Get the global kernel manager instance.
+     * <p>
+     * The kernel manager provides lower-level control over kernel selection
+     * and allows querying available kernels for all operations.
+     * </p>
+     *
+     * @return the global KernelManager instance
+     */
+    public static org.nd4j.linalg.api.ops.executioner.KernelManager getKernelManager() {
+        return org.nd4j.linalg.api.ops.executioner.KernelManager.getInstance();
     }
 
     /**
@@ -2958,6 +3165,45 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         return batchOutput().output(outputs).inputs(placeholders).output();
     }
 
+    /**
+     * Fast-path inference that bypasses setCloseable management, listener iteration,
+     * and TAD cache clearing. Use when placeholder arrays are managed externally
+     * (e.g., static KV cache decode loop with frozen shapes).
+     *
+     * Saves ~5ms per call by avoiding 5000+ JNI calls for closeable flag toggling.
+     */
+    public Map<String, INDArray> outputDirect(Map<String, INDArray> placeholders, String... outputs) {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession is = sessions.get(threadId);
+        if (is == null) {
+            is = getInferenceFactory().create(this);
+            if (planBasedExecutionDefault) {
+                is.setPlanBasedExecutionEnabled(true);
+            }
+            sessions.put(threadId, is);
+        }
+
+        ExecutionResult result = is.output(
+                outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
+                placeholders,
+                Collections.emptyMap(),
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                At.defaultAt(Operation.INFERENCE));
+
+        if (result.getOutputs() != null) {
+            Map<String, INDArray> ret = new LinkedHashMap<>();
+            for (Map.Entry<String, Optional<INDArray>> entry : result.getOutputs().entrySet()) {
+                ret.put(entry.getKey(), entry.getValue().get());
+            }
+            return ret;
+        } else {
+            Map<String, INDArray> ret = new LinkedHashMap<>();
+            result.getValueOutputs().forEach((k, v) -> ret.put(k, v.getTensorValue()));
+            return ret;
+        }
+    }
 
     /**
      * Do inference for the given variables for a single batch.
@@ -3093,6 +3339,27 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         // This additional clearing serves as a safety net for alternative execution paths.
         org.nd4j.linalg.factory.Nd4j.clearTADCache();
 
+        // Undo the setCloseable(false) poisoning applied to placeholders before execution.
+        // Without this, placeholder arrays (e.g., KV cache from previous decode step) become
+        // permanently non-closeable, causing ~66MB/step GPU memory leak in autoregressive decoding.
+        // The DSP path never closes placeholder arrays during execution, so this is safe.
+        if(placeholders != null)
+            placeholders.values().stream().forEach(arr -> arr.setCloseable(true));
+        if(otherPlaceholders != null)
+            otherPlaceholders.values().stream().forEach(value -> {
+                switch(value.getSdValueType()) {
+                    case TENSOR:
+                        value.getTensorValue().setCloseable(true);
+                        break;
+                    case LIST:
+                        value.getListValue().stream().forEach(arr -> arr.setCloseable(true));
+                        break;
+                    case DICT:
+                        value.getDictValue().values().stream().forEach(arr -> arr.setCloseable(true));
+                        break;
+                }
+            });
+
         // Output arrays should be closeable - users are responsible for closing them after use
         // Removed setCloseable(false) to prevent memory leaks
 
@@ -3143,7 +3410,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
             log.info("Creating new InferenceSession for thread {}", threadId);
-            sessions.put(threadId, getInferenceFactory().create(this));
+            InferenceSession session = getInferenceFactory().create(this);
+            if (planBasedExecutionDefault) {
+                session.setPlanBasedExecutionEnabled(true);
+            }
+            sessions.put(threadId, session);
         }
 
         List<String> phNames = inputs();
@@ -3284,17 +3555,33 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
-        if(constant.isView()) {
+        if(constant.isView() || constant.isAttached()) {
             try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
                 constant = constant.dup();
             }
         }
 
-        SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType());
-        name = v.name();
-        variables.put(name, Variable.builder().name(name).variable(v).build());
-        constantArrays.setArray(name, constant);
-        return v;
+        Nd4j.getDeallocatorService().registerPendingConstant(constant);
+        try {
+            if (constant.data() != null) {
+                constant.data().setConstant(true);
+            }
+            // Also mark the shape info buffer as constant
+            if (constant.shapeInfoDataBuffer() != null) {
+                constant.shapeInfoDataBuffer().setConstant(true);
+            }
+            // Prevent explicit close() on the array
+            constant.setCloseable(false);
+
+            SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType());
+            name = v.name();
+            variables.put(name, Variable.builder().name(name).variable(v).build());
+            constantArrays.setArray(name, constant);
+            return v;
+        } finally {
+            // Release from pending constants - the array is now protected by being marked constant
+            Nd4j.getDeallocatorService().releasePendingConstant(constant);
+        }
     }
 
     /**
@@ -3741,6 +4028,20 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             duped = true;
         }
 
+        // Views (sub-arrays, tensor-along-dimension, etc.) need to be duplicated to avoid
+        // StackOverflowError during gradient computation. This is due to a native memory
+        // handling issue where view arrays can cause infinite recursion when creating
+        // shape info buffers.
+        // Note: dup() alone is not sufficient because it copies the entire backing buffer.
+        // We need to create a compact copy with a properly-sized buffer.
+        if (!duped && arr.isView()) {
+            // Create a new array with exactly the right buffer size and copy values
+            INDArray compactCopy = Nd4j.createUninitialized(arr.dataType(), arr.shape(), arr.ordering());
+            compactCopy.assign(arr);
+            arr = compactCopy;
+            duped = true;
+        }
+
         if (!duped) {
             for (String s : variablesArrays.arrayNames()) {
                 if (variablesArrays.getArray(s) == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
@@ -3845,6 +4146,297 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Enable or disable plan-based execution on all current and future InferenceSessions.
+     * When enabled, the first execution with a given set of placeholder shapes compiles
+     * an ExecutionPlan with pre-computed shapes and a contiguous memory layout.
+     * Subsequent executions with the same shapes reuse the plan with no per-op
+     * shape inference or dynamic allocation.
+     *
+     * @param enabled true to enable, false to disable
+     */
+    public void setPlanBasedExecution(boolean enabled) {
+        for (InferenceSession session : sessions.values()) {
+            session.setPlanBasedExecutionEnabled(enabled);
+        }
+        // Also set on the factory so new sessions inherit the setting
+        this.planBasedExecutionDefault = enabled;
+    }
+
+    /**
+     * Get a cached DynamicShapePlan for the given output set, or null if none exists.
+     * Plans survive InferenceSession resets since they contain only compiled graph structure.
+     */
+    public DynamicShapePlan getCachedDynamicShapePlan(Set<String> outputSet) {
+        return dynamicShapePlanCache.get(outputSet);
+    }
+
+    /**
+     * Cache a compiled DynamicShapePlan for the given output set.
+     */
+    public void cacheDynamicShapePlan(Set<String> outputSet, DynamicShapePlan plan) {
+        dynamicShapePlanCache.put(outputSet, plan);
+    }
+
+
+    /**
+     * Re-run device assignment on all cached DynamicShapePlans with fresh memory budgets.
+     * Call after memory-intensive phases (e.g., vision encoder) complete to redistribute
+     * ops to secondary devices that now have more free memory.
+     */
+    public void reassignDynamicShapePlanDevices() {
+        for (DynamicShapePlan plan : dynamicShapePlanCache.values()) {
+            plan.reassignDevices();
+        }
+    }
+
+    /**
+     * Apply a preset DSP/Triton compilation profile similar to PyTorch compile modes.
+     * This configures graph backend selection and Triton compiler/runtime knobs.
+     */
+    public void setDspCompilationMode(@NonNull DspCompilationMode mode) {
+        org.nd4j.linalg.factory.Environment env = Nd4j.getEnvironment();
+        switch (mode) {
+            case REDUCE_OVERHEAD:
+                // Favor quick compile path and low startup cost.
+                graphExecutionMode = GraphExecutionMode.PTX_JIT;
+                dspFallbackToAutoIfTritonUnavailable = true;
+                env.setTritonCacheEnabled(true);
+                env.setTritonAlwaysCompile(false);
+                env.setTritonBuildThreads(1);
+                env.setTritonMaxSubsegmentOps(24);
+                env.setTritonMaxSubsegmentSections(4);
+                break;
+            case SPLIT_STITCH:
+                // Split large segments into smaller Triton sections and stitch execution at runtime.
+                // This is opt-in and strict: Triton must be available or compilation fails loudly.
+                graphExecutionMode = GraphExecutionMode.TRITON;
+                dspFallbackToAutoIfTritonUnavailable = false;
+                env.setTritonCacheEnabled(true);
+                env.setTritonAlwaysCompile(false);
+                env.setTritonBuildThreads(
+                        Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2)));
+                env.setTritonMaxSubsegmentOps(192);
+                env.setTritonMaxSubsegmentSections(8);
+                env.setTritonNumWarps(4);
+                env.setTritonNumStages(2);
+                env.setTritonNumCTAs(1);
+                env.setTritonMaxNreg(0);                 // unset
+                env.setTritonCoopTargetBlocks(512);
+                env.setTritonEnableFpFusion(true);
+                env.setTritonDisableLineInfo(false);
+                break;
+            case MAX_AUTOTUNE:
+                // Favor highest steady-state throughput via Triton.
+                graphExecutionMode = GraphExecutionMode.TRITON;
+                // Strict by default: MAX_AUTOTUNE should fail loudly if Triton is unavailable.
+                dspFallbackToAutoIfTritonUnavailable = false;
+                env.setTritonCacheEnabled(true);
+                env.setTritonAlwaysCompile(false);
+                env.setTritonBuildThreads(Math.max(1, Math.min(8, Runtime.getRuntime().availableProcessors() / 2)));
+                env.setTritonMaxSubsegmentOps(0);        // auto
+                env.setTritonMaxSubsegmentSections(0);   // auto
+                env.setTritonNumWarps(0);                // auto
+                env.setTritonNumStages(0);               // auto
+                env.setTritonMaxNreg(0);                 // unset
+                env.setTritonEnableFpFusion(true);
+                env.setTritonDisableLineInfo(false);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported DSP compilation mode: " + mode);
+        }
+    }
+
+    /**
+     * Explicitly compile a DynamicShapePlan for the specified outputs.
+     * DSP execution will reuse this plan instead of compiling on first execution.
+     */
+    public DynamicShapePlan compileDynamicShapePlan(String... requestedOutputs) {
+        List<String> out = requestedOutputs == null ? null : Arrays.asList(requestedOutputs);
+        return compileDynamicShapePlan(out);
+    }
+
+    /**
+     * Explicitly compile a DynamicShapePlan for the specified outputs.
+     * DSP execution will reuse this plan instead of compiling on first execution.
+     */
+    public DynamicShapePlan compileDynamicShapePlan(Collection<String> requestedOutputs) {
+        List<String> out = normalizeCompileOutputs(requestedOutputs);
+        return getOrCreateSession().compileDynamicShapePlan(out);
+    }
+
+    /**
+     * Explicitly compile the native DSP plan handle for the specified outputs.
+     * Uses this SameDiff's configured graph execution mode and Triton fallback policy.
+     *
+     * @return the effective graph execution mode configured on the native plan
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(String... requestedOutputs) {
+        List<String> out = requestedOutputs == null ? null : Arrays.asList(requestedOutputs);
+        return compileNativeDynamicShapePlan(out, graphExecutionMode, dspFallbackToAutoIfTritonUnavailable);
+    }
+
+    /**
+     * Apply a DSP compilation profile, then compile the native DSP plan handle.
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(DspCompilationMode mode, String... requestedOutputs) {
+        List<String> out = requestedOutputs == null ? null : Arrays.asList(requestedOutputs);
+        return compileNativeDynamicShapePlan(out, mode);
+    }
+
+    /**
+     * Apply a DSP compilation profile, then compile the native DSP plan handle.
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(Collection<String> requestedOutputs,
+                                                            DspCompilationMode mode) {
+        setDspCompilationMode(mode);
+        return compileNativeDynamicShapePlan(
+                requestedOutputs, graphExecutionMode, dspFallbackToAutoIfTritonUnavailable);
+    }
+
+    /**
+     * Explicitly compile the native DSP plan handle for the specified outputs.
+     *
+     * @param requestedOutputs outputs to compile for; if empty, SameDiff configured outputs are used
+     * @param requestedMode desired graph execution mode (AUTO/TRITON/NVRTC/etc)
+     * @param fallbackToAutoIfTritonUnavailable if true, TRITON degrades to AUTO when Triton is unavailable
+     * @return the effective graph execution mode configured on the native plan
+     */
+    public GraphExecutionMode compileNativeDynamicShapePlan(Collection<String> requestedOutputs,
+                                                            GraphExecutionMode requestedMode,
+                                                            boolean fallbackToAutoIfTritonUnavailable) {
+        List<String> out = normalizeCompileOutputs(requestedOutputs);
+        return getOrCreateSession().compileNativeDynamicShapePlan(
+                out, requestedMode, fallbackToAutoIfTritonUnavailable);
+    }
+
+    private List<String> normalizeCompileOutputs(Collection<String> requestedOutputs) {
+        if (requestedOutputs != null && !requestedOutputs.isEmpty()) {
+            return new ArrayList<>(requestedOutputs);
+        }
+
+        List<String> configuredOutputs = outputs();
+        Preconditions.checkState(configuredOutputs != null && !configuredOutputs.isEmpty(),
+                "No outputs were provided and SameDiff has no configured outputs");
+        return new ArrayList<>(configuredOutputs);
+    }
+
+    /**
+     * Get the InferenceSession for the current thread, creating one if needed.
+     */
+    public InferenceSession getOrCreateSession() {
+        long threadId = Thread.currentThread().getId();
+        if (!sessions.containsKey(threadId)) {
+            InferenceSession session = getInferenceFactory().create(this);
+            if (planBasedExecutionDefault) {
+                session.setPlanBasedExecutionEnabled(true);
+            }
+            sessions.put(threadId, session);
+        }
+        return sessions.get(threadId);
+    }
+
+    /**
+     * Reset the InferenceSession for the current thread, releasing its workspace and cached state.
+     * This frees native GPU memory held by the workspace (which can be several GB after learning).
+     * The session will be automatically recreated on the next output() call.
+     *
+     * <p>Use this in multi-model pipelines after you're done with one model's inference
+     * and before starting another model, to free GPU memory for the second model.</p>
+     */
+    public void resetSession() {
+        long threadId = Thread.currentThread().getId();
+        InferenceSession session = sessions.remove(threadId);
+        if (session != null) {
+            // Collect all unique DataBuffers from intermediate arrays.
+            // Many arrays are views that share a parent DataBuffer. The INDArray-level close()
+            // refuses to close views (isView() check), but we can close the underlying DataBuffer
+            // directly. Using IdentityHashMap ensures each physical buffer is closed exactly once.
+            IdentityHashMap<DataBuffer, Boolean> uniqueBuffers = new IdentityHashMap<>();
+            Map<VarId, SDValue> nodeOutputs = session.getNodeValueOutputs();
+            if (nodeOutputs != null) {
+                for (SDValue value : nodeOutputs.values()) {
+                    if (value != null) {
+                        switch (value.getSdValueType()) {
+                            case TENSOR:
+                                INDArray tensor = value.getTensorValue();
+                                if (tensor != null && !tensor.wasClosed() && tensor.data() != null) {
+                                    uniqueBuffers.put(tensor.data(), Boolean.TRUE);
+                                }
+                                break;
+                            case LIST:
+                                if (value.getListValue() != null) {
+                                    for (INDArray arr : value.getListValue()) {
+                                        if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                                            uniqueBuffers.put(arr.data(), Boolean.TRUE);
+                                        }
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+                nodeOutputs.clear();
+            }
+
+            // Close each unique DataBuffer directly, bypassing INDArray isView() checks.
+            // This is safe because the entire session is being destroyed - no array from this
+            // session should be used after resetSession(). Callers must dup() arrays they need.
+            int closedCount = 0;
+            int skippedReleased = 0, skippedAttached = 0, skippedConstant = 0;
+            for (DataBuffer buf : uniqueBuffers.keySet()) {
+                if (buf.closeable()) {
+                    try {
+                        buf.close();
+                        closedCount++;
+                    } catch (Exception e) {
+                        // Buffer may already be deallocated; ignore
+                    }
+                } else {
+                    // Log why buffer is not closeable for debugging
+                    if (buf.wasClosed()) skippedReleased++;
+                    else if (buf.isAttached()) skippedAttached++;
+                    else if (buf.isConstant()) skippedConstant++;
+                }
+            }
+            if (skippedReleased > 0 || skippedAttached > 0 || skippedConstant > 0) {
+                log.info("SameDiff resetSession: {} buffers not closeable (released={}, attached={}, constant={})",
+                        skippedReleased + skippedAttached + skippedConstant, skippedReleased, skippedAttached, skippedConstant);
+            }
+
+            // Close active OpContexts
+            Map<String, OpContext> opContexts = session.getOpContexts();
+            if (opContexts != null) {
+                for (OpContext ctx : opContexts.values()) {
+                    if (ctx != null) {
+                        try {
+                            ctx.close();
+                        } catch (Exception e) {
+                            log.warn("Error closing OpContext during resetSession: {}", e.getMessage());
+                        }
+                    }
+                }
+                opContexts.clear();
+            }
+
+            // Close pooled OpContexts and clear accumulated thread-local state.
+            // Without this, pooled contexts accumulate stale native pointers across
+            // repeated session resets, causing double-free crashes.
+            session.closePooledResources();
+
+            // Close the memory manager to free workspace/cache memory
+            SessionMemMgr memMgr = session.getMmgr();
+            if (memMgr != null) {
+                try {
+                    memMgr.close();
+                } catch (Exception e) {
+                    log.warn("Error closing SessionMemMgr during resetSession: {}", e.getMessage());
+                }
+            }
+            log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released", threadId, closedCount);
+        }
+    }
+
+    /**
      * Close all OpContexts in all cached InferenceSessions and clear the sessions map.
      * This prevents native memory leaks from OpContext objects when sessions are cleared.
      */
@@ -3883,6 +4475,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                             }
                         }
                         opContexts.clear();
+                    }
+
+                    // Close the session's memory manager to free native workspace resources
+                    SessionMemMgr memMgr = session.getMmgr();
+                    if (memMgr != null) {
+                        try {
+                            memMgr.close();
+                        } catch (Exception e) {
+                            log.warn("Error closing SessionMemMgr during session cleanup: {}", e.getMessage());
+                        }
                     }
                 } catch (Exception e) {
                     log.warn("Error cleaning up session: {}", e.getMessage());
@@ -3968,8 +4570,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             String n = variable.name();
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
-            //constants are reusable and should not be reused
-            arr.setCloseable(false);
+            arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+            try {
+                if (arr.data() != null) {
+                    arr.data().setConstant(true);
+                }
+                if (arr.shapeInfoDataBuffer() != null) {
+                    arr.shapeInfoDataBuffer().setConstant(true);
+                }
+                arr.setCloseable(false);
+            } finally {
+                Nd4j.getDeallocatorService().releasePendingConstant(arr);
+            }
             constantArrays.setArray(n, arr);   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
             variablesArrays.removeArray(n);
             if (!placeholdersPerThread.isEmpty()) {
@@ -4152,6 +4764,18 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 case CONSTANT:
                     INDArray arr2 = constantArrays.removeArray(e.getKey());
                     INDArray newArr2 = arr2.castTo(d);
+                    newArr2 = Nd4j.getDeallocatorService().registerPendingConstant(newArr2);
+                    try {
+                        if (newArr2.data() != null) {
+                            newArr2.data().setConstant(true);
+                        }
+                        if (newArr2.shapeInfoDataBuffer() != null) {
+                            newArr2.shapeInfoDataBuffer().setConstant(true);
+                        }
+                        newArr2.setCloseable(false);
+                    } finally {
+                        Nd4j.getDeallocatorService().releasePendingConstant(newArr2);
+                    }
                     constantArrays.setArray(e.getKey(), newArr2);  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                     break;
                 case PLACEHOLDER:
@@ -4662,7 +5286,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable
      */
     public SDVariable constant(String name, double value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4685,7 +5309,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable
      */
     public SDVariable constant(String name, float value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4706,7 +5330,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return SDVariable
      */
     public SDVariable constant(String name, int value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4728,7 +5352,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, boolean value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4748,7 +5372,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, long value) {
-        return constant(name, Nd4j.scalar(value));
+        return constant(name, Nd4j.constantScalar(value));
 
     }
 
@@ -4760,7 +5384,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @param value    Value to initialize the constant with
      */
     public SDVariable constant(String name, DataType dataType, Number value) {
-        return constant(name, Nd4j.scalar(dataType, value));
+        return constant(name, Nd4j.constantScalar(dataType, value));
 
     }
 
@@ -6570,6 +7194,50 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Save an optimized SameDiff instance to a ZIP file (.sdz format).
+     * Graph optimizations are applied before saving to produce a more efficient model for inference.
+     * This includes operator fusion (e.g., matmul+add -> xw_plus_b), constant folding, and dead code elimination.
+     *
+     * @param file             The file to save to (should end with .sdz)
+     * @param saveUpdaterState Whether to save updater state (typically false for inference)
+     * @param requiredOutputs  The output variable names that must be preserved during optimization.
+     *                         These are the outputs you will use for inference.
+     * @throws IOException If saving fails
+     */
+    public void saveShardedOptimized(File file, boolean saveUpdaterState, List<String> requiredOutputs) throws IOException {
+        SDZSerializer.saveOptimized(this, file, saveUpdaterState, null, requiredOutputs);
+    }
+
+    /**
+     * Save an optimized SameDiff instance to a ZIP file with a single output.
+     * Graph optimizations are applied before saving.
+     *
+     * @param file             The file to save to (should end with .sdz)
+     * @param saveUpdaterState Whether to save updater state
+     * @param requiredOutput   The single output variable name to preserve
+     * @throws IOException If saving fails
+     */
+    public void saveShardedOptimized(File file, boolean saveUpdaterState, String requiredOutput) throws IOException {
+        SDZSerializer.saveOptimized(this, file, saveUpdaterState, requiredOutput);
+    }
+
+    /**
+     * Save an optimized SameDiff instance with custom optimization passes.
+     *
+     * @param file             The file to save to
+     * @param saveUpdaterState Whether to save updater state
+     * @param metaData         Optional metadata to include
+     * @param requiredOutputs  The output variable names to preserve
+     * @param optimizations    Custom list of optimization passes to apply
+     * @throws IOException If saving fails
+     */
+    public void saveShardedOptimized(File file, boolean saveUpdaterState, Map<String, String> metaData,
+                                     List<String> requiredOutputs,
+                                     List<org.nd4j.autodiff.samediff.optimize.OptimizerSet> optimizations) throws IOException {
+        SDZSerializer.saveOptimized(this, file, saveUpdaterState, metaData, requiredOutputs, optimizations);
+    }
+
+    /**
      * Save the SameDiff instance to a file. Files can be loaded using {@link #load(File, boolean)}
      *
      * @param file             File to save to
@@ -6657,6 +7325,117 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             tempFile.delete();
         }
     }
+
+    // ============================================================================================
+    // ONNX Export Methods
+    // ============================================================================================
+
+    /**
+     * Export this SameDiff instance to ONNX format.
+     * <p>
+     * This method exports the computation graph to the Open Neural Network Exchange (ONNX) format,
+     * enabling interoperability with other ML frameworks like PyTorch, TensorFlow, and ONNX Runtime.
+     * <p>
+     * Example usage:
+     * <pre>
+     * SameDiff sd = SameDiff.create();
+     * // ... build your graph ...
+     * sd.exportToOnnx(new File("model.onnx"));
+     * </pre>
+     *
+     * @param file The output file (typically with .onnx extension)
+     * @throws IOException If export fails
+     */
+    public void exportToOnnx(@NonNull File file) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, file);
+    }
+
+    /**
+     * Export this SameDiff instance to ONNX format with custom configuration.
+     * <p>
+     * The configuration allows control over:
+     * <ul>
+     *   <li>ONNX opset version (default: 13)</li>
+     *   <li>IR version (default: 7)</li>
+     *   <li>Producer name and version</li>
+     *   <li>Whether to include training state</li>
+     * </ul>
+     *
+     * @param file   The output file
+     * @param config Export configuration
+     * @throws IOException If export fails
+     */
+    public void exportToOnnx(@NonNull File file,
+                             @NonNull org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig config) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, file, config);
+    }
+
+    /**
+     * Export this SameDiff instance to ONNX format, writing to an output stream.
+     *
+     * @param outputStream The output stream to write to
+     * @throws IOException If export fails
+     */
+    public void exportToOnnx(@NonNull OutputStream outputStream) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, outputStream);
+    }
+
+    /**
+     * Export this SameDiff instance to ONNX format with training state.
+     * <p>
+     * This creates two files:
+     * <ul>
+     *   <li>The main ONNX model file</li>
+     *   <li>A companion .training file with optimizer state</li>
+     * </ul>
+     * <p>
+     * The training state can be reimported to continue training.
+     *
+     * @param file The output file
+     * @throws IOException If export fails
+     */
+    public void exportToOnnxWithTraining(@NonNull File file) throws IOException {
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig config =
+            org.nd4j.samediff.frameworkimport.onnx.export.OnnxExportConfig.WITH_TRAINING;
+        org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.export(this, file, config);
+    }
+
+    /**
+     * Convert this SameDiff instance to ONNX bytes.
+     * <p>
+     * Useful for serving models or sending over network.
+     *
+     * @return The ONNX model as a byte array
+     */
+    public byte[] toOnnxBytes() {
+        return org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.toBytes(this);
+    }
+
+    /**
+     * Check if this SameDiff instance can be fully exported to ONNX.
+     * <p>
+     * Returns true only if all operations in the graph have ONNX equivalents.
+     *
+     * @return true if the graph can be exported, false otherwise
+     */
+    public boolean canExportToOnnx() {
+        return org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.canExport(this);
+    }
+
+    /**
+     * Get a list of operations that cannot be exported to ONNX.
+     * <p>
+     * Useful for debugging when {@link #canExportToOnnx()} returns false.
+     *
+     * @return List of unsupported operation names
+     */
+    public java.util.List<String> getUnsupportedOnnxOps() {
+        return org.nd4j.samediff.frameworkimport.onnx.export.OnnxExporter.validateForExport(this);
+    }
+
+    // ============================================================================================
+    // End ONNX Export Methods
+    // ============================================================================================
 
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later<br>
@@ -6821,7 +7600,16 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     arr = Nd4j.createFromFlatArray(fa);
                 }
-                sd.setArrayForVariable(n, arr);
+                if (vt == VariableType.CONSTANT) {
+                    arr = Nd4j.getDeallocatorService().registerPendingConstant(arr);
+                    try {
+                        sd.setArrayForVariable(n, arr);
+                    } finally {
+                        Nd4j.getDeallocatorService().releasePendingConstant(arr);
+                    }
+                } else {
+                    sd.setArrayForVariable(n, arr);
+                }
             }
 
             IntPair id = v.id();    //First value: node (op) id. Second: output number
@@ -7154,6 +7942,125 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         return clone;
     }
 
+    /**
+     * Selectively freeze specific variables by converting them from VARIABLE to CONSTANT type.
+     * Unlike {@link #freeze(boolean)} which freezes all variables, this method allows selective freezing.
+     * Frozen variables will not be updated during training.
+     *
+     * @param variableNames Names of variables to freeze
+     */
+    public void freezeVariables(Collection<String> variableNames) {
+        for (String name : variableNames) {
+            Variable varMeta = variables.get(name);
+            if (varMeta == null) {
+                log.warn("Variable '{}' not found, skipping freeze", name);
+                continue;
+            }
+            SDVariable var = varMeta.getVariable();
+            if (var.getVariableType() == VariableType.VARIABLE) {
+                var.setVariableType(VariableType.CONSTANT);
+                log.debug("Froze variable: {}", name);
+            }
+        }
+    }
+
+    /**
+     * Selectively freeze specific variables by name.
+     *
+     * @param variableNames Names of variables to freeze
+     */
+    public void freezeVariables(String... variableNames) {
+        freezeVariables(Arrays.asList(variableNames));
+    }
+
+    /**
+     * Freeze variables matching the given regex patterns.
+     *
+     * @param patterns Regex patterns to match variable names
+     */
+    public void freezeMatching(String... patterns) {
+        List<Pattern> compiled = new ArrayList<>();
+        for (String pattern : patterns) {
+            compiled.add(Pattern.compile(pattern));
+        }
+
+        List<String> toFreeze = new ArrayList<>();
+        for (SDVariable var : variables()) {
+            if (var.getVariableType() == VariableType.VARIABLE) {
+                for (Pattern p : compiled) {
+                    if (p.matcher(var.name()).matches()) {
+                        toFreeze.add(var.name());
+                        break;
+                    }
+                }
+            }
+        }
+        freezeVariables(toFreeze);
+    }
+
+    /**
+     * Freeze all variables whose names start with the given prefix.
+     *
+     * @param prefix Prefix to match
+     */
+    public void freezePrefix(String prefix) {
+        freezeMatching("^" + Pattern.quote(prefix) + ".*");
+    }
+
+    /**
+     * Unfreeze variables (convert from CONSTANT back to VARIABLE).
+     * This allows previously frozen variables to be trained again.
+     *
+     * @param variableNames Names of variables to unfreeze
+     */
+    public void unfreezeVariables(Collection<String> variableNames) {
+        for (String name : variableNames) {
+            Variable varMeta = variables.get(name);
+            if (varMeta == null) {
+                log.warn("Variable '{}' not found, skipping unfreeze", name);
+                continue;
+            }
+            SDVariable var = varMeta.getVariable();
+            if (var.getVariableType() == VariableType.CONSTANT) {
+                var.setVariableType(VariableType.VARIABLE);
+                log.debug("Unfroze variable: {}", name);
+            }
+        }
+    }
+
+    /**
+     * Unfreeze variables by name.
+     *
+     * @param variableNames Names of variables to unfreeze
+     */
+    public void unfreezeVariables(String... variableNames) {
+        unfreezeVariables(Arrays.asList(variableNames));
+    }
+
+    /**
+     * Unfreeze variables matching the given regex patterns.
+     *
+     * @param patterns Regex patterns to match variable names
+     */
+    public void unfreezeMatching(String... patterns) {
+        List<Pattern> compiled = new ArrayList<>();
+        for (String pattern : patterns) {
+            compiled.add(Pattern.compile(pattern));
+        }
+
+        List<String> toUnfreeze = new ArrayList<>();
+        for (SDVariable var : variables()) {
+            if (var.getVariableType() == VariableType.CONSTANT) {
+                for (Pattern p : compiled) {
+                    if (p.matcher(var.name()).matches()) {
+                        toUnfreeze.add(var.name());
+                        break;
+                    }
+                }
+            }
+        }
+        unfreezeVariables(toUnfreeze);
+    }
 
     /**
      * All constants are converted to variables, also called unfreezing a graph.

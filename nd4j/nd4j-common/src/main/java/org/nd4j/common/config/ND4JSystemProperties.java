@@ -287,6 +287,395 @@ public class ND4JSystemProperties {
      */
     public final static String ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS = "org.nd4j.linalg.profiler.pointoforigin.patterns";
 
+    /**
+     * Applicability: Always<br>
+     * Description: Controls whether multi-backend support is enabled. When multiple backends
+     * (e.g., nd4j-native and nd4j-cuda) are on the classpath, ND4J will automatically discover
+     * and initialize all available backends, enabling operations to run on any available device.
+     * <p>
+     * Default: true (multi-backend is enabled by default when multiple backends are available)
+     * <p>
+     * When enabled:
+     * <ul>
+     *   <li>All backends on classpath are discovered and initialized</li>
+     *   <li>Device routing allows operations to run on CPU, GPU, or other accelerators</li>
+     *   <li>Cross-device data transfers are handled automatically</li>
+     * </ul>
+     */
+    public final static String MULTI_BACKEND_AUTO_ENABLED = "org.nd4j.backend.multi.auto";
+
+    /**
+     * Applicability: Always (when multi-backend is enabled)<br>
+     * Description: Controls whether automatic device routing is enabled. When enabled,
+     * ND4J will automatically select the optimal device for operations based on data location,
+     * device availability, and memory constraints.
+     * <p>
+     * Default: true
+     */
+    public final static String DEVICE_ROUTING_AUTO_ENABLED = "org.nd4j.device.routing.auto";
+
+    /**
+     * Applicability: CUDA backend with nd4j-native also on classpath<br>
+     * Description: When set to true, enables the DeviceAwareOpExecutioner with multi-backend
+     * support. This allows CPU fallback execution when GPU memory is constrained or data
+     * has spilled to CPU memory.
+     * <p>
+     * Requirements:
+     * <ul>
+     *   <li>Primary backend must be CUDA (or other GPU backend)</li>
+     *   <li>nd4j-native (CPU backend) JAR must be on classpath</li>
+     *   <li>Both native libraries must be loadable (no symbol conflicts)</li>
+     * </ul>
+     * <p>
+     * Default: false (single-backend mode)
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.multibackend.enabled=true -jar myapp.jar
+     * </pre>
+     */
+    public final static String MULTI_BACKEND_EXECUTION_ENABLED = "nd4j.multibackend.enabled";
+
+    /**
+     * Applicability: Multi-backend configuration<br>
+     * Description: When set to true, disables automatic multi-backend discovery and initialization.
+     * By default, ND4J will automatically detect and use all available backends on the classpath.
+     * Set this to true to force single-backend mode even when multiple backends are available.
+     * <p>
+     * Default: false (auto-discovery enabled)
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.multibackend.disabled=true -jar myapp.jar
+     * </pre>
+     */
+    public final static String MULTI_BACKEND_DISABLED = "nd4j.multibackend.disabled";
+
+    /**
+     * Applicability: When multi-backend execution is enabled<br>
+     * Description: Controls whether to log routing decisions when operations are
+     * routed to different backends. Useful for debugging and performance analysis.
+     * <p>
+     * Default: false
+     */
+    public final static String MULTI_BACKEND_LOG_ROUTING = "nd4j.multibackend.logrouting";
+
+    /**
+     * Applicability: When multi-backend execution is enabled<br>
+     * Description: Minimum array size (in bytes) for considering CPU fallback.
+     * Arrays smaller than this threshold will always stay on the primary device.
+     * <p>
+     * Default: 1048576 (1 MB)
+     */
+    public final static String MULTI_BACKEND_MIN_SPILLOVER_SIZE = "nd4j.multibackend.minspilloversize";
+
+    /**
+     * Applicability: Multi-backend configuration<br>
+     * Description: Comma-separated list of secondary backend classes to load alongside
+     * the primary backend. Each backend class must be on the classpath and implement Nd4jBackend.
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.backend.secondary=org.nd4j.linalg.cpu.nativecpu.CpuBackend -jar myapp.jar
+     * </pre>
+     * <p>
+     * This allows loading CPU as a secondary backend when CUDA is primary, enabling
+     * CPU fallback execution for spillover data.
+     */
+    public final static String SECONDARY_BACKEND_CLASSES = "nd4j.backend.secondary";
+
+    /**
+     * Applicability: Multi-backend configuration<br>
+     * Description: Comma-separated list of secondary backend property files to load.
+     * Each property file defines a backend configuration (opexec, native.ops, device.type, etc.)
+     * <p>
+     * Example usage:
+     * <pre>
+     * java -Dnd4j.backend.secondary.properties=nd4j-native.properties -jar myapp.jar
+     * </pre>
+     */
+    public final static String SECONDARY_BACKEND_PROPERTIES = "nd4j.backend.secondary.properties";
+
+    /**
+     * Applicability: SameDiff workspace mode<br>
+     * Description: When true, SameDiff automatically enables workspace-backed memory management
+     * for CUDA backends. This uses bump allocation for intermediate arrays, avoiding per-op
+     * cudaMalloc/cudaFree calls. Set to "false" to disable auto-enable.
+     * Default: true
+     */
+    public final static String SAMEDIFF_WORKSPACE_AUTO = "nd4j.samediff.workspace.auto";
+
+    /**
+     * Applicability: SameDiff workspace mode<br>
+     * Description: Initial workspace size in bytes for SameDiff workspace-backed memory management.
+     * Default: 268435456 (256 MB)
+     */
+    public final static String SAMEDIFF_WORKSPACE_SIZE = "nd4j.samediff.workspace.size";
+
+    // ---- DynamicShapePlan (DSP) execution properties ----
+
+    /**
+     * Applicability: DynamicShapePlan-based inference (autoregressive decoding)<br>
+     * Description: Controls how often the CUDA memory pool is trimmed during DSP execution.
+     * During steady-state decode, the pool reuses freed memory without trimming. Trimming every
+     * step wastes time on cudaStreamSynchronize + cudaMemPoolTrimTo. Set to N to trim every
+     * N steps. Step 0/1 always trims (prefill-to-decode transition).
+     * <p>
+     * Default: 10
+     */
+    public static final String DSP_TRIM_INTERVAL = "nd4j.dsp.trimInterval";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Per-slot byte threshold for selective cache eviction. When total cached
+     * slot memory exceeds 512MB (after prefill), only arrays larger than this threshold are
+     * evicted. Small utility arrays (scalars, shapes, small intermediates) survive and serve
+     * decode step 1 with O(1) cache hits.
+     * <p>
+     * Default: 65536 (64KB)
+     */
+    public static final String DSP_PER_SLOT_EVICTION_THRESHOLD = "nd4j.dsp.perSlotEvictionThreshold";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Byte threshold below which freePendingBuffers uses a fast path that skips
+     * the expensive GPU address dedup and live view range check. For decode steps with tiny
+     * intermediates (seq_len=1), aliasing is extremely unlikely and the full dedup overhead
+     * is unnecessary.
+     * <p>
+     * Default: 10485760 (10MB)
+     */
+    public static final String DSP_FAST_CLOSE_THRESHOLD = "nd4j.dsp.fastCloseThreshold";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Flush interval for pending buffer close during execution. Every N ops,
+     * dead intermediates are freed to reduce peak GPU memory.
+     * <p>
+     * Default: 100
+     */
+    public static final String DSP_FLUSH_INTERVAL = "nd4j.dsp.flushInterval";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Byte threshold for memory-pressure flush during DSP execution.
+     * When accumulated dead intermediate bytes exceed this threshold, flush immediately
+     * instead of waiting for the op-count interval. Prevents multi-GB intermediate
+     * accumulation between flush intervals.
+     * <p>
+     * Default: 256MB (268435456)
+     */
+    public static final String DSP_FLUSH_BYTE_THRESHOLD = "nd4j.dsp.flushByteThreshold";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, force single-GPU mode for DSP execution even when multiple
+     * CUDA devices are available.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_SINGLE_GPU = "nd4j.dsp.singleGpu";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference with non-P2P multi-GPU<br>
+     * Description: Fraction of available memory to use as budget for non-P2P secondary GPUs.
+     * Non-P2P devices use host-staged transfers which may need extra headroom.
+     * <p>
+     * Default: 1.0 (use full available memory)
+     */
+    public static final String DSP_NON_P2P_BUDGET_FRACTION = "nd4j.dsp.nonP2pBudgetFraction";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, serialize parallel worker op execution (only one worker thread
+     * executes at a time). For debugging concurrent CUDA issues.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_SERIAL_EXEC = "nd4j.dsp.serialExec";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, enable parallel worker execution across multiple devices
+     * even when latent heap corruption is suspected.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_FORCE_PARALLEL = "nd4j.dsp.forceParallel";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Growth factor for intermediate slot cache allocation. When a slot cache miss
+     * occurs, the allocated array is this factor times the required size, so it can serve future
+     * steps without reallocation (e.g., growing KV cache).
+     * <p>
+     * Default: 2.0
+     */
+    public static final String DSP_SLOT_CACHE_GROWTH_FACTOR = "org.nd4j.dsp.slotCacheGrowthFactor";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Maximum size in bytes for the local buffer pool that persists across
+     * execute() calls for array reuse.
+     * <p>
+     * Default: 2147483648 (2GB)
+     */
+    public static final String DSP_POOL_MAX_BYTES = "org.nd4j.dsp.pool.maxBytes";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: Enable detailed per-op timing breakdown for DSP execution.
+     * <p>
+     * Default: false
+     */
+    public static final String INFERENCE_TIMING = "org.nd4j.inference.timing";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, tells C++ to skip redundant output shape calculation
+     * (Java pre-computes shapes and passes them to C++ via OpContext).
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_SHAPE_OVERRIDE = "org.nd4j.inference.dynamicShapePlan.shapeOverride";
+
+    /**
+     * Applicability: SameDiff inference<br>
+     * Description: Enable or disable DynamicShapePlan-based execution for autoregressive
+     * inference with dynamic shapes (e.g., growing KV cache).
+     * <p>
+     * Default: true
+     */
+    public static final String DYNAMIC_SHAPE_PLAN_ENABLED = "org.nd4j.inference.dynamicShapePlan";
+
+    /**
+     * Applicability: SameDiff inference<br>
+     * Description: Enable native C++ graph executor for DynamicShapePlan execution.
+     * When enabled, the entire pre-compiled plan is sent to C++ via a single JNI call
+     * instead of dispatching each op individually from Java. Falls back to Java executor
+     * on any failure.
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_NATIVE_EXECUTOR_ENABLED = "nd4j.dsp.nativeExecutor.enabled";
+
+    /**
+     * Applicability: CUDA native executor<br>
+     * Description: Enable or disable CUDA Graphs for the native C++ plan executor.
+     * When enabled, capturable segments of the execution plan are recorded as CUDA graphs
+     * and replayed on subsequent calls, reducing kernel launch overhead.
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_CUDA_GRAPHS_ENABLED = "nd4j.dsp.cudaGraphs.enabled";
+
+    /**
+     * Applicability: DSP execution engine<br>
+     * Description: JIT compilation mode for DSP segment execution.<br>
+     * Values: "graph" (default, CUDA graph only), "jit" (NVRTC JIT only),
+     *         "graph+jit" (try JIT first, fall back to graph capture)
+     */
+    public static final String DSP_JIT_MODE = "nd4j.dsp.jitMode";
+
+    /**
+     * Applicability: DSP execution engine<br>
+     * Description: Graph execution mode controlling which backend is used.<br>
+     * Values: "AUTO" (default), "SLOT_BY_SLOT", "CUDA_GRAPHS", "NVRTC_JIT", "PTX_JIT", "TRITON"
+     */
+    public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
+
+    // ---- VLM speculative decoding properties ----
+
+    /**
+     * Applicability: VLM batch generation<br>
+     * Description: Enable or disable n-gram speculative decoding in VLM batch generation.
+     * When enabled, attempts to predict multiple future tokens from n-gram patterns in the
+     * generated sequence, then verifies them in a single forward pass.
+     * <p>
+     * Default: true
+     */
+    public static final String VLM_SPECULATIVE = "nd4j.vlm.speculative";
+
+    /**
+     * Applicability: VLM batch generation (when speculative decoding is enabled)<br>
+     * Description: Size of the n-gram to match when predicting future tokens.
+     * Larger n-grams are more specific but require more context before matching.
+     * <p>
+     * Default: 3
+     */
+    public static final String VLM_SPECULATIVE_NGRAM_SIZE = "nd4j.vlm.speculative.ngramSize";
+
+    /**
+     * Applicability: VLM batch generation (when speculative decoding is enabled)<br>
+     * Description: Maximum number of tokens to speculate in a single attempt.
+     * More tokens can be accepted per step but the verification forward pass is larger.
+     * <p>
+     * Default: 5
+     */
+    public static final String VLM_SPECULATIVE_MAX_TOKENS = "nd4j.vlm.speculative.maxTokens";
+
+    /**
+     * Applicability: DSP native executor with CUDA graphs<br>
+     * Description: Maximum KV cache sequence length for pre-allocation.
+     * When set to a positive value, KV cache output slots (present_key / present_value outputs)
+     * are pre-allocated at this maximum size on the first decode step and reused for all
+     * subsequent steps. This keeps GPU buffer addresses stable across steps, which is required
+     * for CUDA graph capture of autoregressive decoder models.
+     * <p>
+     * Set this to the maximum sequence length you expect (prompt length + max new tokens).
+     * Example: -Dnd4j.dsp.maxKvCacheLength=2048
+     * <p>
+     * Default: 0 (disabled)
+     */
+    public static final String DSP_MAX_KV_CACHE_LENGTH = "nd4j.dsp.maxKvCacheLength";
+
+    /**
+     * When set, enables trace-level logging for DynamicShapePlanExecutor.
+     * Presence of the property (any value) enables tracing.
+     * Example: -Dnd4j.dsp.trace
+     */
+    public static final String DSP_TRACE = "nd4j.dsp.trace";
+
+    /**
+     * Controls how often CUDA error checks are performed in DynamicShapePlanExecutor.
+     * Set to 1 to check after every op (useful for debugging CUDA errors).
+     * Default: 50
+     * Example: -Dnd4j.dsp.errorCheckInterval=1
+     */
+    public static final String DSP_ERROR_CHECK_INTERVAL = "nd4j.dsp.errorCheckInterval";
+
+    /**
+     * Controls how often the SameDiff workspace is reset during Java-side DSP execution.
+     * Set to 1 to reset every op.
+     * Default: 25
+     * Example: -Dnd4j.dsp.workspaceResetInterval=1
+     */
+    public static final String DSP_WORKSPACE_RESET_INTERVAL = "nd4j.dsp.workspaceResetInterval";
+
+    /**
+     * When set to {@code true}, dumps the first few values of each output to the log
+     * after every Java-side DSP execution step. Useful for comparing Java vs native output.
+     * Default: false
+     * Example: -Dnd4j.dsp.java.dumpOutputs=true
+     */
+    public static final String DSP_JAVA_DUMP_OUTPUTS = "nd4j.dsp.java.dumpOutputs";
+
+    /**
+     * When set to {@code true}, dumps the first few values of each output to the log
+     * after every native-side DSP execution step. Useful for comparing Java vs native output.
+     * Default: false
+     * Example: -Dnd4j.dsp.native.dumpOutputs=true
+     */
+    public static final String DSP_NATIVE_DUMP_OUTPUTS = "nd4j.dsp.native.dumpOutputs";
+
+    /**
+     * When set to {@code true}, enables per-step execution timing in the native DSP executor.
+     * Prints a breakdown of time spent in graph-replay vs slot-by-slot segments.
+     * Default: false
+     * Example: -Dnd4j.dsp.executionTiming=true
+     */
+    public static final String DSP_EXECUTION_TIMING = "nd4j.dsp.executionTiming";
+
     private ND4JSystemProperties() {
     }
 }

@@ -23,6 +23,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <cublas_v2.h>
+#include <cuda_fp16.h>
 #include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
@@ -33,7 +34,33 @@
 #include "../MmulHelper.h"
 #include "execution/cuda/LaunchDims.h"
 
+// Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
+extern thread_local bool tl_graphExecutionActive;
+
 namespace sd {
+
+// Thread-local persistent cast cache for CUDA graph capture.
+// During non-capture execution, cast results are cached here.
+// During capture, cached buffers are reused via assign() to avoid
+// capture workspace allocations that may not replay correctly.
+static thread_local std::vector<NDArray*> tl_castCacheA;
+static thread_local std::vector<NDArray*> tl_castCacheB;
+static thread_local size_t tl_castIdxA = 0;
+static thread_local size_t tl_castIdxB = 0;
+
+void MmulHelper::resetCastCacheIndices() {
+  tl_castIdxA = 0;
+  tl_castIdxB = 0;
+}
+
+void MmulHelper::clearCastCache() {
+  for (auto* p : tl_castCacheA) delete p;
+  for (auto* p : tl_castCacheB) delete p;
+  tl_castCacheA.clear();
+  tl_castCacheB.clear();
+  tl_castIdxA = 0;
+  tl_castIdxB = 0;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
@@ -427,13 +454,63 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  const auto bType = B->dataType();
  const auto cType = C->dataType();
 
- const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
+ // Mixed-precision handling: when one input is FLOAT32 and the other is HALF,
+ // cast the FLOAT32 input to HALF so both are HALF. cuBLAS cublasSgemmEx then handles
+ // HALF×HALF→FLOAT32 with FP32 accumulation (tensor cores, much faster than FP32 GEMM).
+ // The cast is fast (GPU parallel) and we still get the memory bandwidth benefit of FP16 weights.
+ //
+ NDArray* castA = nullptr;
+ NDArray* castB = nullptr;
+ NDArray* effA = const_cast<NDArray*>(A);
+ NDArray* effB = const_cast<NDArray*>(B);
 
- const bool typeDouble = ABC && aType == DOUBLE;
- const bool typeFloat = ABC && aType == FLOAT32;
- const bool typeHalf = ABC && aType == HALF && major >= 6;
- const bool typeIntFloat = AB && aType == INT8 && cType == FLOAT32 && major >= 6;
- const bool typeHalfFloat = AB && aType == HALF && cType == FLOAT32 && major >= 6;
+ if (aType != bType && cType == FLOAT32 && major >= 6) {
+   if (aType == FLOAT32 && bType == HALF) {
+     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+       // During capture: reuse persistent buffer, assign launches FLOAT→HALF kernel (captured)
+       NDArray* cached = tl_castCacheA[tl_castIdxA++];
+       cached->assign(effA);
+       effA = cached;
+     } else {
+       // Non-capture or cache miss: allocate normally
+       castA = effA->cast(HALF);
+       effA = castA;
+       if (!tl_graphExecutionActive) {
+         // Cache a persistent HALF buffer for future capture reuse
+         auto* shapePtr = castA->getShapeAsVector();
+         auto* persistent = new NDArray(castA->ordering(), *shapePtr, HALF, castA->getContext());
+         delete shapePtr;
+         tl_castCacheA.push_back(persistent);
+       }
+     }
+   } else if (aType == HALF && bType == FLOAT32) {
+     if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()) {
+       NDArray* cached = tl_castCacheB[tl_castIdxB++];
+       cached->assign(effB);
+       effB = cached;
+     } else {
+       castB = effB->cast(HALF);
+       effB = castB;
+       if (!tl_graphExecutionActive) {
+         auto* shapePtr = castB->getShapeAsVector();
+         auto* persistent = new NDArray(castB->ordering(), *shapePtr, HALF, castB->getContext());
+         delete shapePtr;
+         tl_castCacheB.push_back(persistent);
+       }
+     }
+   }
+ }
+
+ const auto effAType = effA->dataType();
+ const auto effBType = effB->dataType();
+
+ const bool AB(effAType == effBType), AC(effAType == cType), ABC(AB && AC);
+
+ const bool typeDouble = ABC && effAType == DOUBLE;
+ const bool typeFloat = ABC && effAType == FLOAT32;
+ const bool typeHalf = ABC && effAType == HALF && major >= 6;
+ const bool typeIntFloat = AB && effAType == INT8 && cType == FLOAT32 && major >= 6;
+ const bool typeHalfFloat = AB && effAType == HALF && cType == FLOAT32 && major >= 6;
 
  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
@@ -445,36 +522,33 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
-   NDArray::prepareSpecialUse({C}, {A, B});
+   NDArray::prepareSpecialUse({C}, {effA, effB});
    BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm,
-                                (dims.y, dims.x, dims.z, stream, A->specialBuffer(),
-                                 A->specialShapeInfo(), B->specialBuffer(), B->specialShapeInfo(), C->specialBuffer(),
+                                (dims.y, dims.x, dims.z, stream, effA->specialBuffer(),
+                                 effA->specialShapeInfo(), effB->specialBuffer(), effB->specialShapeInfo(), C->specialBuffer(),
                                  C->specialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta),
                                 SD_NUMERIC_TYPES)
-   NDArray::registerSpecialUse({C}, {A, B});
-
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+   NDArray::registerSpecialUse({C}, {effA, effB});
 
  } else {
    std::vector<NDArray*> toDelete;
 
-   NDArray *pA(const_cast<NDArray*>(A)), *pB(const_cast<NDArray*>(B)), *pC(const_cast<NDArray*>(C));
+   NDArray *pA(const_cast<NDArray*>(effA)), *pB(const_cast<NDArray*>(effB)), *pC(const_cast<NDArray*>(C));
 
-   bool aMcont = M == 1 || A->strideAt(0) == 1;
-   bool aKcont = K == 1 || A->strideAt(1) == 1;
-   bool bKcont = K == 1 || B->strideAt(0) == 1;
-   bool bNcont = N == 1 || B->strideAt(1) == 1;
+   bool aMcont = M == 1 || effA->strideAt(0) == 1;
+   bool aKcont = K == 1 || effA->strideAt(1) == 1;
+   bool bKcont = K == 1 || effB->strideAt(0) == 1;
+   bool bNcont = N == 1 || effB->strideAt(1) == 1;
    bool cMcont = M == 1 || C->strideAt(0) == 1;
    bool cNcont = N == 1 || C->strideAt(1) == 1;
 
    if (!aMcont && !aKcont) {
-     pA = A->dup('f');
+     pA = effA->dup('f');
      toDelete.push_back(pA);
      aMcont = true;
    }
    if (!bKcont && !bNcont) {
-     pB = B->dup('f');
+     pB = effB->dup('f');
      toDelete.push_back(pB);
      bKcont = true;
    }
@@ -522,13 +596,14 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
    NDArray::registerSpecialUse({pC}, {pA, pB});
 
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
-
    if (C != pC) C->assign(pC);
 
    for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
  }
+
+ // Cleanup cast arrays
+ delete castA;
+ delete castB;
 
  return C;
 }////////////////////////////////////////////////////////////////////////////
@@ -589,9 +664,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
         X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
        SD_NUMERIC_TYPES)
    NDArray::registerSpecialUse({Y}, {A, X});
-
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
+   // Don't sync - let CUDA operations run asynchronously
 
  } else {
    NDArray* pA(const_cast<NDArray*>(A));
@@ -624,10 +697,8 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
-   auto cudaResult = cudaStreamSynchronize(*stream);
-   if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
-
    NDArray::registerSpecialUse({Y}, {pA, X});
+   // Don't sync - let CUDA operations run asynchronously
 
    if (pA != A) delete pA;
  }
@@ -677,10 +748,8 @@ NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, NDArray* Z, const double alpha,
                                Y->specialBuffer(), incy, beta, Z->specialBuffer()),
                               SD_NUMERIC_TYPES);
 
- auto cudaResult = cudaStreamSynchronize(*stream);
- if (cudaResult != 0) throw cuda_exception::build("MmulHelper::dot cuda failed !", cudaResult);
-
  NDArray::registerSpecialUse({Z}, {X, Y});
+ // Don't sync - let CUDA operations run asynchronously
 
  return Z;
 }
@@ -723,6 +792,63 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (C->isEmpty()) return C;
 
+ // Try cuBLAS strided batch GEMM first for 3D tensors - much faster than custom kernel
+ if (aRank == 3 && bRank == 3) {
+   if (tryBlasStridedBatched(A, B, C, alpha, beta)) {
+     return C;
+   }
+ }
+
+ // Mixed-precision path: when A and B have different types (e.g., FLOAT32 × HALF),
+ // the batchedGemm custom kernel can't handle it (BUILD_SINGLE_SELECTOR_THRICE assumes
+ // all types match). Reshape higher-rank A to 2D and delegate to mmulMxM which has
+ // cublasGemmEx support for mixed FLOAT32/HALF inputs.
+ if (A->dataType() != B->dataType()) {
+   const auto aType = A->dataType();
+   const auto bType = B->dataType();
+   const bool isMixedHalfFloat = ((aType == FLOAT32 && bType == HALF) || (aType == HALF && bType == FLOAT32));
+
+   if (isMixedHalfFloat) {
+     // For [B0, B1, ..., M, K] × [K, N], reshape A to [B0*B1*...*M, K] (2D),
+     // call mmulMxM, then result is [B0*B1*...*M, N] which we reshape to C's shape.
+     // This works because each row of A is independently multiplied by B.
+     const LongType M = A->sizeAt(-2);
+     const LongType K = A->sizeAt(-1);
+     const LongType N = B->sizeAt(-1);
+
+     // Compute total rows = product of all dims except last
+     LongType totalRows = 1;
+     for (int i = 0; i < aRank - 1; ++i) {
+       totalRows *= A->sizeAt(i);
+     }
+
+     // Reshape A to 2D [totalRows, K]
+     std::vector<LongType> a2dShape = {totalRows, K};
+     NDArray* a2d = A->reshape(A->ordering(), a2dShape, false);
+
+     // Reshape B to 2D if needed (should already be 2D for the common case)
+     NDArray* b2d = const_cast<NDArray*>(B);
+     bool bReshaped = false;
+     if (bRank > 2) {
+       std::vector<LongType> b2dShape = {K, N};
+       b2d = B->reshape(B->ordering(), b2dShape, false);
+       bReshaped = true;
+     }
+
+     // Reshape C to 2D [totalRows, N]
+     std::vector<LongType> c2dShape = {totalRows, N};
+     NDArray* c2d = C->reshape(C->ordering(), c2dShape, false);
+
+     mmulMxM(a2d, b2d, c2d, alpha, beta, c2d->ordering());
+
+     delete a2d;
+     if (bReshaped) delete b2d;
+     delete c2d;
+
+     return C;
+   }
+ }
+
  const LongType cRank = C->rankOf();
 
  const LongType aMaxis(aRank - 2), aKaxis(aRank - 1), bKaxis(bRank - 2), bNaxis(bRank - 1), cMaxis(cRank - 2),
@@ -763,14 +889,214 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
       aBatchDims, bBatchDims, cBatchDims, aMaxis, aKaxis, bKaxis, bNaxis, cMaxis, cNaxis, alpha, beta),
      SD_NUMERIC_TYPES)
  NDArray::registerSpecialUse({C}, {A, B});
-
- manager.synchronize();
+ // Don't sync explicitly - manager destructor handles it if needed
 
  delete aDims;
  delete bDims;
  delete cDims;
 
  return C;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// cuBLAS Strided Batch GEMM - most efficient for contiguous batched data on GPU
+// Uses cublasSgemmStridedBatched/cublasDgemmStridedBatched/cublasHgemmStridedBatched
+// This avoids kernel launch overhead for each batch element
+// Supports both 3D [batch, M, K] and 4D [batch0, batch1, M, K] tensors
+//////////////////////////////////////////////////////////////////////////
+bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
+                                        double alpha, double beta) {
+  const int aRank = A->rankOf();
+  const int bRank = B->rankOf();
+  const int cRank = C->rankOf();
+
+  // Handle 3D and 4D tensors with matching ranks
+  if (aRank != bRank || bRank != cRank || (aRank != 3 && aRank != 4)) {
+    return false;
+  }
+
+  const auto xType = A->dataType();
+  const auto yType = B->dataType();
+  const auto zType = C->dataType();
+
+  // Types must match for cuBLAS strided batched
+  if (xType != yType || yType != zType) {
+    return false;
+  }
+
+  // Only float, double, and half supported
+  if (xType != DataType::FLOAT32 && xType != DataType::DOUBLE && xType != DataType::HALF) {
+    return false;
+  }
+
+  // Validate buffers
+  if (A->specialBuffer() == nullptr || B->specialBuffer() == nullptr || C->specialBuffer() == nullptr) {
+    return false;
+  }
+
+  // For 4D tensors, flatten first two batch dimensions
+  // 3D: [batch, M, K] @ [batch, K, N] -> [batch, M, N]
+  // 4D: [b0, b1, M, K] @ [b0, b1, K, N] -> [b0, b1, M, N] (treat as [b0*b1, M, K] @ [b0*b1, K, N])
+  LongType batchSize;
+  LongType M, K, N;
+
+  if (aRank == 3) {
+    batchSize = A->sizeAt(0);
+    M = A->sizeAt(1);
+    K = A->sizeAt(2);
+    N = B->sizeAt(2);
+  } else {  // aRank == 4
+    // Flatten first two batch dimensions
+    batchSize = A->sizeAt(0) * A->sizeAt(1);
+    M = A->sizeAt(2);
+    K = A->sizeAt(3);
+    N = B->sizeAt(3);
+
+    // Verify batch dimensions match
+    if (A->sizeAt(0) != B->sizeAt(0) || A->sizeAt(1) != B->sizeAt(1) ||
+        A->sizeAt(0) != C->sizeAt(0) || A->sizeAt(1) != C->sizeAt(1)) {
+      return false;
+    }
+  }
+
+  if (M <= 0 || K <= 0 || N <= 0 || batchSize <= 0) {
+    return false;
+  }
+
+  // Check inner dimensions match for matmul
+  const int kAxisA = aRank - 1;  // Last axis of A
+  const int kAxisB = aRank - 2;  // Second-to-last axis of B
+  if (A->sizeAt(kAxisA) != B->sizeAt(kAxisB)) {
+    return false;
+  }
+
+  // Check C dimensions match expected output
+  if (C->sizeAt(-2) != M || C->sizeAt(-1) != N) {
+    return false;
+  }
+
+  // cuBLAS is column-major, so we need to check for compatible memory layouts
+  // For row-major [..., M, K]: stride[-1]=1, stride[-2]=K
+  // We'll use the trick: C = A*B in row-major is equivalent to C^T = B^T * A^T in col-major
+  // So we swap A and B and compute B * A instead
+
+  // Check for contiguous row-major layout (innermost dimensions)
+  const bool aRowMajor = (A->strideAt(-1) == 1) && (A->strideAt(-2) == K);
+  const bool bRowMajor = (B->strideAt(-1) == 1) && (B->strideAt(-2) == N);
+  const bool cRowMajor = (C->strideAt(-1) == 1) && (C->strideAt(-2) == N);
+
+  if (!aRowMajor || !bRowMajor || !cRowMajor) {
+    return false;
+  }
+
+  // Calculate strides for batched operation
+  // For 3D: stride between batches is stride[0]
+  // For 4D: stride between batches is stride[1] (stride within b0), and we need contiguous b0*b1
+  long long strideA, strideB, strideC;
+
+  if (aRank == 3) {
+    const LongType expectedStrideA = M * K;
+    const LongType expectedStrideB = K * N;
+    const LongType expectedStrideC = M * N;
+
+    if (A->strideAt(0) < expectedStrideA || B->strideAt(0) < expectedStrideB || C->strideAt(0) < expectedStrideC) {
+      return false;
+    }
+
+    strideA = A->strideAt(0);
+    strideB = B->strideAt(0);
+    strideC = C->strideAt(0);
+  } else {  // aRank == 4
+    // For 4D, we need the stride between individual batch elements
+    // Each batch element is M*K for A, K*N for B, M*N for C
+    const LongType expectedStrideA = M * K;
+    const LongType expectedStrideB = K * N;
+    const LongType expectedStrideC = M * N;
+
+    // Check that the 4D tensor is laid out as contiguous batches
+    // stride[1] should be M*K (stride between b1 elements)
+    // stride[0] should be b1*M*K (stride between b0 elements)
+    if (A->strideAt(-3) < expectedStrideA || B->strideAt(-3) < expectedStrideB || C->strideAt(-3) < expectedStrideC) {
+      return false;
+    }
+
+    // Also verify outer batch dimension is contiguous
+    LongType b1 = A->sizeAt(1);
+    if (A->strideAt(0) < b1 * expectedStrideA || B->strideAt(0) < b1 * expectedStrideB || C->strideAt(0) < b1 * expectedStrideC) {
+      return false;
+    }
+
+    // Use the inner batch stride (stride[1] for 4D = stride[-3])
+    strideA = A->strideAt(-3);
+    strideB = B->strideAt(-3);
+    strideC = C->strideAt(-3);
+  }
+
+  // Get cuBLAS handle
+  auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
+  auto stream = A->getContext()->getCudaStream();
+  cublasSetStream(*handle, *stream);
+
+  NDArray::prepareSpecialUse({C}, {A, B});
+
+  cublasStatus_t status;
+
+  // cuBLAS uses column-major, so we compute C^T = B^T * A^T
+  // In terms of our row-major arrays: C = A * B becomes computing with swapped order
+  // cublas: C_col = B_col * A_col where our row-major A is cublas's A^T
+  // So we call cublas with (B, A) to get A*B in row-major
+
+  if (xType == DataType::DOUBLE) {
+    status = cublasDgemmStridedBatched(
+        *handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        N, M, K,  // Swapped M,N for row-major
+        &alpha,
+        reinterpret_cast<const double*>(B->specialBuffer()), N, strideB,
+        reinterpret_cast<const double*>(A->specialBuffer()), K, strideA,
+        &beta,
+        reinterpret_cast<double*>(C->specialBuffer()), N, strideC,
+        batchSize);
+  } else if (xType == DataType::FLOAT32) {
+    float alphaF = static_cast<float>(alpha);
+    float betaF = static_cast<float>(beta);
+    status = cublasSgemmStridedBatched(
+        *handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        N, M, K,  // Swapped M,N for row-major
+        &alphaF,
+        reinterpret_cast<const float*>(B->specialBuffer()), N, strideB,
+        reinterpret_cast<const float*>(A->specialBuffer()), K, strideA,
+        &betaF,
+        reinterpret_cast<float*>(C->specialBuffer()), N, strideC,
+        batchSize);
+  } else if (xType == DataType::HALF) {
+    __half alphaH = __float2half(static_cast<float>(alpha));
+    __half betaH = __float2half(static_cast<float>(beta));
+    status = cublasHgemmStridedBatched(
+        *handle,
+        CUBLAS_OP_N, CUBLAS_OP_N,
+        N, M, K,  // Swapped M,N for row-major
+        &alphaH,
+        reinterpret_cast<const __half*>(B->specialBuffer()), N, strideB,
+        reinterpret_cast<const __half*>(A->specialBuffer()), K, strideA,
+        &betaH,
+        reinterpret_cast<__half*>(C->specialBuffer()), N, strideC,
+        batchSize);
+  } else {
+    NDArray::registerSpecialUse({C}, {A, B});
+    return false;
+  }
+
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    NDArray::registerSpecialUse({C}, {A, B});
+    return false;
+  }
+
+  NDArray::registerSpecialUse({C}, {A, B});
+  // Don't sync - let CUDA operations run asynchronously
+
+  return true;
 }
 
 } // namespace sd

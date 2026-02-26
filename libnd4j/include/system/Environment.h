@@ -26,6 +26,7 @@
 #include <types/pair.h>
 
 #include <atomic>
+#include <string>
 #include <stdexcept>
 #include <vector>
 #include <config.h>
@@ -49,6 +50,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<sd::DataType> _dataType;
   std::atomic<bool> _precBoost;
   std::atomic<bool> _useONEDNN{true};
+  std::atomic<bool> _useMPS{true};
   std::atomic<bool> _allowHelpers{true};
   std::atomic<bool> funcTracePrintDeallocate;
   std::atomic<bool> funcTracePrintAllocate;
@@ -65,6 +67,13 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _snapshotFiles{false};  // Default off - only write snapshots on demand
   std::atomic<bool> _trackOperations{false};  // Default off - operation tracking adds overhead
 
+  // Individual tracker enable flags
+  std::atomic<bool> _ndArrayTracking{false};
+  std::atomic<bool> _dataBufferTracking{false};
+  std::atomic<bool> _tadCacheTracking{false};
+  std::atomic<bool> _shapeCacheTracking{false};
+  std::atomic<bool> _opContextTracking{false};
+
   std::atomic<int> _maxThreads;
   std::atomic<int> _maxMasterThreads;
   std::atomic<bool> deleteSpecial{true};
@@ -80,6 +89,11 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int64_t> _maxDeviceMemory{-1};
   bool _blasFallback = false;
   std::atomic<bool> _enableBlasFall{true};
+
+  // BLAS call serialization to prevent OpenBLAS TLS corruption and race conditions
+  // Default true for safety with OpenBLAS in multi-threaded Java applications
+  std::atomic<bool> _serializeBlasCallsSet{false};  // tracks if explicitly set
+  std::atomic<int> _openBlasThreads{0};  // 0 = use default
 
 #ifdef SD_EXPERIMENTAL_ENABLED
   const bool _experimental = true;
@@ -105,12 +119,19 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _cudaUseDeviceHost{false};
   std::atomic<int> _cudaEventLimit{4};
   std::atomic<int> _cudaCachingAllocatorLimit{0}; // in MB
+  std::atomic<int64_t> _cudaPinnedHostLimit{8LL * 1024}; // in MB, default 8 GB
   std::atomic<bool> _cudaUseUnifiedMemory{false};
   std::atomic<int> _cudaPrefetchSize{0}; // in MB
   std::atomic<bool> _cudaGraphOptimization{false};
   std::atomic<bool> _cudaTensorCoreEnabled{true};
   std::atomic<int> _cudaBlockingSync{0};
   std::atomic<int> _cudaDeviceSchedule{0}; // 0: default, 1: spin, 2: yield, 3: block
+
+  // NDArray print options (similar to NumPy's printoptions)
+  std::atomic<int> _printEdgeItems{3};       // Number of elements at each edge when summarizing
+  std::atomic<int> _printThreshold{1000};    // Total elements before switching to summarized output
+  std::atomic<int> _printLineWidth{75};      // Characters per line for output
+  std::atomic<int> _printPrecision{8};       // Floating point precision (digits after decimal)
 
   // CUDA Device Limit configurations
   std::atomic<size_t> _cudaStackSize{0};            // cudaLimitStackSize
@@ -120,6 +141,30 @@ class SD_LIB_EXPORT Environment {
   std::atomic<size_t> _cudaDevRuntimePendingLaunchCount{0}; // cudaLimitDevRuntimePendingLaunchCount
   std::atomic<size_t> _cudaMaxL2FetchGranularity{0}; // cudaLimitMaxL2FetchGranularity
   std::atomic<size_t> _cudaPersistingL2CacheSize{0}; // cudaLimitPersistingL2CacheSize
+
+  // Triton GPU compilation settings
+  std::atomic<int> _tritonBuildThreads{1};
+  std::atomic<bool> _tritonCacheEnabled{true};
+  std::atomic<int> _tritonCoopTargetBlocks{0};  // 0 = auto
+  std::atomic<int> _tritonMaxSubsegmentOps{0};       // 0 = auto/adaptive
+  std::atomic<int> _tritonMaxSubsegmentSections{0};  // 0 = auto/adaptive
+  std::atomic<bool> _tritonVerbose{false};
+  std::atomic<bool> _tritonDumpSections{false};
+  std::atomic<bool> _tritonDumpArgs{false};
+  std::atomic<bool> _tritonLogAllPatterns{false};
+  std::atomic<bool> _tritonAlwaysCompile{false};
+  std::atomic<bool> _tritonKernelDump{false};
+  std::atomic<bool> _tritonKernelOverride{false};
+  std::atomic<int> _tritonNumWarps{0};    // 0 = auto
+  std::atomic<int> _tritonNumStages{0};   // 0 = auto
+  std::atomic<int> _tritonNumCTAs{1};     // 1 = default (non-clustered)
+  std::atomic<int> _tritonMaxNreg{0};     // 0 = unset
+  std::atomic<bool> _tritonEnableFpFusion{true};
+  std::atomic<bool> _tritonDisableLineInfo{false};
+  std::string _tritonCacheDir;
+  std::string _tritonDumpDir;
+  std::string _tritonOverrideDir;
+  std::string _tritonOverrideArch;
 
   Environment();
 
@@ -211,6 +256,32 @@ class SD_LIB_EXPORT Environment {
 
   bool blasFallback();
 
+  /**
+   * Check if BLAS call serialization is enabled.
+   * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+   * TLS corruption and race conditions in multi-threaded environments.
+   * Default is true for safety.
+   */
+  bool isSerializeBlasCalls();
+
+  /**
+   * Enable or disable BLAS call serialization.
+   * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+   */
+  void setSerializeBlasCalls(bool serialize);
+
+  /**
+   * Get the number of threads OpenBLAS should use.
+   * Returns 0 if using OpenBLAS default.
+   */
+  int getOpenBlasThreads();
+
+  /**
+   * Set the number of threads OpenBLAS should use.
+   * Set to 0 for OpenBLAS default, or a specific number for explicit control.
+   */
+  void setOpenBlasThreads(int threads);
+
   int tadThreshold();
   void setTadThreshold(int threshold);
 
@@ -249,6 +320,9 @@ class SD_LIB_EXPORT Environment {
 
   bool isUseONEDNN() { return _useONEDNN.load(); }
   void setUseONEDNN(bool useMKLDNN) { _useONEDNN.store(useMKLDNN); }
+
+  bool isUseMPS() { return _useMPS.load(); }
+  void setUseMPS(bool useMPS) { _useMPS.store(useMPS); }
 
   sd::DataType defaultFloatDataType();
   void setDefaultFloatDataType(sd::DataType dtype);
@@ -290,6 +364,18 @@ class SD_LIB_EXPORT Environment {
   bool isTrackOperations();
   void setTrackOperations(bool enabled);
 
+  // Individual tracker enable/disable methods
+  bool isNDArrayTracking();
+  void setNDArrayTracking(bool enabled);
+  bool isDataBufferTracking();
+  void setDataBufferTracking(bool enabled);
+  bool isTADCacheTracking();
+  void setTADCacheTracking(bool enabled);
+  bool isShapeCacheTracking();
+  void setShapeCacheTracking(bool enabled);
+  bool isOpContextTracking();
+  void setOpContextTracking(bool enabled);
+
   bool isDeleteShapeInfo();
   void setDeleteShapeInfo(bool deleteShapeInfo);
 
@@ -321,6 +407,8 @@ class SD_LIB_EXPORT Environment {
   void setCudaEventLimit(int limit);
   int cudaCachingAllocatorLimit() { return _cudaCachingAllocatorLimit.load(); }
   void setCudaCachingAllocatorLimit(int limitInMB);
+  int64_t cudaPinnedHostLimit() { return _cudaPinnedHostLimit.load(); }
+  void setCudaPinnedHostLimit(int64_t limitInMB);
   bool cudaUseUnifiedMemory() { return _cudaUseUnifiedMemory.load(); }
   void setCudaUseUnifiedMemory(bool unified);
   int cudaPrefetchSize() { return _cudaPrefetchSize.load(); }
@@ -352,6 +440,65 @@ class SD_LIB_EXPORT Environment {
 
   bool setCudaDeviceLimit(int limitType, size_t value);
 
+  // NDArray print options (NumPy-style printoptions)
+  int printEdgeItems() { return _printEdgeItems.load(); }
+  void setPrintEdgeItems(int edgeItems);
+  int printThreshold() { return _printThreshold.load(); }
+  void setPrintThreshold(int threshold);
+  int printLineWidth() { return _printLineWidth.load(); }
+  void setPrintLineWidth(int lineWidth);
+  int printPrecision() { return _printPrecision.load(); }
+  void setPrintPrecision(int precision);
+
+  // Triton GPU compilation settings
+  int tritonBuildThreads() { return _tritonBuildThreads.load(); }
+  void setTritonBuildThreads(int threads);
+  bool tritonCacheEnabled() { return _tritonCacheEnabled.load(); }
+  void setTritonCacheEnabled(bool enabled);
+  int tritonCoopTargetBlocks() { return _tritonCoopTargetBlocks.load(); }
+  void setTritonCoopTargetBlocks(int blocks);
+  int tritonMaxSubsegmentOps() { return _tritonMaxSubsegmentOps.load(); }
+  void setTritonMaxSubsegmentOps(int ops);
+  int tritonMaxSubsegmentSections() { return _tritonMaxSubsegmentSections.load(); }
+  void setTritonMaxSubsegmentSections(int sections);
+  bool tritonVerbose() { return _tritonVerbose.load(); }
+  void setTritonVerbose(bool verbose);
+  bool tritonDumpSections() { return _tritonDumpSections.load(); }
+  void setTritonDumpSections(bool dumpSections);
+  bool tritonDumpArgs() { return _tritonDumpArgs.load(); }
+  void setTritonDumpArgs(bool dumpArgs);
+  bool tritonLogAllPatterns() { return _tritonLogAllPatterns.load(); }
+  void setTritonLogAllPatterns(bool logAllPatterns);
+  bool tritonAlwaysCompile() { return _tritonAlwaysCompile.load(); }
+  void setTritonAlwaysCompile(bool alwaysCompile);
+  bool tritonKernelDump() { return _tritonKernelDump.load(); }
+  void setTritonKernelDump(bool kernelDump);
+  bool tritonKernelOverride() { return _tritonKernelOverride.load(); }
+  void setTritonKernelOverride(bool kernelOverride);
+  int tritonNumWarps() { return _tritonNumWarps.load(); }
+  void setTritonNumWarps(int warps);
+  int tritonNumStages() { return _tritonNumStages.load(); }
+  void setTritonNumStages(int stages);
+  int tritonNumCTAs() { return _tritonNumCTAs.load(); }
+  void setTritonNumCTAs(int ctas);
+  int tritonMaxNreg() { return _tritonMaxNreg.load(); }
+  void setTritonMaxNreg(int maxNreg);
+  bool tritonEnableFpFusion() { return _tritonEnableFpFusion.load(); }
+  void setTritonEnableFpFusion(bool enableFpFusion);
+  bool tritonDisableLineInfo() { return _tritonDisableLineInfo.load(); }
+  void setTritonDisableLineInfo(bool disableLineInfo);
+  std::string tritonCacheDir() const { return _tritonCacheDir; }
+  void setTritonCacheDir(const std::string& cacheDir);
+  std::string tritonDumpDir() const { return _tritonDumpDir; }
+  void setTritonDumpDir(const std::string& dumpDir);
+  std::string tritonOverrideDir() const { return _tritonOverrideDir; }
+  void setTritonOverrideDir(const std::string& overrideDir);
+  std::string tritonOverrideArch() const { return _tritonOverrideArch; }
+  void setTritonOverrideArch(const std::string& overrideArch);
+
+  // Process environment path helpers used by native backends.
+  std::string homeDirectory() const;
+  std::string cudaToolkitPath() const;
 
   // Initialize CUDA environment settings from environment variables
   void initCudaEnvironment();

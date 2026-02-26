@@ -121,6 +121,12 @@ public class ND4JEnvironmentVars {
      */
     public static final String ND4J_CUDA_FORCE_SINGLE_GPU = "ND4J_CUDA_FORCE_SINGLE_GPU";
     /**
+     * Applicability: nd4j-cuda-xx used on multi-GPU systems<br>
+     * Description: If set to true, ND4J will allow use of multiple GPUs by default when no explicit device list is provided.
+     * When false (default), ND4J will select a single best GPU unless devices are explicitly configured.
+     */
+    public static final String ND4J_CUDA_ALLOW_MULTI_GPU = "ND4J_CUDA_ALLOW_MULTI_GPU";
+    /**
      * Applicability: nd4j-cuda-xx<br>
      * Description:
      */
@@ -186,6 +192,191 @@ public class ND4JEnvironmentVars {
      * If set, this variable defines how much memory application is allowed to use on any one computational device
      */
     public static final String SD_MAX_DEVICE_BYTES = "SD_MAX_DEVICE_BYTES";
+
+    /**
+     * Applicability: nd4j-native backend with OpenBLAS<br>
+     * Description: Sets the number of threads used by OpenBLAS for BLAS operations (GEMM, GEMV, etc.).
+     * This is separate from {@link #OMP_NUM_THREADS} which controls ND4J's own parallel operations.
+     * <p>
+     * Default value: 1 (single-threaded). This default prevents SEGV_ACCERR crashes caused by
+     * OpenBLAS's thread-local storage (TLS) corruption when called from Java thread pools.
+     * OpenBLAS uses TLS for per-thread scratch buffers, and when Java threads are recycled,
+     * the TLS state can become stale or corrupted, leading to crashes in BLAS kernels.
+     * <p>
+     * Setting this to a higher value may improve performance for large matrix operations,
+     * but can cause stability issues in multi-threaded Java applications. Only increase this
+     * if you understand the implications and have tested thoroughly.
+     * <p>
+     * This can also be set via the native environment variable OPENBLAS_NUM_THREADS before
+     * JVM startup, which takes precedence over this setting.
+     */
+    public static final String ND4J_OPENBLAS_THREADS = "ND4J_OPENBLAS_THREADS";
+
+    /**
+     * Controls whether BLAS calls are serialized to prevent OpenBLAS TLS corruption
+     * and race conditions in multi-threaded environments.
+     * <p>
+     * Default value: "true" (serialization enabled). When enabled, external BLAS calls
+     * are serialized using a mutex, while OpenBLAS can still use multiple threads internally
+     * for each call. This prevents the Thread Local Storage (TLS) corruption that occurs
+     * when multiple Java threads call OpenBLAS concurrently.
+     * <p>
+     * Set to "false" only if:
+     * - Using a thread-safe BLAS implementation like Intel MKL
+     * - You have verified your workload doesn't trigger OpenBLAS race conditions
+     * - You need maximum throughput and accept the crash risk
+     * <p>
+     * Valid values: "true", "false", "1", "0", "yes", "no"
+     */
+    public static final String ND4J_BLAS_SERIALIZE = "ND4J_BLAS_SERIALIZE";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Number of parallel threads for Triton kernel compilation.
+     * Higher values compile more sub-kernels concurrently but use more memory (~1-2GB per thread).
+     * Valid values: 1-16, default: 1
+     */
+    public static final String ND4J_TRITON_BUILD_THREADS = "ND4J_TRITON_BUILD_THREADS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Enable disk cache for compiled Triton kernels (PTX files).
+     * Valid values: "true", "false", default: "true"
+     */
+    public static final String ND4J_TRITON_CACHE_ENABLE = "ND4J_TRITON_CACHE_ENABLE";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Target cooperative grid size (in blocks) for sectioned Triton kernels.
+     * Controls launch granularity tuning to keep cooperative launches within device capacity.
+     * Set to 0 for automatic device-based default.
+     */
+    public static final String ND4J_TRITON_COOP_TARGET_BLOCKS = "ND4J_TRITON_COOP_TARGET_BLOCKS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Enable verbose Triton diagnostics logging.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_VERBOSE = "ND4J_TRITON_VERBOSE";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Dump Triton section breakdown diagnostics.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_DUMP_SECTIONS = "ND4J_TRITON_DUMP_SECTIONS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Dump Triton argument mapping diagnostics.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_DUMP_ARGS = "ND4J_TRITON_DUMP_ARGS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Log every detected Triton fusion pattern instead of only the best match.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_LOG_ALL_PATTERNS = "ND4J_TRITON_LOG_ALL_PATTERNS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Cap adaptive Triton sub-segment size by number of ops.
+     * Value 0 keeps adaptive auto behavior.
+     */
+    public static final String ND4J_TRITON_MAX_SUBSEGMENT_OPS = "ND4J_TRITON_MAX_SUBSEGMENT_OPS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Cap adaptive Triton sub-segment size by number of sections.
+     * Value 0 keeps adaptive auto behavior.
+     */
+    public static final String ND4J_TRITON_MAX_SUBSEGMENT_SECTIONS = "ND4J_TRITON_MAX_SUBSEGMENT_SECTIONS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Custom directory for ND4J Triton PTX cache.
+     */
+    public static final String ND4J_TRITON_CACHE_DIR = "ND4J_TRITON_CACHE_DIR";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Directory for dumped Triton artifacts (.ttir/.ptx/.meta) when kernel dump is enabled.
+     */
+    public static final String ND4J_TRITON_DUMP_DIR = "ND4J_TRITON_DUMP_DIR";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Directory for override Triton kernels loaded by hash (ttir_<hash>.ptx).
+     */
+    public static final String ND4J_TRITON_OVERRIDE_DIR = "ND4J_TRITON_OVERRIDE_DIR";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Force recompilation for every kernel invocation (bypass disk cache lookup).
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_ALWAYS_COMPILE = "ND4J_TRITON_ALWAYS_COMPILE";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Dump compiled Triton artifacts to ND4J_TRITON_DUMP_DIR.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_KERNEL_DUMP = "ND4J_TRITON_KERNEL_DUMP";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Load prebuilt Triton kernels from ND4J_TRITON_OVERRIDE_DIR by content hash.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_KERNEL_OVERRIDE = "ND4J_TRITON_KERNEL_OVERRIDE";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Override compiled Triton kernel warps (0 keeps auto).
+     */
+    public static final String ND4J_TRITON_NUM_WARPS = "ND4J_TRITON_NUM_WARPS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Override compiled Triton kernel pipeline stages (0 keeps auto).
+     */
+    public static final String ND4J_TRITON_NUM_STAGES = "ND4J_TRITON_NUM_STAGES";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Override Triton cluster CTAs for TTIR->TTGIR conversion (default: 1).
+     */
+    public static final String ND4J_TRITON_NUM_CTAS = "ND4J_TRITON_NUM_CTAS";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Optional max register budget per thread (0 disables override).
+     */
+    public static final String ND4J_TRITON_MAXNREG = "ND4J_TRITON_MAXNREG";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Override target architecture string (e.g. "sm_90", "gfx942", "pvc").
+     */
+    public static final String ND4J_TRITON_OVERRIDE_ARCH = "ND4J_TRITON_OVERRIDE_ARCH";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Enable floating-point fusion in LLVM code generation.
+     * Valid values: "true", "false", default: "true"
+     */
+    public static final String ND4J_TRITON_ENABLE_FP_FUSION = "ND4J_TRITON_ENABLE_FP_FUSION";
+
+    /**
+     * Applicability: nd4j-cuda with Triton GPU backend
+     * Description: Disable line-info generation when loading PTX via CUDA JIT.
+     * Valid values: "true", "false", default: "false"
+     */
+    public static final String ND4J_TRITON_DISABLE_LINE_INFO = "ND4J_TRITON_DISABLE_LINE_INFO";
 
     private ND4JEnvironmentVars() {
     }

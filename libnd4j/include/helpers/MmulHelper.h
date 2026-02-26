@@ -27,67 +27,210 @@
 #include "array/NDArray.h"
 
 namespace sd {
+
+/**
+ * MmulHelper - Matrix multiplication helper with automatic backend dispatch
+ *
+ * Provides unified interface for matrix operations with automatic selection of:
+ * - OneDNN (MKL) batched matmul for 3D tensors when available
+ * - BLAS batched GEMM (cblas_sgemm_batch) when available
+ * - BLAS per-batch GEMM calls as fallback
+ * - Optimized manual implementation for non-standard types
+ *
+ * Key methods:
+ * - mmul(): General matrix multiply with automatic dispatch
+ * - matmul(): High-level matmul with transpose support
+ * - tensorDot(): Tensor contraction along specified axes
+ */
 class SD_LIB_EXPORT MmulHelper {
  private:
-  // multiptication N-dimensions tensor on other N-dimensions one
-  static NDArray* mmulNxN(NDArray* A, NDArray* B, NDArray* C, const double alpha = 1.0,
-                              const double beta = 0.0, const char outOrder = 'f');
+  // ============== Core Matrix Operations ==============
 
-  // dot product of vectors (X * Y) = Z[0]
+  // Matrix x Matrix: [M,K] x [K,N] = [M,N]
+  static NDArray* mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha = 1.0,
+                          double beta = 0.0, const char outOrder = 'f');
+
+  // Matrix x Vector: [M,N] x [N] = [M]
+  static NDArray* mmulMxV(NDArray* A, NDArray* B, NDArray* C, double alpha = 1.0,
+                          double beta = 0.0, const char outOrder = 'f');
+
+  // Dot product: [N] x [N] = scalar
   static NDArray* dot(NDArray* X, NDArray* Y, NDArray* Z, const double alpha = 1.0,
-                          const double beta = 0.0);
+                      const double beta = 0.0);
 
-  // multiptication Matrix to Matrix
-  static NDArray* mmulMxM( NDArray* A,  NDArray* B, NDArray* C, double alpha = 1.0,
-                              double beta = 0.0, const char outOrder = 'f');
+  // N-dimensional batched matmul: [...,M,K] x [...,K,N] = [...,M,N]
+  static NDArray* mmulNxN(NDArray* A, NDArray* B, NDArray* C, const double alpha = 1.0,
+                          const double beta = 0.0, const char outOrder = 'f');
 
-  // multiptication Matrix to vector
-  static NDArray* mmulMxV( NDArray* A, NDArray* B, NDArray* C, double alpha = 1.0,
-                              double beta = 0.0, const char outOrder = 'f');
+  // ============== Batched Matmul with Backend Dispatch ==============
+
+  /**
+   * Batched matrix multiplication with automatic backend selection
+   *
+   * Tries backends in order of preference:
+   * 1. OneDNN batched matmul (single primitive for entire batch)
+   * 2. BLAS batched GEMM (cblas_sgemm_batch)
+   * 3. Per-batch BLAS GEMM calls
+   * 4. Manual parallel implementation
+   *
+   * @param A Input tensor [batch..., M, K]
+   * @param B Input tensor [batch..., K, N]
+   * @param C Output tensor [batch..., M, N]
+   * @param alpha Scalar multiplier for A*B
+   * @param beta Scalar multiplier for C (accumulation)
+   * @return true if computation succeeded, false on error
+   */
+  static bool mmulBatched(NDArray* A, NDArray* B, NDArray* C,
+                          double alpha = 1.0, double beta = 0.0);
+
+  /**
+   * Try OneDNN batched matmul for 3D tensors
+   * @return true if OneDNN handled the operation
+   */
+  static bool tryOneDnnBatched(NDArray* A, NDArray* B, NDArray* C,
+                               double alpha, double beta);
+
+  /**
+   * Try strided batch GEMM for contiguous batched data
+   *
+   * On CPU (MKL): Uses cblas_sgemm_batch_strided/cblas_dgemm_batch_strided
+   * On GPU (cuBLAS): Uses cublasSgemmStridedBatched/cublasDgemmStridedBatched/cublasHgemmStridedBatched
+   *
+   * More efficient than pointer-array batch GEMM as it avoids building pointer arrays
+   * and allows the library to optimize memory access patterns.
+   *
+   * @return true if strided batch GEMM handled the operation
+   */
+  static bool tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
+                                     double alpha, double beta);
+
+  /**
+   * Try BLAS batched GEMM (cblas_sgemm_batch/cblas_dgemm_batch)
+   * @return true if batched BLAS handled the operation
+   */
+  static bool tryBlasBatched(NDArray* A, NDArray* B, NDArray* C,
+                             double alpha, double beta);
+
+  /**
+   * Try per-batch BLAS GEMM calls
+   * @return true if per-batch BLAS handled the operation
+   */
+  static bool tryBlasPerBatch(NDArray* A, NDArray* B, NDArray* C,
+                              double alpha, double beta);
+
+  /**
+   * Manual parallel batched matmul fallback
+   * Always succeeds for supported types
+   */
+  static void manualBatchedGemm(NDArray* A, NDArray* B, NDArray* C,
+                                double alpha, double beta);
 
  public:
+  // ============== Public Interface ==============
+
+  /**
+   * General matrix multiplication with automatic dispatch
+   *
+   * Handles:
+   * - Dot product (vector x vector)
+   * - Matrix x vector
+   * - Vector x matrix
+   * - Matrix x matrix
+   * - Batched matmul (3D+)
+   *
+   * @param A First input array
+   * @param B Second input array
+   * @param C Output array (optional, created if null)
+   * @param alpha Scalar for A*B
+   * @param beta Scalar for C accumulation
+   * @param outOrder Memory order for output ('c' or 'f')
+   * @return Result array (C if provided, new array otherwise)
+   */
   static NDArray* mmul(NDArray* A, NDArray* B, NDArray* C = nullptr,
-                           const double alpha = 1.0, const double beta = 0.0, const char outOrder = 'f');
+                       const double alpha = 1.0, const double beta = 0.0,
+                       const char outOrder = 'f');
+
+  /**
+   * High-level matmul with transpose support
+   *
+   * Supports arbitrary ranks with broadcasting.
+   * Transpose flags apply to the last two dimensions.
+   *
+   * @param x First input
+   * @param y Second input
+   * @param z Output (must be pre-allocated with correct shape)
+   * @param transX Transpose x's last two dims
+   * @param transY Transpose y's last two dims
+   * @param alpha Scalar for x*y
+   * @param beta Scalar for z accumulation
+   * @param realFinalResult Optional final destination (for chained ops)
+   */
+  static void matmul(NDArray* x, NDArray* y, NDArray* z,
+                     const bool transX, const bool transY,
+                     double alpha, double beta,
+                     NDArray* realFinalResult = nullptr);
+
+  /**
+   * Reset the mixed-precision cast cache indices to 0.
+   * Must be called before CUDA graph capture to ensure cached buffers are
+   * reused in the same order as the non-capture warmup execution.
+   */
+  static void resetCastCacheIndices();
+
+  /**
+   * Clear the entire cast cache (delete buffers and reset indices).
+   * Must be called when shapes change (e.g. prefill → decode transition)
+   * so the cache is repopulated with correctly-sized buffers during warmup.
+   */
+  static void clearCastCache();
+
+  /**
+   * Resolve transpose flags based on dimension compatibility
+   * @return true if dimensions are compatible
+   */
+  static bool resolveTranspose(NDArray& a, NDArray& b, bool& transA, bool& transB);
+
+  // ============== Tensor Dot Operations ==============
 
   static NDArray* tensorDot(NDArray* A, NDArray* B,
-                                const std::initializer_list<LongType>& axesA,
-                                const std::initializer_list<LongType>& axesB = {});
+                            const std::initializer_list<LongType>& axesA,
+                            const std::initializer_list<LongType>& axesB = {});
 
-  static NDArray* tensorDot(NDArray* A, NDArray* B, const std::vector<LongType>& axesA,
-                                const std::vector<LongType>& axesB);
+  static NDArray* tensorDot(NDArray* A, NDArray* B,
+                            const std::vector<LongType>& axesA,
+                            const std::vector<LongType>& axesB);
 
-  static void tensorDot(NDArray* a, NDArray* b, NDArray* c, std::vector<LongType>& axes_a,
-                        std::vector<LongType>& axes_b, std::vector<LongType>& permutForC);
+  static void tensorDot(NDArray* a, NDArray* b, NDArray* c,
+                        std::vector<LongType>& axes_a,
+                        std::vector<LongType>& axes_b,
+                        std::vector<LongType>& permutForC);
 
   static void computeNewShapesAndAxes(
       NDArray& as_, const std::vector<LongType>& axes_a,
       NDArray& bs, const std::vector<LongType>& axes_b,
       std::vector<LongType>& newshape_a, std::vector<LongType>& newaxes_a,
-      std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b
-      );
+      std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b);
+
 #ifndef __JAVACPP_HACK__
-  /**
-   *  modif - (can be empty) vector containing a subsequence of permutation/reshaping arrays (in any order), user must
-   * take care of correctness of such arrays by himself
-   */
   static void tensorDot(NDArray* a, NDArray* b, NDArray* c,
                         std::vector<std::vector<LongType>>& modifA,
                         std::vector<std::vector<LongType>>& modifB,
                         std::vector<std::vector<LongType>>& modifC);
+
   static NDArray* tensorDot(NDArray* a, NDArray* b,
-                                std::vector<std::vector<LongType>>& modifA,
-                                std::vector<std::vector<LongType>>& modifB);
+                            std::vector<std::vector<LongType>>& modifA,
+                            std::vector<std::vector<LongType>>& modifB);
 
-  static void tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
-                         const std::vector<LongType>& axes_b, std::vector<LongType>& permutAt,
-                         std::vector<LongType>& permuteBt, std::vector<LongType>& permuteCt, NDArray* realFinalResult = nullptr);
+  static void tensorDot2(NDArray* a, NDArray* b, NDArray* c,
+                         const std::vector<LongType>& axes_a,
+                         const std::vector<LongType>& axes_b,
+                         std::vector<LongType>& permutAt,
+                         std::vector<LongType>& permuteBt,
+                         std::vector<LongType>& permuteCt,
+                         NDArray* realFinalResult = nullptr);
 #endif
-
-  static void matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY, double alpha,
-                     double beta, NDArray* realFinalResult = nullptr);
-
-  static bool resolveTranspose(sd::NDArray& a, sd::NDArray& b, bool& transA, bool& transB);
 };
+
 }  // namespace sd
 
 #endif  // LIBND4J_MMULHELPER_H
