@@ -111,75 +111,65 @@ jobs:
       - name: Free Disk Space (Windows)
         shell: powershell
         run: |
+          $ErrorActionPreference = 'Continue'
           # Show initial disk space
           Write-Host "Initial disk space:"
           Get-PSDrive C | Select-Object Used,Free
-           # The system must be told to stop managing the pagefile size automatically.
-          wmic computersystem set AutomaticManagedPagefile=False
-          
-          # Find and delete any existing pagefile configuration to ensure ours is the only one.
-          $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'"
-          if ($currentPagefile) {
-            $currentPagefile.Delete()
+
+          # Configure pagefile to 12 GB
+          try {
+              wmic computersystem set AutomaticManagedPagefile=False 2>$null
+              $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'" -ErrorAction SilentlyContinue
+              if ($currentPagefile) { $currentPagefile.Delete() }
+              wmic pagefileset create name="C:\\pagefile.sys" 2>$null
+              wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=12288,MaximumSize=12288 2>$null
+              Write-Host "Pagefile configured to 12 GB for the duration of this job."
+          }
+          catch {
+              Write-Host "Pagefile configuration failed. Continuing..."
           }
 
-          # Create a new pagefile with a static size of 12 GB (12288 MB).
-          wmic pagefileset create name="C:\\pagefile.sys"
-          wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=12288, MaximumSize=12288
-          
-          echo "Pagefile configured to 12 GB for the duration of this job."
           # Remove Windows Defender scan history
           Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Removed Windows Defender scan history"
-          
+
           # Clear Windows temp folders
           Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Cleared Windows temp folders"
-          
-          # Clear Windows Update cache safely (without stopping/starting service)
-          try {
-              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Windows Update download cache"
-          }
-          catch {
-              Write-Host "Could not clear Windows Update cache. Continuing..."
-          }
-          
+
+          # Clear Windows Update cache safely
+          Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared Windows Update download cache"
+
           # Clean package manager caches
           if (Test-Path -Path "C:\npm\cache") {
               Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
               Write-Host "Cleared NPM cache"
           }
-          
-          choco cache remove -y -ErrorAction SilentlyContinue
+
+          choco cache remove -y 2>$null
           Write-Host "Cleared Chocolatey cache"
-          
+
           # Remove Docker images if Docker is installed
           try {
               if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-                  docker image prune -a -f
-                  docker container prune -f
-                  docker volume prune -f
+                  docker image prune -a -f 2>$null
+                  docker container prune -f 2>$null
+                  docker volume prune -f 2>$null
                   Write-Host "Pruned Docker resources"
               }
           }
           catch {
               Write-Host "Failed to prune Docker resources. Continuing..."
           }
-          
+
           # Remove .NET SDK/Runtime backup folders
-          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
-              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Removed .NET backup folders"
-          }
-          
+          Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
+
           # Clear Azure artifacts cache
-          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
-              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Azure artifacts cache"
-          }
-          
+          Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
+
           # Optimize Windows Component Store
           try {
               Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
@@ -188,7 +178,7 @@ jobs:
           catch {
               Write-Host "Failed to optimize Windows Component Store. Continuing..."
           }
-          
+
           # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
