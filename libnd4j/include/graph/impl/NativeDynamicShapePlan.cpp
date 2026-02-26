@@ -2952,7 +2952,7 @@ Status NativeDynamicShapePlan::executeSlot(
         }
       }
       if (output == nullptr) {
-        output = new NDArray(outputShapeInfo, true, LaunchContext::defaultContext());
+        output = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
         slotArrayCache_[lastOutputSlotIdx] = output;
       }
       output->nullify();  // Zero output before fused kernel writes to it
