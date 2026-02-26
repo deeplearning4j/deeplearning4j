@@ -73,25 +73,9 @@
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
-        <!-- MKL dependency for extended BLAS support (bf16, strided batch GEMM) -->
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl</artifactId>
-            <version>${mkl.version}-${javacpp-presets.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl</artifactId>
-            <version>${mkl.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.platform}</classifier>
-        </dependency>
-        <!-- MKL redist - contains headers and additional libraries -->
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl</artifactId>
-            <version>${mkl.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.platform}-redist</classifier>
-        </dependency>
+        <!-- MKL dependencies are handled by platform-specific profiles below
+             (mkl-default-linux-x86_64, mkl-default-windows-x86_64, mkl-default-macosx-x86_64)
+             to avoid pulling non-existent MKL artifacts for unsupported platforms like Android -->
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
