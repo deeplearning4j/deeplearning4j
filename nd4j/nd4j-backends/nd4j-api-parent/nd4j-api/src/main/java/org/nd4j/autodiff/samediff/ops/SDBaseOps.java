@@ -425,6 +425,114 @@ public class SDBaseOps {
   }
 
   /**
+   * Boolean AND operation: elementwise x && y. Supports broadcasting.<br>
+   *
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean AND result (BOOL type)
+   */
+  public SDVariable booleanAnd(SDVariable x, SDVariable y) {
+    SDValidation.validateBool("booleanAnd", "x", x);
+    SDValidation.validateBool("booleanAnd", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Boolean AND operation: elementwise x && y. Supports broadcasting.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean AND result (BOOL type)
+   */
+  public SDVariable booleanAnd(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateBool("booleanAnd", "x", x);
+    SDValidation.validateBool("booleanAnd", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Boolean NOT operation: elementwise !x<br>
+   *
+   * @param x Input boolean array (BOOL type)
+   * @return output Boolean NOT result (BOOL type)
+   */
+  public SDVariable booleanNot(SDVariable x) {
+    SDValidation.validateBool("booleanNot", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot(sd,x).outputVariable();
+  }
+
+  /**
+   * Boolean NOT operation: elementwise !x<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input boolean array (BOOL type)
+   * @return output Boolean NOT result (BOOL type)
+   */
+  public SDVariable booleanNot(String name, SDVariable x) {
+    SDValidation.validateBool("booleanNot", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Boolean OR operation: elementwise x || y. Supports broadcasting.<br>
+   *
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean OR result (BOOL type)
+   */
+  public SDVariable booleanOr(SDVariable x, SDVariable y) {
+    SDValidation.validateBool("booleanOr", "x", x);
+    SDValidation.validateBool("booleanOr", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Boolean OR operation: elementwise x || y. Supports broadcasting.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean OR result (BOOL type)
+   */
+  public SDVariable booleanOr(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateBool("booleanOr", "x", x);
+    SDValidation.validateBool("booleanOr", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.<br>
+   *
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean XOR result (BOOL type)
+   */
+  public SDVariable booleanXor(SDVariable x, SDVariable y) {
+    SDValidation.validateBool("booleanXor", "x", x);
+    SDValidation.validateBool("booleanXor", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Boolean XOR operation: elementwise x ^ y. Supports broadcasting.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input boolean array (BOOL type)
+   * @param y Second input boolean array (BOOL type)
+   * @return output Boolean XOR result (BOOL type)
+   */
+  public SDVariable booleanXor(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateBool("booleanXor", "x", x);
+    SDValidation.validateBool("booleanXor", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Cast the array to a new datatype - for example, Integer -> Float<br>
    *
    * @param arg Input variable to cast (NDARRAY type)
@@ -4713,6 +4821,34 @@ public class SDBaseOps {
   public SDVariable squeeze(String name, SDVariable x, int axis) {
     SDValidation.validateNumerical("squeeze", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Squeeze(sd,x, axis).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Remove all dimensions of size 1 from the input tensor.<br>
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
+   * This is the NumPy-style squeeze with no axis specified.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable squeezeAll(SDVariable x) {
+    SDValidation.validateNumerical("squeezeAll", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.shape.Squeeze(sd,x).outputVariable();
+  }
+
+  /**
+   * Remove all dimensions of size 1 from the input tensor.<br>
+   * For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]<br>
+   * This is the NumPy-style squeeze with no axis specified.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable squeezeAll(String name, SDVariable x) {
+    SDValidation.validateNumerical("squeezeAll", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.Squeeze(sd,x).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

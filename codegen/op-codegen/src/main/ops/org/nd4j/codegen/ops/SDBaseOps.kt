@@ -1713,6 +1713,20 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         }
     }
 
+    Op("squeezeAll") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "Squeeze"
+        Input(NUMERIC, "x") { description = "Input variable" }
+        Output(NUMERIC, "output"){ description = "Output variable" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Remove all dimensions of size 1 from the input tensor.
+                For example, if input has shape [a,1,b,1,c] then squeezeAll(input) returns an array of shape [a,b,c]
+                This is the NumPy-style squeeze with no axis specified.
+            """.trimIndent()
+        }
+    }
+
     Op("stack") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         argsFirst = true
@@ -2176,6 +2190,58 @@ fun SDBaseOps() =  Namespace("BaseOps"){
                 axis = 0: [b,c]
                 axis = 1: [a,c]
                 axis = 2: [a,b]
+            """.trimIndent()
+        }
+    }
+
+    Op("booleanNot") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.bool"
+        javaOpClass = "BooleanNot"
+        legacy = true
+        Input(BOOL, "x") { description = "Input boolean array" }
+        Output(BOOL, "output"){ description = "Boolean NOT result" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Boolean NOT operation: elementwise !x
+            """.trimIndent()
+        }
+    }
+
+    Op("booleanAnd") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "BooleanAnd"
+        Input(BOOL, "x") { description = "First input boolean array" }
+        Input(BOOL, "y") { description = "Second input boolean array" }
+        Output(BOOL, "output"){ description = "Boolean AND result" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Boolean AND operation: elementwise x && y. Supports broadcasting.
+            """.trimIndent()
+        }
+    }
+
+    Op("booleanOr") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "BooleanOr"
+        Input(BOOL, "x") { description = "First input boolean array" }
+        Input(BOOL, "y") { description = "Second input boolean array" }
+        Output(BOOL, "output"){ description = "Boolean OR result" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Boolean OR operation: elementwise x || y. Supports broadcasting.
+            """.trimIndent()
+        }
+    }
+
+    Op("booleanXor") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "BooleanXor"
+        Input(BOOL, "x") { description = "First input boolean array" }
+        Input(BOOL, "y") { description = "Second input boolean array" }
+        Output(BOOL, "output"){ description = "Boolean XOR result" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Boolean XOR operation: elementwise x ^ y. Supports broadcasting.
             """.trimIndent()
         }
     }

@@ -146,6 +146,204 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @param temperature Sharpening temperature (typically 0.04-0.07)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public SDVariable centerAndSharpen(SDVariable input, SDVariable center, double temperature) {
+    SDValidation.validateNumerical("centerAndSharpen", "input", input);
+    SDValidation.validateNumerical("centerAndSharpen", "center", center);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(sd,input, center, temperature).outputVariable();
+  }
+
+  /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @param temperature Sharpening temperature (typically 0.04-0.07)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public SDVariable centerAndSharpen(String name, SDVariable input, SDVariable center,
+      double temperature) {
+    SDValidation.validateNumerical("centerAndSharpen", "input", input);
+    SDValidation.validateNumerical("centerAndSharpen", "center", center);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(sd,input, center, temperature).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public SDVariable centerAndSharpen(SDVariable input, SDVariable center) {
+    SDValidation.validateNumerical("centerAndSharpen", "input", input);
+    SDValidation.validateNumerical("centerAndSharpen", "center", center);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(sd,input, center, 0.07).outputVariable();
+  }
+
+  /**
+   * DINOv2 centering and sharpening operation.<br>
+   * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
+   * and applying temperature-based sharpening:<br>
+   *   output = softmax((input - center) / temperature)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Teacher output logits [batch, features] (NUMERIC type)
+   * @param center Running center vector [features] (NUMERIC type)
+   * @return output Sharpened probabilities [batch, features] (NUMERIC type)
+   */
+  public SDVariable centerAndSharpen(String name, SDVariable input, SDVariable center) {
+    SDValidation.validateNumerical("centerAndSharpen", "input", input);
+    SDValidation.validateNumerical("centerAndSharpen", "center", center);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CenterAndSharpen(sd,input, center, 0.07).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public SDVariable[] ctcGreedyDecoder(SDVariable logits, boolean mergeRepeated, int blankIndex) {
+    SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, null, mergeRepeated, blankIndex).outputVariables();
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public SDVariable[] ctcGreedyDecoder(String[] names, SDVariable logits, boolean mergeRepeated,
+      int blankIndex) {
+    SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, null, mergeRepeated, blankIndex).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public SDVariable[] ctcGreedyDecoder(SDVariable logits, SDVariable sequenceLength,
+      boolean mergeRepeated, int blankIndex) {
+    SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, sequenceLength, mergeRepeated, blankIndex).outputVariables();
+  }
+
+  /**
+   * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
+   * <br>
+   * Performs greedy (best path) decoding on CTC output. Used in:<br>
+   * - OCR (Optical Character Recognition) - PaddleOCR, CRNN<br>
+   * - Speech recognition - DeepSpeech, Wav2Vec<br>
+   * - Handwriting recognition<br>
+   * <br>
+   * Algorithm:<br>
+   * 1. At each timestep, select the class with highest probability<br>
+   * 2. Optionally merge consecutive repeated characters<br>
+   * 3. Remove blank labels from the output<br>
+   * <br>
+   * For example, with mergeRepeated=true and blankIndex=0:<br>
+   * Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')<br>
+   * Output: [1, 2] -> "ab"<br>
+   * <br>
+   * Note: This is greedy decoding. For better accuracy with language models,<br>
+   * use beam search decoding instead.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param logits Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses] (NUMERIC type)
+   * @param sequenceLength Optional actual sequence lengths. Shape: [batch] (NUMERIC type)
+   * @param mergeRepeated Whether to merge repeated characters in output
+   * @param blankIndex Index of the blank label in the vocabulary
+   */
+  public SDVariable[] ctcGreedyDecoder(String[] names, SDVariable logits, SDVariable sequenceLength,
+      boolean mergeRepeated, int blankIndex) {
+    SDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
+    SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, sequenceLength, mergeRepeated, blankIndex).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
    * This operation performs dot product attention on the given timeseries input with the given queries<br>
    * out = sum(similarity(k_i, q) * v_i)<br>
    * <br>
@@ -228,35 +426,37 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * This operation performs dot product attention on the given timeseries input with the given queries<br>
-   * out = sum(similarity(k_i, q) * v_i)<br>
+   * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
    * <br>
-   * Optionally with normalization step:<br>
-   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
    * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
-   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
-   * be 3D but can have queryCount = 1<br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
    * <br>
-   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
-   * both.<br>
-   * <br>
-   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
-   * output rank will depend on the input rank.<br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
    *
-   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
-   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
-   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
-   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
-   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
-   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
-   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
-   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
-   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
-   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
    */
   public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
       SDVariable queryMask, SDVariable valueMask, double scaleFactor, double dropoutProbability,
@@ -266,40 +466,42 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
   }
 
   /**
-   * This operation performs dot product attention on the given timeseries input with the given queries<br>
-   * out = sum(similarity(k_i, q) * v_i)<br>
+   * Dot product attention operation with flash attention and KV cache support.<br>
    * <br>
-   * similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q<br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
    * <br>
-   * Optionally with normalization step:<br>
-   * similarity(k, q) = softmax(k * q / sqrt(size(q))<br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
    * <br>
-   * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)<br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
    * <br>
-   * Note: This supports multiple queries at once, if only one query is available the queries vector still has to<br>
-   * be 3D but can have queryCount = 1<br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
    * <br>
-   * Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for<br>
-   * both.<br>
-   * <br>
-   * Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The<br>
-   * output rank will depend on the input rank.<br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param queries A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim] (NUMERIC type)
-   * @param values A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim] (NUMERIC type)
-   * @param keys A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim] (NUMERIC type)
-   * @param queryMask A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries] (NUMERIC type)
-   * @param valueMask @param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues] (NUMERIC type)
-   * @param scaleFactor @param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys.
-   * @param dropoutProbability A {@code double} specifying the dropout probability to be applied to attention weights.
-   * @param useCausalMask  A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks.
-   * @param training  A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout.
-   * @return output  A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim] (NUMERIC type)
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
    */
   public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
       SDVariable keys, SDVariable queryMask, SDVariable valueMask, double scaleFactor,
@@ -309,7 +511,101 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
     SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
     SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, null, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(SDVariable queries, SDVariable values, SDVariable keys,
+      SDVariable queryMask, SDVariable valueMask, SDVariable attentionBias, double scaleFactor,
+      double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
+  }
+
+  /**
+   * Dot product attention operation with flash attention and KV cache support.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale + attentionBias) * V<br>
+   * <br>
+   * For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.<br>
+   * For 2D/3D inputs, uses standard attention computation.<br>
+   * <br>
+   * Flash attention features:<br>
+   * - O(N) memory complexity instead of O(N^2)<br>
+   * - Tiled computation with online softmax<br>
+   * - Supports grouped query attention (GQA) where numHeads > numKvHeads<br>
+   * - Supports attention bias (relative position bias, ALiBi, etc.)<br>
+   * <br>
+   * KV Cache support for autoregressive generation:<br>
+   * - Pass keyCache and valueCache tensors<br>
+   * - Set kvCachePosition to current generation position<br>
+   * - Cached keys/values are updated in-place<br>
+   * <br>
+   * See "Attention is all you need" (https://arxiv.org/abs/1706.03762)<br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param queries Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention (NUMERIC type)
+   * @param values Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param keys Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim] (NUMERIC type)
+   * @param queryMask Query mask tensor (optional). Shape: [batchSize, numQueries] (NUMERIC type)
+   * @param valueMask Value mask tensor (optional). Shape: [batchSize, numValues] (NUMERIC type)
+   * @param attentionBias Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax. (NUMERIC type)
+   * @param scaleFactor Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))
+   * @param dropoutProbability Dropout probability applied to attention weights
+   * @param useCausalMask Whether to apply causal mask for autoregressive tasks
+   * @param training Whether in training mode (affects dropout)
+   * @return output Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable dotProductAttentionV2(String name, SDVariable queries, SDVariable values,
+      SDVariable keys, SDVariable queryMask, SDVariable valueMask, SDVariable attentionBias,
+      double scaleFactor, double dropoutProbability, boolean useCausalMask, boolean training) {
+    SDValidation.validateNumerical("dotProductAttentionV2", "queries", queries);
+    SDValidation.validateNumerical("dotProductAttentionV2", "values", values);
+    SDValidation.validateNumerical("dotProductAttentionV2", "keys", keys);
+    SDValidation.validateNumerical("dotProductAttentionV2", "queryMask", queryMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "valueMask", valueMask);
+    SDValidation.validateNumerical("dotProductAttentionV2", "attentionBias", attentionBias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionV2(sd,queries, values, keys, queryMask, valueMask, attentionBias, scaleFactor, dropoutProbability, useCausalMask, training).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -408,6 +704,172 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @param decay EMA decay factor (typically 0.996-0.9999)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public SDVariable emaUpdate(SDVariable model, SDVariable shadow, double decay) {
+    SDValidation.validateNumerical("emaUpdate", "model", model);
+    SDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(sd,model, shadow, decay).outputVariable();
+  }
+
+  /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @param decay EMA decay factor (typically 0.996-0.9999)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public SDVariable emaUpdate(String name, SDVariable model, SDVariable shadow, double decay) {
+    SDValidation.validateNumerical("emaUpdate", "model", model);
+    SDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(sd,model, shadow, decay).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public SDVariable emaUpdate(SDVariable model, SDVariable shadow) {
+    SDValidation.validateNumerical("emaUpdate", "model", model);
+    SDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(sd,model, shadow, 0.999).outputVariable();
+  }
+
+  /**
+   * Exponential Moving Average parameter update for DINOv2 teacher networks.<br>
+   * Computes: output = decay * shadow + (1 - decay) * model<br>
+   * Used in self-supervised learning to maintain a slowly-updated teacher model.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param model Current model parameters (student) (NUMERIC type)
+   * @param shadow EMA shadow parameters (teacher) (NUMERIC type)
+   * @return output Updated shadow parameters (NUMERIC type)
+   */
+  public SDVariable emaUpdate(String name, SDVariable model, SDVariable shadow) {
+    SDValidation.validateNumerical("emaUpdate", "model", model);
+    SDValidation.validateNumerical("emaUpdate", "shadow", shadow);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.EmaUpdate(sd,model, shadow, 0.999).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Flash Attention - Memory-efficient attention computation.<br>
+   * <br>
+   * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
+   * instead of O(N^2) for standard attention.<br>
+   * <br>
+   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,<br>
+   * allowing multiple query heads to share the same KV heads.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale) * V<br>
+   * <br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads, for GQA use smaller value)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable flashAttention(SDVariable query, SDVariable key, SDVariable value, double scale,
+      boolean isCausal, int numHeads, int numKvHeads) {
+    SDValidation.validateNumerical("flashAttention", "query", query);
+    SDValidation.validateNumerical("flashAttention", "key", key);
+    SDValidation.validateNumerical("flashAttention", "value", value);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention(sd,query, key, value, scale, isCausal, numHeads, numKvHeads).outputVariable();
+  }
+
+  /**
+   * Flash Attention - Memory-efficient attention computation.<br>
+   * <br>
+   * Uses tiled computation with online softmax to achieve O(N) memory complexity<br>
+   * instead of O(N^2) for standard attention.<br>
+   * <br>
+   * Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,<br>
+   * allowing multiple query heads to share the same KV heads.<br>
+   * <br>
+   * out = softmax(Q * K^T / scale) * V<br>
+   * <br>
+   * See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads, for GQA use smaller value)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable flashAttention(String name, SDVariable query, SDVariable key, SDVariable value,
+      double scale, boolean isCausal, int numHeads, int numKvHeads) {
+    SDValidation.validateNumerical("flashAttention", "query", query);
+    SDValidation.validateNumerical("flashAttention", "key", key);
+    SDValidation.validateNumerical("flashAttention", "value", value);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention(sd,query, key, value, scale, isCausal, numHeads, numKvHeads).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   *
+   * @param input Primary input array (NUMERIC type)
+   * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
+   * @param opCodes Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu (Size: AtLeast(min=1))
+   * @return output Result of applying the fused element-wise chain (NUMERIC type)
+   */
+  public SDVariable fusedElementwiseChain(SDVariable input, SDVariable[] secondaryInputs,
+      int[] opCodes) {
+    SDValidation.validateNumerical("fusedElementwiseChain", "input", input);
+    SDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
+    Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
+    Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(sd,input, secondaryInputs, opCodes).outputVariable();
+  }
+
+  /**
+   * Executes a fused chain of element-wise operations in a single kernel pass.<br>
+   * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Primary input array (NUMERIC type)
+   * @param secondaryInputs Optional secondary input arrays for binary ops (add, sub, mul, div) (NUMERIC type)
+   * @param opCodes Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu (Size: AtLeast(min=1))
+   * @return output Result of applying the fused element-wise chain (NUMERIC type)
+   */
+  public SDVariable fusedElementwiseChain(String name, SDVariable input,
+      SDVariable[] secondaryInputs, int[] opCodes) {
+    SDValidation.validateNumerical("fusedElementwiseChain", "input", input);
+    SDValidation.validateNumerical("fusedElementwiseChain", "secondaryInputs", secondaryInputs);
+    Preconditions.checkArgument(secondaryInputs.length >= 0, "secondaryInputs has incorrect size/length. Expected: secondaryInputs.length >= 0, got %s", secondaryInputs.length);
+    Preconditions.checkArgument(opCodes.length >= 1, "opCodes has incorrect size/length. Expected: opCodes.length >= 1, got %s", opCodes.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain(sd,input, secondaryInputs, opCodes).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units<br>
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
    * This method uses the sigmoid approximation<br>
@@ -432,6 +894,72 @@ public class SDNN extends SDOps {
   public SDVariable gelu(String name, SDVariable x) {
     SDValidation.validateNumerical("gelu", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.<br>
+   * <br>
+   * Multiple query heads share the same key-value heads, reducing memory and<br>
+   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.<br>
+   * <br>
+   * numHeads must be divisible by numKvHeads. Each KV head is repeated<br>
+   * (numHeads / numKvHeads) times to match query heads.<br>
+   * <br>
+   * Special cases:<br>
+   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)<br>
+   * - numKvHeads == 1: Multi-Query Attention (MQA)<br>
+   * <br>
+   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (must divide numHeads evenly)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable groupedQueryAttention(SDVariable query, SDVariable key, SDVariable value,
+      double scale, boolean isCausal, int numHeads, int numKvHeads) {
+    SDValidation.validateNumerical("groupedQueryAttention", "query", query);
+    SDValidation.validateNumerical("groupedQueryAttention", "key", key);
+    SDValidation.validateNumerical("groupedQueryAttention", "value", value);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention(sd,query, key, value, scale, isCausal, numHeads, numKvHeads).outputVariable();
+  }
+
+  /**
+   * Grouped Query Attention (GQA) - Efficient attention with shared KV heads.<br>
+   * <br>
+   * Multiple query heads share the same key-value heads, reducing memory and<br>
+   * computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.<br>
+   * <br>
+   * numHeads must be divisible by numKvHeads. Each KV head is repeated<br>
+   * (numHeads / numKvHeads) times to match query heads.<br>
+   * <br>
+   * Special cases:<br>
+   * - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)<br>
+   * - numKvHeads == 1: Multi-Query Attention (MQA)<br>
+   * <br>
+   * See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @param isCausal Whether to apply causal masking
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (must divide numHeads evenly)
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable groupedQueryAttention(String name, SDVariable query, SDVariable key,
+      SDVariable value, double scale, boolean isCausal, int numHeads, int numKvHeads) {
+    SDValidation.validateNumerical("groupedQueryAttention", "query", query);
+    SDValidation.validateNumerical("groupedQueryAttention", "key", key);
+    SDValidation.validateNumerical("groupedQueryAttention", "value", value);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention(sd,query, key, value, scale, isCausal, numHeads, numKvHeads).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -516,6 +1044,175 @@ public class SDNN extends SDOps {
   public SDVariable hardTanhDerivative(String name, SDVariable x) {
     SDValidation.validateNumerical("hardTanhDerivative", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * KV Cache Update - Updates key-value cache for autoregressive generation.<br>
+   * <br>
+   * During LLM inference, past key-value pairs are cached to avoid redundant<br>
+   * computation during token-by-token generation. This operation efficiently<br>
+   * inserts new keys/values at the specified position.<br>
+   * <br>
+   * Usage pattern:<br>
+   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]<br>
+   * 2. For each new token, compute new K/V and update cache<br>
+   * 3. Use full cached K/V for attention computation<br>
+   * <br>
+   * Returns updated keyCache and valueCache tensors.<br>
+   *
+   * @param keyCache Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param valueCache Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param startPosition Position in cache where new keys/values should be inserted
+   */
+  public SDVariable[] kvCacheUpdate(SDVariable keyCache, SDVariable valueCache, SDVariable newKeys,
+      SDVariable newValues, int startPosition) {
+    SDValidation.validateNumerical("kvCacheUpdate", "keyCache", keyCache);
+    SDValidation.validateNumerical("kvCacheUpdate", "valueCache", valueCache);
+    SDValidation.validateNumerical("kvCacheUpdate", "newKeys", newKeys);
+    SDValidation.validateNumerical("kvCacheUpdate", "newValues", newValues);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate(sd,keyCache, valueCache, newKeys, newValues, startPosition).outputVariables();
+  }
+
+  /**
+   * KV Cache Update - Updates key-value cache for autoregressive generation.<br>
+   * <br>
+   * During LLM inference, past key-value pairs are cached to avoid redundant<br>
+   * computation during token-by-token generation. This operation efficiently<br>
+   * inserts new keys/values at the specified position.<br>
+   * <br>
+   * Usage pattern:<br>
+   * 1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]<br>
+   * 2. For each new token, compute new K/V and update cache<br>
+   * 3. Use full cached K/V for attention computation<br>
+   * <br>
+   * Returns updated keyCache and valueCache tensors.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param keyCache Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param valueCache Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newKeys New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param newValues New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param startPosition Position in cache where new keys/values should be inserted
+   */
+  public SDVariable[] kvCacheUpdate(String[] names, SDVariable keyCache, SDVariable valueCache,
+      SDVariable newKeys, SDVariable newValues, int startPosition) {
+    SDValidation.validateNumerical("kvCacheUpdate", "keyCache", keyCache);
+    SDValidation.validateNumerical("kvCacheUpdate", "valueCache", valueCache);
+    SDValidation.validateNumerical("kvCacheUpdate", "newKeys", newKeys);
+    SDValidation.validateNumerical("kvCacheUpdate", "newValues", newValues);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate(sd,keyCache, valueCache, newKeys, newValues, startPosition).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public SDVariable kvScatter(SDVariable present, SDVariable staticBuffer, long cachePos) {
+    SDValidation.validateNumerical("kvScatter", "present", present);
+    SDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(sd,present, staticBuffer, cachePos, 1).outputVariable();
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public SDVariable kvScatter(String name, SDVariable present, SDVariable staticBuffer,
+      long cachePos) {
+    SDValidation.validateNumerical("kvScatter", "present", present);
+    SDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(sd,present, staticBuffer, cachePos, 1).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @param numPairs Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public SDVariable kvScatter(SDVariable present, SDVariable staticBuffer, long cachePos,
+      int numPairs) {
+    SDValidation.validateNumerical("kvScatter", "present", present);
+    SDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(sd,present, staticBuffer, cachePos, numPairs).outputVariable();
+  }
+
+  /**
+   * Batch KV cache scatter update for LLM autoregressive decoding.<br>
+   * <br>
+   * Copies a single time-step slice from each present KV tensor into the<br>
+   * corresponding static KV buffer at a given cache position. Replaces N<br>
+   * individual Java view+assign calls with a single native kernel launch.<br>
+   * <br>
+   * The present tensor has shape [batch, heads, seqLen, dim] where the new<br>
+   * token's KV entry is at the last sequence position. This entry is extracted<br>
+   * and written into the static buffer at cachePos.<br>
+   * <br>
+   * For multiple pairs, inputs are ordered as:<br>
+   * [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param present Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim] (NUMERIC type)
+   * @param staticBuffer Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place. (NUMERIC type)
+   * @param cachePos Position in static buffer to write the new entry
+   * @param numPairs Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]
+   * @return output Scalar 0 on success (LONG type)
+   */
+  public SDVariable kvScatter(String name, SDVariable present, SDVariable staticBuffer,
+      long cachePos, int numPairs) {
+    SDValidation.validateNumerical("kvScatter", "present", present);
+    SDValidation.validateNumerical("kvScatter", "staticBuffer", staticBuffer);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(sd,present, staticBuffer, cachePos, numPairs).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -812,6 +1509,172 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   */
+  public SDVariable[] mixtureOfExperts(SDVariable input, SDVariable routerWeights,
+      SDVariable expertWeights, int numExperts, int topK) {
+    SDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0).outputVariables();
+  }
+
+  /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   */
+  public SDVariable[] mixtureOfExperts(String[] names, SDVariable input, SDVariable routerWeights,
+      SDVariable expertWeights, int numExperts, int topK) {
+    SDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, null, numExperts, topK, true, 1.0).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param capacityFactor Expert capacity factor for load balancing
+   */
+  public SDVariable[] mixtureOfExperts(SDVariable input, SDVariable routerWeights,
+      SDVariable expertWeights, SDVariable expertBias, int numExperts, int topK,
+      boolean normalizeProbs, double capacityFactor) {
+    SDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    SDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor).outputVariables();
+  }
+
+  /**
+   * Mixture of Experts (MoE) Layer.<br>
+   * <br>
+   * Implements sparse MoE routing where each token is processed by only the top-k<br>
+   * selected experts out of a larger pool. This enables scaling model capacity<br>
+   * without proportionally increasing computation.<br>
+   * <br>
+   * Used in large language models like:<br>
+   * - DeepSeek (DeepSeekMoE)<br>
+   * - Mixtral (Mistral AI)<br>
+   * - Switch Transformer (Google)<br>
+   * - GShard (Google)<br>
+   * <br>
+   * The router computes expert selection probabilities:<br>
+   * router_probs = softmax(input @ routerWeights)<br>
+   * <br>
+   * Top-k experts are selected and their outputs are weighted by normalized probs:<br>
+   * output = sum(normalized_prob[i] * expert[i](input) for i in top_k)<br>
+   * <br>
+   * Benefits:<br>
+   * - Scales model capacity with sublinear compute increase<br>
+   * - Enables very large models with efficient inference<br>
+   * - Supports expert parallelism across devices<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input embeddings. Shape: [batch, seqLen, hiddenSize] (NUMERIC type)
+   * @param routerWeights Router projection weights. Shape: [hiddenSize, numExperts] (NUMERIC type)
+   * @param expertWeights Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize] (NUMERIC type)
+   * @param expertBias Optional expert biases. Shape: [numExperts, expertHiddenSize] (NUMERIC type)
+   * @param numExperts Total number of experts
+   * @param topK Number of experts to route to per token
+   * @param normalizeProbs Whether to normalize router probabilities for selected experts
+   * @param capacityFactor Expert capacity factor for load balancing
+   */
+  public SDVariable[] mixtureOfExperts(String[] names, SDVariable input, SDVariable routerWeights,
+      SDVariable expertWeights, SDVariable expertBias, int numExperts, int topK,
+      boolean normalizeProbs, double capacityFactor) {
+    SDValidation.validateNumerical("mixtureOfExperts", "input", input);
+    SDValidation.validateNumerical("mixtureOfExperts", "routerWeights", routerWeights);
+    SDValidation.validateNumerical("mixtureOfExperts", "expertWeights", expertWeights);
+    SDValidation.validateNumerical("mixtureOfExperts", "expertBias", expertBias);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts(sd,input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
    * This performs multi-headed dot product attention on the given timeseries input<br>
    * out = concat(head_1, head_2, ..., head_n) * Wo<br>
    * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
@@ -890,7 +1753,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -905,7 +1768,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -923,7 +1786,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
@@ -937,7 +1800,7 @@ public class SDNN extends SDOps {
   }
 
   /**
-   * Padding operation <br>
+   * Padding operation<br>
    *
    * @param name name May be null. Name for the output variable
    * @param input Input tensor (NUMERIC type)
@@ -1023,6 +1886,141 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.PRelu(sd,input, alpha, sharedAxes).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public SDVariable relativePositionBias(SDVariable biasTable, int numHeads, int windowSize) {
+    SDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(sd,biasTable, null, numHeads, windowSize, false).outputVariable();
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public SDVariable relativePositionBias(String name, SDVariable biasTable, int numHeads,
+      int windowSize) {
+    SDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(sd,biasTable, null, numHeads, windowSize, false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param relativePositionIndex Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public SDVariable relativePositionBias(SDVariable biasTable, SDVariable relativePositionIndex,
+      int numHeads, int windowSize) {
+    SDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    SDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(sd,biasTable, relativePositionIndex, numHeads, windowSize, false).outputVariable();
+  }
+
+  /**
+   * Relative Position Bias - Compute relative position bias for attention.<br>
+   * <br>
+   * Supports two modes:<br>
+   * 1. Learned bias (Swin/SAM style): Looks up bias values from a learned table<br>
+   *    based on relative positions between query and key positions.<br>
+   * <br>
+   * 2. ALiBi (Attention with Linear Biases): Computes linear position-based bias<br>
+   *    without learned parameters. More efficient for very long sequences.<br>
+   * <br>
+   * For learned bias mode:<br>
+   * - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D<br>
+   * - Output is gathered based on relative position indices<br>
+   * <br>
+   * For ALiBi mode:<br>
+   * - biasTable can be sequence length (scalar) or input tensor<br>
+   * - Computes m_h * |i - j| where m_h = 2^(-8*h/H)<br>
+   * <br>
+   * Reference: "Swin Transformer" (Liu et al., 2021)<br>
+   *            "Train Short, Test Long" (Press et al., 2021) for ALiBi<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param biasTable Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode (NUMERIC type)
+   * @param relativePositionIndex Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param windowSize Window size for 2D position encoding (used if generating index)
+   * @return output Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen] (NUMERIC type)
+   */
+  public SDVariable relativePositionBias(String name, SDVariable biasTable,
+      SDVariable relativePositionIndex, int numHeads, int windowSize) {
+    SDValidation.validateNumerical("relativePositionBias", "biasTable", biasTable);
+    SDValidation.validateNumerical("relativePositionBias", "relativePositionIndex", relativePositionIndex);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias(sd,biasTable, relativePositionIndex, numHeads, windowSize, false).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1117,6 +2115,146 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input, SDVariable gamma, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, epsilon).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input, SDVariable gamma, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input, SDVariable gamma) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, 1.0E-5).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @param gamma Scale/gain vector (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input, SDVariable gamma) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDValidation.validateNumerical("rmsNorm", "gamma", gamma);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, gamma, 1.0E-5).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, epsilon).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input, double epsilon) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param input Input variable (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(SDVariable input) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, 1.0E-5).outputVariable();
+  }
+
+  /**
+   * Root Mean Square Layer Normalization (RMSNorm):<br>
+   * <br>
+   * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
+   * <br>
+   * If gamma is not provided, only RMS normalization is applied.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input variable (NUMERIC type)
+   * @return output RMS normalized output (NUMERIC type)
+   */
+  public SDVariable rmsNorm(String name, SDVariable input) {
+    SDValidation.validateNumerical("rmsNorm", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm(sd,input, null, 1.0E-5).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a><br>
    * <br>
    * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
@@ -1195,6 +2333,72 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("sigmoidDerivative", "x", x);
     SDValidation.validateNumerical("sigmoidDerivative", "wrt", wrt);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative(sd,x, wrt).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Sliding Window Attention - Efficient attention for long sequences.<br>
+   * <br>
+   * Each token only attends to a fixed window of previous tokens, enabling<br>
+   * efficient processing of very long sequences. Used in Mistral and other<br>
+   * modern LLMs for handling long contexts.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Memory efficient for long sequences<br>
+   * - Supports very long context lengths (e.g., 32K with 4K window)<br>
+   * <br>
+   * The attention mask is automatically applied to restrict each position<br>
+   * to only attend to positions within [pos - windowSize, pos].<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param windowSize Sliding window size - tokens can only attend to this many previous positions
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable slidingWindowAttention(SDVariable query, SDVariable key, SDVariable value,
+      int windowSize, int numHeads, int numKvHeads, double scale) {
+    SDValidation.validateNumerical("slidingWindowAttention", "query", query);
+    SDValidation.validateNumerical("slidingWindowAttention", "key", key);
+    SDValidation.validateNumerical("slidingWindowAttention", "value", value);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(sd,query, key, value, windowSize, numHeads, numKvHeads, scale).outputVariable();
+  }
+
+  /**
+   * Sliding Window Attention - Efficient attention for long sequences.<br>
+   * <br>
+   * Each token only attends to a fixed window of previous tokens, enabling<br>
+   * efficient processing of very long sequences. Used in Mistral and other<br>
+   * modern LLMs for handling long contexts.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Memory efficient for long sequences<br>
+   * - Supports very long context lengths (e.g., 32K with 4K window)<br>
+   * <br>
+   * The attention mask is automatically applied to restrict each position<br>
+   * to only attend to positions within [pos - windowSize, pos].<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   * @param key Key tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param value Value tensor. Shape: [batch, seqLen, numKvHeads, headDim] (NUMERIC type)
+   * @param windowSize Sliding window size - tokens can only attend to this many previous positions
+   * @param numHeads Number of query attention heads
+   * @param numKvHeads Number of KV heads (0 = same as numHeads)
+   * @param scale Scaling factor. 0 = auto (1/sqrt(headDim))
+   * @return output Attention output. Shape: [batch, seqLen, numHeads, headDim] (NUMERIC type)
+   */
+  public SDVariable slidingWindowAttention(String name, SDVariable query, SDVariable key,
+      SDVariable value, int windowSize, int numHeads, int numKvHeads, double scale) {
+    SDValidation.validateNumerical("slidingWindowAttention", "query", query);
+    SDValidation.validateNumerical("slidingWindowAttention", "key", key);
+    SDValidation.validateNumerical("slidingWindowAttention", "value", value);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(sd,query, key, value, windowSize, numHeads, numKvHeads, scale).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1371,6 +2575,104 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public SDVariable tokenSample(SDVariable logits) {
+    SDValidation.validateNumerical("tokenSample", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(sd,logits, 0.0, 0, 0.0, 0).outputVariable();
+  }
+
+  /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public SDVariable tokenSample(String name, SDVariable logits) {
+    SDValidation.validateNumerical("tokenSample", "logits", logits);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(sd,logits, 0.0, 0, 0.0, 0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @param temperature Temperature for sampling. 0 = greedy (argmax)
+   * @param topK Top-K filtering: keep only top K logits. 0 = disabled
+   * @param topP Top-P (nucleus) filtering threshold. 0 = disabled
+   * @param seed Random seed for sampling. 0 = random
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public SDVariable tokenSample(SDVariable logits, double temperature, int topK, double topP,
+      long seed) {
+    SDValidation.validateNumerical("tokenSample", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(sd,logits, temperature, topK, topP, seed).outputVariable();
+  }
+
+  /**
+   * Token sampling for LLM inference.<br>
+   * <br>
+   * Full sampling pipeline in a single native GPU call:<br>
+   *   temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax<br>
+   * <br>
+   * For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax<br>
+   * with shared-memory reduction — avoids transferring the full logits tensor to host.<br>
+   * <br>
+   * Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3<br>
+   * [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position<br>
+   * is automatically extracted for sampling.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param logits Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position. (NUMERIC type)
+   * @param temperature Temperature for sampling. 0 = greedy (argmax)
+   * @param topK Top-K filtering: keep only top K logits. 0 = disabled
+   * @param topP Top-P (nucleus) filtering threshold. 0 = disabled
+   * @param seed Random seed for sampling. 0 = random
+   * @return output Sampled token indices. Shape: [batch] or scalar (LONG type)
+   */
+  public SDVariable tokenSample(String name, SDVariable logits, double temperature, int topK,
+      double topP, long seed) {
+    SDValidation.validateNumerical("tokenSample", "logits", logits);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample(sd,logits, temperature, topK, topP, seed).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Find values and indices for the largest k entries along the last dimension.<br>
    *
    * @param input Input data (NUMERIC type)
@@ -1394,5 +2696,266 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("topK", "input", input);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TopK(sd,input, k, sorted).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   */
+  public SDVariable[] twoWayCrossAttention(SDVariable tokenQuery, SDVariable tokenKey,
+      SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey, SDVariable imageValue,
+      double scale) {
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(sd,tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, scale).outputVariables();
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param scale Attention scale factor (default: 1/sqrt(embedDim))
+   */
+  public SDVariable[] twoWayCrossAttention(String[] names, SDVariable tokenQuery,
+      SDVariable tokenKey, SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey,
+      SDVariable imageValue, double scale) {
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(sd,tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, scale).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   */
+  public SDVariable[] twoWayCrossAttention(SDVariable tokenQuery, SDVariable tokenKey,
+      SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey, SDVariable imageValue) {
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(sd,tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0).outputVariables();
+  }
+
+  /**
+   * SAM-style Two-Way Cross Attention.<br>
+   * Bidirectional cross-attention where tokens attend to image features and<br>
+   * image features attend to tokens simultaneously:<br>
+   *   tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV<br>
+   *   imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param tokenQuery Token queries [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenKey Token keys [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param tokenValue Token values [batch, tokenSeqLen, embedDim] (NUMERIC type)
+   * @param imageQuery Image queries [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageKey Image keys [batch, imageSeqLen, embedDim] (NUMERIC type)
+   * @param imageValue Image values [batch, imageSeqLen, embedDim] (NUMERIC type)
+   */
+  public SDVariable[] twoWayCrossAttention(String[] names, SDVariable tokenQuery,
+      SDVariable tokenKey, SDVariable tokenValue, SDVariable imageQuery, SDVariable imageKey,
+      SDVariable imageValue) {
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenQuery", tokenQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenKey", tokenKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "tokenValue", tokenValue);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageQuery", imageQuery);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageKey", imageKey);
+    SDValidation.validateNumerical("twoWayCrossAttention", "imageValue", imageValue);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TwoWayCrossAttention(sd,tokenQuery, tokenKey, tokenValue, imageQuery, imageKey, imageValue, 0.0).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public SDVariable windowedAttention(SDVariable query, SDVariable key, SDVariable value,
+      int windowSize, int numHeads) {
+    SDValidation.validateNumerical("windowedAttention", "query", query);
+    SDValidation.validateNumerical("windowedAttention", "key", key);
+    SDValidation.validateNumerical("windowedAttention", "value", value);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, null, null, windowSize, numHeads, 0, 0.0, false).outputVariable();
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public SDVariable windowedAttention(String name, SDVariable query, SDVariable key,
+      SDVariable value, int windowSize, int numHeads) {
+    SDValidation.validateNumerical("windowedAttention", "query", query);
+    SDValidation.validateNumerical("windowedAttention", "key", key);
+    SDValidation.validateNumerical("windowedAttention", "value", value);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, null, null, windowSize, numHeads, 0, 0.0, false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param relativePositionBias Optional relative position bias. Shape: [numHeads, windowSize, windowSize] (NUMERIC type)
+   * @param attentionMask Optional attention mask (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @param shiftSize Shift size for shifted window attention (Swin style). 0 = no shift
+   * @param scale Attention scale factor. 0 = auto (1/sqrt(headDim))
+   * @param returnWeights Whether to return attention weights
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public SDVariable windowedAttention(SDVariable query, SDVariable key, SDVariable value,
+      SDVariable relativePositionBias, SDVariable attentionMask, int windowSize, int numHeads,
+      int shiftSize, double scale, boolean returnWeights) {
+    SDValidation.validateNumerical("windowedAttention", "query", query);
+    SDValidation.validateNumerical("windowedAttention", "key", key);
+    SDValidation.validateNumerical("windowedAttention", "value", value);
+    SDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights).outputVariable();
+  }
+
+  /**
+   * Windowed Attention - Local/Sliding Window Attention.<br>
+   * <br>
+   * Implements windowed attention mechanisms used in efficient transformers like<br>
+   * Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).<br>
+   * <br>
+   * Supports both:<br>
+   * - 1D windowed attention: for sequences [batch, seqLen, heads, dim]<br>
+   * - 2D windowed attention: for images [batch, height, width, heads, dim]<br>
+   * <br>
+   * Shifted window attention (shiftSize > 0) enables cross-window connections<br>
+   * as used in Swin Transformer.<br>
+   * <br>
+   * Benefits:<br>
+   * - O(N * windowSize) complexity instead of O(N^2)<br>
+   * - Efficient for long sequences and high-resolution images<br>
+   * - Supports relative position bias for position-aware attention<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D (NUMERIC type)
+   * @param key Key tensor. Same shape as query (NUMERIC type)
+   * @param value Value tensor. Same shape as query (NUMERIC type)
+   * @param relativePositionBias Optional relative position bias. Shape: [numHeads, windowSize, windowSize] (NUMERIC type)
+   * @param attentionMask Optional attention mask (NUMERIC type)
+   * @param windowSize Size of attention window
+   * @param numHeads Number of attention heads
+   * @param shiftSize Shift size for shifted window attention (Swin style). 0 = no shift
+   * @param scale Attention scale factor. 0 = auto (1/sqrt(headDim))
+   * @param returnWeights Whether to return attention weights
+   * @return output Attention output. Same shape as query (NUMERIC type)
+   */
+  public SDVariable windowedAttention(String name, SDVariable query, SDVariable key,
+      SDVariable value, SDVariable relativePositionBias, SDVariable attentionMask, int windowSize,
+      int numHeads, int shiftSize, double scale, boolean returnWeights) {
+    SDValidation.validateNumerical("windowedAttention", "query", query);
+    SDValidation.validateNumerical("windowedAttention", "key", key);
+    SDValidation.validateNumerical("windowedAttention", "value", value);
+    SDValidation.validateNumerical("windowedAttention", "relativePositionBias", relativePositionBias);
+    SDValidation.validateNumerical("windowedAttention", "attentionMask", attentionMask);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention(sd,query, key, value, relativePositionBias, attentionMask, windowSize, numHeads, shiftSize, scale, returnWeights).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 }

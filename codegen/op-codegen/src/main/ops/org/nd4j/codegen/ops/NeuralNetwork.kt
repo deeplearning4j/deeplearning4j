@@ -445,45 +445,75 @@ fun NN() = Namespace("NN") {
         }
     }
 
-
-    Op("dotProductAttentionV2") {
+    Op("rmsNorm") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
-        val q = Input(NUMERIC, "queries") { description = "A {@link SDVariable} representing the query tensor. Shape: [batchSize, numQueries, queryDim]" }
-        val v = Input(NUMERIC, "values") { description = "A {@link SDVariable} representing the value tensor. Shape: [batchSize, numValues, valueDim]" }
+        javaOpClass = "RmsNorm"
+        val input = Input(NUMERIC, "input") { description = "Input variable" }
+        val gamma = Input(NUMERIC, "gamma") { description = "Scale/gain vector"; defaultValue = null }
+        val epsilon = Arg(FLOATING_POINT, "epsilon") { defaultValue = 1e-5; description = "Epsilon for numerical stability" }
 
-        val k = Input(NUMERIC, "keys") { description = "A {@link SDVariable} representing the key tensor. Shape: [batchSize, numValues, keyDim]" }
-        val queryMask = Input(NUMERIC, "queryMask") { description = "A {@link SDVariable} representing the query mask tensor. Shape: [batchSize, numQueries]" }
-        val valueMask = Input(NUMERIC, "valueMask") { description = "@param valueMask          A {@link SDVariable} representing the value mask tensor. Shape: [batchSize, numValues]" }
+        Output(NUMERIC, "output") { description = "RMS normalized output" }
 
-        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 1.0; description = "@param scaleFactor        A {@code double} scaling factor applied to the dot product between queries and keys." }
-        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "A {@code double} specifying the dropout probability to be applied to attention weights." }
-        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = " A {@code boolean} flag to indicate whether to apply a causal mask to the attention scores, for autoregressive tasks." }
-        val training = Arg(BOOL, "training") { defaultValue = false; description = " A {@code boolean} flag to indicate whether the layer is in training mode or inference mode, affecting dropout." }
-
-        Output(NUMERIC, "output") { description = " A {@link SDVariable} representing the output tensor of the dot product attention operation. Shape: [batchSize, numQueries, valueDim]"}
-
-        Signature(q,v,k,queryMask,valueMask, s,dropout,useCausalMask,training)
+        AllParamSignature()
+        Signature(input, gamma)
+        Signature(input, epsilon)
+        Signature(input)
 
         Doc(Language.ANY, DocScope.ALL) {
             """
-             This operation performs dot product attention on the given timeseries input with the given queries
-             out = sum(similarity(k_i, q) * v_i)
-            
-             similarity(k, q) = softmax(k * q) where x * q is the dot product of x and q
-            
-             Optionally with normalization step:
-             similarity(k, q) = softmax(k * q / sqrt(size(q))
-            
-             See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
-            
-             Note: This supports multiple queries at once, if only one query is available the queries vector still has to
-             be 3D but can have queryCount = 1
-            
-             Note: keys and values usually is the same array. If you want to use it as the same array, simply pass it for
-             both.
-            
-             Note: Queries, keys and values must either be all rank 3 or all rank 4 arrays. Mixing them doesn't work. The
-             output rank will depend on the input rank.
+             Root Mean Square Layer Normalization (RMSNorm):
+
+             output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma
+
+             If gamma is not provided, only RMS normalization is applied.
+            """.trimIndent()
+        }
+    }
+
+
+    Op("dotProductAttentionV2") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "queries") { description = "Query tensor. Shape: [batchSize, numQueries, queryDim] or [batchSize, numQueries, numHeads, headDim] for flash attention" }
+        val v = Input(NUMERIC, "values") { description = "Value tensor. Shape: [batchSize, numValues, valueDim] or [batchSize, numValues, numHeads, headDim]" }
+        val k = Input(NUMERIC, "keys") { description = "Key tensor. Shape: [batchSize, numValues, keyDim] or [batchSize, numValues, numHeads, headDim]" }
+        val queryMask = Input(NUMERIC, "queryMask") { description = "Query mask tensor (optional). Shape: [batchSize, numQueries]"; defaultValue = null }
+        val valueMask = Input(NUMERIC, "valueMask") { description = "Value mask tensor (optional). Shape: [batchSize, numValues]"; defaultValue = null }
+        val attentionBias = Input(NUMERIC, "attentionBias") { description = "Attention bias tensor (optional). Shape: [batchSize, numHeads, numQueries, numKeys] or broadcastable. Added to attention scores before softmax."; defaultValue = null }
+
+        val s = Arg(FLOATING_POINT, "scaleFactor") { defaultValue = 0.0; description = "Scaling factor applied to attention scores. 0 = auto (1/sqrt(headDim))" }
+        val dropout = Arg(FLOATING_POINT, "dropoutProbability") { defaultValue = 0.0; description = "Dropout probability applied to attention weights" }
+        val useCausalMask = Arg(BOOL, "useCausalMask") { defaultValue = false; description = "Whether to apply causal mask for autoregressive tasks" }
+        val training = Arg(BOOL, "training") { defaultValue = false; description = "Whether in training mode (affects dropout)" }
+
+        Output(NUMERIC, "output") { description = "Output tensor. Shape: [batchSize, numQueries, valueDim] or [batchSize, numQueries, numHeads, headDim]" }
+
+        // Standard signature without attention bias (backward compatible)
+        Signature(q, v, k, queryMask, valueMask, s, dropout, useCausalMask, training)
+        // Full signature with attention bias
+        Signature(q, v, k, queryMask, valueMask, attentionBias, s, dropout, useCausalMask, training)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Dot product attention operation with flash attention and KV cache support.
+
+             out = softmax(Q * K^T / scale + attentionBias) * V
+
+             For 4D inputs [batch, seq, heads, dim], uses memory-efficient flash attention algorithm.
+             For 2D/3D inputs, uses standard attention computation.
+
+             Flash attention features:
+             - O(N) memory complexity instead of O(N^2)
+             - Tiled computation with online softmax
+             - Supports grouped query attention (GQA) where numHeads > numKvHeads
+             - Supports attention bias (relative position bias, ALiBi, etc.)
+
+             KV Cache support for autoregressive generation:
+             - Pass keyCache and valueCache tensors
+             - Set kvCachePosition to current generation position
+             - Cached keys/values are updated in-place
+
+             See "Attention is all you need" (https://arxiv.org/abs/1706.03762)
+             See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
             """.trimIndent()
         }
     }
@@ -565,6 +595,139 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("flashAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scaling factor. 0 = auto (1/sqrt(headDim))" }
+        val isCausal = Arg(BOOL, "isCausal") { defaultValue = true; description = "Whether to apply causal masking" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query attention heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { defaultValue = 0; description = "Number of KV heads (0 = same as numHeads, for GQA use smaller value)" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Shape: [batch, seqLen, numHeads, headDim]" }
+
+        Signature(q, k, v, scale, isCausal, numHeads, numKvHeads)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Flash Attention - Memory-efficient attention computation.
+
+             Uses tiled computation with online softmax to achieve O(N) memory complexity
+             instead of O(N^2) for standard attention.
+
+             Supports Grouped Query Attention (GQA) where numHeads > numKvHeads,
+             allowing multiple query heads to share the same KV heads.
+
+             out = softmax(Q * K^T / scale) * V
+
+             See "FlashAttention: Fast and Memory-Efficient Exact Attention" (https://arxiv.org/abs/2205.14135)
+            """.trimIndent()
+        }
+    }
+
+    Op("groupedQueryAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scaling factor. 0 = auto (1/sqrt(headDim))" }
+        val isCausal = Arg(BOOL, "isCausal") { defaultValue = true; description = "Whether to apply causal masking" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query attention heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { description = "Number of KV heads (must divide numHeads evenly)" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Shape: [batch, seqLen, numHeads, headDim]" }
+
+        Signature(q, k, v, scale, isCausal, numHeads, numKvHeads)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Grouped Query Attention (GQA) - Efficient attention with shared KV heads.
+
+             Multiple query heads share the same key-value heads, reducing memory and
+             computation while maintaining model quality. Used in LLaMA 2, Mistral, etc.
+
+             numHeads must be divisible by numKvHeads. Each KV head is repeated
+             (numHeads / numKvHeads) times to match query heads.
+
+             Special cases:
+             - numKvHeads == numHeads: Standard Multi-Head Attention (MHA)
+             - numKvHeads == 1: Multi-Query Attention (MQA)
+
+             See "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints"
+            """.trimIndent()
+        }
+    }
+
+    Op("kvCacheUpdate") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "KVCacheUpdate"
+        val keyCache = Input(NUMERIC, "keyCache") { description = "Existing key cache. Shape: [batch, maxSeqLen, numKvHeads, headDim]" }
+        val valueCache = Input(NUMERIC, "valueCache") { description = "Existing value cache. Shape: [batch, maxSeqLen, numKvHeads, headDim]" }
+        val newKeys = Input(NUMERIC, "newKeys") { description = "New keys to insert. Shape: [batch, newSeqLen, numKvHeads, headDim]" }
+        val newValues = Input(NUMERIC, "newValues") { description = "New values to insert. Shape: [batch, newSeqLen, numKvHeads, headDim]" }
+
+        val startPosition = Arg(INT, "startPosition") { defaultValue = 0; description = "Position in cache where new keys/values should be inserted" }
+
+        Output(NUMERIC, "updatedKeyCache") { description = "Updated key cache" }
+        Output(NUMERIC, "updatedValueCache") { description = "Updated value cache" }
+
+        Signature(keyCache, valueCache, newKeys, newValues, startPosition)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             KV Cache Update - Updates key-value cache for autoregressive generation.
+
+             During LLM inference, past key-value pairs are cached to avoid redundant
+             computation during token-by-token generation. This operation efficiently
+             inserts new keys/values at the specified position.
+
+             Usage pattern:
+             1. Initialize cache with zeros: [batch, maxSeqLen, numKvHeads, headDim]
+             2. For each new token, compute new K/V and update cache
+             3. Use full cached K/V for attention computation
+
+             Returns updated keyCache and valueCache tensors.
+            """.trimIndent()
+        }
+    }
+
+    Op("slidingWindowAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim]" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Shape: [batch, seqLen, numKvHeads, headDim]" }
+
+        val windowSize = Arg(INT, "windowSize") { defaultValue = 4096; description = "Sliding window size - tokens can only attend to this many previous positions" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of query attention heads" }
+        val numKvHeads = Arg(INT, "numKvHeads") { defaultValue = 0; description = "Number of KV heads (0 = same as numHeads)" }
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Scaling factor. 0 = auto (1/sqrt(headDim))" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Shape: [batch, seqLen, numHeads, headDim]" }
+
+        Signature(q, k, v, windowSize, numHeads, numKvHeads, scale)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Sliding Window Attention - Efficient attention for long sequences.
+
+             Each token only attends to a fixed window of previous tokens, enabling
+             efficient processing of very long sequences. Used in Mistral and other
+             modern LLMs for handling long contexts.
+
+             Benefits:
+             - O(N * windowSize) complexity instead of O(N^2)
+             - Memory efficient for long sequences
+             - Supports very long context lengths (e.g., 32K with 4K window)
+
+             The attention mask is automatically applied to restrict each position
+             to only attend to positions within [pos - windowSize, pos].
+            """.trimIndent()
+        }
+    }
+
     Op("pad") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms"
         Input(NUMERIC, "input") { description = "Input tensor"}
@@ -576,7 +739,7 @@ fun NN() = Namespace("NN") {
 
         Doc(Language.ANY, DocScope.ALL){
             """
-             Padding operation 
+             Padding operation
             """.trimIndent()
         }
     }
@@ -598,5 +761,314 @@ fun NN() = Namespace("NN") {
         }
     }
 
+    Op("windowedAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val q = Input(NUMERIC, "query") { description = "Query tensor. Shape: [batch, seqLen, numHeads, headDim] for 1D or [batch, height, width, numHeads, headDim] for 2D" }
+        val k = Input(NUMERIC, "key") { description = "Key tensor. Same shape as query" }
+        val v = Input(NUMERIC, "value") { description = "Value tensor. Same shape as query" }
+        val rpb = Input(NUMERIC, "relativePositionBias") { description = "Optional relative position bias. Shape: [numHeads, windowSize, windowSize]"; defaultValue = null }
+        val mask = Input(NUMERIC, "attentionMask") { description = "Optional attention mask"; defaultValue = null }
+
+        val windowSize = Arg(INT, "windowSize") { description = "Size of attention window" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads" }
+        val shiftSize = Arg(INT, "shiftSize") { defaultValue = 0; description = "Shift size for shifted window attention (Swin style). 0 = no shift" }
+        val scale = Arg(FLOATING_POINT, "scale") { defaultValue = 0.0; description = "Attention scale factor. 0 = auto (1/sqrt(headDim))" }
+        val returnWeights = Arg(BOOL, "returnWeights") { defaultValue = false; description = "Whether to return attention weights" }
+
+        Output(NUMERIC, "output") { description = "Attention output. Same shape as query" }
+
+        Signature(q, k, v, windowSize, numHeads)
+        Signature(q, k, v, rpb, mask, windowSize, numHeads, shiftSize, scale, returnWeights)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Windowed Attention - Local/Sliding Window Attention.
+
+             Implements windowed attention mechanisms used in efficient transformers like
+             Longformer, BigBird, Swin Transformer, and SAM (Segment Anything Model).
+
+             Supports both:
+             - 1D windowed attention: for sequences [batch, seqLen, heads, dim]
+             - 2D windowed attention: for images [batch, height, width, heads, dim]
+
+             Shifted window attention (shiftSize > 0) enables cross-window connections
+             as used in Swin Transformer.
+
+             Benefits:
+             - O(N * windowSize) complexity instead of O(N^2)
+             - Efficient for long sequences and high-resolution images
+             - Supports relative position bias for position-aware attention
+            """.trimIndent()
+        }
+    }
+
+    Op("relativePositionBias") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val biasTable = Input(NUMERIC, "biasTable") { description = "Learned bias table. Shape: [numRelativePositions, numHeads] for learned mode, or scalar/tensor for ALiBi mode" }
+        val relPosIndex = Input(NUMERIC, "relativePositionIndex") { description = "Optional precomputed relative position index. Shape: [windowSize^2, windowSize^2]"; defaultValue = null }
+
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads" }
+        val windowSize = Arg(INT, "windowSize") { defaultValue = 0; description = "Window size for 2D position encoding (used if generating index)" }
+        val useAlibi = Arg(BOOL, "useAlibi") { defaultValue = false; description = "Use ALiBi (Attention with Linear Biases) instead of learned bias" }
+
+        Output(NUMERIC, "output") { description = "Position bias. Shape: [numHeads, windowSize^2, windowSize^2] or [numHeads, seqLen, seqLen]" }
+
+        Signature(biasTable, numHeads, windowSize)
+        Signature(biasTable, relPosIndex, numHeads, windowSize)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Relative Position Bias - Compute relative position bias for attention.
+
+             Supports two modes:
+             1. Learned bias (Swin/SAM style): Looks up bias values from a learned table
+                based on relative positions between query and key positions.
+
+             2. ALiBi (Attention with Linear Biases): Computes linear position-based bias
+                without learned parameters. More efficient for very long sequences.
+
+             For learned bias mode:
+             - biasTable shape: [(2*windowSize-1)^2, numHeads] for 2D
+             - Output is gathered based on relative position indices
+
+             For ALiBi mode:
+             - biasTable can be sequence length (scalar) or input tensor
+             - Computes m_h * |i - j| where m_h = 2^(-8*h/H)
+
+             Reference: "Swin Transformer" (Liu et al., 2021)
+                        "Train Short, Test Long" (Press et al., 2021) for ALiBi
+            """.trimIndent()
+        }
+    }
+
+    Op("mixtureOfExperts") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        val input = Input(NUMERIC, "input") { description = "Input embeddings. Shape: [batch, seqLen, hiddenSize]" }
+        val routerWeights = Input(NUMERIC, "routerWeights") { description = "Router projection weights. Shape: [hiddenSize, numExperts]" }
+        val expertWeights = Input(NUMERIC, "expertWeights") { description = "Expert weight matrices. Shape: [numExperts, hiddenSize, expertHiddenSize]" }
+        val expertBias = Input(NUMERIC, "expertBias") { description = "Optional expert biases. Shape: [numExperts, expertHiddenSize]"; defaultValue = null }
+
+        val numExperts = Arg(INT, "numExperts") { description = "Total number of experts" }
+        val topK = Arg(INT, "topK") { defaultValue = 2; description = "Number of experts to route to per token" }
+        val normalizeProbs = Arg(BOOL, "normalizeProbs") { defaultValue = true; description = "Whether to normalize router probabilities for selected experts" }
+        val capacityFactor = Arg(FLOATING_POINT, "capacityFactor") { defaultValue = 1.0; description = "Expert capacity factor for load balancing" }
+
+        Output(NUMERIC, "output") { description = "Combined expert outputs. Shape: [batch, seqLen, expertHiddenSize]" }
+        Output(NUMERIC, "routerProbs") { description = "Router probabilities. Shape: [batch, seqLen, numExperts]" }
+        Output(NUMERIC, "expertIndices") { description = "Selected expert indices. Shape: [batch, seqLen, topK]" }
+
+        Signature(input, routerWeights, expertWeights, numExperts, topK)
+        Signature(input, routerWeights, expertWeights, expertBias, numExperts, topK, normalizeProbs, capacityFactor)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Mixture of Experts (MoE) Layer.
+
+             Implements sparse MoE routing where each token is processed by only the top-k
+             selected experts out of a larger pool. This enables scaling model capacity
+             without proportionally increasing computation.
+
+             Used in large language models like:
+             - DeepSeek (DeepSeekMoE)
+             - Mixtral (Mistral AI)
+             - Switch Transformer (Google)
+             - GShard (Google)
+
+             The router computes expert selection probabilities:
+             router_probs = softmax(input @ routerWeights)
+
+             Top-k experts are selected and their outputs are weighted by normalized probs:
+             output = sum(normalized_prob[i] * expert[i](input) for i in top_k)
+
+             Benefits:
+             - Scales model capacity with sublinear compute increase
+             - Enables very large models with efficient inference
+             - Supports expert parallelism across devices
+            """.trimIndent()
+        }
+    }
+
+    Op("ctcGreedyDecoder") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "CTCGreedyDecoder"
+        val logits = Input(NUMERIC, "logits") { description = "Log probabilities from CTC output. Shape: [batch, timeSteps, numClasses]" }
+        val sequenceLength = Input(NUMERIC, "sequenceLength") { description = "Optional actual sequence lengths. Shape: [batch]"; defaultValue = null }
+
+        val mergeRepeated = Arg(BOOL, "mergeRepeated") { defaultValue = true; description = "Whether to merge repeated characters in output" }
+        val blankIndex = Arg(INT, "blankIndex") { defaultValue = 0; description = "Index of the blank label in the vocabulary" }
+
+        Output(NUMERIC, "decoded") { description = "Decoded sequences. Shape: [batch, timeSteps] (padded with blank)" }
+        Output(NUMERIC, "logProbability") { description = "Log probability of decoded sequences. Shape: [batch]" }
+
+        Signature(logits, mergeRepeated, blankIndex)
+        Signature(logits, sequenceLength, mergeRepeated, blankIndex)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             CTC Greedy Decoder - Connectionist Temporal Classification decoding.
+
+             Performs greedy (best path) decoding on CTC output. Used in:
+             - OCR (Optical Character Recognition) - PaddleOCR, CRNN
+             - Speech recognition - DeepSpeech, Wav2Vec
+             - Handwriting recognition
+
+             Algorithm:
+             1. At each timestep, select the class with highest probability
+             2. Optionally merge consecutive repeated characters
+             3. Remove blank labels from the output
+
+             For example, with mergeRepeated=true and blankIndex=0:
+             Input:  [0, 1, 1, 0, 2, 2, 2, 0] (0=blank, 1='a', 2='b')
+             Output: [1, 2] -> "ab"
+
+             Note: This is greedy decoding. For better accuracy with language models,
+             use beam search decoding instead.
+            """.trimIndent()
+        }
+    }
+
+    Op("emaUpdate") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "EmaUpdate"
+        Input(NUMERIC, "model") { description = "Current model parameters (student)" }
+        Input(NUMERIC, "shadow") { description = "EMA shadow parameters (teacher)" }
+        Arg(NUMERIC, "decay") { description = "EMA decay factor (typically 0.996-0.9999)"; defaultValue = 0.999 }
+        Output(NUMERIC, "output") { description = "Updated shadow parameters" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Exponential Moving Average parameter update for DINOv2 teacher networks.
+             Computes: output = decay * shadow + (1 - decay) * model
+             Used in self-supervised learning to maintain a slowly-updated teacher model.
+            """.trimIndent()
+        }
+    }
+
+    Op("centerAndSharpen") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "CenterAndSharpen"
+        Input(NUMERIC, "input") { description = "Teacher output logits [batch, features]" }
+        Input(NUMERIC, "center") { description = "Running center vector [features]" }
+        Arg(NUMERIC, "temperature") { description = "Sharpening temperature (typically 0.04-0.07)"; defaultValue = 0.07 }
+        Output(NUMERIC, "output") { description = "Sharpened probabilities [batch, features]" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             DINOv2 centering and sharpening operation.
+             Prevents mode collapse in self-supervised learning by centering the teacher output
+             and applying temperature-based sharpening:
+               output = softmax((input - center) / temperature)
+            """.trimIndent()
+        }
+    }
+
+    Op("twoWayCrossAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TwoWayCrossAttention"
+        Input(NUMERIC, "tokenQuery") { description = "Token queries [batch, tokenSeqLen, embedDim]" }
+        Input(NUMERIC, "tokenKey") { description = "Token keys [batch, tokenSeqLen, embedDim]" }
+        Input(NUMERIC, "tokenValue") { description = "Token values [batch, tokenSeqLen, embedDim]" }
+        Input(NUMERIC, "imageQuery") { description = "Image queries [batch, imageSeqLen, embedDim]" }
+        Input(NUMERIC, "imageKey") { description = "Image keys [batch, imageSeqLen, embedDim]" }
+        Input(NUMERIC, "imageValue") { description = "Image values [batch, imageSeqLen, embedDim]" }
+        Arg(NUMERIC, "scale") { description = "Attention scale factor (default: 1/sqrt(embedDim))"; defaultValue = 0.0 }
+        Output(NUMERIC, "tokenOutput") { description = "Attended token embeddings [batch, tokenSeqLen, embedDim]" }
+        Output(NUMERIC, "imageOutput") { description = "Attended image embeddings [batch, imageSeqLen, embedDim]" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             SAM-style Two-Way Cross Attention.
+             Bidirectional cross-attention where tokens attend to image features and
+             image features attend to tokens simultaneously:
+               tokenOutput = softmax(tokenQ @ imageK^T * scale) @ imageV
+               imageOutput = softmax(imageQ @ tokenK^T * scale) @ tokenV
+            """.trimIndent()
+        }
+    }
+
+    Op("tokenSample") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TokenSample"
+        val logits = Input(NUMERIC, "logits") { description = "Logits tensor. Shape: [vocabSize], [batch, vocabSize], or [batch, seqLen, vocabSize]. For rank-3, samples from the last sequence position." }
+        val temperature = Arg(FLOATING_POINT, "temperature") { defaultValue = 0.0; description = "Temperature for sampling. 0 = greedy (argmax)" }
+        val topK = Arg(INT, "topK") { defaultValue = 0; description = "Top-K filtering: keep only top K logits. 0 = disabled" }
+        val topP = Arg(FLOATING_POINT, "topP") { defaultValue = 0.0; description = "Top-P (nucleus) filtering threshold. 0 = disabled" }
+        val seed = Arg(LONG, "seed") { defaultValue = 0; description = "Random seed for sampling. 0 = random" }
+
+        Output(LONG, "output") { description = "Sampled token indices. Shape: [batch] or scalar" }
+
+        Signature(logits)
+        Signature(logits, temperature, topK, topP, seed)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Token sampling for LLM inference.
+
+             Full sampling pipeline in a single native GPU call:
+               temperature scaling -> top-K filtering -> softmax -> top-P filtering -> sample/argmax
+
+             For greedy decoding (temperature=0 or no top-k/top-p), performs GPU-side argmax
+             with shared-memory reduction — avoids transferring the full logits tensor to host.
+
+             Supports rank 1 [vocabSize], rank 2 [batch, vocabSize], and rank 3
+             [batch, seqLen, vocabSize] inputs. For rank 3, the last sequence position
+             is automatically extracted for sampling.
+            """.trimIndent()
+        }
+    }
+
+    Op("kvScatter") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "KvScatter"
+        val present = Input(NUMERIC, "present") { description = "Present KV tensor from decoder output. Shape: [batch, heads, seqLen, dim]" }
+        val staticBuf = Input(NUMERIC, "staticBuffer") { description = "Static KV cache buffer. Shape: [batch, heads, maxKvLen, dim]. Updated in-place." }
+
+        val cachePos = Arg(LONG, "cachePos") { description = "Position in static buffer to write the new entry" }
+        val numPairs = Arg(INT, "numPairs") { defaultValue = 1; description = "Number of present/static KV pairs. When > 1, inputs are [present_0..N-1, static_0..N-1]" }
+
+        Output(LONG, "output") { description = "Scalar 0 on success" }
+
+        Signature(present, staticBuf, cachePos)
+        Signature(present, staticBuf, cachePos, numPairs)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Batch KV cache scatter update for LLM autoregressive decoding.
+
+             Copies a single time-step slice from each present KV tensor into the
+             corresponding static KV buffer at a given cache position. Replaces N
+             individual Java view+assign calls with a single native kernel launch.
+
+             The present tensor has shape [batch, heads, seqLen, dim] where the new
+             token's KV entry is at the last sequence position. This entry is extracted
+             and written into the static buffer at cachePos.
+
+             For multiple pairs, inputs are ordered as:
+             [present_0, ..., present_{N-1}, static_0, ..., static_{N-1}]
+            """.trimIndent()
+        }
+    }
+
     Alias(Math(), "tanh")
+
+    Op("fusedElementwiseChain") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedElementwiseChain"
+
+        Input(NUMERIC, "input") { description = "Primary input array" }
+        Input(NUMERIC, "secondaryInputs") {
+            count = AtLeast(0)
+            description = "Optional secondary input arrays for binary ops (add, sub, mul, div)"
+        }
+        Arg(INT, "opCodes") {
+            count = AtLeast(1)
+            description = "Op codes: 0=add, 1=sub, 2=mul, 3=div, 10=relu, 11=sigmoid, 12=tanh, 13=gelu, 14=exp, 15=log, 16=abs, 17=neg, 18=square, 19=sqrt, 20=swish, 21=silu, 22=mish, 30=clip, 31=leaky_relu"
+        }
+
+        Output(NUMERIC, "output"){ description = "Result of applying the fused element-wise chain" }
+
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                Executes a fused chain of element-wise operations in a single kernel pass.
+                Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.
+            """.trimIndent()
+        }
+    }
 }
