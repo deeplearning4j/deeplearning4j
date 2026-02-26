@@ -44,7 +44,7 @@ static constexpr size_t GLOBAL_NEW_PADDING = 4096;
 #if defined(__ANDROID__)
 #define SD_ALLOC_VIS
 #else
-#define SD_ALLOC_VIS SD_ALLOC_VIS
+#define SD_ALLOC_VIS __attribute__((visibility("hidden")))
 #endif
 
 SD_ALLOC_VIS
