@@ -2637,20 +2637,26 @@
 template <typename TT, typename WW>
 SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   TT* var;
-  if (workSpace == nullptr) {
-    // Add 256 bytes of padding for non-workspace heap allocations.
-    // C++ ops can overrun temporary buffers by a few bytes, corrupting
-    // adjacent glibc malloc chunk metadata → SIGABRT on free().
-    // Workspace allocations use bump allocation where overruns are harmless.
+  // Use if constexpr to avoid compiling workSpace->allocateBytes when WW is std::nullptr_t
+  // (GCC ARM64 errors on dereferencing nullptr_t even in dead code)
+  if constexpr (std::is_null_pointer_v<WW>) {
     size_t requestedBytes = len * sizeof(TT);
     size_t allocBytes = requestedBytes + SD_ALLOC_PADDING;
 #if defined(SD_ALIGNED_ALLOC)
-    // Allocate aligned memory, ensuring the size is a multiple of the alignment
     var = static_cast<TT*>(
         aligned_alloc(SD_DESIRED_ALIGNMENT,
                       (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
 #else
-    // Fallback to standard array allocation — add padding elements
+    var = new TT[len + (SD_ALLOC_PADDING / sizeof(TT)) + 1];
+#endif
+  } else if (workSpace == nullptr) {
+    size_t requestedBytes = len * sizeof(TT);
+    size_t allocBytes = requestedBytes + SD_ALLOC_PADDING;
+#if defined(SD_ALIGNED_ALLOC)
+    var = static_cast<TT*>(
+        aligned_alloc(SD_DESIRED_ALIGNMENT,
+                      (allocBytes + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
+#else
     var = new TT[len + (SD_ALLOC_PADDING / sizeof(TT)) + 1];
 #endif
   } else {

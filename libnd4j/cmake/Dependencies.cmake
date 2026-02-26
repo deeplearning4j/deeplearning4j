@@ -395,10 +395,11 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to native build if available
-        if(CMAKE_C_COMPILER_LAUNCHER)
+        # Skip on Windows — smart_ccache.sh is a bash script that can't run as a Win32 process
+        if(CMAKE_C_COMPILER_LAUNCHER AND NOT WIN32)
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER)
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT WIN32)
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
         endif()
 
@@ -715,6 +716,15 @@ function(setup_mlir)
     if(MLIR_ENABLE_GPU AND SD_CUDA)
         add_compile_definitions(MLIR_ENABLE_GPU=1)
     endif()
+    if(MLIR_ENABLE_VULKAN)
+        add_compile_definitions(MLIR_ENABLE_VULKAN=1)
+    endif()
+    if(MLIR_ENABLE_AARCH64)
+        add_compile_definitions(MLIR_ENABLE_AARCH64=1)
+    endif()
+    if(NOT MLIR_AOT_TARGET STREQUAL "HOST")
+        add_compile_definitions(MLIR_AOT_TARGET="${MLIR_AOT_TARGET}")
+    endif()
     if(MLIR_JIT_CACHE)
         add_compile_definitions(MLIR_JIT_CACHE=1)
     endif()
@@ -725,6 +735,9 @@ function(setup_mlir)
     message(STATUS "✅ MLIR/LLVM setup complete")
     message(STATUS "   LLVM Version: ${LLVM_VERSION}")
     message(STATUS "   GPU Support: ${MLIR_ENABLE_GPU}")
+    message(STATUS "   Vulkan/SPIR-V: ${MLIR_ENABLE_VULKAN}")
+    message(STATUS "   AArch64 Backend: ${MLIR_ENABLE_AARCH64}")
+    message(STATUS "   AOT Target: ${MLIR_AOT_TARGET}")
     message(STATUS "   JIT Cache: ${MLIR_JIT_CACHE}")
 endfunction()
 
@@ -990,7 +1003,12 @@ function(setup_triton)
     # After CMake cache clean, targets don't persist but install dirs do.
     set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
     set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
-    if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" AND
+    set(_TRITON_LIB_EXISTS FALSE)
+    if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
+       EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib")
+        set(_TRITON_LIB_EXISTS TRUE)
+    endif()
+    if(_TRITON_LIB_EXISTS AND
        EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
         message(STATUS "Triton helper: reusing existing install at ${TRITON_INSTALL_DIR}")
         set(HAVE_TRITON ON CACHE BOOL "Triton availability" FORCE)
@@ -1004,23 +1022,45 @@ function(setup_triton)
                 "${TRITON_INSTALL_DIR}/include"
                 "${TRITON_LLVM_INSTALL_DIR}/include"
             )
-            target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
+            if(WIN32)
+                target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/triton.lib")
+            else()
+                target_link_libraries(triton_interface INTERFACE "${TRITON_INSTALL_DIR}/lib/libtriton.a")
+            endif()
             # Glob ALL MLIR and LLVM static libraries — avoids missing transitive deps
-            file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
-            file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
-            file(GLOB _TRITON_MLIR_CAPI_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRCAPI*.a")
+            if(WIN32)
+                file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/MLIR*.lib")
+                file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/LLVM*.lib")
+                file(GLOB _TRITON_MLIR_CAPI_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/MLIRCAPI*.lib")
+            else()
+                file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
+                file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
+                file(GLOB _TRITON_MLIR_CAPI_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIRCAPI*.a")
+            endif()
             list(SORT _TRITON_MLIR_LIBS)
             list(SORT _TRITON_LLVM_LIBS)
-            target_link_libraries(triton_interface INTERFACE
-                -Wl,--start-group
-                ${_TRITON_MLIR_LIBS}
-                ${_TRITON_LLVM_LIBS}
-                ${_TRITON_MLIR_CAPI_LIBS}
-                -Wl,--end-group
-                -lz -lzstd -lrt -ldl -lm -lpthread
-            )
-            # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
-            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+            if(WIN32)
+                # MSVC linker handles circular deps automatically (no --start-group needed)
+                target_link_libraries(triton_interface INTERFACE
+                    ${_TRITON_MLIR_LIBS}
+                    ${_TRITON_LLVM_LIBS}
+                    ${_TRITON_MLIR_CAPI_LIBS}
+                    zlib.lib zstd.lib
+                )
+                # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+                target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+            else()
+                target_link_libraries(triton_interface INTERFACE
+                    -Wl,--start-group
+                    ${_TRITON_MLIR_LIBS}
+                    ${_TRITON_LLVM_LIBS}
+                    ${_TRITON_MLIR_CAPI_LIBS}
+                    -Wl,--end-group
+                    -lz -lzstd -lrt -ldl -lm -lpthread
+                )
+                # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+                target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+            endif()
             list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
             list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
             message(STATUS "Triton interface: ${_mlir_count} MLIR + ${_llvm_count} LLVM static libs (from existing install)")
@@ -1040,7 +1080,7 @@ function(setup_triton)
     set(HELPERS_triton ON PARENT_SCOPE)
     set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
     set(TRITON_PREFIX "${CMAKE_BINARY_DIR}/triton_external")
-    set(TRITON_VERSION "3.2.0")
+    set(TRITON_VERSION "3.6.0")
     set(TRITON_STAMP_DIR "${TRITON_PREFIX}/stamp")
     set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
 
@@ -1059,7 +1099,11 @@ function(setup_triton)
         endforeach()
     endif()
 
-    set(TRITON_URL "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
+    if(WIN32)
+        set(TRITON_URL "https://github.com/triton-lang/triton-windows/archive/refs/heads/release/3.6.x-windows.tar.gz")
+    else()
+        set(TRITON_URL "https://github.com/triton-lang/triton/archive/refs/tags/v${TRITON_VERSION}.tar.gz")
+    endif()
 
     # Determine codegen backends based on TRITON_GPU_TARGET and build config.
     # This MUST be done before the LLVM build so LLVM_TARGETS_TO_BUILD can be set correctly.
@@ -1094,10 +1138,10 @@ function(setup_triton)
     string(REPLACE ";" "\\;" TRITON_BACKENDS_STR "${TRITON_CODEGEN_BACKENDS}")
     message(STATUS "   Triton codegen backends: ${TRITON_CODEGEN_BACKENDS}")
 
-    # Triton v3.2.0 requires a specific LLVM version (pinned commit 86b69c31).
+    # Triton v3.6.0 requires a specific LLVM version (pinned commit f6ded0be).
     # We build LLVM/MLIR from source at that commit to ensure ABI compatibility.
     # This is a one-time cost — subsequent builds reuse the installed artifacts.
-    set(TRITON_LLVM_COMMIT "86b69c31642e98f8357df62c09d118ad1da4e16a")
+    set(TRITON_LLVM_COMMIT "f6ded0be897e2878612dd903f7e8bb85448269e5")
     set(TRITON_LLVM_PREFIX "${CMAKE_BINARY_DIR}/triton_llvm")
 
     # Determine LLVM targets based on which Triton codegen backends are needed.
@@ -1146,6 +1190,15 @@ function(setup_triton)
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         )
+
+        # MSVC-specific flags for LLVM build
+        if(MSVC)
+            list(APPEND TRITON_LLVM_CMAKE_ARGS
+                -DLLVM_BUILD_SHARED_LIBS=OFF
+                "-DCMAKE_C_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
+                "-DCMAKE_CXX_FLAGS=/utf-8 /D_SILENCE_NONFLOATING_COMPLEX_DEPRECATION_WARNING"
+            )
+        endif()
 
         # Pass SmartCcache / compiler launcher to LLVM build
         if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
@@ -1247,6 +1300,14 @@ function(setup_triton)
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     )
 
+    # MSVC-specific flags for Triton build
+    if(MSVC)
+        list(APPEND TRITON_CMAKE_ARGS
+            "-DCMAKE_C_FLAGS=/bigobj /Zc:preprocessor /permissive- /utf-8"
+            "-DCMAKE_CXX_FLAGS=/bigobj /Zc:preprocessor /permissive- /utf-8"
+        )
+    endif()
+
     # Pass compiler launcher if available
     if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
@@ -1268,66 +1329,30 @@ function(setup_triton)
     )
     message(STATUS "   Triton smart ccache segment=triton shape=${TRITON_SHAPE_KEY}")
 
-    # Triton v3.2.0's bin/RegisterTritonDialects.h unconditionally includes AMD dialect
+    # Cross-platform patch script (replaces bash-only patch_triton_no_amd.sh).
+    # Triton's bin/RegisterTritonDialects.h unconditionally includes AMD dialect
     # headers, even when only the nvidia backend is selected via TRITON_CODEGEN_BACKENDS.
     # When the AMD backend isn't built, the .h.inc files don't get generated, causing
-    # compilation failures. Write a patch script that removes AMD-specific code.
-    set(TRITON_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton_no_amd.sh")
+    # compilation failures. The CMake patch script removes AMD-specific code and adds
+    # NegFOp/TanhOp patterns needed by our IR.
+    set(TRITON_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton.cmake")
+    set(_TRITON_PATCH_ARGS
+        -DSOURCE_DIR=<SOURCE_DIR>
+    )
     if(NOT "amd" IN_LIST TRITON_CODEGEN_BACKENDS)
-        # Write the patch script to the source tree (survives clean install of build dir)
-        file(WRITE "${TRITON_PATCH_SCRIPT}" "#!/bin/bash
-# Patch RegisterTritonDialects.h to remove AMD backend references
-SRC=\"$1\"
-H=\"$SRC/bin/RegisterTritonDialects.h\"
-BIN_CMAKE=\"$SRC/bin/CMakeLists.txt\"
-if [ -f \"$H\" ]; then
-    sed -i '/amd\\/include\\//d' \"$H\"
-    sed -i '/TritonAMDGPUToLLVM/d' \"$H\"
-    sed -i '/TritonAMDGPUTransforms/d' \"$H\"
-    sed -i '/registerConvertTritonAMDGPUToLLVM/d' \"$H\"
-    sed -i '/registerConvertBuiltinFuncToLLVM/d' \"$H\"
-    sed -i '/registerDecomposeUnsupportedAMDConversions/d' \"$H\"
-    sed -i '/registerOptimizeAMDLDSUsage/d' \"$H\"
-    sed -i '/registerTritonAMDGPU/d' \"$H\"
-    sed -i '/TritonAMDGPUDialect/d' \"$H\"
-fi
-if [ -f \"$BIN_CMAKE\" ]; then
-    sed -i '/MLIRGPUToROCDLTransforms/d' \"$BIN_CMAKE\"
-fi
+        list(APPEND _TRITON_PATCH_ARGS -DREMOVE_AMD=ON)
+    endif()
 
-# Patch TritonToTritonGPUPass.cpp to add NegFOp and TanhOp as legal ops.
-# Triton upstream comments out NegFOp and omits TanhOp; we need both for our IR.
-TTGPU_PASS=\"$SRC/lib/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.cpp\"
-if [ -f \"$TTGPU_PASS\" ]; then
-    sed -i 's/GenericOpPattern<arith::ShRSIOp>, \\/\\/ NegFOp/GenericOpPattern<arith::ShRSIOp>, GenericOpPattern<arith::NegFOp>,/' \"$TTGPU_PASS\"
-    sed -i 's/GenericOpPattern<math::FmaOp>>/GenericOpPattern<math::FmaOp>, GenericOpPattern<math::TanhOp>>/' \"$TTGPU_PASS\"
-fi
+    # Cross-platform install script (replaces bash-only install_triton.sh).
+    # Triton uses OBJECT libraries (no install() rules), so we archive .o/.obj files
+    # into a static library and copy headers.
+    set(TRITON_INSTALL_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/install_triton.cmake")
 
-# Patch ElementwiseOpToLLVM.cpp to add NegFOp and TanhOp LLVM lowering patterns.
-ELEM_LLVM=\"$SRC/lib/Conversion/TritonGPUToLLVM/ElementwiseOpToLLVM.cpp\"
-if [ -f \"$ELEM_LLVM\" ]; then
-    sed -i '/POPULATE_UNARY_OP(arith::UIToFPOp, LLVM::UIToFPOp)/a\\  POPULATE_UNARY_OP(arith::NegFOp, LLVM::FNegOp)' \"$ELEM_LLVM\"
-    sed -i '/POPULATE_UNARY_OP(math::ExpOp, math::ExpOp)/a\\  POPULATE_UNARY_OP(math::TanhOp, math::TanhOp)' \"$ELEM_LLVM\"
-fi
-")
-        file(CHMOD "${TRITON_PATCH_SCRIPT}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+    # Build byproducts differ by platform
+    if(WIN32)
+        set(_TRITON_LIB_BYPRODUCT "${TRITON_INSTALL_DIR}/lib/triton.lib")
     else()
-        # AMD backend selected — still need NegFOp/TanhOp patches
-        file(WRITE "${TRITON_PATCH_SCRIPT}" "#!/bin/bash
-# AMD backend enabled — only NegFOp/TanhOp patches needed
-SRC=\"$1\"
-TTGPU_PASS=\"$SRC/lib/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.cpp\"
-if [ -f \"$TTGPU_PASS\" ]; then
-    sed -i 's/GenericOpPattern<arith::ShRSIOp>, \\/\\/ NegFOp/GenericOpPattern<arith::ShRSIOp>, GenericOpPattern<arith::NegFOp>,/' \"$TTGPU_PASS\"
-    sed -i 's/GenericOpPattern<math::FmaOp>>/GenericOpPattern<math::FmaOp>, GenericOpPattern<math::TanhOp>>/' \"$TTGPU_PASS\"
-fi
-ELEM_LLVM=\"$SRC/lib/Conversion/TritonGPUToLLVM/ElementwiseOpToLLVM.cpp\"
-if [ -f \"$ELEM_LLVM\" ]; then
-    sed -i '/POPULATE_UNARY_OP(arith::AbsFOp, arith::AbsFOp)/a\\\\  POPULATE_UNARY_OP(arith::NegFOp, arith::NegFOp)' \"$ELEM_LLVM\"
-    sed -i '/POPULATE_UNARY_OP(math::ExpOp, math::ExpOp)/a\\\\  POPULATE_UNARY_OP(math::TanhOp, math::TanhOp)' \"$ELEM_LLVM\"
-fi
-")
-        file(CHMOD "${TRITON_PATCH_SCRIPT}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+        set(_TRITON_LIB_BYPRODUCT "${TRITON_INSTALL_DIR}/lib/libtriton.a")
     endif()
 
     ExternalProject_Add(triton_external
@@ -1339,16 +1364,13 @@ fi
             STAMP_DIR         "${TRITON_STAMP_DIR}"
             DOWNLOAD_NO_PROGRESS FALSE
             DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-            PATCH_COMMAND     bash "${TRITON_PATCH_SCRIPT}" <SOURCE_DIR>
+            PATCH_COMMAND     ${CMAKE_COMMAND} ${_TRITON_PATCH_ARGS} -P "${TRITON_PATCH_SCRIPT}"
             CMAKE_ARGS        ${TRITON_CMAKE_ARGS}
             BUILD_COMMAND     ${TRITON_BUILD_COMMAND}
-            # Triton v3.2.0 uses OBJECT libraries (no install() commands, no libtriton.a).
-            # Custom install: archive all .o files into libtriton.a and copy headers.
-            # Use a script written to CMAKE_SOURCE_DIR so it survives 'clean install'.
-            INSTALL_COMMAND   bash "${CMAKE_SOURCE_DIR}/cmake/install_triton.sh" <BINARY_DIR> <SOURCE_DIR> "${TRITON_INSTALL_DIR}"
+            INSTALL_COMMAND   ${CMAKE_COMMAND} -DBINARY_DIR=<BINARY_DIR> -DSOURCE_DIR=<SOURCE_DIR> -DINSTALL_DIR=${TRITON_INSTALL_DIR} -P "${TRITON_INSTALL_SCRIPT}"
             BUILD_BYPRODUCTS
                 "${TRITON_INSTALL_DIR}/include/triton/Compiler/Compiler.h"
-                "${TRITON_INSTALL_DIR}/lib/libtriton.a"
+                "${_TRITON_LIB_BYPRODUCT}"
             TIMEOUT           1800
             LOG_DOWNLOAD      OFF
             LOG_CONFIGURE     OFF
@@ -1375,8 +1397,13 @@ fi
     target_link_directories(triton_interface INTERFACE "${TRITON_LLVM_INSTALL_DIR}/lib")
 
     # Try glob first (works when LLVM already built from previous run)
-    file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
-    file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
+    if(WIN32)
+        file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/MLIR*.lib")
+        file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/LLVM*.lib")
+    else()
+        file(GLOB _TRITON_MLIR_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libMLIR*.a")
+        file(GLOB _TRITON_LLVM_LIBS "${TRITON_LLVM_INSTALL_DIR}/lib/libLLVM*.a")
+    endif()
     list(LENGTH _TRITON_MLIR_LIBS _mlir_count)
     list(LENGTH _TRITON_LLVM_LIBS _llvm_count)
 
@@ -1384,185 +1411,210 @@ fi
         # Libraries exist — use full paths (most reliable)
         list(SORT _TRITON_MLIR_LIBS)
         list(SORT _TRITON_LLVM_LIBS)
-        target_link_libraries(triton_interface INTERFACE
-            -Wl,--start-group
-            ${_TRITON_MLIR_LIBS}
-            ${_TRITON_LLVM_LIBS}
-            -Wl,--end-group
-            -lz -lzstd -lrt -ldl -lm -lpthread
-        )
+        if(WIN32)
+            target_link_libraries(triton_interface INTERFACE
+                ${_TRITON_MLIR_LIBS}
+                ${_TRITON_LLVM_LIBS}
+                zlib.lib zstd.lib
+            )
+            target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+        else()
+            target_link_libraries(triton_interface INTERFACE
+                -Wl,--start-group
+                ${_TRITON_MLIR_LIBS}
+                ${_TRITON_LLVM_LIBS}
+                -Wl,--end-group
+                -lz -lzstd -lrt -ldl -lm -lpthread
+            )
+            target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
+        endif()
         message(STATUS "Triton linking ${_mlir_count} MLIR + ${_llvm_count} LLVM static libraries (globbed)")
     else()
         # Fresh build — LLVM not built yet, use -l flags resolved at link time.
-        # COMPLETE list of all MLIR + LLVM libraries from Triton's LLVM 19 fork.
+        # COMPLETE list of all MLIR + LLVM libraries from Triton's LLVM fork.
         # --start-group/--end-group handles circular dependencies.
         # Unused libraries won't increase binary size (linker only pulls needed objects).
-        message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking (all 468 libs)")
-        target_link_libraries(triton_interface INTERFACE
-            -Wl,--start-group
-            # === ALL MLIR libraries (364) ===
-            -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard
-            -lMLIRAffineTransformOps -lMLIRAffineTransforms
-            -lMLIRAffineUtils -lMLIRAMDGPUDialect -lMLIRAMDGPUToROCDL
-            -lMLIRAMDGPUTransforms -lMLIRAMDGPUUtils -lMLIRAMXDialect
-            -lMLIRAMXToLLVMIRTranslation -lMLIRAMXTransforms -lMLIRAnalysis
-            -lMLIRArithAttrToLLVMConversion -lMLIRArithDialect
-            -lMLIRArithToAMDGPU -lMLIRArithToArmSME -lMLIRArithToEmitC
-            -lMLIRArithToLLVM -lMLIRArithToSPIRV -lMLIRArithTransforms
-            -lMLIRArithUtils -lMLIRArithValueBoundsOpInterfaceImpl -lMLIRArmNeon2dToIntr
-            -lMLIRArmNeonDialect -lMLIRArmNeonToLLVMIRTranslation
-            -lMLIRArmNeonTransforms -lMLIRArmSMEDialect
-            -lMLIRArmSMEToLLVM -lMLIRArmSMEToLLVMIRTranslation -lMLIRArmSMEToSCF
-            -lMLIRArmSMETransforms -lMLIRArmSVEDialect -lMLIRArmSVEToLLVMIRTranslation
-            -lMLIRArmSVETransforms -lMLIRAsmParser -lMLIRAsyncDialect
-            -lMLIRAsyncToLLVM -lMLIRAsyncTransforms -lMLIRBufferizationDialect
-            -lMLIRBufferizationPipelines -lMLIRBufferizationToMemRef
-            -lMLIRBufferizationTransformOps -lMLIRBufferizationTransforms
-            -lMLIRBuiltinToLLVMIRTranslation -lMLIRBytecodeOpInterface
-            -lMLIRBytecodeReader -lMLIRBytecodeWriter -lMLIRCallInterfaces
-            -lMLIRCAPIAMDGPU -lMLIRCAPIArith -lMLIRCAPIAsync
-            -lMLIRCAPIControlFlow -lMLIRCAPIConversion -lMLIRCAPIDebug
-            -lMLIRCAPIExecutionEngine -lMLIRCAPIFunc -lMLIRCAPIGPU
-            -lMLIRCAPIInterfaces -lMLIRCAPIIR -lMLIRCAPIIRDL
-            -lMLIRCAPILinalg -lMLIRCAPILLVM -lMLIRCAPIMath
-            -lMLIRCAPIMemRef -lMLIRCAPIMLProgram -lMLIRCAPINVGPU
-            -lMLIRCAPINVVM -lMLIRCAPIOpenMP -lMLIRCAPIPDL
-            -lMLIRCAPIQuant -lMLIRCAPIRegisterEverything -lMLIRCAPIROCDL
-            -lMLIRCAPISCF -lMLIRCAPIShape -lMLIRCAPISparseTensor
-            -lMLIRCAPISPIRV -lMLIRCAPITarget -lMLIRCAPITensor
-            -lMLIRCAPITransformDialect -lMLIRCAPITransformDialectTransforms -lMLIRCAPITransforms
-            -lMLIRCAPIVector -lMLIRCastInterfaces -lMLIRComplexDialect
-            -lMLIRComplexToLibm -lMLIRComplexToLLVM -lMLIRComplexToSPIRV
-            -lMLIRComplexToStandard -lMLIRControlFlowDialect -lMLIRControlFlowInterfaces
-            -lMLIRControlFlowToLLVM -lMLIRControlFlowToSCF
-            -lMLIRControlFlowToSPIRV -lMLIRControlFlowTransforms -lMLIRConvertToLLVMInterface
-            -lMLIRConvertToLLVMPass -lMLIRConvertToSPIRVPass -lMLIRCopyOpInterface
-            -lMLIRDataLayoutInterfaces -lMLIRDebug -lMLIRDerivedAttributeOpInterface
-            -lMLIRDestinationStyleOpInterface -lMLIRDialect -lMLIRDialectUtils
-            -lMLIRDLTIDialect -lMLIRDLTITransformOps
-            -lMLIREmitCDialect -lMLIREmitCTransforms -lMLIRExecutionEngine
-            -lMLIRExecutionEngineUtils -lMLIRFromLLVMIRTranslationRegistration
-            -lMLIRFuncAllExtensions -lMLIRFuncDialect -lMLIRFuncInlinerExtension
-            -lMLIRFuncMeshShardingExtensions -lMLIRFunctionInterfaces
-            -lMLIRFuncToEmitC -lMLIRFuncToLLVM -lMLIRFuncToSPIRV
-            -lMLIRFuncTransformOps -lMLIRFuncTransforms -lMLIRGPUDialect
-            -lMLIRGPUPipelines -lMLIRGPUToGPURuntimeTransforms
-            -lMLIRGPUToLLVMIRTranslation -lMLIRGPUToLLVMSPV -lMLIRGPUToNVVMTransforms
-            -lMLIRGPUToROCDLTransforms -lMLIRGPUToSPIRV -lMLIRGPUToVulkanTransforms
-            -lMLIRGPUTransformOps -lMLIRGPUTransforms -lMLIRIndexDialect
-            -lMLIRIndexToLLVM -lMLIRIndexToSPIRV -lMLIRInferIntRangeCommon
-            -lMLIRInferIntRangeInterface -lMLIRInferTypeOpInterface -lMLIRIR
-            -lMLIRIRDL -lMLIRJitRunner -lMLIRLinalgDialect
-            -lMLIRLinalgToStandard -lMLIRLinalgTransformOps
-            -lMLIRLinalgTransforms -lMLIRLinalgUtils -lMLIRLLVMCommonConversion
-            -lMLIRLLVMDialect -lMLIRLLVMIRToLLVMTranslation -lMLIRLLVMIRToNVVMTranslation
-            -lMLIRLLVMIRTransforms -lMLIRLLVMToLLVMIRTranslation
-            -lMLIRLoopLikeInterface -lMLIRLspServerLib
-            -lMLIRLspServerSupportLib -lMLIRMaskableOpInterface -lMLIRMaskingOpInterface
-            -lMLIRMathDialect -lMLIRMathToFuncs
-            -lMLIRMathToLibm -lMLIRMathToLLVM -lMLIRMathToROCDL
-            -lMLIRMathToSPIRV -lMLIRMathTransforms -lMLIRMemorySlotInterfaces
-            -lMLIRMemRefDialect -lMLIRMemRefToEmitC
-            -lMLIRMemRefToLLVM -lMLIRMemRefToSPIRV -lMLIRMemRefTransformOps
-            -lMLIRMemRefTransforms -lMLIRMemRefUtils -lMLIRMeshDialect
-            -lMLIRMeshTransforms -lMLIRMlirOptMain
-            -lMLIRMLProgramDialect -lMLIRMLProgramTransforms -lMLIRMPIDialect
-            -lMLIRNVGPUDialect -lMLIRNVGPUToNVVM
-            -lMLIRNVGPUTransformOps -lMLIRNVGPUTransforms -lMLIRNVGPUUtils
-            -lMLIRNVVMDialect -lMLIRNVVMTarget -lMLIRNVVMToLLVM
-            -lMLIRNVVMToLLVMIRTranslation -lMLIRObservers -lMLIROpenACCDialect
-            -lMLIROpenACCMPCommon -lMLIROpenACCToLLVMIRTranslation -lMLIROpenACCToSCF
-            -lMLIROpenACCTransforms -lMLIROpenMPDialect -lMLIROpenMPToLLVM
-            -lMLIROpenMPToLLVMIRTranslation -lMLIROptLib -lMLIRParallelCombiningOpInterface
-            -lMLIRParser -lMLIRPass -lMLIRPDLDialect
-            -lMLIRPDLInterpDialect -lMLIRPDLLAST -lMLIRPDLLCodeGen
-            -lMLIRPDLLODS -lMLIRPDLToPDLInterp -lMLIRPluginsLib
-            -lMLIRPolynomialDialect -lMLIRPresburger -lMLIRPtrDialect
-            -lMLIRQuantDialect -lMLIRQuantTransforms -lMLIRQuantUtils
-            -lMLIRQuery -lMLIRQueryLib -lMLIRQueryMatcher
-            -lMLIRReconcileUnrealizedCasts -lMLIRReduce -lMLIRReduceLib
-            -lMLIRRewrite -lMLIRRewritePDL -lMLIRROCDLDialect
-            -lMLIRROCDLTarget -lMLIRROCDLToLLVMIRTranslation -lMLIRRuntimeVerifiableOpInterface
-            -lMLIRSCFDialect -lMLIRSCFToControlFlow
-            -lMLIRSCFToEmitC -lMLIRSCFToGPU -lMLIRSCFToOpenMP
-            -lMLIRSCFToSPIRV -lMLIRSCFTransformOps -lMLIRSCFTransforms
-            -lMLIRSCFUtils -lMLIRShapeDialect -lMLIRShapedOpInterfaces
-            -lMLIRShapeOpsTransforms -lMLIRShapeToStandard
-            -lMLIRShardingInterface -lMLIRSideEffectInterfaces -lMLIRSparseTensorDialect
-            -lMLIRSparseTensorPipelines -lMLIRSparseTensorRuntime -lMLIRSparseTensorTransformOps
-            -lMLIRSparseTensorTransforms -lMLIRSparseTensorUtils -lMLIRSPIRVAttrToLLVMConversion
-            -lMLIRSPIRVBinaryUtils -lMLIRSPIRVConversion -lMLIRSPIRVDeserialization
-            -lMLIRSPIRVDialect -lMLIRSPIRVModuleCombiner -lMLIRSPIRVSerialization
-            -lMLIRSPIRVTarget -lMLIRSPIRVToLLVM
-            -lMLIRSPIRVToLLVMIRTranslation -lMLIRSPIRVTransforms -lMLIRSPIRVTranslateRegistration
-            -lMLIRSPIRVUtils -lMLIRSubsetOpInterface -lMLIRSupport
-            -lMLIRTableGen -lMLIRTargetCpp -lMLIRTargetLLVM
-            -lMLIRTargetLLVMIRExport -lMLIRTargetLLVMIRImport -lMLIRTblgenLib
-            -lMLIRTensorAllExtensions -lMLIRTensorDialect -lMLIRTensorInferTypeOpInterfaceImpl
-            -lMLIRTensorMeshShardingExtensions -lMLIRTensorTilingInterfaceImpl
-            -lMLIRTensorToLinalg -lMLIRTensorToSPIRV -lMLIRTensorTransformOps
-            -lMLIRTensorTransforms -lMLIRTensorUtils -lMLIRTilingInterface
-            -lMLIRToLLVMIRTranslationRegistration -lMLIRTosaDialect -lMLIRTosaShardingInterfaceImpl
-            -lMLIRTosaToArith -lMLIRTosaToLinalg
-            -lMLIRTosaToMLProgram -lMLIRTosaToSCF -lMLIRTosaToTensor
-            -lMLIRTosaTransforms -lMLIRTransformDebugExtension -lMLIRTransformDialect
-            -lMLIRTransformDialectInterfaces -lMLIRTransformDialectIRDLExtension
-            -lMLIRTransformDialectTransforms -lMLIRTransformDialectUtils
-            -lMLIRTransformLoopExtension -lMLIRTransformPDLExtension -lMLIRTransforms
-            -lMLIRTransformUtils -lMLIRTranslateLib -lMLIRUBDialect
-            -lMLIRUBToLLVM -lMLIRUBToSPIRV -lMLIRValueBoundsOpInterface
-            -lMLIRVCIXDialect -lMLIRVCIXToLLVMIRTranslation -lMLIRVectorDialect
-            -lMLIRVectorInterfaces -lMLIRVectorToArmSME
-            -lMLIRVectorToGPU -lMLIRVectorToLLVM -lMLIRVectorToLLVMPass
-            -lMLIRVectorToSCF -lMLIRVectorToSPIRV -lMLIRVectorToXeGPU
-            -lMLIRVectorTransformOps -lMLIRVectorTransforms -lMLIRVectorUtils
-            -lMLIRViewLikeInterface -lMLIRX86VectorDialect -lMLIRX86VectorToLLVMIRTranslation
-            -lMLIRX86VectorTransforms -lMLIRXeGPUDialect -lMLIRXeGPUTransforms
-            # === ALL LLVM libraries (104) ===
-            -lLLVMAggressiveInstCombine -lLLVMAnalysis -lLLVMAsmParser
-            -lLLVMAsmPrinter -lLLVMBinaryFormat -lLLVMBitReader
-            -lLLVMBitstreamReader -lLLVMBitWriter -lLLVMCFGuard
-            -lLLVMCFIVerify -lLLVMCGData -lLLVMCodeGen
-            -lLLVMCodeGenTypes -lLLVMCore -lLLVMCoroutines
-            -lLLVMCoverage -lLLVMDebugInfoBTF -lLLVMDebugInfoCodeView
-            -lLLVMDebuginfod -lLLVMDebugInfoDWARF -lLLVMDebugInfoGSYM
-            -lLLVMDebugInfoLogicalView -lLLVMDebugInfoMSF -lLLVMDebugInfoPDB
-            -lLLVMDemangle -lLLVMDiff -lLLVMDlltoolDriver
-            -lLLVMDWARFLinker -lLLVMDWARFLinkerClassic -lLLVMDWARFLinkerParallel
-            -lLLVMDWP -lLLVMExecutionEngine -lLLVMExegesis
-            -lLLVMExegesisX86 -lLLVMExtensions -lLLVMFileCheck
-            -lLLVMFrontendAtomic -lLLVMFrontendDriver -lLLVMFrontendHLSL
-            -lLLVMFrontendOffloading -lLLVMFrontendOpenACC -lLLVMFrontendOpenMP
-            -lLLVMFuzzerCLI -lLLVMFuzzMutate -lLLVMGlobalISel
-            -lLLVMHipStdPar -lLLVMInstCombine -lLLVMInstrumentation
-            -lLLVMInterfaceStub -lLLVMInterpreter -lLLVMipo
-            -lLLVMIRPrinter -lLLVMIRReader -lLLVMJITLink
-            -lLLVMLibDriver -lLLVMLineEditor -lLLVMLinker
-            -lLLVMLTO -lLLVMMC -lLLVMMCA
-            -lLLVMMCDisassembler -lLLVMMCJIT -lLLVMMCParser
-            -lLLVMMIRParser -lLLVMNVPTXCodeGen -lLLVMNVPTXDesc
-            -lLLVMNVPTXInfo -lLLVMObjCARCOpts -lLLVMObjCopy
-            -lLLVMObject -lLLVMObjectYAML -lLLVMOptDriver
-            -lLLVMOption -lLLVMOrcDebugging -lLLVMOrcJIT
-            -lLLVMOrcShared -lLLVMOrcTargetProcess -lLLVMPasses
-            -lLLVMProfileData -lLLVMRemarks -lLLVMRuntimeDyld
-            -lLLVMSandboxIR -lLLVMScalarOpts -lLLVMSelectionDAG
-            -lLLVMSupport -lLLVMSymbolize -lLLVMTableGen
-            -lLLVMTableGenBasic -lLLVMTableGenCommon -lLLVMTarget
-            -lLLVMTargetParser -lLLVMTextAPI -lLLVMTextAPIBinaryReader
-            -lLLVMTransformUtils -lLLVMVectorize -lLLVMWindowsDriver
-            -lLLVMWindowsManifest -lLLVMX86AsmParser -lLLVMX86CodeGen
-            -lLLVMX86Desc -lLLVMX86Disassembler -lLLVMX86Info
-            -lLLVMX86TargetMCA -lLLVMXRay
-            -Wl,--end-group
-            -lz -lzstd -lrt -ldl -lm -lpthread
-        )
+        if(WIN32)
+            # On Windows (MSVC), deferred linking uses .lib names directly.
+            # MSVC linker resolves circular deps automatically.
+            message(STATUS "Triton: LLVM not yet built, using deferred linking (Windows)")
+            # Will be resolved at link time via target_link_directories above.
+            # The glob path above will handle this on rebuild.
+        else()
+            message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking (all 468 libs)")
+            target_link_libraries(triton_interface INTERFACE
+                -Wl,--start-group
+                # === ALL MLIR libraries (364) ===
+                -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard
+                -lMLIRAffineTransformOps -lMLIRAffineTransforms
+                -lMLIRAffineUtils -lMLIRAMDGPUDialect -lMLIRAMDGPUToROCDL
+                -lMLIRAMDGPUTransforms -lMLIRAMDGPUUtils -lMLIRAMXDialect
+                -lMLIRAMXToLLVMIRTranslation -lMLIRAMXTransforms -lMLIRAnalysis
+                -lMLIRArithAttrToLLVMConversion -lMLIRArithDialect
+                -lMLIRArithToAMDGPU -lMLIRArithToArmSME -lMLIRArithToEmitC
+                -lMLIRArithToLLVM -lMLIRArithToSPIRV -lMLIRArithTransforms
+                -lMLIRArithUtils -lMLIRArithValueBoundsOpInterfaceImpl -lMLIRArmNeon2dToIntr
+                -lMLIRArmNeonDialect -lMLIRArmNeonToLLVMIRTranslation
+                -lMLIRArmNeonTransforms -lMLIRArmSMEDialect
+                -lMLIRArmSMEToLLVM -lMLIRArmSMEToLLVMIRTranslation -lMLIRArmSMEToSCF
+                -lMLIRArmSMETransforms -lMLIRArmSVEDialect -lMLIRArmSVEToLLVMIRTranslation
+                -lMLIRArmSVETransforms -lMLIRAsmParser -lMLIRAsyncDialect
+                -lMLIRAsyncToLLVM -lMLIRAsyncTransforms -lMLIRBufferizationDialect
+                -lMLIRBufferizationPipelines -lMLIRBufferizationToMemRef
+                -lMLIRBufferizationTransformOps -lMLIRBufferizationTransforms
+                -lMLIRBuiltinToLLVMIRTranslation -lMLIRBytecodeOpInterface
+                -lMLIRBytecodeReader -lMLIRBytecodeWriter -lMLIRCallInterfaces
+                -lMLIRCAPIAMDGPU -lMLIRCAPIArith -lMLIRCAPIAsync
+                -lMLIRCAPIControlFlow -lMLIRCAPIConversion -lMLIRCAPIDebug
+                -lMLIRCAPIExecutionEngine -lMLIRCAPIFunc -lMLIRCAPIGPU
+                -lMLIRCAPIInterfaces -lMLIRCAPIIR -lMLIRCAPIIRDL
+                -lMLIRCAPILinalg -lMLIRCAPILLVM -lMLIRCAPIMath
+                -lMLIRCAPIMemRef -lMLIRCAPIMLProgram -lMLIRCAPINVGPU
+                -lMLIRCAPINVVM -lMLIRCAPIOpenMP -lMLIRCAPIPDL
+                -lMLIRCAPIQuant -lMLIRCAPIRegisterEverything -lMLIRCAPIROCDL
+                -lMLIRCAPISCF -lMLIRCAPIShape -lMLIRCAPISparseTensor
+                -lMLIRCAPISPIRV -lMLIRCAPITarget -lMLIRCAPITensor
+                -lMLIRCAPITransformDialect -lMLIRCAPITransformDialectTransforms -lMLIRCAPITransforms
+                -lMLIRCAPIVector -lMLIRCastInterfaces -lMLIRComplexDialect
+                -lMLIRComplexToLibm -lMLIRComplexToLLVM -lMLIRComplexToSPIRV
+                -lMLIRComplexToStandard -lMLIRControlFlowDialect -lMLIRControlFlowInterfaces
+                -lMLIRControlFlowToLLVM -lMLIRControlFlowToSCF
+                -lMLIRControlFlowToSPIRV -lMLIRControlFlowTransforms -lMLIRConvertToLLVMInterface
+                -lMLIRConvertToLLVMPass -lMLIRConvertToSPIRVPass -lMLIRCopyOpInterface
+                -lMLIRDataLayoutInterfaces -lMLIRDebug -lMLIRDerivedAttributeOpInterface
+                -lMLIRDestinationStyleOpInterface -lMLIRDialect -lMLIRDialectUtils
+                -lMLIRDLTIDialect -lMLIRDLTITransformOps
+                -lMLIREmitCDialect -lMLIREmitCTransforms -lMLIRExecutionEngine
+                -lMLIRExecutionEngineUtils -lMLIRFromLLVMIRTranslationRegistration
+                -lMLIRFuncAllExtensions -lMLIRFuncDialect -lMLIRFuncInlinerExtension
+                -lMLIRFuncMeshShardingExtensions -lMLIRFunctionInterfaces
+                -lMLIRFuncToEmitC -lMLIRFuncToLLVM -lMLIRFuncToSPIRV
+                -lMLIRFuncTransformOps -lMLIRFuncTransforms -lMLIRGPUDialect
+                -lMLIRGPUPipelines -lMLIRGPUToGPURuntimeTransforms
+                -lMLIRGPUToLLVMIRTranslation -lMLIRGPUToLLVMSPV -lMLIRGPUToNVVMTransforms
+                -lMLIRGPUToROCDLTransforms -lMLIRGPUToSPIRV -lMLIRGPUToVulkanTransforms
+                -lMLIRGPUTransformOps -lMLIRGPUTransforms -lMLIRIndexDialect
+                -lMLIRIndexToLLVM -lMLIRIndexToSPIRV -lMLIRInferIntRangeCommon
+                -lMLIRInferIntRangeInterface -lMLIRInferTypeOpInterface -lMLIRIR
+                -lMLIRIRDL -lMLIRJitRunner -lMLIRLinalgDialect
+                -lMLIRLinalgToStandard -lMLIRLinalgTransformOps
+                -lMLIRLinalgTransforms -lMLIRLinalgUtils -lMLIRLLVMCommonConversion
+                -lMLIRLLVMDialect -lMLIRLLVMIRToLLVMTranslation -lMLIRLLVMIRToNVVMTranslation
+                -lMLIRLLVMIRTransforms -lMLIRLLVMToLLVMIRTranslation
+                -lMLIRLoopLikeInterface -lMLIRLspServerLib
+                -lMLIRLspServerSupportLib -lMLIRMaskableOpInterface -lMLIRMaskingOpInterface
+                -lMLIRMathDialect -lMLIRMathToFuncs
+                -lMLIRMathToLibm -lMLIRMathToLLVM -lMLIRMathToROCDL
+                -lMLIRMathToSPIRV -lMLIRMathTransforms -lMLIRMemorySlotInterfaces
+                -lMLIRMemRefDialect -lMLIRMemRefToEmitC
+                -lMLIRMemRefToLLVM -lMLIRMemRefToSPIRV -lMLIRMemRefTransformOps
+                -lMLIRMemRefTransforms -lMLIRMemRefUtils -lMLIRMeshDialect
+                -lMLIRMeshTransforms -lMLIRMlirOptMain
+                -lMLIRMLProgramDialect -lMLIRMLProgramTransforms -lMLIRMPIDialect
+                -lMLIRNVGPUDialect -lMLIRNVGPUToNVVM
+                -lMLIRNVGPUTransformOps -lMLIRNVGPUTransforms -lMLIRNVGPUUtils
+                -lMLIRNVVMDialect -lMLIRNVVMTarget -lMLIRNVVMToLLVM
+                -lMLIRNVVMToLLVMIRTranslation -lMLIRObservers -lMLIROpenACCDialect
+                -lMLIROpenACCMPCommon -lMLIROpenACCToLLVMIRTranslation -lMLIROpenACCToSCF
+                -lMLIROpenACCTransforms -lMLIROpenMPDialect -lMLIROpenMPToLLVM
+                -lMLIROpenMPToLLVMIRTranslation -lMLIROptLib -lMLIRParallelCombiningOpInterface
+                -lMLIRParser -lMLIRPass -lMLIRPDLDialect
+                -lMLIRPDLInterpDialect -lMLIRPDLLAST -lMLIRPDLLCodeGen
+                -lMLIRPDLLODS -lMLIRPDLToPDLInterp -lMLIRPluginsLib
+                -lMLIRPolynomialDialect -lMLIRPresburger -lMLIRPtrDialect
+                -lMLIRQuantDialect -lMLIRQuantTransforms -lMLIRQuantUtils
+                -lMLIRQuery -lMLIRQueryLib -lMLIRQueryMatcher
+                -lMLIRReconcileUnrealizedCasts -lMLIRReduce -lMLIRReduceLib
+                -lMLIRRewrite -lMLIRRewritePDL -lMLIRROCDLDialect
+                -lMLIRROCDLTarget -lMLIRROCDLToLLVMIRTranslation -lMLIRRuntimeVerifiableOpInterface
+                -lMLIRSCFDialect -lMLIRSCFToControlFlow
+                -lMLIRSCFToEmitC -lMLIRSCFToGPU -lMLIRSCFToOpenMP
+                -lMLIRSCFToSPIRV -lMLIRSCFTransformOps -lMLIRSCFTransforms
+                -lMLIRSCFUtils -lMLIRShapeDialect -lMLIRShapedOpInterfaces
+                -lMLIRShapeOpsTransforms -lMLIRShapeToStandard
+                -lMLIRShardingInterface -lMLIRSideEffectInterfaces -lMLIRSparseTensorDialect
+                -lMLIRSparseTensorPipelines -lMLIRSparseTensorRuntime -lMLIRSparseTensorTransformOps
+                -lMLIRSparseTensorTransforms -lMLIRSparseTensorUtils -lMLIRSPIRVAttrToLLVMConversion
+                -lMLIRSPIRVBinaryUtils -lMLIRSPIRVConversion -lMLIRSPIRVDeserialization
+                -lMLIRSPIRVDialect -lMLIRSPIRVModuleCombiner -lMLIRSPIRVSerialization
+                -lMLIRSPIRVTarget -lMLIRSPIRVToLLVM
+                -lMLIRSPIRVToLLVMIRTranslation -lMLIRSPIRVTransforms -lMLIRSPIRVTranslateRegistration
+                -lMLIRSPIRVUtils -lMLIRSubsetOpInterface -lMLIRSupport
+                -lMLIRTableGen -lMLIRTargetCpp -lMLIRTargetLLVM
+                -lMLIRTargetLLVMIRExport -lMLIRTargetLLVMIRImport -lMLIRTblgenLib
+                -lMLIRTensorAllExtensions -lMLIRTensorDialect -lMLIRTensorInferTypeOpInterfaceImpl
+                -lMLIRTensorMeshShardingExtensions -lMLIRTensorTilingInterfaceImpl
+                -lMLIRTensorToLinalg -lMLIRTensorToSPIRV -lMLIRTensorTransformOps
+                -lMLIRTensorTransforms -lMLIRTensorUtils -lMLIRTilingInterface
+                -lMLIRToLLVMIRTranslationRegistration -lMLIRTosaDialect -lMLIRTosaShardingInterfaceImpl
+                -lMLIRTosaToArith -lMLIRTosaToLinalg
+                -lMLIRTosaToMLProgram -lMLIRTosaToSCF -lMLIRTosaToTensor
+                -lMLIRTosaTransforms -lMLIRTransformDebugExtension -lMLIRTransformDialect
+                -lMLIRTransformDialectInterfaces -lMLIRTransformDialectIRDLExtension
+                -lMLIRTransformDialectTransforms -lMLIRTransformDialectUtils
+                -lMLIRTransformLoopExtension -lMLIRTransformPDLExtension -lMLIRTransforms
+                -lMLIRTransformUtils -lMLIRTranslateLib -lMLIRUBDialect
+                -lMLIRUBToLLVM -lMLIRUBToSPIRV -lMLIRValueBoundsOpInterface
+                -lMLIRVCIXDialect -lMLIRVCIXToLLVMIRTranslation -lMLIRVectorDialect
+                -lMLIRVectorInterfaces -lMLIRVectorToArmSME
+                -lMLIRVectorToGPU -lMLIRVectorToLLVM -lMLIRVectorToLLVMPass
+                -lMLIRVectorToSCF -lMLIRVectorToSPIRV -lMLIRVectorToXeGPU
+                -lMLIRVectorTransformOps -lMLIRVectorTransforms -lMLIRVectorUtils
+                -lMLIRViewLikeInterface -lMLIRX86VectorDialect -lMLIRX86VectorToLLVMIRTranslation
+                -lMLIRX86VectorTransforms -lMLIRXeGPUDialect -lMLIRXeGPUTransforms
+                # === ALL LLVM libraries (104) ===
+                -lLLVMAggressiveInstCombine -lLLVMAnalysis -lLLVMAsmParser
+                -lLLVMAsmPrinter -lLLVMBinaryFormat -lLLVMBitReader
+                -lLLVMBitstreamReader -lLLVMBitWriter -lLLVMCFGuard
+                -lLLVMCFIVerify -lLLVMCGData -lLLVMCodeGen
+                -lLLVMCodeGenTypes -lLLVMCore -lLLVMCoroutines
+                -lLLVMCoverage -lLLVMDebugInfoBTF -lLLVMDebugInfoCodeView
+                -lLLVMDebuginfod -lLLVMDebugInfoDWARF -lLLVMDebugInfoGSYM
+                -lLLVMDebugInfoLogicalView -lLLVMDebugInfoMSF -lLLVMDebugInfoPDB
+                -lLLVMDemangle -lLLVMDiff -lLLVMDlltoolDriver
+                -lLLVMDWARFLinker -lLLVMDWARFLinkerClassic -lLLVMDWARFLinkerParallel
+                -lLLVMDWP -lLLVMExecutionEngine -lLLVMExegesis
+                -lLLVMExegesisX86 -lLLVMExtensions -lLLVMFileCheck
+                -lLLVMFrontendAtomic -lLLVMFrontendDriver -lLLVMFrontendHLSL
+                -lLLVMFrontendOffloading -lLLVMFrontendOpenACC -lLLVMFrontendOpenMP
+                -lLLVMFuzzerCLI -lLLVMFuzzMutate -lLLVMGlobalISel
+                -lLLVMHipStdPar -lLLVMInstCombine -lLLVMInstrumentation
+                -lLLVMInterfaceStub -lLLVMInterpreter -lLLVMipo
+                -lLLVMIRPrinter -lLLVMIRReader -lLLVMJITLink
+                -lLLVMLibDriver -lLLVMLineEditor -lLLVMLinker
+                -lLLVMLTO -lLLVMMC -lLLVMMCA
+                -lLLVMMCDisassembler -lLLVMMCJIT -lLLVMMCParser
+                -lLLVMMIRParser -lLLVMNVPTXCodeGen -lLLVMNVPTXDesc
+                -lLLVMNVPTXInfo -lLLVMObjCARCOpts -lLLVMObjCopy
+                -lLLVMObject -lLLVMObjectYAML -lLLVMOptDriver
+                -lLLVMOption -lLLVMOrcDebugging -lLLVMOrcJIT
+                -lLLVMOrcShared -lLLVMOrcTargetProcess -lLLVMPasses
+                -lLLVMProfileData -lLLVMRemarks -lLLVMRuntimeDyld
+                -lLLVMSandboxIR -lLLVMScalarOpts -lLLVMSelectionDAG
+                -lLLVMSupport -lLLVMSymbolize -lLLVMTableGen
+                -lLLVMTableGenBasic -lLLVMTableGenCommon -lLLVMTarget
+                -lLLVMTargetParser -lLLVMTextAPI -lLLVMTextAPIBinaryReader
+                -lLLVMTransformUtils -lLLVMVectorize -lLLVMWindowsDriver
+                -lLLVMWindowsManifest -lLLVMX86AsmParser -lLLVMX86CodeGen
+                -lLLVMX86Desc -lLLVMX86Disassembler -lLLVMX86Info
+                -lLLVMX86TargetMCA -lLLVMXRay
+                -Wl,--end-group
+                -lz -lzstd -lrt -ldl -lm -lpthread
+            )
+        endif()
+    endif()
+
+    # Link nvrtc and cuda driver for NVRTC JIT and PTX backends
+    if(WIN32)
+        target_link_libraries(triton_interface INTERFACE nvrtc.lib cuda.lib)
+    else()
+        target_link_libraries(triton_interface INTERFACE -lnvrtc -lcuda)
     endif()
 
     add_dependencies(triton_interface triton_external)
     set(TRITON triton_interface PARENT_SCOPE)
 
-    message(STATUS "✅ Triton ${TRITON_VERSION} setup complete (target: ${TRITON_GPU_TARGET})")
+    message(STATUS "Triton ${TRITON_VERSION} setup complete (target: ${TRITON_GPU_TARGET})")
 endfunction()
 
 # =============================================================================
