@@ -37,34 +37,15 @@
 #include <type_traits>
 
 // ============================================================================
-// DATATYPE CONSTEXPR ALIASES
+// DATATYPE ALIASES
 // ============================================================================
-// On Windows, names like BOOL, INT8, INT16, INT32, INT64, UINT8, UINT16,
-// UINT32, UINT64 conflict with Windows SDK typedefs in <minwindef.h> and
-// <basetsd.h>.  Place them inside namespace sd to avoid global-scope clashes.
+// The DataType enum values (BOOL, INT8, etc.) are already in namespace sd
+// via the unscoped enum in DataType.h. Files with `using namespace sd;`
+// (which is most of the codebase) get these names automatically.
+// No additional aliases needed — they would either:
+//   - Clash with Windows SDK typedefs at global scope, or
+//   - Clash with the DataType enum values inside namespace sd (MSVC C2365).
 // ============================================================================
-
-namespace sd {
-  static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
-  static constexpr auto BOOL = sd::DataType::BOOL;
-  static constexpr auto DOUBLE = sd::DataType::DOUBLE;
-  static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
-  static constexpr auto HALF = sd::DataType::HALF;
-  static constexpr auto INT16 = sd::DataType::INT16;
-  static constexpr auto INT32 = sd::DataType::INT32;
-  static constexpr auto INT64 = sd::DataType::INT64;
-  static constexpr auto INT8 = sd::DataType::INT8;
-  static constexpr auto UINT16 = sd::DataType::UINT16;
-  static constexpr auto UINT32 = sd::DataType::UINT32;
-  static constexpr auto UINT64 = sd::DataType::UINT64;
-  static constexpr auto UINT8 = sd::DataType::UINT8;
-  static constexpr auto UTF16 = sd::DataType::UTF16;
-  static constexpr auto UTF32 = sd::DataType::UTF32;
-  static constexpr auto UTF8 = sd::DataType::UTF8;
-}  // namespace sd
-
-// Make the aliases accessible via 'using namespace sd' which most source files already do.
-// For files that don't, the qualified sd::BOOL etc. form works.
 
   using LongType = sd::LongType;
   using UnsignedLong = sd::UnsignedLong;
