@@ -78,6 +78,8 @@ void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weig
   if (wEnd - wptr) cudaMemsetAsync(wptr, 0, wEnd - wptr, stream);
 }
 
+// Old RNN API (cuDNN < 9.0) — removed APIs in cuDNN 9.0
+#if CUDNN_VERSION < 9000
 void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDArray *inputWeights,
                    NDArray *recurrentWeights, NDArray *biases, NDArray *prevAct, NDArray *prevMemCell,
                    NDArray *outputActivations, NDArray *finalTimeStepActivations, NDArray *finalMemCellState,
@@ -264,6 +266,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
 
   return;
 }
+#endif  // CUDNN_VERSION < 9000
 
 #if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VER
 
@@ -546,7 +549,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
 #if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
   cudnn_rnn_old(contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn, hiddenSize,
                 (double)cellClip, isBidirectional);
-#else
+#elif CUDNN_VERSION < 9000
   if (cudnnGetVersion() >= CUDNN_NEW_RNN_API_VER) {
     cudnn_rnn_v8(contextPtr, dataFormat, x, seqLengthArray, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn,
                  hiddenSize, (double)cellClip, isBidirectional);
@@ -554,6 +557,10 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
     cudnn_rnn_old(contextPtr, dataFormat, x, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn, hiddenSize,
                   (double)cellClip, isBidirectional);
   }
+#else
+  // cuDNN 9.0+ — old RNN API removed, always use v8
+  cudnn_rnn_v8(contextPtr, dataFormat, x, seqLengthArray, Wx, Wr, b, hI, cI, h, hL, cL, seqLength, bS, nIn,
+               hiddenSize, (double)cellClip, isBidirectional);
 #endif
 
   return Status::OK;

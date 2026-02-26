@@ -80,6 +80,8 @@ void copyGruWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *w
   if (wEnd - wptr) cudaMemsetAsync(wptr, 0, wEnd - wptr, stream);
 }
 
+// Old RNN API (cuDNN < 9.0) — removed APIs in cuDNN 9.0
+#if CUDNN_VERSION < 9000
 void cudnn_gru_old(LaunchContext *contextPtr, NDArray *input, NDArray *inputWeights,
                    NDArray *recurrentWeights, NDArray *biases, NDArray *prevAct,
                    NDArray *outputActivations, NDArray *finalTimeStepActivations,
@@ -239,6 +241,7 @@ void cudnn_gru_old(LaunchContext *contextPtr, NDArray *input, NDArray *inputWeig
 
   return;
 }
+#endif  // CUDNN_VERSION < 9000
 
 #if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VER
 
@@ -423,12 +426,15 @@ PLATFORM_IMPL(gru, ENGINE_CUDA) {
 
 #if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
   cudnn_gru_old(contextPtr, x, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional);
-#else
+#elif CUDNN_VERSION < 9000
   if (cudnnGetVersion() >= CUDNN_NEW_RNN_API_VER) {
     cudnn_gru_v8(contextPtr, x, nullptr, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional);
   } else {
     cudnn_gru_old(contextPtr, x, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional);
   }
+#else
+  // cuDNN 9.0+ — old RNN API removed, always use v8
+  cudnn_gru_v8(contextPtr, x, nullptr, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional);
 #endif
 
   return Status::OK;

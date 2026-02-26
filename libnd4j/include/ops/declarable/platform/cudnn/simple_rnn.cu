@@ -81,6 +81,8 @@ void copySimpleRnnWeights(const cudaStream_t &stream, bool isBidirectional, uint
   if (wEnd - wptr) cudaMemsetAsync(wptr, 0, wEnd - wptr, stream);
 }
 
+// Old RNN API (cuDNN < 9.0) — cudnnSetRNNDescriptor_v6, cudnnRNNForwardTraining, etc. were removed in cuDNN 9.0
+#if CUDNN_VERSION < 9000
 void cudnn_simple_rnn_old(LaunchContext *contextPtr, NDArray *input, NDArray *inputWeights,
                           NDArray *recurrentWeights, NDArray *biases, NDArray *prevAct,
                           NDArray *outputActivations, NDArray *finalTimeStepActivations,
@@ -241,6 +243,7 @@ void cudnn_simple_rnn_old(LaunchContext *contextPtr, NDArray *input, NDArray *in
 
   return;
 }
+#endif  // CUDNN_VERSION < 9000
 
 #if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VER
 
@@ -428,13 +431,17 @@ PLATFORM_IMPL(simple_rnn, ENGINE_CUDA) {
 
 #if CUDNN_VERSION < CUDNN_NEW_RNN_API_VER
   cudnn_simple_rnn_old(contextPtr, x, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional, useTanh);
-#else
+#elif CUDNN_VERSION < 9000
   if (cudnnGetVersion() >= CUDNN_NEW_RNN_API_VER) {
     cudnn_simple_rnn_v8(contextPtr, x, nullptr, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional,
                         useTanh);
   } else {
     cudnn_simple_rnn_old(contextPtr, x, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional, useTanh);
   }
+#else
+  // cuDNN 9.0+ — old RNN API removed, always use v8
+  cudnn_simple_rnn_v8(contextPtr, x, nullptr, Wx, Wh, b, hI, h, nullptr, time, bS, nIn, nOut, isBidirectional,
+                      useTanh);
 #endif
 
   return Status::OK;

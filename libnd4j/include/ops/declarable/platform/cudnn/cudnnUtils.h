@@ -40,7 +40,11 @@
 // These macros are kept for backward compatibility but should be replaced
 // with CudnnVersionProvider methods in new code.
 // ============================================================================
+// cuDNN 8.0.1+ introduced cudnnSetRNNDescriptor_v8 (new RNN API)
+#define CUDNN_NEW_RNN_API_VERSION 8001
 #define CUDNN_NEW_RNN_API_VER CUDNN_NEW_RNN_API_VERSION
+// cuDNN 7.2.1+ introduced RNN clipping support
+#define CUDNN_CLIPPING_API_VERSION 7201
 #define CUDNN_CLIPPING_API_VER CUDNN_CLIPPING_API_VERSION
 
 // Use CudnnVersionProvider for runtime version checks:
@@ -388,6 +392,8 @@ struct RnnDataDesc {
 };
 #endif
 
+// cudnnSetRNNDescriptor_v6 and cudnnSetRNNMatrixMathType were removed in cuDNN 9.0
+#if CUDNN_VERSION < 9000
 SD_INLINE void setRnnDescriptorOldApi(cudnnRNNDescriptor_t rnnDesc, cudnnHandle_t handle, cudnnRNNInputMode_t inputMode,
                                       cudnnDirectionMode_t dirMode, cudnnRNNMode_t cellMode, cudnnRNNAlgo_t algo,
                                       cudnnDataType_t mathPrec, int32_t hiddenSize, int32_t numLayers,
@@ -403,14 +409,17 @@ SD_INLINE void setRnnDescriptorOldApi(cudnnRNNDescriptor_t rnnDesc, cudnnHandle_
 #endif
   return;
 }
+#endif
 
 struct RnnDesc {
   MOVEONLY_DESC_FULL_IMPL(RnnDesc, RNNDescriptor)
 
+#if CUDNN_VERSION < 9000
   template <typename... Args>
   void setUsingOldAPI(Args&&... args) {
     setRnnDescriptorOldApi(desc, std::forward<Args>(args)...);
   }
+#endif
 
   // New RNN API (cuDNN 8.0.1+) - Use CudnnVersionProvider::hasNewRnnApi()
 #if CUDNN_VERSION >= CUDNN_NEW_RNN_API_VERSION
