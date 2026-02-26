@@ -2414,11 +2414,37 @@ mkbuilddir() {
     LOCK_FILE="$BUILD_DIR/.build.lock"
     exec 200>"$LOCK_FILE"
     LOCK_WAIT_SECONDS="${LOCK_WAIT_SECONDS:-1200}"
-    if ! flock -w "$LOCK_WAIT_SECONDS" 200 2>/dev/null; then
-        print_colored "red" "ERROR: Another build is already running for backend '$CHIP'"
-        print_colored "yellow" "Lock file: $LOCK_FILE"
-        print_colored "yellow" "Waited ${LOCK_WAIT_SECONDS}s for lock. If no other build is running, remove the lock file manually"
-        exit 1
+
+    if command -v flock >/dev/null 2>&1; then
+        # Some environments (notably certain macOS runner setups) may have flock
+        # installed but unable to lock file descriptors reliably.
+        FLOCK_TEST_FILE="$BUILD_DIR/.flock.test"
+        exec 201>"$FLOCK_TEST_FILE"
+        FLOCK_SUPPORTED=true
+        if ! flock -n 201 2>/dev/null; then
+            FLOCK_SUPPORTED=false
+        fi
+        exec 201>&-
+        rm -f "$FLOCK_TEST_FILE"
+
+        if [ "$FLOCK_SUPPORTED" = "true" ]; then
+            LOCK_START_TS=$(date +%s)
+            while ! flock -n 200 2>/dev/null; do
+                NOW_TS=$(date +%s)
+                ELAPSED=$((NOW_TS - LOCK_START_TS))
+                if [ "$ELAPSED" -ge "$LOCK_WAIT_SECONDS" ]; then
+                    print_colored "red" "ERROR: Another build is already running for backend '$CHIP'"
+                    print_colored "yellow" "Lock file: $LOCK_FILE"
+                    print_colored "yellow" "Waited ${LOCK_WAIT_SECONDS}s for lock. If no other build is running, remove the lock file manually"
+                    exit 1
+                fi
+                sleep 5
+            done
+        else
+            print_colored "yellow" "WARNING: flock is unavailable for this environment; skipping backend lock"
+        fi
+    else
+        print_colored "yellow" "WARNING: flock command not found; skipping backend lock"
     fi
     # Lock will be released when script exits (fd 200 closes)
 
