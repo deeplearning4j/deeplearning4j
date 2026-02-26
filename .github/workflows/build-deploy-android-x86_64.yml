@@ -168,7 +168,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libdw-dev libelf-dev
+          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
 
       - name: Cache cmake install
         uses: actions/cache@v4

@@ -133,7 +133,8 @@ jobs:
             g++-aarch64-linux-gnu \
             libc6-dev-arm64-cross \
             libdw-dev \
-            libelf-dev
+            libelf-dev \
+            libdwarf-dev
 
       - name: Set up Java for publishing
         id: setup-java
