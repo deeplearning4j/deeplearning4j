@@ -63,15 +63,15 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-${{ runner.arch }}-protobuf
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
@@ -158,7 +158,7 @@ jobs:
 
 
 
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -309,7 +309,7 @@ jobs:
             experimental: true
             name: Extra maven flags to use as part of the build
 
-    runs-on: macos-10.15
+    runs-on: macos-13
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0

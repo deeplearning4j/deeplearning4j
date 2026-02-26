@@ -1,0 +1,94 @@
+name: Setup ccache for macOS
+description: 'Install and configure ccache with smart caching for macOS builds'
+
+inputs:
+  cache-suffix:
+    description: 'Suffix for cache key (e.g., x86_64, arm64)'
+    required: false
+    default: ''
+  max-size:
+    description: 'Maximum cache size (e.g., 5G)'
+    required: false
+    default: '5G'
+
+outputs:
+  cache-hit:
+    description: 'Whether there was a cache hit'
+    value: ${{ steps.ccache-restore.outputs.cache-hit }}
+  save-key:
+    description: 'Unique cache key used when saving ccache at end of job'
+    value: ${{ steps.ccache-keys.outputs.save-key }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ccache
+      shell: bash
+      run: |
+        # Check if ccache is already installed
+        if ! command -v ccache &> /dev/null; then
+          echo "Installing ccache via Homebrew..."
+          brew install ccache
+        else
+          echo "ccache is already installed"
+        fi
+        ccache --version
+        echo "ccache location: $(which ccache)"
+
+    - name: Compute ccache keys
+      id: ccache-keys
+      shell: bash
+      run: |
+        echo "restore-key=ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+        echo "save-key=ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore ccache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ${{ steps.ccache-keys.outputs.restore-key }}
+        restore-keys: |
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-master-
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-main-
+          ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-
+
+    - name: Configure ccache
+      shell: bash
+      run: |
+        # Set ccache directory
+        export CCACHE_DIR="${HOME}/.ccache"
+        mkdir -p "${CCACHE_DIR}"
+
+        # Configure ccache settings optimized for CI
+        ccache --set-config=max_size=${{ inputs.max-size }}
+        ccache --set-config=compression=true
+        ccache --set-config=compression_level=6
+        ccache --set-config=hash_dir=false
+        ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
+        ccache --set-config=compiler_check=content
+        ccache --set-config=base_dir=${GITHUB_WORKSPACE}
+
+        # Show configuration
+        echo "=== ccache configuration ==="
+        ccache --show-config
+
+        # Export environment variables for subsequent steps
+        echo "CCACHE_DIR=${CCACHE_DIR}" >> $GITHUB_ENV
+        echo "CCACHE_COMPILERCHECK=content" >> $GITHUB_ENV
+        echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
+        echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+
+        # Add ccache symlinks directory to PATH (Homebrew creates these)
+        CCACHE_LIBEXEC="$(brew --prefix)/opt/ccache/libexec"
+        if [ -d "$CCACHE_LIBEXEC" ]; then
+          echo "$CCACHE_LIBEXEC" >> $GITHUB_PATH
+        fi
+
+    - name: Show ccache stats before build
+      shell: bash
+      run: |
+        echo "=== ccache stats before build ==="
+        ccache --show-stats --verbose || ccache -sv || ccache -s

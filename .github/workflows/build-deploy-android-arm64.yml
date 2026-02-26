@@ -79,6 +79,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Setup ccache
+        id: setup-ccache
+        uses: ./.github/actions/setup-ccache-linux
+        with:
+          cache-suffix: android-arm64-${{ matrix.helper }}
+          max-size: '5G'
+
       - name: Free Disk Space (Initial)
         uses: jlumbroso/free-disk-space@main
         with:
@@ -95,7 +102,7 @@ jobs:
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-intel-v1
+          key: ${{ runner.os }}-${{ runner.arch }}-protobuf-intel-v1
 
       - name: Install protobuf
         uses: ./.github/actions/install-protobuf-linux
@@ -106,7 +113,7 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake-v1
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake-v1
 
       - name: Install CMake
         uses: ./.github/actions/install-cmake-linux
@@ -144,7 +151,7 @@ jobs:
         run: |
           NDK_HOME="${GITHUB_WORKSPACE}/android-ndk-r27d"
           if [ ! -d "${NDK_HOME}" ]; then
-            echo "Downloading Android NDK r27d for Linux x86_64..."
+            echo "Downloading Android NDK r25c for Linux x86_64..."
             cd "${GITHUB_WORKSPACE}"
             wget --progress=dot:giga "https://dl.google.com/android/repository/android-ndk-r27d-linux.zip"
             unzip -q "android-ndk-r27d-linux.zip"
@@ -217,6 +224,7 @@ jobs:
         run: |
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
+          export JAVA_HOME="/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/11.0.27-6/x64"
           find /opt -name java
           echo "✅ Using Android NDK at: ${ANDROID_NDK}"
           echo "✅ Cross-compiling from Intel x86_64 to ARM64"
@@ -281,9 +289,22 @@ jobs:
               eval "${MAVEN_COMMAND}"
           fi
 
+      - name: Show ccache stats after build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats after build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
+
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event.inputs.debug_enabled == 'true' }}
         with:
           limit-access-to-actor: true
-

@@ -101,6 +101,13 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
 
+      - name: Setup ccache
+        id: setup-ccache
+        uses: ./.github/actions/setup-ccache-windows
+        with:
+          cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
+          max-size: '5G'
+
       - name: Free Disk Space (Windows)
         shell: powershell
         run: |
@@ -217,14 +224,6 @@ jobs:
           bash -c "tar -xzf apache-maven-3.6.3-bin.tar.gz -C 'C:/Program Files/'"
 
           python -m pip install gdown || python -m pip install gdown
-
-          echo Installing ccache
-          curl -LO https://github.com/ccache/ccache/releases/download/v4.6/ccache-4.6-windows-64.zip
-          unzip -j ccache-4.6-windows-64.zip -d C:/msys64/usr/bin/
-          mkdir ccache
-          echo max_size = 3.0G                                                                        > ccache\ccache.conf
-          echo hash_dir = false                                                                      >> ccache\ccache.conf
-          echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros >> ccache\ccache.conf
 
           echo Installing an older less buggy version of GCC
           curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-13.2.0-6-any.pkg.tar.zst
@@ -410,6 +409,20 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
+
+      - name: Show ccache stats after build
+        if: always()
+        shell: cmd
+        run: |
+          echo === ccache stats after build ===
+          %USERPROFILE%\ccache\ccache.exe -sv
+
+      - name: Save ccache (always)
+        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.ccache
+          key: ${{ steps.setup-ccache.outputs.save-key }}
 
       - name: Clean up
         shell: cmd

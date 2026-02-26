@@ -1,0 +1,102 @@
+name: Setup ccache for Windows
+description: 'Install and configure ccache with smart caching for Windows builds'
+
+inputs:
+  cache-suffix:
+    description: 'Suffix for cache key (e.g., cuda-12.6)'
+    required: false
+    default: ''
+  max-size:
+    description: 'Maximum cache size (e.g., 5G)'
+    required: false
+    default: '5G'
+
+outputs:
+  cache-hit:
+    description: 'Whether there was a cache hit'
+    value: ${{ steps.ccache-restore.outputs.cache-hit }}
+  save-key:
+    description: 'Unique cache key used when saving ccache at end of job'
+    value: ${{ steps.ccache-keys.outputs.save-key }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ccache
+      shell: cmd
+      run: |
+        echo Installing ccache for Windows...
+        cd /d %USERPROFILE%
+        if not exist ccache-4.10.2-windows-x86_64.zip (
+          curl -LO https://github.com/ccache/ccache/releases/download/v4.10.2/ccache-4.10.2-windows-x86_64.zip
+        )
+        if not exist ccache (
+          mkdir ccache
+          tar -xf ccache-4.10.2-windows-x86_64.zip -C ccache --strip-components=1
+        )
+        echo ccache installed successfully
+
+    - name: Compute ccache keys
+      id: ccache-keys
+      shell: pwsh
+      run: |
+        $restoreKey = "ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}"
+        $saveKey = "$restoreKey-${{ github.run_id }}-${{ github.run_attempt }}"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "restore-key=$restoreKey"
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "save-key=$saveKey"
+
+    - name: Restore ccache
+      id: ccache-restore
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.ccache
+        key: ${{ steps.ccache-keys.outputs.restore-key }}
+        restore-keys: |
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-master-
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-main-
+          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-
+
+    - name: Configure ccache
+      shell: cmd
+      run: |
+        set "CCACHE_DIR=%USERPROFILE%\.ccache"
+        if not exist "%CCACHE_DIR%" mkdir "%CCACHE_DIR%"
+
+        REM Create ccache configuration
+        set "CCACHE_CONFIGPATH=%CCACHE_DIR%\ccache.conf"
+        echo max_size = ${{ inputs.max-size }}> "%CCACHE_CONFIGPATH%"
+        echo compression = true>> "%CCACHE_CONFIGPATH%"
+        echo compression_level = 6>> "%CCACHE_CONFIGPATH%"
+        echo hash_dir = false>> "%CCACHE_CONFIGPATH%"
+        echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed>> "%CCACHE_CONFIGPATH%"
+        echo compiler_check = content>> "%CCACHE_CONFIGPATH%"
+        echo run_second_cpp = true>> "%CCACHE_CONFIGPATH%"
+
+        echo === ccache configuration ===
+        type "%CCACHE_CONFIGPATH%"
+
+    - name: Add ccache to PATH
+      shell: pwsh
+      run: |
+        $ccachePath = "$env:USERPROFILE\ccache"
+        $ccacheDir = "$env:USERPROFILE\.ccache"
+
+        # Add to GITHUB_PATH for subsequent steps
+        Add-Content -Path $env:GITHUB_PATH -Value $ccachePath
+
+        # Add to GITHUB_ENV
+        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
+        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
+        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
+        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=ccache"
+        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+
+        # Verify ccache is accessible
+        & "$ccachePath\ccache.exe" --version
+
+    - name: Show ccache stats before build
+      shell: cmd
+      run: |
+        echo === ccache stats before build ===
+        %USERPROFILE%\ccache\ccache.exe -sv

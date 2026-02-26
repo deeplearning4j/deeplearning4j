@@ -33,7 +33,7 @@
     <name>nd4j-tvm</name>
 
     <properties>
-        <!-- TVM 1.5.12 presets not yet available, using latest available 1.5.11 -->
+        <!-- TVM 1.5.13 presets not yet available, using latest available 1.5.11 -->
         <tvm.version>0.18.0</tvm.version>
         <tvm.javacpp-presets.version>1.5.11</tvm.javacpp-presets.version>
         <tvm.javacpp.version>${tvm.version}-${tvm.javacpp-presets.version}</tvm.javacpp.version>
