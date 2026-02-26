@@ -75,8 +75,7 @@ void centerAndSharpenBp(NDArray* input, NDArray* center, NDArray* gradOutput,
     NDArray softmaxOut(input->shapeInfo(), input->dataType(), false, context);
     centerAndSharpen(input, center, &softmaxOut, temperature, context);
 
-    double zero = 0.0;
-    dLdCenter->assign(zero);
+    dLdCenter->nullify();
 
     for (sd::LongType b = 0; b < batchSize; b++) {
         // Compute dot(gradOutput[b], softmax[b])
