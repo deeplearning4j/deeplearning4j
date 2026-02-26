@@ -816,9 +816,11 @@ void DataBuffer::close() { this->deleteBuffers(); }
 void DataBuffer::setDeviceId(int deviceId) { _deviceId = deviceId; }
 
 void DataBuffer::resetCounters() {
+#ifdef SD_CUDA
   _writePrimary.store(0);
   _writeSpecial.store(0);
   _readPrimary.store(0);
   _readSpecial.store(0);
+#endif
 }
 }  // namespace sd
