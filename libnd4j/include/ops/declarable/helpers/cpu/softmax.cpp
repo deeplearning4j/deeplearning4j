@@ -63,7 +63,7 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
    COORDS2INDEX(inRank, inStride, coords, inOffset);
    T val = inBuff[inOffset];
    // Skip Inf and NaN when finding max
-   if (!std::isinf(val) && !std::isnan(val)) {
+   if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
      max = sd::math::sd_max<T>(max, val);
    }
  }
@@ -258,7 +258,7 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
          sd::LongType offset;
          COORDS2INDEX(tadRank, tadStride, tadCoords, offset);
          T val = inBuff[offset];
-         if (!std::isinf(val) && !std::isnan(val)) {
+         if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
            max = sd::math::sd_max<T>(max, val);
          }
        }

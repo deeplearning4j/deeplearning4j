@@ -779,7 +779,7 @@ static void argIndexCaseNonScalar(const int& first_rank, const int& output_rank,
 template <typename X, typename Z, typename ReductionOp>
 SD_LIB_HIDDEN void argIndex_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   char input_order = input.ordering();
-  auto isContiguousInOrder = [](const NDArray& arr) {
+  auto isContiguousInOrder = [](NDArray& arr) {
     auto rank = arr.rankOf();
     auto shp = arr.shapeOf();
     auto strides = arr.stridesOf();
