@@ -242,11 +242,8 @@ function(configure_cuda_linking main_target_name)
     target_link_libraries(${main_target_name} PUBLIC CUDA::toolkit CUDA::cudart CUDA::cublas CUDA::cusolver)
 
     # NVRTC and CUDA driver API are required for NVRTC JIT and PTX GPU backends.
-    # Link explicitly using full paths since CUDA::nvrtc/CUDA::cuda_driver targets
-    # may not be reliably resolved in all cmake versions.
-    target_link_libraries(${main_target_name} PUBLIC
-        ${CUDAToolkit_LIBRARY_DIR}/libnvrtc.so
-        ${CUDAToolkit_LIBRARY_DIR}/stubs/libcuda.so)
+    # Use CMake's imported targets for cross-platform compatibility (handles .so/.lib/.dylib).
+    target_link_libraries(${main_target_name} PUBLIC CUDA::nvrtc CUDA::cuda_driver)
 
     # SD_GCC_FUNCTRACE: Link libdw for stack traces
     if(SD_GCC_FUNCTRACE AND NOT WIN32)

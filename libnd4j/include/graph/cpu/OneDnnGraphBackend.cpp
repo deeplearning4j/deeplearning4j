@@ -55,7 +55,7 @@ OneDnnGraphBackend::~OneDnnGraphBackend() = default;
 // ─── Availability ───────────────────────────────────────────────────────────
 
 bool OneDnnGraphBackend::isAvailable() const {
-  return sd::ops::platforms::OnednnVersionProvider::hasGraphApi();
+  return sd::ops::platforms::onednn::OnednnVersionProvider::hasGraphApi();
 }
 
 // ─── Op kind mapping ────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ dg::op::kind OneDnnGraphBackend::mapOpKind(const std::string& opName) {
   // Normalization
   if (opName == "softmax" || opName == "Softmax") return dg::op::kind::SoftMax;
   if (opName == "log_softmax" || opName == "LogSoftmax") return dg::op::kind::LogSoftmax;
-  if (opName == "layer_norm" || opName == "LayerNorm") return dg::op::kind::LayerNormalization;
+  if (opName == "layer_norm" || opName == "LayerNorm") return dg::op::kind::LayerNorm;
   if (opName == "batchnorm" || opName == "BatchNorm") return dg::op::kind::BatchNormInference;
 
   // Shape operations
