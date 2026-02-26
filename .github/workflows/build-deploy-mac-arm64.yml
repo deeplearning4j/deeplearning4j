@@ -168,7 +168,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gnu-sed unzip gcc swig autoconf-archive automake libomp libtool libusb ant maven nasm xz pkg-config sdl bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install gnu-sed unzip gcc swig autoconf-archive automake libomp libtool libusb ant maven nasm xz pkg-config sdl bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python openblas
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup OpenBLAS for macOS ARM64
