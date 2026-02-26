@@ -48,6 +48,7 @@
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugInfo.h>
 #include <memory/MemoryCounter.h>
+#include <memory/MultiBackendWorkspace.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <csignal>
 #include <cstdio>
@@ -61,7 +62,7 @@ typedef Context OpaqueContext;
 typedef sd::NDArray* OpaqueNDArray;
 typedef sd::NDArray** OpaqueNDArrayArr;
 typedef sd::LaunchContext* OpaqueLaunchContext;
-typedef RandomGenerator* OpaqueRandomGenerator;
+typedef RandomGenerator OpaqueRandomGenerator;
 typedef sd::graph::ResultWrapper OpaqueResultWrapper;
 typedef sd::graph::VariablesSet OpaqueVariablesSet;
 typedef sd::graph::Variable OpaqueVariable;
@@ -69,17 +70,19 @@ typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
 typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
+typedef sd::memory::Workspace* OpaqueWorkspace;
+typedef sd::memory::MultiBackendWorkspace* OpaqueMultiBackendWorkspace;
 
 
 
 
 SD_LIB_EXPORT const char* getAllCustomOps();
-SD_LIB_EXPORT OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
+SD_LIB_EXPORT OpaqueRandomGenerator* createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
 
 SD_LIB_EXPORT OpaqueContext *createGraphContext(int nodeId);
 SD_LIB_EXPORT void setGraphContextCudaContext(OpaqueContext *ptr, void *stream, void *reductionPointer,
                                               void *allocationPointer);
-SD_LIB_EXPORT OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext *ptr);
+SD_LIB_EXPORT OpaqueRandomGenerator* getGraphContextRandomGenerator(OpaqueContext *ptr);
 
 SD_LIB_EXPORT void shuffle(sd::Pointer *extras,
                            OpaqueNDArrayArr x,
@@ -174,6 +177,14 @@ SD_LIB_EXPORT void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointe
 SD_LIB_EXPORT sd::LongType const *getShape(OpaqueShapeList *list, sd::LongType i);
 
 SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context);
+
+/**
+ * Same as calculateOutputShapes2 but skips forceSyncToHost() on input arrays.
+ * Use for ops whose shape function only reads shape info (not array values).
+ * Avoids expensive CUDA D2H synchronization for shape-only ops.
+ */
+SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapesNoSync(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context);
+
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list);
 
 SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *db) ;
@@ -255,11 +266,23 @@ SD_LIB_EXPORT sd::Pointer mallocHost(sd::LongType memorySize, int flags) ;
 SD_LIB_EXPORT sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) ;
 SD_LIB_EXPORT int freeHost(sd::Pointer pointer) ;
 SD_LIB_EXPORT int freeDevice(sd::Pointer pointer, int deviceId) ;
+
+// CUDA Memory Pool functions (CUDA 11.2+)
+SD_LIB_EXPORT bool isMemoryPoolEnabled() ;
+SD_LIB_EXPORT void setMemoryPoolEnabled(bool enabled) ;
+SD_LIB_EXPORT void getMemoryPoolStats(int deviceId, sd::LongType* usedBytes, sd::LongType* reservedBytes) ;
+SD_LIB_EXPORT void trimMemoryPool(int deviceId) ;
+SD_LIB_EXPORT void trimMemoryPoolOnStream(int deviceId, void *stream) ;
+SD_LIB_EXPORT sd::LongType getPinnedHostBytesUsed() ;
+SD_LIB_EXPORT sd::LongType getPinnedHostBytesLimit() ;
+SD_LIB_EXPORT void setPinnedHostBytesLimit(sd::LongType maxBytes) ;
+
 SD_LIB_EXPORT sd::Pointer createContext() ;
 SD_LIB_EXPORT sd::Pointer createStream() ;
 SD_LIB_EXPORT sd::Pointer createEvent() ;
 SD_LIB_EXPORT int registerEvent(sd::Pointer event, sd::Pointer stream) ;
 SD_LIB_EXPORT int setDevice(int deviceId) ;
+SD_LIB_EXPORT void setAvailableDevices(int *devices, int size) ;
 SD_LIB_EXPORT sd::LongType getDeviceFreeMemoryDefault() ;
 SD_LIB_EXPORT sd::LongType getDeviceFreeMemory(int device) ;
 SD_LIB_EXPORT sd::LongType getDeviceTotalMemory(int device) ;
@@ -271,11 +294,43 @@ SD_LIB_EXPORT int destroyEvent(sd::Pointer event) ;
 SD_LIB_EXPORT int streamSynchronize(sd::Pointer stream) ;
 SD_LIB_EXPORT int eventSynchronize(sd::Pointer event) ;
 SD_LIB_EXPORT int getAvailableDevices() ;
+SD_LIB_EXPORT bool isPeerAccessSupported(int srcDevice, int dstDevice);
 SD_LIB_EXPORT void enableDebugMode(bool reallyEnable) ;
 SD_LIB_EXPORT void setGridLimit(int gridSize) ;
 SD_LIB_EXPORT int ompGetMaxThreads() ;
 SD_LIB_EXPORT int ompGetNumThreads() ;
 SD_LIB_EXPORT void setOmpNumThreads(int threads) ;
+/**
+ * Sets the number of threads used by OpenBLAS for BLAS operations.
+ * This is separate from OMP threads and specifically controls OpenBLAS's internal threading.
+ * Default should be 1 to prevent TLS corruption crashes in multi-threaded Java applications.
+ * @param threads number of threads for OpenBLAS to use
+ */
+SD_LIB_EXPORT void setOpenBlasThreads(int threads) ;
+
+/**
+ * Gets the number of threads OpenBLAS is configured to use.
+ * @return number of threads, 0 if using default
+ */
+SD_LIB_EXPORT int getOpenBlasThreads() ;
+
+/**
+ * Check if BLAS call serialization is enabled.
+ * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+ * TLS corruption and race conditions in multi-threaded environments.
+ * @return true if serialization is enabled
+ */
+SD_LIB_EXPORT bool isSerializeBlasCalls() ;
+
+/**
+ * Enable or disable BLAS call serialization.
+ * When enabled, external BLAS calls are serialized to prevent OpenBLAS
+ * TLS corruption and race conditions in multi-threaded environments.
+ * Disable only if using a thread-safe BLAS implementation (e.g., MKL).
+ * @param serialize true to enable serialization, false to disable
+ */
+SD_LIB_EXPORT void setSerializeBlasCalls(bool serialize) ;
+
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;
@@ -397,25 +452,25 @@ SD_LIB_EXPORT sd::LongType numTArgumentsNative(OpaqueContext* ptr) ;
 SD_LIB_EXPORT sd::LongType numIArgumentsNative(OpaqueContext* ptr) ;
 SD_LIB_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index,OpaqueNDArray arr) ;
 SD_LIB_EXPORT void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) ;
-SD_LIB_EXPORT void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) ;
-SD_LIB_EXPORT void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) ;
+SD_LIB_EXPORT void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) ;
+SD_LIB_EXPORT void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays, OpaqueNDArrayArr arr) ;
 SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext *ptr, double *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextIArguments(OpaqueContext *ptr, sd::LongType *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextBArguments(OpaqueContext *ptr, bool *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void deleteGraphContext(OpaqueContext *ptr) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT void setRandomGeneratorStates(OpaqueRandomGenerator ptr, sd::LongType rootSeed, sd::LongType nodeSeed) ;
-SD_LIB_EXPORT float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, sd::LongType index) ;
-SD_LIB_EXPORT int getRandomGeneratorNextInt(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator ptr) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT void setRandomGeneratorStates(OpaqueRandomGenerator* ptr, sd::LongType rootSeed, sd::LongType nodeSeed) ;
+SD_LIB_EXPORT float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, sd::LongType index) ;
+SD_LIB_EXPORT int getRandomGeneratorNextInt(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT float getRandomGeneratorNextFloat(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT double getRandomGeneratorNextDouble(OpaqueRandomGenerator* ptr) ;
+SD_LIB_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr) ;
 SD_LIB_EXPORT sd::LongType getCachedMemory(int deviceId) ;
 SD_LIB_EXPORT sd::Pointer lcScalarPointer(OpaqueLaunchContext lc) ;
 SD_LIB_EXPORT sd::Pointer lcReductionPointer(OpaqueLaunchContext lc) ;
@@ -426,6 +481,7 @@ SD_LIB_EXPORT sd::Pointer lcBlasHandle(OpaqueLaunchContext lc) ;
 SD_LIB_EXPORT sd::Pointer lcSolverHandle(OpaqueLaunchContext lc) ;
 SD_LIB_EXPORT void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) ;
 SD_LIB_EXPORT void ctxPurge(OpaqueContext *ptr) ;
+SD_LIB_EXPORT void ctxPurgeNoSync(OpaqueContext *ptr) ;
 SD_LIB_EXPORT int binaryLevel() ;
 SD_LIB_EXPORT int optimalLevel() ;
 SD_LIB_EXPORT bool isMinimalRequirementsMet() ;
@@ -443,18 +499,157 @@ SD_LIB_EXPORT void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType ele
 SD_LIB_EXPORT int dbUseCount(OpaqueDataBuffer* dataBuffer) ;
 SD_LIB_EXPORT void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbForceSyncToPrimary(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbForceSyncToSpecial(OpaqueDataBuffer *dataBuffer) ;
+
+/**
+ * Batched asynchronous synchronization of multiple data buffers from host to device.
+ * Uses multiple CUDA streams to transfer data in parallel, providing better performance
+ * than individual synchronous transfers for model loading.
+ *
+ * @param buffers Array of OpaqueDataBuffer pointers to sync
+ * @param bufferCount Number of buffers in the array
+ * @param streamCount Number of CUDA streams to use for parallel transfers (typically 2-8)
+ */
+SD_LIB_EXPORT void batchSyncToSpecialAsync(OpaqueDataBuffer **buffers, int bufferCount, int streamCount);
+
+SD_LIB_EXPORT void dbMigrate(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickHostRead(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) ;
 SD_LIB_EXPORT void dbClose(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbFreeBuffersOnly(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbFreeBuffersOnStream(OpaqueDataBuffer *dataBuffer, void *stream) ;
+SD_LIB_EXPORT bool dbIsOwner(OpaqueDataBuffer *dataBuffer) ;
+SD_LIB_EXPORT void dbCloseGetDiagnostics(sd::LongType* outStats) ;
+SD_LIB_EXPORT void dbCloseResetDiagnostics() ;
 SD_LIB_EXPORT int dbDeviceId(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) ;
 SD_LIB_EXPORT int dbLocality(OpaqueDataBuffer *dataBuffer) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::LongType length) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) ;
+
+/**
+ * Create an externalized data buffer that is ALREADY marked as constant.
+ * This is critical for preventing race conditions where the Java GC can
+ * finalize the buffer before setConstant() is called.
+ *
+ * The constant flag is set IN NATIVE CODE before returning to Java,
+ * eliminating the race window between buffer creation and marking constant.
+ *
+ * @param elements Number of elements
+ * @param dataType Data type integer
+ * @param primary Primary (host) pointer
+ * @param special Special (device) pointer
+ * @return Buffer that is already marked as constant and will never be deallocated
+ */
+SD_LIB_EXPORT OpaqueDataBuffer* dbCreateConstantExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) ;
+
+/**
+ * Set the constant flag on an OpaqueDataBuffer.
+ * Constant buffers (like shape info) should never be freed by the deallocator.
+ * This propagates the flag from Java to the native InteropDataBuffer.
+ *
+ * @param dataBuffer The buffer to mark as constant
+ * @param isConstant true to mark as constant, false otherwise
+ * @return true if the flag was successfully set, false if the buffer was invalid
+ *         (already closed or freed). If false is returned, the buffer may have
+ *         been deallocated by GC and should not be used.
+ */
+SD_LIB_EXPORT bool dbSetConstant(OpaqueDataBuffer *dataBuffer, bool isConstant);
+
+/**
+ * Check if a buffer is marked as constant.
+ */
+SD_LIB_EXPORT bool dbIsConstant(OpaqueDataBuffer *dataBuffer);
+
+// =====================================================
+// Transfer Metrics API - for tracking device transfers
+// =====================================================
+
+/**
+ * Enable or disable transfer metrics collection
+ */
+SD_LIB_EXPORT void transferMetricsSetEnabled(bool enabled);
+
+/**
+ * Check if transfer metrics are enabled
+ */
+SD_LIB_EXPORT bool transferMetricsIsEnabled();
+
+/**
+ * Enable or disable individual transfer logging
+ */
+SD_LIB_EXPORT void transferMetricsSetLogTransfers(bool log);
+
+/**
+ * Set minimum bytes threshold for logging individual transfers
+ */
+SD_LIB_EXPORT void transferMetricsSetMinBytesForLogging(sd::LongType bytes);
+
+/**
+ * Get total bytes transferred (H2D)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetH2DBytes();
+
+/**
+ * Get total bytes transferred (D2H)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2HBytes();
+
+/**
+ * Get total bytes transferred (D2D within device)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2DBytes();
+
+/**
+ * Get total bytes transferred (P2P between devices)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetP2PBytes();
+
+/**
+ * Get total transfer count (H2D)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetH2DCount();
+
+/**
+ * Get total transfer count (D2H)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2HCount();
+
+/**
+ * Get total transfer count (D2D)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetD2DCount();
+
+/**
+ * Get total transfer count (P2P)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetP2PCount();
+
+/**
+ * Get total transfer time in nanoseconds (all types)
+ */
+SD_LIB_EXPORT sd::LongType transferMetricsGetTotalTimeNs();
+
+/**
+ * Get transfer overhead as percentage of op execution time
+ */
+SD_LIB_EXPORT double transferMetricsGetOverheadPercent();
+
+/**
+ * Reset all transfer metrics
+ */
+SD_LIB_EXPORT void transferMetricsReset();
+
+/**
+ * Print transfer metrics summary to stdout
+ */
+SD_LIB_EXPORT void transferMetricsPrintSummary();
+
 SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) ;
 SD_LIB_EXPORT OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo);
 SD_LIB_EXPORT OpaqueConstantShapeBuffer shapeBuffer(int rank, sd::LongType* shape, sd::LongType* strides,
@@ -520,6 +715,7 @@ SD_LIB_EXPORT OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueCont
 SD_LIB_EXPORT const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer);
 SD_LIB_EXPORT const char *lastErrorMessage();
 SD_LIB_EXPORT int lastErrorCode();
+SD_LIB_EXPORT void clearLastError();
 SD_LIB_EXPORT void triggerLeakCheck();
 SD_LIB_EXPORT void enableNDArrayTracking();
 SD_LIB_EXPORT void disableNDArrayTracking();
@@ -531,6 +727,27 @@ SD_LIB_EXPORT void enableShapeCacheTracking();
 SD_LIB_EXPORT void disableShapeCacheTracking();
 SD_LIB_EXPORT void enableOpContextTracking();
 SD_LIB_EXPORT void disableOpContextTracking();
+
+/**
+ * Set the current operation context for allocation tracking.
+ * All allocations (NDArray, DataBuffer) made while an op context is set
+ * will be tagged with the operation name for per-op leak analysis.
+ * @param opName The name of the operation (e.g., "matmul", "add", "conv2d")
+ *               Pass nullptr to clear the context.
+ */
+SD_LIB_EXPORT void setLifecycleOpContext(const char* opName);
+
+/**
+ * Clear the current operation context for allocation tracking.
+ * Subsequent allocations will be tagged as "(unknown)" in leak reports.
+ */
+SD_LIB_EXPORT void clearLifecycleOpContext();
+
+/**
+ * Get the current operation context for allocation tracking.
+ * @return The current operation name, or empty string if none is set
+ */
+SD_LIB_EXPORT const char* getLifecycleOpContext();
 
 /**
  * Enable operation execution logging for crash detection.
@@ -636,6 +853,61 @@ SD_LIB_EXPORT void clearAllocationContext();
  */
 SD_LIB_EXPORT void updateAllocationJavaStackTrace(OpaqueNDArray array, const char* javaStackTrace);
 
+// ===============================
+// Java-side Lifecycle Recording API
+// These functions are called from Java to record allocation/deallocation events
+// for lifecycle tracking. They delegate to the corresponding C++ lifecycle trackers.
+// ===============================
+
+/**
+ * Record an NDArray allocation from Java side.
+ * @param array The OpaqueNDArray that was allocated
+ * @param size Size in bytes
+ * @param dataType Data type of the array
+ * @param isView Whether this is a view of another array
+ */
+SD_LIB_EXPORT void recordJavaNDArrayAllocation(OpaqueNDArray array, long size, int dataType, bool isView);
+
+/**
+ * Record an NDArray deallocation from Java side.
+ * @param array The OpaqueNDArray being deallocated
+ */
+SD_LIB_EXPORT void recordJavaNDArrayDeallocation(OpaqueNDArray array);
+
+/**
+ * Record a DataBuffer allocation from Java side.
+ * @param buffer The OpaqueDataBuffer that was allocated
+ * @param size Size in bytes
+ * @param dataType Data type of the buffer
+ * @param isWorkspace Whether this buffer is from a workspace
+ */
+SD_LIB_EXPORT void recordJavaDataBufferAllocation(OpaqueDataBuffer *buffer, long size, int dataType, bool isWorkspace);
+
+/**
+ * Record a DataBuffer deallocation from Java side.
+ * @param buffer The OpaqueDataBuffer being deallocated
+ */
+SD_LIB_EXPORT void recordJavaDataBufferDeallocation(OpaqueDataBuffer *buffer);
+
+/**
+ * Record an OpContext allocation from Java side.
+ * @param context The OpaqueContext that was allocated
+ * @param nodeId Node ID for the context
+ * @param fastpathInSize Size of fastpath input arrays
+ * @param fastpathOutSize Size of fastpath output arrays
+ * @param intermediateResultsSize Size of intermediate results
+ * @param handlesSize Size of handles
+ * @param hasWorkspace Whether context has workspace
+ * @param isFastPath Whether this is a fastpath context
+ */
+SD_LIB_EXPORT void recordJavaOpContextAllocation(OpaqueContext *context, int nodeId, long fastpathInSize, long fastpathOutSize, long intermediateResultsSize, long handlesSize, bool hasWorkspace, bool isFastPath);
+
+/**
+ * Record an OpContext deallocation from Java side.
+ * @param context The OpaqueContext being deallocated
+ */
+SD_LIB_EXPORT void recordJavaOpContextDeallocation(OpaqueContext *context);
+
 /**
  * Clear all cached TAD packs to prevent memory leaks during testing.
  * This frees all TadPack objects stored in the TAD cache.
@@ -645,7 +917,7 @@ SD_LIB_EXPORT void clearTADCache();
 
 /**
  * Marks that shutdown is in progress.
- * CRITICAL: Call this early in JVM shutdown (e.g., from a shutdown hook)
+ * Call this early in JVM shutdown (e.g., from a shutdown hook)
  * to prevent SIGSEGV crashes during cache cleanup.
  *
  * During JVM/static destruction, memory allocators may have been destroyed,
@@ -667,8 +939,26 @@ SD_LIB_EXPORT bool isTADCacheShutdownInProgress();
  * Clears all cached shape buffers.
  * This frees all ConstantShapeBuffer objects stored in the shape cache.
  * Called during application shutdown to prevent memory leaks.
+ * NOTE: Will return early without action if setShapeCacheShutdownInProgress(true) was called.
  */
 SD_LIB_EXPORT void clearShapeCache();
+
+/**
+ * Marks that shutdown is in progress for the shape cache.
+ *
+ * When set to true, clearShapeCache() becomes a no-op to avoid segfaults
+ * during JVM/application shutdown when buffers may still have external
+ * references or memory allocators may be in an inconsistent state.
+ *
+ * @param inProgress true to mark shutdown in progress, false otherwise
+ */
+SD_LIB_EXPORT void setShapeCacheShutdownInProgress(bool inProgress);
+
+/**
+ * Check if shape cache shutdown is in progress.
+ * @return true if setShapeCacheShutdownInProgress(true) was called
+ */
+SD_LIB_EXPORT bool isShapeCacheShutdownInProgress();
 
 /**
  * Get the total number of cached shape buffer entries.
@@ -1003,5 +1293,695 @@ SD_LIB_EXPORT sd::LongType getDeallocatorServiceLiveCount();
  * NOTE: Returns 0 when SD_GCC_FUNCTRACE is not defined.
  */
 SD_LIB_EXPORT sd::LongType getDeallocatorServiceBytesInUse();
+
+// =====================================================
+// Op Timing Tracker API
+// =====================================================
+
+/**
+ * Enable op timing tracker.
+ * @param enabled 1 to enable, 0 to disable
+ * @param detailed 1 for phase-level timing, 0 for total-only
+ */
+SD_LIB_EXPORT void setOpTimingEnabled(int enabled, int detailed);
+
+/**
+ * Enable op timing with Chrome trace export.
+ * @param detailed 1 for phase-level timing, 0 for total-only
+ */
+SD_LIB_EXPORT void setOpTimingEnabledWithTrace(int detailed);
+
+/**
+ * Check if op timing is enabled.
+ * @return 1 if enabled, 0 if disabled
+ */
+SD_LIB_EXPORT int isOpTimingEnabled();
+
+/**
+ * Flush ring buffer to aggregated stats.
+ * Call before reading any stats.
+ */
+SD_LIB_EXPORT void flushOpTiming();
+
+/**
+ * Print top N ops by total time.
+ * @param topN number of ops to show
+ */
+SD_LIB_EXPORT void printOpTimingStats(int topN);
+
+/**
+ * Print phase breakdown for a specific op.
+ * @param opName name of the op to analyze
+ */
+SD_LIB_EXPORT void printOpTimingBreakdown(const char* opName);
+
+/**
+ * Print timing histogram for a specific op.
+ * @param opName name of the op to analyze
+ */
+SD_LIB_EXPORT void printOpTimingHistogram(const char* opName);
+
+/**
+ * Print per-thread timing statistics.
+ */
+SD_LIB_EXPORT void printOpTimingThreadStats();
+
+/**
+ * Reset all timing data.
+ */
+SD_LIB_EXPORT void resetOpTiming();
+
+/**
+ * Get number of unique ops tracked.
+ * @return number of unique ops
+ */
+SD_LIB_EXPORT int getOpTimingNumOps();
+
+/**
+ * Get total number of op executions tracked.
+ * @return total execution count
+ */
+SD_LIB_EXPORT sd::LongType getOpTimingTotalExecutions();
+
+/**
+ * Export timing data to Chrome trace JSON format.
+ * @param filename output file path
+ * @return 1 on success, 0 on failure
+ */
+SD_LIB_EXPORT int exportOpTimingChromeTrace(const char* filename);
+
+/**
+ * Export timing data to CSV format.
+ * @param filename output file path
+ * @return 1 on success, 0 on failure
+ */
+SD_LIB_EXPORT int exportOpTimingCSV(const char* filename);
+
+// ========================
+// Workspace Management API
+// ========================
+
+/**
+ * Create a native workspace for bump-allocated memory.
+ * @param initialSize initial allocation in bytes
+ * @return opaque workspace pointer
+ */
+SD_LIB_EXPORT OpaqueWorkspace createNativeWorkspace(sd::LongType initialSize);
+
+/**
+ * Destroy a native workspace and free all memory.
+ */
+SD_LIB_EXPORT void destroyNativeWorkspace(OpaqueWorkspace workspace);
+
+/**
+ * Enter workspace scope - resets offsets for new allocation cycle.
+ */
+SD_LIB_EXPORT void workspaceScopeIn(OpaqueWorkspace workspace);
+
+/**
+ * Exit workspace scope - resets offsets, making memory reusable.
+ */
+SD_LIB_EXPORT void workspaceScopeOut(OpaqueWorkspace workspace);
+
+/**
+ * Attach a workspace to an op execution context.
+ * All subsequent allocations by ops using this context will come from the workspace.
+ */
+SD_LIB_EXPORT void attachWorkspaceToContext(OpaqueContext* ctx, OpaqueWorkspace workspace);
+
+/**
+ * Detach workspace from context (ops will allocate from heap again).
+ */
+SD_LIB_EXPORT void detachWorkspaceFromContext(OpaqueContext* ctx);
+
+/**
+ * Get the current used size (offset) of the workspace.
+ */
+SD_LIB_EXPORT sd::LongType getWorkspaceCurrentOffset(OpaqueWorkspace workspace);
+
+/**
+ * Get the total allocated size of the workspace.
+ */
+SD_LIB_EXPORT sd::LongType getWorkspaceAllocatedSize(OpaqueWorkspace workspace);
+
+// ========================
+// Multi-Backend Workspace API (for multi-device / multi-GPU support)
+// ========================
+
+/**
+ * Create a multi-backend workspace with device awareness.
+ */
+SD_LIB_EXPORT OpaqueMultiBackendWorkspace createNativeMultiBackendWorkspace(
+    sd::LongType initialSize, int primaryDeviceType, int primaryDeviceIndex);
+
+/**
+ * Destroy a multi-backend workspace.
+ */
+SD_LIB_EXPORT void destroyNativeMultiBackendWorkspace(OpaqueMultiBackendWorkspace handle);
+
+/**
+ * Allocate bytes from multi-backend workspace on primary device.
+ */
+SD_LIB_EXPORT void* nativeMbwAllocateBytes(OpaqueMultiBackendWorkspace handle, sd::LongType numBytes);
+
+/**
+ * Multi-backend workspace scope management.
+ */
+SD_LIB_EXPORT void nativeMbwScopeIn(OpaqueMultiBackendWorkspace handle);
+SD_LIB_EXPORT void nativeMbwScopeOut(OpaqueMultiBackendWorkspace handle);
+
+/**
+ * Transfer data between devices in multi-backend workspace.
+ */
+SD_LIB_EXPORT void nativeMbwTransferTo(OpaqueMultiBackendWorkspace handle,
+    int srcDeviceType, int srcDeviceIndex, int dstDeviceType, int dstDeviceIndex);
+
+/**
+ * Get coherence state for a device.
+ */
+SD_LIB_EXPORT int nativeMbwGetCoherenceState(OpaqueMultiBackendWorkspace handle,
+    int deviceType, int deviceIndex);
+
+/**
+ * Get total allocated size across all devices.
+ */
+SD_LIB_EXPORT sd::LongType nativeMbwGetTotalAllocatedSize(OpaqueMultiBackendWorkspace handle);
+
+// ========================
+// Native Graph Executor API
+// ========================
+
+/**
+ * Compile a serialized DynamicShapePlan into a native C++ executor.
+ * The serialized plan is a binary format produced by DynamicShapePlan.serialize() in Java.
+ *
+ * @param serializedPlan  Pointer to the serialized plan bytes
+ * @param planSize  Size of the serialized plan in bytes
+ * @return Opaque handle to the compiled plan, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType planSize);
+
+/**
+ * Execute a compiled native plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param opContext  OpaqueContext with inputs set via setGraphContextInputArray(), outputs pre-allocated via setGraphContextOutputArray()
+ * @param stream  CUDA stream pointer (nullptr for CPU)
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int executeDynamicShapePlan(
+    sd::Pointer planHandle,
+    OpaqueContext* opContext,
+    sd::Pointer stream);
+
+/**
+ * Free a compiled native plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void freeDynamicShapePlan(sd::Pointer planHandle);
+
+/**
+ * Clear shape caches in a compiled plan.
+ * Must be called when a session resets to avoid stale GPU memory references.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void clearDynamicShapePlanCaches(sd::Pointer planHandle);
+
+/**
+ * Force-clear ALL shape caches unconditionally (including static slots).
+ * Use for session reset or model reload scenarios.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void clearAllDynamicShapePlanCachesForce(sd::Pointer planHandle);
+
+/**
+ * Configure KV cache retention for a compiled plan.
+ * After this call, execute() will scatter new KV entries into static input buffers
+ * instead of returning them as outputs, avoiding per-step JNI round-trips.
+ *
+ * @param planHandle    Handle from compileDynamicShapePlan()
+ * @param mappings      Flat array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
+ * @param numMappings   Number of KV cache mappings
+ * @param maxKvLen      Maximum KV cache length (static buffer size along sequence dimension)
+ * @param initialPos    Initial write position (prefillLen)
+ */
+SD_LIB_EXPORT void configurePlanKvCacheRetention(
+    sd::Pointer planHandle,
+    const int* mappings,
+    int numMappings,
+    int maxKvLen,
+    int initialPos);
+
+/**
+ * Advance the KV cache write position by 1.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return the new position value
+ */
+SD_LIB_EXPORT int advancePlanKvCachePosition(sd::Pointer planHandle);
+
+/**
+ * Reset KV cache write position.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param newPos  New write position
+ */
+SD_LIB_EXPORT void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos);
+
+/**
+ * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
+ *
+ * @param filePath  Path to the .sdz or .sdnb file
+ * @return Opaque handle to the loaded model, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer loadModelFromFile(const char* filePath);
+
+/**
+ * Compile a loaded model into a native execution plan.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ * @param requestedOutputNames  Array of output variable name strings
+ * @param numOutputs  Number of requested outputs
+ * @return Opaque plan handle, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer compileModelPlan(
+    sd::Pointer modelHandle,
+    sd::Pointer requestedOutputNames, int numOutputs);
+
+/**
+ * Free a loaded model.
+ *
+ * @param modelHandle  Handle from loadModelFromFile()
+ */
+SD_LIB_EXPORT void freeLoadedModel(sd::Pointer modelHandle);
+
+/**
+ * Get the number of external inputs required by a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of external inputs
+ */
+SD_LIB_EXPORT int getPlanNumExternalInputs(sd::Pointer planHandle);
+
+/**
+ * Get the number of requested outputs in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of requested outputs
+ */
+SD_LIB_EXPORT int getPlanNumRequestedOutputs(sd::Pointer planHandle);
+
+/**
+ * Get the number of slots (ops) in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of slots
+ */
+SD_LIB_EXPORT int getPlanNumSlots(sd::Pointer planHandle);
+
+/**
+ * Enable or disable CUDA Graphs for a compiled plan.
+ * When enabled, capturable segments are captured as CUDA graphs on the
+ * second execution and replayed on subsequent calls with matching shapes.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled  true to enable, false to disable
+ */
+SD_LIB_EXPORT void setPlanCudaGraphsEnabled(sd::Pointer planHandle, bool enabled);
+
+/**
+ * Set the minimum segment size for CUDA graph capture.
+ * Segments smaller than this are always executed slot-by-slot.
+ * Default: 10. Set to 1 for testing.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param minSize  Minimum number of slots for capture (clamped to >=1)
+ */
+SD_LIB_EXPORT void setPlanMinCaptureSegmentSize(sd::Pointer planHandle, int minSize);
+
+/**
+ * Set maximum segment size for CUDA graph capture. Large capturable segments
+ * are split into sub-segments of at most this size to prevent OOM during capture.
+ * Default: 300.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param maxSize     Maximum slots per capture segment (0 for unlimited)
+ */
+SD_LIB_EXPORT void setPlanMaxCaptureSegmentSize(sd::Pointer planHandle, int maxSize);
+
+/**
+ * Enable/disable "shapes frozen" mode for a compiled plan.
+ * When frozen, shape inference and cache clearing are skipped between executions.
+ * Use during static KV decode where external input shapes are guaranteed constant.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param frozen      true to enable, false to disable
+ */
+SD_LIB_EXPORT void setPlanShapesFrozen(sd::Pointer planHandle, bool frozen);
+
+/**
+ * Enable/disable execution timing breakdown logging for a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable timing, false to disable
+ */
+SD_LIB_EXPORT void setPlanExecutionTimingEnabled(sd::Pointer planHandle, bool enabled);
+
+/**
+ * Set the JIT compilation mode for DSP segment execution.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param mode  0 = GRAPH_ONLY (default), 1 = JIT_ONLY, 2 = GRAPH_PLUS_JIT
+ */
+SD_LIB_EXPORT void setPlanJitMode(sd::Pointer planHandle, int mode);
+
+/**
+ * Set the graph execution mode for DSP execution.
+ * Controls which backend is used for segment execution.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+ */
+SD_LIB_EXPORT void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode);
+
+/**
+ * Enable/disable trace logging for DSP execution decisions.
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param enabled     true to enable trace, false to disable
+ */
+SD_LIB_EXPORT void setPlanTraceEnabled(sd::Pointer planHandle, bool enabled);
+
+/**
+ * Set maximum sizes for specific output slots (KV cache pre-allocation).
+ * When set, these slots will be pre-allocated at the specified maximum size,
+ * keeping buffer addresses stable across all subsequent steps.
+ * This enables CUDA graph capture for models with growing KV caches.
+ *
+ * @param planHandle       Handle from compileDynamicShapePlan()
+ * @param numSlots         Number of slot entries
+ * @param slotIndices      Array of output slot indices to pre-allocate
+ * @param maxSizes         Array of maximum sizes (in number of elements, not bytes)
+ */
+SD_LIB_EXPORT void setPlanOutputSlotMaxSizes(sd::Pointer planHandle, sd::LongType numSlots,
+                                               const int* slotIndices, const sd::LongType* maxSizes);
+
+/**
+ * Set the KV cache sequence position (for slice-based KV cache access).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param pos         Current sequence position (where new KV entries will be written)
+ */
+SD_LIB_EXPORT void setPlanKvCachePosition(sd::Pointer planHandle, int pos);
+
+/**
+ * Set the maximum KV cache length (for pre-allocated attention outputs).
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param maxLen      Maximum sequence length for KV cache
+ */
+SD_LIB_EXPORT void setPlanMaxKvCacheLength(sd::Pointer planHandle, int maxLen);
+
+/**
+ * Get the number of graph segments in a compiled plan.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of segments, or -1 if handle is null
+ */
+SD_LIB_EXPORT int getPlanNumSegments(sd::Pointer planHandle);
+
+/**
+ * Get the number of segments that have been captured as CUDA graphs.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of captured graph segments
+ */
+SD_LIB_EXPORT int getPlanNumCapturedGraphSegments(sd::Pointer planHandle);
+
+/**
+ * Get the total number of CUDA graph replays across all segments.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Total graph replay count
+ */
+SD_LIB_EXPORT int getPlanTotalGraphReplays(sd::Pointer planHandle);
+
+/**
+ * Validate that the captured CUDA graph covers all ops in the plan.
+ * Returns true if every op contributed at least one CUDA graph node.
+ * Must be called after execution with debug/verbose mode active.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return true if all ops are captured, false if any are host-only
+ */
+SD_LIB_EXPORT bool validatePlanCapturedGraph(sd::Pointer planHandle);
+
+/**
+ * Get the count of host-only ops from the last capture audit.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Number of ops that contributed 0 CUDA graph nodes
+ */
+SD_LIB_EXPORT int getPlanNumHostOnlyOps(sd::Pointer planHandle);
+
+/**
+ * Get pipe-delimited names of host-only ops from the last capture audit.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Pipe-delimited string of op names (thread-local static storage)
+ */
+SD_LIB_EXPORT const char* getPlanHostOnlyOpNames(sd::Pointer planHandle);
+
+/**
+ * Print the full CUDA graph contents and capture audit to stderr.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void printPlanCapturedGraphDebug(sd::Pointer planHandle);
+
+/**
+ * Get detailed capture statistics as a formatted string.
+ * Returns: "captured=N|oomRetrying=N|permFailed=N|nonCapt=N|tooSmall=N|addrUnstable=N"
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return Thread-local static buffer with stats string
+ */
+SD_LIB_EXPORT const char* getPlanCaptureStats(sd::Pointer planHandle);
+
+/**
+ * Export the CUDA graph visualization to Chrome trace format.
+ * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
+ * Similar to PyTorch's torch.cuda.CUDAGraph.debug_dump() functionality.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Output file path (should end with .json)
+ * @return true on success
+ */
+SD_LIB_EXPORT bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPath);
+
+/**
+ * Export the CUDA graph visualization to HTML format.
+ * Creates a standalone HTML file with interactive visualization.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Output HTML file path
+ * @return true on success
+ */
+SD_LIB_EXPORT bool exportPlanCudaGraphHtml(sd::Pointer planHandle, const char* outputPath);
+
+/**
+ * Dump all CUDA graph debug files (DOT, JSON, HTML, nodes JSON).
+ * Creates: {outputPath}.dot, {outputPath}.json, {outputPath}.html, {outputPath}_nodes.json
+ * PyTorch-style debug dump similar to torch.cuda.CUDAGraph.debug_dump().
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param outputPath  Base path for output files (without extension)
+ * @return true on success
+ */
+SD_LIB_EXPORT bool debugDumpPlanCudaGraph(sd::Pointer planHandle, const char* outputPath);
+
+/**
+ * Get the CUDA graph execution timeline as a JSON string in Chrome trace format.
+ * For programmatic access to the timeline data.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @return JSON string, or empty string if no graph data
+ */
+SD_LIB_EXPORT const char* getPlanCudaGraphChromeTraceJson(sd::Pointer planHandle);
+
+/**
+ * Clear the CUDA graph execution timeline history.
+ * Useful to reset timing data between profiling sessions.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ */
+SD_LIB_EXPORT void clearPlanCudaGraphTimeline(sd::Pointer planHandle);
+
+// =============================================================================
+// Triton GPU Backend Counters
+// =============================================================================
+
+/**
+ * Returns true if Triton backend support is compiled and available at runtime.
+ */
+SD_LIB_EXPORT bool isTritonAvailable();
+
+/**
+ * Get the total number of Triton kernel launches since the backend was initialized.
+ * Returns 0 if Triton is not available.
+ */
+SD_LIB_EXPORT sd::LongType getTritonKernelLaunchCount();
+
+/**
+ * Get the total number of Triton PTX cache hits since the backend was initialized.
+ * Returns 0 if Triton is not available.
+ */
+SD_LIB_EXPORT sd::LongType getTritonCacheHitCount();
+
+/**
+ * Reset all Triton execution counters to zero.
+ */
+SD_LIB_EXPORT void resetTritonCounters();
+
+/**
+ * Invalidate all cached Triton compiled kernels (frees CUmodule GPU memory).
+ */
+SD_LIB_EXPORT void invalidateTritonCache();
+
+/**
+ * Invalidate the Triton compiled kernel cache, unloading all GPU modules.
+ * Used by tests to free GPU memory between test methods.
+ */
+SD_LIB_EXPORT void invalidateTritonCache();
+
+// =============================================================================
+// NCCL Collective Communication Operations
+// =============================================================================
+
+/**
+ * Initialize an NCCL communicator for a group of GPUs.
+ *
+ * @param numRanks   Number of ranks (GPUs) in the communicator
+ * @param rankId     This process's rank (0-indexed)
+ * @param deviceId   CUDA device ID for this rank
+ * @return Opaque pointer to the NCCL communicator, or nullptr on failure
+ */
+SD_LIB_EXPORT sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId);
+
+/**
+ * Initialize an NCCL communicator from a unique ID (for multi-process).
+ *
+ * @param numRanks   Number of ranks
+ * @param rankId     This process's rank
+ * @param uniqueId   Pointer to an ncclUniqueId (128 bytes)
+ * @return Opaque pointer to the NCCL communicator
+ */
+SD_LIB_EXPORT sd::Pointer ncclCommInitWithId(int numRanks, int rankId, sd::Pointer uniqueId);
+
+/**
+ * Generate a unique NCCL ID for multi-process initialization.
+ *
+ * @return Pointer to a newly allocated ncclUniqueId (caller must free)
+ */
+SD_LIB_EXPORT sd::Pointer ncclGetUniqueId();
+
+/**
+ * Destroy an NCCL communicator and release resources.
+ *
+ * @param commHandle Handle from ncclCommInit
+ */
+SD_LIB_EXPORT void ncclCommDestroy(sd::Pointer commHandle);
+
+/**
+ * AllReduce: sum all tensors across ranks, result available on all ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (OpaqueDataBuffer*)
+ * @param recvBuf      Receive buffer (OpaqueDataBuffer*), can be same as sendBuf for in-place
+ * @param numElements  Number of elements
+ * @param dataType     Data type (sd::DataType ordinal)
+ * @param reduceOp     Reduction operation (0=SUM, 1=PROD, 2=MAX, 3=MIN, 4=AVG)
+ * @param stream       CUDA stream pointer (nullptr for default stream)
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoAllReduce(sd::Pointer commHandle,
+                                   sd::Pointer sendBuf, sd::Pointer recvBuf,
+                                   sd::LongType numElements, int dataType,
+                                   int reduceOp, sd::Pointer stream);
+
+/**
+ * AllGather: gather data from all ranks, result available on all ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (this rank's data)
+ * @param recvBuf      Receive buffer (must hold numRanks * sendCount elements)
+ * @param sendCount    Number of elements per rank
+ * @param dataType     Data type ordinal
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoAllGather(sd::Pointer commHandle,
+                                   sd::Pointer sendBuf, sd::Pointer recvBuf,
+                                   sd::LongType sendCount, int dataType,
+                                   sd::Pointer stream);
+
+/**
+ * ReduceScatter: reduce then scatter result across ranks.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer (full data)
+ * @param recvBuf      Receive buffer (this rank's shard)
+ * @param recvCount    Number of elements per rank after scatter
+ * @param dataType     Data type ordinal
+ * @param reduceOp     Reduction operation
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoReduceScatter(sd::Pointer commHandle,
+                                       sd::Pointer sendBuf, sd::Pointer recvBuf,
+                                       sd::LongType recvCount, int dataType,
+                                       int reduceOp, sd::Pointer stream);
+
+/**
+ * Send data to a specific peer rank.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param sendBuf      Send buffer
+ * @param numElements  Number of elements to send
+ * @param dataType     Data type ordinal
+ * @param peerRank     Destination rank
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoSend(sd::Pointer commHandle,
+                              sd::Pointer sendBuf, sd::LongType numElements,
+                              int dataType, int peerRank, sd::Pointer stream);
+
+/**
+ * Receive data from a specific peer rank.
+ *
+ * @param commHandle   NCCL communicator handle
+ * @param recvBuf      Receive buffer
+ * @param numElements  Number of elements to receive
+ * @param dataType     Data type ordinal
+ * @param peerRank     Source rank
+ * @param stream       CUDA stream pointer
+ * @return 0 on success, non-zero on failure
+ */
+SD_LIB_EXPORT int ncclDoRecv(sd::Pointer commHandle,
+                              sd::Pointer recvBuf, sd::LongType numElements,
+                              int dataType, int peerRank, sd::Pointer stream);
+
+/**
+ * Begin a group of NCCL operations (for fusing multiple collectives).
+ * @return 0 on success
+ */
+SD_LIB_EXPORT int ncclGroupStart();
+
+/**
+ * End a group of NCCL operations.
+ * @return 0 on success
+ */
+SD_LIB_EXPORT int ncclGroupEnd();
 
 #endif // NATIVEOPS_H

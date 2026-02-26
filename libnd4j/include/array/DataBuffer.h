@@ -32,7 +32,61 @@
 
 #include <cstring>
 #include <mutex>
+#include <unordered_map>
+#include <vector>
 namespace sd {
+
+/**
+ * Thread-local flag indicating graph execution/capture is in progress.
+ * When true, syncToPrimary() skips D2H transfers — data must stay
+ * on the compute device during graph execution. Applies to all graph
+ * backends: CUDA Graphs (capture/replay), oneDNN Graph, and ACL
+ * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
+ * execution, cleared when execution completes or is aborted.
+ */
+SD_LIB_EXPORT extern thread_local bool tl_graphExecutionActive;
+
+#ifdef SD_CUDA
+/**
+ * Captured CUDA stream for the current graph capture session.
+ * Some capture-safe paths must enqueue work on the exact captured stream;
+ * using a different stream can invalidate capture.
+ */
+#ifndef __JAVACPP_HACK__
+SD_LIB_EXPORT extern thread_local cudaStream_t tl_graphCaptureStream;
+#endif
+#endif
+
+/**
+ * Thread-local accumulator for pinned host buffers allocated during CUDA graph capture.
+ * PointersManager::replicatePointer copies host data to persistent pinned memory
+ * during capture so graph replay reads from valid addresses.
+ * After capture, these are transferred to CudaGraphHandle for lifetime management.
+ */
+SD_LIB_EXPORT extern thread_local std::vector<void*> tl_capturedHostPtrs;
+
+#ifndef __JAVACPP_HACK__
+/**
+ * Thread-local cache for PointersManager H2D copies during CUDA graph capture.
+ * Maps {content_hash ^ size} → device pointer. When the same data is uploaded
+ * multiple times during capture (e.g., dimension arrays [0,1] used by many ops),
+ * the cached device pointer is returned without creating a redundant memcpy node.
+ * Cleared at the start of each capture.
+ */
+SD_LIB_EXPORT extern thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+#endif
+
+/**
+ * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture
+ * to eliminate cudaMallocAsync/cudaFreeAsync nodes from the captured graph.
+ * CudaMemoryPool::allocate uses bump allocation from this workspace instead of
+ * cudaMallocAsync when tl_graphExecutionActive && tl_captureWorkspace != nullptr.
+ * CudaMemoryPool::free becomes a no-op for addresses within this workspace.
+ * The workspace buffer persists for graph lifetime (stored on GraphSegment).
+ */
+SD_LIB_EXPORT extern thread_local void* tl_captureWorkspace;
+SD_LIB_EXPORT extern thread_local size_t tl_captureWorkspaceSize;
+SD_LIB_EXPORT extern thread_local size_t tl_captureWorkspaceOffset;
 
 class SD_LIB_EXPORT DataBuffer {
  private:
@@ -44,7 +98,12 @@ class SD_LIB_EXPORT DataBuffer {
 
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
+  std::atomic<int> _specialDeviceId{-1};  // Device ID where _specialBuffer was allocated (for multi-GPU)
   LongType _lenInBytes = 0;
+  // Track actual allocated sizes independently to prevent overrun when
+  // setPrimaryBuffer/setSpecialBuffer are called with different sizes.
+  LongType _primaryAllocBytes = 0;
+  LongType _specialAllocBytes = 0;
   memory::Workspace *_workspace = nullptr;
 
   std::atomic<int> _deviceId;
@@ -56,6 +115,14 @@ class SD_LIB_EXPORT DataBuffer {
   mutable std::atomic<LongType> _writeSpecial;
   mutable std::atomic<LongType> _readPrimary;
   mutable std::atomic<LongType> _readSpecial;
+
+  // CUDA event to track the last write to special (device) buffer.
+  // This enables proper cross-thread synchronization: when syncToPrimary() is called
+  // from a different thread than the one that executed the kernel, we wait on this
+  // event instead of synchronizing on the (wrong) caller's stream.
+  // Mutable because it's created/updated in const writeSpecial() method.
+  mutable void* _writeEvent = nullptr;  // cudaEvent_t*, void* to avoid cuda_runtime.h in header
+  mutable std::atomic<bool> _writeEventRecorded{false};
 #endif
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -80,7 +147,6 @@ class SD_LIB_EXPORT DataBuffer {
   void copyCounters(const DataBuffer &other);
   void deleteSpecial();
   void deletePrimary();
-  void deleteBuffers();
   void setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial = false);
   void allocateBuffers(const bool allocBoth = false);
 
@@ -90,6 +156,22 @@ class SD_LIB_EXPORT DataBuffer {
                           const LongType offsetHostBuffer = 0);
 
  public:
+
+  void deleteBuffers();
+
+  /**
+   * Free GPU (special) buffer only, abandon host (primary) buffer.
+   * Used by dbFreeBuffersOnly to avoid SIGABRT from host heap corruption.
+   */
+  void freeGpuOnly();
+
+  /**
+   * Free GPU (special) buffer on the specified CUDA stream.
+   * Used by DSP mid-execution flushing to free on the execution stream
+   * instead of stream 0, so the pool can reuse memory on the same stream.
+   * @param stream CUDA stream for cudaFreeAsync (nullptr = default stream)
+   */
+  void freeGpuOnStream(void* stream);
 
   bool _isOwnerPrimary;
   bool _isOwnerSpecial;
@@ -141,6 +223,25 @@ class SD_LIB_EXPORT DataBuffer {
    */
   void validateIntegrity() const;
 
+  /**
+   * Check if this DataBuffer has been destroyed (destructor was called).
+   * After destruction, the magic number is set to 0xDEADBEEF.
+   * This is useful for detecting use-after-free and preventing double-free.
+   * @return true if the buffer has been destroyed, false if it's still valid
+   */
+  bool isDestroyed() const { return _magicNumber == 0xDEADBEEF; }
+
+  /**
+   * Check if this DataBuffer is valid (not destroyed and has correct magic number).
+   * @return true if the buffer is valid, false otherwise
+   */
+  bool isValid() const { return _magicNumber == MAGIC_NUMBER && !closed; }
+
+#if defined(SD_CUDA)
+  void* writeEvent() const { return _writeEvent; }
+  bool writeEventRecorded() const { return _writeEventRecorded.load(std::memory_order_acquire); }
+#endif
+
   void allocatePrimary();
   void allocateSpecial();
 
@@ -180,6 +281,8 @@ class SD_LIB_EXPORT DataBuffer {
   void  showBufferLimited();
   //for Debug purposes
   void showCounters(const char* msg1, const char* msg2);
+  // Reset host/device sync counters when reusing buffers.
+  void resetCounters();
 
   /**
    * This method deletes buffers, if we're owners
@@ -196,7 +299,7 @@ class SD_LIB_EXPORT DataBuffer {
    */
   std::string getCreationTraceAsString() const;
   void printHostDevice(long offset);
-  static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset);
+  static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset, sd::LongType n = 0);
   /**
    * Print detailed buffer information including host and device content if available
    * @param msg - Optional message to display
@@ -205,6 +308,28 @@ class SD_LIB_EXPORT DataBuffer {
    */
 #ifndef __JAVACPP_HACK__
   void printBufferDebug(const char* msg = nullptr, sd::LongType offset = 0, sd::LongType limit = 10);
+#endif
+
+  // Padded operator new/delete to protect adjacent glibc chunks from
+  // overruns on nearby allocations. DataBuffer objects are ~200 bytes on
+  // the heap with zero padding — any adjacent overrun corrupts the next
+  // chunk metadata → SIGABRT on free(). Adding 4KB padding keeps the
+  // next chunk's header safely out of reach.
+  static void* operator new(size_t size) {
+    return std::malloc(size + 4096);
+  }
+#ifndef __JAVACPP_HACK__
+  static void* operator new(size_t size, const std::nothrow_t&) noexcept {
+    return std::malloc(size + 4096);
+  }
+#endif
+  static void operator delete(void* ptr) noexcept {
+    std::free(ptr);
+  }
+#ifndef __JAVACPP_HACK__
+  static void operator delete(void* ptr, const std::nothrow_t&) noexcept {
+    std::free(ptr);
+  }
 #endif
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////

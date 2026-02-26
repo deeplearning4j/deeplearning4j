@@ -21,6 +21,7 @@
 //
 #include <system/Environment.h>
 
+#include <helpers/BlasHelper.h>
 #include <helpers/StringUtils.h>
 #include <helpers/logger.h>
 #include <memory/MemoryCounter.h>
@@ -30,6 +31,14 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+
+// Lifecycle tracker includes for enabling/disabling via Environment
+#include <array/NDArrayLifecycleTracker.h>
+#include <array/DataBufferLifecycleTracker.h>
+#include <array/TADCacheLifecycleTracker.h>
+#include <array/ShapeCacheLifecycleTracker.h>
+#include <array/DeallocatorServiceLifecycleTracker.h>
+#include <graph/OpContextLifecycleTracker.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -327,35 +336,94 @@ Environment::Environment() {
 #endif
 
 #ifdef SD_CUDA
- int devCnt = 0;
- cudaGetDeviceCount(&devCnt);
- _cudaDeviceCount.store(devCnt);
- printf("During environment initialization we found [%i] CUDA devices\n", devCnt);
- auto devProperties = new cudaDeviceProp[devCnt];
- for (int i = 0; i < devCnt; i++) {
-   cudaSetDevice(i);
-   cudaGetDeviceProperties(&devProperties[i], i);
+  // SAFETY: Initialize CUDA with extensive error checking
+  // This is the first CUDA operation - any heap corruption will manifest here
+  int devCnt = 0;
+  cudaError_t err = cudaGetDeviceCount(&devCnt);
+  
+  if (err != cudaSuccess) {
+    sd_printf("Environment::Environment: ERROR - cudaGetDeviceCount failed: %s\n", cudaGetErrorString(err));
+    devCnt = 0;
+  }
+  
+  // SAFETY: Validate device count before using it
+  if (devCnt < 0 || devCnt > 128) {
+    sd_printf("Environment::Environment: ERROR - Invalid device count %d, limiting to 0\n", devCnt);
+    devCnt = 0;
+  }
+  
+  _cudaDeviceCount.store(devCnt);
+  sd_printf("During environment initialization we found [%i] CUDA devices\n", devCnt);
+  
+  // SAFETY: Only proceed if we have valid devices
+  if (devCnt > 0) {
+    // SAFETY: Use try-catch around device property allocation
+    cudaDeviceProp* devProperties = nullptr;
+    try {
+      devProperties = new cudaDeviceProp[devCnt];
+    } catch (...) {
+      sd_printf("Environment::Environment: ERROR - Failed to allocate device properties array\n");
+      devCnt = 0;
+    }
+    
+    if (devProperties != nullptr) {
+      // SAFETY: Validate each device before accessing
+      for (int i = 0; i < devCnt; i++) {
+        err = cudaSetDevice(i);
+        if (err != cudaSuccess) {
+          sd_printf("Environment::Environment: WARNING - cudaSetDevice(%d) failed: %s\n", i, cudaGetErrorString(err));
+          continue;
+        }
+        
+        err = cudaGetDeviceProperties(&devProperties[i], i);
+        if (err != cudaSuccess) {
+          sd_printf("Environment::Environment: WARNING - cudaGetDeviceProperties(%d) failed: %s\n", i, cudaGetErrorString(err));
+          continue;
+        }
 
-   Pair p(devProperties[i].major, devProperties[i].minor);
-   _capabilities.emplace_back(p);
- }
+        // SAFETY: Validate compute capability before creating Pair
+        if (devProperties[i].major >= 0 && devProperties[i].minor >= 0) {
+          try {
+            Pair p(devProperties[i].major, devProperties[i].minor);
+            _capabilities.emplace_back(p);
+          } catch (...) {
+            sd_printf("Environment::Environment: WARNING - Failed to add capability for device %d\n", i);
+          }
+        }
+      }
 
- BlasVersionHelper ver;
- _blasMajorVersion = ver._blasMajorVersion;
- _blasMinorVersion = ver._blasMinorVersion;
- _blasPatchVersion = ver._blasPatchVersion;
+      delete[] devProperties;
+    }
+  }
 
- // Initialize CUDA environment settings
- initCudaEnvironment();
+  // SAFETY: Wrap BlasVersionHelper construction in try-catch
+  try {
+    BlasVersionHelper ver;
+    _blasMajorVersion = ver._blasMajorVersion;
+    _blasMinorVersion = ver._blasMinorVersion;
+    _blasPatchVersion = ver._blasPatchVersion;
+  } catch (...) {
+    sd_printf("Environment::Environment: WARNING - BlasVersionHelper initialization failed\n");
+    _blasMajorVersion = 0;
+    _blasMinorVersion = 0;
+    _blasPatchVersion = 0;
+  }
 
- // Initialize CUDA device limits
- initCudaDeviceLimits();
+  // Initialize CUDA environment settings
+  // SAFETY: These functions should handle their own errors
+  try {
+    initCudaEnvironment();
+    initCudaDeviceLimits();
+  } catch (...) {
+    sd_printf("Environment::Environment: WARNING - CUDA environment initialization failed\n");
+  }
 
- // Set initial device to 0
- cudaSetDevice(0);
- _cudaCurrentDevice.store(0);
-
- delete[] devProperties;
+  // Set initial device to 0
+  err = cudaSetDevice(0);
+  if (err != cudaSuccess) {
+    sd_printf("Environment::Environment: WARNING - cudaSetDevice(0) failed: %s\n", cudaGetErrorString(err));
+  }
+  _cudaCurrentDevice.store(0);
 #else
  // No CUDA environment to initialize
 #endif
@@ -860,6 +928,28 @@ void Environment::initCudaEnvironment() {
 #endif
  }
 #endif
+ const char* cudaPinnedHostLimitVar = std::getenv("SD_CUDA_PINNED_HOST_LIMIT");
+#ifdef SD_CUDA
+ if (cudaPinnedHostLimitVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string limitStr(cudaPinnedHostLimitVar);
+     int64_t limit = std::stoll(limitStr);
+     if (limit > 0) {
+       _cudaPinnedHostLimit.store(limit);
+     }
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string limitStr(cudaPinnedHostLimitVar);
+   int64_t limit = std::stoll(limitStr);
+   if (limit > 0) {
+     _cudaPinnedHostLimit.store(limit);
+   }
+#endif
+ }
+#endif
  const char* cudaUnifiedMemVar = std::getenv("SD_CUDA_USE_UNIFIED_MEMORY");
 #ifdef SD_CUDA
  if (cudaUnifiedMemVar != nullptr) {
@@ -937,7 +1027,7 @@ void Environment::initCudaEnvironment() {
 #endif
  }
 #endif
- const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
+const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
 #ifdef SD_CUDA
  if (cudaDeviceScheduleVar != nullptr) {
 #ifdef __cpp_exceptions
@@ -958,158 +1048,267 @@ void Environment::initCudaEnvironment() {
    }
 #endif
  }
-}
+
+ const char* tritonBuildThreadsVar = std::getenv("ND4J_TRITON_BUILD_THREADS");
+ if (tritonBuildThreadsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string threadsStr(tritonBuildThreadsVar);
+     int threads = std::stoi(threadsStr);
+     setTritonBuildThreads(threads);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string threadsStr(tritonBuildThreadsVar);
+   int threads = std::stoi(threadsStr);
+   setTritonBuildThreads(threads);
 #endif
+ }
 
-
-void Environment::setCudaCurrentDevice(int device) {
-#ifdef SD_CUDA
- if (device >= 0 && device < _cudaDeviceCount.load()) {
-   cudaError_t err = cudaSetDevice(device);
-   if (err == cudaSuccess) {
-     _cudaCurrentDevice.store(device);
+ const char* tritonCacheEnabledVar = std::getenv("ND4J_TRITON_CACHE_ENABLE");
+ if (tritonCacheEnabledVar != nullptr) {
+   std::string cacheStr(tritonCacheEnabledVar);
+   if (cacheStr == "false" || cacheStr == "0" || cacheStr == "no") {
+     setTritonCacheEnabled(false);
    } else {
-     sd_printf("Warning: Failed to set CUDA device to %d, error: %s\n", device, cudaGetErrorString(err));
-   }
- } else {
-   sd_printf("Warning: Attempted to set invalid CUDA device %d (valid range: 0-%d)\n", device, _cudaDeviceCount.load() - 1);
- }
-#endif
-}
-
-void Environment::setCudaMemoryPinned(bool pinned) {
- _cudaMemoryPinned.store(pinned);
-}
-
-void Environment::setCudaUseManagedMemory(bool managed) {
- _cudaUseManagedMemory.store(managed);
-}
-
-void Environment::setCudaMemoryPoolSize(int sizeInMB) {
- if (sizeInMB >= 0) {
-   _cudaMemoryPoolSize.store(sizeInMB);
- }
-}
-
-void Environment::setCudaForceP2P(bool forceP2P) {
- _cudaForceP2P.store(forceP2P);
-}
-
-void Environment::setCudaAllocatorEnabled(bool enabled) {
- _cudaAllocatorEnabled.store(enabled);
-}
-
-void Environment::setCudaMaxBlocks(int blocks) {
- if (blocks > 0) {
-   _cudaMaxBlocks.store(blocks);
- }
-}
-
-void Environment::setCudaMaxThreadsPerBlock(int threads) {
- if (threads > 0) {
-   _cudaMaxThreadsPerBlock.store(threads);
- }
-}
-
-void Environment::setCudaAsyncExecution(bool async) {
- _cudaAsyncExecution.store(async);
-}
-
-void Environment::setCudaStreamLimit(int limit) {
- if (limit > 0) {
-   _cudaStreamLimit.store(limit);
- }
-}
-
-void Environment::setCudaUseDeviceHost(bool useDeviceHost) {
- _cudaUseDeviceHost.store(useDeviceHost);
-}
-
-void Environment::setCudaEventLimit(int limit) {
- if (limit > 0) {
-   _cudaEventLimit.store(limit);
- }
-}
-
-void Environment::setCudaCachingAllocatorLimit(int limitInMB) {
- if (limitInMB >= 0) {
-   _cudaCachingAllocatorLimit.store(limitInMB);
- }
-}
-
-void Environment::setCudaUseUnifiedMemory(bool unified) {
- _cudaUseUnifiedMemory.store(unified);
-}
-
-void Environment::setCudaPrefetchSize(int sizeInMB) {
- if (sizeInMB >= 0) {
-   _cudaPrefetchSize.store(sizeInMB);
- }
-}
-
-void Environment::setCudaGraphOptimization(bool enabled) {
- _cudaGraphOptimization.store(enabled);
-}
-
-void Environment::setCudaTensorCoreEnabled(bool enabled) {
-#ifdef SD_CUDA
- _cudaTensorCoreEnabled.store(enabled);
-
- // Apply TensorCore settings if the device supports it
- if (_cudaCurrentDevice.load() >= 0 && _cudaCurrentDevice.load() < _cudaDeviceCount.load()) {
-   int deviceId = _cudaCurrentDevice.load();
-   if (_capabilities[deviceId].first() >= 7) {  // Volta and newer architectures support TensorCores
-     // Instead of using attribute directly, use the math mode flags
-     // which are more widely supported across CUDA versions
-     cudaError_t err;
-     if (enabled) {
-       // Use the most permissive math mode that allows tensor cores
-       err = cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
-       if (err != cudaSuccess) {
-         sd_printf("Warning: Failed to set shared memory config for tensor cores, error: %s\n",
-                   cudaGetErrorString(err));
-       }
-     }
+     setTritonCacheEnabled(true);
    }
  }
-#endif
-}
 
-void Environment::setCudaBlockingSync(int mode) {
-#ifdef SD_CUDA
- if (mode >= 0 && mode <= 1) {
-   _cudaBlockingSync.store(mode);
-   cudaSetDeviceFlags(mode == 1 ? cudaDeviceBlockingSync : cudaDeviceScheduleSpin);
- }
-#endif
-}
-
-void Environment::setCudaDeviceSchedule(int schedule) {
-#ifdef SD_CUDA
- if (schedule >= 0 && schedule <= 3) {
-   _cudaDeviceSchedule.store(schedule);
-
-   unsigned int flag;
-   switch (schedule) {
-     case 1:
-       flag = cudaDeviceScheduleSpin;
-       break;
-     case 2:
-       flag = cudaDeviceScheduleYield;
-       break;
-     case 3:
-       flag = cudaDeviceScheduleBlockingSync;
-       break;
-     case 0:
-     default:
-       flag = cudaDeviceScheduleAuto;
-       break;
+ const char* tritonCoopTargetBlocksVar = std::getenv("ND4J_TRITON_COOP_TARGET_BLOCKS");
+ if (tritonCoopTargetBlocksVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string blocksStr(tritonCoopTargetBlocksVar);
+     int blocks = std::stoi(blocksStr);
+     setTritonCoopTargetBlocks(blocks);
+   } catch (std::exception &e) {
+     // Do nothing on error
    }
-
-   cudaSetDeviceFlags(flag);
- }
+#else
+   std::string blocksStr(tritonCoopTargetBlocksVar);
+   int blocks = std::stoi(blocksStr);
+   setTritonCoopTargetBlocks(blocks);
 #endif
+ }
+
+ const char* tritonMaxSubsegmentOpsVar = std::getenv("ND4J_TRITON_MAX_SUBSEGMENT_OPS");
+ if (tritonMaxSubsegmentOpsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string opsStr(tritonMaxSubsegmentOpsVar);
+     int ops = std::stoi(opsStr);
+     setTritonMaxSubsegmentOps(ops);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string opsStr(tritonMaxSubsegmentOpsVar);
+   int ops = std::stoi(opsStr);
+   setTritonMaxSubsegmentOps(ops);
+#endif
+ }
+
+ const char* tritonMaxSubsegmentSectionsVar = std::getenv("ND4J_TRITON_MAX_SUBSEGMENT_SECTIONS");
+ if (tritonMaxSubsegmentSectionsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string sectionsStr(tritonMaxSubsegmentSectionsVar);
+     int sections = std::stoi(sectionsStr);
+     setTritonMaxSubsegmentSections(sections);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string sectionsStr(tritonMaxSubsegmentSectionsVar);
+   int sections = std::stoi(sectionsStr);
+   setTritonMaxSubsegmentSections(sections);
+#endif
+ }
+
+ const char* tritonVerboseVar = std::getenv("ND4J_TRITON_VERBOSE");
+ if (tritonVerboseVar != nullptr) {
+   std::string verboseStr(tritonVerboseVar);
+   if (verboseStr == "false" || verboseStr == "0" || verboseStr == "no") {
+     setTritonVerbose(false);
+   } else {
+     setTritonVerbose(true);
+   }
+ }
+
+ const char* tritonDumpSectionsVar = std::getenv("ND4J_TRITON_DUMP_SECTIONS");
+ if (tritonDumpSectionsVar != nullptr) {
+   std::string dumpSectionsStr(tritonDumpSectionsVar);
+   if (dumpSectionsStr == "false" || dumpSectionsStr == "0" || dumpSectionsStr == "no") {
+     setTritonDumpSections(false);
+   } else {
+     setTritonDumpSections(true);
+   }
+ }
+
+ const char* tritonDumpArgsVar = std::getenv("ND4J_TRITON_DUMP_ARGS");
+ if (tritonDumpArgsVar != nullptr) {
+   std::string dumpArgsStr(tritonDumpArgsVar);
+   if (dumpArgsStr == "false" || dumpArgsStr == "0" || dumpArgsStr == "no") {
+     setTritonDumpArgs(false);
+   } else {
+     setTritonDumpArgs(true);
+   }
+ }
+
+ const char* tritonLogAllPatternsVar = std::getenv("ND4J_TRITON_LOG_ALL_PATTERNS");
+ if (tritonLogAllPatternsVar != nullptr) {
+   std::string patternsStr(tritonLogAllPatternsVar);
+   if (patternsStr == "false" || patternsStr == "0" || patternsStr == "no") {
+     setTritonLogAllPatterns(false);
+   } else {
+     setTritonLogAllPatterns(true);
+   }
+ }
+
+ const char* tritonCacheDirVar = std::getenv("ND4J_TRITON_CACHE_DIR");
+ if (tritonCacheDirVar != nullptr) {
+   setTritonCacheDir(std::string(tritonCacheDirVar));
+ }
+
+ const char* tritonDumpDirVar = std::getenv("ND4J_TRITON_DUMP_DIR");
+ if (tritonDumpDirVar != nullptr) {
+   setTritonDumpDir(std::string(tritonDumpDirVar));
+ }
+
+ const char* tritonOverrideDirVar = std::getenv("ND4J_TRITON_OVERRIDE_DIR");
+ if (tritonOverrideDirVar != nullptr) {
+   setTritonOverrideDir(std::string(tritonOverrideDirVar));
+ }
+
+ const char* tritonOverrideArchVar = std::getenv("ND4J_TRITON_OVERRIDE_ARCH");
+ if (tritonOverrideArchVar != nullptr) {
+   setTritonOverrideArch(std::string(tritonOverrideArchVar));
+ }
+
+ const char* tritonAlwaysCompileVar = std::getenv("ND4J_TRITON_ALWAYS_COMPILE");
+ if (tritonAlwaysCompileVar != nullptr) {
+   std::string alwaysCompileStr(tritonAlwaysCompileVar);
+   if (alwaysCompileStr == "false" || alwaysCompileStr == "0" || alwaysCompileStr == "no") {
+     setTritonAlwaysCompile(false);
+   } else {
+     setTritonAlwaysCompile(true);
+   }
+ }
+
+ const char* tritonKernelDumpVar = std::getenv("ND4J_TRITON_KERNEL_DUMP");
+ if (tritonKernelDumpVar != nullptr) {
+   std::string kernelDumpStr(tritonKernelDumpVar);
+   if (kernelDumpStr == "false" || kernelDumpStr == "0" || kernelDumpStr == "no") {
+     setTritonKernelDump(false);
+   } else {
+     setTritonKernelDump(true);
+   }
+ }
+
+ const char* tritonKernelOverrideVar = std::getenv("ND4J_TRITON_KERNEL_OVERRIDE");
+ if (tritonKernelOverrideVar != nullptr) {
+   std::string kernelOverrideStr(tritonKernelOverrideVar);
+   if (kernelOverrideStr == "false" || kernelOverrideStr == "0" || kernelOverrideStr == "no") {
+     setTritonKernelOverride(false);
+   } else {
+     setTritonKernelOverride(true);
+   }
+ }
+
+ const char* tritonEnableFpFusionVar = std::getenv("ND4J_TRITON_ENABLE_FP_FUSION");
+ if (tritonEnableFpFusionVar != nullptr) {
+   std::string fpFusionStr(tritonEnableFpFusionVar);
+   if (fpFusionStr == "false" || fpFusionStr == "0" || fpFusionStr == "no") {
+     setTritonEnableFpFusion(false);
+   } else {
+     setTritonEnableFpFusion(true);
+   }
+ }
+
+ const char* tritonDisableLineInfoVar = std::getenv("ND4J_TRITON_DISABLE_LINE_INFO");
+ if (tritonDisableLineInfoVar != nullptr) {
+   std::string lineInfoStr(tritonDisableLineInfoVar);
+   if (lineInfoStr == "false" || lineInfoStr == "0" || lineInfoStr == "no") {
+     setTritonDisableLineInfo(false);
+   } else {
+     setTritonDisableLineInfo(true);
+   }
+ }
+
+ const char* tritonNumWarpsVar = std::getenv("ND4J_TRITON_NUM_WARPS");
+ if (tritonNumWarpsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string warpsStr(tritonNumWarpsVar);
+     int warps = std::stoi(warpsStr);
+     setTritonNumWarps(warps);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string warpsStr(tritonNumWarpsVar);
+   int warps = std::stoi(warpsStr);
+   setTritonNumWarps(warps);
+#endif
+ }
+
+ const char* tritonNumStagesVar = std::getenv("ND4J_TRITON_NUM_STAGES");
+ if (tritonNumStagesVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string stagesStr(tritonNumStagesVar);
+     int stages = std::stoi(stagesStr);
+     setTritonNumStages(stages);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string stagesStr(tritonNumStagesVar);
+   int stages = std::stoi(stagesStr);
+   setTritonNumStages(stages);
+#endif
+ }
+
+ const char* tritonNumCTAsVar = std::getenv("ND4J_TRITON_NUM_CTAS");
+ if (tritonNumCTAsVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string ctasStr(tritonNumCTAsVar);
+     int ctas = std::stoi(ctasStr);
+     setTritonNumCTAs(ctas);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string ctasStr(tritonNumCTAsVar);
+   int ctas = std::stoi(ctasStr);
+   setTritonNumCTAs(ctas);
+#endif
+ }
+
+ const char* tritonMaxNregVar = std::getenv("ND4J_TRITON_MAXNREG");
+ if (tritonMaxNregVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string maxNregStr(tritonMaxNregVar);
+     int maxNreg = std::stoi(maxNregStr);
+     setTritonMaxNreg(maxNreg);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string maxNregStr(tritonMaxNregVar);
+   int maxNreg = std::stoi(maxNregStr);
+   setTritonMaxNreg(maxNreg);
+#endif
+ }
 }
+#endif
+
+
+// CUDA configuration setters moved to Environment_CudaConfig.cpp
 
  bool Environment::isCheckOutputChange() { return _checkOutputChange.load(); }
 
@@ -1134,6 +1333,25 @@ void Environment::setCudaDeviceSchedule(int schedule) {
 
  bool Environment::blasFallback() { return _blasFallback; }
 
+bool Environment::isSerializeBlasCalls() {
+  // Delegate to BlasHelper which manages the actual serialization
+  return BlasHelper::getInstance().isSerializeBlasCalls();
+}
+
+void Environment::setSerializeBlasCalls(bool serialize) {
+  _serializeBlasCallsSet.store(true);
+  BlasHelper::getInstance().setSerializeBlasCalls(serialize);
+}
+
+int Environment::getOpenBlasThreads() {
+  return BlasHelper::getInstance().getOpenblasThreads();
+}
+
+void Environment::setOpenBlasThreads(int threads) {
+  _openBlasThreads.store(threads);
+  BlasHelper::getInstance().setOpenblasThreads(threads);
+}
+
  Environment::~Environment() {
    //
  }
@@ -1147,6 +1365,30 @@ void Environment::setCudaDeviceSchedule(int schedule) {
  Environment &Environment::getInstance() {
    static Environment instance;
    return instance;
+ }
+
+ std::string Environment::homeDirectory() const {
+#ifdef _WIN32
+   const char* homeDrive = std::getenv("HOMEDRIVE");
+   const char* homePath = std::getenv("HOMEPATH");
+   if (homeDrive != nullptr && homePath != nullptr && homeDrive[0] != '\0' &&
+       homePath[0] != '\0') {
+     return std::string(homeDrive) + std::string(homePath);
+   }
+#endif
+   const char* home = std::getenv("HOME");
+   if (home != nullptr && home[0] != '\0') {
+     return std::string(home);
+   }
+   return "";
+ }
+
+ std::string Environment::cudaToolkitPath() const {
+   const char* cudaPath = std::getenv("CUDA_PATH");
+   if (cudaPath != nullptr && cudaPath[0] != '\0') {
+     return std::string(cudaPath);
+   }
+   return "";
  }
 
  bool Environment::isVerbose() { return _verbose.load(); }
@@ -1313,4 +1555,177 @@ void Environment::setCudaDeviceSchedule(int schedule) {
  bool Environment::isTrackOperations() { return _trackOperations.load(); }
 
  void Environment::setTrackOperations(bool enabled) { _trackOperations.store(enabled); }
+
+ // Individual tracker enable/disable methods
+ bool Environment::isNDArrayTracking() { return _ndArrayTracking.load(); }
+
+ void Environment::setNDArrayTracking(bool enabled) {
+   _ndArrayTracking.store(enabled);
+   array::NDArrayLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isDataBufferTracking() { return _dataBufferTracking.load(); }
+
+ void Environment::setDataBufferTracking(bool enabled) {
+   _dataBufferTracking.store(enabled);
+   array::DataBufferLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isTADCacheTracking() { return _tadCacheTracking.load(); }
+
+ void Environment::setTADCacheTracking(bool enabled) {
+   _tadCacheTracking.store(enabled);
+   array::TADCacheLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isShapeCacheTracking() { return _shapeCacheTracking.load(); }
+
+ void Environment::setShapeCacheTracking(bool enabled) {
+   _shapeCacheTracking.store(enabled);
+   array::ShapeCacheLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ bool Environment::isOpContextTracking() { return _opContextTracking.load(); }
+
+ void Environment::setOpContextTracking(bool enabled) {
+   _opContextTracking.store(enabled);
+   graph::OpContextLifecycleTracker::getInstance().setEnabled(enabled);
+ }
+
+ // NDArray print options (NumPy-style printoptions)
+ void Environment::setPrintEdgeItems(int edgeItems) {
+   if (edgeItems > 0) {
+     _printEdgeItems.store(edgeItems);
+   }
+ }
+
+ void Environment::setPrintThreshold(int threshold) {
+   if (threshold > 0) {
+     _printThreshold.store(threshold);
+   }
+ }
+
+ void Environment::setPrintLineWidth(int lineWidth) {
+   if (lineWidth > 0) {
+     _printLineWidth.store(lineWidth);
+   }
+ }
+
+  void Environment::setPrintPrecision(int precision) {
+    if (precision >= 0 && precision <= 20) {
+      _printPrecision.store(precision);
+    }
+  }
+
+  // Triton GPU compilation settings
+  void Environment::setTritonBuildThreads(int threads) {
+    if (threads > 0 && threads <= 16) {
+      _tritonBuildThreads.store(threads);
+    }
+  }
+
+  void Environment::setTritonCacheEnabled(bool enabled) {
+    _tritonCacheEnabled.store(enabled);
+  }
+
+  void Environment::setTritonCoopTargetBlocks(int blocks) {
+    if (blocks < 0) {
+      blocks = 0;
+    }
+    _tritonCoopTargetBlocks.store(blocks);
+  }
+
+  void Environment::setTritonMaxSubsegmentOps(int ops) {
+    if (ops < 0) {
+      ops = 0;
+    }
+    _tritonMaxSubsegmentOps.store(ops);
+  }
+
+  void Environment::setTritonMaxSubsegmentSections(int sections) {
+    if (sections < 0) {
+      sections = 0;
+    }
+    _tritonMaxSubsegmentSections.store(sections);
+  }
+
+  void Environment::setTritonVerbose(bool verbose) {
+    _tritonVerbose.store(verbose);
+  }
+
+  void Environment::setTritonDumpSections(bool dumpSections) {
+    _tritonDumpSections.store(dumpSections);
+  }
+
+  void Environment::setTritonDumpArgs(bool dumpArgs) {
+    _tritonDumpArgs.store(dumpArgs);
+  }
+
+  void Environment::setTritonLogAllPatterns(bool logAllPatterns) {
+    _tritonLogAllPatterns.store(logAllPatterns);
+  }
+
+  void Environment::setTritonAlwaysCompile(bool alwaysCompile) {
+    _tritonAlwaysCompile.store(alwaysCompile);
+  }
+
+  void Environment::setTritonKernelDump(bool kernelDump) {
+    _tritonKernelDump.store(kernelDump);
+  }
+
+  void Environment::setTritonKernelOverride(bool kernelOverride) {
+    _tritonKernelOverride.store(kernelOverride);
+  }
+
+  void Environment::setTritonNumWarps(int warps) {
+    if (warps < 0) {
+      warps = 0;
+    }
+    _tritonNumWarps.store(warps);
+  }
+
+  void Environment::setTritonNumStages(int stages) {
+    if (stages < 0) {
+      stages = 0;
+    }
+    _tritonNumStages.store(stages);
+  }
+
+  void Environment::setTritonNumCTAs(int ctas) {
+    if (ctas < 1) {
+      ctas = 1;
+    }
+    _tritonNumCTAs.store(ctas);
+  }
+
+  void Environment::setTritonMaxNreg(int maxNreg) {
+    if (maxNreg < 0) {
+      maxNreg = 0;
+    }
+    _tritonMaxNreg.store(maxNreg);
+  }
+
+  void Environment::setTritonEnableFpFusion(bool enableFpFusion) {
+    _tritonEnableFpFusion.store(enableFpFusion);
+  }
+
+  void Environment::setTritonDisableLineInfo(bool disableLineInfo) {
+    _tritonDisableLineInfo.store(disableLineInfo);
+  }
+
+  void Environment::setTritonCacheDir(const std::string& cacheDir) {
+    _tritonCacheDir = cacheDir;
+  }
+
+  void Environment::setTritonDumpDir(const std::string& dumpDir) {
+    _tritonDumpDir = dumpDir;
+  }
+
+  void Environment::setTritonOverrideDir(const std::string& overrideDir) {
+    _tritonOverrideDir = overrideDir;
+  }
+
+  void Environment::setTritonOverrideArch(const std::string& overrideArch) {
+    _tritonOverrideArch = overrideArch;
+  }
 }
