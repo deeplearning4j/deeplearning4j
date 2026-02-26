@@ -18,9 +18,22 @@ option(SD_SMART_CCACHE "Enable smart ccache wrapper that detects file changes" O
 option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
 
 # Only proceed if we have ccache and smart mode is enabled
-# Skip on Windows: the wrapper is a bash script that cannot be executed via CreateProcess
-# Use CMAKE_HOST_SYSTEM_NAME because WIN32 may not be set under MSYS2/MinGW cmake
-if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT WIN32 AND NOT MSVC AND NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+# Skip on Windows: the wrapper is a bash script that cannot be executed via CreateProcess.
+# We detect Windows robustly by checking if cmd.exe exists, since WIN32/MSVC/CMAKE_HOST_SYSTEM_NAME
+# may not be set correctly under MSYS2/MinGW cmake.
+set(_SD_IS_WINDOWS FALSE)
+if(WIN32 OR MSVC OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set(_SD_IS_WINDOWS TRUE)
+endif()
+if(NOT _SD_IS_WINDOWS)
+    find_program(_SD_CMD_EXE "cmd.exe")
+    if(_SD_CMD_EXE)
+        set(_SD_IS_WINDOWS TRUE)
+        message(STATUS "Detected Windows via cmd.exe (MSYS2/MinGW environment)")
+    endif()
+endif()
+
+if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT _SD_IS_WINDOWS)
     # Check if the launcher is ccache
     get_filename_component(LAUNCHER_NAME "${CMAKE_CXX_COMPILER_LAUNCHER}" NAME)
     if(LAUNCHER_NAME MATCHES "ccache")
