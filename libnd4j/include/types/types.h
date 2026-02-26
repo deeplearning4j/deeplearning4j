@@ -39,8 +39,12 @@
 // ============================================================================
 // DATATYPE CONSTEXPR ALIASES
 // ============================================================================
+// On Windows, names like BOOL, INT8, INT16, INT32, INT64, UINT8, UINT16,
+// UINT32, UINT64 conflict with Windows SDK typedefs in <minwindef.h> and
+// <basetsd.h>.  Place them inside namespace sd to avoid global-scope clashes.
+// ============================================================================
 
-
+namespace sd {
   static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
   static constexpr auto BOOL = sd::DataType::BOOL;
   static constexpr auto DOUBLE = sd::DataType::DOUBLE;
@@ -57,6 +61,10 @@
   static constexpr auto UTF16 = sd::DataType::UTF16;
   static constexpr auto UTF32 = sd::DataType::UTF32;
   static constexpr auto UTF8 = sd::DataType::UTF8;
+}  // namespace sd
+
+// Make the aliases accessible via 'using namespace sd' which most source files already do.
+// For files that don't, the qualified sd::BOOL etc. form works.
 
   using LongType = sd::LongType;
   using UnsignedLong = sd::UnsignedLong;
