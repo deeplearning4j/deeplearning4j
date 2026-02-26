@@ -123,7 +123,7 @@ void twoWayCrossAttentionBp(
         scaleMatrix(logits1, scale);
 
         NDArray attnWeights1(logits1.shapeInfo(), logits1.dataType(), false, context);
-        attnWeights1.assign(logits1);
+        attnWeights1.assign(&logits1);
         applySoftmax2D(attnWeights1);
 
         // dL/dAttnWeights1 = gradTokenOut @ imageV^T
@@ -152,7 +152,7 @@ void twoWayCrossAttentionBp(
         NDArray dLdImageKeyContrib('c', ikShape, imageKey->dataType());
         MmulHelper::mmul(dLdLogits1T, tokenQuery, &dLdImageKeyContrib);
         delete dLdLogits1T;
-        dLdImageKey->assign(dLdImageKeyContrib);
+        dLdImageKey->assign(&dLdImageKeyContrib);
     }
 
     // ---- Direction 2 backward: imageOut = softmax(imageQ @ tokenK^T * scale) @ tokenV ----
@@ -165,7 +165,7 @@ void twoWayCrossAttentionBp(
         scaleMatrix(logits2, scale);
 
         NDArray attnWeights2(logits2.shapeInfo(), logits2.dataType(), false, context);
-        attnWeights2.assign(logits2);
+        attnWeights2.assign(&logits2);
         applySoftmax2D(attnWeights2);
 
         // dL/dAttnWeights2 = gradImageOut @ tokenV^T
@@ -194,7 +194,7 @@ void twoWayCrossAttentionBp(
         NDArray dLdTokenKeyContrib('c', tkShape, tokenKey->dataType());
         MmulHelper::mmul(dLdLogits2T, imageQuery, &dLdTokenKeyContrib);
         delete dLdLogits2T;
-        dLdTokenKey->assign(dLdTokenKeyContrib);
+        dLdTokenKey->assign(&dLdTokenKeyContrib);
     }
 }
 
