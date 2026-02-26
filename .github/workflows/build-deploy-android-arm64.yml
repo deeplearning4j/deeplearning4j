@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [armcompute, ""]
+        helper: [armcompute, compile, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
@@ -283,7 +283,11 @@ jobs:
             deploy \
             -DskipTests"
           
-          if [ "${{ matrix.helper }}" == "armcompute" ]; then
+          if [ "${{ matrix.helper }}" == "compile" ]; then
+             HELPER_FLAGS="-Djavacpp.platform.extension=-compile \
+               -Dlibnd4j.triton=ON \
+               -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile"
+          elif [ "${{ matrix.helper }}" == "armcompute" ]; then
              HELPER_FLAGS="-Dlibnd4j.helper=${{ matrix.helper }} \
                -Djavacpp.platform.extension=-${{ matrix.helper }} \
                -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"

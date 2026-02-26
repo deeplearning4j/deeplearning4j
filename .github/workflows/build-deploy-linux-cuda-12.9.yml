@@ -63,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [ cudnn, "" ]
+        helper: [ cudnn, compile, "" ]
         extension: [ ""  ]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
@@ -153,7 +153,10 @@ jobs:
           fi
           command="mvn ${{ matrix.mvn_ext }} -Pcuda -Dlibnd4j.generate.flatc=ON --no-transfer-progress -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make  -pl ${modules} -Dlibnd4j.compute='8.6 9.0' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
           libnd4j_download_file_url=""
-          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+          if [ "${{ matrix.helper }}" == 'compile' ]; then
+             mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.triton=ON -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-compile"
+             libnd4j_download_file_url="linux-cuda-12.9-compile"
+          elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
              mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-12.9-${{ matrix.helper }}-${{matrix.extension}}"
              libnd4j_download_file_url="linux-cuda-12.9-${{ matrix.extension }}-${{ matrix.helper }}"
           elif [ "${{ matrix.helper }}" != '' ]; then
@@ -162,7 +165,7 @@ jobs:
           else
              mvn_ext=" -Dlibnd4j.classifier=linux-x86_64-cuda-12.9"
              libnd4j_download_file_url="linux-cuda-12.9-${{ matrix.extension }}-${{ matrix.helper }}"
-          
+
           fi
           command="${command} ${mvn_ext}"
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
