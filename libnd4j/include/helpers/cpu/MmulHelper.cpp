@@ -30,6 +30,11 @@
 #include <system/openmp_pragmas.h>
 namespace sd {
 
+// CPU stubs for cast cache methods (only used on CUDA)
+void MmulHelper::clearCastCache() {}
+void MmulHelper::resetCastCacheIndices() {}
+
+
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
 template <typename T1, typename T2, typename T3>
