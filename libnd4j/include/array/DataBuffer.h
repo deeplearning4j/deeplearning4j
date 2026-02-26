@@ -240,6 +240,9 @@ class SD_LIB_EXPORT DataBuffer {
 #if defined(SD_CUDA)
   void* writeEvent() const { return _writeEvent; }
   bool writeEventRecorded() const { return _writeEventRecorded.load(std::memory_order_acquire); }
+#else
+  void* writeEvent() const { return nullptr; }
+  bool writeEventRecorded() const { return false; }
 #endif
 
   void allocatePrimary();
