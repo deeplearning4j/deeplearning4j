@@ -90,7 +90,8 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         return 0;
     }
 
-    private DeviceDescriptor resolveCpuDevice() {
+    @Override
+    protected DeviceDescriptor resolveCpuDevice() {
         DeviceDescriptor cpu = BackendRegistry.getInstance().getDefaultCpuDevice();
         return cpu != null ? cpu : DeviceDescriptor.cpu();
     }
