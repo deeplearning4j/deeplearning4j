@@ -225,44 +225,7 @@ jobs:
 
           python -m pip install gdown || python -m pip install gdown
 
-          echo Installing an older less buggy version of GCC
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-ada-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-objc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-libs-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-fortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-gcc-libgfortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-binutils-2.42-2-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-crt-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-headers-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-libmangle-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-libwinpthread-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-tools-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-winpthreads-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-winstorecompat-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-vulkan-headers-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-vulkan-loader-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-SDL2-2.30.12-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/i686/mingw-w64-i686-python-3.11.9-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-ada-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-objc-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libs-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-fortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-gcc-libgfortran-13.2.0-6-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-binutils-2.42-2-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-crt-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-headers-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libmangle-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-libwinpthread-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-tools-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-winpthreads-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-winstorecompat-git-11.0.0.r750.g05598db99-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-vulkan-headers-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-vulkan-loader-1.3.280.0-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-SDL2-2.30.12-1-any.pkg.tar.zst
-          curl -LO http://repo.msys2.org/mingw/x86_64/mingw-w64-x86_64-python-3.11.9-1-any.pkg.tar.zst
-          bash -c "pacman -U --noconfirm *.pkg.tar.zst"
+          echo Using GCC from pacman -S toolchain install (pinned versions removed from MSYS2 repo)
 
       - name: Set mvn build command based on matrix
         shell: powershell

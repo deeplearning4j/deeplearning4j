@@ -31,29 +31,22 @@ void centerAndSharpen(NDArray* input, NDArray* center, NDArray* output,
     // Forward: output = softmax((input - center) / temperature) per row
     // input: [batch, dim], center: [1, dim] or [dim], output: [batch, dim]
 
-    // Step 1: centered = input - center (broadcast subtraction)
-    auto centered = (*input) - (*center);
-
-    // Step 2: scaled = centered / temperature
-    centered /= temperature;
-
-    // Step 3: softmax per row
-    // For each row: exp(x - max(x)) / sum(exp(x - max(x)))
     auto batchSize = input->sizeAt(0);
     auto dim = input->sizeAt(1);
 
     for (sd::LongType b = 0; b < batchSize; b++) {
-        // Find row max for numerical stability
+        // Compute scaled centered values and find row max for numerical stability
         double rowMax = -1e30;
         for (sd::LongType d = 0; d < dim; d++) {
-            double val = centered.e<double>(b, d);
+            double val = (input->e<double>(b, d) - center->e<double>(d)) / temperature;
+            output->p(b, d, val);
             if (val > rowMax) rowMax = val;
         }
 
         // Compute exp(x - max) and sum
         double expSum = 0.0;
         for (sd::LongType d = 0; d < dim; d++) {
-            double val = std::exp(centered.e<double>(b, d) - rowMax);
+            double val = std::exp(output->e<double>(b, d) - rowMax);
             output->p(b, d, val);
             expSum += val;
         }
