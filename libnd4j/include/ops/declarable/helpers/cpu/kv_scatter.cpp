@@ -68,9 +68,6 @@ void kvScatter(NDArray* present, NDArray* output,
   BUILD_SINGLE_SELECTOR(present->dataType(), kvScatter_, (present, output, cachePos, context), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void kvScatter_, (NDArray* present, NDArray* output,
-                       LongType cachePos, LaunchContext* context), SD_FLOAT_TYPES);
-
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
