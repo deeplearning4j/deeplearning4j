@@ -51,11 +51,11 @@ static T applyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxV
             return T(0.5) * val * (T(1) + std::tanh(inner));
         }
         case FUSED_EXP:       return std::exp(val);
-        case FUSED_LOG:       return val > T(0) ? std::log(val) : T(-1e38);
+        case FUSED_LOG:       return val > T(0) ? T(std::log(val)) : T(-1e38);
         case FUSED_ABS:       return std::abs(val);
         case FUSED_NEG:       return -val;
         case FUSED_SQUARE:    return val * val;
-        case FUSED_SQRT:      return val >= T(0) ? std::sqrt(val) : T(0);
+        case FUSED_SQRT:      return val >= T(0) ? T(std::sqrt(val)) : T(0);
         case FUSED_SWISH:     return val / (T(1) + std::exp(-val)); // x * sigmoid(x)
         case FUSED_SILU:      return val / (T(1) + std::exp(-val)); // Same as swish
         case FUSED_MISH: {
