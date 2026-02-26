@@ -24,6 +24,7 @@
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <array/NDArray.h>
 #include <execution/Threads.h>
+#include <math/templatemath.h>
 #include <cmath>
 #include <algorithm>
 
@@ -52,7 +53,7 @@ static T applyOp(T val, FusedElemOp op, T secondaryVal, T clipMinVal, T clipMaxV
         }
         case FUSED_EXP:       return std::exp(val);
         case FUSED_LOG:       return val > T(0) ? T(std::log(val)) : T(-1e38);
-        case FUSED_ABS:       return std::abs(val);
+        case FUSED_ABS:       return sd::math::sd_abs<T, T>(val);
         case FUSED_NEG:       return -val;
         case FUSED_SQUARE:    return val * val;
         case FUSED_SQRT:      return val >= T(0) ? T(std::sqrt(val)) : T(0);
