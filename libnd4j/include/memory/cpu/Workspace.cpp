@@ -192,5 +192,15 @@ Workspace *Workspace::clone() {
   // for clone we take whatever is higher: current allocated size, or allocated size of current loop
   return new Workspace(sd::math::sd_max<sd::LongType>(this->getCurrentSize(), this->_cycleAllocations.load()));
 }
+
+// CPU stubs for canary methods (only used on CUDA for GPU buffer overrun detection)
+void Workspace::enableCanary() {
+  // no-op on CPU
+}
+
+sd::LongType Workspace::checkCanary() const {
+  return -1;  // canary always "intact" on CPU
+}
+
 }  // namespace memory
 }  // namespace sd

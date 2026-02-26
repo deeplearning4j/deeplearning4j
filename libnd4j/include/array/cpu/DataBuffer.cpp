@@ -38,6 +38,11 @@ thread_local bool tl_graphExecutionActive = false;
 thread_local std::vector<void*> tl_capturedHostPtrs;
 thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
 
+// CPU stubs for CUDA graph capture workspace variables (declared in DataBuffer.h)
+thread_local void* tl_captureWorkspace = nullptr;
+thread_local size_t tl_captureWorkspaceSize = 0;
+thread_local size_t tl_captureWorkspaceOffset = 0;
+
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
