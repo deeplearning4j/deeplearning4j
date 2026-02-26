@@ -62,8 +62,8 @@
 set -eu
 
 # cd to the directory containing this script
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$DIR"
+DIR="$( builtin cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+builtin cd "$DIR"
 
 
 # Check bash version and set compatibility mode
@@ -2421,7 +2421,7 @@ mkbuilddir() {
     fi
     # Lock will be released when script exits (fd 200 closes)
 
-    cd "$BUILD_DIR"
+    builtin cd "$BUILD_DIR"
 }
 
 HELPERS_CMAKE=""
@@ -2794,7 +2794,7 @@ if [ "$CMAKE_ONLY" == "ON" ]; then
         print_colored "blue" "=========================================="
         echo
 
-        cd "$DIR/preflight-checks"
+        builtin cd "$DIR/preflight-checks"
         if ./validate_build_config.sh --stage cmake --chip "$CHIP"; then
             print_colored "green" "✅ Configuration validation passed"
             echo
@@ -2963,14 +2963,14 @@ if [ "$LINK_ONLY" == "ON" ]; then
         exit 1
     fi
 
-    cd blasbuild/$CHIP
+    builtin cd blasbuild/$CHIP
 
     # Check if object files exist
     OBJ_COUNT=$(find . -name "*.o" 2>/dev/null | wc -l)
     if [ "$OBJ_COUNT" -eq 0 ]; then
         print_colored "red" "❌ ERROR: No object files found in blasbuild/$CHIP"
         print_colored "yellow" "   You must run a full build first before using --link-only"
-        cd ../..
+        builtin cd ../..
         exit 1
     fi
 
@@ -2992,9 +2992,9 @@ if [ "$LINK_ONLY" == "ON" ]; then
 
     # Run make with the specific target (CMake will skip up-to-date compilation)
     if [ "$LOG_OUTPUT" == "none" ]; then
-        eval "$MAKE_COMMAND" "$LINK_TARGET" && cd ../../..
+        eval "$MAKE_COMMAND" "$LINK_TARGET" && builtin cd ../../..
     else
-        eval "$MAKE_COMMAND" "$LINK_TARGET" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+        eval "$MAKE_COMMAND" "$LINK_TARGET" >> "$LOG_OUTPUT" 2>&1 && builtin cd ../../..
     fi
 
     LINK_EXIT_CODE=$?
@@ -3066,28 +3066,28 @@ else
             print_colored "red" "═══════════════════════════════════════════════════════════"
             print_colored "red" "❌ BUILD KILLED BY OOM KILLER"
             print_colored "red" "═══════════════════════════════════════════════════════════"
-            cd ../../..
+            builtin cd ../../..
             exit 137
         elif [ $BUILD_EXIT_CODE -ne 0 ]; then
             print_colored "red" "❌ BUILD FAILED (exit code: $BUILD_EXIT_CODE)"
-            cd ../../..
+            builtin cd ../../..
             exit $BUILD_EXIT_CODE
         fi
 
-        cd ../../..
+        builtin cd ../../..
     else
         # Normal build without OOM monitoring
         if [ "$LOG_OUTPUT" == "none" ]; then
-            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && builtin cd ../../..
         else
-            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+            eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && builtin cd ../../..
         fi
         BUILD_EXIT_CODE=$?
     fi
 fi
 
 # Determine script location
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="$( builtin cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Find the libnd4j directory
 if [[ "$SCRIPT_DIR" == */libnd4j* ]]; then
     # Already in or under libnd4j directory
@@ -3111,7 +3111,7 @@ fi
 ORIGINAL_DIR=$(pwd)
 
 # cd to the script directory for the operations that need to be performed there
-cd "$SCRIPT_DIR"
+builtin cd "$SCRIPT_DIR"
 
 if [ "$GENERATE_FLATC" == "ON" ]; then
     echo "Copying flatc generated for java"
@@ -3120,6 +3120,6 @@ if [ "$GENERATE_FLATC" == "ON" ]; then
 fi
 
 # Return to the original directory where the script was launched from
-cd "$ORIGINAL_DIR"
+builtin cd "$ORIGINAL_DIR"
 
 echo "Build process completed successfully."
