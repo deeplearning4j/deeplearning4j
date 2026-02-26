@@ -474,6 +474,10 @@ jobs:
           # Show memory status before build
           echo "=== Memory status before build ==="
           free -h
+
+          # Make libdwarf layout visible to Android cross-toolchain includes.
+          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
+          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
           
           # Pre-build verification
           echo "=== Pre-build OpenBLAS verification ==="

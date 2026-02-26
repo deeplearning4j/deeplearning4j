@@ -187,6 +187,12 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
+      - name: Install DWARF headers for stack trace support
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
+
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 12.9.0
@@ -285,6 +291,8 @@ jobs:
           # Explicitly set PATH and other environment variables for this step
           export PATH=/usr/local/cuda-12.9/bin:/opt/protobuf/bin:/opt/cmake/bin:$PATH
           export LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH
+          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
+          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
           
           # Final check for nvcc before proceeding
           echo "Final check for nvcc:"

@@ -228,6 +228,8 @@ jobs:
         run: |
           export PATH="/opt/protobuf/bin:/opt/cmake/bin:/usr/bin:$PATH"
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
+          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
+          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
           export JAVA_HOME="${JAVA_HOME:-${{ steps.setup-java.outputs.path }}}"
           if [ -z "${JAVA_HOME}" ]; then
             echo "JAVA_HOME was not set by actions/setup-java"
@@ -254,7 +256,9 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
             -DBLAS_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so \
-            -DLAPACK_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so"
+            -DLAPACK_LIBRARIES=${OPENBLAS_PATH}/libopenblas.so \
+            -DCMAKE_C_FLAGS=-I/usr/include/libdwarf \
+            -DCMAKE_CXX_FLAGS=-I/usr/include/libdwarf"
           
           BASE_COMMAND="mvn ${{ matrix.mvn_ext }} \
             -Dlibnd4j.generate.flatc=ON \

@@ -208,7 +208,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libdw-dev libelf-dev
+          sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
 
       - name: Setup ccache
         id: setup-ccache
@@ -323,6 +323,8 @@ jobs:
           cmake --version
           protoc --version
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+          export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
+          export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
           
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
