@@ -540,6 +540,7 @@ function(setup_onednn)
     # Build CMAKE_ARGS list for OneDNN
     set(ONEDNN_CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
+            -DCMAKE_INSTALL_LIBDIR=lib64
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DDNNL_LIBRARY_TYPE=STATIC
             -DDNNL_BUILD_TESTS=OFF
@@ -1441,143 +1442,116 @@ function(setup_triton)
             # Will be resolved at link time via target_link_directories above.
             # The glob path above will handle this on rebuild.
         else()
-            message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking (all 468 libs)")
+            message(STATUS "Triton: LLVM not yet built, using -l flags for deferred linking")
             target_link_libraries(triton_interface INTERFACE
                 -Wl,--start-group
-                # === ALL MLIR libraries (364) ===
-                -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard
-                -lMLIRAffineTransformOps -lMLIRAffineTransforms
-                -lMLIRAffineUtils -lMLIRAMDGPUDialect -lMLIRAMDGPUToROCDL
-                -lMLIRAMDGPUTransforms -lMLIRAMDGPUUtils -lMLIRAMXDialect
-                -lMLIRAMXToLLVMIRTranslation -lMLIRAMXTransforms -lMLIRAnalysis
-                -lMLIRArithAttrToLLVMConversion -lMLIRArithDialect
-                -lMLIRArithToAMDGPU -lMLIRArithToArmSME -lMLIRArithToEmitC
-                -lMLIRArithToLLVM -lMLIRArithToSPIRV -lMLIRArithTransforms
-                -lMLIRArithUtils -lMLIRArithValueBoundsOpInterfaceImpl -lMLIRArmNeon2dToIntr
-                -lMLIRArmNeonDialect -lMLIRArmNeonToLLVMIRTranslation
-                -lMLIRArmNeonTransforms -lMLIRArmSMEDialect
-                -lMLIRArmSMEToLLVM -lMLIRArmSMEToLLVMIRTranslation -lMLIRArmSMEToSCF
-                -lMLIRArmSMETransforms -lMLIRArmSVEDialect -lMLIRArmSVEToLLVMIRTranslation
-                -lMLIRArmSVETransforms -lMLIRAsmParser -lMLIRAsyncDialect
-                -lMLIRAsyncToLLVM -lMLIRAsyncTransforms -lMLIRBufferizationDialect
-                -lMLIRBufferizationPipelines -lMLIRBufferizationToMemRef
-                -lMLIRBufferizationTransformOps -lMLIRBufferizationTransforms
-                -lMLIRBuiltinToLLVMIRTranslation -lMLIRBytecodeOpInterface
-                -lMLIRBytecodeReader -lMLIRBytecodeWriter -lMLIRCallInterfaces
-                -lMLIRCAPIAMDGPU -lMLIRCAPIArith -lMLIRCAPIAsync
-                -lMLIRCAPIControlFlow -lMLIRCAPIConversion -lMLIRCAPIDebug
-                -lMLIRCAPIExecutionEngine -lMLIRCAPIFunc -lMLIRCAPIGPU
-                -lMLIRCAPIInterfaces -lMLIRCAPIIR -lMLIRCAPIIRDL
-                -lMLIRCAPILinalg -lMLIRCAPILLVM -lMLIRCAPIMath
-                -lMLIRCAPIMemRef -lMLIRCAPIMLProgram -lMLIRCAPINVGPU
-                -lMLIRCAPINVVM -lMLIRCAPIOpenMP -lMLIRCAPIPDL
-                -lMLIRCAPIQuant -lMLIRCAPIRegisterEverything -lMLIRCAPIROCDL
-                -lMLIRCAPISCF -lMLIRCAPIShape -lMLIRCAPISparseTensor
-                -lMLIRCAPISPIRV -lMLIRCAPITarget -lMLIRCAPITensor
+                # === ALL MLIR libraries (Triton 3.6.0 LLVM pin: f6ded0be) ===
+                # AUTO-GENERATED from triton_llvm_install/lib/libMLIR*.a (357 libraries)
+                -lMLIRAffineAnalysis -lMLIRAffineDialect -lMLIRAffineToStandard -lMLIRAffineTransformOps
+                -lMLIRAffineTransforms -lMLIRAffineUtils -lMLIRAMDGPUDialect -lMLIRAMDGPUToROCDL
+                -lMLIRAMDGPUTransforms -lMLIRAMDGPUUtils -lMLIRAMXDialect -lMLIRAMXTransforms -lMLIRAnalysis
+                -lMLIRArithAttrToLLVMConversion -lMLIRArithDialect -lMLIRArithToAMDGPU -lMLIRArithToArmSME
+                -lMLIRArithToEmitC -lMLIRArithToLLVM -lMLIRArithToSPIRV -lMLIRArithTransforms -lMLIRArithUtils
+                -lMLIRArithValueBoundsOpInterfaceImpl -lMLIRArmNeon2dToIntr -lMLIRArmNeonDialect
+                -lMLIRArmNeonToLLVMIRTranslation -lMLIRArmNeonTransforms -lMLIRArmNeonVectorTransformOps
+                -lMLIRArmSMEDialect -lMLIRArmSMEToLLVM -lMLIRArmSMEToLLVMIRTranslation -lMLIRArmSMEToSCF
+                -lMLIRArmSMETransforms -lMLIRArmSVEDialect -lMLIRArmSVEToLLVMIRTranslation -lMLIRArmSVETransforms
+                -lMLIRArmSVEVectorTransformOps -lMLIRAsmParser -lMLIRAsyncDialect -lMLIRAsyncToLLVM
+                -lMLIRAsyncTransforms -lMLIRBufferizationDialect -lMLIRBufferizationPipelines
+                -lMLIRBufferizationToMemRef -lMLIRBufferizationTransformOps -lMLIRBufferizationTransforms
+                -lMLIRBuiltinToLLVMIRTranslation -lMLIRBytecodeOpInterface -lMLIRBytecodeReader
+                -lMLIRBytecodeWriter -lMLIRCallInterfaces -lMLIRCAPIAMDGPU -lMLIRCAPIArith -lMLIRCAPIAsync
+                -lMLIRCAPIControlFlow -lMLIRCAPIConversion -lMLIRCAPIDebug -lMLIRCAPIEmitC
+                -lMLIRCAPIExecutionEngine -lMLIRCAPIExportSMTLIB -lMLIRCAPIFunc -lMLIRCAPIGPU -lMLIRCAPIIndex
+                -lMLIRCAPIInterfaces -lMLIRCAPIIR -lMLIRCAPIIRDL -lMLIRCAPILinalg -lMLIRCAPILLVM -lMLIRCAPIMath
+                -lMLIRCAPIMemRef -lMLIRCAPIMLProgram -lMLIRCAPINVGPU -lMLIRCAPINVVM -lMLIRCAPIOpenMP -lMLIRCAPIPDL
+                -lMLIRCAPIQuant -lMLIRCAPIRegisterEverything -lMLIRCAPIROCDL -lMLIRCAPISCF -lMLIRCAPIShape
+                -lMLIRCAPISMT -lMLIRCAPISparseTensor -lMLIRCAPISPIRV -lMLIRCAPITarget -lMLIRCAPITensor
                 -lMLIRCAPITransformDialect -lMLIRCAPITransformDialectTransforms -lMLIRCAPITransforms
-                -lMLIRCAPIVector -lMLIRCastInterfaces -lMLIRComplexDialect
-                -lMLIRComplexToLibm -lMLIRComplexToLLVM -lMLIRComplexToSPIRV
+                -lMLIRCAPIVector -lMLIRCastInterfaces -lMLIRComplexDialect -lMLIRComplexDivisionConversion
+                -lMLIRComplexToLibm -lMLIRComplexToLLVM -lMLIRComplexToROCDLLibraryCalls -lMLIRComplexToSPIRV
                 -lMLIRComplexToStandard -lMLIRControlFlowDialect -lMLIRControlFlowInterfaces
-                -lMLIRControlFlowToLLVM -lMLIRControlFlowToSCF
-                -lMLIRControlFlowToSPIRV -lMLIRControlFlowTransforms -lMLIRConvertToLLVMInterface
-                -lMLIRConvertToLLVMPass -lMLIRConvertToSPIRVPass -lMLIRCopyOpInterface
+                -lMLIRControlFlowToLLVM -lMLIRControlFlowToSCF -lMLIRControlFlowToSPIRV -lMLIRControlFlowTransforms
+                -lMLIRConvertToEmitC -lMLIRConvertToLLVMInterface -lMLIRConvertToLLVMPass
                 -lMLIRDataLayoutInterfaces -lMLIRDebug -lMLIRDerivedAttributeOpInterface
-                -lMLIRDestinationStyleOpInterface -lMLIRDialect -lMLIRDialectUtils
-                -lMLIRDLTIDialect -lMLIRDLTITransformOps
-                -lMLIREmitCDialect -lMLIREmitCTransforms -lMLIRExecutionEngine
-                -lMLIRExecutionEngineUtils -lMLIRFromLLVMIRTranslationRegistration
-                -lMLIRFuncAllExtensions -lMLIRFuncDialect -lMLIRFuncInlinerExtension
-                -lMLIRFuncMeshShardingExtensions -lMLIRFunctionInterfaces
-                -lMLIRFuncToEmitC -lMLIRFuncToLLVM -lMLIRFuncToSPIRV
-                -lMLIRFuncTransformOps -lMLIRFuncTransforms -lMLIRGPUDialect
-                -lMLIRGPUPipelines -lMLIRGPUToGPURuntimeTransforms
-                -lMLIRGPUToLLVMIRTranslation -lMLIRGPUToLLVMSPV -lMLIRGPUToNVVMTransforms
-                -lMLIRGPUToROCDLTransforms -lMLIRGPUToSPIRV -lMLIRGPUToVulkanTransforms
-                -lMLIRGPUTransformOps -lMLIRGPUTransforms -lMLIRIndexDialect
-                -lMLIRIndexToLLVM -lMLIRIndexToSPIRV -lMLIRInferIntRangeCommon
-                -lMLIRInferIntRangeInterface -lMLIRInferTypeOpInterface -lMLIRIR
-                -lMLIRIRDL -lMLIRJitRunner -lMLIRLinalgDialect
-                -lMLIRLinalgToStandard -lMLIRLinalgTransformOps
-                -lMLIRLinalgTransforms -lMLIRLinalgUtils -lMLIRLLVMCommonConversion
-                -lMLIRLLVMDialect -lMLIRLLVMIRToLLVMTranslation -lMLIRLLVMIRToNVVMTranslation
-                -lMLIRLLVMIRTransforms -lMLIRLLVMToLLVMIRTranslation
-                -lMLIRLoopLikeInterface -lMLIRLspServerLib
-                -lMLIRLspServerSupportLib -lMLIRMaskableOpInterface -lMLIRMaskingOpInterface
-                -lMLIRMathDialect -lMLIRMathToFuncs
-                -lMLIRMathToLibm -lMLIRMathToLLVM -lMLIRMathToROCDL
-                -lMLIRMathToSPIRV -lMLIRMathTransforms -lMLIRMemorySlotInterfaces
-                -lMLIRMemRefDialect -lMLIRMemRefToEmitC
-                -lMLIRMemRefToLLVM -lMLIRMemRefToSPIRV -lMLIRMemRefTransformOps
-                -lMLIRMemRefTransforms -lMLIRMemRefUtils -lMLIRMeshDialect
-                -lMLIRMeshTransforms -lMLIRMlirOptMain
-                -lMLIRMLProgramDialect -lMLIRMLProgramTransforms -lMLIRMPIDialect
-                -lMLIRNVGPUDialect -lMLIRNVGPUToNVVM
-                -lMLIRNVGPUTransformOps -lMLIRNVGPUTransforms -lMLIRNVGPUUtils
-                -lMLIRNVVMDialect -lMLIRNVVMTarget -lMLIRNVVMToLLVM
-                -lMLIRNVVMToLLVMIRTranslation -lMLIRObservers -lMLIROpenACCDialect
-                -lMLIROpenACCMPCommon -lMLIROpenACCToLLVMIRTranslation -lMLIROpenACCToSCF
-                -lMLIROpenACCTransforms -lMLIROpenMPDialect -lMLIROpenMPToLLVM
-                -lMLIROpenMPToLLVMIRTranslation -lMLIROptLib -lMLIRParallelCombiningOpInterface
-                -lMLIRParser -lMLIRPass -lMLIRPDLDialect
-                -lMLIRPDLInterpDialect -lMLIRPDLLAST -lMLIRPDLLCodeGen
-                -lMLIRPDLLODS -lMLIRPDLToPDLInterp -lMLIRPluginsLib
-                -lMLIRPolynomialDialect -lMLIRPresburger -lMLIRPtrDialect
-                -lMLIRQuantDialect -lMLIRQuantTransforms -lMLIRQuantUtils
-                -lMLIRQuery -lMLIRQueryLib -lMLIRQueryMatcher
-                -lMLIRReconcileUnrealizedCasts -lMLIRReduce -lMLIRReduceLib
-                -lMLIRRewrite -lMLIRRewritePDL -lMLIRROCDLDialect
-                -lMLIRROCDLTarget -lMLIRROCDLToLLVMIRTranslation -lMLIRRuntimeVerifiableOpInterface
-                -lMLIRSCFDialect -lMLIRSCFToControlFlow
-                -lMLIRSCFToEmitC -lMLIRSCFToGPU -lMLIRSCFToOpenMP
-                -lMLIRSCFToSPIRV -lMLIRSCFTransformOps -lMLIRSCFTransforms
-                -lMLIRSCFUtils -lMLIRShapeDialect -lMLIRShapedOpInterfaces
-                -lMLIRShapeOpsTransforms -lMLIRShapeToStandard
-                -lMLIRShardingInterface -lMLIRSideEffectInterfaces -lMLIRSparseTensorDialect
+                -lMLIRDestinationStyleOpInterface -lMLIRDialect -lMLIRDialectUtils -lMLIRDLTIDialect
+                -lMLIRDLTITransformOps -lMLIREmitCDialect -lMLIREmitCTransforms -lMLIRExecutionEngine
+                -lMLIRExecutionEngineUtils -lMLIRExportSMTLIB -lMLIRFromLLVMIRTranslationRegistration
+                -lMLIRFuncAllExtensions -lMLIRFuncDialect -lMLIRFuncInlinerExtension -lMLIRFuncShardingExtensions
+                -lMLIRFunctionInterfaces -lMLIRFuncToEmitC -lMLIRFuncToLLVM -lMLIRFuncToSPIRV
+                -lMLIRFuncTransformOps -lMLIRFuncTransforms -lMLIRFuncUtils -lMLIRGPUDialect -lMLIRGPUPipelines
+                -lMLIRGPUToGPURuntimeTransforms -lMLIRGPUToLLVMIRTranslation -lMLIRGPUToLLVMSPV
+                -lMLIRGPUToNVVMTransforms -lMLIRGPUToROCDLTransforms -lMLIRGPUToSPIRV -lMLIRGPUTransformOps
+                -lMLIRGPUTransforms -lMLIRGPUUtils -lMLIRIndexDialect -lMLIRIndexingMapOpInterface
+                -lMLIRIndexToLLVM -lMLIRIndexToSPIRV -lMLIRInferIntRangeCommon -lMLIRInferIntRangeInterface
+                -lMLIRInferTypeOpInterface -lMLIRIR -lMLIRIRDL -lMLIRJitRunner -lMLIRLinalgDialect
+                -lMLIRLinalgToStandard -lMLIRLinalgTransformOps -lMLIRLinalgTransforms -lMLIRLinalgUtils
+                -lMLIRLLVMCommonConversion -lMLIRLLVMDialect -lMLIRLLVMIRToLLVMTranslation
+                -lMLIRLLVMIRToNVVMTranslation -lMLIRLLVMIRTransforms -lMLIRLLVMToLLVMIRTranslation
+                -lMLIRLoopLikeInterface -lMLIRLspServerLib -lMLIRLspServerSupportLib -lMLIRMaskableOpInterface
+                -lMLIRMaskingOpInterface -lMLIRMathDialect -lMLIRMathToEmitC -lMLIRMathToFuncs -lMLIRMathToLibm
+                -lMLIRMathToLLVM -lMLIRMathToROCDL -lMLIRMathToSPIRV -lMLIRMathTransforms -lMLIRMemOpInterfaces
+                -lMLIRMemorySlotInterfaces -lMLIRMemRefDialect -lMLIRMemRefToEmitC -lMLIRMemRefToLLVM
+                -lMLIRMemRefToSPIRV -lMLIRMemRefTransformOps -lMLIRMemRefTransforms -lMLIRMemRefUtils
+                -lMLIRMlirOptMain -lMLIRMLProgramDialect -lMLIRMLProgramTransforms -lMLIRMPIDialect -lMLIRMPIToLLVM
+                -lMLIRNVGPUDialect -lMLIRNVGPUToNVVM -lMLIRNVGPUTransformOps -lMLIRNVGPUTransforms -lMLIRNVGPUUtils
+                -lMLIRNVVMDialect -lMLIRNVVMTarget -lMLIRNVVMToLLVM -lMLIRNVVMToLLVMIRTranslation -lMLIRObservers
+                -lMLIROpenACCDialect -lMLIROpenACCMPCommon -lMLIROpenACCToLLVMIRTranslation -lMLIROpenACCToSCF
+                -lMLIROpenACCTransforms -lMLIROpenMPDialect -lMLIROpenMPToLLVM -lMLIROpenMPToLLVMIRTranslation
+                -lMLIROptLib -lMLIRParallelCombiningOpInterface -lMLIRParser -lMLIRPass -lMLIRPDLDialect
+                -lMLIRPDLInterpDialect -lMLIRPDLLAST -lMLIRPDLLCodeGen -lMLIRPDLLODS -lMLIRPDLToPDLInterp
+                -lMLIRPluginsLib -lMLIRPresburger -lMLIRPtrDialect -lMLIRPtrMemorySpaceInterfaces -lMLIRPtrToLLVM
+                -lMLIRPtrToLLVMIRTranslation -lMLIRQuantDialect -lMLIRQuantTransforms -lMLIRQuantUtils -lMLIRQuery
+                -lMLIRQueryLib -lMLIRQueryMatcher -lMLIRReconcileUnrealizedCasts -lMLIRReduce -lMLIRReduceLib
+                -lMLIRRegisterAllDialects -lMLIRRegisterAllExtensions -lMLIRRegisterAllPasses -lMLIRRemarkStreamer
+                -lMLIRRewrite -lMLIRRewritePDL -lMLIRROCDLDialect -lMLIRROCDLTarget -lMLIRROCDLToLLVMIRTranslation
+                -lMLIRRuntimeVerifiableOpInterface -lMLIRSCFDialect -lMLIRSCFToControlFlow -lMLIRSCFToEmitC
+                -lMLIRSCFToGPU -lMLIRSCFToOpenMP -lMLIRSCFToSPIRV -lMLIRSCFTransformOps -lMLIRSCFTransforms
+                -lMLIRSCFUtils -lMLIRShapeDialect -lMLIRShapedOpInterfaces -lMLIRShapeOpsTransforms
+                -lMLIRShapeToStandard -lMLIRShardDialect -lMLIRShardingInterface -lMLIRShardToMPI
+                -lMLIRShardTransforms -lMLIRSideEffectInterfaces -lMLIRSMT -lMLIRSparseTensorDialect
                 -lMLIRSparseTensorPipelines -lMLIRSparseTensorRuntime -lMLIRSparseTensorTransformOps
                 -lMLIRSparseTensorTransforms -lMLIRSparseTensorUtils -lMLIRSPIRVAttrToLLVMConversion
-                -lMLIRSPIRVBinaryUtils -lMLIRSPIRVConversion -lMLIRSPIRVDeserialization
-                -lMLIRSPIRVDialect -lMLIRSPIRVModuleCombiner -lMLIRSPIRVSerialization
-                -lMLIRSPIRVTarget -lMLIRSPIRVToLLVM
-                -lMLIRSPIRVToLLVMIRTranslation -lMLIRSPIRVTransforms -lMLIRSPIRVTranslateRegistration
-                -lMLIRSPIRVUtils -lMLIRSubsetOpInterface -lMLIRSupport
-                -lMLIRTableGen -lMLIRTargetCpp -lMLIRTargetLLVM
-                -lMLIRTargetLLVMIRExport -lMLIRTargetLLVMIRImport -lMLIRTblgenLib
+                -lMLIRSPIRVBinaryUtils -lMLIRSPIRVConversion -lMLIRSPIRVDeserialization -lMLIRSPIRVDialect
+                -lMLIRSPIRVImageInterfaces -lMLIRSPIRVModuleCombiner -lMLIRSPIRVSerialization -lMLIRSPIRVTarget
+                -lMLIRSPIRVToLLVM -lMLIRSPIRVToLLVMIRTranslation -lMLIRSPIRVTransforms
+                -lMLIRSPIRVTranslateRegistration -lMLIRSPIRVUtils -lMLIRSubsetOpInterface -lMLIRSupport
+                -lMLIRTableGen -lMLIRTargetCpp -lMLIRTargetIRDLToCpp -lMLIRTargetLLVM -lMLIRTargetLLVMIRExport
+                -lMLIRTargetLLVMIRImport -lMLIRTargetLLVMIRTransforms -lMLIRTargetWasmImport -lMLIRTblgenLib
                 -lMLIRTensorAllExtensions -lMLIRTensorDialect -lMLIRTensorInferTypeOpInterfaceImpl
-                -lMLIRTensorMeshShardingExtensions -lMLIRTensorTilingInterfaceImpl
-                -lMLIRTensorToLinalg -lMLIRTensorToSPIRV -lMLIRTensorTransformOps
-                -lMLIRTensorTransforms -lMLIRTensorUtils -lMLIRTilingInterface
-                -lMLIRToLLVMIRTranslationRegistration -lMLIRTosaDialect -lMLIRTosaShardingInterfaceImpl
-                -lMLIRTosaToArith -lMLIRTosaToLinalg
-                -lMLIRTosaToMLProgram -lMLIRTosaToSCF -lMLIRTosaToTensor
-                -lMLIRTosaTransforms -lMLIRTransformDebugExtension -lMLIRTransformDialect
-                -lMLIRTransformDialectInterfaces -lMLIRTransformDialectIRDLExtension
-                -lMLIRTransformDialectTransforms -lMLIRTransformDialectUtils
-                -lMLIRTransformLoopExtension -lMLIRTransformPDLExtension -lMLIRTransforms
-                -lMLIRTransformUtils -lMLIRTranslateLib -lMLIRUBDialect
-                -lMLIRUBToLLVM -lMLIRUBToSPIRV -lMLIRValueBoundsOpInterface
-                -lMLIRVCIXDialect -lMLIRVCIXToLLVMIRTranslation -lMLIRVectorDialect
-                -lMLIRVectorInterfaces -lMLIRVectorToArmSME
-                -lMLIRVectorToGPU -lMLIRVectorToLLVM -lMLIRVectorToLLVMPass
-                -lMLIRVectorToSCF -lMLIRVectorToSPIRV -lMLIRVectorToXeGPU
-                -lMLIRVectorTransformOps -lMLIRVectorTransforms -lMLIRVectorUtils
-                -lMLIRViewLikeInterface -lMLIRX86VectorDialect -lMLIRX86VectorToLLVMIRTranslation
-                -lMLIRX86VectorTransforms -lMLIRXeGPUDialect -lMLIRXeGPUTransforms
-                # === ALL LLVM libraries (104) ===
+                -lMLIRTensorShardingExtensions -lMLIRTensorTilingInterfaceImpl -lMLIRTensorToLinalg
+                -lMLIRTensorToSPIRV -lMLIRTensorTransformOps -lMLIRTensorTransforms -lMLIRTensorUtils
+                -lMLIRTilingInterface -lMLIRToLLVMIRTranslationRegistration -lMLIRTosaDialect
+                -lMLIRTosaShardingInterfaceImpl -lMLIRTosaToArith -lMLIRTosaToLinalg -lMLIRTosaToMLProgram
+                -lMLIRTosaToSCF -lMLIRTosaToTensor -lMLIRTosaTransforms -lMLIRTransformDebugExtension
+                -lMLIRTransformDialect -lMLIRTransformDialectInterfaces -lMLIRTransformDialectIRDLExtension
+                -lMLIRTransformDialectTransforms -lMLIRTransformDialectUtils -lMLIRTransformLoopExtension
+                -lMLIRTransformPDLExtension -lMLIRTransforms -lMLIRTransformSMTExtension
+                -lMLIRTransformTuneExtension -lMLIRTransformUtils -lMLIRTranslateLib -lMLIRUBDialect -lMLIRUBToLLVM
+                -lMLIRUBToSPIRV -lMLIRValueBoundsOpInterface -lMLIRVCIXDialect -lMLIRVCIXToLLVMIRTranslation
+                -lMLIRVectorDialect -lMLIRVectorInterfaces -lMLIRVectorToAMX -lMLIRVectorToArmSME -lMLIRVectorToGPU
+                -lMLIRVectorToLLVM -lMLIRVectorToLLVMPass -lMLIRVectorToSCF -lMLIRVectorToSPIRV -lMLIRVectorToXeGPU
+                -lMLIRVectorTransformOps -lMLIRVectorTransforms -lMLIRVectorUtils -lMLIRViewLikeInterface
+                -lMLIRWasmSSADialect -lMLIRX86VectorDialect -lMLIRX86VectorTransforms -lMLIRXeGPUDialect
+                -lMLIRXeGPUToXeVM -lMLIRXeGPUTransforms -lMLIRXeGPUUtils -lMLIRXeVMDialect -lMLIRXeVMTarget
+                -lMLIRXeVMToLLVM -lMLIRXeVMToLLVMIRTranslation
+                # === ALL LLVM libraries (Triton 3.6.0 LLVM pin: f6ded0be) ===
+                # AUTO-GENERATED from triton_llvm_install/lib/libLLVM*.a (110 libraries)
                 -lLLVMAggressiveInstCombine -lLLVMAnalysis -lLLVMAsmParser
                 -lLLVMAsmPrinter -lLLVMBinaryFormat -lLLVMBitReader
-                -lLLVMBitstreamReader -lLLVMBitWriter -lLLVMCFGuard
-                -lLLVMCFIVerify -lLLVMCGData -lLLVMCodeGen
+                -lLLVMBitstreamReader -lLLVMBitWriter -lLLVMCAS
+                -lLLVMCFGuard -lLLVMCFIVerify -lLLVMCGData -lLLVMCodeGen
                 -lLLVMCodeGenTypes -lLLVMCore -lLLVMCoroutines
                 -lLLVMCoverage -lLLVMDebugInfoBTF -lLLVMDebugInfoCodeView
-                -lLLVMDebuginfod -lLLVMDebugInfoDWARF -lLLVMDebugInfoGSYM
-                -lLLVMDebugInfoLogicalView -lLLVMDebugInfoMSF -lLLVMDebugInfoPDB
-                -lLLVMDemangle -lLLVMDiff -lLLVMDlltoolDriver
-                -lLLVMDWARFLinker -lLLVMDWARFLinkerClassic -lLLVMDWARFLinkerParallel
-                -lLLVMDWP -lLLVMExecutionEngine -lLLVMExegesis
-                -lLLVMExegesisX86 -lLLVMExtensions -lLLVMFileCheck
-                -lLLVMFrontendAtomic -lLLVMFrontendDriver -lLLVMFrontendHLSL
-                -lLLVMFrontendOffloading -lLLVMFrontendOpenACC -lLLVMFrontendOpenMP
-                -lLLVMFuzzerCLI -lLLVMFuzzMutate -lLLVMGlobalISel
+                -lLLVMDebuginfod -lLLVMDebugInfoDWARF -lLLVMDebugInfoDWARFLowLevel
+                -lLLVMDebugInfoGSYM -lLLVMDebugInfoLogicalView -lLLVMDebugInfoMSF
+                -lLLVMDebugInfoPDB -lLLVMDemangle -lLLVMDiff -lLLVMDlltoolDriver
+                -lLLVMDWARFCFIChecker -lLLVMDWARFLinker -lLLVMDWARFLinkerClassic
+                -lLLVMDWARFLinkerParallel -lLLVMDWP -lLLVMExecutionEngine
+                -lLLVMExegesis -lLLVMExegesisX86 -lLLVMExtensions -lLLVMFileCheck
+                -lLLVMFrontendAtomic -lLLVMFrontendDirective -lLLVMFrontendDriver
+                -lLLVMFrontendHLSL -lLLVMFrontendOffloading -lLLVMFrontendOpenACC
+                -lLLVMFrontendOpenMP -lLLVMFuzzerCLI -lLLVMFuzzMutate -lLLVMGlobalISel
                 -lLLVMHipStdPar -lLLVMInstCombine -lLLVMInstrumentation
                 -lLLVMInterfaceStub -lLLVMInterpreter -lLLVMipo
                 -lLLVMIRPrinter -lLLVMIRReader -lLLVMJITLink
@@ -1591,9 +1565,9 @@ function(setup_triton)
                 -lLLVMOrcShared -lLLVMOrcTargetProcess -lLLVMPasses
                 -lLLVMProfileData -lLLVMRemarks -lLLVMRuntimeDyld
                 -lLLVMSandboxIR -lLLVMScalarOpts -lLLVMSelectionDAG
-                -lLLVMSupport -lLLVMSymbolize -lLLVMTableGen
+                -lLLVMSupport -lLLVMSupportLSP -lLLVMSymbolize -lLLVMTableGen
                 -lLLVMTableGenBasic -lLLVMTableGenCommon -lLLVMTarget
-                -lLLVMTargetParser -lLLVMTextAPI -lLLVMTextAPIBinaryReader
+                -lLLVMTargetParser -lLLVMTelemetry -lLLVMTextAPI -lLLVMTextAPIBinaryReader
                 -lLLVMTransformUtils -lLLVMVectorize -lLLVMWindowsDriver
                 -lLLVMWindowsManifest -lLLVMX86AsmParser -lLLVMX86CodeGen
                 -lLLVMX86Desc -lLLVMX86Disassembler -lLLVMX86Info
