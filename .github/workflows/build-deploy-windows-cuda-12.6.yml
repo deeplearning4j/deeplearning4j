@@ -109,6 +109,7 @@ jobs:
           echo "CMAKE_CUDA_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Free Disk Space (Windows)
+        continue-on-error: true
         shell: powershell
         run: |
           # Show initial disk space
