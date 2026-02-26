@@ -82,8 +82,8 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
 
    T val = inBuff[inOffset];
    // Handle Inf/NaN inputs - treat as very large/small values
-   if (std::isinf(val) || std::isnan(val)) {
-     val = (val > 0 || std::isnan(val)) ? clampMax + max : clampMin + max;
+   if (std::isinf(static_cast<float>(val)) || std::isnan(static_cast<float>(val))) {
+     val = (val > 0 || std::isnan(static_cast<float>(val))) ? clampMax + max : clampMin + max;
    }
    // Clamp the difference to prevent overflow in exp
    T diff = val - max;
@@ -275,8 +275,8 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
          COORDS2INDEX(tadRank, tadStride, tadCoords, offset);
          T val = inBuff[offset];
          // Handle Inf/NaN inputs
-         if (std::isinf(val) || std::isnan(val)) {
-           val = (val > 0 || std::isnan(val)) ? clampMax + max : clampMin + max;
+         if (std::isinf(static_cast<float>(val)) || std::isnan(static_cast<float>(val))) {
+           val = (val > 0 || std::isnan(static_cast<float>(val))) ? clampMax + max : clampMin + max;
          }
          // Clamp the difference to prevent overflow in exp
          T diff = val - max;
