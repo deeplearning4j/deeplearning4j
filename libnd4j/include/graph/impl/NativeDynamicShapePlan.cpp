@@ -62,6 +62,12 @@
 #endif
 #ifdef HAVE_MLIR
 #include <graph/cpu/MlirCpuGraphBackend.h>
+#if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
+#include <graph/cpu/ArmHybridGraphBackend.h>
+#endif
+#endif
+#if defined(HAVE_NNAPI)
+#include <graph/cpu/NnapiGraphBackend.h>
 #endif
 #if HAVE_MLX
 #include <graph/cpu/MlxGraphBackend.h>
@@ -1028,10 +1034,15 @@ Status NativeDynamicShapePlan::execute(
   if (executeCount_ == 1 && graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
     auto* gpuBackend = getGpuGraphBackend();
     if (gpuBackend != nullptr) {
-      // Collect segments eligible for parallel precompilation
+      // Collect segments eligible for parallel precompilation.
+      // Each task records the target GPU device so async threads can call
+      // cudaSetDevice() before touching any CUDA state — new threads have
+      // no device context and default to device 0, which is wrong on
+      // multi-GPU systems where segments target different GPUs.
       struct PrecompileTask {
         int segIdx;
         LongType shapeKey;
+        int targetDevice;  // GPU device this segment's slots live on
       };
       std::vector<PrecompileTask> tasks;
       for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
@@ -1041,7 +1052,12 @@ Status NativeDynamicShapePlan::execute(
         if (!tryCapture) continue;
         if (!gpuBackend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) continue;
         LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
-        tasks.push_back({si, segShapeKey});
+        int segTargetDevice = 0;
+        if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
+          segTargetDevice = slots_[seg.startSlot].targetDeviceId;
+          if (segTargetDevice < 0) segTargetDevice = 0;
+        }
+        tasks.push_back({si, segShapeKey, segTargetDevice});
       }
 
       if (tasks.size() > 1) {
@@ -1058,6 +1074,17 @@ Status NativeDynamicShapePlan::execute(
         for (const auto& task : tasks) {
           futures.emplace_back(std::async(std::launch::async,
               [this, gpuBackend, externalInputs, numExternalInputs, task]() -> bool {
+                // CRITICAL: set CUDA device before any CUDA call on this thread.
+                // std::async threads inherit NO device context — without this,
+                // cudaGetDevice() returns 0 and all allocations/module loads go
+                // to the wrong GPU on multi-GPU systems.
+                cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
+                if (setDevErr != cudaSuccess) {
+                  sd_printf("NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s\n",
+                            task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
+                  cudaGetLastError();
+                  return false;
+                }
                 auto& seg = segments_[task.segIdx];
                 return gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
                                                   outputSlots_, totalOutputSlots_, task.shapeKey,
@@ -3837,7 +3864,6 @@ void NativeDynamicShapePlan::resetKvCachePosition(int newPos) {
   kvCachePosition_ = newPos;
 }
 
-#ifdef SD_CUDA
 void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots) {
   if (slotIndices == nullptr || maxSizes == nullptr || numSlots <= 0) return;
 
@@ -3858,7 +3884,6 @@ void NativeDynamicShapePlan::setKvCachePosition(int pos) {
 void NativeDynamicShapePlan::setMaxKvCacheLength(int maxLen) {
   maxKvCacheLen_ = maxLen;
 }
-#endif // SD_CUDA
 
 void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numExt, void* stream) {
   if (!kvCacheRetentionEnabled_ || kvCacheNumMappings_ == 0) return;
@@ -4294,7 +4319,30 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   }
 #endif
 
+#if defined(HAVE_NNAPI)
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_NNAPI ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& nnapi = NnapiGraphBackend::getInstance();
+    if (nnapi.isAvailable()) {
+      cpuGraphBackend_ = &nnapi;
+      sd_printf("NativeDynamicShapePlan: using Android NNAPI backend\n", "");
+      return cpuGraphBackend_;
+    }
+  }
+#endif
+
 #ifdef HAVE_MLIR
+#if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_ARM_HYBRID ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& armHybrid = ArmHybridGraphBackend::getInstance();
+    if (armHybrid.isAvailable()) {
+      cpuGraphBackend_ = &armHybrid;
+      sd_printf("NativeDynamicShapePlan: using ARM Hybrid (MLIR CPU + Vulkan) backend\n", "");
+      return cpuGraphBackend_;
+    }
+  }
+#endif
   auto& mlirBackend = MlirCpuGraphBackend::getInstance();
   if (mlirBackend.isAvailable()) {
     cpuGraphBackend_ = &mlirBackend;

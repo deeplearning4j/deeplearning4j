@@ -72,7 +72,9 @@ enum class GraphExecutionMode : int {
   GEM_NVRTC_JIT = 3,    // Force NVRTC JIT backend for fusible segments
   GEM_PTX_JIT = 4,      // Force PTX template backend for fusible segments
   GEM_TRITON = 5,       // Force Triton MLIR backend for fusible segments
-  GEM_MLX = 6           // Force MLX Apple Silicon backend for fusible segments
+  GEM_MLX = 6,          // Force MLX Apple Silicon backend for fusible segments
+  GEM_ARM_HYBRID = 7,   // Force ARM Hybrid (MLIR CPU + Vulkan) backend
+  GEM_NNAPI = 8         // Force Android NNAPI backend for hardware acceleration
 };
 
 // FlatGraph is in the ::graph namespace (FlatBuffer-generated)
@@ -586,42 +588,42 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * @return true if all ops contributed CUDA graph nodes, false if any host-only ops found
    */
    bool validateCapturedGraph(int segmentIndex = -1) const;
+#endif
 
   /**
    * Set maximum sizes for specific output slots (KV cache pre-allocation).
-   * 
+   *
    * When set, these slots will be pre-allocated at the specified maximum size during
    * the first execution, keeping buffer addresses stable across all subsequent steps.
    * This enables CUDA graph capture for models with growing KV caches.
-   * 
+   *
    * @param slotIndices   Array of output slot indices to pre-allocate
    * @param maxSizes      Array of maximum sizes (in number of elements, not bytes)
    * @param numSlots      Number of entries in the arrays
-   * 
+   *
    * Usage for KV cache:
    *   - Call once before first execution
    *   - For each KV cache output slot, set max size = batch * numHeads * maxSeqLen * headDim
    */
   void setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots);
-  
+
   /**
    * Get the current KV cache sequence position (for slice-based KV cache access).
    * This is the position where new KV entries will be written.
    */
   int getKvCachePosition() const { return kvCachePosition_; }
-  
+
   /**
    * Set the KV cache sequence position.
    * Call before each decode step to tell the attention op where to write new KV.
    */
   void setKvCachePosition(int pos);
-  
+
   /**
    * Set the maximum KV cache length (used with pre-allocated KV cache).
    * When set, attention outputs are pre-allocated at [batch, numHeads, maxKvLen, headDim].
    */
   void setMaxKvCacheLength(int maxLen);
-#endif
 
   /**
    * Validate that a compiled CPU graph (oneDNN/ACL) covers all ops in the segment.
