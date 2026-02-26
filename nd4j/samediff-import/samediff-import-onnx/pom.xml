@@ -59,7 +59,7 @@
       <dependency>
         <groupId>org.bytedeco</groupId>
         <artifactId>onnxruntime-platform</artifactId>
-        <version>1.22.0-1.5.12</version>
+        <version>1.24.1-1.5.13</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
