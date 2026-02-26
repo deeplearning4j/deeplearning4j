@@ -757,8 +757,8 @@ private:
     mutable std::mutex _cacheMutex;
     mutable std::mutex _captureMutex;
 
-    // Thread-local current device
-    static thread_local int _currentDevice;
+    // Thread-local current device (accessor pattern for MSVC C2492 compatibility)
+    static int& currentDeviceRef();
 };
 
 /**

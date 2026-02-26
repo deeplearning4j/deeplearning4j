@@ -465,8 +465,8 @@ private:
     std::vector<P2PConnection> _p2pConnections;
     std::unordered_map<std::string, DeviceGroup> _deviceGroups;
 
-    // Thread-local current device
-    static thread_local int _currentDevice;
+    // Thread-local current device (accessor pattern for MSVC C2492 compatibility)
+    static int& currentDeviceRef();
 
     // Reserved memory tracking
     std::unordered_map<int, size_t> _reservedMemory;

@@ -36,8 +36,11 @@
 namespace sd {
 namespace modelparallel {
 
-// Thread-local current device
-thread_local int DeviceManager::_currentDevice = 0;
+// Thread-local current device (function-local to avoid MSVC C2492 with dllexport)
+int& DeviceManager::currentDeviceRef() {
+    static thread_local int _currentDevice = 0;
+    return _currentDevice;
+}
 
 DeviceManager& DeviceManager::getInstance() {
     static DeviceManager instance;
@@ -781,11 +784,11 @@ void DeviceManager::setCurrentDevice(int globalIndex) {
     }
 #endif
 
-    _currentDevice = globalIndex;
+    currentDeviceRef() = globalIndex;
 }
 
 int DeviceManager::getCurrentDevice() const {
-    return _currentDevice;
+    return currentDeviceRef();
 }
 
 samediff::Engine DeviceManager::deviceTypeToEngine(DeviceType type) {

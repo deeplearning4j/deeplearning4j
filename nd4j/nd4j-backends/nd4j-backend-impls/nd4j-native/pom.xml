@@ -895,6 +895,22 @@
                                     <value>${javacpp.platform.extension}</value>
                                 </property>
                             </propertyKeysAndValues>
+                            <includePaths>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-target-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-host-build/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
+                                <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                                <includePath>${libnd4jhome}/blas</includePath>
+                                <includePath>${libnd4jhome}/include</includePath>
+                                <includePath>${libnd4jhome}/include/helpers</includePath>
+                                <includePath>${libnd4jhome}/include/array</includePath>
+                                <includePath>${libnd4jhome}/include/cnpy</includePath>
+                                <includePath>${libnd4jhome}/include/execution</includePath>
+                                <includePath>${libnd4jhome}/include/exceptions</includePath>
+                                <includePath>${libnd4jhome}/include/graph</includePath>
+                                <includePath>${libnd4jhome}/include/indexing</includePath>
+                                <includePath>${libnd4jhome}/include/memory</includePath>
+                            </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>

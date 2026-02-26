@@ -36,8 +36,11 @@
 namespace sd {
 namespace cuda {
 
-// Thread-local current device
-thread_local int CudaGraphScheduler::_currentDevice = 0;
+// Thread-local current device (function-local to avoid MSVC C2492 with dllexport)
+int& CudaGraphScheduler::currentDeviceRef() {
+    static thread_local int _currentDevice = 0;
+    return _currentDevice;
+}
 
 // CudaGraphHandle implementation moved to CudaGraphHandle.cu for SD_GCC_FUNCTRACE builds
 // MultiDeviceGraph implementation moved to MultiDeviceGraph.cu for SD_GCC_FUNCTRACE builds
@@ -548,11 +551,11 @@ void CudaGraphScheduler::destroyPipeline(int pipelineId) {
 }
 
 void CudaGraphScheduler::setCurrentDevice(int deviceId) {
-    _currentDevice = deviceId;
+    currentDeviceRef() = deviceId;
 }
 
 int CudaGraphScheduler::getCurrentDevice() const {
-    return _currentDevice;
+    return currentDeviceRef();
 }
 
 bool CudaGraphScheduler::deviceSupportsGraphs(int deviceId) const {
