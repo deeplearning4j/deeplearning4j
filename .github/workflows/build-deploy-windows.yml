@@ -109,6 +109,7 @@ jobs:
           max-size: '5G'
 
       - name: Free Disk Space (Windows)
+        continue-on-error: true
         shell: powershell
         run: |
           $ErrorActionPreference = 'Continue'
