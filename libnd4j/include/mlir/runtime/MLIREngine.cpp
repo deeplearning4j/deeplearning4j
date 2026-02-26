@@ -47,6 +47,10 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#if __has_include("mlir/Dialect/Math/IR/Math.h")
+#include "mlir/Dialect/Math/IR/Math.h"
+#define SD_MLIR_HAS_MATH_DIALECT 1
+#endif
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
@@ -81,6 +85,10 @@
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#if __has_include("mlir/Conversion/MathToLLVM/MathToLLVM.h")
+#include "mlir/Conversion/MathToLLVM/MathToLLVM.h"
+#define SD_MLIR_HAS_MATH_TO_LLVM_PASS 1
+#endif
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #if __has_include("mlir/Conversion/VectorToLLVM/ConvertVectorToLLVMPass.h")
@@ -129,6 +137,7 @@
 #endif
 
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include <sstream>
 
@@ -174,19 +183,83 @@ bool CompiledKernel::execute(const std::vector<NDArray*>& inputs,
         return false;
     }
 
-    // TODO: Implement actual execution via ExecutionEngine
-    // This will involve:
-    // 1. Converting NDArray buffers to MLIR MemRef descriptors
-    // 2. Calling the JIT-compiled function via the execution engine
-    // 3. Handling results
+    // Pack NDArray buffers into MLIR's invokePacked format.
+    // For each rank-1 memref arg, invokePacked expects 5 void* entries:
+    //   &basePtr, &alignedPtr, &offset, &sizes[0], &strides[0]
+    // Then one entry for the index (n_elements) arg at the end.
 
-    // Placeholder implementation
-    auto invokeFn = _engine->lookup(_entryPoint);
-    if (!invokeFn) {
+    int numBufferArgs = static_cast<int>(inputs.size() + outputs.size());
+    int numPackedEntries = numBufferArgs * 5 + 1;  // 5 per memref + 1 for n_elements
+
+    // Allocate descriptor storage for all memref args
+    struct MemRefDescriptor {
+        void* basePtr;
+        void* alignedPtr;
+        int64_t offset;
+        int64_t sizes[1];
+        int64_t strides[1];
+    };
+
+    std::vector<MemRefDescriptor> descriptors(numBufferArgs);
+    std::vector<void*> packedArgs(numPackedEntries);
+
+    // Determine n_elements from the first input
+    int64_t nElements = 0;
+    if (!inputs.empty() && inputs[0]) {
+        nElements = inputs[0]->lengthOf();
+    } else if (!outputs.empty() && outputs[0]) {
+        nElements = outputs[0]->lengthOf();
+    }
+
+    int packedIdx = 0;
+    int descIdx = 0;
+
+    // Pack input buffers
+    for (auto* arr : inputs) {
+        if (!arr) return false;
+        auto& desc = descriptors[descIdx];
+        desc.basePtr = arr->buffer();
+        desc.alignedPtr = arr->buffer();
+        desc.offset = 0;
+        desc.sizes[0] = arr->lengthOf();
+        desc.strides[0] = 1;
+
+        packedArgs[packedIdx++] = &desc.basePtr;
+        packedArgs[packedIdx++] = &desc.alignedPtr;
+        packedArgs[packedIdx++] = &desc.offset;
+        packedArgs[packedIdx++] = &desc.sizes[0];
+        packedArgs[packedIdx++] = &desc.strides[0];
+        descIdx++;
+    }
+
+    // Pack output buffers
+    for (auto* arr : outputs) {
+        if (!arr) return false;
+        auto& desc = descriptors[descIdx];
+        desc.basePtr = arr->buffer();
+        desc.alignedPtr = arr->buffer();
+        desc.offset = 0;
+        desc.sizes[0] = arr->lengthOf();
+        desc.strides[0] = 1;
+
+        packedArgs[packedIdx++] = &desc.basePtr;
+        packedArgs[packedIdx++] = &desc.alignedPtr;
+        packedArgs[packedIdx++] = &desc.offset;
+        packedArgs[packedIdx++] = &desc.sizes[0];
+        packedArgs[packedIdx++] = &desc.strides[0];
+        descIdx++;
+    }
+
+    // Pack n_elements as index type (int64_t)
+    packedArgs[packedIdx++] = &nElements;
+
+    // Invoke the JIT-compiled function
+    auto error = _engine->invokePacked(_entryPoint, packedArgs);
+    if (error) {
+        llvm::errs() << "CpuIRBuilder: JIT execution failed: " << error << "\n";
         return false;
     }
 
-    // For now, return true as placeholder
     return true;
 }
 
@@ -231,6 +304,9 @@ bool MLIREngine::initialize() {
     _context->loadDialect<mlir::tensor::TensorDialect>();
     _context->loadDialect<mlir::vector::VectorDialect>();
     _context->loadDialect<mlir::LLVM::LLVMDialect>();
+#ifdef SD_MLIR_HAS_MATH_DIALECT
+    _context->loadDialect<mlir::math::MathDialect>();
+#endif
     _context->loadDialect<mlir::bufferization::BufferizationDialect>();
 #ifdef SD_MLIR_HAS_AFFINE_DIALECT
     _context->loadDialect<mlir::affine::AffineDialect>();
@@ -330,6 +406,49 @@ std::shared_ptr<CompiledKernel> MLIREngine::compile(
         std::move(*maybeEngine), opName + "_kernel");
 
     return kernel;
+}
+
+std::shared_ptr<CompiledKernel> MLIREngine::compileModule(
+    mlir::OwningOpRef<mlir::ModuleOp> module,
+    const std::string& entryPoint,
+    const MLIRCompileOptions& options) {
+
+    if (!_initialized && !initialize()) {
+        return nullptr;
+    }
+
+    if (!module) {
+        return nullptr;
+    }
+
+    // Build CPU lowering pipeline
+    mlir::PassManager pm(_context.get());
+    buildCPUPipeline(pm, options);
+
+    // Run the lowering pipeline
+    if (mlir::failed(pm.run(*module))) {
+        return nullptr;
+    }
+
+    if (options.debugDumps) {
+        module->dump();
+    }
+
+    // Create execution engine
+    llvm::SmallVector<llvm::StringRef, 0> sharedLibPaths;
+    auto optPipeline = mlir::makeOptimizingTransformer(
+        options.optLevel, /*sizeLevel=*/0, /*targetMachine=*/nullptr);
+
+    auto maybeEngine = mlir::ExecutionEngine::create(
+        *module, /*llvmModuleBuilder=*/nullptr,
+        optPipeline, llvm::CodeGenOptLevel::Default,
+        sharedLibPaths);
+
+    if (!maybeEngine) {
+        return nullptr;
+    }
+
+    return std::make_shared<CompiledKernel>(std::move(*maybeEngine), entryPoint);
 }
 
 std::shared_ptr<CompiledKernel> MLIREngine::getOrCompile(
@@ -434,6 +553,9 @@ void MLIREngine::buildCPUPipeline(mlir::PassManager& pm,
     pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
     pm.addPass(mlir::createConvertControlFlowToLLVMPass());
     pm.addPass(mlir::createArithToLLVMConversionPass());
+#ifdef SD_MLIR_HAS_MATH_TO_LLVM_PASS
+    pm.addPass(mlir::createConvertMathToLLVMPass());
+#endif
 
     // Final cleanup
     pm.addPass(mlir::createCanonicalizerPass());
@@ -583,6 +705,13 @@ std::shared_ptr<CompiledKernel> MLIREngine::compile(
     const std::string&,
     const std::vector<std::vector<int64_t>>&,
     const std::vector<int>&,
+    const MLIRCompileOptions&) {
+    return nullptr;
+}
+
+std::shared_ptr<CompiledKernel> MLIREngine::compileModule(
+    mlir::OwningOpRef<mlir::ModuleOp>,
+    const std::string&,
     const MLIRCompileOptions&) {
     return nullptr;
 }

@@ -45,11 +45,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <condition_variable>
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <mutex>
+#include <thread>
 #include <future>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -162,6 +166,98 @@ inline bool configureCudaKernelSharedMemory(void* kernelFunc, unsigned int share
     }
   }
 
+  return true;
+}
+
+inline bool queryCudaCooperativeLaunchCapacity(void* kernelFunc,
+                                               unsigned int blockX, unsigned int blockY, unsigned int blockZ,
+                                               unsigned int sharedMemBytes,
+                                               bool* cooperativeSupported,
+                                               long long* maxBlocks,
+                                               int* blocksPerSm,
+                                               int* smCount) {
+  if (cooperativeSupported) *cooperativeSupported = false;
+  if (maxBlocks) *maxBlocks = 0;
+  if (blocksPerSm) *blocksPerSm = 0;
+  if (smCount) *smCount = 0;
+  if (kernelFunc == nullptr) return false;
+
+  int currentDevice = 0;
+  cudaError_t getDeviceErr = cudaGetDevice(&currentDevice);
+  if (getDeviceErr != cudaSuccess) {
+    sd_printf("TritonGraphBackend: cudaGetDevice failed during cooperative capacity query: %s\n",
+              cudaGetErrorString(getDeviceErr));
+    cudaGetLastError();
+    return false;
+  }
+
+  CUdevice cuDevice = 0;
+  CUresult devRes = cuDeviceGet(&cuDevice, currentDevice);
+  if (devRes != CUDA_SUCCESS) {
+    const char* errStr = nullptr;
+    cuGetErrorString(devRes, &errStr);
+    sd_printf("TritonGraphBackend: cuDeviceGet failed during cooperative capacity query: %s (code=%d)\n",
+              errStr ? errStr : "unknown", static_cast<int>(devRes));
+    return false;
+  }
+
+  int coopLaunchAttr = 0;
+  CUresult coopRes =
+      cuDeviceGetAttribute(&coopLaunchAttr, CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH, cuDevice);
+  if (coopRes != CUDA_SUCCESS) {
+    const char* errStr = nullptr;
+    cuGetErrorString(coopRes, &errStr);
+    sd_printf("TritonGraphBackend: cuDeviceGetAttribute(COOPERATIVE_LAUNCH) failed: %s (code=%d)\n",
+              errStr ? errStr : "unknown", static_cast<int>(coopRes));
+    return false;
+  }
+
+  const bool coopSupported = (coopLaunchAttr != 0);
+  if (cooperativeSupported) *cooperativeSupported = coopSupported;
+  if (!coopSupported) return true;
+
+  int smCountLocal = 0;
+  CUresult smRes =
+      cuDeviceGetAttribute(&smCountLocal, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice);
+  if (smRes != CUDA_SUCCESS || smCountLocal <= 0) {
+    const char* errStr = nullptr;
+    cuGetErrorString(smRes, &errStr);
+    sd_printf("TritonGraphBackend: cuDeviceGetAttribute(MULTIPROCESSOR_COUNT) failed: %s (code=%d)\n",
+              errStr ? errStr : "unknown", static_cast<int>(smRes));
+    return false;
+  }
+
+  unsigned long long threadsPerBlock64 =
+      static_cast<unsigned long long>(blockX) *
+      static_cast<unsigned long long>(blockY) *
+      static_cast<unsigned long long>(blockZ);
+  if (threadsPerBlock64 == 0 ||
+      threadsPerBlock64 > static_cast<unsigned long long>(std::numeric_limits<int>::max())) {
+    sd_printf("TritonGraphBackend: invalid launch block size for cooperative capacity query: %llux%ux%u\n",
+              static_cast<unsigned long long>(blockX), blockY, blockZ);
+    return false;
+  }
+
+  int blocksPerSmLocal = 0;
+  CUresult occRes = cuOccupancyMaxActiveBlocksPerMultiprocessor(
+      &blocksPerSmLocal,
+      static_cast<CUfunction>(kernelFunc),
+      static_cast<int>(threadsPerBlock64),
+      sharedMemBytes);
+  if (occRes != CUDA_SUCCESS) {
+    const char* errStr = nullptr;
+    cuGetErrorString(occRes, &errStr);
+    sd_printf("TritonGraphBackend: cuOccupancyMaxActiveBlocksPerMultiprocessor failed: %s (code=%d)\n",
+              errStr ? errStr : "unknown", static_cast<int>(occRes));
+    return false;
+  }
+
+  blocksPerSmLocal = std::max(0, blocksPerSmLocal);
+  long long capacity = static_cast<long long>(smCountLocal) * static_cast<long long>(blocksPerSmLocal);
+
+  if (smCount) *smCount = smCountLocal;
+  if (blocksPerSm) *blocksPerSm = blocksPerSmLocal;
+  if (maxBlocks) *maxBlocks = capacity;
   return true;
 }
 #endif
@@ -567,7 +663,55 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                         int totalSlots,
                                         int* requestedOutputSlotIndices,
                                         int numRequestedOutputs) {
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey};
+#ifdef SD_CUDA
+  int activeDevice = -1;
+  cudaError_t activeDeviceErr = cudaGetDevice(&activeDevice);
+  if (activeDeviceErr != cudaSuccess) {
+    sd_printf("TritonGraphBackend::compileSegment: cudaGetDevice failed for segment [%d-%d]: %s\n",
+              seg.startSlot, seg.endSlot, cudaGetErrorString(activeDeviceErr));
+    cudaGetLastError();
+    return false;
+  }
+
+  int targetDevice = -1;
+  if (seg.startSlot >= 0) {
+    targetDevice = slots[seg.startSlot].targetDeviceId;
+  }
+
+  int compileDevice = activeDevice;
+  if (targetDevice >= 0) {
+    int deviceCount = 0;
+    cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
+    if (countErr != cudaSuccess || deviceCount <= 0) {
+      sd_printf("TritonGraphBackend::compileSegment: failed to query CUDA device count "
+                "for segment [%d-%d] targetDeviceId=%d: %s\n",
+                seg.startSlot, seg.endSlot, targetDevice, cudaGetErrorString(countErr));
+      cudaGetLastError();
+      return false;
+    }
+    if (targetDevice >= deviceCount) {
+      sd_printf("TritonGraphBackend::compileSegment: invalid targetDeviceId=%d for segment [%d-%d] "
+                "(deviceCount=%d)\n",
+                targetDevice, seg.startSlot, seg.endSlot, deviceCount);
+      return false;
+    }
+    compileDevice = targetDevice;
+  }
+
+  if (compileDevice != activeDevice) {
+    cudaError_t setDeviceErr = cudaSetDevice(compileDevice);
+    if (setDeviceErr != cudaSuccess) {
+      sd_printf("TritonGraphBackend::compileSegment: failed to set CUDA device %d for segment [%d-%d]: %s\n",
+                compileDevice, seg.startSlot, seg.endSlot, cudaGetErrorString(setDeviceErr));
+      cudaGetLastError();
+      return false;
+    }
+  }
+#else
+  const int compileDevice = -1;
+#endif
+
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey, compileDevice};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -580,8 +724,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
     if (failedCache_.find(key) != failedCache_.end()) {
       sd_printf("TritonGraphBackend::compileSegment: skipping previously failed segment [%d-%d] "
-                "(shapeKey=%lld)\n",
-                seg.startSlot, seg.endSlot, shapeKey);
+                "(shapeKey=%lld, deviceId=%d)\n",
+                seg.startSlot, seg.endSlot, shapeKey, compileDevice);
       return false;
     }
   }
@@ -604,8 +748,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return false;
   }
 
-  sd_printf("TritonGraphBackend: segment [%d-%d] has %d ops, %d sections\n",
-            seg.startSlot, seg.endSlot, segmentOps, static_cast<int>(sections.size()));
+  sd_printf("TritonGraphBackend: segment [%d-%d] has %d ops, %d sections (deviceId=%d)\n",
+            seg.startSlot, seg.endSlot, segmentOps, static_cast<int>(sections.size()),
+            compileDevice);
 
   // ── Step 1: Build adaptive compile ranges from section graph ──
   struct SubSegmentRange {
@@ -729,24 +874,17 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
 #ifdef SD_CUDA
-  int compileDevice = -1;
-  cudaError_t compileDeviceErr = cudaGetDevice(&compileDevice);
+  int activeCompileDevice = -1;
+  cudaError_t compileDeviceErr = cudaGetDevice(&activeCompileDevice);
   if (compileDeviceErr != cudaSuccess) {
     sd_printf("TritonGraphBackend: cudaGetDevice failed before adaptive compilation "
               "for segment [%d-%d]: %s\n",
-              seg.startSlot, seg.endSlot,
-              cudaGetErrorString(compileDeviceErr));
+              seg.startSlot, seg.endSlot, cudaGetErrorString(compileDeviceErr));
     cudaGetLastError();
     return false;
   }
-  cudaError_t setDeviceErr = cudaSetDevice(compileDevice);
-  if (setDeviceErr != cudaSuccess) {
-    sd_printf("TritonGraphBackend: failed to set CUDA device %d before adaptive compilation "
-              "for segment [%d-%d]: %s\n",
-              compileDevice, seg.startSlot, seg.endSlot, cudaGetErrorString(setDeviceErr));
-    cudaGetLastError();
-    return false;
-  }
+  sd_printf("TritonGraphBackend: compile device binding seg[%d-%d] targetDeviceId=%d activeDevice=%d cacheDeviceId=%d\n",
+            seg.startSlot, seg.endSlot, targetDevice, activeCompileDevice, compileDevice);
 #endif
 
   struct CompileRangeResult {
@@ -818,16 +956,17 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return result;
   };
 
-  // ── Step 2: Adaptive compile-and-split loop ──
-  while (!pendingRanges.empty()) {
-    std::vector<SubSegmentRange> readyRanges;
-    readyRanges.reserve(static_cast<size_t>(maxParallelCompiles));
+  // ── Step 2: Work-stealing compile loop ──
+  // Instead of batch-sequential dispatch (launch N, wait ALL, repeat), use a
+  // shared work queue with condition variables so workers pick up new work
+  // (including split retries) as soon as they finish — eliminating tail latency.
 
-    while (!pendingRanges.empty() &&
-           readyRanges.size() < static_cast<size_t>(maxParallelCompiles)) {
+  // Pre-split any ranges that exceed caps before entering the work queue.
+  {
+    std::deque<SubSegmentRange> preSplit;
+    while (!pendingRanges.empty()) {
       SubSegmentRange range = pendingRanges.front();
       pendingRanges.pop_front();
-
       const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
       const bool canSplit = (sectionCount > 1) || (range.opsCount > 1);
       const bool exceedsOpsCap = (maxOpsCap > 0 && range.opsCount > maxOpsCap);
@@ -838,96 +977,152 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                   range.startSlot, range.endSlot, range.opsCount, sectionCount,
                   maxOpsCap, maxSectionsCap);
         splitRange(range);
-        continue;
-      }
-      readyRanges.push_back(range);
-    }
-
-    if (readyRanges.empty()) {
-      continue;
-    }
-
-    batchIndex++;
-    const int activeWorkers = std::min(maxParallelCompiles, static_cast<int>(readyRanges.size()));
-    sd_printf("TritonGraphBackend: compile progress seg[%d-%d] dispatch batch=%d "
-              "(ranges=%d, workers=%d/%d, pending=%d, launched=%lld, completed=%lld, inflight=%lld)\n",
-              seg.startSlot, seg.endSlot, batchIndex,
-              static_cast<int>(readyRanges.size()), activeWorkers, maxParallelCompiles,
-              static_cast<int>(pendingRanges.size()),
-              launchedRanges.load(), completedRanges.load(), inFlightRanges.load());
-    if (maxParallelCompiles > 1 && activeWorkers < maxParallelCompiles) {
-      sd_printf("TritonGraphBackend: compile progress seg[%d-%d] batch=%d has %d/%d active workers "
-                "(insufficient ready ranges; adjust runtime caps for more parallel fanout)\n",
-                seg.startSlot, seg.endSlot, batchIndex, activeWorkers, maxParallelCompiles);
-    }
-
-    std::vector<CompileRangeResult> compileResults;
-    compileResults.reserve(readyRanges.size());
-
-    if (maxParallelCompiles > 1 && readyRanges.size() > 1) {
-      std::vector<std::future<CompileRangeResult>> futures;
-      futures.reserve(readyRanges.size());
-      for (const auto& range : readyRanges) {
-        futures.emplace_back(std::async(std::launch::async, compileRange, range));
-      }
-      for (auto& f : futures) {
-        compileResults.emplace_back(f.get());
-      }
-    } else {
-      for (const auto& range : readyRanges) {
-        compileResults.emplace_back(compileRange(range));
+      } else {
+        preSplit.push_back(range);
       }
     }
+    pendingRanges = std::move(preSplit);
+  }
 
-    for (auto& compileResult : compileResults) {
-      const SubSegmentRange& range = compileResult.range;
-      const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
-      const bool canSplit = (sectionCount > 1) || (range.opsCount > 1);
+  const int totalInitialRanges = static_cast<int>(pendingRanges.size());
+  sd_printf("TritonGraphBackend: work-stealing compile seg[%d-%d] "
+            "(ranges=%d, workers=%d)\n",
+            seg.startSlot, seg.endSlot, totalInitialRanges, maxParallelCompiles);
 
-      if (compileResult.compiled.gpuModule && compileResult.compiled.kernelFunction) {
-        compiledSeg.subKernels.push_back(std::move(compileResult.compiled));
-        continue;
+  // Shared state for the work-stealing pool
+  std::mutex workMtx;
+  std::condition_variable workCv;
+  std::vector<CompileRangeResult> allResults;
+  bool leafFailed = false;       // Set when an unsplittable range fails
+  SubSegmentRange failedLeaf{};  // The range that caused the leaf failure
+  std::atomic<int> activeWorkers{0};
+
+  auto workerLoop = [&]() {
+    while (true) {
+      SubSegmentRange range;
+      {
+        std::unique_lock<std::mutex> lock(workMtx);
+        workCv.wait(lock, [&] {
+          return !pendingRanges.empty() || leafFailed ||
+                 (pendingRanges.empty() && activeWorkers.load() == 0);
+        });
+        if (leafFailed) return;
+        if (pendingRanges.empty()) {
+          if (activeWorkers.load() == 0) return;  // All work done
+          continue;
+        }
+        range = pendingRanges.front();
+        pendingRanges.pop_front();
+        activeWorkers.fetch_add(1);
       }
 
+      auto result = compileRange(range);
+      const bool success = (result.compiled.gpuModule && result.compiled.kernelFunction);
+
+      {
+        std::lock_guard<std::mutex> lock(workMtx);
+        if (success) {
+          allResults.push_back(std::move(result));
+        } else {
 #ifdef SD_CUDA
-      cudaGetLastError();
+          cudaGetLastError();
 #endif
-      if (canSplit) {
-        sd_printf("TritonGraphBackend: adaptive range [%d-%d] compile failed; splitting by section graph\n",
-                  range.startSlot, range.endSlot);
-        splitRetryCount++;
-        splitRange(range);
-        continue;
+          const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
+          const bool canSplit = (sectionCount > 1) || (range.opsCount > 1);
+          if (canSplit) {
+            sd_printf("TritonGraphBackend: adaptive range [%d-%d] compile failed; "
+                      "splitting by section graph\n",
+                      range.startSlot, range.endSlot);
+            splitRetryCount++;
+            splitRange(range);
+            // New sub-ranges are in pendingRanges; wake other workers
+          } else {
+            // Leaf range failed — signal all workers to stop
+            leafFailed = true;
+            failedLeaf = range;
+          }
+        }
+        activeWorkers.fetch_sub(1);
       }
+      workCv.notify_all();
+    }
+  };
 
-      // Leaf range failed: all-or-nothing reject entire segment.
-      for (auto& kernel : compiledSeg.subKernels) {
-        if (kernel.gpuModule) {
-          TritonTargetDispatch::unloadModule(kernel.gpuModule);
-          kernel.gpuModule = nullptr;
-          kernel.kernelFunction = nullptr;
+  if (maxParallelCompiles > 1 && pendingRanges.size() > 1) {
+    // Launch worker threads
+    const int numWorkers = std::min(maxParallelCompiles,
+                                    static_cast<int>(pendingRanges.size()));
+    std::vector<std::thread> workers;
+    workers.reserve(numWorkers);
+    for (int i = 0; i < numWorkers; i++) {
+      workers.emplace_back(workerLoop);
+    }
+    for (auto& w : workers) {
+      w.join();
+    }
+  } else {
+    // Single-threaded: drain queue directly (no thread overhead)
+    while (!pendingRanges.empty() && !leafFailed) {
+      SubSegmentRange range = pendingRanges.front();
+      pendingRanges.pop_front();
+
+      auto result = compileRange(range);
+      const bool success = (result.compiled.gpuModule && result.compiled.kernelFunction);
+      if (success) {
+        allResults.push_back(std::move(result));
+      } else {
+#ifdef SD_CUDA
+        cudaGetLastError();
+#endif
+        const int sectionCount = range.endSectionIdx - range.startSectionIdx + 1;
+        const bool canSplit = (sectionCount > 1) || (range.opsCount > 1);
+        if (canSplit) {
+          sd_printf("TritonGraphBackend: adaptive range [%d-%d] compile failed; "
+                    "splitting by section graph\n",
+                    range.startSlot, range.endSlot);
+          splitRetryCount++;
+          splitRange(range);
+        } else {
+          leafFailed = true;
+          failedLeaf = range;
         }
       }
-      compiledSeg.subKernels.clear();
-      compiledSeg.audit.clear();
-      for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-        CompilationAuditEntry entry;
-        entry.slotIndex = s;
-        entry.opName = slots[s].opName;
-        entry.wasCompiled = false;
-        entry.reason = "segment rejected (all-or-nothing Triton compile failed)";
-        compiledSeg.audit.push_back(entry);
-      }
-      lastCompilationAudit_ = compiledSeg.audit;
-      {
-        std::lock_guard<std::mutex> lock(cacheMtx_);
-        failedCache_.insert(key);
-      }
-      sd_printf("TritonGraphBackend: all-or-nothing compile FAILED for [%d-%d]; "
-                "leaf range [%d-%d] is not Triton-compilable on this graph/device\n",
-                seg.startSlot, seg.endSlot, range.startSlot, range.endSlot);
-      return false;
     }
+  }
+
+  if (leafFailed) {
+    // Leaf range failed: all-or-nothing reject entire segment.
+    for (auto& r : allResults) {
+      if (r.compiled.gpuModule) {
+        TritonTargetDispatch::unloadModule(r.compiled.gpuModule);
+        r.compiled.gpuModule = nullptr;
+        r.compiled.kernelFunction = nullptr;
+      }
+    }
+    compiledSeg.subKernels.clear();
+    compiledSeg.audit.clear();
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      CompilationAuditEntry entry;
+      entry.slotIndex = s;
+      entry.opName = slots[s].opName;
+      entry.wasCompiled = false;
+      entry.reason = "segment rejected (all-or-nothing Triton compile failed)";
+      compiledSeg.audit.push_back(entry);
+    }
+    lastCompilationAudit_ = compiledSeg.audit;
+    {
+      std::lock_guard<std::mutex> lock(cacheMtx_);
+      failedCache_.insert(key);
+    }
+    sd_printf("TritonGraphBackend: all-or-nothing compile FAILED for [%d-%d]; "
+              "leaf range [%d-%d] is not Triton-compilable on this graph/device (deviceId=%d)\n",
+              seg.startSlot, seg.endSlot, failedLeaf.startSlot, failedLeaf.endSlot, compileDevice);
+    return false;
+  }
+
+  // Move successful results into compiledSeg
+  for (auto& r : allResults) {
+    compiledSeg.subKernels.push_back(std::move(r.compiled));
   }
 
   sd_printf("TritonGraphBackend: compile progress seg[%d-%d] summary "
@@ -1113,8 +1308,8 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     cache_[key] = std::move(compiledSeg);
   }
 
-  sd_printf("TritonGraphBackend: compiled segment [%d-%d] (%d sub-kernels, shape key %lld)\n",
-            seg.startSlot, seg.endSlot, compiledKernelCount, shapeKey);
+  sd_printf("TritonGraphBackend: compiled segment [%d-%d] (%d sub-kernels, shape key %lld, deviceId=%d)\n",
+            seg.startSlot, seg.endSlot, compiledKernelCount, shapeKey, compileDevice);
   return true;
 }
 
@@ -1397,23 +1592,22 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                                           NDArray** externalInputs, int numExternalInputs,
                                           NDArray** outputSlots, int totalOutputSlots,
                                           void* stream) {
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey};
-
-  CompiledSegment* compiledSeg = nullptr;
-  {
-    std::lock_guard<std::mutex> lock(cacheMtx_);
-    auto it = cache_.find(key);
-    if (it == cache_.end()) {
-      sd_printf("TritonGraphBackend::executeSegment: no compiled kernel for segment [%d-%d]\n",
-                seg.startSlot, seg.endSlot);
-      return Status::KERNEL_FAILURE;
-    }
-    compiledSeg = &it->second;
+  void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
+  int execDevice = -1;
+  int targetDevice = -1;
+  if (seg.startSlot >= 0) {
+    targetDevice = slots[seg.startSlot].targetDeviceId;
   }
+  bool streamCaptureActive = false;
 
 #ifdef SD_CUDA
-  void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
-  bool streamCaptureActive = false;
+  cudaError_t execDeviceErr = cudaGetDevice(&execDevice);
+  if (execDeviceErr != cudaSuccess) {
+    sd_printf("TritonGraphBackend::executeSegment: cudaGetDevice failed for segment [%d-%d]: %s\n",
+              seg.startSlot, seg.endSlot, cudaGetErrorString(execDeviceErr));
+    cudaGetLastError();
+    return Status::KERNEL_FAILURE;
+  }
   if (actualStream != nullptr) {
     cudaStreamCaptureStatus captureStatus = cudaStreamCaptureStatusNone;
     auto capErr = cudaStreamIsCapturing(static_cast<cudaStream_t>(actualStream), &captureStatus);
@@ -1421,7 +1615,40 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       streamCaptureActive = true;
     }
   }
+#endif
 
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, execDevice};
+
+  CompiledSegment* compiledSeg = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(cacheMtx_);
+    auto it = cache_.find(key);
+    if (it == cache_.end()) {
+      int cachedDeviceId = -999;
+      for (const auto& entry : cache_) {
+        if (entry.first.startSlot == seg.startSlot &&
+            entry.first.endSlot == seg.endSlot &&
+            entry.first.shapeKey == seg.shapeKey) {
+          cachedDeviceId = entry.first.deviceId;
+          break;
+        }
+      }
+      if (cachedDeviceId != -999) {
+        sd_printf("TritonGraphBackend::executeSegment: kernel cache miss for segment [%d-%d] "
+                  "(shapeKey=%lld, activeDevice=%d, targetDeviceId=%d). "
+                  "Found compiled kernel for deviceId=%d but cross-device module reuse is disallowed.\n",
+                  seg.startSlot, seg.endSlot, seg.shapeKey, execDevice, targetDevice, cachedDeviceId);
+      } else {
+        sd_printf("TritonGraphBackend::executeSegment: no compiled kernel for segment [%d-%d] "
+                  "(shapeKey=%lld, deviceId=%d)\n",
+                  seg.startSlot, seg.endSlot, seg.shapeKey, execDevice);
+      }
+      return Status::KERNEL_FAILURE;
+    }
+    compiledSeg = &it->second;
+  }
+
+#ifdef SD_CUDA
   if (streamCaptureActive && !compiledSeg->fallbackRanges.empty()) {
     sd_printf("TritonGraphBackend::executeSegment: refusing slot fallback during CUDA graph capture for [%d-%d] (%d fallback ranges)\n",
               seg.startSlot, seg.endSlot, static_cast<int>(compiledSeg->fallbackRanges.size()));
@@ -1431,10 +1658,11 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 
   // Execute sub-kernels in-order and run uncovered slot gaps via callback.
   sd_printf("TritonGraphBackend::executeSegment: segment [%d-%d] launching %d sub-kernels "
-            "(fallbackRanges=%d)\n",
+            "(fallbackRanges=%d, targetDeviceId=%d, activeDevice=%d)\n",
             seg.startSlot, seg.endSlot,
             static_cast<int>(compiledSeg->subKernels.size()),
-            static_cast<int>(compiledSeg->fallbackRanges.size()));
+            static_cast<int>(compiledSeg->fallbackRanges.size()),
+            targetDevice, execDevice);
 
   int nextSlotToRun = seg.startSlot;
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
@@ -1604,6 +1832,77 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
             irModule.useIndirectArgs ? 1 : 0, irModule.useCooperativeLaunch ? 1 : 0,
             irModule.gridX, irModule.gridY, irModule.gridZ,
             irModule.blockX, irModule.blockY, irModule.blockZ);
+
+#ifdef SD_CUDA
+  // ── Early cooperative launch capacity check ──
+  // Reject BEFORE the expensive TTIR→PTX compilation (which can take 30+ minutes
+  // for large fused kernels) if the required grid clearly exceeds what the GPU
+  // can support for cooperative launch. We estimate blocks/SM from both thread
+  // occupancy (maxThreadsPerSM / threadsPerBlock) and shared memory occupancy
+  // (maxSharedPerSM / estimatedSharedMemBytes). The estimate is conservative
+  // (may allow some cases that will fail post-compile) but catches the common
+  // case of 400+ blocks on 128 SMs with large shared memory per block.
+  if (irModule.useCooperativeLaunch) {
+    unsigned long long requiredBlocks =
+        static_cast<unsigned long long>(std::max(1u, irModule.gridX)) *
+        static_cast<unsigned long long>(std::max(1u, irModule.gridY)) *
+        static_cast<unsigned long long>(std::max(1u, irModule.gridZ));
+    if (irModule.requiredGrid > 0) {
+      requiredBlocks = std::max(requiredBlocks,
+                                static_cast<unsigned long long>(std::max(1, irModule.requiredGrid)));
+    }
+
+    int currentDevice = 0;
+    cudaError_t devErr = cudaGetDevice(&currentDevice);
+    if (devErr == cudaSuccess) {
+      CUdevice cuDevice = 0;
+      CUresult cuDevErr = cuDeviceGet(&cuDevice, currentDevice);
+      if (cuDevErr == CUDA_SUCCESS) {
+        int smCount = 0;
+        int maxThreadsPerSM = 0;
+        int maxSharedPerSM = 0;
+        cuDeviceGetAttribute(&smCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice);
+        cuDeviceGetAttribute(&maxThreadsPerSM, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR, cuDevice);
+        cuDeviceGetAttribute(&maxSharedPerSM,
+            CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, cuDevice);
+
+        // Compute blocks/SM upper bound from BOTH thread and shared memory occupancy.
+        // The actual occupancy is min(thread limit, shared memory limit).
+        int threadsPerBlock = std::max(1, irModule.numWarps) * 32;
+        int blocksPerSmByThreads = (maxThreadsPerSM > 0 && threadsPerBlock > 0)
+            ? (maxThreadsPerSM / threadsPerBlock)
+            : 16;
+
+        int blocksPerSmBySmem = 16;  // default if no estimate
+        if (irModule.estimatedSharedMemBytes > 0 && maxSharedPerSM > 0) {
+          blocksPerSmBySmem = maxSharedPerSM / irModule.estimatedSharedMemBytes;
+        }
+
+        int blocksPerSmEstimate = std::max(1, std::min(blocksPerSmByThreads, blocksPerSmBySmem));
+
+        unsigned long long maxPossibleBlocks =
+            static_cast<unsigned long long>(smCount) * blocksPerSmEstimate;
+        if (smCount > 0 && requiredBlocks > maxPossibleBlocks) {
+          sd_printf("TritonGraphBackend: EARLY REJECT cooperative launch for [%d-%d]: "
+                    "requiredBlocks=%llu exceeds max=%llu "
+                    "(smCount=%d, blocksPerSm<=%d [threads: %d/%d=%d, smem: %d/%d=%d]). "
+                    "Skipping expensive compilation.\n",
+                    startSlot, endSlot,
+                    requiredBlocks, maxPossibleBlocks,
+                    smCount, blocksPerSmEstimate,
+                    maxThreadsPerSM, threadsPerBlock, blocksPerSmByThreads,
+                    maxSharedPerSM, irModule.estimatedSharedMemBytes, blocksPerSmBySmem);
+          cleanupModule();
+          return result;
+        }
+        sd_printf("TritonGraphBackend: cooperative launch pre-check OK for [%d-%d]: "
+                  "requiredBlocks=%llu, maxPossible=%llu (smCount=%d, blocksPerSm<=%d)\n",
+                  startSlot, endSlot, requiredBlocks, maxPossibleBlocks,
+                  smCount, blocksPerSmEstimate);
+      }
+    }
+  }
+#endif
 
   // Build compilation audit
   for (int i = startSlot; i <= endSlot; i++) {
@@ -1820,13 +2119,71 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   }
 
 #ifdef SD_CUDA
+  unsigned int requestedSharedMem =
+      binary.sharedMemBytes > 0 ? static_cast<unsigned int>(binary.sharedMemBytes) : 0u;
+
   if (binary.target == TritonGpuTarget::NVIDIA) {
-    unsigned int requestedSharedMem =
-        binary.sharedMemBytes > 0 ? static_cast<unsigned int>(binary.sharedMemBytes) : 0u;
     if (!configureCudaKernelSharedMemory(result.kernelFunction, requestedSharedMem)) {
       sd_printf("TritonGraphBackend: shared memory setup failed for segment [%d-%d] "
                 "(requested=%u bytes)\n",
                 startSlot, endSlot, requestedSharedMem);
+      TritonTargetDispatch::unloadModule(result.gpuModule);
+      result.gpuModule = nullptr;
+      result.kernelFunction = nullptr;
+      delete[] static_cast<char*>(binary.data);
+      cleanupModule();
+      return result;
+    }
+  }
+
+  if (binary.target == TritonGpuTarget::NVIDIA && irModule.useCooperativeLaunch) {
+    const unsigned int launchBlockX = static_cast<unsigned int>(std::max(1, binary.numWarps) * 32);
+    const unsigned int launchBlockY = std::max(1u, irModule.blockY);
+    const unsigned int launchBlockZ = std::max(1u, irModule.blockZ);
+    unsigned long long requiredBlocks = static_cast<unsigned long long>(std::max(1u, irModule.gridX)) *
+                                        static_cast<unsigned long long>(std::max(1u, irModule.gridY)) *
+                                        static_cast<unsigned long long>(std::max(1u, irModule.gridZ));
+    if (irModule.requiredGrid > 0) {
+      requiredBlocks = std::max(requiredBlocks,
+                                static_cast<unsigned long long>(std::max(1, irModule.requiredGrid)));
+    }
+
+    bool coopSupported = false;
+    long long maxCoopBlocks = 0;
+    int blocksPerSm = 0;
+    int smCount = 0;
+    const bool capacityKnown = queryCudaCooperativeLaunchCapacity(
+        result.kernelFunction,
+        launchBlockX, launchBlockY, launchBlockZ,
+        requestedSharedMem,
+        &coopSupported, &maxCoopBlocks, &blocksPerSm, &smCount);
+
+    if (!capacityKnown) {
+      sd_printf("TritonGraphBackend: cooperative launch capacity check unavailable for [%d-%d]; "
+                "continuing with runtime launch validation\n",
+                startSlot, endSlot);
+    } else if (!coopSupported) {
+      sd_printf("TritonGraphBackend: cooperative launch required for [%d-%d], "
+                "but current CUDA device does not support cooperative launch\n",
+                startSlot, endSlot);
+      TritonTargetDispatch::unloadModule(result.gpuModule);
+      result.gpuModule = nullptr;
+      result.kernelFunction = nullptr;
+      delete[] static_cast<char*>(binary.data);
+      cleanupModule();
+      return result;
+    } else if (maxCoopBlocks <= 0 ||
+               requiredBlocks > static_cast<unsigned long long>(maxCoopBlocks)) {
+      sd_printf("TritonGraphBackend: cooperative launch capacity exceeded for [%d-%d] "
+                "(requiredBlocks=%llu, maxBlocks=%lld, smCount=%d, blocksPerSm=%d, "
+                "grid=%ux%ux%u, block=%ux%ux%u, sharedMem=%u). "
+                "Rejecting this fused range so adaptive splitting can retry.\n",
+                startSlot, endSlot,
+                static_cast<unsigned long long>(requiredBlocks), maxCoopBlocks,
+                smCount, blocksPerSm,
+                irModule.gridX, irModule.gridY, irModule.gridZ,
+                launchBlockX, launchBlockY, launchBlockZ,
+                requestedSharedMem);
       TritonTargetDispatch::unloadModule(result.gpuModule);
       result.gpuModule = nullptr;
       result.kernelFunction = nullptr;

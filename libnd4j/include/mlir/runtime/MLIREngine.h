@@ -31,7 +31,7 @@ class ModuleOp;
 class PassManager;
 class ExecutionEngine;
 template <typename T> class OwningOpRef;
-}
+}  // namespace mlir
 
 namespace sd {
 
@@ -145,6 +145,20 @@ public:
     /// Enable/disable JIT caching
     void setCachingEnabled(bool enabled) { _cachingEnabled = enabled; }
     bool isCachingEnabled() const { return _cachingEnabled; }
+
+    /// Get the MLIR context (for building modules externally)
+    mlir::MLIRContext* getContext() { return _context.get(); }
+
+    /// Compile a pre-built MLIR module through the CPU lowering pipeline.
+    /// This bypasses createModuleForOp() — the caller builds the module directly.
+    /// @param module Pre-built MLIR module (takes ownership)
+    /// @param entryPoint Name of the entry function in the module
+    /// @param options Compilation options
+    /// @return Compiled kernel or nullptr on failure
+    std::shared_ptr<CompiledKernel> compileModule(
+        mlir::OwningOpRef<mlir::ModuleOp> module,
+        const std::string& entryPoint,
+        const MLIRCompileOptions& options = MLIRCompileOptions());
 
 private:
     MLIREngine();

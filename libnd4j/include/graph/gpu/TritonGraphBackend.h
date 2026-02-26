@@ -167,13 +167,19 @@ class TritonGraphBackend : public GraphBackend {
     }
   };
 
-  // Per-segment cache (keyed by segment start/end + shape)
+  // Per-segment cache (keyed by segment start/end + shape + runtime device).
+  // GPU driver module handles are device/context-bound and cannot be shared
+  // safely across different CUDA devices.
   struct SegmentCacheKey {
     int startSlot;
     int endSlot;
     LongType shapeKey;
+    int deviceId;
     bool operator==(const SegmentCacheKey& o) const {
-      return startSlot == o.startSlot && endSlot == o.endSlot && shapeKey == o.shapeKey;
+      return startSlot == o.startSlot &&
+             endSlot == o.endSlot &&
+             shapeKey == o.shapeKey &&
+             deviceId == o.deviceId;
     }
   };
   struct SegmentCacheHash {
@@ -181,13 +187,14 @@ class TritonGraphBackend : public GraphBackend {
       size_t h = std::hash<int>()(k.startSlot);
       h ^= std::hash<int>()(k.endSlot) << 1;
       h ^= std::hash<LongType>()(k.shapeKey) << 2;
+      h ^= std::hash<int>()(k.deviceId) << 3;
       return h;
     }
   };
 
   std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
-  // Negative cache: segment/shape keys that previously failed Triton compilation.
-  // This avoids repeating expensive compile attempts for known-bad shapes.
+  // Negative cache: segment/shape/device keys that previously failed Triton compilation.
+  // This avoids repeating expensive compile attempts for known-bad shapes on a given device.
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
   std::mutex cacheMtx_;
 

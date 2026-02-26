@@ -1627,6 +1627,115 @@ function(setup_cutlass)
 endfunction()
 
 # =============================================================================
+# MLX (Apple Metal GPU Compute on Apple Silicon)
+# =============================================================================
+function(setup_mlx)
+    # Only on macOS arm64
+    if(NOT APPLE OR NOT CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        set(HAVE_MLX OFF CACHE BOOL "MLX availability" FORCE)
+        message(STATUS "MLX disabled (requires macOS arm64)")
+        return()
+    endif()
+
+    # Opt-in: -DSD_MLX=ON or SD_MLX=ON env var
+    set(_mlx_requested OFF)
+    if(DEFINED SD_MLX AND SD_MLX)
+        set(_mlx_requested ON)
+    endif()
+    if(DEFINED ENV{SD_MLX} AND "$ENV{SD_MLX}" STREQUAL "ON")
+        set(_mlx_requested ON)
+    endif()
+    # Explicit opt-out overrides
+    if(DEFINED SD_MLX AND NOT SD_MLX)
+        set(_mlx_requested OFF)
+    endif()
+    if(DEFINED ENV{SD_MLX} AND "$ENV{SD_MLX}" STREQUAL "OFF")
+        set(_mlx_requested OFF)
+    endif()
+
+    if(NOT _mlx_requested)
+        message(STATUS "MLX disabled (use -DSD_MLX=ON to enable)")
+        set(HAVE_MLX OFF CACHE BOOL "MLX availability" FORCE)
+        set(MLX "" PARENT_SCOPE)
+        return()
+    endif()
+
+    # Try FindMLX first (pre-installed)
+    include(${CMAKE_CURRENT_LIST_DIR}/FindMLX.cmake)
+    if(MLX_FOUND)
+        message(STATUS "MLX found at ${MLX_INCLUDE_DIRS}")
+        if(NOT TARGET mlx_interface)
+            add_library(mlx_interface INTERFACE)
+            target_include_directories(mlx_interface INTERFACE ${MLX_INCLUDE_DIRS})
+            target_link_libraries(mlx_interface INTERFACE ${MLX_LIBRARIES})
+            # MLX requires Metal, Foundation, Accelerate frameworks
+            target_link_libraries(mlx_interface INTERFACE
+                "-framework Metal"
+                "-framework Foundation"
+                "-framework Accelerate"
+            )
+        endif()
+        set(HAVE_MLX ON CACHE BOOL "MLX availability" FORCE)
+        set(MLX mlx_interface PARENT_SCOPE)
+        message(STATUS "MLX setup complete (pre-installed)")
+        return()
+    endif()
+
+    # Build from source via ExternalProject_Add
+    message(STATUS "MLX not found locally — building from source")
+    set(MLX_VERSION "0.22.0")
+    set(MLX_INSTALL_DIR "${CMAKE_BINARY_DIR}/mlx_install")
+    set(MLX_PREFIX "${CMAKE_BINARY_DIR}/mlx_external")
+
+    file(MAKE_DIRECTORY "${MLX_PREFIX}/stamp")
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+
+    set(MLX_URL "https://github.com/ml-explore/mlx/archive/refs/tags/v${MLX_VERSION}.tar.gz")
+
+    include(ExternalProject)
+    ExternalProject_Add(mlx_external
+        PREFIX            "${MLX_PREFIX}"
+        URL               "${MLX_URL}"
+        DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${MLX_INSTALL_DIR}
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_CXX_STANDARD=20
+            -DMLX_BUILD_TESTS=OFF
+            -DMLX_BUILD_EXAMPLES=OFF
+            -DMLX_BUILD_PYTHON_BINDINGS=OFF
+            -DMLX_BUILD_BENCHMARKS=OFF
+        TIMEOUT           600
+        LOG_DOWNLOAD      OFF
+        LOG_CONFIGURE     OFF
+        LOG_BUILD         OFF
+        LOG_INSTALL       OFF
+    )
+
+    add_library(mlx_interface INTERFACE)
+    target_include_directories(mlx_interface INTERFACE
+        "${MLX_INSTALL_DIR}/include"
+    )
+    # Link the built MLX library
+    target_link_libraries(mlx_interface INTERFACE
+        "${MLX_INSTALL_DIR}/lib/libmlx.dylib"
+    )
+    # Apple frameworks
+    target_link_libraries(mlx_interface INTERFACE
+        "-framework Metal"
+        "-framework Foundation"
+        "-framework Accelerate"
+    )
+    add_dependencies(mlx_interface mlx_external)
+
+    set(HAVE_MLX ON CACHE BOOL "MLX availability" FORCE)
+    set(MLX mlx_interface PARENT_SCOPE)
+
+    message(STATUS "MLX ${MLX_VERSION} setup complete (building from source)")
+endfunction()
+
+# =============================================================================
 # NCCL (NVIDIA Collective Communications Library)
 # =============================================================================
 function(setup_nccl)

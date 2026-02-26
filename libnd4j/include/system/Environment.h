@@ -143,7 +143,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<size_t> _cudaPersistingL2CacheSize{0}; // cudaLimitPersistingL2CacheSize
 
   // Triton GPU compilation settings
-  std::atomic<int> _tritonBuildThreads{1};
+  std::atomic<int> _tritonBuildThreads{4};
   std::atomic<bool> _tritonCacheEnabled{true};
   std::atomic<int> _tritonCoopTargetBlocks{0};  // 0 = auto
   std::atomic<int> _tritonMaxSubsegmentOps{0};       // 0 = auto/adaptive

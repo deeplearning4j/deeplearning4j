@@ -19,7 +19,7 @@
 #ifndef LIBND4J_OP_CATEGORY_TABLE_H
 #define LIBND4J_OP_CATEGORY_TABLE_H
 
-#ifdef SD_CUDA
+#if defined(SD_CUDA) || defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX
 
 #include <string>
 #include <unordered_map>
@@ -458,5 +458,5 @@ inline int categoryInputCount(TritonOpCategory cat) {
 }  // namespace graph
 }  // namespace sd
 
-#endif  // SD_CUDA
+#endif  // defined(SD_CUDA) || defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX
 #endif  // LIBND4J_OP_CATEGORY_TABLE_H

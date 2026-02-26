@@ -230,6 +230,8 @@ jobs:
           export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENBLAS_PATH}"
           export C_INCLUDE_PATH="/usr/include/libdwarf:${C_INCLUDE_PATH:-}"
           export CPLUS_INCLUDE_PATH="/usr/include/libdwarf:${CPLUS_INCLUDE_PATH:-}"
+          export CFLAGS="${CFLAGS:-} -DBACKWARD_HAS_DW=0 -DBACKWARD_HAS_BACKTRACE_SYMBOL=1"
+          export CXXFLAGS="${CXXFLAGS:-} -DBACKWARD_HAS_DW=0 -DBACKWARD_HAS_BACKTRACE_SYMBOL=1"
           export JAVA_HOME="${JAVA_HOME:-${{ steps.setup-java.outputs.path }}}"
           if [ -z "${JAVA_HOME}" ]; then
             echo "JAVA_HOME was not set by actions/setup-java"

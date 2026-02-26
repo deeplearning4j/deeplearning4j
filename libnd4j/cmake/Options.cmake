@@ -154,6 +154,7 @@ set(HAVE_ACCELERATE OFF CACHE BOOL "Apple Accelerate availability" FORCE)
 set(HAVE_LLAMACPP OFF CACHE BOOL "LlamaCpp availability" FORCE)
 set(HAVE_VLM OFF CACHE BOOL "VLM availability" FORCE)
 set(HAVE_TRITON OFF CACHE BOOL "Triton availability" FORCE)
+set(HAVE_MLX OFF CACHE BOOL "MLX availability" FORCE)
 set(HAVE_CUTLASS OFF CACHE BOOL "CUTLASS availability" FORCE)
 set(HAVE_NCCL OFF CACHE BOOL "NCCL availability" FORCE)
 

@@ -71,7 +71,8 @@ enum class GraphExecutionMode : int {
   GEM_CUDA_GRAPHS = 2,  // CUDA graph capture/replay only
   GEM_NVRTC_JIT = 3,    // Force NVRTC JIT backend for fusible segments
   GEM_PTX_JIT = 4,      // Force PTX template backend for fusible segments
-  GEM_TRITON = 5        // Force Triton MLIR backend for fusible segments
+  GEM_TRITON = 5,       // Force Triton MLIR backend for fusible segments
+  GEM_MLX = 6           // Force MLX Apple Silicon backend for fusible segments
 };
 
 // FlatGraph is in the ::graph namespace (FlatBuffer-generated)

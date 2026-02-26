@@ -4746,6 +4746,29 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       std::min<LongType>(static_cast<LongType>(result.gridX) * result.gridY,
                          static_cast<LongType>(2147483647)));
 
+  // Estimate shared memory for basic module (elementwise + matmul fusion).
+  // This module never uses cooperative launch, but set the estimate for consistency.
+  {
+    bool hasMatmulCat = false;
+    bool hasReductionCat = false;
+    bool hasNormCat = false;
+    for (auto cat : categories) {
+      if (cat == TritonOpCategory::MATMUL) hasMatmulCat = true;
+      if (cat == TritonOpCategory::REDUCTION) hasReductionCat = true;
+      if (cat == TritonOpCategory::NORMALIZATION) hasNormCat = true;
+    }
+    if (hasMatmulCat) {
+      // Basic matmul fusion: BLOCK_SIZE^2 * elemSize * numStages (simplified)
+      result.estimatedSharedMemBytes = blockSize * blockSize * 2 * numStages;
+    } else if (hasNormCat) {
+      result.estimatedSharedMemBytes = blockSize * 4 * 2;
+    } else if (hasReductionCat) {
+      result.estimatedSharedMemBytes = blockSize * 4;
+    } else {
+      result.estimatedSharedMemBytes = 0;
+    }
+  }
+
   // Dump TTIR module for diagnostics (before Triton pipeline)
   {
     std::string ttirDump;
@@ -6250,6 +6273,106 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.requiredGrid = maxSectionGrid;
   result.sections = sections;
 
+  // Estimate shared memory from section types and tile sizes.
+  // This is used for early cooperative launch capacity rejection BEFORE the
+  // expensive TTIR→PTX compilation. The actual value (set by AllocateSharedMemoryPass
+  // during TTGIR lowering) may differ, but this estimate is conservative enough
+  // to catch clearly impossible cooperative launch configurations.
+  //
+  // Section type shared memory breakdown:
+  //   MATMUL:           A+B tiles in shared memory, multi-buffered by numStages
+  //   FUSED_ATTENTION:  Q+K+V tiles, uses estimateFusedAttentionSharedMemBytes()
+  //   REDUCTION:        Tree reduction scratch: BLOCK_SIZE * sizeof(float)
+  //   NORMALIZATION:    Multi-pass reduction (max + exp-sum + norm): 2x reduction
+  //   CONVOLUTION:      Scalar 1D loop (no tiled tt.dot), no shared memory
+  //   ELEMENTWISE:      Pure register ops, no shared memory
+  //   GATHER/SCATTER:   1D indexed load/store, no shared memory
+  //   CONCAT/SPLIT:     1D cascading select/partition, no shared memory
+  //   STACK:            1D like concat, no shared memory
+  //   TILE:             1D modular indexing, no shared memory
+  //   STRIDED_SLICE:    1D strided load, no shared memory
+  //   SHAPE_MANIPULATION: Stride recomputation, no shared memory
+  //   CONSTANT_GENERATION: Immediate stores, no shared memory
+  //   IDENTITY:         SSA forwarding, no IR ops
+  {
+    int maxSmem = 0;
+    for (const auto& sec : sections) {
+      int secSmem = 0;
+      switch (sec.type) {
+        case KernelSectionType::MATMUL: {
+          // Tiled matmul with K-loop: tiles A[BM,BK] and B[BK,BN] in shared mem,
+          // double/triple-buffered by numStages. fp16/bf16 → 2 bytes per element.
+          int bm = std::max(1, sec.blockM);
+          int bn = std::max(1, sec.blockN);
+          int bk = std::max(1, sec.blockK);
+          secSmem = (bm * bk + bk * bn) * 2 * numStages;
+          break;
+        }
+        case KernelSectionType::FUSED_ATTENTION: {
+          // Flash attention: use the same estimator as the tile selection code
+          // which accounts for Q[BM,HD] + K[BN,HD] + V[BN,HD] + overhead.
+          int hd = std::max(1, sec.headDim);
+          int sq = std::max(1, sec.seqQ);
+          int sk = std::max(1, sec.seqK);
+          auto attnTile = chooseFusedAttentionTileConfig(
+              sec.batchSize, sec.numHeads, sq, sk, hd);
+          secSmem = attnTile.estimatedSharedMemBytes;
+          break;
+        }
+        case KernelSectionType::REDUCTION: {
+          // Triton tt.reduce: tree reduction using shared memory shuffle.
+          // AllocateSharedMemoryPass allocates BLOCK_SIZE * elemSize for the
+          // reduction scratch. We assume fp32 (4 bytes) as worst case.
+          secSmem = blockSize * 4;
+          break;
+        }
+        case KernelSectionType::NORMALIZATION: {
+          // Softmax/LayerNorm/RMSNorm: multiple reduction passes
+          // (e.g., max → exp-sum → divide for softmax). Each pass needs
+          // BLOCK_SIZE * 4 bytes. Two concurrent reduction buffers worst case.
+          secSmem = blockSize * 4 * 2;
+          break;
+        }
+        case KernelSectionType::CONVOLUTION: {
+          // Conv2d uses scalar element-wise loops (no tiled tt.dot in the
+          // current backend), so no shared memory beyond what Triton
+          // allocates for cross-warp communication.
+          // Conservative estimate: blockSize * 4 for potential internal shuffles.
+          secSmem = blockSize * 4;
+          break;
+        }
+        // All remaining section types are 1D element-wise patterns that
+        // operate purely on registers and global memory:
+        case KernelSectionType::ELEMENTWISE:
+        case KernelSectionType::IDENTITY:
+        case KernelSectionType::CONSTANT_GENERATION:
+        case KernelSectionType::SHAPE_MANIPULATION:
+        case KernelSectionType::GATHER:
+        case KernelSectionType::GATHER_ND:
+        case KernelSectionType::CONCAT:
+        case KernelSectionType::SPLIT:
+        case KernelSectionType::SPLIT_V:
+        case KernelSectionType::STACK:
+        case KernelSectionType::STRIDED_SLICE:
+        case KernelSectionType::TILE:
+        case KernelSectionType::SCATTER_ND:
+        case KernelSectionType::SCATTER_ND_UPDATE:
+          // No shared memory needed. Triton may allocate a small amount
+          // for internal communication but it's negligible (<256 bytes).
+          secSmem = 0;
+          break;
+      }
+      maxSmem = std::max(maxSmem, secSmem);
+    }
+    // Cooperative kernels need additional shared memory for grid sync barriers.
+    // The Triton cooperative launch protocol uses a shared counter + flags.
+    // 16KB is a safe lower bound for the barrier infrastructure.
+    if (needsGridSync) {
+      maxSmem = std::max(maxSmem, 16384);
+    }
+    result.estimatedSharedMemBytes = maxSmem;
+  }
+
   dumpSectionBreakdown(sections, startSlot, endSlot, maxSectionGrid, needsGridSync);
 
   result.mlirModule = new mlir::ModuleOp(moduleOp);
@@ -6613,6 +6736,10 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
   result.mlirContext = mlirContext;  // Store for proper cleanup
   result.valid = true;
   result.useIndirectArgs = useIndirectArgs;
+
+  // Matmul shared memory: tiles A[BM,BK] + B[BK,BN] in shared mem, multi-buffered.
+  // fp16/bf16 → 2 bytes per element.
+  result.estimatedSharedMemBytes = (blockM * blockK + blockK * blockN) * 2 * numStages;
 
   // Dump TTIR module for diagnostics
   {

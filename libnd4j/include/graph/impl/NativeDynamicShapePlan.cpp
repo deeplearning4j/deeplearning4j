@@ -37,6 +37,7 @@
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
+#include <future>
 #include <numeric>
 #include <climits>
 #include <cstring>
@@ -58,6 +59,12 @@
 #endif
 #if HAVE_ARMCOMPUTE
 #include <graph/cpu/AclGraphBackend.h>
+#endif
+#ifdef HAVE_MLIR
+#include <graph/cpu/MlirCpuGraphBackend.h>
+#endif
+#if HAVE_MLX
+#include <graph/cpu/MlxGraphBackend.h>
 #endif
 // Include GPU graph backends conditionally
 #if HAVE_TRITON
@@ -112,6 +119,64 @@ bool isStrictNoFallbackMode(GraphExecutionMode mode) {
   // fail fast instead of silently degrading to CUDA graphs/slot-by-slot.
   return mode == GraphExecutionMode::GEM_TRITON;
 }
+
+#ifdef SD_CUDA
+bool bindSegmentCudaDevice(const GraphSegment& segment,
+                           NativeSlot* slots,
+                           int numSlots,
+                           bool traceEnabled,
+                           int executeCount,
+                           const char* phase) {
+  int targetDevice = -1;
+  if (segment.startSlot >= 0 && segment.startSlot < numSlots) {
+    targetDevice = slots[segment.startSlot].targetDeviceId;
+  }
+  if (targetDevice < 0) return true;
+
+  int deviceCount = 0;
+  cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
+  if (countErr != cudaSuccess || deviceCount <= 0) {
+    sd_printf("NativeDSP::execute: %s seg[%d-%d] targetDeviceId=%d but CUDA device query failed: %s\n",
+              phase, segment.startSlot, segment.endSlot, targetDevice,
+              cudaGetErrorString(countErr));
+    cudaGetLastError();
+    return false;
+  }
+  if (targetDevice >= deviceCount) {
+    sd_printf("NativeDSP::execute: %s seg[%d-%d] invalid targetDeviceId=%d (deviceCount=%d)\n",
+              phase, segment.startSlot, segment.endSlot, targetDevice, deviceCount);
+    return false;
+  }
+
+  int currentDevice = -1;
+  cudaError_t getErr = cudaGetDevice(&currentDevice);
+  if (getErr != cudaSuccess) {
+    sd_printf("NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s\n",
+              phase, segment.startSlot, segment.endSlot, cudaGetErrorString(getErr));
+    cudaGetLastError();
+    return false;
+  }
+
+  if (currentDevice != targetDevice) {
+    cudaError_t setErr = cudaSetDevice(targetDevice);
+    if (setErr != cudaSuccess) {
+      sd_printf("NativeDSP::execute: %s seg[%d-%d] failed to switch CUDA device %d->%d: %s\n",
+                phase, segment.startSlot, segment.endSlot,
+                currentDevice, targetDevice, cudaGetErrorString(setErr));
+      cudaGetLastError();
+      return false;
+    }
+    if (traceEnabled) {
+      sd_printf("NativeDSP::execute: %s seg[%d-%d] switched CUDA device %d->%d\n",
+                phase, segment.startSlot, segment.endSlot, currentDevice, targetDevice);
+    }
+  } else if (traceEnabled && executeCount <= 2) {
+    sd_printf("NativeDSP::execute: %s seg[%d-%d] using CUDA device %d\n",
+              phase, segment.startSlot, segment.endSlot, currentDevice);
+  }
+  return true;
+}
+#endif
 }  // namespace
 
 // ─── NativeSlot move operations ───────────────────────────────────────────────
@@ -730,6 +795,9 @@ Status NativeDynamicShapePlan::execute(
     cudaGetLastError();
 
     GraphSegment& seg = segments_[0];
+    if (!bindSegmentCudaDevice(seg, slots_, numSlots_, traceEnabled_, executeCount_, "frozenFastPath")) {
+      return Status::KERNEL_FAILURE;
+    }
     cudaStream_t cudaStr = (stream != nullptr)
         ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
@@ -952,11 +1020,82 @@ Status NativeDynamicShapePlan::execute(
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
+  // Step 1b: Parallel precompilation of all GPU-compilable segments.
+  // On executeCount_ == 1 (after warmup), every segment will need compilation.
+  // Instead of compiling lazily in the sequential execution loop, fire all
+  // compilations in parallel so they're cached by the time execution reaches them.
+#ifdef SD_CUDA
+  if (executeCount_ == 1 && graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
+    auto* gpuBackend = getGpuGraphBackend();
+    if (gpuBackend != nullptr) {
+      // Collect segments eligible for parallel precompilation
+      struct PrecompileTask {
+        int segIdx;
+        LongType shapeKey;
+      };
+      std::vector<PrecompileTask> tasks;
+      for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
+        auto& seg = segments_[si];
+        if (seg.captureFailed) continue;
+        bool tryCapture = seg.isCapturable || (shapesFrozen_ && executeCount_ > 0);
+        if (!tryCapture) continue;
+        if (!gpuBackend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) continue;
+        LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
+        tasks.push_back({si, segShapeKey});
+      }
+
+      if (tasks.size() > 1) {
+        const int maxPrecompileThreads = std::min(
+            static_cast<int>(tasks.size()),
+            std::max(1, sd::Environment::getInstance().tritonBuildThreads()));
+        sd_printf("NativeDSP::execute: parallel precompilation of %d segments "
+                  "using %d threads (executeCount=%d)\n",
+                  static_cast<int>(tasks.size()), maxPrecompileThreads, executeCount_);
+        auto precompileStart = Clock::now();
+
+        std::vector<std::future<bool>> futures;
+        futures.reserve(tasks.size());
+        for (const auto& task : tasks) {
+          futures.emplace_back(std::async(std::launch::async,
+              [this, gpuBackend, externalInputs, numExternalInputs, task]() -> bool {
+                auto& seg = segments_[task.segIdx];
+                return gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
+                                                  outputSlots_, totalOutputSlots_, task.shapeKey,
+                                                  numSlots_);
+              }));
+        }
+
+        int precompileOk = 0, precompileFail = 0;
+        for (size_t i = 0; i < futures.size(); i++) {
+          bool ok = futures[i].get();
+          if (ok) {
+            segments_[tasks[i].segIdx].shapeKey = tasks[i].shapeKey;
+            precompileOk++;
+          } else {
+            precompileFail++;
+          }
+        }
+
+        auto precompileMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+            Clock::now() - precompileStart).count();
+        sd_printf("NativeDSP::execute: parallel precompilation done in %lld ms "
+                  "(ok=%d, failed=%d)\n",
+                  static_cast<long long>(precompileMs), precompileOk, precompileFail);
+      }
+    }
+  }
+#endif
+
   // Step 2: Execute segments
   int segmentIdx = 0;
   long long graphReplayUs = 0, slotBySlotUs = 0;
   int graphReplaySegs = 0, slotBySlotSegs = 0, graphReplaySlots = 0, slotBySlotSlots = 0;
   for (auto& segment : segments_) {
+#ifdef SD_CUDA
+    if (!bindSegmentCudaDevice(segment, slots_, numSlots_, traceEnabled_, executeCount_, "segmentExec")) {
+      return Status::KERNEL_FAILURE;
+    }
+#endif
     // Set graph execution flag for ALL graph backends (CUDA Graphs, oneDNN Graph, ACL).
     // This tells DataBuffer::syncToPrimary to skip D2H transfers during graph execution,
     // preventing stream conflicts (CUDA) and unnecessary data movement (CPU graphs).
@@ -1853,7 +1992,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // Use CudaGraphScheduler for capture management
   auto& scheduler = cuda::CudaGraphScheduler::getInstance();
 
-  int currentDevice = AffinityManager::currentDeviceId();
+  int currentDevice = 0;
+  cudaError_t currentDeviceErr = cudaGetDevice(&currentDevice);
+  if (currentDeviceErr != cudaSuccess) {
+    sd_printf("NativeDynamicShapePlan: cudaGetDevice failed during graph capture setup "
+              "for segment [%d-%d]: %s\n",
+              seg.startSlot, seg.endSlot, cudaGetErrorString(currentDeviceErr));
+    cudaGetLastError();
+    seg.captureFailed = true;
+    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+  }
   if (!scheduler.deviceSupportsGraphs(currentDevice)) {
     // Device doesn't support graphs — permanent fallback
     seg.captureFailed = true;
@@ -3867,6 +4015,22 @@ void NativeDynamicShapePlan::buildSegments() {
             (int)segments_.size(), capturableCount,
             staticCapturableCount, dynamicCapturableCount,
             totalCapturable, numSlots_);
+
+  int maxLoggedSegments = 8;
+  int logged = std::min(static_cast<int>(segments_.size()), maxLoggedSegments);
+  for (int i = 0; i < logged; i++) {
+    const auto& seg = segments_[i];
+    int targetDevice = -1;
+    if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
+      targetDevice = slots_[seg.startSlot].targetDeviceId;
+    }
+    sd_printf("NativeDynamicShapePlan: segment[%d] [%d-%d] capturable=%d targetDeviceId=%d\n",
+              i, seg.startSlot, seg.endSlot, static_cast<int>(seg.isCapturable), targetDevice);
+  }
+  if ((int)segments_.size() > maxLoggedSegments) {
+    sd_printf("NativeDynamicShapePlan: ... %d additional segments not shown in device map\n",
+              static_cast<int>(segments_.size()) - maxLoggedSegments);
+  }
 }
 
 // ─── Rebuild segments for frozen shapes ───────────────────────────────────────
@@ -4077,6 +4241,37 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
     return nullptr;
   }
 
+  // MLX is highest priority CPU backend on macOS/Apple Silicon
+  // When GEM_MLX is explicitly selected, force MLX and skip other backends
+#if HAVE_MLX
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_MLX) {
+    auto& mlx = MlxGraphBackend::getInstance();
+    if (mlx.isAvailable()) {
+      cpuGraphBackend_ = &mlx;
+      sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend (forced)\n", "");
+      return cpuGraphBackend_;
+    }
+    sd_printf("NativeDynamicShapePlan: GEM_MLX requested but MLX not available\n", "");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+  // In AUTO mode, MLX takes priority on Apple Silicon
+  {
+    auto& mlx = MlxGraphBackend::getInstance();
+    if (mlx.isAvailable()) {
+      cpuGraphBackend_ = &mlx;
+      sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend\n", "");
+      return cpuGraphBackend_;
+    }
+  }
+#else
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_MLX) {
+    sd_printf("NativeDynamicShapePlan: GEM_MLX requested but HAVE_MLX=0\n", "");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#endif
+
 #if HAVE_ONEDNN
   auto& onednn = OneDnnGraphBackend::getInstance();
   if (onednn.isAvailable()) {
@@ -4091,6 +4286,15 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   if (acl.isAvailable()) {
     cpuGraphBackend_ = &acl;
     sd_printf("NativeDynamicShapePlan: using ARM ACL backend\n", "");
+    return cpuGraphBackend_;
+  }
+#endif
+
+#ifdef HAVE_MLIR
+  auto& mlirBackend = MlirCpuGraphBackend::getInstance();
+  if (mlirBackend.isAvailable()) {
+    cpuGraphBackend_ = &mlirBackend;
+    sd_printf("NativeDynamicShapePlan: using MLIR CPU JIT backend\n", "");
     return cpuGraphBackend_;
   }
 #endif

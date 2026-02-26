@@ -25,7 +25,7 @@
 
 #include <array/NDArray.h>
 #include <graph/NativeDynamicShapePlan.h>
-#include <graph/gpu/OpCategoryTable.h>
+#include <graph/SegmentAnalysisTypes.h>
 #include <system/common.h>
 
 #include <string>
@@ -46,140 +46,8 @@ namespace sd {
 namespace graph {
 
 // TritonOpCategory enum is defined in OpCategoryTable.h (shared with NVRTC path)
-
-/**
- * Kernel pattern classification for mixed-category segments.
- */
-enum class SegmentKernelPattern {
-  ELEMENTWISE_1D,   // All element-wise (including comparison, logical, ternary, cast)
-  REDUCTION_1D,     // Contains reduction ops
-  NORMALIZATION,    // Contains normalization ops (softmax, layer_norm)
-  MATMUL_2D,        // Contains matmul ops
-  MATMUL_EPILOGUE,  // Matmul + element-wise epilogue (bias+activation)
-  FUSED_ATTENTION,  // onnx_multi_head_attention -> Flash Attention kernel
-  WHOLE_GRAPH       // Mixed mega-segment: matmul + elementwise + shape + data movement + etc.
-};
-
-/**
- * Per-op node in the segment dataflow graph, built during profiling.
- */
-struct OpNode {
-  int slotIndex;                        // Absolute slot index
-  int localIndex;                       // 0-based within segment
-  std::string opName;
-  TritonOpCategory category;
-  std::vector<int> inputLocalIndices;   // -1 for external inputs
-  std::vector<int> consumerLocalIndices;// Which local ops consume this op's output
-  bool hasExternalInput;
-
-  // Output shape info from DSP's pre-calculated cache (NativeSlot.cachedOutputShapes)
-  // Populated when outputSlots are available; empty otherwise
-  std::vector<LongType> outputShape;    // First output's dimensions
-  DataType outputDtype;                 // First output's data type
-  bool hasOutputShape;                  // true if outputShape was populated
-
-  OpNode() : slotIndex(-1), localIndex(-1), category(TritonOpCategory::IDENTITY),
-             hasExternalInput(false), outputDtype(FLOAT32), hasOutputShape(false) {}
-};
-
-/**
- * Structured profile from Pass 1 — O(n) single walk over the segment.
- */
-struct SegmentProfile {
-  std::vector<OpNode> nodes;
-  int categoryCounts[16] = {};          // Indexed by (int)TritonOpCategory (16 values)
-  int totalOps;
-  int numUniqueExternalInputs;
-  int numUniqueOutputs;
-  bool hasMatmul, hasReduction, hasNormalization, hasFusedAttention;
-  bool hasShapeManip, hasDataMovement;
-
-  SegmentProfile()
-      : totalOps(0), numUniqueExternalInputs(0), numUniqueOutputs(0),
-        hasMatmul(false), hasReduction(false), hasNormalization(false),
-        hasFusedAttention(false), hasShapeManip(false), hasDataMovement(false) {}
-};
-
-/**
- * Detected composite pattern from Pass 2 pattern matching.
- */
-struct PatternMatch {
-  enum Type {
-    PURE_ELEMENTWISE,
-    PURE_MATMUL,
-    PURE_REDUCTION,
-    PURE_NORMALIZATION,
-    MATMUL_EPILOGUE,
-    SOFTMAX_DECOMPOSED,
-    ATTENTION_QKV,
-    FFN_BLOCK,
-    FUSED_ATTENTION_OP,
-    MIXED_MEGA_SEGMENT
-  };
-  Type type;
-  int priority;                         // Higher wins
-  std::vector<int> localIndices;        // Participating ops (local indices)
-  std::string description;
-
-  PatternMatch() : type(PURE_ELEMENTWISE), priority(0) {}
-};
-
-/**
- * Base class for pluggable pattern detectors.
- */
-class PatternDetector {
- public:
-  virtual ~PatternDetector() = default;
-  virtual const char* name() const = 0;
-  virtual std::vector<PatternMatch> detect(const SegmentProfile& profile,
-                                            NativeSlot* slots, int startSlot) = 0;
-};
-
-/**
- * Collection of all matched patterns from Pass 2.
- */
-struct MatchedPatterns {
-  std::vector<PatternMatch> matches;
-  const PatternMatch* bestMatch() const {
-    if (matches.empty()) return nullptr;
-    const PatternMatch* best = &matches[0];
-    for (size_t i = 1; i < matches.size(); i++) {
-      if (matches[i].priority > best->priority) best = &matches[i];
-    }
-    return best;
-  }
-};
-
-/**
- * Pre-compilation analysis of a segment — computed WITHOUT allocating MLIR objects.
- * Used by Pass 1 of the 2-pass optimizer to validate and classify before IR emission.
- */
-struct SegmentAnalysis {
-  bool canCompile;                // true if segment passes all validation checks
-  std::string failureReason;      // Human-readable reason if canCompile is false
-  int totalInputArgs;             // Unique external/pre-segment input buffers
-  int totalOutputArgs;            // Unique output buffers consumed post-segment
-  int totalArgs;                  // totalInputArgs + totalOutputArgs + 1 (n_elements)
-  SegmentKernelPattern pattern;   // Classified kernel pattern
-  // Per-category op counts
-  int numElementwise;
-  int numMatmul;
-  int numReduction;
-  int numNormalization;
-  int numAttention;
-  int numShapeManip;
-  int numDataMovement;
-  int numConstGen;
-  int numIdentity;
-  int numCast;
-
-  SegmentAnalysis()
-      : canCompile(false), totalInputArgs(0), totalOutputArgs(0), totalArgs(0),
-        pattern(SegmentKernelPattern::ELEMENTWISE_1D),
-        numElementwise(0), numMatmul(0), numReduction(0), numNormalization(0),
-        numAttention(0), numShapeManip(0), numDataMovement(0), numConstGen(0),
-        numIdentity(0), numCast(0) {}
-};
+// SegmentKernelPattern, OpNode, SegmentProfile, PatternMatch, PatternDetector,
+// MatchedPatterns, SegmentAnalysis are defined in SegmentAnalysisTypes.h
 
 /**
  * Section type within a cooperative mega-kernel.
@@ -287,12 +155,17 @@ struct TritonIRModule {
   int requiredGrid;           // Maximum grid size needed across all sections
   std::vector<KernelSection> sections;  // Section breakdown of the kernel
 
+  // Conservative estimate of shared memory per block (bytes), computed from
+  // section types and tile sizes. Used for early cooperative launch capacity
+  // rejection before the expensive TTIR→PTX compilation.
+  int estimatedSharedMemBytes;
+
   TritonIRModule() : mlirModule(nullptr), mlirContext(nullptr), numWarps(4), numStages(3),
                      gridX(1), gridY(1), gridZ(1),
                      blockX(1), blockY(1), blockZ(1),
                      valid(false), useIndirectArgs(false), useCooperativeLaunch(false),
                      useDynamicGrid(true),
-                     requiredGrid(1) {}
+                     requiredGrid(1), estimatedSharedMemBytes(0) {}
 };
 
 /**
