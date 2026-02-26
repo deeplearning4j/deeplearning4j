@@ -734,7 +734,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
   LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
   LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
+#ifdef SD_CUDA
   LongType computeSegmentInputAddrKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
+#endif
   void flushPendingClose(void* stream);
   void buildSegments();
   void rebuildSegmentsForFrozenShapes();

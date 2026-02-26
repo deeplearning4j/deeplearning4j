@@ -3684,6 +3684,7 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
 
 // ─── Segment input address key computation ──────────────────────────────────
 
+#ifdef SD_CUDA
 LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
   // Hash the GPU buffer addresses (specialBuffer) of ALL inputs referenced by
@@ -3728,6 +3729,7 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
 
   return key;
 }
+#endif
 
 // ─── Statistics ─────────────────────────────────────────────────────────────
 
@@ -3804,6 +3806,7 @@ void NativeDynamicShapePlan::configureKvCacheRetention(
     }
     kvCacheRetentionEnabled_ = true;
 
+#ifdef SD_CUDA
     // Mark capture buffers for KV inputs as "always copy" — their data changes
     // each step via kvScatter even though the GPU pointer stays the same
     for (auto& seg : segments_) {
@@ -3816,6 +3819,7 @@ void NativeDynamicShapePlan::configureKvCacheRetention(
         }
       }
     }
+#endif
 
     sd_printf("NativeDynamicShapePlan: KV cache retention configured: %d mappings, maxLen=%d, initialPos=%d\n",
               numMappings, maxKvLen, initialPos);
@@ -3866,8 +3870,8 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
   // Use the execution stream (if provided) so scatter runs on the same stream as
   // the graph — avoids cross-stream synchronization overhead.
   auto* lc = LaunchContext::defaultContext();
-  cudaStream_t* savedStream = nullptr;
 #ifdef SD_CUDA
+  cudaStream_t* savedStream = nullptr;
   if (stream != nullptr) {
     savedStream = lc->getCudaStream();
     lc->setCudaStream(static_cast<cudaStream_t*>(stream));

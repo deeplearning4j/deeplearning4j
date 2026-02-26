@@ -183,26 +183,10 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # --- Flatbuffers Header and Java Generation ---
-if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-    set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
-    set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
-    add_custom_command(
-            OUTPUT ${MAIN_GENERATED_HEADER}
-            COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-            DEPENDS flatbuffers_external
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            COMMENT "Running flatc to generate C++ headers"
-            VERBATIM
-    )
-    add_custom_target(generate_flatbuffers_headers DEPENDS ${MAIN_GENERATED_HEADER})
-    add_custom_command(
-            TARGET generate_flatbuffers_headers POST_BUILD
-            COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            COMMENT "Copying generated Java files"
-            VERBATIM
-    )
-endif()
+# NOTE: flatc generation is handled by ExternalProject_Add_Step in Dependencies.cmake.
+# Both the cross-compile and native paths there already run flatc-generate.sh and
+# declare generated.h as BYPRODUCTS. Adding a duplicate add_custom_command here
+# causes Ninja "multiple rules generate generated.h" errors.
 
 if(SD_EXTRACT_INSTANTIATIONS)
     include(ExtractInstantiations)
