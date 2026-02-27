@@ -101,7 +101,7 @@ public class PythonExecutioner {
         PyObject main = PyImport_ImportModule("__main__");
         PyObject globals = PyModule_GetDict(main);
         PyDict_SetItemString(globals, name, value.getNativePythonObject());
-        Py_DecRef(main);
+        PythonRefCount.decRef(main);
 
     }
 
@@ -161,9 +161,9 @@ public class PythonExecutioner {
                 return new PythonObject(PyObject_GetItem(globals, pyName), false);
             }
         } finally {
-            Py_DecRef(main);
-            //Py_DecRef(globals);
-            Py_DecRef(pyName);
+            PythonRefCount.decRef(main);
+            //PythonRefCount.decRef(globals);
+            PythonRefCount.decRef(pyName);
         }
         return new PythonObject(null);
     }
@@ -277,13 +277,13 @@ public class PythonExecutioner {
                         }
                     }
                 } finally {
-                    Py_DecRef(pyKey);
+                    PythonRefCount.decRef(pyKey);
                 }
             }
         } finally {
-            Py_DecRef(keysIter);
-            Py_DecRef(keys);
-            Py_DecRef(main);
+            PythonRefCount.decRef(keysIter);
+            PythonRefCount.decRef(keys);
+            PythonRefCount.decRef(main);
             return ret;
         }
 
@@ -332,7 +332,7 @@ public class PythonExecutioner {
                 for (File packageDir : packages) {
                     PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
                     PySys_SetObject("path", pythonPath);
-                    Py_DecRef(pythonPath);
+                    PythonRefCount.decRef(pythonPath);
                 }
             } else {
                 StringBuffer sb = new StringBuffer();
@@ -362,7 +362,7 @@ public class PythonExecutioner {
 
                 PyObject pythonPath = PyUnicode_FromString(sb.toString());
                 PySys_SetObject("path", pythonPath);
-                Py_DecRef(pythonPath);
+                PythonRefCount.decRef(pythonPath);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

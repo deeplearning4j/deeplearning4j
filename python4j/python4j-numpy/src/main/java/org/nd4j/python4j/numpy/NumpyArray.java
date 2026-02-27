@@ -86,7 +86,7 @@ public class NumpyArray extends PythonType<INDArray> {
                for(File packageDir : numpy.cachePackages()) {
                    PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
                    PySys_SetObject("path", pythonPath);
-                   Py_DecRef(pythonPath);
+                   PythonRefCount.decRef(pythonPath);
                }
 
             }
@@ -120,12 +120,12 @@ public class NumpyArray extends PythonType<INDArray> {
         PyObject np = PyImport_ImportModule("numpy");
         PyObject ndarray = PyObject_GetAttrString(np, "ndarray");
         if (PyObject_IsInstance(pythonObject.getNativePythonObject(), ndarray) != 1) {
-            Py_DecRef(ndarray);
-            Py_DecRef(np);
+            PythonRefCount.decRef(ndarray);
+            PythonRefCount.decRef(np);
             throw new PythonException("Object is not a numpy array! Use Python.ndarray() to convert object to a numpy array.");
         }
-        Py_DecRef(ndarray);
-        Py_DecRef(np);
+        PythonRefCount.decRef(ndarray);
+        PythonRefCount.decRef(np);
         PyArrayObject npArr = new PyArrayObject(pythonObject.getNativePythonObject());
         long[] shape = new long[PyArray_NDIM(npArr)];
         SizeTPointer shapePtr = PyArray_SHAPE(npArr);
@@ -300,7 +300,7 @@ public class NumpyArray extends PythonType<INDArray> {
                 PythonExecutioner.exec(code);
                 log.debug("exec done.");
                 PythonObject ret = PythonExecutioner.getVariable("npArr");
-                Py_IncRef(ret.getNativePythonObject());
+                PythonRefCount.incRef(ret.getNativePythonObject());
                 return ret;
 
             }

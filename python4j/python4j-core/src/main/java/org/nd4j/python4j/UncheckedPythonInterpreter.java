@@ -127,9 +127,9 @@ public class UncheckedPythonInterpreter implements PythonInterpreter {
                 UncheckedPythonInterpreter.globals = org.bytedeco.cpython.global.python.PyModule_GetDict(main);
                 UncheckedPythonInterpreter.globalsAns = org.bytedeco.cpython.global.python.PyUnicode_FromString(ANS);
                 //we keep the refs eternally
-                //org.bytedeco.cpython.global.python.Py_DecRef(main);
-                //org.bytedeco.cpython.global.python.Py_DecRef(globals);
-                //org.bytedeco.cpython.global.python.Py_DecRef(globalsAns);
+                //PythonRefCount.decRef(main);
+                //PythonRefCount.decRef(globals);
+                //PythonRefCount.decRef(globalsAns);
 
             } catch (Exception e) {
                 e.printStackTrace();

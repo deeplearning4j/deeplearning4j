@@ -87,7 +87,7 @@ public class PythonGC implements Closeable {
 //            try{
 //                System.out.println(PythonTypes.STR.toJava(new PythonObject(pyObject, false)));
 //            }catch (Exception e){}
-            Py_DecRef(pyObject);
+            PythonRefCount.decRef(pyObject);
 
         }
         this.objects = new HashSet<>();
