@@ -42,17 +42,16 @@
 // Provide global constexpr aliases for the DataType enum values so that bare
 // names like FLOAT32, DOUBLE, INT64 etc. can be used throughout the codebase.
 //
-// On Windows, some names (BOOL, INT8..INT64, UINT8..UINT64) conflict with
-// typedefs from <windows.h> (basetsd.h / minwindef.h). These are guarded by
-// !defined(_WINDOWS_) — the include guard that <windows.h> sets. This means:
-//  - Translation units that do NOT include <windows.h>: all aliases available
-//  - Translation units that DO include <windows.h>: conflicting aliases skipped,
-//    those files must use sd::DataType::NAME for the conflicting names.
-// IMPORTANT: Files that include <windows.h> must do so BEFORE including this
-// header, so that _WINDOWS_ is already defined when this guard is checked.
+// On Windows (MinGW/MSVC), some names (BOOL, INT8..INT64, UINT8..UINT64)
+// conflict with typedefs from basetsd.h/minwindef.h that get included via
+// standard headers. These conflicting aliases are only defined on non-Windows.
+// The TTYPE macro system still works on Windows because:
+//  - case labels use qualified sd::DataType::TOKEN lookup (finds enum member)
+//  - SD_CAT concatenation operates on tokens (typedefs don't affect preprocessor)
+// Code that needs bare conflicting names on Windows must use sd::DataType::NAME.
 // ============================================================================
 
-  // These names do NOT conflict with any Windows SDK types
+  // These names do NOT conflict with any Windows SDK types — always available
   static constexpr auto INHERIT = sd::DataType::INHERIT;
   static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
   static constexpr auto HALF = sd::DataType::HALF;
@@ -68,9 +67,8 @@
   static constexpr auto ANY = sd::DataType::ANY;
   static constexpr auto AUTO = sd::DataType::AUTO;
 
-  // These names conflict with Windows SDK typedefs from basetsd.h / minwindef.h.
-  // Only define them when <windows.h> has NOT been included (_WINDOWS_ is its guard).
-#if !defined(_WINDOWS_)
+  // These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
+#if !defined(_WIN32)
   static constexpr auto BOOL = sd::DataType::BOOL;
   static constexpr auto INT8 = sd::DataType::INT8;
   static constexpr auto INT16 = sd::DataType::INT16;
