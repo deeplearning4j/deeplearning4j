@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""NVCC wrapper that filters out MSVC -Fd/-FS flags from response files and arguments.
+r"""NVCC wrapper that filters out MSVC -Fd/-FS flags from response files and arguments.
 
-CMake + Ninja on Windows generates -Xcompiler=-Fd<path>\\,-FS in CUDA response files.
+CMake + Ninja on Windows generates -Xcompiler=-Fd<path>\,-FS in CUDA response files.
 The backslash-comma causes nvcc to misparse this as two arguments, with -FS interpreted
 as an input file, triggering: "A single input file is required".
 
@@ -22,21 +22,28 @@ import re
 import subprocess
 import tempfile
 
+# Log counter for diagnostics (limit verbose output to first few files)
+_log_count = 0
+_MAX_VERBOSE_LOGS = 5
+
+
 def should_filter_arg(arg):
     """Return True if this argument should be stripped."""
     # Filter -Xcompiler args containing -Fd or -FS (PDB debug info flags)
-    if re.match(r'-Xcompiler[=:].*-Fd', arg):
+    if re.search(r'-Xcompiler.*-Fd', arg):
         return True
-    if re.match(r'-Xcompiler[=:].*-FS', arg):
+    if re.search(r'-Xcompiler.*-FS', arg):
         return True
-    if arg == '-Xcompiler=-FS':
+    if re.search(r'-Xcompiler.*/Fd', arg):
+        return True
+    if re.search(r'-Xcompiler.*/FS', arg):
+        return True
+    if arg == '-Xcompiler=-FS' or arg == '-Xcompiler=/FS':
         return True
     # Also filter standalone -Fd... args that might appear
-    if arg.startswith('-Fd'):
+    if arg.startswith('-Fd') or arg.startswith('/Fd'):
         return True
-    if arg == '-FS' or arg == '/FS':
-        return True
-    if arg.startswith('/Fd'):
+    if arg in ('-FS', '/FS'):
         return True
     return False
 
@@ -46,18 +53,35 @@ def filter_response_file(rsp_path):
 
     Returns path to the cleaned response file (may be a new temp file).
     """
+    global _log_count
+
     if not os.path.isfile(rsp_path):
         return rsp_path
 
-    with open(rsp_path, 'r', encoding='utf-8', errors='replace') as f:
-        content = f.read()
+    # Read in binary to preserve exact content for comparison
+    with open(rsp_path, 'rb') as f:
+        raw_content = f.read()
 
-    original = content
+    # Decode and normalize line endings to \n for processing
+    content = raw_content.decode('utf-8', errors='replace')
+    # Detect original line ending style
+    has_crlf = b'\r\n' in raw_content
+    line_ending = '\r\n' if has_crlf else '\n'
 
-    # Filter lines/tokens containing -Fd or -FS in -Xcompiler context
-    # Response file can have args on separate lines or space-separated
     lines = content.splitlines()
+
+    # Dump first few response files for diagnostics
+    _log_count += 1
+    if _log_count <= _MAX_VERBOSE_LOGS:
+        print(f"[nvcc_filter] === Response file: {rsp_path} ===", file=sys.stderr)
+        print(f"[nvcc_filter] Line count: {len(lines)}, CRLF: {has_crlf}", file=sys.stderr)
+        for i, line in enumerate(lines[:30]):
+            print(f"[nvcc_filter]   L{i}: {line[:300]}", file=sys.stderr)
+        if len(lines) > 30:
+            print(f"[nvcc_filter]   ... ({len(lines) - 30} more lines)", file=sys.stderr)
+
     filtered_lines = []
+    removed_lines = []
     for line in lines:
         # Split line into tokens (respecting quotes)
         tokens = []
@@ -77,40 +101,31 @@ def filter_response_file(rsp_path):
             tokens.append(''.join(current))
 
         filtered_tokens = [t for t in tokens if not should_filter_arg(t)]
+        removed_tokens = [t for t in tokens if should_filter_arg(t)]
+
+        if removed_tokens:
+            removed_lines.append((line, removed_tokens))
+
         if filtered_tokens:
             filtered_lines.append(' '.join(filtered_tokens))
 
-    new_content = '\n'.join(filtered_lines) + '\n'
-
-    if new_content != original:
-        # Log what was filtered (first 3 files only, to avoid noise)
-        if not hasattr(filter_response_file, '_log_count'):
-            filter_response_file._log_count = 0
-        filter_response_file._log_count += 1
-        if filter_response_file._log_count <= 3:
-            # Use stdout so Ninja captures it in the build log
-            print(f"[nvcc_filter] Filtered PDB flags from {rsp_path}")
-            print(f"[nvcc_filter] ORIGINAL .rsp content ({len(original)} bytes):")
-            for i, line in enumerate(original.splitlines()[:10]):
-                print(f"[nvcc_filter]   orig[{i}]: {line[:300]}")
-            print(f"[nvcc_filter] FILTERED .rsp content ({len(new_content)} bytes):")
-            for i, line in enumerate(new_content.splitlines()[:10]):
-                print(f"[nvcc_filter]   filt[{i}]: {line[:300]}")
-            # Show diff: lines removed
-            orig_lines = set(original.splitlines())
-            new_lines = set(new_content.splitlines())
-            removed = orig_lines - new_lines
-            for line in removed:
-                print(f"[nvcc_filter]   REMOVED: {line[:300]}")
+    if removed_lines:
+        new_content = line_ending.join(filtered_lines) + line_ending
+        if _log_count <= _MAX_VERBOSE_LOGS:
+            print(f"[nvcc_filter] FILTERED {len(removed_lines)} lines:", file=sys.stderr)
+            for orig_line, removed_toks in removed_lines:
+                print(f"[nvcc_filter]   REMOVED tokens: {removed_toks}", file=sys.stderr)
 
         # Write filtered content to a new temp file in the same directory
         rsp_dir = os.path.dirname(rsp_path) or '.'
         fd, tmp_path = tempfile.mkstemp(suffix='.rsp', dir=rsp_dir, prefix='nvcc_filtered_')
-        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='') as f:
             f.write(new_content)
         return tmp_path
-
-    return rsp_path
+    else:
+        if _log_count <= _MAX_VERBOSE_LOGS:
+            print(f"[nvcc_filter] No PDB flags found to filter", file=sys.stderr)
+        return rsp_path
 
 
 def main():
@@ -121,8 +136,15 @@ def main():
     nvcc = sys.argv[1]
     args = sys.argv[2:]
 
+    # Dump all args for first invocation
+    global _log_count
+    if _log_count == 0:
+        print(f"[nvcc_filter] nvcc: {nvcc}", file=sys.stderr)
+        print(f"[nvcc_filter] args ({len(args)}): {args[:20]}", file=sys.stderr)
+
     filtered_args = []
     temp_files = []
+    direct_filtered = []
 
     i = 0
     while i < len(args):
@@ -160,20 +182,15 @@ def main():
             continue
 
         # Filter direct args
-        if not should_filter_arg(arg):
+        if should_filter_arg(arg):
+            direct_filtered.append(arg)
+        else:
             filtered_args.append(arg)
 
         i += 1
 
-    # Debug: print full command (first 3 invocations only)
-    if not hasattr(main, '_cmd_count'):
-        main._cmd_count = 0
-    main._cmd_count += 1
-    if main._cmd_count <= 3:
-        print(f"[nvcc_filter] Final nvcc command ({len(filtered_args)} args):")
-        print(f"[nvcc_filter]   {nvcc}")
-        for i, a in enumerate(filtered_args):
-            print(f"[nvcc_filter]   arg[{i}]: {a[:300]}")
+    if direct_filtered and _log_count <= _MAX_VERBOSE_LOGS:
+        print(f"[nvcc_filter] Direct args filtered: {direct_filtered}", file=sys.stderr)
 
     try:
         result = subprocess.run([nvcc] + filtered_args)
