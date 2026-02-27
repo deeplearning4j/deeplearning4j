@@ -28,14 +28,30 @@ runs:
       run: |
         echo Installing ccache for Windows...
         cd /d %USERPROFILE%
+        REM Remove any 0-byte leftover zip from a previous failed download
+        if exist ccache-4.10.2-windows-x86_64.zip (
+          for %%F in (ccache-4.10.2-windows-x86_64.zip) do (
+            if %%~zF==0 del ccache-4.10.2-windows-x86_64.zip
+          )
+        )
         if not exist ccache-4.10.2-windows-x86_64.zip (
-          curl -LO https://github.com/ccache/ccache/releases/download/v4.10.2/ccache-4.10.2-windows-x86_64.zip
+          curl -fLO https://github.com/ccache/ccache/releases/download/v4.10.2/ccache-4.10.2-windows-x86_64.zip
+          if errorlevel 1 (
+            echo WARNING: ccache download failed
+            del ccache-4.10.2-windows-x86_64.zip 2>nul
+          )
         )
         if not exist ccache (
-          mkdir ccache
-          tar -xf ccache-4.10.2-windows-x86_64.zip -C ccache --strip-components=1
+          if exist ccache-4.10.2-windows-x86_64.zip (
+            mkdir ccache
+            tar -xf ccache-4.10.2-windows-x86_64.zip -C ccache --strip-components=1
+          )
         )
-        echo ccache installed successfully
+        if exist ccache\ccache.exe (
+          echo ccache installed successfully
+        ) else (
+          echo WARNING: ccache installation failed, builds will proceed without ccache
+        )
 
     - name: Compute ccache keys
       id: ccache-keys
@@ -84,19 +100,25 @@ runs:
       run: |
         $ccachePath = "$env:USERPROFILE\ccache"
         $ccacheDir = "$env:USERPROFILE\.ccache"
+        $ccacheExe = "$ccachePath\ccache.exe"
 
-        # Add to GITHUB_PATH for subsequent steps
-        Add-Content -Path $env:GITHUB_PATH -Value $ccachePath
+        if (Test-Path $ccacheExe) {
+          # Add to GITHUB_PATH for subsequent steps
+          Add-Content -Path $env:GITHUB_PATH -Value $ccachePath
 
-        # Add to GITHUB_ENV
-        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
-        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
-        Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
-        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=ccache"
-        Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          # Add to GITHUB_ENV
+          Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
+          Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
+          Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
+          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=ccache"
+          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
-        # Verify ccache is accessible
-        & "$ccachePath\ccache.exe" --version
+          # Verify ccache is accessible
+          & $ccacheExe --version
+        } else {
+          Write-Host "WARNING: ccache.exe not found at $ccacheExe - skipping ccache setup"
+          Write-Host "Build will proceed without ccache (slower but functional)"
+        }
 
     - name: Show ccache stats before build
       continue-on-error: true
