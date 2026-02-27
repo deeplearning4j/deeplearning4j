@@ -143,27 +143,33 @@ jobs:
           brew install cmake pkg-config gnu-sed
           echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
-      # ── Windows build deps (MSVC + MSYS2) ──
+      # ── Windows build deps (MSYS2 with full mingw64 toolchain) ──
       - name: Setup MSYS2 (Windows)
         if: matrix.os == 'windows'
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
+          path-type: inherit
           install: >-
+            mingw-w64-x86_64-toolchain
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-pkg-config
             make
-
-      - name: Setup MSVC (Windows)
-        if: matrix.os == 'windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
+            git
 
       # ── Rust (all platforms, for tokenizers) ──
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'windows' && 'x86_64-pc-windows-gnu' || '' }}
+
+      - name: Set Rust default target (Windows)
+        if: matrix.os == 'windows'
+        shell: bash
+        run: |
+          rustup set default-host x86_64-pc-windows-gnu
+          echo "CARGO_BUILD_TARGET=x86_64-pc-windows-gnu" >> $GITHUB_ENV
 
       - name: Install cbindgen
         shell: bash
