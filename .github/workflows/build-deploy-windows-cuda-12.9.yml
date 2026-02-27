@@ -119,9 +119,12 @@ jobs:
         shell: powershell
         run: |
           echo "Setting NVCC environment variables to allow unsupported compiler..."
-          echo "CUDAFLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "NVCC_APPEND_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "CMAKE_CUDA_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # Only use --allow-unsupported-compiler (nvcc flag).
+          # Do NOT add -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__ — nvcc misparses it
+          # as a second input file, causing "A single input file is required" error.
+          echo "CUDAFLAGS=--allow-unsupported-compiler" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "NVCC_APPEND_FLAGS=--allow-unsupported-compiler" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CMAKE_CUDA_FLAGS=--allow-unsupported-compiler" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Free Disk Space (Windows)
         continue-on-error: true
