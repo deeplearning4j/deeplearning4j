@@ -238,11 +238,12 @@ jobs:
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-      - name: Set up Java for publishing to GitHub Packages
-        uses: konduitai/setup-java@main
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
+          cache: 'maven'
         
 
 
