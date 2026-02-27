@@ -98,9 +98,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 
 # Configure ccache for CUDA if available
-if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER)
+# Skip on Windows: ccache with nvcc on MSVC mishandles -Xcompiler flags
+# (backslash-comma in -Fd path splits into multiple input files)
+if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT WIN32)
     set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher" FORCE)
-    message(STATUS "✅ Enabled ccache for CUDA compilation")
+    message(STATUS "Enabled ccache for CUDA compilation")
 
     # Configure ccache settings for optimal performance
     execute_process(COMMAND ${CCACHE_PROGRAM} --max-size=10G ERROR_QUIET)
