@@ -8,5 +8,6 @@ runs:
         CMAKE_VERSION=3.28.3
         # Download prebuilt binary instead of building from source
         curl -fsSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz" | sudo tar xz -C /opt
+        sudo rm -rf /opt/cmake
         sudo mv "/opt/cmake-${CMAKE_VERSION}-linux-x86_64" /opt/cmake
         echo "/opt/cmake/bin" >> $GITHUB_PATH
