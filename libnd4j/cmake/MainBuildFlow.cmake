@@ -755,12 +755,27 @@ function(create_and_link_library)
         # PCH is ONLY enabled when SD_GCC_FUNCTRACE is OFF and NOT a CUDA build
         if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA)
             message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
-            target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
-                <system/op_boilerplate.h>
-                <system/type_boilerplate.h>
-                <math/templatemath.h>
-                <helpers/shape.h>
-            )
+            # On Windows, include <windows.h> first so that _WINDOWS_ is defined
+            # before types.h processes its constexpr alias guards. Without this,
+            # the PCH bakes in constexpr aliases (BOOL, INT32, etc.) that conflict
+            # with Windows SDK typedefs when source files later include <windows.h>.
+            if(WIN32)
+                target_compile_definitions(${OBJECT_LIB_NAME} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+                target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
+                    <windows.h>
+                    <system/op_boilerplate.h>
+                    <system/type_boilerplate.h>
+                    <math/templatemath.h>
+                    <helpers/shape.h>
+                )
+            else()
+                target_precompile_headers(${OBJECT_LIB_NAME} PRIVATE
+                    <system/op_boilerplate.h>
+                    <system/type_boilerplate.h>
+                    <math/templatemath.h>
+                    <helpers/shape.h>
+                )
+            endif()
             message(STATUS "✅ Precompiled headers enabled (op_boilerplate.h, type_boilerplate.h, templatemath.h, shape.h)")
         elseif(SD_CUDA)
             message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
@@ -1250,18 +1265,35 @@ endif()
 # This dramatically reduces compile time by pre-compiling 11,000+ lines of headers
 # Users switching between functrace and normal builds should do a clean build
 if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND TARGET ${SD_LIBRARY_NAME})
-    target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
-            <vector>
-            <memory>
-            <algorithm>
-            <functional>
-            <cstring>
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansions.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/shape.h"
-    )
+    if(WIN32)
+        target_compile_definitions(${SD_LIBRARY_NAME} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+        target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+                <windows.h>
+                <vector>
+                <memory>
+                <algorithm>
+                <functional>
+                <cstring>
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansions.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/shape.h"
+        )
+    else()
+        target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
+                <vector>
+                <memory>
+                <algorithm>
+                <functional>
+                <cstring>
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/op_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boilerplate.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/system/type_boiler_plate_expansions.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/math/templatemath.h"
+                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/shape.h"
+        )
+    endif()
     message(STATUS "✅ Precompiled headers enabled for main library ${SD_LIBRARY_NAME}")
 elseif(SD_CUDA)
     message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
