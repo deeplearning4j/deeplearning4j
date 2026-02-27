@@ -261,9 +261,11 @@ jobs:
           fi
 
           # On Windows with MSYS2/MinGW, override JavaCPP compiler from cl.exe to g++
+          # and ensure JNI headers are findable
           COMPILER_OVERRIDE=""
           if [ "${{ matrix.os }}" == "windows" ]; then
             COMPILER_OVERRIDE="-Djavacpp.platform.compiler=g++"
+            export CPLUS_INCLUDE_PATH="${JAVA_HOME}/include:${JAVA_HOME}/include/win32:${CPLUS_INCLUDE_PATH}"
           fi
 
           command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
@@ -311,17 +313,15 @@ jobs:
 
           mvn --version
 
-          # Build all Java modules, skip:
+          # Build all Java modules, skip only:
           # - libnd4j: C++ native ops (built by per-platform native workflows)
           # - libtokenizers, tokenizers-native-preset, tokenizers-native: just built and deployed in previous step
-          # - python4j-core, python4j-numpy: Py_DecRef symbol removed in CPython 3.13+ bindings (needs python4j update)
-          # - datavec-local: depends on python4j-numpy
           # - codegen modules not needed for deployment
           PROTOC_PROFILE=""
           if [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "macosx-arm64" ]; then
             PROTOC_PROFILE="-Posx-aarch64-protoc"
           fi
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy,!:datavec-local \
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native \
             ${PROTOC_PROFILE} \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
