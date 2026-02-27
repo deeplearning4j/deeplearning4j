@@ -125,6 +125,10 @@
                         <includePath>${project.basedir}/../libtokenizers/target/native/include</includePath>
                         <includePath>${project.basedir}/../libtokenizers/target/native/include/tokenizers</includePath>
                         <includePath>${project.basedir}/../libtokenizers/include</includePath>
+                        <includePath>${java.home}/../include</includePath>
+                        <includePath>${java.home}/../include/win32</includePath>
+                        <includePath>${java.home}/../include/linux</includePath>
+                        <includePath>${java.home}/../include/darwin</includePath>
                     </includePaths>
                     <linkPaths>
                         <!-- Primary JavaCPP structure path -->
