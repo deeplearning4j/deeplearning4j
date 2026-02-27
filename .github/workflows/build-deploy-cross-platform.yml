@@ -264,8 +264,16 @@ jobs:
           # and ensure JNI headers are findable
           COMPILER_OVERRIDE=""
           if [ "${{ matrix.os }}" == "windows" ]; then
+            # Convert JAVA_HOME to Unix-style path (C:\... -> /c/...) to avoid
+            # colon conflicts in CPLUS_INCLUDE_PATH and shell path handling
+            JH_UNIX=$(cygpath -u "${JAVA_HOME}")
+            export CPLUS_INCLUDE_PATH="${JH_UNIX}/include:${JH_UNIX}/include/win32:${CPLUS_INCLUDE_PATH:-}"
+            # Also set CXXFLAGS with -I flags as belt-and-suspenders in case
+            # CPLUS_INCLUDE_PATH isn't propagated to JavaCPP's compiler subprocess
+            export CXXFLAGS="-I${JH_UNIX}/include -I${JH_UNIX}/include/win32 ${CXXFLAGS:-}"
             COMPILER_OVERRIDE="-Djavacpp.platform.compiler=g++"
-            export CPLUS_INCLUDE_PATH="${JAVA_HOME}/include:${JAVA_HOME}/include/win32:${CPLUS_INCLUDE_PATH}"
+            echo "JNI include paths: ${JH_UNIX}/include, ${JH_UNIX}/include/win32"
+            ls "${JH_UNIX}/include/jni.h" 2>/dev/null && echo "jni.h found" || echo "WARNING: jni.h not found at ${JH_UNIX}/include/jni.h"
           fi
 
           command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
