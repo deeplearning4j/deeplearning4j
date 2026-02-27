@@ -481,11 +481,11 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
 
   if (newInput != input) {
     if (isNCHW) {
-      NDArray assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3)});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3)});
+      gradI->assign(assign);
     } else {
-      NDArray assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0});
+      gradI->assign(assign);
     }
   }
 

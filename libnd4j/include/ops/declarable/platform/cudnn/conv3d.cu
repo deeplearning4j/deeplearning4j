@@ -499,11 +499,11 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
 
   if (newInput != input) {
     if (isNCDHW) {
-      NDArray assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, gradI->sizeAt(4)});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, gradI->sizeAt(4)});
+      gradI->assign(assign);
     } else {
-      NDArray assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, 0});
-      gradI->assign(&assign);
+      auto assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, 0});
+      gradI->assign(assign);
     }
   }
   return Status::OK;
