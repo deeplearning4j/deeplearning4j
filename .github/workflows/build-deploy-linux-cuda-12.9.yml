@@ -139,6 +139,13 @@ jobs:
           cache-suffix: cuda-12.9-${{ matrix.helper }}
           max-size: '8G'
 
+      - name: Show ccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats before build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |

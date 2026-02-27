@@ -120,6 +120,13 @@ jobs:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
           max-size: '5G'
 
+      - name: Show ccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats before build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |

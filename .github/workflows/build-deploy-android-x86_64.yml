@@ -102,6 +102,13 @@ jobs:
           cache-suffix: android-x86_64-${{ matrix.helper }}
           max-size: '5G'
 
+      - name: Show ccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats before build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:

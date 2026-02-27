@@ -108,6 +108,13 @@ jobs:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
           max-size: '5G'
 
+      - name: Show ccache stats before build
+        if: always()
+        shell: cmd
+        run: |
+          echo === ccache stats before build ===
+          %USERPROFILE%\ccache\ccache.exe -sv
+
       - name: Free Disk Space (Windows)
         continue-on-error: true
         shell: powershell

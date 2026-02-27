@@ -100,6 +100,13 @@ jobs:
           cache-suffix: arm64-${{ matrix.helper }}
           max-size: '5G'
 
+      - name: Show ccache stats before build
+        if: always()
+        shell: bash
+        run: |
+          echo "=== ccache stats before build ==="
+          ccache --show-stats --verbose || ccache -sv || ccache -s
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
