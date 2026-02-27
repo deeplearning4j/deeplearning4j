@@ -40,64 +40,11 @@
 // DATATYPE ALIASES
 // ============================================================================
 // On non-Windows platforms, provide global constexpr aliases for the DataType
-// enum values so they can be used as bare identifiers in switch cases etc.
+// enum values. The macro system (TTYPE_*, BUILD_SINGLE_SELECTOR, etc.) relies
+// on these bare names being available as C++ identifiers.
 // On Windows, these clash with Windows SDK typedefs (BOOL, INT8, UINT16, etc.)
-// from minwindef.h and basetsd.h, so they are omitted.
-//
-// The SD_DT_* macros provide portable DataType enum references for TTYPE_*
-// tuples. On Windows they use fully qualified sd::DataType::NAME; elsewhere
-// they use the bare constexpr aliases. We use individual macros (not SD_DT(x))
-// to avoid nested parentheses that break CMake's type-tuple regex parsing.
-// ============================================================================
-#ifdef _WIN32
-  #define SD_DT_INHERIT sd::DataType::INHERIT
-  #define SD_DT_BOOL sd::DataType::BOOL
-  #define SD_DT_FLOAT8 sd::DataType::FLOAT8
-  #define SD_DT_HALF sd::DataType::HALF
-  #define SD_DT_HALF2 sd::DataType::HALF2
-  #define SD_DT_FLOAT32 sd::DataType::FLOAT32
-  #define SD_DT_DOUBLE sd::DataType::DOUBLE
-  #define SD_DT_INT8 sd::DataType::INT8
-  #define SD_DT_INT16 sd::DataType::INT16
-  #define SD_DT_INT32 sd::DataType::INT32
-  #define SD_DT_INT64 sd::DataType::INT64
-  #define SD_DT_UINT8 sd::DataType::UINT8
-  #define SD_DT_UINT16 sd::DataType::UINT16
-  #define SD_DT_UINT32 sd::DataType::UINT32
-  #define SD_DT_UINT64 sd::DataType::UINT64
-  #define SD_DT_QINT8 sd::DataType::QINT8
-  #define SD_DT_QINT16 sd::DataType::QINT16
-  #define SD_DT_BFLOAT16 sd::DataType::BFLOAT16
-  #define SD_DT_UTF8 sd::DataType::UTF8
-  #define SD_DT_UTF16 sd::DataType::UTF16
-  #define SD_DT_UTF32 sd::DataType::UTF32
-  #define SD_DT_ANY sd::DataType::ANY
-  #define SD_DT_AUTO sd::DataType::AUTO
-#else
-  #define SD_DT_INHERIT INHERIT
-  #define SD_DT_BOOL BOOL
-  #define SD_DT_FLOAT8 FLOAT8
-  #define SD_DT_HALF HALF
-  #define SD_DT_HALF2 HALF2
-  #define SD_DT_FLOAT32 FLOAT32
-  #define SD_DT_DOUBLE DOUBLE
-  #define SD_DT_INT8 INT8
-  #define SD_DT_INT16 INT16
-  #define SD_DT_INT32 INT32
-  #define SD_DT_INT64 INT64
-  #define SD_DT_UINT8 UINT8
-  #define SD_DT_UINT16 UINT16
-  #define SD_DT_UINT32 UINT32
-  #define SD_DT_UINT64 UINT64
-  #define SD_DT_QINT8 QINT8
-  #define SD_DT_QINT16 QINT16
-  #define SD_DT_BFLOAT16 BFLOAT16
-  #define SD_DT_UTF8 UTF8
-  #define SD_DT_UTF16 UTF16
-  #define SD_DT_UTF32 UTF32
-  #define SD_DT_ANY ANY
-  #define SD_DT_AUTO AUTO
-#endif
+// from minwindef.h and basetsd.h, so they are omitted. The macro system still
+// works on Windows because it uses qualified sd::DataType::NAME access.
 // ============================================================================
 #if !defined(_WIN32)
   static constexpr auto INHERIT = sd::DataType::INHERIT;
@@ -304,7 +251,7 @@
 // Boolean type
 #if SD_SINGLE_TYPE_1_COMPILED
   #define HAS_BOOL 1
-  #define TTYPE_BOOL , (SD_DT_BOOL, bool)
+  #define TTYPE_BOOL , (BOOL, bool)
 #else
   #define TTYPE_BOOL
 #endif
@@ -318,7 +265,7 @@
 #if SD_SINGLE_TYPE_3_COMPILED
   #define HAS_FLOAT16 1
   #define HAS_HALF 1  // Both aliases for the same type
-  #define TTYPE_HALF , (SD_DT_HALF, float16)
+  #define TTYPE_HALF , (HALF, float16)
 #else
   #define TTYPE_HALF
 #endif
@@ -331,7 +278,7 @@
 // Float32 type
 #if SD_SINGLE_TYPE_5_COMPILED
   #define HAS_FLOAT32 1
-  #define TTYPE_FLOAT32 , (SD_DT_FLOAT32, float)
+  #define TTYPE_FLOAT32 , (FLOAT32, float)
 #else
   #define TTYPE_FLOAT32
 #endif
@@ -339,7 +286,7 @@
 // Double type
 #if SD_SINGLE_TYPE_6_COMPILED
   #define HAS_DOUBLE 1
-  #define TTYPE_DOUBLE , (SD_DT_DOUBLE, double)
+  #define TTYPE_DOUBLE , (DOUBLE, double)
 #else
   #define TTYPE_DOUBLE
 #endif
@@ -347,7 +294,7 @@
 // Int8 type
 #if SD_SINGLE_TYPE_7_COMPILED
   #define HAS_INT8 1
-  #define TTYPE_INT8 , (SD_DT_INT8, SignedChar)
+  #define TTYPE_INT8 , (INT8, SignedChar)
 #else
   #define TTYPE_INT8
 #endif
@@ -355,7 +302,7 @@
 // Int16 type
 #if SD_SINGLE_TYPE_8_COMPILED
   #define HAS_INT16 1
-  #define TTYPE_INT16 , (SD_DT_INT16, Int16Type)
+  #define TTYPE_INT16 , (INT16, Int16Type)
 #else
   #define TTYPE_INT16
 #endif
@@ -363,7 +310,7 @@
 // Int32 type
 #if SD_SINGLE_TYPE_9_COMPILED
   #define HAS_INT32 1
-  #define TTYPE_INT32 , (SD_DT_INT32, Int32Type)
+  #define TTYPE_INT32 , (INT32, Int32Type)
 #else
   #define TTYPE_INT32
 #endif
@@ -371,7 +318,7 @@
 // Int64 type
 #if SD_SINGLE_TYPE_10_COMPILED
   #define HAS_INT64 1
-  #define TTYPE_INT64 , (SD_DT_INT64, LongType)
+  #define TTYPE_INT64 , (INT64, LongType)
 #else
   #define TTYPE_INT64
 #endif
@@ -379,7 +326,7 @@
 // UInt8 type
 #if SD_SINGLE_TYPE_11_COMPILED
   #define HAS_UINT8 1
-  #define TTYPE_UINT8 , (SD_DT_UINT8, UnsignedChar)
+  #define TTYPE_UINT8 , (UINT8, UnsignedChar)
 #else
   #define TTYPE_UINT8
 #endif
@@ -387,7 +334,7 @@
 // UInt16 type
 #if SD_SINGLE_TYPE_12_COMPILED
   #define HAS_UINT16 1
-  #define TTYPE_UINT16 , (SD_DT_UINT16, UInt16Type)
+  #define TTYPE_UINT16 , (UINT16, UInt16Type)
 #else
   #define TTYPE_UINT16
 #endif
@@ -395,7 +342,7 @@
 // UInt32 type
 #if SD_SINGLE_TYPE_13_COMPILED
   #define HAS_UINT32 1
-  #define TTYPE_UINT32 , (SD_DT_UINT32, UInt32Type)
+  #define TTYPE_UINT32 , (UINT32, UInt32Type)
 #else
   #define TTYPE_UINT32
 #endif
@@ -404,7 +351,7 @@
 #if SD_SINGLE_TYPE_14_COMPILED
   #define HAS_UNSIGNEDLONG 1
   #define HAS_UINT64 1  // Alternative name
-  #define TTYPE_UINT64 , (SD_DT_UINT64, UInt64Type)
+  #define TTYPE_UINT64 , (UINT64, UInt64Type)
 #else
   #define TTYPE_UINT64
 #endif
@@ -422,8 +369,8 @@
 // BFloat16 type
 #if SD_SINGLE_TYPE_17_COMPILED
   #define HAS_BFLOAT16 1
-  #define TTYPE_BFLOAT , (SD_DT_BFLOAT16, bfloat16)
-  #define TTYPE_BFLOAT16 , (SD_DT_BFLOAT16, bfloat16)
+  #define TTYPE_BFLOAT , (BFLOAT16, bfloat16)
+  #define TTYPE_BFLOAT16 , (BFLOAT16, bfloat16)
 #else
   #define TTYPE_BFLOAT
   #define TTYPE_BFLOAT16
@@ -432,7 +379,7 @@
 // UTF8 type
 #if SD_SINGLE_TYPE_50_COMPILED
   #define HAS_UTF8 1
-  #define TTYPE_UTF8 , (SD_DT_UTF8, stdstring)
+  #define TTYPE_UTF8 , (UTF8, stdstring)
 #else
   #define TTYPE_UTF8
 #endif
@@ -440,7 +387,7 @@
 // UTF16 type
 #if SD_SINGLE_TYPE_51_COMPILED
   #define HAS_UTF16 1
-  #define TTYPE_UTF16 , (SD_DT_UTF16, u16string)
+  #define TTYPE_UTF16 , (UTF16, u16string)
 #else
   #define TTYPE_UTF16
 #endif
@@ -448,7 +395,7 @@
 // UTF32 type
 #if SD_SINGLE_TYPE_52_COMPILED
   #define HAS_UTF32 1
-  #define TTYPE_UTF32 , (SD_DT_UTF32, u32string)
+  #define TTYPE_UTF32 , (UTF32, u32string)
 #else
   #define TTYPE_UTF32
 #endif
@@ -462,13 +409,13 @@
 // duplicate template instantiations. Only include TTYPE_PLATFORM_UINT64 on non-__LP64__ systems where
 // uint64_t is unsigned long long and we need unsigned long separately.
 #if defined(__linux__) && !defined(__ANDROID__) && !defined(__LP64__)
-#define TTYPE_PLATFORM_UINT64 , (SD_DT_UINT64, PlatformUInt64)
+#define TTYPE_PLATFORM_UINT64 , (UINT64, PlatformUInt64)
 #else
 #define TTYPE_PLATFORM_UINT64
 #endif
 
 #if defined(__linux__) && !defined(__ANDROID__) && defined(HAS_UINT32)
-#define TTYPE_PLATFORM_UINT32 , (SD_DT_UINT32, UInt32Type)
+#define TTYPE_PLATFORM_UINT32 , (UINT32, UInt32Type)
 #else
 #define TTYPE_PLATFORM_UINT32
 #endif
@@ -539,7 +486,7 @@
 // These platform types are for template instantiation only and should be used in BUILD_*_TEMPLATE contexts.
 
 // we have to define bool anyway
-#define SD_BOOL_TYPES (SD_DT_BOOL, bool)
+#define SD_BOOL_TYPES (BOOL, bool)
 
 // On __LP64__ systems (Linux x86-64), uint64_t IS typedef'd to unsigned long, so TTYPE_UINT64
 // (which uses UnsignedLong = uint64_t) already covers unsigned long. Including TTYPE_PLATFORM_UINT64
@@ -563,7 +510,7 @@
 
 #if COUNT_NARG(SD_LONG_TYPES_L) < 1
 #pragma message WARN("it will use int64 as SD_LONG_TYPES")
-#define SD_LONG_TYPES (SD_DT_INT64, LongType)
+#define SD_LONG_TYPES (INT64, LongType)
 #else
 #define SD_LONG_TYPES SKIP_FIRST_COMMA(SD_LONG_TYPES_L)
 #endif
@@ -572,34 +519,34 @@
 #define SD_INDEXING_TYPES SKIP_FIRST_COMMA(SD_INDEXING_TYPES_L)
 #else
 #pragma message WARN("it will use int32 as SD_INDEXING_TYPES")
-#define SD_INDEXING_TYPES (SD_DT_INT32, Int32Type)
+#define SD_INDEXING_TYPES (INT32, Int32Type)
 #endif
 
 #if COUNT_NARG(SD_INTEGER_TYPES_L) < 1
 #pragma message WARN("it will use int32 as SD_INTEGER_TYPES")
-#define SD_INTEGER_TYPES (SD_DT_INT32, Int32Type)
+#define SD_INTEGER_TYPES (INT32, Int32Type)
 #else
 #define SD_INTEGER_TYPES SKIP_FIRST_COMMA(SD_INTEGER_TYPES_L)
 #endif
 
 #if COUNT_NARG(SD_FLOAT_NATIVE_L) < 1
 #pragma message WARN("it will use float32 as SD_FLOAT_NATIVE")
-#define SD_FLOAT_NATIVE (SD_DT_FLOAT32, float)
+#define SD_FLOAT_NATIVE (FLOAT32, float)
 #else
 #define SD_FLOAT_NATIVE SKIP_FIRST_COMMA(SD_FLOAT_NATIVE_L)
 #endif
 
 #if COUNT_NARG(SD_FLOAT_TYPES_L) < 1
 #pragma message WARN("it will use float32 as SD_FLOAT_TYPES")
-#define SD_FLOAT_TYPES (SD_DT_FLOAT32, float)
+#define SD_FLOAT_TYPES (FLOAT32, float)
 #else
 #define SD_FLOAT_TYPES SKIP_FIRST_COMMA(SD_FLOAT_TYPES_L)
 #endif
 
 #if COUNT_NARG(SD_COMMON_TYPES_L) < 1
 #pragma message WARN("it will use float32 as SD_COMMON_TYPES")
-#define SD_COMMON_TYPES (SD_DT_FLOAT32, float)
-#define SD_COMMON_TYPES_EXTENDED (SD_DT_FLOAT32, float)
+#define SD_COMMON_TYPES (FLOAT32, float)
+#define SD_COMMON_TYPES_EXTENDED (FLOAT32, float)
 #else
 #define SD_COMMON_TYPES SKIP_FIRST_COMMA(SD_COMMON_TYPES_L)
 #define SD_COMMON_TYPES_EXTENDED SKIP_FIRST_COMMA(SD_COMMON_TYPES_L)
@@ -607,19 +554,19 @@
 
 #if COUNT_NARG(SD_NUMERIC_TYPES_L) < 1
 #pragma message WARN("it will use float32 as SD_NUMERIC_TYPES")
-#define SD_NUMERIC_TYPES (SD_DT_FLOAT32, float)
+#define SD_NUMERIC_TYPES (FLOAT32, float)
 #else
 #define SD_NUMERIC_TYPES SKIP_FIRST_COMMA(SD_NUMERIC_TYPES_L)
 #endif
 
 #if COUNT_NARG(SD_GENERIC_NUMERIC_TYPES_L) < 1
 #pragma message WARN("it will use float32 as SD_GENERIC_NUMERIC_TYPES")
-#define SD_GENERIC_NUMERIC_TYPES (SD_DT_FLOAT32, float)
+#define SD_GENERIC_NUMERIC_TYPES (FLOAT32, float)
 #else
 #define SD_GENERIC_NUMERIC_TYPES SKIP_FIRST_COMMA(SD_GENERIC_NUMERIC_TYPES_L)
 #endif
 
-#define SD_NATIVE_FLOAT_TYPES  (SD_DT_FLOAT32, float), (SD_DT_DOUBLE, double)
+#define SD_NATIVE_FLOAT_TYPES  (FLOAT32, float), (DOUBLE, double)
 
 
 ///////////FULL LIST FOR THE METHODS WHICH SHOULD BE DEFINED FOR GENERAL TYPES///////////////
@@ -630,14 +577,14 @@
 // Without this fallback, BUILD_SINGLE_SELECTOR in runtime methods would have no cases and crash.
 #if COUNT_NARG(SD_COMMON_TYPES_ALL_L) < 1
 #pragma message WARN("SD_COMMON_TYPES_ALL_L is empty due to selective rendering - using explicit runtime type list")
-#define SD_COMMON_TYPES_ALL (SD_DT_BOOL, bool), (SD_DT_INT8, SignedChar), (SD_DT_INT16, Int16Type), (SD_DT_INT32, Int32Type), (SD_DT_INT64, LongType), (SD_DT_UINT8, UnsignedChar), (SD_DT_UINT16, UInt16Type), (SD_DT_UINT32, UInt32Type), (SD_DT_UINT64, UInt64Type), (SD_DT_HALF, float16), (SD_DT_FLOAT32, float), (SD_DT_DOUBLE, double), (SD_DT_BFLOAT16, bfloat16)
+#define SD_COMMON_TYPES_ALL (BOOL, bool), (INT8, SignedChar), (INT16, Int16Type), (INT32, Int32Type), (INT64, LongType), (UINT8, UnsignedChar), (UINT16, UInt16Type), (UINT32, UInt32Type), (UINT64, UInt64Type), (HALF, float16), (FLOAT32, float), (DOUBLE, double), (BFLOAT16, bfloat16)
 #else
 #define SD_COMMON_TYPES_ALL SKIP_FIRST_COMMA(SD_COMMON_TYPES_ALL_L)
 #endif
 
 // DEPRECATED: SD_ALL_RUNTIME_TYPES was an early attempt to solve this problem, but used wrong format.
 // The fallback above (with COUNT_NARG check) is the correct solution.
-// #define SD_ALL_RUNTIME_TYPES (SD_DT_BOOL, bool), (SD_DT_INT8, SignedChar), (SD_DT_INT16, Int16Type), (SD_DT_INT32, Int32Type), (SD_DT_INT64, LongType), (SD_DT_UINT8, UnsignedChar), (SD_DT_UINT16, UInt16Type), (SD_DT_UINT32, UInt32Type), (SD_DT_UINT64, UInt64Type), (SD_DT_HALF, float16), (SD_DT_FLOAT32, float), (SD_DT_DOUBLE, double), (SD_DT_BFLOAT16, bfloat16)
+// #define SD_ALL_RUNTIME_TYPES (BOOL, bool), (INT8, SignedChar), (INT16, Int16Type), (INT32, Int32Type), (INT64, LongType), (UINT8, UnsignedChar), (UINT16, UInt16Type), (UINT32, UInt32Type), (UINT64, UInt64Type), (HALF, float16), (FLOAT32, float), (DOUBLE, double), (BFLOAT16, bfloat16)
 
 // NOTE: The HAS_* and TTYPE_* macros are now defined earlier in this file (around line 238-387)
 // to ensure they're available when type lists like SD_COMMON_TYPES_ALL_L are expanded.
@@ -757,7 +704,7 @@
 // NOTE: TTYPE_* macros MUST be defined here, after HAS_* redefinitions, not before
 #if SD_SINGLE_TYPE_1_COMPILED
   #define HAS_BOOL 1
-  #define TTYPE_BOOL , (SD_DT_BOOL, bool)
+  #define TTYPE_BOOL , (BOOL, bool)
 #else
   #define TTYPE_BOOL
 #endif
@@ -769,7 +716,7 @@
 #if SD_SINGLE_TYPE_3_COMPILED
   #define HAS_FLOAT16 1
   #define HAS_HALF 1  // Both aliases for the same type
-  #define TTYPE_HALF , (SD_DT_HALF, float16)
+  #define TTYPE_HALF , (HALF, float16)
 #else
   #define TTYPE_HALF
 #endif
@@ -780,63 +727,63 @@
 
 #if SD_SINGLE_TYPE_5_COMPILED
   #define HAS_FLOAT32 1
-  #define TTYPE_FLOAT32 , (SD_DT_FLOAT32, float)
+  #define TTYPE_FLOAT32 , (FLOAT32, float)
 #else
   #define TTYPE_FLOAT32
 #endif
 
 #if SD_SINGLE_TYPE_6_COMPILED
   #define HAS_DOUBLE 1
-  #define TTYPE_DOUBLE , (SD_DT_DOUBLE, double)
+  #define TTYPE_DOUBLE , (DOUBLE, double)
 #else
   #define TTYPE_DOUBLE
 #endif
 
 #if SD_SINGLE_TYPE_7_COMPILED
   #define HAS_INT8 1
-  #define TTYPE_INT8 , (SD_DT_INT8, SignedChar)
+  #define TTYPE_INT8 , (INT8, SignedChar)
 #else
   #define TTYPE_INT8
 #endif
 
 #if SD_SINGLE_TYPE_8_COMPILED
   #define HAS_INT16 1
-  #define TTYPE_INT16 , (SD_DT_INT16, Int16Type)
+  #define TTYPE_INT16 , (INT16, Int16Type)
 #else
   #define TTYPE_INT16
 #endif
 
 #if SD_SINGLE_TYPE_9_COMPILED
   #define HAS_INT32 1
-  #define TTYPE_INT32 , (SD_DT_INT32, Int32Type)
+  #define TTYPE_INT32 , (INT32, Int32Type)
 #else
   #define TTYPE_INT32
 #endif
 
 #if SD_SINGLE_TYPE_10_COMPILED
   #define HAS_INT64 1
-  #define TTYPE_INT64 , (SD_DT_INT64, LongType)
+  #define TTYPE_INT64 , (INT64, LongType)
 #else
   #define TTYPE_INT64
 #endif
 
 #if SD_SINGLE_TYPE_11_COMPILED
   #define HAS_UINT8 1
-  #define TTYPE_UINT8 , (SD_DT_UINT8, UnsignedChar)
+  #define TTYPE_UINT8 , (UINT8, UnsignedChar)
 #else
   #define TTYPE_UINT8
 #endif
 
 #if SD_SINGLE_TYPE_12_COMPILED
   #define HAS_UINT16 1
-  #define TTYPE_UINT16 , (SD_DT_UINT16, UInt16Type)
+  #define TTYPE_UINT16 , (UINT16, UInt16Type)
 #else
   #define TTYPE_UINT16
 #endif
 
 #if SD_SINGLE_TYPE_13_COMPILED
   #define HAS_UINT32 1
-  #define TTYPE_UINT32 , (SD_DT_UINT32, UInt32Type)
+  #define TTYPE_UINT32 , (UINT32, UInt32Type)
 #else
   #define TTYPE_UINT32
 #endif
@@ -844,7 +791,7 @@
 #if SD_SINGLE_TYPE_14_COMPILED
   #define HAS_UNSIGNEDLONG 1
   #define HAS_UINT64 1  // Alternative name
-  #define TTYPE_UINT64 , (SD_DT_UINT64, UnsignedLong)
+  #define TTYPE_UINT64 , (UINT64, UnsignedLong)
 #else
   #define TTYPE_UINT64
 #endif
@@ -859,8 +806,8 @@
 
 #if SD_SINGLE_TYPE_17_COMPILED
   #define HAS_BFLOAT16 1
-  #define TTYPE_BFLOAT , (SD_DT_BFLOAT16, bfloat16)
-  #define TTYPE_BFLOAT16 , (SD_DT_BFLOAT16, bfloat16)
+  #define TTYPE_BFLOAT , (BFLOAT16, bfloat16)
+  #define TTYPE_BFLOAT16 , (BFLOAT16, bfloat16)
 #else
   #define TTYPE_BFLOAT
   #define TTYPE_BFLOAT16
@@ -868,30 +815,30 @@
 
 #if SD_SINGLE_TYPE_50_COMPILED
   #define HAS_UTF8 1
-  #define TTYPE_UTF8 , (SD_DT_UTF8, stdstring)
+  #define TTYPE_UTF8 , (UTF8, stdstring)
 #elif defined(ORIGINAL_HAS_UTF8)
   #define HAS_UTF8 1
-  #define TTYPE_UTF8 , (SD_DT_UTF8, stdstring)
+  #define TTYPE_UTF8 , (UTF8, stdstring)
 #else
   #define TTYPE_UTF8
 #endif
 
 #if SD_SINGLE_TYPE_51_COMPILED
   #define HAS_UTF16 1
-  #define TTYPE_UTF16 , (SD_DT_UTF16, u16string)
+  #define TTYPE_UTF16 , (UTF16, u16string)
 #elif defined(ORIGINAL_HAS_UTF16)
   #define HAS_UTF16 1
-  #define TTYPE_UTF16 , (SD_DT_UTF16, u16string)
+  #define TTYPE_UTF16 , (UTF16, u16string)
 #else
   #define TTYPE_UTF16
 #endif
 
 #if SD_SINGLE_TYPE_52_COMPILED
   #define HAS_UTF32 1
-  #define TTYPE_UTF32 , (SD_DT_UTF32, u32string)
+  #define TTYPE_UTF32 , (UTF32, u32string)
 #elif defined(ORIGINAL_HAS_UTF32)
   #define HAS_UTF32 1
-  #define TTYPE_UTF32 , (SD_DT_UTF32, u32string)
+  #define TTYPE_UTF32 , (UTF32, u32string)
 #else
   #define TTYPE_UTF32
 #endif
@@ -900,7 +847,7 @@
 #define SD_STRING_TYPES_L TTYPE_UTF8 TTYPE_UTF16 TTYPE_UTF32
 #if COUNT_NARG(SD_STRING_TYPES_L) < 1
 #pragma message WARN("it will use utf8 as SD_STRING_TYPES")
-#define SD_STRING_TYPES (SD_DT_UTF8, stdstring)
+#define SD_STRING_TYPES (UTF8, stdstring)
 #else
 #define SD_STRING_TYPES SKIP_FIRST_COMMA(SD_STRING_TYPES_L)
 #endif
