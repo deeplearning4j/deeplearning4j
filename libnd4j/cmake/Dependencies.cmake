@@ -1360,11 +1360,14 @@ function(setup_triton)
     string(REPLACE ";" "_" _TRITON_BACKENDS_KEY "${TRITON_CODEGEN_BACKENDS}")
     set(_TRITON_SHAPE_KEY_RAW "${TRITON_VERSION}-${_TRITON_BACKENDS_KEY}-${CMAKE_BUILD_TYPE}")
     string(REGEX REPLACE "[^A-Za-z0-9_.-]" "_" TRITON_SHAPE_KEY "${_TRITON_SHAPE_KEY_RAW}")
+    # Use DEP_PARALLEL_JOBS (memory-based) instead of hardcoded 8.
+    # Higher parallelism can cause race conditions between TableGen-generated
+    # .h.inc files and compilation of sources that include them.
     set(TRITON_BUILD_COMMAND
             ${CMAKE_COMMAND} -E env
             "SD_SMART_CCACHE_SEGMENT=triton"
             "SD_SMART_CCACHE_SHAPE_KEY=${TRITON_SHAPE_KEY}"
-            ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel 8
+            ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel ${DEP_PARALLEL_JOBS}
     )
     message(STATUS "   Triton smart ccache segment=triton shape=${TRITON_SHAPE_KEY}")
 
