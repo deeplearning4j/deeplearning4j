@@ -579,6 +579,26 @@ function(setup_onednn)
         message(STATUS "   Passing CXX compiler launcher to OneDNN: ${CMAKE_CXX_COMPILER_LAUNCHER}")
     endif()
 
+    # Pass Android cross-compilation args to OneDNN (same pattern as FlatBuffers)
+    if(CMAKE_TOOLCHAIN_FILE)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE})
+    endif()
+    if(CMAKE_SYSTEM_NAME)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_SYSTEM_NAME=${CMAKE_SYSTEM_NAME})
+    endif()
+    if(CMAKE_SYSTEM_VERSION)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_SYSTEM_VERSION=${CMAKE_SYSTEM_VERSION})
+    endif()
+    if(CMAKE_ANDROID_ARCH_ABI)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_ANDROID_ARCH_ABI=${CMAKE_ANDROID_ARCH_ABI})
+    endif()
+    if(CMAKE_ANDROID_NDK)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_ANDROID_NDK=${CMAKE_ANDROID_NDK})
+    endif()
+    if(CMAKE_ANDROID_STL_TYPE)
+        list(APPEND ONEDNN_CMAKE_ARGS -DCMAKE_ANDROID_STL_TYPE=${CMAKE_ANDROID_STL_TYPE})
+    endif()
+
     ExternalProject_Add(onednn_external
             PREFIX            "${ONEDNN_PREFIX}"
             URL               "${ONEDNN_URL}"
