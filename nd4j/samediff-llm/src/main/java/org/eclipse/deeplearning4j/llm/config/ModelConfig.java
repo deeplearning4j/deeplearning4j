@@ -221,7 +221,7 @@ public class ModelConfig {
             return list.stream()
                     .filter(o -> o instanceof Number)
                     .map(o -> ((Number) o).intValue())
-                    .toList();
+                    .collect(java.util.stream.Collectors.toList());
         }
         return List.of();
     }
