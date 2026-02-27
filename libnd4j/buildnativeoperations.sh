@@ -3053,6 +3053,35 @@ else
     # Normal build mode: full compilation and linking
     BUILD_EXIT_CODE=0
 
+    # =========================================================================
+    # POST-CMAKE FIXUP: Strip MSVC PDB flags from Ninja build files on Windows
+    # =========================================================================
+    # CMake's Ninja generator injects -Xcompiler=-FdPath\,-FS into CUDA compile
+    # rules. nvcc misparses the backslash-comma, treating -FS as a second input
+    # file → "nvcc fatal: A single input file is required". We strip these flags
+    # from build.ninja and all .rsp files after cmake configure completes.
+    if [[ "$CHIP" == "cuda" ]] && [[ "$(uname -s)" == MINGW* || "$(uname -s)" == MSYS* || "$(uname -o 2>/dev/null)" == "Msys" ]]; then
+        if [ -f "build.ninja" ]; then
+            print_colored "cyan" "Patching Ninja build files: removing MSVC PDB flags from CUDA rules..."
+            # Count matches before patching for diagnostic output
+            MATCH_COUNT=$(grep -c 'Xcompiler.*-Fd\|Xcompiler.*\/Fd\|Xcompiler.*\/FS' build.ninja 2>/dev/null || echo 0)
+            # Remove -Xcompiler=-Fd...,-FS patterns (backslash-comma form)
+            sed -i 's/ -Xcompiler=-Fd[^ ]*,-FS//g' build.ninja 2>/dev/null || true
+            # Remove -Xcompiler=/Fd... patterns (forward-slash form)
+            sed -i 's/ -Xcompiler=\/Fd[^ ]*//g' build.ninja 2>/dev/null || true
+            # Remove standalone -Xcompiler=/FS
+            sed -i 's/ -Xcompiler=\/FS//g' build.ninja 2>/dev/null || true
+            # Also check rules.ninja if it exists (some cmake versions split rules)
+            if [ -f "rules.ninja" ]; then
+                sed -i 's/ -Xcompiler=-Fd[^ ]*,-FS//g' rules.ninja 2>/dev/null || true
+                sed -i 's/ -Xcompiler=\/Fd[^ ]*//g' rules.ninja 2>/dev/null || true
+                sed -i 's/ -Xcompiler=\/FS//g' rules.ninja 2>/dev/null || true
+            fi
+            REMAINING=$(grep -c 'Xcompiler.*-Fd\|Xcompiler.*\/Fd\|Xcompiler.*\/FS' build.ninja 2>/dev/null || echo 0)
+            print_colored "green" "Patched Ninja build files: removed $MATCH_COUNT MSVC PDB flag occurrences ($REMAINING remaining)"
+        fi
+    fi
+
     if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
         print_colored "cyan" "═══════════════════════════════════════════════════════════"
         print_colored "cyan" "🛡️  OOM KILLER ENABLED - ACTIVE MEMORY PROTECTION"
