@@ -25,8 +25,7 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
-// Thread-local tuning guard
-thread_local bool TuningGuard::_isTuning = false;
+// Thread-local tuning guard - now function-local in header (isTuningRef())
 
 Status NativeOpExecutor::execute(graph::Context& context) {
   if (_op != nullptr) {

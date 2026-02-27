@@ -25,14 +25,18 @@
 
 namespace sd {
 
-// Thread-local instance
-thread_local AttentionWorkspace* AttentionWorkspace::instance_ = nullptr;
+// Thread-local instance accessor (function-local thread_local avoids MSVC C2492)
+AttentionWorkspace*& AttentionWorkspace::instanceRef() {
+  static thread_local AttentionWorkspace* instance_ = nullptr;
+  return instance_;
+}
 
 AttentionWorkspace* AttentionWorkspace::getInstance() {
-  if (instance_ == nullptr) {
-    instance_ = new AttentionWorkspace();
+  auto& inst = instanceRef();
+  if (inst == nullptr) {
+    inst = new AttentionWorkspace();
   }
-  return instance_;
+  return inst;
 }
 
 AttentionWorkspace::AttentionWorkspace() = default;

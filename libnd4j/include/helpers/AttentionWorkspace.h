@@ -127,8 +127,8 @@ class SD_LIB_EXPORT AttentionWorkspace {
 
   void evictIfNeeded(size_t requiredBytes);
 
-  // Thread-local instance
-  static thread_local AttentionWorkspace* instance_;
+  // Thread-local instance accessor (avoids MSVC C2492 with dllexport)
+  static AttentionWorkspace*& instanceRef();
 };
 
 /**

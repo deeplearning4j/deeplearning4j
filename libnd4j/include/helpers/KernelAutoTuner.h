@@ -106,13 +106,17 @@ class SD_LIB_EXPORT NativeOpExecutor : public KernelExecutor {
  */
 class SD_LIB_EXPORT TuningGuard {
  private:
-  static thread_local bool _isTuning;
+  // Function-local thread_local avoids MSVC C2492 with dllexport
+  static bool& isTuningRef() {
+    static thread_local bool _isTuning = false;
+    return _isTuning;
+  }
 
  public:
-  TuningGuard() { _isTuning = true; }
-  ~TuningGuard() { _isTuning = false; }
+  TuningGuard() { isTuningRef() = true; }
+  ~TuningGuard() { isTuningRef() = false; }
 
-  static bool isTuning() { return _isTuning; }
+  static bool isTuning() { return isTuningRef(); }
 
   // Prevent copying
   TuningGuard(const TuningGuard&) = delete;
