@@ -154,6 +154,15 @@ if [[ -d "${FFI_DIR}" ]]; then
     # Build the FFI crate
     CARGO_TARGET_DIR="${FFI_TARGET_DIR}" cargo build --release --manifest-path="${FFI_DIR}/Cargo.toml"
 
+    # When CARGO_BUILD_TARGET is set, cargo outputs to target/<triple>/release/ instead of target/release/
+    # Copy the library to the expected location so CMake can find it
+    if [[ -n "${CARGO_BUILD_TARGET}" && -d "${FFI_TARGET_DIR}/${CARGO_BUILD_TARGET}/release" ]]; then
+        echo "Copying FFI library from target-specific directory: ${CARGO_BUILD_TARGET}"
+        mkdir -p "${FFI_TARGET_DIR}/release"
+        cp "${FFI_TARGET_DIR}/${CARGO_BUILD_TARGET}/release"/libtokenizers_ffi.* "${FFI_TARGET_DIR}/release/" 2>/dev/null || true
+        cp "${FFI_TARGET_DIR}/${CARGO_BUILD_TARGET}/release"/tokenizers_ffi.* "${FFI_TARGET_DIR}/release/" 2>/dev/null || true
+    fi
+
     # Generate C header with cbindgen
     if command_exists cbindgen; then
         echo "Generating C header with cbindgen..."

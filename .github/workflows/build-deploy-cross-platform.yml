@@ -314,7 +314,7 @@ jobs:
           if [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "macosx-arm64" ]; then
             PROTOC_PROFILE="-Posx-aarch64-protoc"
           fi
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy,!:datavec-local,!:deeplearning4j-modelimport,!:platform-tests \
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy,!:datavec-local,!:deeplearning4j-modelimport \
             ${PROTOC_PROFILE} \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
