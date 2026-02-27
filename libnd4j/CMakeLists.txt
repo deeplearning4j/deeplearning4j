@@ -53,10 +53,19 @@ if(CCACHE_PROGRAM)
         execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=sloppiness= ERROR_QUIET)
 
         # Use FORCE to ensure cache is always updated and avoid inconsistent builds
-        set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher" FORCE)
-        set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
+        # On Windows CUDA builds: skip C/CXX caching to reserve all cache space for
+        # expensive .cu compilations. GitHub Actions has limited cache storage and .cu
+        # files take 10-100x longer to compile than .cpp files with MinGW.
+        if(WIN32 AND SD_CUDA)
+            set(CMAKE_C_COMPILER_LAUNCHER "" CACHE STRING "C compiler launcher" FORCE)
+            set(CMAKE_CXX_COMPILER_LAUNCHER "" CACHE STRING "C++ compiler launcher" FORCE)
+            message(STATUS "Windows CUDA: C/CXX ccache disabled to prioritize .cu file caching")
+        else()
+            set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C compiler launcher" FORCE)
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
+        endif()
         # CUDA launcher will be set after project() if needed
-        message(STATUS "✅ Ccache enabled with depend_mode for accurate change detection")
+        message(STATUS "Ccache enabled with depend_mode for accurate change detection")
     endif()
 else()
     message(STATUS "ℹ️  Ccache not found - install with: sudo apt-get install ccache (or brew install ccache)")

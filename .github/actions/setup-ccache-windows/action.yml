@@ -107,11 +107,12 @@ runs:
           Add-Content -Path $env:GITHUB_PATH -Value $ccachePath
 
           # Add to GITHUB_ENV
+          # Note: CMAKE_C/CXX_COMPILER_LAUNCHER are NOT set here — CMakeLists.txt
+          # controls which compilers use ccache. On CUDA builds, C/CXX caching is
+          # disabled to reserve all cache storage for expensive .cu compilations.
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
-          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_C_COMPILER_LAUNCHER=ccache"
-          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
 
           # Verify ccache is accessible
           & $ccacheExe --version
