@@ -171,6 +171,27 @@ if(WIN32 AND SD_CUDA)
 endif()
 
 
+# On Windows CUDA: use nvcc_filter.py wrapper to strip MSVC -Fd/-FS flags from
+# response files. CMake's Ninja generator injects -Xcompiler=-Fd<path>\,-FS into
+# .rsp files for CUDA compilation, and the backslash-comma causes nvcc to misparse
+# -FS as an input file ("A single input file is required"). No CMake variable override
+# can prevent this; we must filter at invocation time.
+if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
+    find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(Python3_FOUND)
+        set(_NVCC_FILTER "${CMAKE_CURRENT_SOURCE_DIR}/cmake/nvcc_filter.py")
+        if(EXISTS "${_NVCC_FILTER}")
+            set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}"
+                CACHE STRING "CUDA compiler launcher (nvcc flag filter)" FORCE)
+            message(STATUS "Windows CUDA: nvcc_filter.py wrapper enabled via ${Python3_EXECUTABLE}")
+        else()
+            message(WARNING "nvcc_filter.py not found at ${_NVCC_FILTER}")
+        endif()
+    else()
+        message(WARNING "Python3 not found - cannot enable nvcc flag filter wrapper")
+    endif()
+endif()
+
 # Configure ccache for CUDA if available
 # Skip on Windows: ccache with nvcc on MSVC mishandles -Xcompiler flags
 # (backslash-comma in -Fd path splits into multiple input files)
