@@ -102,12 +102,13 @@ PLATFORM_IMPL(ctc_loss, ENGINE_CUDA) {
   auto outputLosses = OUTPUT_VARIABLE(0);
   auto context = block.launchContext();
   // in Cudnn Batch is in the middle dimension
-  logitInput->permutei({1, 0, 2});
+  logitInput->permutei({1, 0, 2}, false, true);
   // in Cudnn targets are concantenated instead of batched as matrix
   auto labels = getConcatTargets(*targetLabels, *targetLabelLengths);
   const int32_t *ldata = labels.data();
-  auto emptyGrads = NDArrayFactory::empty<float>();
-  cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, *outputLosses, emptyGrads);
+  auto emptyGrads = NDArrayFactory::empty(FLOAT32);
+  cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, *outputLosses, *emptyGrads);
+  delete emptyGrads;
   return Status::OK;
 }
 
@@ -152,15 +153,15 @@ PLATFORM_IMPL(ctc_loss_grad, ENGINE_CUDA) {
                "CtcLoss Gradient: wrong shape of output array, expected is %s but got %s instead !",
                ShapeUtils::shapeAsString(logitInput).c_str(), ShapeUtils::shapeAsString(outputGradients).c_str());
   // in Cudnn Batch is in the middle dimension
-  logitInput->permutei({1, 0, 2});
-  outputGradients->permutei({1, 0, 2});
+  logitInput->permutei({1, 0, 2}, false, true);
+  outputGradients->permutei({1, 0, 2}, false, true);
   // in Cudnn targets are concantenated instead of batched as matrix
   auto labels = getConcatTargets(*targetLabels, *targetLabelLengths);
   const int32_t *ldata = labels.data();
   auto tempLosses = NDArrayFactory::create<float>('c', {logitInputLengths->sizeAt(0)});
   cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, tempLosses, *outputGradients);
   // restore grads shape from {T, BATCH, C} -> {BATCHS, T, C}
-  outputGradients->permutei({1, 0, 2});
+  outputGradients->permutei({1, 0, 2}, false, true);
 
   return Status::OK;
 }
