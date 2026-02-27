@@ -264,7 +264,7 @@ jobs:
           # (GCC-style flags instead of MSVC-style /I /O2 /link flags)
           MINGW_OVERRIDE=""
           if [ "${{ matrix.os }}" == "windows" ]; then
-            MINGW_OVERRIDE="-Djavacpp.platform.build=windows-x86_64-mingw"
+            MINGW_OVERRIDE="-Djavacpp.platform.build=windows-x86_64-mingw -Djavacpp.platform.compiler=g++"
           fi
 
           command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
