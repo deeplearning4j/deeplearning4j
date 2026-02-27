@@ -37,6 +37,11 @@
     <name>tokenizers-native-preset</name>
     <description>JavaCPP presets for tokenizers native bindings</description>
 
+    <properties>
+        <!-- JavaCPP build properties file (override to windows-x86_64-mingw for MinGW builds) -->
+        <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.bytedeco</groupId>
@@ -104,7 +109,7 @@
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <configuration>
-                    <properties>${javacpp.platform}</properties>
+                    <properties>${javacpp.platform.build}</properties>
                     <propertyKeysAndValues>
                         <property>
                             <name>platform.root</name>

@@ -41,6 +41,8 @@
         <!-- Platform-specific output path for native binaries -->
         <javacpp.build.output.path>${project.build.directory}/classes/org/eclipse/deeplearning4j/tokenizers/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <javacpp.platform.library.path>natives/${javacpp.platform}</javacpp.platform.library.path>
+        <!-- JavaCPP build properties file (override to windows-x86_64-mingw for MinGW builds) -->
+        <javacpp.platform.build>${javacpp.platform}</javacpp.platform.build>
         <module.name>org.eclipse.deeplearning4j.tokenizers</module.name>
     </properties>
 
@@ -147,7 +149,7 @@
                     </dependency>
                 </dependencies>
                 <configuration>
-                    <properties>${javacpp.platform}</properties>
+                    <properties>${javacpp.platform.build}</properties>
                     <outputDirectory>${javacpp.build.output.path}</outputDirectory>
                     <propertyKeysAndValues>
                         <property>

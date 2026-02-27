@@ -260,26 +260,17 @@ jobs:
             [ -d /opt/cmake/bin ] && export PATH=/opt/cmake/bin:$PATH
           fi
 
-          # On Windows with MSYS2/MinGW, override JavaCPP compiler from cl.exe to g++
-          # and ensure JNI headers are findable
-          COMPILER_OVERRIDE=""
+          # On Windows with MSYS2/MinGW, use the mingw JavaCPP properties
+          # (GCC-style flags instead of MSVC-style /I /O2 /link flags)
+          MINGW_OVERRIDE=""
           if [ "${{ matrix.os }}" == "windows" ]; then
-            # Convert JAVA_HOME to Unix-style path (C:\... -> /c/...) to avoid
-            # colon conflicts in CPLUS_INCLUDE_PATH and shell path handling
-            JH_UNIX=$(cygpath -u "${JAVA_HOME}")
-            export CPLUS_INCLUDE_PATH="${JH_UNIX}/include:${JH_UNIX}/include/win32:${CPLUS_INCLUDE_PATH:-}"
-            # Also set CXXFLAGS with -I flags as belt-and-suspenders in case
-            # CPLUS_INCLUDE_PATH isn't propagated to JavaCPP's compiler subprocess
-            export CXXFLAGS="-I${JH_UNIX}/include -I${JH_UNIX}/include/win32 ${CXXFLAGS:-}"
-            COMPILER_OVERRIDE="-Djavacpp.platform.compiler=g++"
-            echo "JNI include paths: ${JH_UNIX}/include, ${JH_UNIX}/include/win32"
-            ls "${JH_UNIX}/include/jni.h" 2>/dev/null && echo "jni.h found" || echo "WARNING: jni.h not found at ${JH_UNIX}/include/jni.h"
+            MINGW_OVERRIDE="-Djavacpp.platform.build=windows-x86_64-mingw"
           fi
 
           command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
             --also-make \
             -Djavacpp.platform=${{ matrix.platform }} \
-            ${COMPILER_OVERRIDE} \
+            ${MINGW_OVERRIDE} \
             -DskipTestResourceEnforcement=true \
             -Dmaven.javadoc.failOnError=false \
             --no-transfer-progress --batch-mode \
