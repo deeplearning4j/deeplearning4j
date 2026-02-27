@@ -175,7 +175,7 @@ PLATFORM_IMPL(biasadd_bp, ENGINE_CUDA) {
     }
   }
 
-  gradO->reduceAlongDimension(reduce::Sum, *gradB, &reduceDims, false);
+  gradO->reduceAlongDimension(reduce::Sum, gradB, &reduceDims, false);
 
   return Status::OK;
 }

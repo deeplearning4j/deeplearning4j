@@ -43,7 +43,9 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   CHECK_CUDNN_FAILURE(cudnnSetStream(*handle, *context->getCudaStream()));
 
-  const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
+  auto* xShapePtr = input->getShapeAsVectorInt();
+  const std::vector<int> xShape = *xShapePtr;  // input and output have same shapes
+  delete xShapePtr;
 
   std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
@@ -127,7 +129,9 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
   cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
 
-  const std::vector<int> xShape = input->getShapeAsVectorInt();  // input and output have same shapes
+  auto* xShapePtr2 = input->getShapeAsVectorInt();
+  const std::vector<int> xShape = *xShapePtr2;  // input and output have same shapes
+  delete xShapePtr2;
 
   std::vector<int> paramsShape, paramsStrides;  // mean, variance, gamma and beta have same shapes
   if (isSpatialMode) {                          // 1xCx1x1
@@ -276,8 +280,8 @@ PLATFORM_IMPL(batchnorm, ENGINE_CUDA) {
   if (needPermut) {  // if NHWC
     std::vector<LongType> perm =
         inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
-    tmpInput.reset(input->permute(perm));  // permute() already returns NDArray*
-    tmpOutput.reset(output->permute(perm));
+    tmpInput.reset(input->permute(perm, false, false));
+    tmpOutput.reset(output->permute(perm, false, false));
     input = tmpInput.get();
     output = tmpOutput.get();
   }
@@ -451,9 +455,9 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CUDA) {
   if (needPermut) {  // if NHWC
     std::vector<LongType> perm =
         inRank == 4 ? std::vector<LongType>({0, 3, 1, 2}) : std::vector<LongType>({0, 4, 1, 2, 3});  // NHWC -> NCHW
-    tmpInput.reset(input->permute(perm));  // permute() already returns NDArray*
-    tmpGradO.reset(gradO->permute(perm));
-    tmpGradI.reset(gradI->permute(perm));
+    tmpInput.reset(input->permute(perm, false, false));
+    tmpGradO.reset(gradO->permute(perm, false, false));
+    tmpGradI.reset(gradI->permute(perm, false, false));
     input = tmpInput.get();
     gradO = tmpGradO.get();
     gradI = tmpGradI.get();
