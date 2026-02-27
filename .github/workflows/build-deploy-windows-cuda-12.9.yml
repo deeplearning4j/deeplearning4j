@@ -11,7 +11,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 2
+        default: 1
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
@@ -87,7 +87,7 @@ jobs:
           - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '1' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -197,7 +197,7 @@ jobs:
             $modules=":nd4j-cuda-12.9-preset,:nd4j-cuda-12.9,libnd4j,:nd4j-cuda-12.9-platform"
            }
           
-          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads || '4' }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads || '1' }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
           
           if ( "${{ matrix.helper }}" -eq "compile" ) {
                 $mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.triton=ON -Dlibnd4j.classifier=windows-x86_64-cuda-12.9-compile"

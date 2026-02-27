@@ -105,7 +105,7 @@ jobs:
             experimental: true
             name: Extra maven flags to use as part of the build
 
-          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '1' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
