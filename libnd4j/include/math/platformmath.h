@@ -1945,10 +1945,11 @@ SD_INLINE SD_HOST_DEVICE sd::LongType _rotate_right(sd::LongType value, sd::Long
 // On macOS ARM64, unsigned long != uint64_t (unsigned long long), so we need
 // a specialization for unsigned long that doesn't conflict with the template.
 // On Linux ARM64/x86_64, unsigned long == uint64_t so this is the uint64_t specialization.
-#if (defined(__APPLE__) && defined(__aarch64__)) || defined(_MSC_VER)
+#if (defined(__APPLE__) && defined(__aarch64__)) || defined(_MSC_VER) || defined(__MINGW32__) || defined(__MINGW64__)
 // Platforms where unsigned long != uint64_t:
 // - macOS ARM64: uint64_t is unsigned long long
 // - MSVC (Windows): unsigned long is 32-bit, uint64_t is unsigned long long
+// - MinGW (Windows): same as MSVC — unsigned long is 32-bit
 template <>
 SD_INLINE SD_HOST_DEVICE unsigned long _rotate_left(unsigned long value, unsigned long shift) {
  unsigned long result = value << shift | value >> (sizeof(unsigned long) * 8 - shift);

@@ -356,10 +356,13 @@ jobs:
                   call "%GITHUB_WORKSPACE%\mvn-command.bat"
                )
           )
-          
+          set MVN_EXIT=%ERRORLEVEL%
+
           ccache --version -sv
           df -h
           wmic pagefile list /format:list
+
+          exit /b %MVN_EXIT%
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
