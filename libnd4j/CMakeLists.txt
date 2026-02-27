@@ -117,11 +117,57 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-DNDEBUG" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_FLAGS_MINSIZEREL "-DNDEBUG" CACHE STRING "" FORCE)
 
-    # 4. Custom compile rule with comma-separated -Xcompiler flags
+    # 4. Strip -Fd and -FS flags from all CUDA flag variables.
+    # CMake's MSVC detection puts -Xcompiler=-FdPath\,-FS into CMAKE_CUDA_FLAGS
+    # during project() initialization. These end up in Ninja's .rsp response files.
+    # nvcc misparses the backslash-comma as an escape, treating -FS as a second
+    # input file → "A single input file is required for a non-link phase".
+    foreach(_cuda_flags_var
+            CMAKE_CUDA_FLAGS
+            CMAKE_CUDA_FLAGS_DEBUG
+            CMAKE_CUDA_FLAGS_RELEASE
+            CMAKE_CUDA_FLAGS_RELWITHDEBINFO
+            CMAKE_CUDA_FLAGS_MINSIZEREL)
+        if(DEFINED ${_cuda_flags_var})
+            # Remove -Xcompiler flags containing -Fd or -FS (various formats)
+            string(REGEX REPLACE "-Xcompiler[=,][^ ]*-Fd[^ ]*" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            string(REGEX REPLACE "-Xcompiler[=,][^ ]*-FS[^ ]*" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            string(REGEX REPLACE "-Xcompiler[=,][^ ]*/Fd[^ ]*" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            string(REGEX REPLACE "-Xcompiler[=,][^ ]*/FS[^ ]*" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # Also remove bare /Fd and /FS (in case passed without -Xcompiler)
+            string(REGEX REPLACE "/Fd[^ ]*" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            string(REGEX REPLACE "/FS" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # Clean up multiple spaces
+            string(REGEX REPLACE "  +" " " ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            string(STRIP "${${_cuda_flags_var}}" ${_cuda_flags_var})
+            set(${_cuda_flags_var} "${${_cuda_flags_var}}" CACHE STRING "" FORCE)
+        endif()
+    endforeach()
+
+    # 5. Custom compile rule with comma-separated -Xcompiler flags
     set(CMAKE_CUDA_COMPILE_OBJECT
             "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=/bigobj,/EHsc,/MD -o <OBJECT> -c <SOURCE>"
             CACHE STRING "" FORCE)
-    message(STATUS "Applied Windows CUDA compile fix: disabled MSVC PDB flags + custom compile rule")
+
+    # Debug: dump ALL variables that could contribute to CUDA compile command
+    message(STATUS "=== Windows CUDA Flag Diagnostics ===")
+    message(STATUS "CMAKE_CUDA_FLAGS: [${CMAKE_CUDA_FLAGS}]")
+    message(STATUS "CMAKE_CUDA_FLAGS_RELEASE: [${CMAKE_CUDA_FLAGS_RELEASE}]")
+    message(STATUS "CMAKE_CUDA_FLAGS_DEBUG: [${CMAKE_CUDA_FLAGS_DEBUG}]")
+    message(STATUS "CMAKE_CUDA_COMPILE_OBJECT: [${CMAKE_CUDA_COMPILE_OBJECT}]")
+    message(STATUS "CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL: [${CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL}]")
+    message(STATUS "CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_Embedded: [${CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_Embedded}]")
+    message(STATUS "CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_ProgramDatabase: [${CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_ProgramDatabase}]")
+    message(STATUS "CMAKE_MSVC_DEBUG_INFORMATION_FORMAT: [${CMAKE_MSVC_DEBUG_INFORMATION_FORMAT}]")
+    message(STATUS "CMAKE_MSVC_RUNTIME_LIBRARY: [${CMAKE_MSVC_RUNTIME_LIBRARY}]")
+    # Check all CUDA compile options vars
+    get_cmake_property(_allvars VARIABLES)
+    foreach(_v IN LISTS _allvars)
+        if(_v MATCHES "^CMAKE_CUDA_COMPILE_OPTIONS")
+            message(STATUS "${_v}: [${${_v}}]")
+        endif()
+    endforeach()
+    message(STATUS "=== End Windows CUDA Flag Diagnostics ===")
 endif()
 
 
