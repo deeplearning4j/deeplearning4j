@@ -257,8 +257,9 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
     // refill output
     if (dataFormat == 1) {
       std::vector<sd::LongType> permute = {1,0,2};
-      NDArray assign = argOutput->permute(permute, 0, false);
-      outputActivations->assign(&assign);
+      NDArray* assign = argOutput->permute(permute, 0, false);
+      outputActivations->assign(assign);
+      delete assign;
     }
   }
   NDArray::registerSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState},

@@ -310,11 +310,12 @@ PLATFORM_IMPL(conv2d, ENGINE_CUDA) {
     std::vector<LongType> nhwcDims = {3, 0, 1, 2};
 
     // Use the appropriate one in the call
-    NDArray assign = weights->permute(
+    NDArray* assign = weights->permute(
         isNCHW ? nchwDims : nhwcDims,
         true,   // copyToNewBuff
         true);  // resetStrides
-    newWeights->assign(&assign);  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
+    newWeights->assign(assign);  // (kH, kW, iC, oC  --> oC, iC, kH, kW) or (kH, kW, iC, oC  --> oC, kH, kW, iC)
+    delete assign;
   }
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -448,12 +449,13 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CUDA) {
     // Create named vectors as lvalues
     std::vector<LongType> nchwDims = {3, 2, 0, 1};
     std::vector<LongType> nhwcDims = {3, 0, 1, 2};
-    NDArray assign = weights->permute(
+    NDArray* assign = weights->permute(
                                 isNCHW ? nchwDims : nhwcDims,
                                 true,   // copyToNewBuff
                                 true);
     // Use the appropriate one in the call
-    newWeights->assign(&assign);
+    newWeights->assign(assign);
+    delete assign;
   }
 
   NDArray* newInput = input;

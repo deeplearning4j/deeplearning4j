@@ -319,12 +319,13 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CUDA) {
     std::vector<LongType> format0Permute = {4, 3, 0, 1, 2};
     std::vector<LongType> format1Permute = {0, 4, 1, 2, 3};
 
-    NDArray assign = weights->permute(
+    NDArray* assign = weights->permute(
                                 0 == wFormat ? format0Permute : format1Permute,
                                 true,   // copyToNewBuff
                                 true);
     // Use the appropriate one in the permute call
-    newWeights->assign(&assign); // resetStrides
+    newWeights->assign(assign); // resetStrides
+    delete assign;
   }
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -463,13 +464,14 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
     newGradW = tmpGradW.get();
     newWeights = tmpWeights.get();
 
-    NDArray assign = weights->permute(
+    NDArray* assign = weights->permute(
                                 isNCDHW ? ncdhwPermute : ndhwcPermute,
                                 true,   // copyToNewBuff
                                 true);
     // Use the appropriate one in the permute call
-    newWeights->assign(&assign); // resetStrides (kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW) or (kD, kH, kW,
+    newWeights->assign(assign); // resetStrides (kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW) or (kD, kH, kW,
                                                         // iC, oC  --> oC, kD, kH, kW, iC)
+    delete assign;
   }
 
   NDArray* newInput = input;

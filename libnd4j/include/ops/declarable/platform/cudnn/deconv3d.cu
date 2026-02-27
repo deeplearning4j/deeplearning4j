@@ -307,8 +307,9 @@ PLATFORM_IMPL(deconv3d, ENGINE_CUDA) {
     tmpWeights.reset(new NDArray(weights->ordering(), newShape, weights->dataType(), weights->getContext()));
     newWeights = tmpWeights.get();
     std::vector<LongType> permDims = {4, 3, 0, 1, 2};
-    NDArray permuted = weights->permute(permDims, true, true);
-    newWeights->assign(&permuted);
+    NDArray* permuted = weights->permute(permDims, true, true);
+    newWeights->assign(permuted);
+    delete permuted;
   }
 
   deconv3dCUDNN(block.launchContext(), input, newWeights, bias, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW,
@@ -391,8 +392,9 @@ PLATFORM_IMPL(deconv3d_bp, ENGINE_CUDA) {
     newWeights = tmpWeights.get();
     newGradW = tmpGradW.get();
     std::vector<LongType> permDims = {4, 3, 0, 1, 2};
-    NDArray permuted = weights->permute(permDims, true, true);
-    newWeights->assign(&permuted);
+    NDArray* permuted = weights->permute(permDims, true, true);
+    newWeights->assign(permuted);
+    delete permuted;
   }
 
   deconv3dBpCUDNN(block.launchContext(), input, newWeights, gradO, gradI, newGradW, gradB,

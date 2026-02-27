@@ -332,8 +332,9 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
   std::vector<sd::LongType > perm =  {iC, mC, kH, kW};
   NDArray * uNewWeights =  new NDArray(weights->ordering(),perm, weights->dataType(), weights->getContext());
 
-  NDArray assign = weights->permute(wPermut,false,false);
-  uNewWeights->assign(&assign);
+  NDArray* assign = weights->permute(wPermut,false,false);
+  uNewWeights->assign(assign);
+  delete assign;
   std::unique_ptr<NDArray> tmpInput = {};
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -459,8 +460,9 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
   NDArray * uNewWeights =
       new NDArray(weights->ordering(),shape, weights->dataType(), weights->getContext());
 
-  NDArray assign = weights->permute(wPermut,false,false);
-  uNewWeights->assign(&assign);
+  NDArray* assign = weights->permute(wPermut,false,false);
+  uNewWeights->assign(assign);
+  delete assign;
 
   NDArray* newInput = input;
   NDArray* newGradI = gradI;

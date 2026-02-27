@@ -255,7 +255,10 @@ PLATFORM_IMPL(conv1d, ENGINE_CUDA) {
   const LongType oW = isNCW ? output->sizeAt(2) : output->sizeAt(1);
 
   if (paddingMode)
-    ConvolutionUtils::calcPadding1D(pW, oW, iW, kW, sW, dW);
+    {
+      const LongType eKW = (kW - 1) * dW + 1;
+      pW = ((oW - 1) * sW + eKW - iW) / 2;
+    }
 
   // Reshape weights to cuDNN format [oC, iC, 1, kW]
   std::unique_ptr<NDArray> tmpWeights;
@@ -267,8 +270,9 @@ PLATFORM_IMPL(conv1d, ENGINE_CUDA) {
     tmpWeights.reset(new NDArray(weights->ordering(), newShape, weights->dataType(), weights->getContext()));
     newWeights = tmpWeights.get();
     std::vector<LongType> permDims = {2, 1, 0};
-    NDArray permuted = weights->permute(permDims, true, true);
-    newWeights->assign(&permuted);
+    NDArray* permuted = weights->permute(permDims, true, true);
+    newWeights->assign(permuted);
+    delete permuted;
   }
 
   conv1dCUDNN(block.launchContext(), input, newWeights, bias, output, kW, sW, pW, dW, paddingMode, isNCW, wFormat);
@@ -331,7 +335,10 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CUDA) {
   const LongType oW = isNCW ? gradO->sizeAt(2) : gradO->sizeAt(1);
 
   if (paddingMode)
-    ConvolutionUtils::calcPadding1D(pW, oW, iW, kW, sW, dW);
+    {
+      const LongType eKW = (kW - 1) * dW + 1;
+      pW = ((oW - 1) * sW + eKW - iW) / 2;
+    }
 
   std::unique_ptr<NDArray> tmpWeights, tmpGradW;
   NDArray *newWeights = weights, *newGradW = gradW;
@@ -343,8 +350,9 @@ PLATFORM_IMPL(conv1d_bp, ENGINE_CUDA) {
     newWeights = tmpWeights.get();
     newGradW = tmpGradW.get();
     std::vector<LongType> permDims = {2, 1, 0};
-    NDArray permuted = weights->permute(permDims, true, true);
-    newWeights->assign(&permuted);
+    NDArray* permuted = weights->permute(permDims, true, true);
+    newWeights->assign(permuted);
+    delete permuted;
   }
 
   conv1dBpCUDNN(block.launchContext(), input, newWeights, gradO, gradI, newGradW, gradB,

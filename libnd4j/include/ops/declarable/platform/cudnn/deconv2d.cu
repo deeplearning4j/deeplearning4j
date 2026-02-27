@@ -301,8 +301,9 @@ PLATFORM_IMPL(deconv2d, ENGINE_CUDA) {
     tmpWeights.reset(new NDArray(weights->ordering(), newShape, weights->dataType(), weights->getContext()));
     newWeights = tmpWeights.get();
     std::vector<LongType> permDims = isNCHW ? std::vector<LongType>({3, 2, 0, 1}) : std::vector<LongType>({3, 0, 1, 2});
-    NDArray permuted = weights->permute(permDims, true, true);
-    newWeights->assign(&permuted);
+    NDArray* permuted = weights->permute(permDims, true, true);
+    newWeights->assign(permuted);
+    delete permuted;
   }
 
   deconv2dCUDNN(block.launchContext(), input, newWeights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
@@ -381,8 +382,9 @@ PLATFORM_IMPL(deconv2d_bp, ENGINE_CUDA) {
     newWeights = tmpWeights.get();
     newGradW = tmpGradW.get();
     std::vector<LongType> permDims = isNCHW ? std::vector<LongType>({3, 2, 0, 1}) : std::vector<LongType>({3, 0, 1, 2});
-    NDArray permuted = weights->permute(permDims, true, true);
-    newWeights->assign(&permuted);
+    NDArray* permuted = weights->permute(permDims, true, true);
+    newWeights->assign(permuted);
+    delete permuted;
   }
 
   deconv2dBpCUDNN(block.launchContext(), input, newWeights, gradO, gradI, newGradW, gradB,
