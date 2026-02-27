@@ -96,18 +96,19 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# On MSVC + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
+# On Windows + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
 # nvcc misparses this (backslash escapes comma, -FS becomes input file),
 # failing with "A single input file is required".
-# Fix: Use CMP0141 policy (cmake 3.25+) to use /ZI instead of /Fd, or
-# disable MSVC debug information format for CUDA entirely.
-if(MSVC AND SD_CUDA)
-    if(POLICY CMP0141)
-        cmake_policy(SET CMP0141 NEW)
-        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "")
-    endif()
-    # Also add /FS separately to avoid the combined -Fd,-FS problem
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/FS")
+# NOTE: We check WIN32, not MSVC, because the C/CXX compiler may be MinGW g++
+# while nvcc still uses MSVC cl.exe as its host compiler.
+# The pre-project CMAKE_CUDA_COMPILE_OBJECT override gets reset by project(),
+# so we must override it here, AFTER project().
+if(WIN32 AND SD_CUDA)
+    # Override the CUDA compile command to avoid the -Fd,-FS combination
+    set(CMAKE_CUDA_COMPILE_OBJECT
+            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE> --compiler-options \"/bigobj /EHsc /MD /FS /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH\""
+            CACHE STRING "" FORCE)
+    message(STATUS "Applied Windows CUDA compile command fix (avoiding -Fd,-FS nvcc parse error)")
 endif()
 
 
