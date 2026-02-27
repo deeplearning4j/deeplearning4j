@@ -1379,7 +1379,7 @@ function(setup_triton)
     # NegFOp/TanhOp patterns needed by our IR.
     set(TRITON_PATCH_SCRIPT "${CMAKE_SOURCE_DIR}/cmake/patch_triton.cmake")
     set(_TRITON_PATCH_ARGS
-        -DSOURCE_DIR=<SOURCE_DIR>
+        -DSOURCE_DIR=${TRITON_PREFIX}/src/triton-${TRITON_VERSION}
     )
     if(NOT "amd" IN_LIST TRITON_CODEGEN_BACKENDS)
         list(APPEND _TRITON_PATCH_ARGS -DREMOVE_AMD=ON)
