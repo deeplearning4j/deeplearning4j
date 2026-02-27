@@ -127,10 +127,25 @@ jobs:
       - uses: ./.github/actions/install-cmake-linux
         if: matrix.os == 'linux' && matrix.platform == 'linux-x86_64' && steps.cache-cmake.outputs.cache-hit != 'true'
 
-      - name: Install cmake from apt (Linux ARM64)
+      - name: Install cmake (Linux ARM64)
         if: matrix.os == 'linux' && matrix.platform == 'linux-arm64'
         shell: bash
         run: sudo apt-get install -y cmake
+
+      - name: Install protoc 3.21.7 (ARM64)
+        if: matrix.platform == 'linux-arm64' || matrix.platform == 'macosx-arm64'
+        shell: bash
+        run: |
+          PROTOC_VERSION=21.7
+          if [ "${{ matrix.os }}" == "linux" ]; then
+            PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-aarch_64.zip
+          else
+            PROTOC_ZIP=protoc-${PROTOC_VERSION}-osx-aarch_64.zip
+          fi
+          curl -fsSL "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}" -o /tmp/protoc.zip
+          sudo unzip -o /tmp/protoc.zip -d /usr/local bin/protoc
+          sudo chmod +x /usr/local/bin/protoc
+          protoc --version
 
       # ── macOS build deps ──
       # NOTE: Do NOT install brew protobuf — it is v4.x which generates code
@@ -293,8 +308,14 @@ jobs:
           # - libnd4j: C++ native ops (built by per-platform native workflows)
           # - libtokenizers: just built and deployed in previous step
           # - tokenizers-native-preset, tokenizers-native: just built and deployed
+          # - python4j/datavec-local: depend on cpython native bindings
           # - codegen modules not needed for deployment
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy \
+          PROTOC_PROFILE=""
+          if [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "macosx-arm64" ]; then
+            PROTOC_PROFILE="-Posx-aarch64-protoc"
+          fi
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy,!:datavec-local \
+            ${PROTOC_PROFILE} \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
             -Dmaven.javadoc.failOnError=false \
