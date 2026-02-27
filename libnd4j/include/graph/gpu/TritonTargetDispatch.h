@@ -51,6 +51,8 @@ struct TritonCompiledBinary {
   std::string targetArch;   // e.g. "sm_89", "gfx1100"
   int numWarps;
   int sharedMemBytes;
+  int globalScratchBytes;      // Global scratch memory required (Triton 3.6.0+)
+  int globalScratchAlignment;  // Alignment for global scratch allocation
 };
 
 /**

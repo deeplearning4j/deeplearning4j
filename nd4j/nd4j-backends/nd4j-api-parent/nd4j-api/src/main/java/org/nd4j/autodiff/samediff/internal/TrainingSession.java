@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
+import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
@@ -187,21 +188,23 @@ public class TrainingSession extends InferenceSession {
         if (!dspHandled) {
             log.debug("Using standard execution path for training");
 
-            // Execute forward+backward pass via output().
-            // When listeners are present (which is always true during training — at minimum
-            // ScoreListener/HistoryListener), the per-op execution path is used, which calls
-            // getOutputs() on each op. Our getOutputs() override applies updaters inline
-            // (gradient → updater → param update) as each gradient op is computed.
-            // Therefore we must NOT apply updaters again here.
-            //
-            // Loss capture also happens inline in getOutputs() — but we also extract from
-            // results here as a safety net for the DAG path (listeners empty → DSP).
+            // Execute forward+backward pass via output(). The new DAG-based execution engine
+            // (executeOperations → executeNode) bypasses TrainingSession.getOutputs() entirely,
+            // so loss capture and updater application must happen here post-execution.
             Map<String, INDArray> results = output(outputVars, placeholders, batch, requiredActivations, listeners, at);
 
-            // NOTE: Do NOT extract losses or apply updaters here — getOutputs() already
-            // handled both inline during per-op execution. Doing it again would:
-            //   - Double-count loss values (currIterLoss[i] += l twice)
-            //   - Double-update parameters, causing divergence
+            // Extract loss values from results
+            for (Map.Entry<String, Integer> entry : lossVarsToLossIdx.entrySet()) {
+                INDArray arr = results.get(entry.getKey());
+                if (arr != null) {
+                    double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
+                    currIterLoss[entry.getValue()] += l;
+                    log.debug("Captured loss '{}' = {} (lossIdx={})", entry.getKey(), l, entry.getValue());
+                }
+            }
+
+            // Apply updaters and update parameters post-execution
+            applyUpdatersFromResults(results, at);
         }
 
 
@@ -320,14 +323,29 @@ public class TrainingSession extends InferenceSession {
      * so updater application must happen post-execution on the result map.
      */
     private void applyUpdatersFromResults(Map<String, INDArray> results, At at) {
+        int applied = 0;
+        int skipped = 0;
         for (Map.Entry<String, String> entry : gradVarToVarMap.entrySet()) {
             String gradName = entry.getKey();
             INDArray gradArr = results.get(gradName);
             if (gradArr == null) {
+                log.warn("Gradient '{}' not found in results (available keys: {})", gradName,
+                    results.keySet().stream().limit(20).collect(java.util.stream.Collectors.toList()));
+                skipped++;
                 continue;
+            }
+            if (at.iteration() < 5) {
+                log.trace("Raw gradient '{}' for var '{}': shape={}, mean={}, absMax={}, min={}, max={}",
+                    gradName, entry.getValue(), java.util.Arrays.toString(gradArr.shape()),
+                    gradArr.meanNumber(), gradArr.ameanNumber(),
+                    gradArr.minNumber(), gradArr.maxNumber());
             }
             // Dup the gradient to avoid modifying the execution engine's cached arrays in-place
             applyUpdaterForGradient(entry.getValue(), gradName, gradArr.dup(), at);
+            applied++;
+        }
+        if (at.iteration() < 5) {
+            log.trace("applyUpdatersFromResults: applied={}, skipped={}, gradVarToVarMap.size={}", applied, skipped, gradVarToVarMap.size());
         }
     }
 
@@ -401,7 +419,16 @@ public class TrainingSession extends InferenceSession {
             }
         }
 
+        if (at.iteration() == 0) {
+            log.trace("Pre-updater grad '{}': shape={}, values={}", varName,
+                java.util.Arrays.toString(gradArr.shape()), gradArr.toStringFull());
+        }
+
         u.applyUpdater(gradArr, at.iteration(), at.epoch());
+
+        if (at.iteration() == 0) {
+            log.trace("Post-updater grad '{}': values={}", varName, gradArr.toStringFull());
+        }
 
         // Post-apply regularization (weight decay)
         if (r != null && r.size() > 0) {

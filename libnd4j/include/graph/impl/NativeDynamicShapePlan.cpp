@@ -2236,6 +2236,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               cb.neverSkipCopy = true;
             }
 
+            // KV cache inputs: data changes each step via kvScatter even though the
+            // GPU pointer stays the same.  configureKvScatter() sets neverSkipCopy
+            // on the segments that exist at configuration time, but those segments
+            // are destroyed and rebuilt when shapes freeze.  Re-apply the flag here
+            // so that capture buffers created AFTER segment rebuild still copy KV data.
+            if (kvCacheRetentionEnabled_) {
+              for (int km = 0; km < kvCacheNumMappings_; km++) {
+                if (extIdx == kvCacheMappings_[km].pastInputExternalIdx) {
+                  cb.neverSkipCopy = true;
+                  break;
+                }
+              }
+            }
+
             extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
             seg.captureBuffers.push_back(std::move(cb));
           }

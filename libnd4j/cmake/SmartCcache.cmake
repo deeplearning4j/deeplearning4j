@@ -271,8 +271,35 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     fi
 fi
 
-# Execute ccache with all original arguments
-exec \"\$CCACHE\" \"\$@\"
+# ==============================================================================
+# Expand nvcc --options-file (response file) arguments inline.
+# ccache strips --options-file during preprocessing, losing all -I paths.
+# This causes preprocessor errors and zero cache hits for CUDA files.
+# We read the response file contents and splice them into the argument list
+# so ccache sees the actual flags on the command line.
+# ==============================================================================
+EXPANDED_ARGS=()
+while [[ \$# -gt 0 ]]; do
+    if [[ \"\$1\" == \"--options-file\" && -n \"\$2\" && -f \"\$2\" ]]; then
+        # Read the response file and split into args (handles quoted paths)
+        while IFS= read -r line || [[ -n \"\$line\" ]]; do
+            # Skip empty lines and comments
+            [[ -z \"\$line\" || \"\$line\" == \\#* ]] && continue
+            # Split the line on whitespace, respecting double quotes
+            eval 'for word in '\"\$line\"'; do EXPANDED_ARGS+=(\"\$word\"); done'
+        done < \"\$2\"
+        if [[ \"\$DEBUG\" == \"ON\" ]]; then
+            echo \"[SMART_CCACHE] Expanded --options-file \$2 (\${#EXPANDED_ARGS[@]} args so far)\" >&2
+        fi
+        shift 2
+    else
+        EXPANDED_ARGS+=(\"\$1\")
+        shift
+    fi
+done
+
+# Execute ccache with expanded arguments
+exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
 ")
 
         # Make executable

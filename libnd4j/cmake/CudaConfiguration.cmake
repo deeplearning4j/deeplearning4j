@@ -288,7 +288,7 @@ function(configure_cuda_linking main_target_name)
     # Triton GPU Compiler linking (for CUDA builds)
     if(HAVE_TRITON AND TARGET triton_interface)
         target_link_libraries(${main_target_name} PUBLIC triton_interface)
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_TRITON=1)
+        # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
         message(STATUS "🔗 Linking Triton GPU compiler backend to ${main_target_name}")
     elseif(HAVE_TRITON)
         message(STATUS "⚠️ Triton NOT linked: HAVE_TRITON=${HAVE_TRITON} but triton_interface target missing")

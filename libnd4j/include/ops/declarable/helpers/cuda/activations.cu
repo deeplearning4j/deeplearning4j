@@ -798,17 +798,23 @@ void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const i
     } else
       *output = 0.;
   } else {
+    // log(softmax(x)) = x - max(x) - log(sum(exp(x - max(x))))
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
     auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
     auto inputMinusMax = *input - *maxAlongDim;
-    inputMinusMax->applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dim, true);
-    *output /= *sumAlongDim;
-    output->applyTransform(transform::Log, output);
+    // Compute exp(x - max) into a temp array
+    NDArray expTemp(output->shapeInfo(), output->dataType(), false, context);
+    inputMinusMax->applyTransform(transform::Exp, &expTemp);
+    auto sumExp = expTemp.reduceAlongDimension(reduce::Sum, &dim, true);
+    sumExp->applyTransform(transform::Log, sumExp);
+    // output = (x - max) - log(sumExp)
+    auto* result = (*inputMinusMax) - (*sumExp);
+    output->assign(result);
+    delete result;
     input->tickReadDevice();
     delete maxAlongDim;
     delete inputMinusMax;
-    delete sumAlongDim;
+    delete sumExp;
   }
 
   // Don't sync - let CUDA operations run asynchronously

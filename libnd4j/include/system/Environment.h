@@ -145,6 +145,7 @@ class SD_LIB_EXPORT Environment {
   // Triton GPU compilation settings
   std::atomic<int> _tritonBuildThreads{4};
   std::atomic<bool> _tritonCacheEnabled{true};
+  std::atomic<bool> _tritonCooperativeLaunch{false};  // cooperative launch OFF by default
   std::atomic<int> _tritonCoopTargetBlocks{0};  // 0 = auto
   std::atomic<int> _tritonMaxSubsegmentOps{0};       // 0 = auto/adaptive
   std::atomic<int> _tritonMaxSubsegmentSections{0};  // 0 = auto/adaptive
@@ -455,6 +456,8 @@ class SD_LIB_EXPORT Environment {
   void setTritonBuildThreads(int threads);
   bool tritonCacheEnabled() { return _tritonCacheEnabled.load(); }
   void setTritonCacheEnabled(bool enabled);
+  bool tritonCooperativeLaunch() { return _tritonCooperativeLaunch.load(); }
+  void setTritonCooperativeLaunch(bool enabled);
   int tritonCoopTargetBlocks() { return _tritonCoopTargetBlocks.load(); }
   void setTritonCoopTargetBlocks(int blocks);
   int tritonMaxSubsegmentOps() { return _tritonMaxSubsegmentOps.load(); }

@@ -1076,6 +1076,12 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
    }
  }
 
+ const char* tritonCooperativeLaunchVar = std::getenv("ND4J_TRITON_COOPERATIVE_LAUNCH");
+ if (tritonCooperativeLaunchVar != nullptr) {
+   std::string val(tritonCooperativeLaunchVar);
+   setTritonCooperativeLaunch(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
  const char* tritonCoopTargetBlocksVar = std::getenv("ND4J_TRITON_COOP_TARGET_BLOCKS");
  if (tritonCoopTargetBlocksVar != nullptr) {
 #ifdef __cpp_exceptions
@@ -1626,6 +1632,10 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setTritonCacheEnabled(bool enabled) {
     _tritonCacheEnabled.store(enabled);
+  }
+
+  void Environment::setTritonCooperativeLaunch(bool enabled) {
+    _tritonCooperativeLaunch.store(enabled);
   }
 
   void Environment::setTritonCoopTargetBlocks(int blocks) {

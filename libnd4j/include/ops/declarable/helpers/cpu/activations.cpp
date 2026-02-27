@@ -243,16 +243,22 @@ void logSoftmax(LaunchContext* context, NDArray* input, NDArray* output, const i
     } else
       *output = 0.;
   } else {
+    // log(softmax(x)) = x - max(x) - log(sum(exp(x - max(x))))
     std::vector<sd::LongType> dimVector = {dimension};
     auto maxAlongDim = input->reduceAlongDimension(reduce::Max, &dimVector, true);
-    auto maxMinusDim = *input - *maxAlongDim;
-    maxMinusDim->applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dimVector, true);
-    *output /= *sumAlongDim;
-    output->applyTransform(transform::Log, output);
+    auto inputMinusMax = *input - *maxAlongDim;
+    // Compute exp(x - max) into a temp array
+    NDArray expTemp(output->shapeInfo(), output->dataType(), false, context);
+    inputMinusMax->applyTransform(transform::Exp, &expTemp);
+    auto sumExp = expTemp.reduceAlongDimension(reduce::Sum, &dimVector, true);
+    sumExp->applyTransform(transform::Log, sumExp);
+    // output = (x - max) - log(sumExp)
+    auto* result = (*inputMinusMax) - (*sumExp);
+    output->assign(result);
+    delete result;
     delete maxAlongDim;
-    delete maxMinusDim;
-    delete sumAlongDim;
+    delete inputMinusMax;
+    delete sumExp;
   }
 }
 

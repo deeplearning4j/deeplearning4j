@@ -1640,6 +1640,8 @@ public static final int
   public native void setTritonBuildThreads(int threads);
   public native @Cast("bool") boolean tritonCacheEnabled();
   public native void setTritonCacheEnabled(@Cast("bool") boolean enabled);
+  public native @Cast("bool") boolean tritonCooperativeLaunch();
+  public native void setTritonCooperativeLaunch(@Cast("bool") boolean enabled);
   public native int tritonCoopTargetBlocks();
   public native void setTritonCoopTargetBlocks(int blocks);
   public native int tritonMaxSubsegmentOps();

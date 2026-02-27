@@ -764,6 +764,22 @@ public interface Environment {
      * Value {@code 0} means auto (device-dependent default).
      * @return cooperative launch target blocks
      */
+    /**
+     * Whether Triton cooperative launch (cuLaunchCooperativeKernel) is enabled.
+     * Default is false — sections run without grid-wide sync barriers,
+     * allowing arbitrary grid sizes.
+     * @return true if cooperative launch is enabled
+     */
+    default boolean tritonCooperativeLaunch() {
+        return false;
+    }
+
+    /**
+     * Enable or disable Triton cooperative launch.
+     * @param enabled true to enable cooperative launch (requires grid fits in SM capacity)
+     */
+    default void setTritonCooperativeLaunch(boolean enabled) {}
+
     default int tritonCoopTargetBlocks() {
         return 0;
     }

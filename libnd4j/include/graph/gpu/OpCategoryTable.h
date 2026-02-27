@@ -19,6 +19,8 @@
 #ifndef LIBND4J_OP_CATEGORY_TABLE_H
 #define LIBND4J_OP_CATEGORY_TABLE_H
 
+#include <config.h>
+
 #if defined(SD_CUDA) || defined(HAVE_MLIR) || HAVE_TRITON || HAVE_MLX
 
 #include <string>

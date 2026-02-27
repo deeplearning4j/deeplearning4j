@@ -100,6 +100,18 @@ struct KernelSection {
   int concatAxis;             // Concat axis
   std::vector<int> splitSizes; // Split sizes for split_v
 
+  // Trailing permute fusion: when an elementwise section is immediately followed
+  // by a permute op that reads from this section's output, the permute is absorbed
+  // into the section as a transposed store. This eliminates the permute section
+  // and its barrier, saving one kernel launch per permute.
+  bool hasTrailingPermute = false;
+  int trailingPermuteSlot = -1;           // slot index of the absorbed permute op
+  int trailingPermuteOutputSlotIdx = -1;  // outputSlotIndices[0] of the permute
+  int trailingPermuteInputSlotIdx = -1;   // inputSourceIndices[0] of the permute
+  std::vector<int> trailingPermutation;
+  std::vector<LongType> trailingPermuteInputShape;
+  std::vector<LongType> trailingPermuteOutputShape;
+
   KernelSection()
       : type(KernelSectionType::ELEMENTWISE), startSlot(-1), endSlot(-1),
         numOps(0), gridRequirement(1),
@@ -160,12 +172,26 @@ struct TritonIRModule {
   // rejection before the expensive TTIR→PTX compilation.
   int estimatedSharedMemBytes;
 
+  // Multi-phase launch: when cooperative launch is disabled and cross-section
+  // barriers are needed, the kernel is launched once per phase. Each phase is
+  // a maximal group of consecutive sections that don't require cross-block sync.
+  // The kernel has a phase_id argument that controls which sections execute.
+  // Kernel launch provides implicit global sync between phases.
+  struct LaunchPhase {
+    int startSection;   // First section index in this phase (inclusive)
+    int endSection;     // Last section index in this phase (inclusive)
+    int gridX;          // Grid size needed for this phase (max across contained sections)
+  };
+  std::vector<LaunchPhase> launchPhases;  // Empty = single launch (no phases)
+  bool useMultiPhaseLaunch;               // true when launchPhases is populated
+
   TritonIRModule() : mlirModule(nullptr), mlirContext(nullptr), numWarps(4), numStages(3),
                      gridX(1), gridY(1), gridZ(1),
                      blockX(1), blockY(1), blockZ(1),
                      valid(false), useIndirectArgs(false), useCooperativeLaunch(false),
                      useDynamicGrid(true),
-                     requiredGrid(1), estimatedSharedMemBytes(0) {}
+                     requiredGrid(1), estimatedSharedMemBytes(0),
+                     useMultiPhaseLaunch(false) {}
 };
 
 /**
@@ -406,6 +432,9 @@ class TritonIRBuilder {
   // Emit a cooperative grid sync barrier (inline PTX via tt.elementwise_inline_asm)
   static void emitGridSync(mlir::OpBuilder& builder, mlir::Location loc,
                            mlir::Value syncCounterPtr, mlir::Value numBlocksVal);
+
+  // Emit a lightweight threadfence barrier (membar.gl + bar.sync) — no cooperative launch needed
+  static void emitThreadfenceBarrier(mlir::OpBuilder& builder, mlir::Location loc);
 
   // ── Section emitters (inline within the mega-kernel) ──
 

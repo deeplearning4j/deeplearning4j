@@ -459,7 +459,9 @@ function(configure_cpu_linking main_target_name)
     # Triton GPU Compiler
     if(HAVE_TRITON AND DEFINED TRITON)
         target_link_libraries(${main_target_name} PUBLIC ${TRITON})
-        target_compile_definitions(${main_target_name} PUBLIC HAVE_TRITON=1)
+        # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
+        # Global -D flags change every file's compiler command line, breaking ccache
+        # for the 276 generated .cu template instantiation files.
         message(STATUS "🔗 Linking Triton GPU compiler backend")
     endif()
 
@@ -660,8 +662,8 @@ function(create_and_link_library)
                     "${_TRITON_INSTALL}/include"
                     "${_TRITON_LLVM_INSTALL}/include"
                 )
-                target_compile_definitions(${OBJECT_LIB_NAME} PUBLIC HAVE_TRITON=1)
-                message(STATUS "✅ Triton include dirs and HAVE_TRITON=1 added to ${OBJECT_LIB_NAME}")
+                # HAVE_TRITON is provided via generated config.h, not as a global -D flag.
+                message(STATUS "✅ Triton include dirs added to ${OBJECT_LIB_NAME} (HAVE_TRITON via config.h)")
             endif()
         endif()
 

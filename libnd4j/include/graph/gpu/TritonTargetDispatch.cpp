@@ -167,11 +167,34 @@ std::string canonicalizeAmdArch(const std::string& arch) {
   return arch.substr(0, suffixPos);
 }
 
+int getModuleGlobalScratchMemoryBytes(mlir::ModuleOp* moduleOp) {
+  if (moduleOp == nullptr || !*moduleOp) return 0;
+  auto scratchAttr =
+      moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("ttg.global_scratch_memory_size");
+  if (!scratchAttr) return 0;
+  int64_t scratchBytes = scratchAttr.getInt();
+  if (scratchBytes <= 0) return 0;
+  return static_cast<int>(std::min(scratchBytes, static_cast<int64_t>(std::numeric_limits<int>::max())));
+}
+
+int getModuleGlobalScratchAlignment(mlir::ModuleOp* moduleOp) {
+  if (moduleOp == nullptr || !*moduleOp) return 128;
+  auto alignAttr =
+      moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("ttg.global_scratch_memory_alignment");
+  if (!alignAttr) return 128;
+  int64_t align = alignAttr.getInt();
+  return align > 0 ? static_cast<int>(align) : 128;
+}
+
 int getModuleSharedMemoryBytes(mlir::ModuleOp* moduleOp) {
   if (moduleOp == nullptr || !*moduleOp) return 0;
 
+  // Triton 3.6.0 uses "ttg.shared", older versions used "triton_gpu.shared"
   auto sharedAttr =
-      moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("triton_gpu.shared");
+      moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("ttg.shared");
+  if (!sharedAttr) {
+    sharedAttr = moduleOp->getOperation()->getAttrOfType<mlir::IntegerAttr>("triton_gpu.shared");
+  }
   if (!sharedAttr) return 0;
 
   int64_t sharedBytes = sharedAttr.getInt();
@@ -517,7 +540,7 @@ std::string TritonTargetDispatch::getTargetArch() {
 // ─── Compilation ────────────────────────────────────────────────────────────
 
 TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarps, int numStages) {
-  TritonCompiledBinary result = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", 0, 0};
+  TritonCompiledBinary result = {nullptr, 0, TritonGpuTarget::UNKNOWN, "", 0, 0, 0, 128};
   auto& env = sd::Environment::getInstance();
   const bool tritonVerbose = env.tritonVerbose();
   const long long compileId = nextTritonCompileId();
@@ -880,6 +903,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   // Triton's AllocateSharedMemory pass stores kernel shared memory usage
   // in the module attribute "triton_gpu.shared".
   result.sharedMemBytes = getModuleSharedMemoryBytes(moduleOp);
+  result.globalScratchBytes = getModuleGlobalScratchMemoryBytes(moduleOp);
+  result.globalScratchAlignment = getModuleGlobalScratchAlignment(moduleOp);
 
   // Phase 5: MLIR LLVM dialect -> LLVM IR module
   // Verify the MLIR module before attempting LLVM translation

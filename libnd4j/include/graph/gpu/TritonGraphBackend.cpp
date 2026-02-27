@@ -452,6 +452,8 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
 
   int metaNumWarps = irModule.numWarps;
   int metaSharedMem = 0;
+  int metaGlobalScratchBytes = 0;
+  int metaGlobalScratchAlignment = 128;
   std::string metaKernelName;
   std::string line;
   while (std::getline(metaFile, line)) {
@@ -464,6 +466,10 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
       parseIntValue(value, metaNumWarps);
     } else if (key == "sharedMemBytes") {
       parseIntValue(value, metaSharedMem);
+    } else if (key == "globalScratchBytes") {
+      parseIntValue(value, metaGlobalScratchBytes);
+    } else if (key == "globalScratchAlignment") {
+      parseIntValue(value, metaGlobalScratchAlignment);
     } else if (key == "kernelName") {
       metaKernelName = value;
     }
@@ -494,6 +500,8 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
   }
   binary.numWarps = metaNumWarps;
   binary.sharedMemBytes = metaSharedMem;
+  binary.globalScratchBytes = metaGlobalScratchBytes;
+  binary.globalScratchAlignment = metaGlobalScratchAlignment;
 
   sd_printf("TritonGraphBackend: disk cache HIT for sub-segment [%d-%d] (%zu bytes)\n",
             startSlot, endSlot, binary.size);
@@ -548,6 +556,8 @@ void TritonGraphBackend::writeBinaryToDiskCache(int startSlot, int endSlot,
   std::ostringstream meta;
   meta << "numWarps=" << binary.numWarps << "\n";
   meta << "sharedMemBytes=" << binary.sharedMemBytes << "\n";
+  meta << "globalScratchBytes=" << binary.globalScratchBytes << "\n";
+  meta << "globalScratchAlignment=" << binary.globalScratchAlignment << "\n";
   meta << "kernelName=" << irModule.kernelName << "\n";
   meta << "gridX=" << irModule.gridX << "\n";
   meta << "gridY=" << irModule.gridY << "\n";
@@ -824,6 +834,44 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     pendingRanges.push_front(left);
   };
 
+  // Pre-compute cooperative launch capacity for this device.
+  // Only needed when cooperative launch is enabled — when disabled (default),
+  // grid sync barriers are suppressed in the IR builder and no splitting is needed.
+  const bool cooperativeEnabled = Environment::getInstance().tritonCooperativeLaunch();
+#ifdef SD_CUDA
+  int preCheckSmCount = 0;
+  int preCheckMaxThreadsPerSM = 0;
+  int preCheckMaxSharedPerSM = 0;
+  if (cooperativeEnabled) {
+    int currentDevice = 0;
+    cudaError_t devErr = cudaGetDevice(&currentDevice);
+    if (devErr == cudaSuccess) {
+      CUdevice cuDevice = 0;
+      CUresult cuDevErr = cuDeviceGet(&cuDevice, currentDevice);
+      if (cuDevErr == CUDA_SUCCESS) {
+        cuDeviceGetAttribute(&preCheckSmCount, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, cuDevice);
+        cuDeviceGetAttribute(&preCheckMaxThreadsPerSM, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR, cuDevice);
+        cuDeviceGetAttribute(&preCheckMaxSharedPerSM,
+            CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, cuDevice);
+      }
+    }
+  }
+
+  // Estimate max cooperative blocks for a typical Triton kernel (4 warps = 128 threads).
+  // This is conservative — actual capacity depends on shared memory and register usage.
+  auto estimateMaxCooperativeBlocks = [&](int numWarps, int estimatedSharedMem) -> unsigned long long {
+    int threadsPerBlock = std::max(1, numWarps) * 32;
+    int blocksPerSmByThreads = (preCheckMaxThreadsPerSM > 0 && threadsPerBlock > 0)
+        ? (preCheckMaxThreadsPerSM / threadsPerBlock) : 16;
+    int blocksPerSmBySmem = 16;
+    if (estimatedSharedMem > 0 && preCheckMaxSharedPerSM > 0) {
+      blocksPerSmBySmem = preCheckMaxSharedPerSM / estimatedSharedMem;
+    }
+    int blocksPerSm = std::max(1, std::min(blocksPerSmByThreads, blocksPerSmBySmem));
+    return static_cast<unsigned long long>(preCheckSmCount) * blocksPerSm;
+  };
+#endif
+
   for (int secIdx = 0; secIdx < static_cast<int>(sections.size());) {
     if (isStandaloneSection(sections[secIdx])) {
       pendingRanges.push_back(makeRange(secIdx, secIdx));
@@ -837,7 +885,58 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
            !isStandaloneSection(sections[runEnd + 1])) {
       runEnd++;
     }
-    pendingRanges.push_back(makeRange(runStart, runEnd));
+
+    // If this run has multiple sections, check if cooperative launch is feasible.
+    // Multi-section kernels need cooperative launch when sections have different
+    // grid mappings (e.g., elementwise + matmul). If the max section grid exceeds
+    // the device's cooperative capacity, pre-split into individual sections to
+    // avoid a compile-fail-split cycle.
+    bool needsPreSplit = false;
+#ifdef SD_CUDA
+    if (cooperativeEnabled && runEnd > runStart && preCheckSmCount > 0) {
+      // Find max grid requirement across sections in this run
+      int maxSectionGrid = 0;
+      bool hasNonElementwise = false;
+      for (int s = runStart; s <= runEnd; s++) {
+        if (sections[s].gridRequirement > maxSectionGrid) {
+          maxSectionGrid = sections[s].gridRequirement;
+        }
+        if (sections[s].type != KernelSectionType::ELEMENTWISE) {
+          hasNonElementwise = true;
+        }
+      }
+      if (hasNonElementwise && maxSectionGrid > 0) {
+        // Estimate shared memory: matmul sections typically use 49152+ bytes
+        int estimatedSharedMem = 0;
+        for (int s = runStart; s <= runEnd; s++) {
+          if (sections[s].type == KernelSectionType::MATMUL) {
+            estimatedSharedMem = std::max(estimatedSharedMem, 49152);
+          } else if (sections[s].type == KernelSectionType::FUSED_ATTENTION) {
+            estimatedSharedMem = std::max(estimatedSharedMem, 49152);
+          }
+        }
+        unsigned long long maxCoopBlocks = estimateMaxCooperativeBlocks(4, estimatedSharedMem);
+        if (static_cast<unsigned long long>(maxSectionGrid) > maxCoopBlocks) {
+          sd_printf("TritonGraphBackend: pre-splitting multi-section run [sec %d-%d, slots %d-%d] "
+                    "into individual sections: maxGrid=%d exceeds cooperative capacity=%llu "
+                    "(smCount=%d)\n",
+                    runStart, runEnd,
+                    sections[runStart].startSlot, sections[runEnd].endSlot,
+                    maxSectionGrid, maxCoopBlocks, preCheckSmCount);
+          needsPreSplit = true;
+        }
+      }
+    }
+#endif
+
+    if (needsPreSplit) {
+      // Emit each section as its own compile range
+      for (int s = runStart; s <= runEnd; s++) {
+        pendingRanges.push_back(makeRange(s, s));
+      }
+    } else {
+      pendingRanges.push_back(makeRange(runStart, runEnd));
+    }
     secIdx = runEnd + 1;
   }
 
@@ -1214,11 +1313,22 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           cudaGetLastError();
         }
       }
+      if (k.cachedGlobalScratchDevice) {
+        auto freeErr = freeDeviceBufferAsync(k.cachedGlobalScratchDevice, preallocStream);
+        if (freeErr != cudaSuccess) {
+          sd_printf("TritonGraphBackend: failed freeing pre-allocated global scratch for [%d-%d]: %s\n",
+                    k.startSlot_, k.endSlot_, cudaGetErrorString(freeErr));
+          cudaGetLastError();
+        }
+      }
       k.cachedArgTableDevice = nullptr;
       k.cachedArgTableBytes = 0;
       k.cachedArgTableDeviceId = -1;
       k.cachedSyncCounterDevice = nullptr;
       k.cachedSyncCounterDeviceId = -1;
+      k.cachedGlobalScratchDevice = nullptr;
+      k.cachedGlobalScratchBytes = 0;
+      k.cachedGlobalScratchDeviceId = -1;
       if (k.gpuModule) TritonTargetDispatch::unloadModule(k.gpuModule);
     }
     cudaStreamSynchronize(preallocStream);
@@ -1449,10 +1559,6 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     //   non-cooperative: @kernel(%argTable: !tt.ptr<i64>, %n_elements: i32)
     //   cooperative:     @kernel(%argTable: !tt.ptr<i64>, %n_elements: i32, %sync_counter: !tt.ptr<i32>)
     // It loads each buffer pointer from argTable[i] and casts via tt.int_to_ptr.
-    std::vector<int64_t> argTableHost(numBufferArgs);
-    for (int i = 0; i < numBufferArgs; i++) {
-      argTableHost[i] = reinterpret_cast<int64_t>(bufferPtrs[i]);
-    }
 
 #ifdef SD_CUDA
     // Reuse a persistent device arg table per compiled kernel.
@@ -1491,6 +1597,33 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
       compiled.cachedArgTableBytes = tableBytes;
       compiled.cachedArgTableDeviceId = currentDevice;
     }
+
+    // Use persistent PINNED host buffer for the arg table source.
+    // CUDA graph capture records the cudaMemcpyAsync source address — if we use
+    // a stack-local vector, the graph replay reads from dead stack memory → SIGSEGV.
+    // Pinned memory survives across graph replays.
+    if (compiled.cachedArgTableHostPinned == nullptr ||
+        compiled.cachedArgTableHostPinnedBytes < tableBytes) {
+      if (compiled.cachedArgTableHostPinned != nullptr) {
+        cudaFreeHost(compiled.cachedArgTableHostPinned);
+        compiled.cachedArgTableHostPinned = nullptr;
+        compiled.cachedArgTableHostPinnedBytes = 0;
+      }
+      auto pinnedErr = cudaMallocHost(&compiled.cachedArgTableHostPinned, tableBytes);
+      if (pinnedErr != cudaSuccess) {
+        sd_printf("TritonGraphBackend: failed to allocate pinned arg table host (%d bytes): %s\n",
+                  (int)tableBytes, cudaGetErrorString(pinnedErr));
+        return Status::KERNEL_FAILURE;
+      }
+      compiled.cachedArgTableHostPinnedBytes = tableBytes;
+    }
+
+    // Write buffer pointers into the persistent pinned host buffer
+    auto* argTableHostPinned = static_cast<int64_t*>(compiled.cachedArgTableHostPinned);
+    for (int i = 0; i < numBufferArgs; i++) {
+      argTableHostPinned[i] = reinterpret_cast<int64_t>(bufferPtrs[i]);
+    }
+
     argTableDevice = compiled.cachedArgTableDevice;
 
     // Validate arg table pointer before copy
@@ -1513,14 +1646,15 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
 
     // Copy host → device (async on the execution stream)
-    auto memcpyErr = cudaMemcpyAsync(argTableDevice, argTableHost.data(), tableBytes,
+    // Uses the persistent pinned host buffer — safe for CUDA graph capture/replay.
+    auto memcpyErr = cudaMemcpyAsync(argTableDevice, argTableHostPinned, tableBytes,
                                      cudaMemcpyHostToDevice, cudaExecStream);
     if (memcpyErr != cudaSuccess) {
       sd_printf("TritonGraphBackend: failed to copy arg table (%d bytes) for [%d-%d]: %s "
                 "(devicePtr=%p, hostPtr=%p, cachedDeviceId=%d, currentDevice=%d, stream=%p)\n",
                 (int)tableBytes, compiled.startSlot_, compiled.endSlot_,
                 cudaGetErrorString(memcpyErr),
-                argTableDevice, argTableHost.data(),
+                argTableDevice, argTableHostPinned,
                 compiled.cachedArgTableDeviceId, currentDevice, (void*)cudaExecStream);
       cudaGetLastError();  // Clear the error so subsequent operations aren't poisoned
       return Status::KERNEL_FAILURE;
@@ -1589,6 +1723,55 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 #endif
   }
 
+  // Multi-phase launch: phase_id argument (set per-launch, before implicit Triton args)
+  int phaseId = 0;  // Default phase 0 (overridden in multi-launch loop)
+  if (compiled.useMultiPhaseLaunch) {
+    kernelArgs.push_back(&phaseId);  // Will be updated per-phase in the launch loop
+  }
+
+  // ── Triton 3.6.0 implicit kernel arguments ──
+  // The TritonGPUToLLVM FuncOp conversion adds 2 extra pointer arguments to every
+  // kernel function (see FuncOpToLLVM.cpp, NOTE: [Additional Function Arguments]):
+  //   1. global_scratch_ptr — pointer to per-program scratch memory
+  //   2. profile_ptr — pointer to profiling data (unused, pass nullptr)
+  // These MUST be appended to kernelArgs in the same order as the lowering adds them.
+  void* globalScratchPtr = nullptr;
+  void* profilePtr = nullptr;
+
+#ifdef SD_CUDA
+  if (compiled.globalScratchBytes > 0) {
+    // Allocate or reuse persistent global scratch buffer
+    // Triton partitions scratch by program ID, so total size = scratchBytes * numPrograms
+    unsigned int numPrograms = actualGridX * actualGridY * actualGridZ;
+    size_t totalScratchBytes = static_cast<size_t>(compiled.globalScratchBytes) * numPrograms;
+    bool deviceChanged = (compiled.cachedGlobalScratchDeviceId != currentDevice);
+    bool needsAlloc = deviceChanged || compiled.cachedGlobalScratchDevice == nullptr ||
+                      compiled.cachedGlobalScratchBytes < totalScratchBytes;
+    if (needsAlloc) {
+      if (compiled.cachedGlobalScratchDevice != nullptr) {
+        freeDeviceBufferAsync(compiled.cachedGlobalScratchDevice, cudaExecStream);
+        compiled.cachedGlobalScratchDevice = nullptr;
+        compiled.cachedGlobalScratchBytes = 0;
+        compiled.cachedGlobalScratchDeviceId = -1;
+      }
+      auto allocErr = allocateDeviceBufferAsync(&compiled.cachedGlobalScratchDevice,
+                                                 totalScratchBytes, cudaExecStream);
+      if (allocErr != cudaSuccess) {
+        sd_printf("TritonGraphBackend: failed to allocate global scratch (%zu bytes) for [%d-%d]: %s\n",
+                  totalScratchBytes, compiled.startSlot_, compiled.endSlot_,
+                  cudaGetErrorString(allocErr));
+        return Status::KERNEL_FAILURE;
+      }
+      compiled.cachedGlobalScratchBytes = totalScratchBytes;
+      compiled.cachedGlobalScratchDeviceId = currentDevice;
+    }
+    globalScratchPtr = compiled.cachedGlobalScratchDevice;
+  }
+#endif
+
+  kernelArgs.push_back(&globalScratchPtr);
+  kernelArgs.push_back(&profilePtr);
+
 #ifdef SD_CUDA
   // Re-apply shared memory opt-in at launch time as a safety net.
   // The attribute was set during compilation, but if the CUfunction was compiled
@@ -1610,7 +1793,25 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 
   // Launch
   bool ok;
-  if (compiled.useCooperativeLaunch) {
+  if (compiled.useMultiPhaseLaunch && !compiled.launchPhases.empty()) {
+    // Multi-phase launch: launch the SAME kernel once per phase, with different
+    // phase_id and grid size. Each kernel launch provides implicit global sync.
+    ok = true;
+    for (size_t p = 0; p < compiled.launchPhases.size() && ok; p++) {
+      phaseId = static_cast<int>(p);  // Update phase_id in kernelArgs (points to &phaseId)
+      unsigned int phaseGridX = static_cast<unsigned int>(
+          std::max(1, compiled.launchPhases[p].gridX));
+      ok = TritonTargetDispatch::launchKernel(
+          compiled.kernelFunction,
+          phaseGridX, actualGridY, actualGridZ,
+          compiled.numWarps * 32,
+          compiled.blockY, compiled.blockZ,
+          compiled.sharedMemBytes,
+          actualStream,
+          kernelArgs.data(),
+          static_cast<int>(kernelArgs.size()));
+    }
+  } else if (compiled.useCooperativeLaunch) {
     ok = TritonTargetDispatch::launchCooperativeKernel(
         compiled.kernelFunction,
         actualGridX, actualGridY, actualGridZ,
@@ -1918,10 +2119,12 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     return result;
   }
   sd_printf("TritonGraphBackend: IR build OK [%d-%d] in %lld ms "
-            "(args=%d, indirect=%d, cooperative=%d, grid=%ux%ux%u, block=%ux%ux%u)\n",
+            "(args=%d, indirect=%d, cooperative=%d, multiPhase=%d(%d phases), grid=%ux%ux%u, block=%ux%ux%u)\n",
             startSlot, endSlot, irBuildMs,
             static_cast<int>(irModule.args.size()),
             irModule.useIndirectArgs ? 1 : 0, irModule.useCooperativeLaunch ? 1 : 0,
+            irModule.useMultiPhaseLaunch ? 1 : 0,
+            static_cast<int>(irModule.launchPhases.size()),
             irModule.gridX, irModule.gridY, irModule.gridZ,
             irModule.blockX, irModule.blockY, irModule.blockZ);
 
@@ -2053,6 +2256,8 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
     int metaNumWarps = compileNumWarps;
     int metaSharedMem = 0;
+    int metaGlobalScratchBytes = 0;
+    int metaGlobalScratchAlignment = 128;
     std::string metaKernelName;
 
     std::ifstream metaFile(metaPath);
@@ -2067,6 +2272,10 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
           parseIntValue(value, metaNumWarps);
         } else if (key == "sharedMemBytes") {
           parseIntValue(value, metaSharedMem);
+        } else if (key == "globalScratchBytes") {
+          parseIntValue(value, metaGlobalScratchBytes);
+        } else if (key == "globalScratchAlignment") {
+          parseIntValue(value, metaGlobalScratchAlignment);
         } else if (key == "kernelName") {
           metaKernelName = value;
         }
@@ -2094,6 +2303,8 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     }
     out.numWarps = metaNumWarps;
     out.sharedMemBytes = metaSharedMem;
+    out.globalScratchBytes = metaGlobalScratchBytes;
+    out.globalScratchAlignment = metaGlobalScratchAlignment;
     sd_printf("TritonGraphBackend: %s HIT for sub-segment [%d-%d] (%zu bytes)\n",
               sourceLabel, startSlot, endSlot, out.size);
     return true;
@@ -2124,6 +2335,8 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       if (metaOut.good()) {
         metaOut << "numWarps=" << dumpBinary.numWarps << "\n";
         metaOut << "sharedMemBytes=" << dumpBinary.sharedMemBytes << "\n";
+        metaOut << "globalScratchBytes=" << dumpBinary.globalScratchBytes << "\n";
+        metaOut << "globalScratchAlignment=" << dumpBinary.globalScratchAlignment << "\n";
         metaOut << "kernelName=" << irModule.kernelName << "\n";
         metaOut << "numStages=" << compileNumStages << "\n";
         metaOut << "numCTAs=" << std::max(1, env.tritonNumCTAs()) << "\n";
@@ -2296,11 +2509,17 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   result.blockY = irModule.blockY;
   result.blockZ = irModule.blockZ;
   result.sharedMemBytes = binary.sharedMemBytes;
+  result.globalScratchBytes = binary.globalScratchBytes > 0
+      ? static_cast<unsigned int>(binary.globalScratchBytes) : 0u;
+  result.globalScratchAlignment = binary.globalScratchAlignment > 0
+      ? static_cast<unsigned int>(binary.globalScratchAlignment) : 128u;
   result.numWarps = binary.numWarps;
   result.argSlotMapping = irModule.args;
   result.useCooperativeLaunch = irModule.useCooperativeLaunch;
   result.useDynamicGrid = irModule.useDynamicGrid;
   result.useIndirectArgs = irModule.useIndirectArgs;
+  result.useMultiPhaseLaunch = irModule.useMultiPhaseLaunch;
+  result.launchPhases = irModule.launchPhases;
 
   // Clean up
   delete[] static_cast<char*>(binary.data);

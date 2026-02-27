@@ -818,6 +818,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public boolean tritonCooperativeLaunch() {
+        return e.tritonCooperativeLaunch();
+    }
+
+    @Override
+    public void setTritonCooperativeLaunch(boolean enabled) {
+        e.setTritonCooperativeLaunch(enabled);
+    }
+
+    @Override
     public int tritonCoopTargetBlocks() {
         return e.tritonCoopTargetBlocks();
     }

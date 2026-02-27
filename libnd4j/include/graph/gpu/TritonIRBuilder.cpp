@@ -4984,6 +4984,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       case KernelSectionType::NORMALIZATION:
       case KernelSectionType::SCATTER_ND:
       case KernelSectionType::SCATTER_ND_UPDATE:
+      case KernelSectionType::SHAPE_MANIPULATION:
+        // SHAPE_MANIPULATION (permute/transpose) reads cross-section intermediates
+        // with permuted indices — thread N reads data written by thread M, so a
+        // global barrier is required to ensure all stores complete before permuted loads.
         return true;
       default:
         return false;
@@ -5029,12 +5033,55 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   bool needsGridSync = std::any_of(sectionNeedsBarrier.begin(), sectionNeedsBarrier.end(),
                                    [](uint8_t v) { return v != 0; });
+
+  // When cooperative launch is disabled (default) and cross-section barriers
+  // are needed, use multi-phase launch: the kernel gets a phase_id argument,
+  // and the host launches the kernel once per phase. Each phase is a maximal
+  // group of consecutive sections that don't need cross-block sync. The kernel
+  // launch itself provides implicit global synchronization between phases.
+  // This allows arbitrary grid sizes and each phase uses its optimal grid size.
+  auto& envRef = sd::Environment::getInstance();
+  bool useMultiPhaseLaunch = false;
+  std::vector<TritonIRModule::LaunchPhase> launchPhases;
+
+  if (needsGridSync && !envRef.tritonCooperativeLaunch()) {
+    int numBarriers = static_cast<int>(std::count(sectionNeedsBarrier.begin(),
+                                                   sectionNeedsBarrier.end(), 1));
+    // Build phases: group consecutive sections between barriers
+    int phaseStart = 0;
+    for (size_t secIdx = 1; secIdx <= sections.size(); secIdx++) {
+      if (secIdx == sections.size() || sectionNeedsBarrier[secIdx]) {
+        // End current phase at secIdx-1
+        TritonIRModule::LaunchPhase phase;
+        phase.startSection = phaseStart;
+        phase.endSection = static_cast<int>(secIdx) - 1;
+        // Grid size for this phase = max grid across contained sections
+        int phaseGrid = 1;
+        for (int s = phase.startSection; s <= phase.endSection; s++) {
+          if (sections[s].gridRequirement > phaseGrid)
+            phaseGrid = sections[s].gridRequirement;
+        }
+        phase.gridX = phaseGrid;
+        launchPhases.push_back(phase);
+        phaseStart = static_cast<int>(secIdx);
+      }
+    }
+    useMultiPhaseLaunch = true;
+    needsGridSync = false;  // No in-kernel barriers needed
+
+    sd_printf("TritonIRBuilder::buildSectionedModule: cooperative launch disabled; "
+              "using multi-phase launch with %d phases (%d barriers) for [%d-%d]\n",
+              static_cast<int>(launchPhases.size()), numBarriers, startSlot, endSlot);
+  }
+
   int requiredBarriers = 0;
   for (auto v : sectionNeedsBarrier) {
     if (v != 0) requiredBarriers++;
   }
-  sd_debug("TritonIRBuilder::buildSectionedModule: %d/%d section boundaries require grid barriers\n",
-            requiredBarriers, std::max(0, static_cast<int>(sections.size()) - 1));
+  sd_debug("TritonIRBuilder::buildSectionedModule: %d/%d section boundaries require barriers "
+            "(gridSync=%d, multiPhase=%d)\n",
+            requiredBarriers, std::max(0, static_cast<int>(sections.size()) - 1),
+            needsGridSync ? 1 : 0, useMultiPhaseLaunch ? 1 : 0);
 
   // Input args: external inputs or outputs from slots BEFORE this segment
   std::vector<TritonKernelArg> inputArgs;
@@ -5122,7 +5169,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.args.insert(result.args.end(), outputArgs.begin(), outputArgs.end());
 
   int totalBufferArgs = static_cast<int>(result.args.size());
-  int extraScalarArgs = needsGridSync ? 2 : 1;  // n_elements [+ sync_counter_ptr]
+  // Extra scalar args: n_elements (always) + sync_counter_ptr (cooperative) + phase_id (multi-phase)
+  int extraScalarArgs = 1;  // n_elements
+  if (needsGridSync) extraScalarArgs++;  // sync_counter_ptr
+  if (useMultiPhaseLaunch) extraScalarArgs++;  // phase_id
   bool useIndirectArgs = (totalBufferArgs + extraScalarArgs) > TRITON_DIRECT_ARG_LIMIT;
 
   sd_debug("TritonIRBuilder::buildSectionedModule: %d input args, %d output args, %d total buffer args%s\n",
@@ -5159,6 +5209,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   if (needsGridSync) {
     funcArgTypes.push_back(mlir::triton::PointerType::get(i32Type, 1));  // sync_counter_ptr
   }
+  // Phase ID for multi-phase launch (controls which sections execute)
+  if (useMultiPhaseLaunch) {
+    funcArgTypes.push_back(i32Type);  // phase_id
+  }
 
   auto funcType = builder.getFunctionType(funcArgTypes, {});
   auto funcOp = builder.create<mlir::triton::FuncOp>(loc, result.kernelName, funcType);
@@ -5193,10 +5247,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
   int nElementsArgIdx = useIndirectArgs ? 1 : totalBufferArgs;
   auto nElementsArg = entryBlock->getArgument(nElementsArgIdx);
+  int nextArgIdx = nElementsArgIdx + 1;
   mlir::Value syncCounterPtr;
   if (needsGridSync) {
-    int syncArgIdx = nElementsArgIdx + 1;
-    syncCounterPtr = entryBlock->getArgument(syncArgIdx);
+    syncCounterPtr = entryBlock->getArgument(nextArgIdx++);
+  }
+  mlir::Value phaseIdArg;
+  if (useMultiPhaseLaunch) {
+    phaseIdArg = entryBlock->getArgument(nextArgIdx++);
   }
 
   // ── Step 4: Derive tile config and recompute section launch grid ──
@@ -5423,6 +5481,16 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   const auto& opTable = getOpTable();
   int sectionBarrierCount = 0;
 
+  // Build section-to-phase mapping for multi-phase launch
+  std::vector<int> sectionPhase(sections.size(), 0);  // phase index per section
+  if (useMultiPhaseLaunch) {
+    for (size_t p = 0; p < launchPhases.size(); p++) {
+      for (int s = launchPhases[p].startSection; s <= launchPhases[p].endSection; s++) {
+        sectionPhase[s] = static_cast<int>(p);
+      }
+    }
+  }
+
   for (size_t secIdx = 0; secIdx < sections.size(); secIdx++) {
     auto& sec = sections[secIdx];
 
@@ -5430,13 +5498,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               static_cast<int>(secIdx), static_cast<int>(sections.size()),
               static_cast<int>(sec.type), sec.startSlot, sec.endSlot);
 
-    // Before each section (except the first), insert a grid sync barrier
-    // only when dependency analysis determined it is required.
+    // Before each section (except the first), insert a cooperative grid sync
+    // barrier if needed. Multi-phase launch doesn't need in-kernel barriers
+    // (kernel launch provides implicit global sync between phases).
     if (secIdx > 0 && needsGridSync && sectionNeedsBarrier[secIdx]) {
-      // Grid sync counter accumulates across barriers (never reset within a launch).
-      // Barrier N must wait for counter >= (N+1) * maxSectionGrid:
-      //   Barrier 0: all K blocks increment → counter = K, check counter >= K ✓
-      //   Barrier 1: all K blocks increment → counter = 2K, check counter >= 2K ✓
       LongType threshold64 =
           static_cast<LongType>(sectionBarrierCount + 1) * static_cast<LongType>(maxSectionGrid);
       if (threshold64 > static_cast<LongType>(2147483647)) {
@@ -5450,8 +5515,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
                 static_cast<int>(secIdx));
     }
 
-    // Guard each section by its own grid requirement. The cooperative launch
-    // uses maxSectionGrid blocks; blocks outside this section's range must no-op.
+    // For multi-phase launch: guard each section by its phase_id.
+    // Sections only execute when the host-supplied phase_id matches their phase.
+    mlir::scf::IfOp phaseIf;
+    if (useMultiPhaseLaunch) {
+      auto phaseConst = builder.create<mlir::arith::ConstantIntOp>(
+          loc, sectionPhase[secIdx], 32);
+      auto phaseMatch = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::eq, phaseIdArg, phaseConst);
+      phaseIf = builder.create<mlir::scf::IfOp>(loc, phaseMatch, /*withElseRegion=*/false);
+      builder.setInsertionPointToStart(&phaseIf.getThenRegion().front());
+    }
+
+    // Guard each section by its own grid requirement. Blocks outside this
+    // section's range must no-op.
     auto secGridConst = builder.create<mlir::arith::ConstantIntOp>(
         loc, std::max(1, sec.gridRequirement), 32);
     auto secActive = builder.create<mlir::arith::CmpIOp>(
@@ -5670,7 +5747,11 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               }
             }
           } else if (cat == TritonOpCategory::SHAPE_MANIPULATION) {
-            // Non-permute shape ops: SSA forwarding
+            // Shape ops (reshape, permute, etc.): SSA forwarding.
+            // For the autoregressive decode step (seq=1), permute [0,2,1,3] on
+            // [1,1,heads,dim] is an identity (dim 1 and 2 are both 1), so SSA
+            // forwarding is correct. For seq > 1, this would need actual reordering.
+            // Non-permute shape ops (reshape, squeeze, expand_dims): always SSA-forward.
             if (slot.numInputs >= 1) {
               auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
               if (inputIt != ssaValues.end()) {
@@ -5715,6 +5796,73 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, outMask,
                                                    mlir::triton::CacheModifier::NONE,
                                                    mlir::triton::EvictionPolicy::NORMAL);
+          }
+        }
+
+        // ── Trailing permute fusion: transposed store ──
+        // If this section absorbed a trailing permute, store the permute's input SSA
+        // value to the permute's OUTPUT buffer using permuted offsets.
+        if (sec.hasTrailingPermute && sec.trailingPermuteInputSlotIdx >= 0) {
+          auto ssaIt = ssaValues.find(sec.trailingPermuteInputSlotIdx);
+          auto outArgIt = slotToArgIdx.find(sec.trailingPermuteOutputSlotIdx);
+          if (ssaIt != ssaValues.end() && outArgIt != slotToArgIdx.end()) {
+            auto& perm = sec.trailingPermutation;
+            auto& inShape = sec.trailingPermuteInputShape;
+            auto& outShape = sec.trailingPermuteOutputShape;
+            int rank = static_cast<int>(inShape.size());
+            int nElements = 1;
+            for (auto d : outShape) nElements *= static_cast<int>(d);
+
+            // Compute output strides (row-major)
+            std::vector<int> outStrides(rank, 1);
+            for (int d = rank - 2; d >= 0; d--)
+              outStrides[d] = outStrides[d + 1] * static_cast<int>(outShape[d + 1]);
+
+            // Compute input strides (row-major)
+            std::vector<int> inStrides(rank, 1);
+            for (int d = rank - 2; d >= 0; d--)
+              inStrides[d] = inStrides[d + 1] * static_cast<int>(inShape[d + 1]);
+
+            // Compute permuted store offsets: for each input flat index (offsets),
+            // unravel to input coords, apply forward permutation, ravel with output strides.
+            // input[d0,d1,...] → output[d_perm_inv[0], d_perm_inv[1], ...] = input[d0,d1,...]
+            // We're scattering: for input flat index, compute output flat index.
+            mlir::Value dstOffsets = splatConstantI32(builder, loc, i32TensorType, 0);
+            mlir::Value remaining = offsets;
+            for (int d = 0; d < rank; d++) {
+              auto strideConst = splatConstantI32(builder, loc, i32TensorType, inStrides[d]);
+              auto coord = builder.create<mlir::arith::DivSIOp>(loc, remaining, strideConst);
+              if (d < rank - 1) {
+                remaining = builder.create<mlir::arith::RemSIOp>(loc, remaining, strideConst);
+              }
+              // coord is the d-th coordinate in input space
+              // In output space, this coord appears at position perm[d]
+              auto outStrideConst = splatConstantI32(builder, loc, i32TensorType, outStrides[perm[d]]);
+              auto contrib = builder.create<mlir::arith::MulIOp>(loc, coord, outStrideConst);
+              dstOffsets = builder.create<mlir::arith::AddIOp>(loc, dstOffsets, contrib);
+            }
+
+            // Store to the permute's output buffer using permuted offsets
+            auto outFuncArg = getBufferArg(outArgIt->second);
+            DataType dt = resolveDtype(sec.trailingPermuteOutputSlotIdx);
+            auto elemType = getMLIRType(builder, dt);
+            auto ptrType = mlir::triton::PointerType::get(elemType, 1);
+            auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+            auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, outFuncArg);
+            auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, dstOffsets);
+            mlir::Value storeVal = castTo(builder, loc, ssaIt->second, elemType);
+
+            // Mask: only store for valid input indices
+            auto nElemConst = builder.create<mlir::arith::ConstantIntOp>(loc, nElements, 32);
+            auto splatN2 = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, nElemConst);
+            auto permMask = builder.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::slt, offsets, splatN2);
+            builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, permMask,
+                                                   mlir::triton::CacheModifier::NONE,
+                                                   mlir::triton::EvictionPolicy::NORMAL);
+            sd_debug("TritonIRBuilder::buildSectionedModule: emitted transposed store for "
+                      "trailing permute (input slot %d -> output slot %d, nElements=%d)\n",
+                      sec.trailingPermuteInputSlotIdx, sec.trailingPermuteOutputSlotIdx, nElements);
           }
         }
         break;
@@ -6253,6 +6401,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
     // Continue emitting after the section guard.
     builder.setInsertionPointAfter(secIf);
+    // Close multi-phase guard if present
+    if (useMultiPhaseLaunch) {
+      builder.setInsertionPointAfter(phaseIf);
+    }
   }
 
   // Return
@@ -6272,6 +6424,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   result.useDynamicGrid = false;
   result.requiredGrid = maxSectionGrid;
   result.sections = sections;
+  result.useMultiPhaseLaunch = useMultiPhaseLaunch;
+  result.launchPhases = launchPhases;
 
   // Estimate shared memory from section types and tile sizes.
   // This is used for early cooperative launch capacity rejection BEFORE the
@@ -6385,11 +6539,13 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     llvm::raw_string_ostream os(ttirDump);
     moduleOp.print(os);
     sd_debug("TritonIRBuilder: built sectioned module '%s' with %d sections, %d ops, "
-              "%d input args, %d output args, maxGrid=%d, cooperative=%s\nTTIR:\n%s\n",
+              "%d input args, %d output args, maxGrid=%d, cooperative=%s, multiPhase=%s(%d phases)\nTTIR:\n%s\n",
               result.kernelName.c_str(), static_cast<int>(sections.size()),
               segSize, static_cast<int>(inputArgs.size()),
               static_cast<int>(outputArgs.size()), maxSectionGrid,
-              needsGridSync ? "YES" : "NO", ttirDump.c_str());
+              needsGridSync ? "YES" : "NO",
+              useMultiPhaseLaunch ? "YES" : "NO",
+              static_cast<int>(launchPhases.size()), ttirDump.c_str());
     // Write TTIR to file for indirect-args kernels
     if (useIndirectArgs) {
       FILE* df = fopen("/tmp/triton_ttir_indirect.mlir", "w");
@@ -6484,21 +6640,43 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
         }
       }
 
-      // Strategy 4: For K, also try input slot's cached shapes
-      if (matmulK == 0 && slots[i].numInputs >= 1) {
+      // Strategy 4: For M and K, try input slot's shape cache (cachedOutputShapes)
+      if (slots[i].numInputs >= 1) {
         int aSrc = slots[i].inputSourceIndices[0];
         if (aSrc >= 0 && aSrc < static_cast<int>(totalOutputSlots)) {
-          // Check if the input slot has cached output shapes
-          // (aSrc is another slot's output index, search for the slot that produces it)
-          for (int s = 0; s < startSlot; s++) {
-            for (int o = 0; o < slots[s].numOutputs; o++) {
-              if (slots[s].outputSlotIndices[o] == aSrc &&
-                  slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty()) {
-                const LongType* shapeInfo = slots[s].cachedOutputShapes[o];
-                if (shapeInfo) {
-                  int rank = static_cast<int>(shape::rank(shapeInfo));
-                  if (rank >= 2) {
-                    matmulK = static_cast<int>(shape::shapeOf(shapeInfo)[rank - 1]);
+          // Find the producing slot's cached output shape for aSrc
+          if ((matmulM == 0 || matmulK == 0)) {
+            for (int s = 0; s < static_cast<int>(totalSlots); s++) {
+              for (int o = 0; o < slots[s].numOutputs; o++) {
+                if (slots[s].outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].cachedOutputShapes[o];
+                  if (si) {
+                    int rank = static_cast<int>(shape::rank(si));
+                    if (rank >= 2) {
+                      if (matmulM == 0) matmulM = static_cast<int>(shape::shapeOf(si)[rank - 2]);
+                      if (matmulK == 0) matmulK = static_cast<int>(shape::shapeOf(si)[rank - 1]);
+                    }
+                  }
+                }
+              }
+              if (matmulM > 0 && matmulK > 0) break;
+            }
+          }
+          // Also check cachedOutputShapes of the producing slot
+          if (matmulK == 0 || matmulM == 0) {
+            for (int s = 0; s < startSlot; s++) {
+              for (int o = 0; o < slots[s].numOutputs; o++) {
+                if (slots[s].outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty()) {
+                  const LongType* shapeInfo = slots[s].cachedOutputShapes[o];
+                  if (shapeInfo) {
+                    int rank = static_cast<int>(shape::rank(shapeInfo));
+                    if (rank >= 2) {
+                      if (matmulM == 0) matmulM = static_cast<int>(shape::shapeOf(shapeInfo)[rank - 2]);
+                      if (matmulK == 0) matmulK = static_cast<int>(shape::shapeOf(shapeInfo)[rank - 1]);
+                    }
                   }
                 }
               }
@@ -6840,7 +7018,11 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     }
   };
 
-  // Helper: check if a section type can be merged with element-wise
+  // Helper: check if a section type can be merged with element-wise.
+  // SHAPE_MANIPULATION (reshape, squeeze, expand_dims, permute) is merged into
+  // element-wise sections and SSA-forwarded. For autoregressive decode (seq=1),
+  // permute [0,2,1,3] on [1,1,H,D] is identity; for general seq>1, permute
+  // would need actual reordering via a transposed store at the section boundary.
   auto canMergeWithElementwise = [](KernelSectionType type) -> bool {
     switch (type) {
       case KernelSectionType::ELEMENTWISE:
@@ -6919,6 +7101,72 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
           currentSection.matmulN = static_cast<int>(bArr->sizeAt(bArr->rankOf() - 1));
           if (currentSection.matmulK == 0)
             currentSection.matmulK = static_cast<int>(bArr->sizeAt(bArr->rankOf() - 2));
+        }
+        // Fallback: resolve M from input A's producing slot's cached output shape
+        if (currentSection.matmulM == 0) {
+          int aSrc = slots[i].inputSourceIndices[0];
+          if (aSrc >= 0 && aSrc < totalOutputSlots) {
+            for (int s = startSlot; s <= endSlot; s++) {
+              for (int o = 0; o < slots[s].numOutputs; o++) {
+                if (slots[s].outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].cachedOutputShapes[o];
+                  if (si && shape::rank(si) >= 2) {
+                    currentSection.matmulM = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 2]);
+                    break;
+                  }
+                }
+              }
+              if (currentSection.matmulM > 0) break;
+            }
+          }
+        }
+        // Fallback: resolve M from output shape (output of matmul is [..., M, N])
+        if (currentSection.matmulM == 0 && slots[i].numOutputs > 0) {
+          int outIdx = slots[i].outputSlotIndices[0];
+          NDArray* outArr = resolveArray(outIdx);
+          if (outArr && outArr->rankOf() >= 2) {
+            currentSection.matmulM = static_cast<int>(outArr->sizeAt(outArr->rankOf() - 2));
+            if (currentSection.matmulN == 0)
+              currentSection.matmulN = static_cast<int>(outArr->sizeAt(outArr->rankOf() - 1));
+          } else if (outIdx >= 0 && outIdx < totalOutputSlots) {
+            // Try the producing slot's cached output shape for outIdx
+            for (int s = startSlot; s <= endSlot; s++) {
+              for (int o = 0; o < slots[s].numOutputs; o++) {
+                if (slots[s].outputSlotIndices[o] == outIdx &&
+                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].cachedOutputShapes[o];
+                  if (si && shape::rank(si) >= 2) {
+                    currentSection.matmulM = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 2]);
+                    if (currentSection.matmulN == 0)
+                      currentSection.matmulN = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 1]);
+                  }
+                }
+              }
+              if (currentSection.matmulM > 0) break;
+            }
+          }
+        }
+        // Fallback: resolve K from input A's producing slot's cached output shape
+        if (currentSection.matmulK == 0) {
+          int aSrc = slots[i].inputSourceIndices[0];
+          if (aSrc >= 0 && aSrc < totalOutputSlots) {
+            for (int s = startSlot; s <= endSlot; s++) {
+              for (int o = 0; o < slots[s].numOutputs; o++) {
+                if (slots[s].outputSlotIndices[o] == aSrc &&
+                    slots[s].shapeCacheValid && !slots[s].cachedOutputShapes.empty() &&
+                    o < static_cast<int>(slots[s].cachedOutputShapes.size())) {
+                  const LongType* si = slots[s].cachedOutputShapes[o];
+                  if (si && shape::rank(si) >= 2) {
+                    currentSection.matmulK = static_cast<int>(shape::shapeOf(si)[shape::rank(si) - 1]);
+                  }
+                }
+              }
+              if (currentSection.matmulK > 0) break;
+            }
+          }
         }
       }
     }
@@ -7089,6 +7337,35 @@ void TritonIRBuilder::emitGridSync(mlir::OpBuilder& builder, mlir::Location loc,
       /*constraints=*/"=r,l,r",
       /*isPure=*/false, /*pack=*/1,
       mlir::ValueRange{syncCounterPtr, numBlocksVal});
+}
+
+
+void TritonIRBuilder::emitThreadfenceBarrier(mlir::OpBuilder& builder, mlir::Location loc) {
+  // Lightweight inter-section barrier using membar.gl + bar.sync.
+  // membar.gl flushes all pending global memory stores, making them visible
+  // to all other blocks on the GPU. bar.sync 0 synchronizes threads within
+  // the CTA so all threads in this block see the flushed state.
+  //
+  // Unlike emitGridSync(), this does NOT wait for other blocks to arrive.
+  // The GPU scheduler will eventually run all blocks. Later sections that
+  // read cross-block data will see committed writes because membar.gl
+  // guarantees global visibility ordering.
+  //
+  // This allows arbitrary grid sizes without the cooperative launch
+  // co-residency requirement (no cuLaunchCooperativeKernel needed).
+  std::string asmStr =
+      "{\n"
+      "  membar.gl;\n"
+      "  bar.sync 0;\n"
+      "}\n";
+
+  auto i32Type = builder.getI32Type();
+  builder.create<mlir::triton::ElementwiseInlineAsmOp>(
+      loc, /*resultTypes=*/mlir::TypeRange{i32Type},
+      asmStr,
+      /*constraints=*/"=r",
+      /*isPure=*/false, /*pack=*/1,
+      mlir::ValueRange{});
 }
 
 

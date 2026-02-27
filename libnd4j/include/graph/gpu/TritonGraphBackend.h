@@ -104,10 +104,14 @@ class TritonGraphBackend : public GraphBackend {
     unsigned int gridX, gridY, gridZ;
     unsigned int blockX, blockY, blockZ;
     unsigned int sharedMemBytes;
+    unsigned int globalScratchBytes;      // Triton 3.6.0+ global scratch memory
+    unsigned int globalScratchAlignment;  // Alignment for scratch allocation
     int numWarps;
     bool useCooperativeLaunch;  // true if kernel needs cuLaunchCooperativeKernel
     bool useDynamicGrid;        // true for simple 1D kernels that derive gridX from n_elements
     bool useIndirectArgs;       // true if kernel uses indirect arg table (>200 buffer args)
+    bool useMultiPhaseLaunch;   // true if kernel uses multi-phase launch (phase_id arg)
+    std::vector<TritonIRModule::LaunchPhase> launchPhases;  // Phase boundaries + grid sizes
 
     // Sub-segment range (absolute slot indices)
     int startSlot_;
@@ -125,23 +129,37 @@ class TritonGraphBackend : public GraphBackend {
     void* cachedArgTableDevice;
     size_t cachedArgTableBytes;
     int cachedArgTableDeviceId;
+    // Persistent pinned host buffer for the arg table — required for CUDA graph
+    // capture. The graph records the cudaMemcpyAsync source address, so it must
+    // remain valid across graph replays (stack-local vectors would be dead).
+    void* cachedArgTableHostPinned;
+    size_t cachedArgTableHostPinnedBytes;
     void* cachedSyncCounterDevice;
     int cachedSyncCounterDeviceId;
+    void* cachedGlobalScratchDevice;
+    size_t cachedGlobalScratchBytes;
+    int cachedGlobalScratchDeviceId;
 #endif
 
     CompiledKernel()
         : gpuModule(nullptr), kernelFunction(nullptr),
           gridX(1), gridY(1), gridZ(1),
           blockX(1), blockY(1), blockZ(1),
-          sharedMemBytes(0), numWarps(4),
+          sharedMemBytes(0), globalScratchBytes(0), globalScratchAlignment(128),
+          numWarps(4),
           useCooperativeLaunch(false),
           useDynamicGrid(true),
           useIndirectArgs(false),
+          useMultiPhaseLaunch(false),
           startSlot_(-1), endSlot_(-1)
 #ifdef SD_CUDA
           , cachedArgTableDevice(nullptr), cachedArgTableBytes(0),
-            cachedArgTableDeviceId(-1), cachedSyncCounterDevice(nullptr),
-            cachedSyncCounterDeviceId(-1)
+            cachedArgTableDeviceId(-1),
+            cachedArgTableHostPinned(nullptr), cachedArgTableHostPinnedBytes(0),
+            cachedSyncCounterDevice(nullptr),
+            cachedSyncCounterDeviceId(-1),
+            cachedGlobalScratchDevice(nullptr), cachedGlobalScratchBytes(0),
+            cachedGlobalScratchDeviceId(-1)
 #endif
     {}
   };
