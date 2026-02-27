@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """NVCC wrapper that filters out MSVC -Fd/-FS flags from response files and arguments.
 
-CMake + Ninja on Windows generates -Xcompiler=-Fd<path>\,-FS in CUDA response files.
+CMake + Ninja on Windows generates -Xcompiler=-Fd<path>\\,-FS in CUDA response files.
 The backslash-comma causes nvcc to misparse this as two arguments, with -FS interpreted
 as an input file, triggering: "A single input file is required".
 
@@ -88,13 +88,20 @@ def filter_response_file(rsp_path):
             filter_response_file._log_count = 0
         filter_response_file._log_count += 1
         if filter_response_file._log_count <= 3:
-            print(f"[nvcc_filter] Filtered PDB flags from {rsp_path}", file=sys.stderr)
+            # Use stdout so Ninja captures it in the build log
+            print(f"[nvcc_filter] Filtered PDB flags from {rsp_path}")
+            print(f"[nvcc_filter] ORIGINAL .rsp content ({len(original)} bytes):")
+            for i, line in enumerate(original.splitlines()[:10]):
+                print(f"[nvcc_filter]   orig[{i}]: {line[:300]}")
+            print(f"[nvcc_filter] FILTERED .rsp content ({len(new_content)} bytes):")
+            for i, line in enumerate(new_content.splitlines()[:10]):
+                print(f"[nvcc_filter]   filt[{i}]: {line[:300]}")
             # Show diff: lines removed
             orig_lines = set(original.splitlines())
             new_lines = set(new_content.splitlines())
             removed = orig_lines - new_lines
             for line in removed:
-                print(f"[nvcc_filter]   REMOVED: {line[:200]}", file=sys.stderr)
+                print(f"[nvcc_filter]   REMOVED: {line[:300]}")
 
         # Write filtered content to a new temp file in the same directory
         rsp_dir = os.path.dirname(rsp_path) or '.'
@@ -157,6 +164,16 @@ def main():
             filtered_args.append(arg)
 
         i += 1
+
+    # Debug: print full command (first 3 invocations only)
+    if not hasattr(main, '_cmd_count'):
+        main._cmd_count = 0
+    main._cmd_count += 1
+    if main._cmd_count <= 3:
+        print(f"[nvcc_filter] Final nvcc command ({len(filtered_args)} args):")
+        print(f"[nvcc_filter]   {nvcc}")
+        for i, a in enumerate(filtered_args):
+            print(f"[nvcc_filter]   arg[{i}]: {a[:300]}")
 
     try:
         result = subprocess.run([nvcc] + filtered_args)
