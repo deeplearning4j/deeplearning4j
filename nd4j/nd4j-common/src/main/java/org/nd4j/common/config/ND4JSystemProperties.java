@@ -426,6 +426,16 @@ public class ND4JSystemProperties {
     public static final String DSP_TRIM_INTERVAL = "nd4j.dsp.trimInterval";
 
     /**
+     * Applicability: DynamicShapePlan-based training<br>
+     * Description: Enable DSP fast path for training iterations. When enabled, the forward+backward
+     * pass is executed via DynamicShapePlanExecutor instead of per-op execution, with updaters
+     * applied post-execution.
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_TRAINING_ENABLED = "nd4j.dsp.training.enabled";
+
+    /**
      * Applicability: DynamicShapePlan-based inference<br>
      * Description: Per-slot byte threshold for selective cache eviction. When total cached
      * slot memory exceeds 512MB (after prefill), only arrays larger than this threshold are

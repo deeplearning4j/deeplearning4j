@@ -207,6 +207,22 @@ class MlxIRBuilder {
                                                      const double* tArgs, int numTArgs,
                                                      const LongType* iArgs, int numIArgs);
 
+  // ─── LLM: Rotary Position Embedding ──────────────────────────────────
+
+  /** RoPE: rope, fused_rope — uses mlx::core::fast::rope() */
+  static std::shared_ptr<void> emitRopeOp(const std::string& opName,
+                                           const std::vector<std::shared_ptr<void>>& inputs,
+                                           const double* tArgs, int numTArgs,
+                                           const LongType* iArgs, int numIArgs);
+
+  // ─── LLM: Fused mega-kernels ───────────────────────────────────────
+
+  /** Fused LLM ops: fused_rms_norm_swiglu, fused_bias_dropout_residual */
+  static std::shared_ptr<void> emitFusedLlmOp(const std::string& opName,
+                                                const std::vector<std::shared_ptr<void>>& inputs,
+                                                const double* tArgs, int numTArgs,
+                                                const LongType* iArgs, int numIArgs);
+
   // ─── Type mapping ────────────────────────────────────────────────────
 
   static int sdTypeToMlxDtype(sd::DataType dt);

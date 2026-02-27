@@ -331,6 +331,8 @@ public static final int
  * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
  * execution, cleared when execution completes or is aborted.
  */
+// Note: thread_local variables must NOT use SD_LIB_EXPORT on MSVC
+// (error C2492: data with thread storage duration may not have dll interface)
 @Namespace("sd") public static native @Cast("bool") boolean tl_graphExecutionActive(); public static native void tl_graphExecutionActive(boolean setter);
 
 // #ifdef SD_CUDA
@@ -477,6 +479,7 @@ public static final int
 // #if defined(SD_CUDA)
   public native Pointer writeEvent();
   public native @Cast("bool") boolean writeEventRecorded();
+// #else
 // #endif
 
   public native void allocatePrimary();

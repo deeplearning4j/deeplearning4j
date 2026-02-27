@@ -12,6 +12,8 @@
 #   /usr/local
 #   /usr
 #   ${CMAKE_BINARY_DIR}/triton_install (ExternalProject install dir)
+#
+# Cross-platform: works on Linux (.a) and Windows (.lib)
 
 include(FindPackageHandleStandardArgs)
 
@@ -20,9 +22,22 @@ set(_TRITON_SEARCH_PATHS
     ${TRITON_ROOT}
     $ENV{TRITON_ROOT}
     ${CMAKE_BINARY_DIR}/triton_install
-    /usr/local
-    /usr
 )
+
+# Add platform-specific search paths
+if(WIN32)
+    # Common Windows install locations
+    list(APPEND _TRITON_SEARCH_PATHS
+        "$ENV{ProgramFiles}/triton"
+        "$ENV{ProgramFiles\(x86\)}/triton"
+        "$ENV{LOCALAPPDATA}/triton"
+    )
+else()
+    list(APPEND _TRITON_SEARCH_PATHS
+        /usr/local
+        /usr
+    )
+endif()
 
 # Find include directory
 find_path(TRITON_INCLUDE_DIR
@@ -32,7 +47,7 @@ find_path(TRITON_INCLUDE_DIR
     DOC "Triton include directory"
 )
 
-# Find main library
+# Find main library — searches for both Unix and Windows names
 find_library(TRITON_LIBRARY
     NAMES triton libtriton
     PATHS ${_TRITON_SEARCH_PATHS}

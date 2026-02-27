@@ -85,7 +85,7 @@ struct OpNode {
  */
 struct SegmentProfile {
   std::vector<OpNode> nodes;
-  int categoryCounts[16] = {};          // Indexed by (int)TritonOpCategory (16 values)
+  int categoryCounts[20] = {};          // Indexed by (int)TritonOpCategory (18 values + headroom)
   int totalOps;
   int numUniqueExternalInputs;
   int numUniqueOutputs;

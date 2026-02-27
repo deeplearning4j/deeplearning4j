@@ -69,48 +69,40 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
     weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
   // E = -labels * log(predictions + epsilon) - (1 - labels) * log(1 + epsilon - predictions)
-  // Break this into steps:
+  // NOTE: NDArray copy constructor creates VIEWS (shares DataBuffer, _ownsBuffer=false).
+  // Deleting the heap original frees the shared DataBuffer, leaving the stack copy dangling.
+  // Therefore we keep all heap-allocated intermediates alive and delete them at the end.
   NDArray* predPlusEps = (*predictions) + epsilon;
   NDArray* logPredPlusEps = predPlusEps->transform(transform::Log);
-  delete predPlusEps;
-  
-  NDArray negLabels = -(*labels);  // unary negation returns value
-  NDArray* term1 = negLabels * (*logPredPlusEps);
-  delete logPredPlusEps;
-  
+
+  NDArray* negLabels = 0.0 - (*labels);
+  NDArray* term1 = (*negLabels) * (*logPredPlusEps);
+
   NDArray* oneMinusLabels = 1. - (*labels);
   NDArray* onePlusEpsMinusPred = (1. + epsilon) - (*predictions);
   NDArray* logOnePlusEpsMinusPred = onePlusEpsMinusPred->transform(transform::Log);
-  delete onePlusEpsMinusPred;
-  
+
   NDArray* term2 = (*oneMinusLabels) * (*logOnePlusEpsMinusPred);
-  delete oneMinusLabels;
-  delete logOnePlusEpsMinusPred;
-  
-  NDArray* E_ptr = (*term1) - (*term2);
-  delete term1;
-  delete term2;
-  
-  NDArray E = *E_ptr;
-  delete E_ptr;
+
+  NDArray* E = (*term1) - (*term2);
 
   // multiply E on weights
-  E *= *weightsBroad;
+  *E *= *weightsBroad;
 
   switch (reductionMode) {
     case 0: {  // 0 - "none", un-reduced weighted losses with the same shape as labels.
-      output->assign(&E);
+      output->assign(E);
       break;
     }
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-      E.reduceNumber(reduce::Sum, output);
+      E->reduceNumber(reduce::Sum, output);
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
       // all elements of weightsBroad array
       double sum;
       if (weights->isScalar()) {
-        sum = weights->e<double>(0) * E.lengthOf();
+        sum = weights->e<double>(0) * E->lengthOf();
       } else {
         NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
         sum = sumPtr->e<double>(0);
@@ -120,10 +112,10 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
       if (sum == 0.)
         *output = 0.;
       else {
-        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* eSum = E->reduceNumber(reduce::Sum);
         NDArray* result = (*eSum) / sum;
-        delete eSum;
         output->assign(result);
+        delete eSum;
         delete result;
       }
       break;
@@ -132,7 +124,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
       // array divided by number of non-zero weights
       LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
-        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
+        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E->lengthOf();
       } else {
         NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
         numOfNonZeroWeights = countNonZero->e<LongType>(0);
@@ -142,16 +134,26 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
       if (numOfNonZeroWeights == 0)
         (*output) = 0.;
       else {
-        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* eSum = E->reduceNumber(reduce::Sum);
         NDArray* result = (*eSum) / double(numOfNonZeroWeights);
-        delete eSum;
         output->assign(result);
+        delete eSum;
         delete result;
       }
       break;
     }
   }
 
+  // Clean up all heap-allocated intermediates
+  delete predPlusEps;
+  delete logPredPlusEps;
+  delete negLabels;
+  delete term1;
+  delete oneMinusLabels;
+  delete onePlusEpsMinusPred;
+  delete logOnePlusEpsMinusPred;
+  delete term2;
+  delete E;
   if (weightsBroad != weights) delete weightsBroad;
 
   return Status::OK;
@@ -241,52 +243,44 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
   if (!weights->isScalar() && !weights->isSameShape(predictions))
     weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
-  NDArray* predictPlusEps_ptr = (*predictions) + epsilon;
-  NDArray predictPlusEps = *predictPlusEps_ptr;
-  delete predictPlusEps_ptr;
-  
-  NDArray* oneMinusLabels_ptr = 1. - (*labels);
-  NDArray oneMinusLabels = *oneMinusLabels_ptr;
-  delete oneMinusLabels_ptr;
-  
-  NDArray* onePlusEpsMinusPredict_ptr = (1. + epsilon) - (*predictions);
-  NDArray onePlusEpsMinusPredict = *onePlusEpsMinusPredict_ptr;
-  delete onePlusEpsMinusPredict_ptr;
+  // NOTE: NDArray copy constructor creates VIEWS (shares DataBuffer, _ownsBuffer=false).
+  // Deleting the heap original frees the shared DataBuffer, leaving the stack copy dangling.
+  // Therefore we keep all heap-allocated intermediates alive and delete them at the end.
+  NDArray* predictPlusEps = (*predictions) + epsilon;
+  NDArray* oneMinusLabels = 1. - (*labels);
+  NDArray* onePlusEpsMinusPredict = (1. + epsilon) - (*predictions);
 
   // dE_i/dp_i = (1-y_i)/(1-p_i+eps) - y_i/(p_i+eps)
-  NDArray* oneMinusDiv = oneMinusLabels / onePlusEpsMinusPredict;
-  NDArray* labelsDiv = (*labels) / predictPlusEps;
+  NDArray* oneMinusDiv = (*oneMinusLabels) / (*onePlusEpsMinusPredict);
+  NDArray* labelsDiv = (*labels) / (*predictPlusEps);
   NDArray* dEdp = (*oneMinusDiv) - (*labelsDiv);
+  dLdp->assign(dEdp);
   delete oneMinusDiv;
   delete labelsDiv;
-  dLdp->assign(dEdp);
   delete dEdp;
-  
+
   // dE_i/dy_i = log((1+2eps)/(p_i+eps) - 1)
   double onePlus2Eps = 1. + 2. * epsilon;
-  NDArray* ratio = onePlus2Eps / predictPlusEps;
+  NDArray* ratio = onePlus2Eps / (*predictPlusEps);
   NDArray* ratioMinus1 = (*ratio) - 1.;
-  delete ratio;
   ratioMinus1->applyTransform(transform::Log, dLdl);
+  delete ratio;
   delete ratioMinus1;
 
   // Compute E for gradient calculations
-  NDArray* logPredPlusEps = predictPlusEps.transform(transform::Log);
-  NDArray* logOnePlusEpsMinusPred = onePlusEpsMinusPredict.transform(transform::Log);
-  
-  NDArray negLabels = -(*labels);  // unary negation returns value
-  NDArray* term1 = negLabels * (*logPredPlusEps);
+  NDArray* logPredPlusEps = predictPlusEps->transform(transform::Log);
+  NDArray* logOnePlusEpsMinusPred = onePlusEpsMinusPredict->transform(transform::Log);
+
+  NDArray* negLabels = 0.0 - (*labels);
+  NDArray* term1 = (*negLabels) * (*logPredPlusEps);
+  NDArray* term2 = (*oneMinusLabels) * (*logOnePlusEpsMinusPred);
+  NDArray* E = (*term1) - (*term2);
+
   delete logPredPlusEps;
-  
-  NDArray* term2 = oneMinusLabels * (*logOnePlusEpsMinusPred);
   delete logOnePlusEpsMinusPred;
-  
-  NDArray* E_ptr = (*term1) - (*term2);
+  delete negLabels;
   delete term1;
   delete term2;
-  
-  NDArray E = *E_ptr;
-  delete E_ptr;
 
   // process 3 possible reduction modes below
   switch (reductionMode) {
@@ -296,15 +290,15 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
       *dLdl *= *weightsBroad;
 
       if (weights->isScalar()) {
-        NDArray* eSum = E.reduceNumber(reduce::Sum);
+        NDArray* eSum = E->reduceNumber(reduce::Sum);
         dLdw->assign(eSum);
         delete eSum;
       } else if (weights != weightsBroad) {
         std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-        E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+        E->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
       } else
-        dLdw->assign(&E);
+        dLdw->assign(E);
 
       break;
     }
@@ -313,7 +307,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 
       double sum;
       if (weights->isScalar()) {
-        sum = weights->e<double>(0) * E.lengthOf();
+        sum = weights->e<double>(0) * E->lengthOf();
       } else {
         NDArray* sumPtr = weightsBroad->reduceNumber(reduce::Sum);
         sum = sumPtr->e<double>(0);
@@ -326,50 +320,41 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
         *dLdw = 0.;
       } else {
         NDArray* weightsDivSum = (*weightsBroad) / sum;
-        NDArray temp = *weightsDivSum;
+
+        *dLdp *= *weightsDivSum;
+        *dLdl *= *weightsDivSum;
         delete weightsDivSum;
-        
-        *dLdp *= temp;
-        *dLdl *= temp;
 
         if (weights->isScalar())
           *dLdw = 0.;
         else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          
-          // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
-          NDArray* ETimesSum = E * sum;
-          NDArray* ETimesWeights = E * (*weightsBroad);
+
+          NDArray* ETimesSum = (*E) * sum;
+          NDArray* ETimesWeights = (*E) * (*weightsBroad);
           NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
-          delete ETimesWeights;
-          
           NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
-          delete ETimesSum;
-          delete ETimesWeightsSum;
-          
           double sumSquared = sum * sum;
           NDArray* result = (*numerator) / sumSquared;
-          delete numerator;
-          
           result->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+          delete ETimesSum;
+          delete ETimesWeights;
+          delete ETimesWeightsSum;
+          delete numerator;
           delete result;
         } else {
-          // Compute (E * sum - (E * weightsBroad).reduceNumber(Sum)) / (sum * sum)
-          NDArray* ETimesSum = E * sum;
-          NDArray* ETimesWeights = E * (*weightsBroad);
+          NDArray* ETimesSum = (*E) * sum;
+          NDArray* ETimesWeights = (*E) * (*weightsBroad);
           NDArray* ETimesWeightsSum = ETimesWeights->reduceNumber(reduce::Sum);
-          delete ETimesWeights;
-          
           NDArray* numerator = (*ETimesSum) - (*ETimesWeightsSum);
-          delete ETimesSum;
-          delete ETimesWeightsSum;
-          
           double sumSquared = sum * sum;
           NDArray* result = (*numerator) / sumSquared;
-          delete numerator;
-          
           dLdw->assign(result);
+          delete ETimesSum;
+          delete ETimesWeights;
+          delete ETimesWeightsSum;
+          delete numerator;
           delete result;
         }
       }
@@ -380,7 +365,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 
       LongType numOfNonZeroWeights = 0;
       if (weights->isScalar()) {
-        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E.lengthOf();
+        if (weights->e<double>(0) != 0.) numOfNonZeroWeights = E->lengthOf();
       } else {
         NDArray* countNonZero = weightsBroad->reduceNumber(reduce::CountNonZero);
         numOfNonZeroWeights = countNonZero->e<LongType>(0);
@@ -394,37 +379,51 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
       } else {
         auto* numOfNonZeroWeightsScalar =
             NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
-        
+
         if (weights->isScalar()) {
-          NDArray* eSum = E.reduceNumber(reduce::Sum);
+          NDArray* eSum = E->reduceNumber(reduce::Sum);
           NDArray* result = (*eSum) / numOfNonZeroWeights;
-          delete eSum;
           dLdw->assign(result);
+          delete eSum;
           delete result;
+
+          // Scale prediction and label gradients by weight / numOfNonZeroWeights
+          double scaleFactor = weights->e<double>(0) / (double)numOfNonZeroWeights;
+          *dLdp *= scaleFactor;
+          *dLdl *= scaleFactor;
         } else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
+          E->reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           *dLdw /= *numOfNonZeroWeightsScalar;
+
+          // Scale prediction and label gradients by weightsBroad / numOfNonZeroWeights
+          NDArray* weightsDivNum = (*weightsBroad) / (*numOfNonZeroWeightsScalar);
+          *dLdp *= *weightsDivNum;
+          *dLdl *= *weightsDivNum;
+          delete weightsDivNum;
         } else {
-          NDArray* EDivNum = E / (*numOfNonZeroWeightsScalar);
+          NDArray* EDivNum = (*E) / (*numOfNonZeroWeightsScalar);
           dLdw->assign(EDivNum);
           delete EDivNum;
 
           NDArray* weightsDivNum = (*weightsBroad) / (*numOfNonZeroWeightsScalar);
-          NDArray temp = *weightsDivNum;
+          *dLdp *= *weightsDivNum;
+          *dLdl *= *weightsDivNum;
           delete weightsDivNum;
-          
-          *dLdp *= temp;
-          *dLdl *= temp;
         }
-        
+
         delete numOfNonZeroWeightsScalar;
       }
       break;
     }
   }
 
+  // Clean up heap-allocated intermediates
+  delete predictPlusEps;
+  delete oneMinusLabels;
+  delete onePlusEpsMinusPredict;
+  delete E;
   if (weightsBroad != weights) delete weightsBroad;
 
   return Status::OK;

@@ -654,7 +654,9 @@ function(create_and_link_library)
                 # from linked targets in all versions.
                 set(_TRITON_INSTALL "${CMAKE_BINARY_DIR}/triton_install")
                 set(_TRITON_LLVM_INSTALL "${CMAKE_BINARY_DIR}/triton_llvm_install")
-                target_include_directories(${OBJECT_LIB_NAME} PUBLIC
+                # Use SYSTEM includes to prevent Triton/LLVM headers from conflicting
+                # with libnd4j's DataType enum names (BOOL, INT8, FLOAT32 etc.)
+                target_include_directories(${OBJECT_LIB_NAME} SYSTEM PUBLIC
                     "${_TRITON_INSTALL}/include"
                     "${_TRITON_LLVM_INSTALL}/include"
                 )

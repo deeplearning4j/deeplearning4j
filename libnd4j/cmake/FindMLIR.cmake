@@ -160,6 +160,22 @@ set(MLIR_GPU_LIBS
     MLIRSPIRVDialect
 )
 
+# SPIR-V / Vulkan libraries for ARM mobile GPU targets
+set(MLIR_VULKAN_LIBS
+    MLIRSPIRVDialect
+    MLIRSPIRVTransforms
+    MLIRSPIRVConversion
+    MLIRSPIRVSerialization
+    MLIRSPIRVDeserialization
+    MLIRGPUToSPIRV
+    MLIRArithToSPIRV
+    MLIRFuncToSPIRV
+    MLIRMemRefToSPIRV
+    MLIRSCFToSPIRV
+    MLIRMathToSPIRV
+    MLIRGPUToVulkanTransforms
+)
+
 # LLVM libraries needed for JIT execution
 set(LLVM_JIT_LIBS
     LLVMCore
@@ -183,6 +199,15 @@ set(LLVM_JIT_LIBS
     LLVMScalarOpts
     LLVMipo
     LLVMPasses
+)
+
+# ARM64 / AArch64 libraries for AOT cross-compilation and native ARM JIT
+set(LLVM_AARCH64_LIBS
+    LLVMAArch64CodeGen
+    LLVMAArch64AsmParser
+    LLVMAArch64Desc
+    LLVMAArch64Info
+    LLVMAArch64Utils
 )
 
 # Create interface library for easy consumption
@@ -210,12 +235,34 @@ if(NOT TARGET MLIR::MLIR)
         endforeach()
     endif()
 
+    # Optionally add Vulkan/SPIR-V libs for ARM mobile GPU
+    if(MLIR_ENABLE_VULKAN)
+        foreach(_lib ${MLIR_VULKAN_LIBS})
+            if(TARGET ${_lib})
+                list(APPEND _mlir_libs_to_link ${_lib})
+            else()
+                message(STATUS "MLIR Vulkan library not found: ${_lib} (optional)")
+            endif()
+        endforeach()
+    endif()
+
     # Link LLVM JIT libs
     foreach(_lib ${LLVM_JIT_LIBS})
         if(TARGET ${_lib})
             list(APPEND _mlir_libs_to_link ${_lib})
         endif()
     endforeach()
+
+    # Link AArch64 backend libs (for AOT cross-compilation or native ARM JIT)
+    if(MLIR_ENABLE_AARCH64 OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+        foreach(_lib ${LLVM_AARCH64_LIBS})
+            if(TARGET ${_lib})
+                list(APPEND _mlir_libs_to_link ${_lib})
+            else()
+                message(STATUS "LLVM AArch64 library not found: ${_lib} (optional)")
+            endif()
+        endforeach()
+    endif()
 
     set_target_properties(MLIR::MLIR PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES "${MLIR_INCLUDE_DIRS}"
@@ -263,6 +310,9 @@ message(STATUS "LLVM Version: ${LLVM_VERSION}")
 message(STATUS "LLVM Include Dirs: ${LLVM_INCLUDE_DIRS}")
 message(STATUS "MLIR Include Dirs: ${MLIR_INCLUDE_DIRS}")
 message(STATUS "MLIR GPU Support: ${MLIR_ENABLE_GPU}")
+message(STATUS "MLIR Vulkan/SPIR-V: ${MLIR_ENABLE_VULKAN}")
+message(STATUS "MLIR AArch64 AOT: ${MLIR_ENABLE_AARCH64}")
+message(STATUS "MLIR AOT Target: ${MLIR_AOT_TARGET}")
 message(STATUS "MLIR Libraries: ${MLIR_LIBRARIES}")
 message(STATUS "==========================")
 message(STATUS "")

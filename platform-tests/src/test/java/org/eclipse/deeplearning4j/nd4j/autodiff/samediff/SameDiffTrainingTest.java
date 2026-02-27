@@ -205,26 +205,23 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
             SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-            SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+            SDVariable b0 = sd.var("b0", new ZeroInitScheme('c'), FLOAT, 1, 10);
 
             SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-            SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
+            SDVariable b1 = sd.var("b1", new ZeroInitScheme('c'), FLOAT, 1, 3);
 
             SDVariable z0 = in.mmul(w0).add(b0);
             SDVariable a0 = sd.math().tanh(z0);
             SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-            SDVariable a1 = sd.nn().softmax(z1,-1);
-
-            SDVariable diff = sd.math().squaredDifference(a1, label);
-            SDVariable lossMse = diff.mul(diff).mean();
+            sd.loss().softmaxCrossEntropy("loss", label, z1, null);
 
             IUpdater updater;
             switch (u) {
                 case "sgd":
-                    updater = new Sgd(3e-1);
+                    updater = new Sgd(1e-1);
                     break;
                 case "adam":
-                    updater = new Adam(1e-1);
+                    updater = new Adam(1e-2);
                     break;
                 case "nesterov":
                     updater = new Nesterovs(1e-1);
@@ -321,18 +318,17 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
         SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-        SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+        SDVariable b0 = sd.var("b0", new ZeroInitScheme('c'), FLOAT, 1, 10);
 
         SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-        SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
+        SDVariable b1 = sd.var("b1", new ZeroInitScheme('c'), FLOAT, 1, 3);
 
         SDVariable z0 = in.mmul(w0).add(b0);
         SDVariable a0 = sd.math().tanh(z0);
         SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-        SDVariable a1 = sd.nn().softmax(z1);
 
-        SDVariable diff = sd.math().squaredDifference(a1, label);
-        SDVariable lossMse = diff.mul(diff).mean();
+        SDVariable a1 = sd.nn().softmax("softmax", z1);
+        sd.loss().logLoss("loss", label, a1);
 
         TrainingConfig conf = new TrainingConfig.Builder()
                 .l2(1e-4)
@@ -379,18 +375,17 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
             SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
             SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-            SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+            SDVariable b0 = sd.var("b0", new ZeroInitScheme('c'), FLOAT, 1, 10);
 
             SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-            SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
+            SDVariable b1 = sd.var("b1", new ZeroInitScheme('c'), FLOAT, 1, 3);
 
             SDVariable z0 = in.mmul(w0).add(b0);
             SDVariable a0 = sd.math().tanh(z0);
             SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-            SDVariable a1 = sd.nn().softmax(z1);
 
-            SDVariable diff = sd.math().squaredDifference(a1, label);
-            SDVariable lossMse = diff.mul(diff).mean();
+            SDVariable a1 = sd.nn().softmax("softmax", z1);
+            sd.loss().logLoss("loss", label, a1);
 
             TrainingConfig conf = new TrainingConfig.Builder()
                     .l2(1e-4)

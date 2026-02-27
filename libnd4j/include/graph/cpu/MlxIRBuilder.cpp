@@ -27,11 +27,14 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstring>
+#include <limits>
 #include <numeric>
 
 // MLX C++ API headers
 #include <mlx/mlx.h>
+#include <mlx/fast.h>
 
 namespace mx = mlx::core;
 
@@ -48,11 +51,16 @@ static std::shared_ptr<void> wrap(mx::array&& arr) {
                                [](void* p) { delete static_cast<mx::array*>(p); });
 }
 
-// ─── Normalize op name (lowercase) ────────────────────────────────────────
+// ─── Normalize op name: lowercase + strip underscores ─────────────────────
+// OpCategoryTable has CamelCase entries ("BatchNorm" -> "batchnorm") and
+// underscore entries ("batch_norm" -> "batchnorm"). By stripping underscores
+// both forms match the same handler.
 static std::string normalizeOp(const std::string& opName) {
-  std::string n = opName;
-  std::transform(n.begin(), n.end(), n.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
+  std::string n;
+  n.reserve(opName.size());
+  for (char c : opName) {
+    if (c != '_') n.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+  }
   return n;
 }
 
@@ -121,6 +129,9 @@ bool MlxIRBuilder::isMlxMappable(const std::string& opName) {
     // Phase 3: compute-intensive
     case TritonOpCategory::CONVOLUTION:
     case TritonOpCategory::FUSED_ATTENTION:
+    // LLM-specific
+    case TritonOpCategory::ROPE:
+    case TritonOpCategory::FUSED_LLM:
       return true;
     default:
       return false;
@@ -160,6 +171,8 @@ SegmentProfile MlxIRBuilder::profileSegment(NativeSlot* slots, int startSlot, in
       case TritonOpCategory::MATMUL:
       case TritonOpCategory::CONVOLUTION:
       case TritonOpCategory::FUSED_ATTENTION:
+      case TritonOpCategory::ROPE:
+      case TritonOpCategory::FUSED_LLM:
         profile.matmulOps++;
         break;
       default:
@@ -301,32 +314,38 @@ std::shared_ptr<void> MlxIRBuilder::emitBinaryElementwise(const std::string& opN
   auto& b = unwrap(rhs);
   std::string op = normalizeOp(opName);
 
-  if (op == "add" || op == "add_scalar") return wrap(mx::add(a, b));
-  if (op == "subtract" || op == "sub" || op == "subtract_scalar") return wrap(mx::subtract(a, b));
-  if (op == "multiply" || op == "mul" || op == "mul_scalar" || op == "multiply_scalar") return wrap(mx::multiply(a, b));
-  if (op == "divide" || op == "div" || op == "div_scalar" || op == "divide_scalar") return wrap(mx::divide(a, b));
-  if (op == "floormod" || op == "mod" || op == "floormod_scalar") return wrap(mx::remainder(a, b));
-  if (op == "maximum" || op == "max_pairwise") return wrap(mx::maximum(a, b));
-  if (op == "minimum" || op == "min_pairwise") return wrap(mx::minimum(a, b));
-  if (op == "pow" || op == "pow_scalar") return wrap(mx::power(a, b));
-  if (op == "squaredsubtract" || op == "squared_subtract") {
+  if (op == "add" || op == "addscalar") return wrap(mx::add(a, b));
+  if (op == "subtract" || op == "sub" || op == "subtractscalar") return wrap(mx::subtract(a, b));
+  if (op == "multiply" || op == "mul" || op == "mulscalar" || op == "multiplyscalar") return wrap(mx::multiply(a, b));
+  if (op == "divide" || op == "div" || op == "divscalar" || op == "dividescalar") return wrap(mx::divide(a, b));
+  if (op == "floormod" || op == "mod" || op == "floormodscalar") return wrap(mx::remainder(a, b));
+  if (op == "maximum" || op == "maxpairwise") return wrap(mx::maximum(a, b));
+  if (op == "minimum" || op == "minpairwise") return wrap(mx::minimum(a, b));
+  if (op == "pow" || op == "powscalar") return wrap(mx::power(a, b));
+  if (op == "squaredsubtract") {
     auto diff = mx::subtract(a, b);
     return wrap(mx::multiply(diff, diff));
   }
-  if (op == "reversedivide" || op == "rdiv" || op == "reversedivide_scalar") return wrap(mx::divide(b, a));
-  if (op == "reversesubtract" || op == "rsub" || op == "reversesubtract_scalar") return wrap(mx::subtract(b, a));
+  if (op == "reversedivide" || op == "rdiv" || op == "reversedividescalar") return wrap(mx::divide(b, a));
+  if (op == "reversesubtract" || op == "rsub" || op == "reversesubtractscalar") return wrap(mx::subtract(b, a));
   if (op == "atan2") return wrap(mx::arctan2(a, b));
   if (op == "realdiv") return wrap(mx::divide(a, b));
   if (op == "floordiv") return wrap(mx::floor(mx::divide(a, b)));
-  if (op == "multiply_no_nan" || op == "multiplynonan") {
+  if (op == "multiplynonan") {
     // multiply but return 0 where either input is NaN
     auto product = mx::multiply(a, b);
     auto nanMask = mx::logical_or(mx::isnan(a), mx::isnan(b));
     return wrap(mx::where(nanMask, mx::array(0.0f), product));
   }
-  if (op == "swish_mul" || op == "swishmul") {
+  if (op == "swishmul") {
     // SwiGLU: x * sigmoid(x) * y
     return wrap(mx::multiply(mx::multiply(a, mx::sigmoid(a)), b));
+  }
+  // prelu: max(0, x) + alpha * min(0, x) where alpha is per-channel
+  if (op == "prelu") {
+    auto pos = mx::maximum(a, mx::array(0.0f));
+    auto neg = mx::multiply(b, mx::minimum(a, mx::array(0.0f)));
+    return wrap(mx::add(pos, neg));
   }
 
   sd_printf("MlxIRBuilder: unsupported binary op '%s'\n", opName.c_str());
@@ -342,7 +361,7 @@ std::shared_ptr<void> MlxIRBuilder::emitUnaryElementwise(const std::string& opNa
   if (op == "abs") return wrap(mx::abs(x));
   if (op == "neg" || op == "negative") return wrap(mx::negative(x));
   if (op == "exp") return wrap(mx::exp(x));
-  if (op == "log" || op == "log_x") return wrap(mx::log(x));
+  if (op == "log" || op == "logx") return wrap(mx::log(x));
   if (op == "sqrt") return wrap(mx::sqrt(x));
   if (op == "rsqrt") return wrap(mx::rsqrt(x));
   if (op == "square") return wrap(mx::square(x));
@@ -401,7 +420,7 @@ std::shared_ptr<void> MlxIRBuilder::emitUnaryElementwise(const std::string& opNa
   if (op == "expm1") return wrap(mx::subtract(mx::exp(x), mx::array(1.0f)));
   if (op == "isnan") return wrap(mx::isnan(x));
   if (op == "isinf") return wrap(mx::isinf(x));
-  if (op == "clip" || op == "clipbyvalue" || op == "clip_by_value" || op == "clamp") {
+  if (op == "clip" || op == "clipbyvalue" || op == "clamp") {
     float minVal = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 0.0f;
     float maxVal = (numTArgs > 1) ? static_cast<float>(tArgs[1]) : 6.0f;
     return wrap(mx::clip(x, mx::array(minVal), mx::array(maxVal)));
@@ -411,7 +430,7 @@ std::shared_ptr<void> MlxIRBuilder::emitUnaryElementwise(const std::string& opNa
     return wrap(mx::divide(x, mx::add(mx::array(1.0f), mx::abs(x))));
   }
   // hard_sigmoid: max(0, min(1, alpha*x + beta))  with alpha=0.2, beta=0.5
-  if (op == "hard_sigmoid" || op == "hardsigmoid") {
+  if (op == "hardsigmoid") {
     float alpha = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 0.2f;
     float beta = (numTArgs > 1) ? static_cast<float>(tArgs[1]) : 0.5f;
     auto linear = mx::add(mx::multiply(mx::array(alpha), x), mx::array(beta));
@@ -424,21 +443,46 @@ std::shared_ptr<void> MlxIRBuilder::emitUnaryElementwise(const std::string& opNa
     return wrap(mx::clip(x, mx::array(minVal), mx::array(maxVal)));
   }
   // Scalar ops: second operand from tArgs[0] (categorized as UNARY in OpCategoryTable)
-  if (op == "add_scalar") {
+  if (op == "addscalar") {
     float scalar = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 0.0f;
     return wrap(mx::add(x, mx::array(scalar)));
   }
-  if (op == "subtract_scalar") {
+  if (op == "subtractscalar") {
     float scalar = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 0.0f;
     return wrap(mx::subtract(x, mx::array(scalar)));
   }
-  if (op == "multiply_scalar") {
+  if (op == "multiplyscalar") {
     float scalar = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 1.0f;
     return wrap(mx::multiply(x, mx::array(scalar)));
   }
-  if (op == "divide_scalar") {
+  if (op == "dividescalar") {
     float scalar = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 1.0f;
     return wrap(mx::divide(x, mx::array(scalar)));
+  }
+  // fused_gelu: fast GELU approximation x * sigmoid(1.702 * x)
+  if (op == "fusedgelu") {
+    return wrap(mx::multiply(x, mx::sigmoid(mx::multiply(mx::array(1.702f), x))));
+  }
+  // hardswish: x * relu6(x + 3) / 6
+  if (op == "hardswish") {
+    auto inner = mx::add(x, mx::array(3.0f));
+    auto clamped = mx::clip(inner, mx::array(0.0f), mx::array(6.0f));
+    return wrap(mx::divide(mx::multiply(x, clamped), mx::array(6.0f)));
+  }
+  // celu: max(0,x) + min(0, alpha * (exp(x/alpha) - 1))
+  if (op == "celu") {
+    float alpha = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 1.0f;
+    auto pos = mx::maximum(x, mx::array(0.0f));
+    auto neg = mx::minimum(mx::array(0.0f),
+                           mx::multiply(mx::array(alpha),
+                                        mx::subtract(mx::exp(mx::divide(x, mx::array(alpha))),
+                                                     mx::array(1.0f))));
+    return wrap(mx::add(pos, neg));
+  }
+  // thresholdedrelu: x if x > theta, else 0
+  if (op == "thresholdedrelu") {
+    float theta = (numTArgs > 0) ? static_cast<float>(tArgs[0]) : 1.0f;
+    return wrap(mx::where(mx::greater(x, mx::array(theta)), x, mx::array(0.0f)));
   }
 
   sd_printf("MlxIRBuilder: unsupported unary op '%s'\n", opName.c_str());
@@ -454,10 +498,10 @@ std::shared_ptr<void> MlxIRBuilder::emitComparisonOp(const std::string& opName,
 
   if (op == "greater" || op == "greaterthan") return wrap(mx::greater(a, b));
   if (op == "less" || op == "lessthan") return wrap(mx::less(a, b));
-  if (op == "greater_equal" || op == "greaterthanorequal") return wrap(mx::greater_equal(a, b));
-  if (op == "less_equal" || op == "lessthanorequal") return wrap(mx::less_equal(a, b));
+  if (op == "greaterequal" || op == "greaterthanorequal") return wrap(mx::greater_equal(a, b));
+  if (op == "lessequal" || op == "lessthanorequal") return wrap(mx::less_equal(a, b));
   if (op == "equals" || op == "equal") return wrap(mx::equal(a, b));
-  if (op == "not_equals" || op == "notequals" || op == "not_equal") return wrap(mx::not_equal(a, b));
+  if (op == "notequals" || op == "notequal") return wrap(mx::not_equal(a, b));
 
   sd_printf("MlxIRBuilder: unsupported comparison op '%s'\n", opName.c_str());
   return nullptr;
@@ -469,16 +513,16 @@ std::shared_ptr<void> MlxIRBuilder::emitLogicalOp(const std::string& opName,
   auto& a = unwrap(lhs);
   std::string op = normalizeOp(opName);
 
-  if (op == "boolean_and" || op == "and" || op == "logical_and") {
+  if (op == "booleanand" || op == "and" || op == "logicaland") {
     return wrap(mx::logical_and(a, unwrap(rhs)));
   }
-  if (op == "boolean_or" || op == "or" || op == "logical_or") {
+  if (op == "booleanor" || op == "or" || op == "logicalor") {
     return wrap(mx::logical_or(a, unwrap(rhs)));
   }
-  if (op == "boolean_not" || op == "not" || op == "logical_not") {
+  if (op == "booleannot" || op == "not" || op == "logicalnot" || op == "boolnot") {
     return wrap(mx::logical_not(a));
   }
-  if (op == "boolean_xor" || op == "xor" || op == "logical_xor") {
+  if (op == "booleanxor" || op == "xor" || op == "logicalxor") {
     auto orResult = mx::logical_or(a, unwrap(rhs));
     auto andResult = mx::logical_and(a, unwrap(rhs));
     return wrap(mx::logical_and(orResult, mx::logical_not(andResult)));
@@ -527,37 +571,37 @@ std::shared_ptr<void> MlxIRBuilder::emitReductionOp(const std::string& opName,
   // Empty axes = reduce all dimensions
 
   // reduce_sum / sum
-  if (op == "reduce_sum" || op == "sum" || op == "reduce_sum_bp") {
+  if (op == "reducesum" || op == "sum" || op == "reducesumbp") {
     if (axes.empty()) return wrap(mx::sum(x, keepDims));
     return wrap(mx::sum(x, axes, keepDims));
   }
   // reduce_max / max
-  if (op == "reduce_max" || op == "max" || op == "reduce_amax") {
+  if (op == "reducemax" || op == "max" || op == "reduceamax") {
     if (axes.empty()) return wrap(mx::max(x, keepDims));
     return wrap(mx::max(x, axes, keepDims));
   }
   // reduce_min / min
-  if (op == "reduce_min" || op == "min" || op == "reduce_amin") {
+  if (op == "reducemin" || op == "min" || op == "reduceamin") {
     if (axes.empty()) return wrap(mx::min(x, keepDims));
     return wrap(mx::min(x, axes, keepDims));
   }
   // reduce_mean / mean
-  if (op == "reduce_mean" || op == "mean") {
+  if (op == "reducemean" || op == "mean") {
     if (axes.empty()) return wrap(mx::mean(x, keepDims));
     return wrap(mx::mean(x, axes, keepDims));
   }
   // reduce_prod / prod
-  if (op == "reduce_prod" || op == "prod") {
+  if (op == "reduceprod" || op == "prod") {
     if (axes.empty()) return wrap(mx::prod(x, keepDims));
     return wrap(mx::prod(x, axes, keepDims));
   }
   // reduce_variance / variance
-  if (op == "reduce_variance" || op == "variance") {
+  if (op == "reducevariance" || op == "variance") {
     if (axes.empty()) return wrap(mx::var(x, keepDims));
     return wrap(mx::var(x, axes, keepDims));
   }
   // reduce_stdev / stdev
-  if (op == "reduce_stdev" || op == "stdev") {
+  if (op == "reducestdev" || op == "stdev") {
     if (axes.empty()) {
       auto v = mx::var(x, keepDims);
       return wrap(mx::sqrt(v));
@@ -566,19 +610,19 @@ std::shared_ptr<void> MlxIRBuilder::emitReductionOp(const std::string& opName,
     return wrap(mx::sqrt(v));
   }
   // reduce_norm1 / norm1
-  if (op == "reduce_norm1" || op == "norm1") {
+  if (op == "reducenorm1" || op == "norm1") {
     auto absX = mx::abs(x);
     if (axes.empty()) return wrap(mx::sum(absX, keepDims));
     return wrap(mx::sum(absX, axes, keepDims));
   }
   // reduce_norm2 / norm2
-  if (op == "reduce_norm2" || op == "norm2") {
+  if (op == "reducenorm2" || op == "norm2") {
     auto sq = mx::square(x);
     if (axes.empty()) return wrap(mx::sqrt(mx::sum(sq, keepDims)));
     return wrap(mx::sqrt(mx::sum(sq, axes, keepDims)));
   }
   // reduce_logsumexp / logsumexp
-  if (op == "reduce_logsumexp" || op == "logsumexp") {
+  if (op == "reducelogsumexp" || op == "logsumexp") {
     if (axes.empty()) return wrap(mx::logsumexp(x, keepDims));
     return wrap(mx::logsumexp(x, axes, keepDims));
   }
@@ -597,6 +641,35 @@ std::shared_ptr<void> MlxIRBuilder::emitReductionOp(const std::string& opName,
     auto absX = mx::abs(x);
     if (axes.empty()) return wrap(mx::max(absX, keepDims));
     return wrap(mx::max(absX, axes, keepDims));
+  }
+
+  // cumsum: cumulative sum along axis
+  if (op == "cumsum") {
+    int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
+    bool exclusive = (numIArgs > 1 && iArgs) ? (iArgs[1] != 0) : false;
+    bool reverse = (numIArgs > 2 && iArgs) ? (iArgs[2] != 0) : false;
+    return wrap(mx::cumsum(x, axis, reverse, !exclusive));
+  }
+
+  // cumprod: cumulative product along axis
+  if (op == "cumprod") {
+    int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
+    bool exclusive = (numIArgs > 1 && iArgs) ? (iArgs[1] != 0) : false;
+    bool reverse = (numIArgs > 2 && iArgs) ? (iArgs[2] != 0) : false;
+    return wrap(mx::cumprod(x, axis, reverse, !exclusive));
+  }
+
+  // top_k: return k largest elements (NOTE: categorized as DATA_MOVEMENT, but handled here too)
+  if (op == "topk") {
+    int k = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 1;
+    return wrap(mx::topk(x, k, -1));
+  }
+
+  // mean_square: mean(x^2) along last dim — building block for RMS norm
+  if (op == "meansquare") {
+    auto sq = mx::square(x);
+    std::vector<int> lastAxis = {-1};
+    return wrap(mx::mean(sq, lastAxis, keepDims));
   }
 
   sd_printf("MlxIRBuilder: unsupported reduction op '%s'\n", opName.c_str());
@@ -622,7 +695,7 @@ std::shared_ptr<void> MlxIRBuilder::emitMatmulOp(const std::string& opName,
   auto& b = unwrap(inputs[1]);
 
   // matmul / batch_matmul / batched_gemm
-  if (op == "matmul" || op == "mmul" || op == "batch_matmul" || op == "batched_gemm" || op == "tensormmul") {
+  if (op == "matmul" || op == "mmul" || op == "batchmatmul" || op == "batchedgemm" || op == "tensormmul") {
     // Check for transpositions from iArgs
     bool transA = (numIArgs > 0 && iArgs) ? (iArgs[0] != 0) : false;
     bool transB = (numIArgs > 1 && iArgs) ? (iArgs[1] != 0) : false;
@@ -641,12 +714,40 @@ std::shared_ptr<void> MlxIRBuilder::emitMatmulOp(const std::string& opName,
   }
 
   // xw_plus_b: output = x @ w + b
-  if (op == "xw_plus_b") {
+  if (op == "xwplusb") {
     auto result = mx::matmul(a, b);
     if (inputs.size() >= 3) {
       result = mx::add(result, unwrap(inputs[2]));
     }
     return wrap(std::move(result));
+  }
+
+  // quantized_matmul: matmul with quantized weights
+  // MLX supports mx::quantized_matmul natively for INT4/INT8 weights
+  if (op == "quantizedmatmul") {
+    // iArgs[0] = quant type (0=Q4_0, 1=Q4_1, 2=Q5_0, 3=Q5_1, 4=Q8_0)
+    // iArgs[1] = transpose_a, iArgs[2] = transpose_b
+    bool transA = (numIArgs > 1 && iArgs) ? (iArgs[1] != 0) : false;
+    bool transB = (numIArgs > 2 && iArgs) ? (iArgs[2] != 0) : false;
+
+    auto aT = transA ? mx::swapaxes(a, -2, -1) : a;
+    auto bT = transB ? mx::swapaxes(b, -2, -1) : b;
+
+    // If weights are already dequantized (float), just do regular matmul
+    // Full quantized_matmul with scales/biases needs inputs[2]=scales, inputs[3]=biases
+    if (inputs.size() >= 4) {
+      // Use MLX quantized matmul: x @ dequantize(w, scales, biases)
+      auto& scales = unwrap(inputs[2]);
+      auto& biases = unwrap(inputs[3]);
+      int groupSize = (numIArgs > 3 && iArgs) ? static_cast<int>(iArgs[3]) : 64;
+      int bits = (numIArgs > 4 && iArgs) ? static_cast<int>(iArgs[4]) : 4;
+      // Dequantize and matmul (MLX fuses this internally)
+      auto wDequant = mx::dequantize(bT, scales, biases, groupSize, bits);
+      return wrap(mx::matmul(aT, wDequant));
+    }
+
+    // Fallback: regular matmul (weights already float)
+    return wrap(mx::matmul(aT, bT));
   }
 
   sd_printf("MlxIRBuilder: unsupported matmul op '%s'\n", opName.c_str());
@@ -672,55 +773,48 @@ std::shared_ptr<void> MlxIRBuilder::emitNormalizationOp(const std::string& opNam
   }
 
   // log_softmax
-  if (op == "log_softmax") {
+  if (op == "logsoftmax") {
     int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : -1;
     // log_softmax(x) = x - logsumexp(x, axis, keepdims=true)
     auto lse = mx::logsumexp(x, std::vector<int>{axis}, true);
     return wrap(mx::subtract(x, lse));
   }
 
-  // layer_norm: (x - mean) / sqrt(var + eps) * gamma + beta
-  if (op == "layer_norm") {
+  // layer_norm: uses mlx::core::fast::layer_norm for optimized Metal kernel
+  if (op == "layernorm" || op == "fusedlayernorm") {
     float eps = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 1e-5f;
-    // Normalize over the last axis by default
-    int axis = -1;
-    if (numIArgs > 0 && iArgs) axis = static_cast<int>(iArgs[0]);
 
-    std::vector<int> axes = {axis};
-    auto mean = mx::mean(x, axes, true);
-    auto centered = mx::subtract(x, mean);
-    auto variance = mx::mean(mx::square(centered), axes, true);
-    auto normalized = mx::multiply(centered, mx::rsqrt(mx::add(variance, mx::array(eps))));
-
-    // Apply gamma (scale) and beta (shift) if provided
-    if (inputs.size() >= 2) {
-      normalized = mx::multiply(normalized, unwrap(inputs[1]));
-    }
+    // Use MLX fast layer_norm: accumulates in higher precision
     if (inputs.size() >= 3) {
-      normalized = mx::add(normalized, unwrap(inputs[2]));
+      auto result = mx::fast::layer_norm(x, unwrap(inputs[1]), unwrap(inputs[2]), eps);
+      return wrap(std::move(result));
+    } else if (inputs.size() >= 2) {
+      // weight only, no bias — pass empty array for bias
+      auto result = mx::fast::layer_norm(x, unwrap(inputs[1]), mx::array(), eps);
+      return wrap(std::move(result));
+    } else {
+      // No weight/bias
+      auto result = mx::fast::layer_norm(x, mx::array(), mx::array(), eps);
+      return wrap(std::move(result));
     }
-
-    return wrap(std::move(normalized));
   }
 
-  // rms_norm: x * rsqrt(mean(x^2) + eps) * gamma
-  if (op == "rms_norm") {
+  // rms_norm: uses mlx::core::fast::rms_norm for optimized Metal kernel
+  if (op == "rmsnorm") {
     float eps = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 1e-5f;
-    int axis = -1;
 
-    std::vector<int> axes = {axis};
-    auto meanSq = mx::mean(mx::square(x), axes, true);
-    auto normalized = mx::multiply(x, mx::rsqrt(mx::add(meanSq, mx::array(eps))));
-
+    // Use MLX fast rms_norm: accumulates in higher precision
     if (inputs.size() >= 2) {
-      normalized = mx::multiply(normalized, unwrap(inputs[1]));
+      auto result = mx::fast::rms_norm(x, unwrap(inputs[1]), eps);
+      return wrap(std::move(result));
+    } else {
+      auto result = mx::fast::rms_norm(x, mx::array(), eps);
+      return wrap(std::move(result));
     }
-
-    return wrap(std::move(normalized));
   }
 
   // batch_norm: (x - mean) / sqrt(var + eps) * gamma + beta
-  if (op == "batch_norm") {
+  if (op == "batchnorm") {
     float eps = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 1e-5f;
     // For inference: use running mean/var (inputs[3], inputs[4])
     // For training: compute from batch (axes [0, 2, 3] for NCHW)
@@ -750,7 +844,7 @@ std::shared_ptr<void> MlxIRBuilder::emitNormalizationOp(const std::string& opNam
   }
 
   // normalize_moments: just return normalized
-  if (op == "normalize_moments") {
+  if (op == "normalizemoments") {
     return wrap(mx::array(x));  // Pass-through for now
   }
 
@@ -794,7 +888,7 @@ std::shared_ptr<void> MlxIRBuilder::emitShapeManipOp(const std::string& opName,
   }
 
   // expand_dims
-  if (op == "expand_dims") {
+  if (op == "expanddims") {
     int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
     return wrap(mx::expand_dims(x, axis));
   }
@@ -812,8 +906,32 @@ std::shared_ptr<void> MlxIRBuilder::emitShapeManipOp(const std::string& opName,
   }
 
   // flatten / flatten_2d
-  if (op == "flatten" || op == "flatten_2d") {
+  if (op == "flatten" || op == "flatten2d") {
     return wrap(mx::flatten(x));
+  }
+
+  // transpose (explicit, same as permute)
+  if (op == "transpose") {
+    if (numIArgs > 0 && iArgs) {
+      std::vector<int> axes(numIArgs);
+      for (int i = 0; i < numIArgs; i++) {
+        axes[i] = static_cast<int>(iArgs[i]);
+      }
+      return wrap(mx::transpose(x, axes));
+    }
+    return wrap(mx::transpose(x));
+  }
+
+  // triu: upper triangular
+  if (op == "triu") {
+    int k = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
+    return wrap(mx::triu(x, k));
+  }
+
+  // tril: lower triangular
+  if (op == "tril") {
+    int k = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
+    return wrap(mx::tril(x, k));
   }
 
   sd_printf("MlxIRBuilder: unsupported shape manipulation op '%s'\n", opName.c_str());
@@ -833,13 +951,13 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
   std::string op = normalizeOp(opName);
 
   // gather
-  if (op == "gather" || op == "gather_nd") {
+  if (op == "gather" || op == "gathernd") {
     if (inputs.size() < 2) return nullptr;
     auto& data = unwrap(inputs[0]);
     auto& indices = unwrap(inputs[1]);
     int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
 
-    if (op == "gather_nd") {
+    if (op == "gathernd") {
       // gather_nd: advanced indexing — use take for 1D case
       // For general case, flatten indices and gather
       auto indicesInt = mx::astype(indices, mx::int32);
@@ -851,7 +969,7 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
   }
 
   // concat
-  if (op == "concat" || op == "concat_bp") {
+  if (op == "concat" || op == "concatbp") {
     int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
     std::vector<mx::array> arrays;
     for (auto& inp : inputs) {
@@ -871,7 +989,7 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
   }
 
   // split / split_v
-  if (op == "split" || op == "split_v") {
+  if (op == "split" || op == "splitv") {
     auto& data = unwrap(inputs[0]);
     int axis = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
 
@@ -922,7 +1040,7 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
   }
 
   // strided_slice
-  if (op == "strided_slice") {
+  if (op == "stridedslice") {
     auto& data = unwrap(inputs[0]);
     // iArgs layout: [begin0, begin1, ..., end0, end1, ..., strides0, strides1, ...]
     int rank = static_cast<int>(data.ndim());
@@ -943,7 +1061,7 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
   }
 
   // scatter_nd / scatter_nd_update
-  if (op == "scatter_nd" || op == "scatter_nd_update") {
+  if (op == "scatternd" || op == "scatterndupdate") {
     if (inputs.size() < 3) return nullptr;
     auto& data = unwrap(inputs[0]);
     auto& indices = unwrap(inputs[1]);
@@ -958,6 +1076,104 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
     int axis = 0;
     auto result = mx::put_along_axis(data, indicesInt, updates, axis);
     return wrap(std::move(result));
+  }
+
+  // embedding_lookup: table[indices] via mx::take
+  if (op == "embeddinglookup") {
+    if (inputs.size() < 2) return nullptr;
+    auto& table = unwrap(inputs[0]);
+    auto& indices = unwrap(inputs[1]);
+    auto indicesInt = mx::astype(indices, mx::int32);
+    // partition_mode from iArgs[0], but for basic lookup just use take on axis 0
+    return wrap(mx::take(table, indicesInt, 0));
+  }
+
+  // repeat: replicate array elements along axis
+  if (op == "repeat") {
+    auto& data = unwrap(inputs[0]);
+    if (numIArgs >= 2 && iArgs) {
+      int repeats = static_cast<int>(iArgs[0]);
+      int axis = static_cast<int>(iArgs[1]);
+      return wrap(mx::repeat(data, repeats, axis));
+    } else if (numIArgs >= 1 && iArgs) {
+      int repeats = static_cast<int>(iArgs[0]);
+      return wrap(mx::repeat(data, repeats));
+    }
+    return nullptr;
+  }
+
+  // pad: add padding to array
+  if (op == "pad") {
+    if (inputs.size() < 2) return nullptr;
+    auto& data = unwrap(inputs[0]);
+    // padding spec from second input (Nx2 array of [before, after] per dim)
+    auto& padSpec = unwrap(inputs[1]);
+    mx::eval(padSpec);
+
+    int ndim = static_cast<int>(data.ndim());
+    std::vector<int> padWidths;
+    auto padData = padSpec.data<int32_t>();
+    for (int i = 0; i < ndim * 2; i++) {
+      padWidths.push_back(padData[i]);
+    }
+
+    // Pad mode from iArgs[0]: 0=constant, 1=reflect, 2=edge
+    float padValue = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 0.0f;
+    return wrap(mx::pad(data, padWidths, mx::array(padValue)));
+  }
+
+  // slice: extract sub-tensor (simpler than strided_slice)
+  if (op == "slice") {
+    auto& data = unwrap(inputs[0]);
+    int rank = static_cast<int>(data.ndim());
+    if (numIArgs < rank * 2) return nullptr;
+
+    std::vector<int> starts(rank), sizes(rank);
+    for (int i = 0; i < rank; i++) {
+      starts[i] = static_cast<int>(iArgs[i]);
+      sizes[i] = static_cast<int>(iArgs[rank + i]);
+    }
+    // Convert sizes to stops
+    std::vector<int> stops(rank);
+    for (int i = 0; i < rank; i++) {
+      stops[i] = starts[i] + sizes[i];
+    }
+    return wrap(mx::slice(data, starts, stops));
+  }
+
+  // kv_cache_update: copy new K/V into cache at position offset
+  if (op == "kvcacheupdate") {
+    // inputs: [key_cache, value_cache, new_keys, new_values]
+    // iArgs[0] = start position
+    if (inputs.size() < 4) return nullptr;
+    // Return updated key cache — actual in-place update done at execution level
+    // For MLX lazy graph, concatenate or slice-assign
+    auto& cache = unwrap(inputs[0]);
+    auto& newKV = unwrap(inputs[2]);
+    int startPos = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
+    int newLen = newKV.shape(1);  // seq_len dimension
+
+    // Slice: cache[:, startPos:startPos+newLen, :, :] = newKV
+    // MLX doesn't have slice_update, so concatenate old prefix + new + old suffix
+    if (startPos == 0) {
+      // Replacing from beginning
+      auto suffix = mx::slice(cache, {0, newLen}, {cache.shape(0), cache.shape(1)});
+      return wrap(mx::concatenate({newKV, suffix}, 1));
+    }
+    auto prefix = mx::slice(cache, {0, 0}, {cache.shape(0), startPos});
+    int endPos = startPos + newLen;
+    if (endPos < cache.shape(1)) {
+      auto suffix = mx::slice(cache, {0, endPos}, {cache.shape(0), cache.shape(1)});
+      return wrap(mx::concatenate({prefix, newKV, suffix}, 1));
+    }
+    return wrap(mx::concatenate({prefix, newKV}, 1));
+  }
+
+  // kv_scatter: scatter KV pairs into cache
+  if (op == "kvscatter") {
+    if (inputs.size() < 2) return nullptr;
+    // Fall through to native — complex scatter semantics
+    return nullptr;
   }
 
   sd_printf("MlxIRBuilder: unsupported data movement op '%s'\n", opName.c_str());
@@ -988,12 +1204,12 @@ std::shared_ptr<void> MlxIRBuilder::emitConstantGenOp(const std::string& opName,
   auto dtype = sdTypeToMlxDtypeInternal(outputArr->dataType());
 
   // zeros_like / zeros_as / zeroslike
-  if (op == "zeros_like" || op == "zeros_as" || op == "zeroslike") {
+  if (op == "zeroslike" || op == "zerosas") {
     return wrap(mx::zeros(shape, dtype));
   }
 
   // ones_like / ones_as / oneslike
-  if (op == "ones_like" || op == "ones_as" || op == "oneslike") {
+  if (op == "oneslike" || op == "onesas") {
     return wrap(mx::ones(shape, dtype));
   }
 
@@ -1003,7 +1219,7 @@ std::shared_ptr<void> MlxIRBuilder::emitConstantGenOp(const std::string& opName,
   }
 
   // set_scalar: fill with tArgs[0]
-  if (op == "set_scalar") {
+  if (op == "setscalar") {
     float val = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 0.0f;
     return wrap(mx::full(shape, mx::array(val), dtype));
   }
@@ -1017,7 +1233,7 @@ std::shared_ptr<void> MlxIRBuilder::emitConstantGenOp(const std::string& opName,
   }
 
   // shape_of: return the shape as an array
-  if (op == "shape_of") {
+  if (op == "shapeof") {
     if (!inputs.empty()) {
       auto& x = unwrap(inputs[0]);
       auto xShape = x.shape();
@@ -1028,8 +1244,42 @@ std::shared_ptr<void> MlxIRBuilder::emitConstantGenOp(const std::string& opName,
   }
 
   // min_max_datatype: return type limits
-  if (op == "min_max_datatype") {
+  if (op == "minmaxdatatype") {
     return wrap(mx::zeros(shape, dtype));
+  }
+
+  // eye: identity matrix
+  if (op == "eye") {
+    int n = shape.size() > 0 ? shape[0] : 1;
+    int m = shape.size() > 1 ? shape[1] : n;
+    return wrap(mx::eye(n, m, 0, dtype));
+  }
+
+  // linspace: evenly spaced values
+  if (op == "linspace") {
+    float start = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 0.0f;
+    float stop = (numTArgs > 1 && tArgs) ? static_cast<float>(tArgs[1]) : 1.0f;
+    int num = shape.size() > 0 ? shape[0] : 100;
+    return wrap(mx::linspace(start, stop, num, dtype));
+  }
+
+  // fill: fill with value
+  if (op == "fill") {
+    float val = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 0.0f;
+    return wrap(mx::full(shape, mx::array(val), dtype));
+  }
+
+  // onehot: one-hot encoding
+  if (op == "onehot") {
+    if (!inputs.empty()) {
+      auto& indices = unwrap(inputs[0]);
+      auto indicesInt = mx::astype(indices, mx::int32);
+      int depth = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : shape.back();
+      // Build one-hot manually: eye(depth)[indices]
+      auto eye = mx::eye(depth);
+      return wrap(mx::take(eye, indicesInt, 0));
+    }
+    return nullptr;
   }
 
   sd_printf("MlxIRBuilder: unsupported constant gen op '%s'\n", opName.c_str());
@@ -1089,7 +1339,7 @@ std::shared_ptr<void> MlxIRBuilder::emitConvolutionOp(const std::string& opName,
   }
 
   // depthwise_conv2d
-  if (op == "depthwise_conv2d") {
+  if (op == "depthwiseconv2d") {
     int sH = (numIArgs > 2) ? static_cast<int>(iArgs[2]) : 1;
     int sW = (numIArgs > 3) ? static_cast<int>(iArgs[3]) : 1;
     int pH = (numIArgs > 4) ? static_cast<int>(iArgs[4]) : 0;
@@ -1166,7 +1416,27 @@ std::shared_ptr<void> MlxIRBuilder::emitConvolutionOp(const std::string& opName,
   }
 
   // Backprop variants: always fall back to native execution
-  if (op == "im2col_bp" || op == "col2im_bp") {
+  if (op == "im2colbp" || op == "col2imbp") {
+    sd_printf("MlxIRBuilder: %s using native fallback\n", op.c_str());
+    return nullptr;
+  }
+
+  // conv1d: 1D convolution — MLX supports conv1d natively
+  if (op == "conv1d") {
+    int sW = (numIArgs > 2) ? static_cast<int>(iArgs[2]) : 1;
+    int pW = (numIArgs > 4) ? static_cast<int>(iArgs[4]) : 0;
+    int dW = (numIArgs > 6) ? static_cast<int>(iArgs[6]) : 1;
+
+    auto result = mx::conv1d(input, filter, sW, pW, dW, 1);
+    if (inputs.size() >= 3) {
+      result = mx::add(result, unwrap(inputs[2]));
+    }
+    return wrap(std::move(result));
+  }
+
+  // Pooling ops: fall back to native for now
+  // TODO: implement via custom Metal kernel or sliding window
+  if (op == "maxpool2d" || op == "avgpool2d" || op == "maxpool3d" || op == "avgpool3d") {
     sd_printf("MlxIRBuilder: %s using native fallback\n", op.c_str());
     return nullptr;
   }
@@ -1185,9 +1455,10 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
                                                            const LongType* iArgs, int numIArgs) {
   std::string op = normalizeOp(opName);
 
-  // Scaled dot-product attention: softmax(Q @ K^T / sqrt(dk)) @ V
-  if (op == "multi_head_attention" || op == "onnx_multi_head_attention" ||
-      op == "dot_product_attention_v2") {
+  // Scaled dot-product attention via MLX fast SDPA kernel
+  // mlx::core::fast::scaled_dot_product_attention(Q, K, V, scale, mask)
+  // Dispatches to optimized Metal shader on Apple Silicon
+  if (op == "multiheadattention" || op == "onnxmultiheadattention" || op == "dotproductattentionv2") {
 
     if (inputs.size() < 3) {
       sd_printf("MlxIRBuilder: attention needs >= 3 inputs (Q, K, V), got %d\n",
@@ -1209,27 +1480,257 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
       scale = 1.0f / std::sqrt(static_cast<float>(dk));
     }
 
-    // Use MLX fast SDPA when available
-    // mlx::core::fast::scaled_dot_product_attention(Q, K, V, scale, mask)
-    // For now, implement manually: softmax(Q @ K^T * scale) @ V
-    auto scores = mx::matmul(Q, mx::swapaxes(K, -2, -1));
-    scores = mx::multiply(scores, mx::array(scale));
-
-    // Apply attention mask if provided (input[3])
+    // Use MLX native fast SDPA — optimized Metal kernel
+    // Signature: scaled_dot_product_attention(q, k, v, scale, mask, stream)
+    // mask can be a bool/additive array broadcastable to [B, N, T_q, T_kv]
     if (inputs.size() >= 4 && inputs[3]) {
       auto& mask = unwrap(inputs[3]);
-      // Mask: 0 = attend, large negative = mask out (or 1/0 bool mask)
-      // Convention: add mask to scores (mask has -inf for masked positions)
-      scores = mx::add(scores, mask);
+      auto result = mx::fast::scaled_dot_product_attention(Q, K, V, scale, mask);
+      return wrap(std::move(result));
+    } else {
+      // No mask — pass empty array
+      auto result = mx::fast::scaled_dot_product_attention(Q, K, V, scale, mx::array());
+      return wrap(std::move(result));
+    }
+  }
+
+  // flash_attention: same as SDPA but always causal
+  if (op == "flashattention") {
+    if (inputs.size() < 3) return nullptr;
+
+    auto& Q = unwrap(inputs[0]);
+    auto& K = unwrap(inputs[1]);
+    auto& V = unwrap(inputs[2]);
+
+    bool causal = (numIArgs > 0 && iArgs) ? (iArgs[0] != 0) : true;
+    float scale = 1.0f;
+    if (numTArgs > 0 && tArgs) {
+      scale = static_cast<float>(tArgs[0]);
+    } else {
+      int dk = K.shape(-1);
+      scale = 1.0f / std::sqrt(static_cast<float>(dk));
     }
 
-    auto attnWeights = mx::softmax(scores, -1);
+    if (inputs.size() >= 4 && inputs[3]) {
+      return wrap(mx::fast::scaled_dot_product_attention(Q, K, V, scale, unwrap(inputs[3])));
+    }
+    // For causal, we could pass "causal" string mask but MLX C++ API may differ
+    // Use explicit causal mask
+    if (causal) {
+      int seqLen = Q.shape(-2);
+      int kvLen = K.shape(-2);
+      auto causalMask = mx::triu(mx::full({seqLen, kvLen}, mx::array(-std::numeric_limits<float>::infinity())), 1);
+      return wrap(mx::fast::scaled_dot_product_attention(Q, K, V, scale, causalMask));
+    }
+    return wrap(mx::fast::scaled_dot_product_attention(Q, K, V, scale, mx::array()));
+  }
 
-    auto result = mx::matmul(attnWeights, V);
+  // grouped_query_attention: GQA with head repeating
+  if (op == "groupedqueryattention") {
+    if (inputs.size() < 3) return nullptr;
+
+    auto& Q = unwrap(inputs[0]);  // [B, seqLen, numHeads, headDim]
+    auto& K = unwrap(inputs[1]);  // [B, kvLen, numKVHeads, headDim]
+    auto& V = unwrap(inputs[2]);  // [B, kvLen, numKVHeads, headDim]
+
+    int numHeads = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : Q.shape(2);
+    int numKVHeads = (numIArgs > 1 && iArgs) ? static_cast<int>(iArgs[1]) : numHeads;
+    bool causal = (numIArgs > 2 && iArgs) ? (iArgs[2] != 0) : true;
+
+    float scale = 1.0f;
+    if (numTArgs > 0 && tArgs) {
+      scale = static_cast<float>(tArgs[0]);
+    } else {
+      int dk = Q.shape(-1);
+      scale = 1.0f / std::sqrt(static_cast<float>(dk));
+    }
+
+    // Reshape Q/K/V to [B, numHeads, seqLen, headDim] for SDPA
+    auto Qr = mx::transpose(Q, {0, 2, 1, 3});
+    auto Kr = mx::transpose(K, {0, 2, 1, 3});
+    auto Vr = mx::transpose(V, {0, 2, 1, 3});
+
+    // Repeat K/V heads to match Q heads for GQA
+    if (numKVHeads < numHeads) {
+      int repeats = numHeads / numKVHeads;
+      // Expand: [B, numKVHeads, kvLen, headDim] -> [B, numHeads, kvLen, headDim]
+      Kr = mx::repeat(Kr, repeats, 1);
+      Vr = mx::repeat(Vr, repeats, 1);
+    }
+
+    // Build mask
+    mx::array mask;
+    if (inputs.size() >= 4 && inputs[3]) {
+      mask = unwrap(inputs[3]);
+    } else if (causal) {
+      int seqLen = Qr.shape(-2);
+      int kvLen = Kr.shape(-2);
+      mask = mx::triu(mx::full({seqLen, kvLen}, mx::array(-std::numeric_limits<float>::infinity())), 1);
+    }
+
+    auto result = mx::fast::scaled_dot_product_attention(Qr, Kr, Vr, scale, mask);
+    // Transpose back: [B, numHeads, seqLen, headDim] -> [B, seqLen, numHeads, headDim]
+    result = mx::transpose(result, {0, 2, 1, 3});
     return wrap(std::move(result));
   }
 
+  // sliding_window_attention: local attention with fixed window
+  if (op == "slidingwindowattention") {
+    if (inputs.size() < 3) return nullptr;
+
+    auto& Q = unwrap(inputs[0]);
+    auto& K = unwrap(inputs[1]);
+    auto& V = unwrap(inputs[2]);
+
+    int windowSize = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 4096;
+    int numHeads = (numIArgs > 1 && iArgs) ? static_cast<int>(iArgs[1]) : Q.shape(2);
+    int numKVHeads = (numIArgs > 2 && iArgs) ? static_cast<int>(iArgs[2]) : numHeads;
+
+    float scale = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0])
+                : 1.0f / std::sqrt(static_cast<float>(Q.shape(-1)));
+
+    auto Qr = mx::transpose(Q, {0, 2, 1, 3});
+    auto Kr = mx::transpose(K, {0, 2, 1, 3});
+    auto Vr = mx::transpose(V, {0, 2, 1, 3});
+
+    if (numKVHeads < numHeads) {
+      int repeats = numHeads / numKVHeads;
+      Kr = mx::repeat(Kr, repeats, 1);
+      Vr = mx::repeat(Vr, repeats, 1);
+    }
+
+    // Build sliding window causal mask
+    int seqLen = Qr.shape(-2);
+    int kvLen = Kr.shape(-2);
+    auto fullMask = mx::full({seqLen, kvLen}, mx::array(-std::numeric_limits<float>::infinity()));
+    // Allow attending to positions within window
+    auto causalMask = mx::triu(fullMask, 1);
+    auto windowMask = mx::tril(fullMask, -windowSize);
+    auto mask = mx::maximum(causalMask, windowMask);
+
+    auto result = mx::fast::scaled_dot_product_attention(Qr, Kr, Vr, scale, mask);
+    result = mx::transpose(result, {0, 2, 1, 3});
+    return wrap(std::move(result));
+  }
+
+  // apply_alibi: add ALiBi linear bias to attention scores
+  if (op == "applyalibi") {
+    // This op takes attention scores and adds linear position bias
+    // For integration with SDPA, we'd need to compute the bias mask
+    // Fall back to native for now — ALiBi is less common in Apple Silicon models
+    sd_printf("MlxIRBuilder: apply_alibi using native fallback\n", "");
+    return nullptr;
+  }
+
   sd_printf("MlxIRBuilder: unsupported attention op '%s'\n", opName.c_str());
+  return nullptr;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LLM: Rotary Position Embedding (RoPE)
+// ═══════════════════════════════════════════════════════════════════════════
+
+std::shared_ptr<void> MlxIRBuilder::emitRopeOp(const std::string& opName,
+                                                 const std::vector<std::shared_ptr<void>>& inputs,
+                                                 const double* tArgs, int numTArgs,
+                                                 const LongType* iArgs, int numIArgs) {
+  if (inputs.empty()) return nullptr;
+  auto& x = unwrap(inputs[0]);
+
+  // iArgs: [mode, n_past, n_dims, n_ctx]
+  // mode: 0=standard/LLaMA, 1=neox, 2=gpt-j
+  int mode = (numIArgs > 0 && iArgs) ? static_cast<int>(iArgs[0]) : 0;
+  int nPast = (numIArgs > 1 && iArgs) ? static_cast<int>(iArgs[1]) : 0;
+  int nDims = (numIArgs > 2 && iArgs) ? static_cast<int>(iArgs[2]) : x.shape(-1);
+
+  // tArgs: [freq_base, freq_scale]
+  float freqBase = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 10000.0f;
+  float freqScale = (numTArgs > 1 && tArgs) ? static_cast<float>(tArgs[1]) : 1.0f;
+
+  // traditional=true for GPT-J style, false for LLaMA/NeoX
+  bool traditional = (mode == 2);
+
+  // Use MLX fast RoPE — optimized Metal kernel
+  // mx::fast::rope(a, dims, traditional, base, scale, offset, freqs)
+  auto result = mx::fast::rope(x, nDims, traditional, freqBase, freqScale, nPast);
+
+  return wrap(std::move(result));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LLM: Fused mega-kernels
+// ═══════════════════════════════════════════════════════════════════════════
+
+std::shared_ptr<void> MlxIRBuilder::emitFusedLlmOp(const std::string& opName,
+                                                      const std::vector<std::shared_ptr<void>>& inputs,
+                                                      const double* tArgs, int numTArgs,
+                                                      const LongType* iArgs, int numIArgs) {
+  std::string op = normalizeOp(opName);
+
+  // fused_rms_norm_swiglu: silu(rms_norm(input) @ W_gate) * (rms_norm(input) @ W_up)
+  if (op == "fusedrmsnormswiglu") {
+    if (inputs.size() < 4) {
+      sd_printf("MlxIRBuilder: fused_rms_norm_swiglu needs 4 inputs, got %d\n",
+                static_cast<int>(inputs.size()));
+      return nullptr;
+    }
+
+    auto& x = unwrap(inputs[0]);
+    auto& gamma = unwrap(inputs[1]);
+    auto& wGate = unwrap(inputs[2]);
+    auto& wUp = unwrap(inputs[3]);
+
+    float eps = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 1e-5f;
+
+    // Step 1: RMS norm with fast kernel
+    auto normed = mx::fast::rms_norm(x, gamma, eps);
+
+    // Step 2: Gate projection + SiLU
+    auto gate = mx::matmul(normed, wGate);
+    auto gateActivated = mx::multiply(gate, mx::sigmoid(gate));  // silu
+
+    // Step 3: Up projection
+    auto up = mx::matmul(normed, wUp);
+
+    // Step 4: Element-wise multiply
+    return wrap(mx::multiply(gateActivated, up));
+  }
+
+  // fused_bias_dropout_residual: dropout(input + bias) + residual
+  if (op == "fusedbiasdropoutresidual") {
+    if (inputs.size() < 3) return nullptr;
+    auto& input = unwrap(inputs[0]);
+    auto& bias = unwrap(inputs[1]);
+    auto& residual = unwrap(inputs[2]);
+
+    // dropout prob from tArgs[0] — at inference time, prob=0.0 means no dropout
+    float dropProb = (numTArgs > 0 && tArgs) ? static_cast<float>(tArgs[0]) : 0.0f;
+    bool training = (iArgs && numIArgs > 0) ? (iArgs[0] != 0) : false;
+
+    auto biased = mx::add(input, bias);
+
+    if (training && dropProb > 0.0f) {
+      // Apply dropout: scale by 1/(1-p), zero out randomly
+      // For inference, skip dropout entirely
+      auto mask = mx::greater(mx::random::uniform(biased.shape()), mx::array(dropProb));
+      biased = mx::multiply(biased, mx::astype(mask, biased.dtype()));
+      biased = mx::divide(biased, mx::array(1.0f - dropProb));
+    }
+
+    return wrap(mx::add(biased, residual));
+  }
+
+  // fused_elementwise_chain: sequence of elementwise ops in one kernel
+  // For MLX this decomposes to individual ops (MLX handles fusion in its graph evaluator)
+  if (op == "fusedelementwisechain") {
+    if (inputs.empty()) return nullptr;
+    // The chain is specified via iArgs op codes
+    // For now, fall through to native — the chain semantics are complex
+    sd_printf("MlxIRBuilder: fused_elementwise_chain using native fallback\n", "");
+    return nullptr;
+  }
+
+  sd_printf("MlxIRBuilder: unsupported fused LLM op '%s'\n", opName.c_str());
   return nullptr;
 }
 
@@ -1389,6 +1890,19 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
         result = emitFusedAttentionOp(slot.opName, inputs,
                                        slot.tArgs, slot.numTArgs,
                                        slot.iArgs, slot.numIArgs);
+        break;
+
+      // ── LLM-specific ops ──
+      case TritonOpCategory::ROPE:
+        result = emitRopeOp(slot.opName, inputs,
+                             slot.tArgs, slot.numTArgs,
+                             slot.iArgs, slot.numIArgs);
+        break;
+
+      case TritonOpCategory::FUSED_LLM:
+        result = emitFusedLlmOp(slot.opName, inputs,
+                                  slot.tArgs, slot.numTArgs,
+                                  slot.iArgs, slot.numIArgs);
         break;
 
       default:

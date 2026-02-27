@@ -97,6 +97,8 @@
 #include <mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h>
 #include <mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h>
 #include <mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h>
+#include <mlir/Conversion/NVVMToLLVM/NVVMToLLVM.h>
+#include <mlir/Dialect/LLVMIR/Transforms/InlinerInterfaceImpl.h>
 
 // LLVM backend for PTX generation
 #include <llvm/IR/LLVMContext.h>
@@ -109,6 +111,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/ADT/SmallString.h>
+#include <llvm/TargetParser/Triple.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IRReader/IRReader.h>
 #include <llvm/Linker/Linker.h>
@@ -118,16 +121,32 @@
 
 
 // Triton dialect passes — TTIR -> TTGIR -> LLVM
-#include <triton/Conversion/TritonToTritonGPU/TritonToTritonGPUPass.h>
+#include <triton/Conversion/TritonToTritonGPU/Passes.h>
 #include <triton/Conversion/TritonGPUToLLVM/Passes.h>
 #include <triton/Dialect/TritonGPU/Transforms/Passes.h>
 #include <triton/Target/LLVMIR/Passes.h>
 
+// Triton NVIDIA GPU dialect transforms (tensor memory, proxy fence, etc.)
+#if __has_include(<triton/Dialect/TritonNvidiaGPU/Transforms/Passes.h>)
+#include <triton/Dialect/TritonNvidiaGPU/Transforms/Passes.h>
+#define HAVE_TRITON_NVIDIA_GPU_DIALECT 1
+#endif
+
+// Gluon dialect (inliner pass, new in Triton 3.6.0)
+#if __has_include(<triton/Dialect/Gluon/Transforms/Passes.h>)
+#include <triton/Dialect/Gluon/Transforms/Passes.h>
+#define HAVE_TRITON_GLUON 1
+#endif
+
 // NVIDIA backend passes (when building with NVIDIA codegen backend)
 #if __has_include(<TritonNVIDIAGPUToLLVM/Passes.h>)
 #include <TritonNVIDIAGPUToLLVM/Passes.h>
-#include <NVGPUToLLVM/NVGPUToLLVMPass.h>
 #define HAVE_TRITON_NVIDIA_PASSES 1
+#endif
+
+// NVGPU to LLVM pass
+#if __has_include(<NVGPUToLLVM/Passes.h>)
+#include <NVGPUToLLVM/Passes.h>
 #endif
 
 // AMD backend passes (when building with AMD codegen backend)
@@ -556,6 +575,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   // Determine target-specific parameters
   std::string targetStr;
   int computeCapability = 0;
+  int ptxVersion = 0;  // PTX ISA version, derived from compute capability
 
   switch (target) {
     case TritonGpuTarget::NVIDIA: {
@@ -587,6 +607,16 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
                   numCTAs, computeCapability);
         numCTAs = 1;
       }
+      // Derive PTX ISA version from compute capability.
+      // This must match the minimum PTX version that supports the target SM.
+      if (computeCapability >= 100) ptxVersion = 86;
+      else if (computeCapability >= 90) ptxVersion = 80;
+      else if (computeCapability >= 89) ptxVersion = 78;
+      else if (computeCapability >= 86) ptxVersion = 71;
+      else if (computeCapability >= 80) ptxVersion = 70;
+      else if (computeCapability >= 75) ptxVersion = 63;
+      else if (computeCapability >= 70) ptxVersion = 60;
+      else ptxVersion = 50;  // fallback for older GPUs
       targetStr = "cuda:" + std::to_string(computeCapability);
       break;
     }
@@ -648,8 +678,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     pm.addPass(mlir::createCSEPass());
 
     // Phase 2: TTIR -> TTGIR
-    pm.addPass(mlir::triton::createConvertTritonToTritonGPUPass(
-        targetStr, numWarps, /*threadsPerWarp=*/32, /*numCTAs=*/numCTAs));
+    {
+      mlir::triton::ConvertTritonToTritonGPUOptions ttirOpts;
+      ttirOpts.target = targetStr;
+      ttirOpts.numWarps = numWarps;
+      ttirOpts.threadsPerWarp = 32;
+      ttirOpts.numCTAs = numCTAs;
+      pm.addPass(mlir::triton::createConvertTritonToTritonGPU(ttirOpts));
+    }
 
     // Phase 3: Full TTGIR optimization pipeline (Triton NVIDIA backend)
     pm.addPass(mlir::triton::gpu::createTritonGPUCoalesce());
@@ -705,10 +741,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
             compileId, elapsedMsSince(phase12Start));
 
   // Phase 4: TTGIR -> LLVM MLIR dialect
-  // Pass order matches Triton NVIDIA backend (compiler.py lines 265-283)
+  // Pass order matches Triton 3.6.0 NVIDIA backend (compiler.py make_llir)
   const auto phase4Start = std::chrono::steady_clock::now();
   sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START\n", compileId);
   {
+    // Register LLVM dialect inliner interface (required by GluonInline pass in 3.6.0)
+    mlir::DialectRegistry phase4Registry;
+    mlir::LLVM::registerInlinerInterface(phase4Registry);
+    moduleOp->getContext()->appendDialectRegistry(phase4Registry);
     mlir::PassManager pm(moduleOp->getContext());
     if (tritonVerbose) {
 #ifdef SD_TRITON_HAS_PASS_INSTRUMENTATION
@@ -721,34 +761,50 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     switch (target) {
       case TritonGpuTarget::NVIDIA: {
 #ifdef HAVE_TRITON_NVIDIA_PASSES
-        // 1. Decompose unsupported layout conversions
-        pm.addPass(mlir::triton::NVIDIA::createDecomposeUnsupportedConversionsPass());
-        // 1b. Combine tensor select and if (matches Triton compiler.py line 274)
+        // Triton 3.6.0 NVIDIA backend pass pipeline (matches compiler.py make_llir)
+        // 1. Combine tensor select and if
         pm.addPass(mlir::triton::gpu::createTritonGPUCombineTensorSelectAndIf());
-        // 2. SCF -> CF (must come BEFORE AllocateSharedMemory — membar needs cf dialect)
-        pm.addPass(mlir::createConvertSCFToCFPass());
-        // 3. Index -> LLVM
-        pm.addPass(mlir::createConvertIndexToLLVMPass());
-        // 4. Shared memory allocation (after SCF lowering)
-        pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
-        // 5. TritonGPU -> LLVM
-        pm.addPass(mlir::triton::createConvertTritonGPUToLLVMPass(computeCapability));
-        // 6. NVGPU -> LLVM
-        pm.addPass(mlir::triton::createConvertNVGPUToLLVMPass());
-        // 7. Arith -> LLVM
-        pm.addPass(mlir::createArithToLLVMConversionPass());
-        // 8. Math -> LLVM (lowering remaining math ops like exp, log, etc.)
-        pm.addPass(mlir::createConvertMathToLLVMPass());
-        // 9. ControlFlow -> LLVM (lowering remaining cf.br, cf.cond_br, etc.)
-        pm.addPass(mlir::createConvertControlFlowToLLVMPass());
-        // 10. Func -> LLVM (lowering remaining func.func, func.call, etc.)
-        pm.addPass(mlir::createConvertFuncToLLVMPass());
-        // 11. Reconcile unrealized casts (resolves leftover builtin.unrealized_conversion_cast)
-        pm.addPass(mlir::createReconcileUnrealizedCastsPass());
-        // 12. Final cleanup
+        // 2. Allocate warp groups (new in 3.6.0)
+        pm.addPass(mlir::triton::gpu::createTritonGPUAllocateWarpGroups());
+        // 3. SCF -> CF (must come BEFORE AllocateSharedMemory — membar needs cf dialect)
+        pm.addPass(mlir::createSCFToControlFlowPass());
+        // 4. Gluon inliner (new in 3.6.0)
+#ifdef HAVE_TRITON_GLUON
+        pm.addPass(mlir::triton::gluon::createGluonInline());
+#else
+        pm.addPass(mlir::createInlinerPass());
+#endif
+        // 5. Allocate shared memory NV (renamed in 3.6.0, takes capability + PTX version)
+        pm.addPass(mlir::triton::createAllocateSharedMemoryNvPass(computeCapability, ptxVersion));
+        // 6. Allocate tensor memory (new in 3.6.0)
+#ifdef HAVE_TRITON_NVIDIA_GPU_DIALECT
+        pm.addPass(mlir::triton::nvidia_gpu::createTritonTensorMemoryAllocationPass());
+#endif
+        // 7. Allocate global scratch memory (new in 3.6.0)
+        pm.addPass(mlir::triton::gpu::createTritonGPUGlobalScratchAllocationPass());
+        // 8. Proxy fence insertion (new in 3.6.0)
+#ifdef HAVE_TRITON_NVIDIA_GPU_DIALECT
+        {
+          mlir::triton::nvidia_gpu::TritonGPUProxyFenceInsertionOptions fenceOpts;
+          fenceOpts.computeCapability = computeCapability;
+          pm.addPass(mlir::triton::nvidia_gpu::createTritonGPUProxyFenceInsertion(fenceOpts));
+        }
+#endif
+        // 9. TritonGPU -> LLVM
+        pm.addPass(mlir::triton::createConvertTritonGPUToLLVMPass(computeCapability, ptxVersion));
+        // 10. Canonicalize + CSE
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
+        // 11. NVGPU -> LLVM
+        pm.addPass(mlir::triton::createConvertNVGPUToLLVM());
+        // 12. Warp specialize to LLVM (new in 3.6.0)
+        pm.addPass(mlir::triton::createConvertWarpSpecializeToLLVM());
+        // 13. Final cleanup
         pm.addPass(mlir::createCanonicalizerPass());
         pm.addPass(mlir::createCSEPass());
         pm.addPass(mlir::createSymbolDCEPass());
+        // 14. NVVM -> LLVM (replaces arith+math+cf to LLVM in 3.6.0)
+        pm.addPass(mlir::createConvertNVVMToLLVMPass());
         hasBackendLowering = true;
 #else
         sd_printf("TritonTargetDispatch::compile: NVIDIA backend passes not available "
@@ -762,9 +818,9 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         const bool hipFtz = true;
         pm.addPass(mlir::triton::AMD::createDecomposeUnsupportedConversionsPass(targetArch));
         pm.addPass(mlir::triton::AMD::createOptimizeLDSUsagePass(targetArch, 0));
-        pm.addPass(mlir::createConvertSCFToCFPass());
+        pm.addPass(mlir::createSCFToControlFlowPass());
         pm.addPass(mlir::createConvertIndexToLLVMPass());
-        pm.addPass(mlir::triton::gpu::createAllocateSharedMemoryPass());
+        pm.addPass(mlir::triton::gpu::createAllocateSharedMemory());
         pm.addPass(mlir::triton::createConvertTritonAMDGPUToLLVMPass(targetArch, hipFtz));
         pm.addPass(mlir::createCanonicalizerPass());
         pm.addPass(mlir::createCSEPass());
@@ -961,7 +1017,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
   }
 
-  llvmModule->setTargetTriple(triple);
+  llvmModule->setTargetTriple(llvm::Triple(triple));
 
   std::string lookupError;
   auto* llvmTarget = llvm::TargetRegistry::lookupTarget(triple, lookupError);
@@ -1037,6 +1093,7 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
 #ifdef SD_CUDA
       // cuModuleLoadDataEx requires a current CUDA context on this thread.
       // Worker threads used by TritonGraphBackend may not have bound one yet.
+      // We must use the Driver API to ensure the primary context is pushed.
       int currentDevice = 0;
       cudaError_t getDeviceErr = cudaGetDevice(&currentDevice);
       if (getDeviceErr != cudaSuccess) {
@@ -1046,13 +1103,19 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
         cudaGetLastError();
         return nullptr;
       }
-      cudaError_t setDeviceErr = cudaSetDevice(currentDevice);
-      if (setDeviceErr != cudaSuccess) {
-        sd_printf("TritonTargetDispatch::loadModule: cudaSetDevice(%d) failed before "
-                  "cuModuleLoadDataEx: %s\n",
-                  currentDevice, cudaGetErrorString(setDeviceErr));
-        cudaGetLastError();
-        return nullptr;
+      // Ensure a CUDA driver context is active on this thread.
+      // cudaSetDevice alone may not push a driver context visible to cuModuleLoadDataEx.
+      CUcontext currentCtx = nullptr;
+      cuCtxGetCurrent(&currentCtx);
+      CUcontext pushedCtx = nullptr;
+      bool didPushCtx = false;
+      if (!currentCtx) {
+        // No driver context — retain and push the primary context for this device
+        CUdevice cuDev;
+        cuDeviceGet(&cuDev, currentDevice);
+        cuDevicePrimaryCtxRetain(&pushedCtx, cuDev);
+        cuCtxPushCurrent(pushedCtx);
+        didPushCtx = true;
       }
 
       // NVIDIA: CUDA Driver API for PTX loading with JIT error logging.
@@ -1097,8 +1160,10 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
           fwrite(binary.data, 1, binary.size, ptxDump);
           fclose(ptxDump);
         }
+        if (didPushCtx) { CUcontext dummy; cuCtxPopCurrent(&dummy); }
         return nullptr;
       }
+      if (didPushCtx) { CUcontext dummy; cuCtxPopCurrent(&dummy); }
       return static_cast<void*>(module);
 #else
       sd_printf("TritonTargetDispatch::loadModule: NVIDIA target requires SD_CUDA\n", "");

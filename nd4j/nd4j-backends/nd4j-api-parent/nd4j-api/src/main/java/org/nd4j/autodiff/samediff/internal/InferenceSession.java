@@ -122,7 +122,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             ThreadLocal.withInitial(ArrayDeque::new);
 
     // DAG cache for avoiding expensive convergence process
-    private final DAGCache dagCache = new DAGCache();
+    protected final DAGCache dagCache = new DAGCache();
 
     // Cached inputs list to avoid iterating all variables on every output() call
     private volatile List<String> cachedInputsList;
@@ -237,16 +237,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         return DYNAMIC_SHAPE_PLAN_ENABLED;
     }
 
-    private volatile DynamicShapePlan dynamicShapePlan;
-    private final ThreadLocal<DynamicShapePlanExecutor> dynamicShapePlanExecutorTl = new ThreadLocal<>();
+    protected volatile DynamicShapePlan dynamicShapePlan;
+    protected final ThreadLocal<DynamicShapePlanExecutor> dynamicShapePlanExecutorTl = new ThreadLocal<>();
 
     // ---- Conditional pool trim ----
     // During steady-state decode, the CUDA memory pool reuses freed memory without trimming.
     // Trimming every step wastes time on cudaStreamSynchronize + cudaMemPoolTrimTo when there's
     // nothing meaningful to return. Only trim periodically and always on step 0/1
     // (prefill→decode transition where large buffers are freed).
-    private int dspStepCount = 0;
-    private static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
+    protected int dspStepCount = 0;
+    protected static final int TRIM_INTERVAL = Integer.getInteger(ND4JSystemProperties.DSP_TRIM_INTERVAL, 10);
 
     private Set<Long> freedArrays() {
         return freedArraysTl.get();
@@ -992,7 +992,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      *
      * @return results as SDValue map, or null if DynamicShapePlan execution is not possible
      */
-    private Map<String, SDValue> executeDynamicShapePlanBased(ForwardExecutionDAG dag,
+    protected Map<String, SDValue> executeDynamicShapePlanBased(ForwardExecutionDAG dag,
                                                                Map<String, INDArray> placeholderArrays,
                                                                Set<String> allRequired,
                                                                List<String> requestedOutputs) {
@@ -2826,7 +2826,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * Only casts arrays whose dtype doesn't match the placeholder's declared dtype.
      * Skips the expensive arrayUseTracker iteration in preprocessPlaceholders.
      */
-    private Map<String, INDArray> castPlaceholderTypes(Map<String, INDArray> placeholders) {
+    protected Map<String, INDArray> castPlaceholderTypes(Map<String, INDArray> placeholders) {
         if (placeholders == null || placeholders.isEmpty()) {
             return placeholders;
         }

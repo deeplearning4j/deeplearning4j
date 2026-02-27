@@ -1235,7 +1235,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define LIST(...) __VA_ARGS__
 
 #define _SELECTOR_DOUBLE_2(NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
-    case ENUM: { \
+    case sd::DataType::ENUM: { \
         SD_IF_PAIR_COMPILED( \
             SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
             SD_CAT(SD_ENUM_TO_NUM_, ENUM), \
@@ -1250,7 +1250,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE2(_SELECT, OR_DOUBLE_2(NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
 
 #define _SELECTOR_DOUBLE(YTYPE, NAME, SIGNATURE, ENUM, TYPE_A, ...)                \
- case ENUM: {                                                                     \
+ case sd::DataType::ENUM: {                                                       \
    switch (YTYPE) {                                                               \
      EXPAND(DISPATCH_DTYPES2(NAME, SIGNATURE, TYPE_A, __VA_ARGS__));              \
      default: {                                                                   \
@@ -1270,7 +1270,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE(_SELECTOR, _DOUBLE(YTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 #define _SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, ENUM, TYPE_B) \
-    case ENUM: { \
+    case sd::DataType::ENUM: { \
         if (ZTYPE == YTYPE) { \
             SD_IF_PAIR_COMPILED( \
                 SD_CAT(SD_TYPE_TO_NUM_, TYPE_A), \
@@ -1298,7 +1298,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define SELECTOR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, TYPE_B) \
  EVALUATING_PASTE2(_SELECT, OR_PAIRWISE_2(XTYPE, YTYPE, ZTYPE, NAME, UNPAREN3(SIGNATURE), TYPE_A, UNPAREN3(TYPE_B)))
 #define _SELECTOR_PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, ENUM, TYPE_A, ...)          \
- case ENUM: {                                                                               \
+ case sd::DataType::ENUM: {                                                                 \
    switch (YTYPE) {                                                                         \
      EXPAND(DISPATCH_PAIRWISE2(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, TYPE_A, __VA_ARGS__)); \
      default: {                                                                             \
@@ -1316,7 +1316,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE(_SELECTOR, _PAIRWISE(XTYPE, YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_A), UNPAREN(TYPES_B)))
 
 #define _SELECTOR_TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, ENUM_Z, TYPE_Z) \
-    case ENUM_Z: { \
+    case sd::DataType::ENUM_Z: { \
         SD_IF_TRIPLE_COMPILED( \
             SD_CAT(SD_TYPE_TO_NUM_, TYPE_X), \
             SD_CAT(SD_TYPE_TO_NUM_, TYPE_Y), \
@@ -1331,7 +1331,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE3(_SELECTOR, _TRIPLE_3(NAME, SIGNATURE, TYPE_X, TYPE_Y, UNPAREN3(TYPE_Z)))
 
 #define _SELECTOR_TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, ENUM_Y, TYPE_Y, TYPES_Z)         \
- case ENUM_Y: {                                                                            \
+ case sd::DataType::ENUM_Y: {                                                              \
    switch (ZTYPE) {                                                                        \
      EXPAND2(DISPATCH_TTYPES3(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPE_Y, UNPAREN3(TYPES_Z))); \
      default: {                                                                            \
@@ -1349,7 +1349,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE2(_SELECTOR, _TRIPLE_2(ZTYPE, NAME, SIGNATURE, TYPE_X, UNPAREN2(TYPE_Y), TYPES_Z))
 
  #define _SELECTOR_TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, ENUM_X, TYPE_X, TYPES_Z, ...) \
- case ENUM_X: {                                                                      \
+ case sd::DataType::ENUM_X: {                                                        \
    switch (YTYPE) {                                                                  \
      EXPAND(DISPATCH_TTYPES2(ZTYPE, NAME, SIGNATURE, TYPE_X, TYPES_Z, __VA_ARGS__)); \
      default: {                                                                      \
@@ -1367,7 +1367,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
  EVALUATING_PASTE(_SELECTOR, _TRIPLE(YTYPE, ZTYPE, NAME, SIGNATURE, UNPAREN(TYPE_X), TYPES_Z, UNPAREN(TYPES_Y)))
 
 #define _SELECTOR_SINGLE(A, B, C, D) \
-    case C: { \
+    case sd::DataType::C: { \
         EVAL(SD_IF_SINGLE_ALIAS_COMPILED( \
             C, \
             A<D> B; \
@@ -1379,7 +1379,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define SELECTOR_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_SINGLE_THRICE(A, B, C, D) \
-    case C: { \
+    case sd::DataType::C: { \
         EVAL(SD_IF_TRIPLE_ALIAS_COMPILED( \
             C, \
             C, \
@@ -1393,7 +1393,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define SELECTOR_SINGLE_THRICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_THRICE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_SINGLE_TWICE(A, B, C, D) \
-    case C: { \
+    case sd::DataType::C: { \
         EVAL(SD_IF_PAIR_ALIAS_COMPILED( \
             C, \
             C, \
@@ -1415,7 +1415,7 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define TEMPLATE_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_TEM, PLATE_SINGLE_TWICE(A, B, UNPAREN(C)))
 
 #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D) \
-    case C: { \
+    case sd::DataType::C: { \
         EVAL(SD_IF_SINGLE_ALIAS_COMPILED( \
             C, \
             A D, UNPAREN2(B); \

@@ -75,7 +75,27 @@ public enum GraphExecutionMode {
      * the full Triton pipeline (TTIR → TTGIR → LLVM → PTX), loads and launches.
      * Produces the most optimized fused kernels.
      */
-    TRITON(5);
+    TRITON(5),
+
+    /**
+     * MLX Apple Silicon backend. Uses Metal Performance Shaders via MLX
+     * for fusible segments on Apple Silicon devices.
+     */
+    MLX(6),
+
+    /**
+     * ARM Hybrid backend. Uses MLIR with ARM-specific optimizations (NEON,
+     * SVE, dot product) for CPU, with optional Vulkan GPU offload for
+     * compute-heavy ops (matmul, conv2d) on ARM Mali/Adreno GPUs.
+     */
+    ARM_HYBRID(7),
+
+    /**
+     * Android NNAPI backend. Routes segments through Android's Neural Networks
+     * API to leverage hardware accelerators (Hexagon DSP, Mali GPU, NPU)
+     * available on the device. Only available on Android API 27+.
+     */
+    NNAPI(8);
 
     private final int nativeCode;
 

@@ -698,7 +698,13 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     compileDevice = targetDevice;
   }
 
-  if (compileDevice != activeDevice) {
+  // Always call cudaSetDevice — not just when compileDevice != activeDevice.
+  // On std::async precompilation threads the CUDA primary context may not be
+  // initialized at all (cudaGetDevice returns 0 by default, but no context is
+  // bound). Without an explicit cudaSetDevice, subsequent driver API calls
+  // (cuModuleLoadDataEx, cuFuncSetAttribute) operate on an uninitialized or
+  // wrong context, causing misaligned-address and kernel-launch failures.
+  {
     cudaError_t setDeviceErr = cudaSetDevice(compileDevice);
     if (setDeviceErr != cudaSuccess) {
       sd_printf("TritonGraphBackend::compileSegment: failed to set CUDA device %d for segment [%d-%d]: %s\n",
@@ -1323,6 +1329,18 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
 
 #ifdef SD_CUDA
+  // Clear any sticky CUDA errors left by prior sub-kernel failures.
+  // Without this, a device-side error (e.g., misaligned access) from an earlier
+  // kernel execution contaminates the CUDA context and causes ALL subsequent
+  // operations (memcpy, launch, etc.) to report the same stale error.
+  {
+    cudaError_t staleErr = cudaGetLastError();
+    if (staleErr != cudaSuccess) {
+      sd_printf("TritonGraphBackend::executeSingleKernel: cleared stale CUDA error before [%d-%d]: %s\n",
+                compiled.startSlot_, compiled.endSlot_, cudaGetErrorString(staleErr));
+    }
+  }
+
   cudaStream_t cudaExecStream = static_cast<cudaStream_t>(actualStream);
   int currentDevice = -1;
   auto devErr = cudaGetDevice(&currentDevice);
@@ -1475,13 +1493,36 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
     argTableDevice = compiled.cachedArgTableDevice;
 
+    // Validate arg table pointer before copy
+    if (argTableDevice == nullptr) {
+      sd_printf("TritonGraphBackend: arg table device pointer is NULL for [%d-%d] "
+                "(tableBytes=%d, cachedDeviceId=%d, currentDevice=%d)\n",
+                compiled.startSlot_, compiled.endSlot_,
+                (int)tableBytes, compiled.cachedArgTableDeviceId, currentDevice);
+      return Status::KERNEL_FAILURE;
+    }
+
+    // Check pointer alignment (CUDA requires at least 4-byte alignment for memcpy)
+    if (reinterpret_cast<uintptr_t>(argTableDevice) % 4 != 0) {
+      sd_printf("TritonGraphBackend: arg table device pointer %p is misaligned for [%d-%d] "
+                "(alignment=%zu, cachedDeviceId=%d)\n",
+                argTableDevice, compiled.startSlot_, compiled.endSlot_,
+                reinterpret_cast<uintptr_t>(argTableDevice) % 256,
+                compiled.cachedArgTableDeviceId);
+      return Status::KERNEL_FAILURE;
+    }
+
     // Copy host → device (async on the execution stream)
     auto memcpyErr = cudaMemcpyAsync(argTableDevice, argTableHost.data(), tableBytes,
                                      cudaMemcpyHostToDevice, cudaExecStream);
     if (memcpyErr != cudaSuccess) {
-      sd_printf("TritonGraphBackend: failed to copy arg table (%d bytes) for [%d-%d]: %s\n",
+      sd_printf("TritonGraphBackend: failed to copy arg table (%d bytes) for [%d-%d]: %s "
+                "(devicePtr=%p, hostPtr=%p, cachedDeviceId=%d, currentDevice=%d, stream=%p)\n",
                 (int)tableBytes, compiled.startSlot_, compiled.endSlot_,
-                cudaGetErrorString(memcpyErr));
+                cudaGetErrorString(memcpyErr),
+                argTableDevice, argTableHost.data(),
+                compiled.cachedArgTableDeviceId, currentDevice, (void*)cudaExecStream);
+      cudaGetLastError();  // Clear the error so subsequent operations aren't poisoned
       return Status::KERNEL_FAILURE;
     }
 #endif
@@ -1548,6 +1589,25 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 #endif
   }
 
+#ifdef SD_CUDA
+  // Re-apply shared memory opt-in at launch time as a safety net.
+  // The attribute was set during compilation, but if the CUfunction was compiled
+  // on a different thread (parallel compilation pool), the attribute may not have
+  // persisted to the execution context. Re-applying is cheap and prevents
+  // cuLaunchKernel from failing with CUDA_ERROR_INVALID_VALUE for >48KB shared mem.
+  if (compiled.sharedMemBytes > 49152u) {
+    if (!configureCudaKernelSharedMemory(compiled.kernelFunction, compiled.sharedMemBytes)) {
+      sd_printf("TritonGraphBackend::executeSingleKernel: shared memory re-configuration failed "
+                "for [%d-%d] (requested=%u bytes, device=%d)\n",
+                compiled.startSlot_, compiled.endSlot_, compiled.sharedMemBytes, currentDevice);
+      return Status::KERNEL_FAILURE;
+    }
+  }
+
+  // Clear any error that might have been set by the shared memory configuration
+  cudaGetLastError();
+#endif
+
   // Launch
   bool ok;
   if (compiled.useCooperativeLaunch) {
@@ -1573,6 +1633,22 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   }
 
   if (!ok) {
+#ifdef SD_CUDA
+    // Log detailed diagnostic info for launch failures
+    int maxSharedOptIn = 0, maxSharedDefault = 0;
+    cudaDeviceGetAttribute(&maxSharedOptIn, cudaDevAttrMaxSharedMemoryPerBlockOptin, currentDevice);
+    cudaDeviceGetAttribute(&maxSharedDefault, cudaDevAttrMaxSharedMemoryPerBlock, currentDevice);
+    sd_printf("TritonGraphBackend::executeSingleKernel: kernel launch failed for [%d-%d] "
+              "(cooperative=%d, dynamicGrid=%d, grid=%ux%ux%u, block=%ux%ux%u, sharedMem=%u, "
+              "deviceSharedDefault=%d, deviceSharedOptIn=%d, kernelFunc=%p)\n",
+              compiled.startSlot_, compiled.endSlot_,
+              compiled.useCooperativeLaunch ? 1 : 0, compiled.useDynamicGrid ? 1 : 0,
+              actualGridX, actualGridY, actualGridZ,
+              compiled.numWarps * 32, compiled.blockY, compiled.blockZ,
+              compiled.sharedMemBytes,
+              maxSharedDefault, maxSharedOptIn, compiled.kernelFunction);
+    cudaGetLastError();  // Clear the error from the failed launch
+#else
     sd_printf("TritonGraphBackend::executeSingleKernel: kernel launch failed for [%d-%d] "
               "(cooperative=%d, dynamicGrid=%d, grid=%ux%ux%u, block=%ux%ux%u, sharedMem=%u)\n",
               compiled.startSlot_, compiled.endSlot_,
@@ -1580,6 +1656,7 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
               actualGridX, actualGridY, actualGridZ,
               compiled.numWarps * 32, compiled.blockY, compiled.blockZ,
               compiled.sharedMemBytes);
+#endif
     return Status::KERNEL_FAILURE;
   }
 
@@ -1689,6 +1766,21 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
     }
 
+#ifdef SD_CUDA
+    // Synchronize execution stream before launching the next sub-kernel to ensure
+    // any prior async errors are caught and cleared rather than cascading.
+    if (i > 0 && !streamCaptureActive) {
+      cudaError_t syncErr = cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
+      if (syncErr != cudaSuccess) {
+        sd_printf("TritonGraphBackend::executeSegment: stream sync before sub-kernel %d/%d [%d-%d] "
+                  "detected prior async error: %s\n",
+                  i + 1, (int)compiledSeg->subKernels.size(),
+                  subKernel.startSlot_, subKernel.endSlot_,
+                  cudaGetErrorString(syncErr));
+        cudaGetLastError();  // Clear the sticky error
+      }
+    }
+#endif
     auto status = executeSingleKernel(subKernel, slots,
                                        externalInputs, numExternalInputs,
                                        outputSlots, totalOutputSlots,
@@ -2198,7 +2290,9 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   result.gridX = irModule.gridX;
   result.gridY = irModule.gridY;
   result.gridZ = irModule.gridZ;
-  result.blockX = irModule.blockX;
+  // Triton 3.6.0's AllocateWarpGroups pass may change the warp count during compilation.
+  // blockX MUST match the actual compiled warp count, not the pre-compilation IR builder value.
+  result.blockX = binary.numWarps * 32;
   result.blockY = irModule.blockY;
   result.blockZ = irModule.blockZ;
   result.sharedMemBytes = binary.sharedMemBytes;

@@ -47,6 +47,8 @@ namespace graph {
  *   Phase 1: Element-wise (binary, unary, comparison, logical, ternary, identity, cast)
  *   Phase 2: Reductions, matmul, normalization, shape manipulation, data movement, constant gen
  *   Phase 3: Convolution (conv2d, depthwise_conv2d), fused attention (SDPA)
+ *   LLM:    RoPE (mx::fast::rope), GQA, flash attention, sliding window attention,
+ *           fused_rms_norm_swiglu, KV cache update, embedding lookup, top-k
  *
  * Priority in getCpuGraphBackend():
  *   MLX (Apple Silicon) > oneDNN (Intel) > ACL (ARM) > MLIR JIT (universal)
