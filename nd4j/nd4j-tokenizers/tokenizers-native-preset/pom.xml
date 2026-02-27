@@ -124,6 +124,7 @@
                     <includePaths>
                         <includePath>${project.basedir}/../libtokenizers/target/native/include</includePath>
                         <includePath>${project.basedir}/../libtokenizers/target/native/include/tokenizers</includePath>
+                        <includePath>${project.basedir}/../libtokenizers/target/native/org/eclipse/deeplearning4j/tokenizers/include</includePath>
                         <includePath>${project.basedir}/../libtokenizers/include</includePath>
                         <includePath>${java.home}/../include</includePath>
                         <includePath>${java.home}/../include/win32</includePath>
