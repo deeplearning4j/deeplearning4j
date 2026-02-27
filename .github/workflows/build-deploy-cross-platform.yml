@@ -115,8 +115,8 @@ jobs:
       - uses: ./.github/actions/install-protobuf-linux
         if: matrix.os == 'linux' && steps.cache-protobuf.outputs.cache-hit != 'true'
 
-      - name: Cache cmake (Linux)
-        if: matrix.os == 'linux'
+      - name: Cache cmake (Linux x86_64 only)
+        if: matrix.os == 'linux' && matrix.platform == 'linux-x86_64'
         uses: actions/cache@v4
         id: cache-cmake
         with:
@@ -125,23 +125,41 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
 
       - uses: ./.github/actions/install-cmake-linux
-        if: matrix.os == 'linux' && steps.cache-cmake.outputs.cache-hit != 'true'
+        if: matrix.os == 'linux' && matrix.platform == 'linux-x86_64' && steps.cache-cmake.outputs.cache-hit != 'true'
+
+      - name: Install cmake from apt (Linux ARM64)
+        if: matrix.os == 'linux' && matrix.platform == 'linux-arm64'
+        shell: bash
+        run: sudo apt-get install -y cmake
 
       # ── macOS build deps ──
+      # NOTE: Do NOT install brew protobuf — it is v4.x which generates code
+      # incompatible with our shaded protobuf 3.21.7. The Maven protoc-jar plugin
+      # downloads the correct protoc binary automatically.
       - name: Install build tools (macOS)
         if: matrix.os == 'macos'
         shell: bash
         run: |
-          brew install cmake protobuf pkg-config gnu-sed
+          brew install cmake pkg-config gnu-sed
           echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
-      # ── Windows build deps ──
-      - name: Install build tools (Windows)
+      # ── Windows build deps (MSVC + MSYS2) ──
+      - name: Setup MSYS2 (Windows)
         if: matrix.os == 'windows'
-        shell: bash
-        run: |
-          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-          choco install -y protoc
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-pkg-config
+            make
+
+      - name: Setup MSVC (Windows)
+        if: matrix.os == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       # ── Rust (all platforms, for tokenizers) ──
       - name: Install Rust
@@ -217,7 +235,8 @@ jobs:
 
           # Add Linux tool paths
           if [ "${{ matrix.os }}" == "linux" ]; then
-            export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+            export PATH=/opt/protobuf/bin:$PATH
+            [ -d /opt/cmake/bin ] && export PATH=/opt/cmake/bin:$PATH
           fi
 
           command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
@@ -258,7 +277,8 @@ jobs:
 
           # Add Linux tool paths
           if [ "${{ matrix.os }}" == "linux" ]; then
-            export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+            export PATH=/opt/protobuf/bin:$PATH
+            [ -d /opt/cmake/bin ] && export PATH=/opt/cmake/bin:$PATH
           fi
 
           mvn --version
