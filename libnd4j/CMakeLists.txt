@@ -72,6 +72,15 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+    # Disable MSVC debug information format for CUDA to prevent -Fd/-FS flags.
+    # CMake wraps MSVC PDB flags in -Xcompiler=-FdPath\,-FS for CUDA objects.
+    # nvcc misparses this (backslash escapes comma, -FS becomes input file).
+    # CMP0141 (CMake 3.25+) enables CMAKE_MSVC_DEBUG_INFORMATION_FORMAT control.
+    if(POLICY CMP0141)
+        cmake_policy(SET CMP0141 NEW)
+    endif()
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "" CACHE STRING "" FORCE)
 endif()
 
 if(SD_CUDA)
@@ -93,12 +102,26 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # gets reset by project(... LANGUAGES CUDA). Note: we check WIN32, not MSVC,
 # because the C/CXX compiler is MinGW g++ but nvcc's host compiler is MSVC.
 if(WIN32 AND SD_CUDA)
-    # Use comma-separated -Xcompiler flags to avoid Ninja quoting issues
-    # and the backslash-comma -Fd path problem
+    # 1. Clear MSVC debug info format variables to prevent -Fd/-FS generation
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_Embedded "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_ProgramDatabase "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_EditAndContinue "" CACHE STRING "" FORCE)
+
+    # 2. Disable compile PDB output directory to prevent -Fd path generation
+    set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "" CACHE PATH "" FORCE)
+    set(CMAKE_PDB_OUTPUT_DIRECTORY "" CACHE PATH "" FORCE)
+
+    # 3. Clear per-config CUDA flags that may contain MSVC debug flags
+    set(CMAKE_CUDA_FLAGS_DEBUG "-Xcompiler=/Od" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_FLAGS_RELEASE "-DNDEBUG" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-DNDEBUG" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_FLAGS_MINSIZEREL "-DNDEBUG" CACHE STRING "" FORCE)
+
+    # 4. Custom compile rule with comma-separated -Xcompiler flags
     set(CMAKE_CUDA_COMPILE_OBJECT
             "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=/bigobj,/EHsc,/MD -o <OBJECT> -c <SOURCE>"
             CACHE STRING "" FORCE)
-    message(STATUS "Applied Windows CUDA compile fix: custom compile rule (no -Fd/-FS)")
+    message(STATUS "Applied Windows CUDA compile fix: disabled MSVC PDB flags + custom compile rule")
 endif()
 
 
