@@ -72,15 +72,6 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-    # Use MinGW g++ as CUDA host compiler to avoid MSVC-specific flag generation.
-    # CMake adds -Xcompiler=-FdPath\,-FS for MSVC host, which nvcc misparses
-    # (backslash-comma causes -FS to be treated as a separate input file).
-    # Since the C/CXX compiler is already MinGW g++, using it for CUDA host
-    # compilation is consistent and avoids the entire class of MSVC flag issues.
-    find_program(_MINGW_GXX g++ REQUIRED)
-    set(CMAKE_CUDA_HOST_COMPILER "${_MINGW_GXX}" CACHE STRING "" FORCE)
-    message(STATUS "Using MinGW g++ as CUDA host compiler: ${_MINGW_GXX}")
 endif()
 
 if(SD_CUDA)
@@ -94,12 +85,20 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# On MSVC + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
-# nvcc misparses this (backslash escapes comma, -FS becomes input file).
-# This is avoided by setting CMAKE_CUDA_HOST_COMPILER to g++ before project(),
-# which prevents cmake from generating any MSVC-specific flags for CUDA.
+# On Windows + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
+# nvcc misparses this (backslash escapes comma, -FS becomes input file),
+# failing with "A single input file is required".
+# Fix: Override CMAKE_CUDA_COMPILE_OBJECT AFTER project() to use comma-separated
+# -Xcompiler flags (no quotes needed, no path issues). The pre-project override
+# gets reset by project(... LANGUAGES CUDA). Note: we check WIN32, not MSVC,
+# because the C/CXX compiler is MinGW g++ but nvcc's host compiler is MSVC.
 if(WIN32 AND SD_CUDA)
-    message(STATUS "Windows CUDA build: using MinGW g++ host compiler (avoids MSVC flag issues)")
+    # Use comma-separated -Xcompiler flags to avoid Ninja quoting issues
+    # and the backslash-comma -Fd path problem
+    set(CMAKE_CUDA_COMPILE_OBJECT
+            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -Xcompiler=/bigobj,/EHsc,/MD -o <OBJECT> -c <SOURCE>"
+            CACHE STRING "" FORCE)
+    message(STATUS "Applied Windows CUDA compile fix: custom compile rule (no -Fd/-FS)")
 endif()
 
 
