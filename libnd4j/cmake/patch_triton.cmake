@@ -202,10 +202,13 @@ if(EXISTS "${_TRITON_GPU_IR_CMAKE}")
     file(READ "${_TRITON_GPU_IR_CMAKE}" _triton_gpu_ir_content)
     string(FIND "${_triton_gpu_ir_content}" "TritonNvidiaGPUTableGen" _already_patched)
     if(_already_patched EQUAL -1)
-        # Add TritonNvidiaGPU tablegen dependencies to TritonGPUIR
+        # Add TritonNvidiaGPU tablegen dependencies to TritonGPUIR.
+        # Insert before LINK_LIBS which comes after the DEPENDS block.
+        # This is more robust than matching exact DEPENDS content which
+        # varies between Triton versions (3.6.0 has additional entries).
         string(REPLACE
-            "  DEPENDS\n  TritonGPUCTAAttrIncGen\n  TritonGPUTableGen"
-            "  DEPENDS\n  TritonGPUCTAAttrIncGen\n  TritonGPUTableGen\n  TritonNvidiaGPUTableGen\n  TritonNvidiaGPUAttrDefsIncGen\n  TritonNvidiaGPUOpInterfacesIncGen"
+            "LINK_LIBS PUBLIC"
+            "TritonNvidiaGPUTableGen\n  TritonNvidiaGPUAttrDefsIncGen\n  TritonNvidiaGPUOpInterfacesIncGen\n\n  LINK_LIBS PUBLIC"
             _triton_gpu_ir_content "${_triton_gpu_ir_content}")
         file(WRITE "${_TRITON_GPU_IR_CMAKE}" "${_triton_gpu_ir_content}")
         message(STATUS "Patched ${_TRITON_GPU_IR_CMAKE}: added TritonNvidiaGPU tablegen dependencies to TritonGPUIR")
