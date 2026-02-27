@@ -177,7 +177,23 @@ endif()
 # -FS as an input file ("A single input file is required"). No CMake variable override
 # can prevent this; we must filter at invocation time.
 if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
+    # Try find_package first, then fall back to find_program for MSYS2/MinGW
     find_package(Python3 QUIET COMPONENTS Interpreter)
+    if(NOT Python3_FOUND)
+        # find_package may fail in MSYS2/MinGW — search PATH directly
+        find_program(_PYTHON3_FALLBACK NAMES python3 python
+            HINTS
+                "C:/hostedtoolcache/windows/Python"
+                "$ENV{USERPROFILE}/AppData/Local/Programs/Python"
+            PATH_SUFFIXES "3.12.10/x64" "3.11/x64" "3.10/x64" ""
+        )
+        if(_PYTHON3_FALLBACK)
+            set(Python3_EXECUTABLE "${_PYTHON3_FALLBACK}")
+            set(Python3_FOUND TRUE)
+            message(STATUS "Python3 found via fallback: ${Python3_EXECUTABLE}")
+        endif()
+    endif()
+
     if(Python3_FOUND)
         set(_NVCC_FILTER "${CMAKE_CURRENT_SOURCE_DIR}/cmake/nvcc_filter.py")
         if(EXISTS "${_NVCC_FILTER}")
@@ -188,7 +204,8 @@ if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
             message(WARNING "nvcc_filter.py not found at ${_NVCC_FILTER}")
         endif()
     else()
-        message(WARNING "Python3 not found - cannot enable nvcc flag filter wrapper")
+        message(WARNING "Python3 not found - cannot enable nvcc flag filter wrapper. "
+            "CUDA compilation may fail with 'A single input file is required'.")
     endif()
 endif()
 

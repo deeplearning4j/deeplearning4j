@@ -83,6 +83,19 @@ def filter_response_file(rsp_path):
     new_content = '\n'.join(filtered_lines) + '\n'
 
     if new_content != original:
+        # Log what was filtered (first 3 files only, to avoid noise)
+        if not hasattr(filter_response_file, '_log_count'):
+            filter_response_file._log_count = 0
+        filter_response_file._log_count += 1
+        if filter_response_file._log_count <= 3:
+            print(f"[nvcc_filter] Filtered PDB flags from {rsp_path}", file=sys.stderr)
+            # Show diff: lines removed
+            orig_lines = set(original.splitlines())
+            new_lines = set(new_content.splitlines())
+            removed = orig_lines - new_lines
+            for line in removed:
+                print(f"[nvcc_filter]   REMOVED: {line[:200]}", file=sys.stderr)
+
         # Write filtered content to a new temp file in the same directory
         rsp_dir = os.path.dirname(rsp_path) or '.'
         fd, tmp_path = tempfile.mkstemp(suffix='.rsp', dir=rsp_dir, prefix='nvcc_filtered_')
