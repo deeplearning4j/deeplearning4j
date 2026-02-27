@@ -174,16 +174,35 @@ def filter_response_file(rsp_path):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: nvcc_filter.py <nvcc_path> [args...]", file=sys.stderr)
+        print("Usage: nvcc_filter.py [--ccache=<path>] <nvcc_path> [args...]", file=sys.stderr)
         sys.exit(1)
 
-    nvcc = sys.argv[1]
-    args = sys.argv[2:]
+    # Parse optional --ccache=<path> to chain ccache with nvcc.
+    # When specified, the final command becomes: ccache nvcc <filtered_args>
+    # This enables caching of CUDA compilations on Windows where the SmartCcache
+    # bash wrapper cannot run.
+    ccache_path = None
+    arg_start = 1
+    if sys.argv[1].startswith('--ccache='):
+        ccache_path = sys.argv[1][len('--ccache='):]
+        if not os.path.isfile(ccache_path):
+            print(f"[nvcc_filter] WARNING: ccache not found at {ccache_path}, proceeding without caching", file=sys.stderr)
+            ccache_path = None
+        arg_start = 2
+
+    if arg_start >= len(sys.argv):
+        print("Usage: nvcc_filter.py [--ccache=<path>] <nvcc_path> [args...]", file=sys.stderr)
+        sys.exit(1)
+
+    nvcc = sys.argv[arg_start]
+    args = sys.argv[arg_start + 1:]
 
     # Dump all args for first invocation
     global _log_count
     if _log_count == 0:
         print(f"[nvcc_filter] nvcc: {nvcc}", file=sys.stderr)
+        if ccache_path:
+            print(f"[nvcc_filter] ccache: {ccache_path}", file=sys.stderr)
         print(f"[nvcc_filter] args ({len(args)}): {args[:20]}", file=sys.stderr)
 
     filtered_args = []
@@ -237,7 +256,12 @@ def main():
         print(f"[nvcc_filter] Direct args filtered: {direct_filtered}", file=sys.stderr)
 
     try:
-        result = subprocess.run([nvcc] + filtered_args)
+        cmd = [nvcc] + filtered_args
+        if ccache_path:
+            # Prepend ccache to cache the nvcc compilation.
+            # ccache hashes the command line + source and caches the output .obj.
+            cmd = [ccache_path] + cmd
+        result = subprocess.run(cmd)
         if result.returncode != 0:
             # On failure, dump the full command and rsp file content for debugging
             print(f"\n[nvcc_filter] === NVCC FAILED (exit {result.returncode}) ===", file=sys.stderr)

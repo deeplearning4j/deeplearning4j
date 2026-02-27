@@ -107,9 +107,26 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_ProgramDatabase "" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_DEBUG_INFORMATION_FORMAT_EditAndContinue "" CACHE STRING "" FORCE)
 
+    # 1b. Clear MSVC runtime library compile options for CUDA
+    # These are set by CMake during project(LANGUAGES CUDA) and inject -Xcompiler=-MD etc.
+    # configure_windows_cuda_build() clears them via PARENT_SCOPE but that only reaches
+    # setup_cuda_build() scope, not the global scope. Use CACHE FORCE here to ensure
+    # they're cleared globally and don't inject extra -Xcompiler flags into <FLAGS>.
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreaded "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDLL "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebug "" CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "" CACHE STRING "" FORCE)
+
     # 2. Disable compile PDB output directory to prevent -Fd path generation
     set(CMAKE_COMPILE_PDB_OUTPUT_DIRECTORY "" CACHE PATH "" FORCE)
     set(CMAKE_PDB_OUTPUT_DIRECTORY "" CACHE PATH "" FORCE)
+
+    # 2b. Disable response files for CUDA compilation
+    # Ninja uses response files (.rsp) for long command lines. These can contain
+    # problematic -Xcompiler flags that nvcc misparses.
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS 0 CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES 0 CACHE STRING "" FORCE)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES 0 CACHE STRING "" FORCE)
 
     # 3. Clear per-config CUDA flags that may contain MSVC debug flags
     set(CMAKE_CUDA_FLAGS_DEBUG "-Xcompiler=/Od" CACHE STRING "" FORCE)
@@ -207,9 +224,16 @@ if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
     if(Python3_FOUND)
         set(_NVCC_FILTER "${CMAKE_CURRENT_SOURCE_DIR}/cmake/nvcc_filter.py")
         if(EXISTS "${_NVCC_FILTER}")
-            set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}"
-                CACHE STRING "CUDA compiler launcher (nvcc flag filter)" FORCE)
-            message(STATUS "Windows CUDA: nvcc_filter.py wrapper enabled via ${Python3_EXECUTABLE}")
+            if(CCACHE_PROGRAM AND NOT CCACHE_SKIP_REASON)
+                # Chain ccache with nvcc_filter: filter cleans MSVC flags, ccache caches compilation
+                set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}" "--ccache=${CCACHE_PROGRAM}"
+                    CACHE STRING "CUDA compiler launcher (nvcc filter + ccache)" FORCE)
+                message(STATUS "Windows CUDA: nvcc_filter.py + ccache enabled (${CCACHE_PROGRAM})")
+            else()
+                set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}"
+                    CACHE STRING "CUDA compiler launcher (nvcc flag filter)" FORCE)
+                message(STATUS "Windows CUDA: nvcc_filter.py wrapper enabled via ${Python3_EXECUTABLE}")
+            endif()
         else()
             message(WARNING "nvcc_filter.py not found at ${_NVCC_FILTER}")
         endif()
@@ -220,13 +244,19 @@ if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 # Configure ccache for CUDA if available
-# Skip on Windows: ccache with nvcc on MSVC mishandles -Xcompiler flags
-# (backslash-comma in -Fd path splits into multiple input files)
-if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT WIN32)
-    set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher" FORCE)
-    message(STATUS "Enabled ccache for CUDA compilation")
+# On Windows: ccache is chained through nvcc_filter.py (set above) to avoid
+# -Xcompiler flag issues. On Linux/macOS: ccache is used directly as the launcher.
+if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON)
+    if(NOT WIN32)
+        # Linux/macOS: use ccache directly as CUDA compiler launcher
+        set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher" FORCE)
+        message(STATUS "Enabled ccache for CUDA compilation")
+    else()
+        # Windows: ccache is already chained via nvcc_filter.py --ccache=<path> above
+        message(STATUS "Windows CUDA ccache: configured via nvcc_filter.py chain")
+    endif()
 
-    # Configure ccache settings for optimal performance
+    # Configure ccache settings for optimal CUDA caching (both platforms)
     execute_process(COMMAND ${CCACHE_PROGRAM} --max-size=10G ERROR_QUIET)
     execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compression=true ERROR_QUIET)
     execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compression_level=6 ERROR_QUIET)
@@ -237,7 +267,7 @@ if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT WIN32)
         OUTPUT_VARIABLE CCACHE_STATS
         ERROR_QUIET
     )
-    message(STATUS "📊 Ccache statistics:\n${CCACHE_STATS}")
+    message(STATUS "Ccache statistics:\n${CCACHE_STATS}")
 endif()
 
 # Enable smart ccache wrapper that forces recompile for modified files
