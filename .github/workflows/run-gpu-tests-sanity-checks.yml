@@ -1,100 +1,99 @@
+name: GPU Sanity Tests
+
 on:
   workflow_dispatch:
+    inputs:
+      testFilter:
+        description: 'Surefire -Dtest filter (e.g. SameDiffTests#testLinearModule). Empty = default sanity set.'
+        required: false
+        default: ''
+
+      runsOn:
+        description: 'Self-hosted runner label with GPU'
+        required: true
+        default: self-hosted
+
 jobs:
-  cache:
-    runs-on: windows-2022
+  gpu-sanity:
+    runs-on: ${{ github.event.inputs.runsOn }}
+    timeout-minutes: 120
+    name: cuda-12.9
+
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Free Disk Space (Windows)
-        shell: powershell
+      - uses: AutoModality/action-clean@v1
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
         run: |
-          # Show initial disk space
-          Write-Host "Initial disk space:"
-          Get-PSDrive C | Select-Object Used,Free
-          
-          # Remove Windows Defender scan history
-          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Removed Windows Defender scan history"
-          
-          # Clear Windows temp folders
-          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Cleared Windows temp folders"
-          
-          # Clear Windows Update cache safely (without stopping/starting service)
-          try {
-              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Windows Update download cache"
-          }
-          catch {
-              Write-Host "Could not clear Windows Update cache. Continuing..."
-          }
-          
-          # Clean package manager caches
-          if (Test-Path -Path "C:\npm\cache") {
-              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared NPM cache"
-          }
-          
-          choco cache remove -y -ErrorAction SilentlyContinue
-          Write-Host "Cleared Chocolatey cache"
-          
-          # Remove Docker images if Docker is installed
-          try {
-              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-                  docker image prune -a -f
-                  docker container prune -f
-                  docker volume prune -f
-                  Write-Host "Pruned Docker resources"
-              }
-          }
-          catch {
-              Write-Host "Failed to prune Docker resources. Continuing..."
-          }
-          
-          # Remove .NET SDK/Runtime backup folders
-          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
-              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Removed .NET backup folders"
-          }
-          
-          # Clear Azure artifacts cache
-          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
-              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "Cleared Azure artifacts cache"
-          }
-          
-          # Optimize Windows Component Store
-          try {
-              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-              Write-Host "Optimized Windows Component Store"
-          }
-          catch {
-              Write-Host "Failed to optimize Windows Component Store. Continuing..."
-          }
-          
-          # Show final disk space
-          Write-Host "Final disk space:"
-          Get-PSDrive C | Select-Object Used,Free
-      
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Build Java modules from source (native jars from snapshots)
+        shell: bash
         env:
-          cuda: 11.6.0
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
+          MAVEN_OPTS: -Xmx2g
+        run: |
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+              -Dmaven.javadoc.skip=true \
+              -pl :platform-tests --also-make \
+              -pl !:libnd4j \
+              --no-transfer-progress --batch-mode
+
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
+
+      - name: Run GPU sanity tests
+        shell: bash
         env:
-          cuda: 11.4.1
-      - name: Cache cuda install windows cuda 11.4
-        uses: actions/cache@v4
-        id: cache-cuda-114
+          MAVEN_OPTS: -Xmx2g
+          CUDA_LAUNCH_BLOCKING: 1
+        run: |
+          export OMP_NUM_THREADS=1
+          TEST_FILTER="${{ github.event.inputs.testFilter }}"
+          if [ -n "$TEST_FILTER" ]; then
+            TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          else
+            TEST_FLAGS="-Dtest=SameDiffTests,SameDiffTrainingTest,BasicOpValidationTests,CustomOpsTests"
+          fi
+          cd platform-tests
+          mvn test \
+              -Dtest.heap.size=8g -Dtest.offheap.size=16g \
+              -DskipTestResourceEnforcement=true \
+              -DexcludedGroups="long-running-test,large-resources,downloads" \
+              ${TEST_FLAGS} \
+              --no-transfer-progress --batch-mode --fail-at-end
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
-          key: windows-2022-${{ runner.arch }}-cuda-11.4
-          restore-keys: windows-2022-${{ runner.arch }}-cuda-11.4
-      - name: Cache cuda install windows cuda 11.6
-        uses: actions/cache@v4
-        id: cache-cuda-116
-        with:
-          path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6
-          key: windows-2022-${{ runner.arch }}-cuda-11.6
-          restore-keys: windows-2022-${{ runner.arch }}-cuda-11.6
+          name: surefire-gpu-sanity
+          path: platform-tests/target/surefire-reports/
+          retention-days: 14

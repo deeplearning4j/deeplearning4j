@@ -1,28 +1,106 @@
+name: CPU Integration Tests
+
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
-        required: true
-        default: 1
+      testFilter:
+        description: 'Surefire -Dtest filter. Empty = full suite (excluding long-running/large-resources).'
+        required: false
+        default: ''
 
       runsOn:
-        description: 'The operating system to run on, defaults to self hosted'
+        description: 'Override runner for all jobs'
         required: false
-        default: self-hosted
+        default: ''
 
 jobs:
-  linux-x86_64:
-    runs-on: ${{ github.event.inputs.runsOn }}
+  integration-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ── Linux x86_64 variants ──
+          - platform: linux-x86_64
+            classifier: linux-x86_64
+            javacpp_platform: linux-x86_64
+            javacpp_extension: ''
+            runner: ubuntu-22.04
+            os: linux
+
+          - platform: linux-x86_64-onednn
+            classifier: linux-x86_64-onednn
+            javacpp_platform: linux-x86_64
+            javacpp_extension: '-onednn'
+            runner: ubuntu-22.04
+            os: linux
+
+          - platform: linux-x86_64-avx2
+            classifier: linux-x86_64-avx2
+            javacpp_platform: linux-x86_64
+            javacpp_extension: '-avx2'
+            runner: ubuntu-22.04
+            os: linux
+
+          - platform: linux-x86_64-onednn-avx2
+            classifier: linux-x86_64-onednn-avx2
+            javacpp_platform: linux-x86_64
+            javacpp_extension: '-onednn-avx2'
+            runner: ubuntu-22.04
+            os: linux
+
+          - platform: linux-x86_64-compile
+            classifier: linux-x86_64-compile
+            javacpp_platform: linux-x86_64
+            javacpp_extension: '-compile'
+            runner: ubuntu-22.04
+            os: linux
+
+          # ── Linux ARM64 variants ──
+          - platform: linux-arm64
+            classifier: linux-arm64
+            javacpp_platform: linux-arm64
+            javacpp_extension: ''
+            runner: ubuntu-22.04-arm
+            os: linux
+
+          - platform: linux-arm64-armcompute
+            classifier: linux-arm64-armcompute
+            javacpp_platform: linux-arm64
+            javacpp_extension: '-armcompute'
+            runner: ubuntu-22.04-arm
+            os: linux
+
+          - platform: linux-arm64-compile
+            classifier: linux-arm64-compile
+            javacpp_platform: linux-arm64
+            javacpp_extension: '-compile'
+            runner: ubuntu-22.04-arm
+            os: linux
+
+          # ── macOS ARM64 variants ──
+          - platform: macosx-arm64
+            classifier: macosx-arm64
+            javacpp_platform: macosx-arm64
+            javacpp_extension: ''
+            runner: macos-14
+            os: macos
+
+          - platform: macosx-arm64-compile
+            classifier: macosx-arm64-compile
+            javacpp_platform: macosx-arm64
+            javacpp_extension: '-compile'
+            runner: macos-14
+            os: macos
+
+    runs-on: ${{ github.event.inputs.runsOn || matrix.runner }}
+    timeout-minutes: 180
+    name: ${{ matrix.platform }}
+
     steps:
-      - uses: AutoModality/action-clean@v1
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0
-        with:
-          access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
-      
-      - name: Free Disk Space
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space (Linux)
+        if: matrix.os == 'linux'
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
@@ -32,18 +110,89 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
-          
-      - uses: ./.github/actions/download-dl4j-test-resources-linux
-      - name: Run cpu tests
+
+      - name: Set up Java 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+
+      - name: Build Java modules from source (native jars from snapshots)
         shell: bash
         env:
-          DEBIAN_FRONTEND: noninteractive
+          MAVEN_OPTS: -Xmx2g
         run: |
-          mvn --version
-          cmake --version
-          protoc --version
+          mvn install -DskipTests -DskipTestResourceEnforcement=true \
+              -Dbackend.artifactId=nd4j-native \
+              -Djavacpp.platform=${{ matrix.javacpp_platform }} \
+              -Djavacpp.platform.extension=${{ matrix.javacpp_extension }} \
+              -Dplatform.classifier=${{ matrix.classifier }} \
+              -Dmaven.javadoc.skip=true \
+              -pl :platform-tests --also-make \
+              -pl !:libnd4j \
+              --no-transfer-progress --batch-mode
+
+      - name: Download test resources
+        shell: bash
+        run: |
+          wget -q https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip -q master.zip
+          cd dl4j-test-resources-master
+          mvn clean install -DskipTests --no-transfer-progress --batch-mode
+
+      - name: Run integration tests
+        shell: bash
+        env:
+          MAVEN_OPTS: -Xmx2g
+        run: |
           export OMP_NUM_THREADS=1
-          mkdir -p ${GITHUB_WORKSPACE}/resources
-          mkdir -p ${GITHUB_WORKSPACE}/cache
-          mvn -Djunit.jupiter.execution.parallel.enabled=true -Djunit.jupiter.execution.parallel.mode.default=concurrent -Djunit.jupiter.execution.parallel.config.strategy=fixed  -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -DexcludedGroups="long-running-tests, large-resources, distributed-systems"  -DskipTestResourceEnforcement=true    clean test --fail-never
-          mvn -Djunit.jupiter.execution.parallel.enabled=true -Djunit.jupiter.execution.parallel.mode.default=concurrent -Djunit.jupiter.execution.parallel.config.strategy=fixed -Dorg.nd4j.strumpf.resource.dirs=${GITHUB_WORKSPACE}/resources -Dorg.nd4j.test.resources.cache.dir=${GITHUB_WORKSPACE}/cache -Dgroups="long-running-tests, large-resources, distributed-systems"   -Dtest.offheap.size=14g -Dtest.heap.size=6g  -Dsurefire.parallel.forcedTimeout=500 -Dsurefire.parallel.timeout=500  -Dsurefire.timeout=200 -Dsurefire.exitTimeout=500 test --fail-never -rf :nd4j
+          TEST_FILTER="${{ github.event.inputs.testFilter }}"
+          TEST_FLAGS=""
+          if [ -n "$TEST_FILTER" ]; then
+            TEST_FLAGS="-Dtest=${TEST_FILTER}"
+          fi
+          cd platform-tests
+          mvn test \
+              -Dbackend.artifactId=nd4j-native \
+              -Djavacpp.platform=${{ matrix.javacpp_platform }} \
+              -Djavacpp.platform.extension=${{ matrix.javacpp_extension }} \
+              -Dplatform.classifier=${{ matrix.classifier }} \
+              -Dtest.heap.size=6g -Dtest.offheap.size=8g \
+              -DskipTestResourceEnforcement=true \
+              -DexcludedGroups="long-running-test,large-resources,distributed-systems,downloads" \
+              ${TEST_FLAGS} \
+              --no-transfer-progress --batch-mode --fail-at-end
+
+      - name: Upload surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-integration-${{ matrix.platform }}
+          path: platform-tests/target/surefire-reports/
+          retention-days: 14
