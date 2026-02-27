@@ -320,7 +320,16 @@ jobs:
           if [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "macosx-arm64" ]; then
             PROTOC_PROFILE="-Posx-aarch64-protoc"
           fi
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native \
+
+          # nd4j-ggml has a test-scope dep on nd4j-native:<platform> which is only
+          # published by the native build workflows.  Exclude it on platforms where
+          # the classifier JAR is not yet on snapshots.
+          GGML_EXCLUDE=""
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            GGML_EXCLUDE=",!:nd4j-ggml"
+          fi
+
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native${GGML_EXCLUDE} \
             ${PROTOC_PROFILE} \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
