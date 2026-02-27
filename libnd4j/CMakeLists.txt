@@ -96,6 +96,20 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# On MSVC + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
+# nvcc misparses this (backslash escapes comma, -FS becomes input file),
+# failing with "A single input file is required".
+# Fix: Use CMP0141 policy (cmake 3.25+) to use /ZI instead of /Fd, or
+# disable MSVC debug information format for CUDA entirely.
+if(MSVC AND SD_CUDA)
+    if(POLICY CMP0141)
+        cmake_policy(SET CMP0141 NEW)
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "")
+    endif()
+    # Also add /FS separately to avoid the combined -Fd,-FS problem
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/FS")
+endif()
+
 
 # Configure ccache for CUDA if available
 # Skip on Windows: ccache with nvcc on MSVC mishandles -Xcompiler flags
