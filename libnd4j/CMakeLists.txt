@@ -117,11 +117,13 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CUDA_FLAGS_RELWITHDEBINFO "-DNDEBUG" CACHE STRING "" FORCE)
     set(CMAKE_CUDA_FLAGS_MINSIZEREL "-DNDEBUG" CACHE STRING "" FORCE)
 
-    # 4. Strip -Fd and -FS flags from all CUDA flag variables.
-    # CMake's MSVC detection puts -Xcompiler=-FdPath\,-FS into CMAKE_CUDA_FLAGS
-    # during project() initialization. These end up in Ninja's .rsp response files.
-    # nvcc misparses the backslash-comma as an escape, treating -FS as a second
-    # input file → "A single input file is required for a non-link phase".
+    # 4. Fix CUDA flag variables: strip -Fd/-FS PDB flags and fix -Xcompiler quoting.
+    #
+    # Two problems with CMake-generated CUDA flags on Windows:
+    # (a) -Xcompiler=-FdPath\,-FS: backslash-comma causes nvcc to misparse -FS as input file
+    # (b) -Xcompiler=" /GR /EHsc": space inside quotes breaks Ninja .rsp file parsing —
+    #     nvcc sees -Xcompiler=", /GR, /EHsc" as three tokens, interpreting /GR as input file
+    # Both cause: "A single input file is required for a non-link phase"
     foreach(_cuda_flags_var
             CMAKE_CUDA_FLAGS
             CMAKE_CUDA_FLAGS_DEBUG
@@ -137,6 +139,13 @@ if(WIN32 AND SD_CUDA)
             # Also remove bare /Fd and /FS (in case passed without -Xcompiler)
             string(REGEX REPLACE "/Fd[^ ]*" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             string(REGEX REPLACE "/FS" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # Fix quoted -Xcompiler with spaces: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
+            # The quotes+spaces break Ninja rsp file parsing (space splits into multiple tokens)
+            string(REGEX REPLACE "-Xcompiler=\"[ ]*(/[^ \"]+)[ ]+(/[^ \"]+)\"" "-Xcompiler=\\1,\\2" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # Handle 3-arg variant: -Xcompiler=" /A /B /C" → -Xcompiler=/A,/B,/C
+            string(REGEX REPLACE "-Xcompiler=\"[ ]*(/[^ \"]+)[ ]+(/[^ \"]+)[ ]+(/[^ \"]+)\"" "-Xcompiler=\\1,\\2,\\3" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # Strip any remaining quotes around -Xcompiler values
+            string(REGEX REPLACE "-Xcompiler=\"([^\"]*)\"" "-Xcompiler=\\1" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Clean up multiple spaces
             string(REGEX REPLACE "  +" " " ${_cuda_flags_var} "${${_cuda_flags_var}}")
             string(STRIP "${${_cuda_flags_var}}" ${_cuda_flags_var})

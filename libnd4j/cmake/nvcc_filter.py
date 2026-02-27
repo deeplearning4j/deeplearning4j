@@ -48,6 +48,26 @@ def should_filter_arg(arg):
     return False
 
 
+def fix_xcompiler_quoting(arg):
+    """Fix -Xcompiler args with quoted space-separated values.
+
+    CMake generates -Xcompiler=" /GR /EHsc" which breaks in Ninja .rsp files
+    because the space splits it into multiple tokens. Convert to comma-separated:
+    -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
+    """
+    # Match -Xcompiler= followed by a quoted value with spaces
+    m = re.match(r'^(-Xcompiler[=:])["\']\s*(.*?)\s*["\']$', arg)
+    if m:
+        prefix = m.group(1)
+        value = m.group(2).strip()
+        # Replace spaces with commas
+        fixed = prefix + value.replace(' ', ',')
+        return fixed
+    # Also handle case where quotes were already stripped but spaces remain
+    # (shouldn't happen in rsp, but handle for direct args)
+    return arg
+
+
 def filter_response_file(rsp_path):
     """Read a response file, filter problematic flags, write cleaned version.
 
@@ -82,7 +102,22 @@ def filter_response_file(rsp_path):
 
     filtered_lines = []
     removed_lines = []
+    modified = False
     for line in lines:
+        # First, fix -Xcompiler quoting at the raw line level BEFORE tokenizing.
+        # CMake puts -Xcompiler=" /GR /EHsc" in CMAKE_CUDA_FLAGS, and this gets
+        # written literally into the .rsp file. nvcc's rsp parser splits on spaces
+        # even inside quotes, so /GR becomes a separate "input file".
+        # Fix: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc (comma-separated, no quotes)
+        orig_line = line
+        line = re.sub(
+            r'-Xcompiler[=:]"[ ]*([^"]*)"',
+            lambda m: '-Xcompiler=' + m.group(1).strip().replace(' ', ','),
+            line
+        )
+        if line != orig_line:
+            modified = True
+
         # Split line into tokens (respecting quotes)
         tokens = []
         current = []
@@ -100,21 +135,30 @@ def filter_response_file(rsp_path):
         if current:
             tokens.append(''.join(current))
 
-        filtered_tokens = [t for t in tokens if not should_filter_arg(t)]
-        removed_tokens = [t for t in tokens if should_filter_arg(t)]
+        kept_tokens = []
+        removed_tokens = []
+        for t in tokens:
+            if should_filter_arg(t):
+                removed_tokens.append(t)
+            else:
+                # Also fix any remaining -Xcompiler quoting at the token level
+                kept_tokens.append(fix_xcompiler_quoting(t))
 
         if removed_tokens:
             removed_lines.append((line, removed_tokens))
 
-        if filtered_tokens:
-            filtered_lines.append(' '.join(filtered_tokens))
+        if kept_tokens:
+            filtered_lines.append(' '.join(kept_tokens))
 
-    if removed_lines:
+    if removed_lines or modified:
         new_content = line_ending.join(filtered_lines) + line_ending
         if _log_count <= _MAX_VERBOSE_LOGS:
-            print(f"[nvcc_filter] FILTERED {len(removed_lines)} lines:", file=sys.stderr)
-            for orig_line, removed_toks in removed_lines:
-                print(f"[nvcc_filter]   REMOVED tokens: {removed_toks}", file=sys.stderr)
+            if removed_lines:
+                print(f"[nvcc_filter] FILTERED {len(removed_lines)} lines:", file=sys.stderr)
+                for orig_line, removed_toks in removed_lines:
+                    print(f"[nvcc_filter]   REMOVED tokens: {removed_toks}", file=sys.stderr)
+            if modified:
+                print(f"[nvcc_filter] Fixed -Xcompiler quoting in {rsp_path}", file=sys.stderr)
 
         # Write filtered content to a new temp file in the same directory
         rsp_dir = os.path.dirname(rsp_path) or '.'
@@ -124,7 +168,7 @@ def filter_response_file(rsp_path):
         return tmp_path
     else:
         if _log_count <= _MAX_VERBOSE_LOGS:
-            print(f"[nvcc_filter] No PDB flags found to filter", file=sys.stderr)
+            print(f"[nvcc_filter] No modifications needed", file=sys.stderr)
         return rsp_path
 
 
@@ -194,6 +238,18 @@ def main():
 
     try:
         result = subprocess.run([nvcc] + filtered_args)
+        if result.returncode != 0:
+            # On failure, dump the full command and rsp file content for debugging
+            print(f"\n[nvcc_filter] === NVCC FAILED (exit {result.returncode}) ===", file=sys.stderr)
+            print(f"[nvcc_filter] Command: {nvcc} {' '.join(filtered_args[:10])}{'...' if len(filtered_args) > 10 else ''}", file=sys.stderr)
+            for tf in temp_files:
+                if os.path.isfile(tf):
+                    with open(tf, 'r', encoding='utf-8', errors='replace') as f:
+                        rsp_content = f.read()
+                    print(f"[nvcc_filter] Filtered RSP ({tf}):", file=sys.stderr)
+                    for i, line in enumerate(rsp_content.splitlines()[:50]):
+                        print(f"[nvcc_filter]   {i}: {line[:300]}", file=sys.stderr)
+            print(f"[nvcc_filter] === END FAILURE DUMP ===\n", file=sys.stderr)
         sys.exit(result.returncode)
     finally:
         # Cleanup temp files
