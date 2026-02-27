@@ -29,9 +29,9 @@ on:
         default: central
 
       runsOn:
-        description: 'System to run on'
+        description: 'Override runner for all jobs (leave empty for matrix defaults)'
         required: false
-        default: ubuntu-22.04
+        default: ''
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled'
@@ -39,8 +39,31 @@ on:
         default: false
 
 jobs:
-  linux-x86_64:
-    runs-on: ${{ github.event.inputs.runsOn }}
+  cross-platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            os: linux
+            runner: ubuntu-22.04
+
+          - platform: linux-arm64
+            os: linux
+            runner: ubuntu-22.04-arm
+
+          - platform: macosx-arm64
+            os: macos
+            runner: macos-14
+
+          - platform: windows-x86_64
+            os: windows
+            runner: windows-2022
+
+    runs-on: ${{ github.event.inputs.runsOn || matrix.runner }}
+    timeout-minutes: 180
+    name: ${{ matrix.platform }}
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -49,7 +72,9 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Free Disk Space
+      # ── Disk / swap (Linux only) ──
+      - name: Free Disk Space (Linux)
+        if: matrix.os == 'linux'
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
@@ -60,7 +85,8 @@ jobs:
           docker-images: true
           swap-storage: true
 
-      - name: Configure swap (8GB)
+      - name: Configure swap (Linux)
+        if: matrix.os == 'linux'
         shell: bash
         run: |
           sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=8 status=progress
@@ -70,18 +96,15 @@ jobs:
           sudo sysctl vm.overcommit_ratio=80
           free -h
 
+      # ── Linux build deps ──
       - uses: ./.github/actions/set-linux-distro-version
+        if: matrix.os == 'linux'
+
       - uses: ./.github/actions/update-deps-linux
+        if: matrix.os == 'linux'
 
-      - name: Cache cmake
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-${{ runner.arch }}-cmake
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
-
-      - name: Cache protobuf
+      - name: Cache protobuf (Linux)
+        if: matrix.os == 'linux'
         uses: actions/cache@v4
         id: cache-protobuf
         with:
@@ -90,11 +113,45 @@ jobs:
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-protobuf
 
       - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
+        if: matrix.os == 'linux' && steps.cache-protobuf.outputs.cache-hit != 'true'
+
+      - name: Cache cmake (Linux)
+        if: matrix.os == 'linux'
+        uses: actions/cache@v4
+        id: cache-cmake
+        with:
+          path: /opt/cmake
+          key: ${{ runner.os }}-${{ runner.arch }}-cmake
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
 
       - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
+        if: matrix.os == 'linux' && steps.cache-cmake.outputs.cache-hit != 'true'
 
+      # ── macOS build deps ──
+      - name: Install build tools (macOS)
+        if: matrix.os == 'macos'
+        shell: bash
+        run: |
+          brew install cmake protobuf pkg-config gnu-sed
+          echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
+
+      # ── Windows build deps ──
+      - name: Install build tools (Windows)
+        if: matrix.os == 'windows'
+        shell: bash
+        run: |
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install -y protoc
+
+      # ── Rust (all platforms, for tokenizers) ──
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cbindgen
+        shell: bash
+        run: cargo install cbindgen
+
+      # ── Java setup ──
       - name: Set up Java for publishing
         uses: actions/setup-java@v4
         with:
@@ -110,8 +167,6 @@ jobs:
       - name: Configure Maven snapshot repository
         shell: bash
         run: |
-          # Merge snapshot repo into the settings.xml that setup-java created
-          # so we can resolve nd4j-native jars from snapshots
           SETTINGS_FILE="${HOME}/.m2/settings.xml"
           if [ ! -f "$SETTINGS_FILE" ]; then
             mkdir -p ~/.m2
@@ -137,12 +192,53 @@ jobs:
           </settings>
           SETTINGS
           else
-            # settings.xml already exists from setup-java; inject the snapshot profile
-            # Insert before </settings>
             sed -i 's|</settings>|<profiles><profile><id>sonatype-snapshots</id><repositories><repository><id>central-portal-snapshots</id><name>Central Portal Snapshots</name><url>https://central.sonatype.com/repository/maven-snapshots/</url><releases><enabled>false</enabled></releases><snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots></repository></repositories></profile></profiles><activeProfiles><activeProfile>sonatype-snapshots</activeProfile></activeProfiles></settings>|' "$SETTINGS_FILE"
           fi
 
-      - name: Build and deploy
+      # ── Step 1: Build and deploy tokenizers native chain ──
+      - name: Build and deploy tokenizers
+        shell: bash
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: central
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          MAVEN_OPTS: -Xmx2g
+        run: |
+          echo "=== Building tokenizers native for ${{ matrix.platform }} ==="
+          rustc --version
+          cargo --version
+
+          # Add Linux tool paths
+          if [ "${{ matrix.os }}" == "linux" ]; then
+            export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          fi
+
+          command="mvn -pl :libtokenizers,:tokenizers-native-preset,:tokenizers-native \
+            --also-make \
+            -Djavacpp.platform=${{ matrix.platform }} \
+            -DskipTestResourceEnforcement=true \
+            -Dmaven.javadoc.failOnError=false \
+            --no-transfer-progress --batch-mode \
+            deploy -DskipTests"
+
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+            echo "Performing release"
+            bash ${GITHUB_WORKSPACE}/release-specified-component.sh \
+              "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+          else
+            echo "Deploying tokenizers to snapshots"
+            eval "$command"
+          fi
+
+      # ── Step 2: Build and deploy all Java modules ──
+      - name: Build and deploy Java modules
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -158,20 +254,23 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           MAVEN_OPTS: -Xmx2g
         run: |
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
+          echo "=== Building and deploying Java modules for ${{ matrix.platform }} ==="
 
-          # Build all Java modules, skip native builds (already on snapshots):
-          # - libnd4j: C++ native ops
-          # - libtokenizers: Rust tokenizers FFI (built by build-deploy-tokenizers workflow)
-          # - tokenizers-native-preset: JavaCPP preset (needs native headers)
-          # - tokenizers-native: JavaCPP bindings (needs native libs)
+          # Add Linux tool paths
+          if [ "${{ matrix.os }}" == "linux" ]; then
+            export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          fi
+
+          mvn --version
+
+          # Build all Java modules, skip native builds that are already on snapshots:
+          # - libnd4j: C++ native ops (built by per-platform native workflows)
+          # - libtokenizers: just built and deployed in previous step
+          # - tokenizers-native-preset, tokenizers-native: just built and deployed
           # - codegen modules not needed for deployment
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:samediff-llm \
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native \
             -DskipTestResourceEnforcement=true \
-            -Djavacpp.platform=linux-x86_64 \
+            -Djavacpp.platform=${{ matrix.platform }} \
             -Dmaven.javadoc.failOnError=false \
             --no-transfer-progress --batch-mode \
             deploy -DskipTests"
@@ -185,8 +284,9 @@ jobs:
             eval "$command"
           fi
 
-      - name: Cleanup swap
-        if: always()
+      # ── Cleanup ──
+      - name: Cleanup swap (Linux)
+        if: always() && matrix.os == 'linux'
         shell: bash
         run: |
           sudo swapoff /swapfile 2>/dev/null || true
