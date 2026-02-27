@@ -159,7 +159,8 @@ PLATFORM_IMPL(ctc_loss_grad, ENGINE_CUDA) {
   auto labels = getConcatTargets(*targetLabels, *targetLabelLengths);
   const int32_t *ldata = labels.data();
   auto tempLosses = NDArrayFactory::create<float>('c', {logitInputLengths->sizeAt(0)});
-  cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, tempLosses, *outputGradients);
+  cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, *tempLosses, *outputGradients);
+  delete tempLosses;
   // restore grads shape from {T, BATCH, C} -> {BATCHS, T, C}
   outputGradients->permutei({1, 0, 2}, false, true);
 
