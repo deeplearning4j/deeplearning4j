@@ -23,6 +23,7 @@ runs:
   using: composite
   steps:
     - name: Install ccache
+      continue-on-error: true
       shell: cmd
       run: |
         echo Installing ccache for Windows...
@@ -58,6 +59,7 @@ runs:
           ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-
 
     - name: Configure ccache
+      continue-on-error: true
       shell: cmd
       run: |
         set "CCACHE_DIR=%USERPROFILE%\.ccache"
@@ -77,6 +79,7 @@ runs:
         type "%CCACHE_CONFIGPATH%"
 
     - name: Add ccache to PATH
+      continue-on-error: true
       shell: pwsh
       run: |
         $ccachePath = "$env:USERPROFILE\ccache"
@@ -96,6 +99,7 @@ runs:
         & "$ccachePath\ccache.exe" --version
 
     - name: Show ccache stats before build
+      continue-on-error: true
       shell: cmd
       run: |
         echo === ccache stats before build ===

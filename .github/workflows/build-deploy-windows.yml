@@ -103,6 +103,7 @@ jobs:
 
       - name: Setup ccache
         id: setup-ccache
+        continue-on-error: true
         uses: ./.github/actions/setup-ccache-windows
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
@@ -110,6 +111,7 @@ jobs:
 
       - name: Show ccache stats before build
         if: always()
+        continue-on-error: true
         shell: cmd
         run: |
           echo === ccache stats before build ===
@@ -375,6 +377,7 @@ jobs:
 
       - name: Show ccache stats after build
         if: always()
+        continue-on-error: true
         shell: cmd
         run: |
           echo === ccache stats after build ===
