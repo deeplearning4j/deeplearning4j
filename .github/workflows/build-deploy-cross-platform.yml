@@ -304,17 +304,15 @@ jobs:
 
           mvn --version
 
-          # Build all Java modules, skip native builds that are already on snapshots:
+          # Build all Java modules, skip only:
           # - libnd4j: C++ native ops (built by per-platform native workflows)
-          # - libtokenizers: just built and deployed in previous step
-          # - tokenizers-native-preset, tokenizers-native: just built and deployed
-          # - python4j/datavec-local: depend on cpython native bindings
+          # - libtokenizers, tokenizers-native-preset, tokenizers-native: just built and deployed in previous step
           # - codegen modules not needed for deployment
           PROTOC_PROFILE=""
           if [ "${{ matrix.platform }}" == "linux-arm64" ] || [ "${{ matrix.platform }}" == "macosx-arm64" ]; then
             PROTOC_PROFILE="-Posx-aarch64-protoc"
           fi
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy,!:datavec-local \
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native \
             ${PROTOC_PROFILE} \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
