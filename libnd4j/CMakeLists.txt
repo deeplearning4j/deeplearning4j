@@ -141,11 +141,12 @@ if(WIN32 AND SD_CUDA)
             string(REGEX REPLACE "/FS" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Fix quoted -Xcompiler with spaces: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
             # The quotes+spaces break Ninja rsp file parsing (space splits into multiple tokens)
-            string(REGEX REPLACE "-Xcompiler=\"[ ]*(/[^ \"]+)[ ]+(/[^ \"]+)\"" "-Xcompiler=\\1,\\2" ${_cuda_flags_var} "${${_cuda_flags_var}}")
-            # Handle 3-arg variant: -Xcompiler=" /A /B /C" → -Xcompiler=/A,/B,/C
-            string(REGEX REPLACE "-Xcompiler=\"[ ]*(/[^ \"]+)[ ]+(/[^ \"]+)[ ]+(/[^ \"]+)\"" "-Xcompiler=\\1,\\2,\\3" ${_cuda_flags_var} "${${_cuda_flags_var}}")
-            # Strip any remaining quotes around -Xcompiler values
-            string(REGEX REPLACE "-Xcompiler=\"([^\"]*)\"" "-Xcompiler=\\1" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # IMPORTANT: Just REMOVE the entire -Xcompiler="..." since we re-add /EHsc via
+            # the custom compile template (-Xcompiler=/bigobj,/EHsc,/MD).
+            # /GR is the default on MSVC and doesn't need to be explicitly set.
+            string(REGEX REPLACE "-Xcompiler=\" [^\"]*\"" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
+            # Also try without space after =
+            string(REGEX REPLACE "-Xcompiler=\"[^\"]*\"" "" ${_cuda_flags_var} "${${_cuda_flags_var}}")
             # Clean up multiple spaces
             string(REGEX REPLACE "  +" " " ${_cuda_flags_var} "${${_cuda_flags_var}}")
             string(STRIP "${${_cuda_flags_var}}" ${_cuda_flags_var})
