@@ -163,9 +163,13 @@ jobs:
           cmake --version
           protoc --version
 
-          # Build all Java modules, skip libnd4j native build (already on snapshots)
-          # Exclude codegen modules that aren't needed for deployment
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j \
+          # Build all Java modules, skip native builds (already on snapshots):
+          # - libnd4j: C++ native ops
+          # - libtokenizers: Rust tokenizers FFI (built by build-deploy-tokenizers workflow)
+          # - tokenizers-native-preset: JavaCPP preset (needs native headers)
+          # - tokenizers-native: JavaCPP bindings (needs native libs)
+          # - codegen modules not needed for deployment
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:samediff-llm \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=linux-x86_64 \
             -Dmaven.javadoc.failOnError=false \
