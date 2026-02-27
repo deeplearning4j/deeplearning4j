@@ -73,16 +73,14 @@ if(WIN32 AND SD_CUDA)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-    # Disable response files and dependencies
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF CACHE BOOL "" FORCE)
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF CACHE BOOL "" FORCE)
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF CACHE BOOL "" FORCE)
-    set(CMAKE_CUDA_DEPFILE_FORMAT "" CACHE STRING "" FORCE)
-    set(CMAKE_CUDA_DEPENDS_USE_COMPILER OFF CACHE BOOL "" FORCE)
-
-    set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE> --compiler-options \"/bigobj /EHsc /MD /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH\""
-            CACHE STRING "" FORCE)
+    # Use MinGW g++ as CUDA host compiler to avoid MSVC-specific flag generation.
+    # CMake adds -Xcompiler=-FdPath\,-FS for MSVC host, which nvcc misparses
+    # (backslash-comma causes -FS to be treated as a separate input file).
+    # Since the C/CXX compiler is already MinGW g++, using it for CUDA host
+    # compilation is consistent and avoids the entire class of MSVC flag issues.
+    find_program(_MINGW_GXX g++ REQUIRED)
+    set(CMAKE_CUDA_HOST_COMPILER "${_MINGW_GXX}" CACHE STRING "" FORCE)
+    message(STATUS "Using MinGW g++ as CUDA host compiler: ${_MINGW_GXX}")
 endif()
 
 if(SD_CUDA)
@@ -96,19 +94,12 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# On Windows + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
-# nvcc misparses this (backslash escapes comma, -FS becomes input file),
-# failing with "A single input file is required".
-# NOTE: We check WIN32, not MSVC, because the C/CXX compiler may be MinGW g++
-# while nvcc still uses MSVC cl.exe as its host compiler.
-# The pre-project CMAKE_CUDA_COMPILE_OBJECT override gets reset by project(),
-# so we must override it here, AFTER project().
+# On MSVC + CUDA, CMake generates -Xcompiler=-FdPath\,-FS for CUDA objects.
+# nvcc misparses this (backslash escapes comma, -FS becomes input file).
+# This is avoided by setting CMAKE_CUDA_HOST_COMPILER to g++ before project(),
+# which prevents cmake from generating any MSVC-specific flags for CUDA.
 if(WIN32 AND SD_CUDA)
-    # Override the CUDA compile command to avoid the -Fd,-FS combination
-    set(CMAKE_CUDA_COMPILE_OBJECT
-            "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -o <OBJECT> -c <SOURCE> --compiler-options \"/bigobj /EHsc /MD /FS /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH\""
-            CACHE STRING "" FORCE)
-    message(STATUS "Applied Windows CUDA compile command fix (avoiding -Fd,-FS nvcc parse error)")
+    message(STATUS "Windows CUDA build: using MinGW g++ host compiler (avoids MSVC flag issues)")
 endif()
 
 
