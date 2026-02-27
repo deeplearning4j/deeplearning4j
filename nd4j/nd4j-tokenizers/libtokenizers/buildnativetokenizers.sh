@@ -138,6 +138,16 @@ case "${PLATFORM}" in
         ;;
 esac
 
+# Normalize PLATFORM for CMake (uname returns mingw64_nt-... on MSYS2)
+case "${PLATFORM}" in
+    mingw*|cygwin*|msys*)
+        CMAKE_PLATFORM="windows"
+        ;;
+    *)
+        CMAKE_PLATFORM="${PLATFORM}"
+        ;;
+esac
+
 echo "Building for target: ${TARGET}"
 
 # First, build the tokenizers-ffi Rust crate that provides C FFI bindings
@@ -205,7 +215,7 @@ fi
 CMAKE_ARGS=(
     "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}"
     "-DCMAKE_INSTALL_PREFIX=${OUTPUT_DIR}/org/eclipse/deeplearning4j/tokenizers"
-    "-DPLATFORM=${PLATFORM}"
+    "-DPLATFORM=${CMAKE_PLATFORM}"
     "-DARCH=${ARCH}"
     "-DJAVACPP_PLATFORM=${JAVACPP_PLATFORM}"
 )
