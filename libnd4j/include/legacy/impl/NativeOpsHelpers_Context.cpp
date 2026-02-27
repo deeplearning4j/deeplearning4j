@@ -16,6 +16,12 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
+// On Windows, include windows.h early so _WINDOWS_ is defined before types.h
+// constexpr alias guards are evaluated (avoids BOOL/INT64/etc. typedef conflicts)
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <graph/GraphExecutioner.h>
 #include <graph/GraphHolder.h>
 #include <helpers/ConstantTadHelper.h>

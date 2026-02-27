@@ -39,29 +39,26 @@
 // ============================================================================
 // DATATYPE ALIASES
 // ============================================================================
-// On non-Windows platforms, provide global constexpr aliases for the DataType
-// enum values. The macro system (TTYPE_*, BUILD_SINGLE_SELECTOR, etc.) relies
-// on these bare names being available as C++ identifiers.
-// On Windows, these clash with Windows SDK typedefs (BOOL, INT8, UINT16, etc.)
-// from minwindef.h and basetsd.h, so they are omitted. The macro system still
-// works on Windows because it uses qualified sd::DataType::NAME access.
+// Provide global constexpr aliases for the DataType enum values so that bare
+// names like FLOAT32, DOUBLE, INT64 etc. can be used throughout the codebase.
+//
+// On Windows, some names (BOOL, INT8..INT64, UINT8..UINT64) conflict with
+// typedefs from <windows.h> (basetsd.h / minwindef.h). These are guarded by
+// !defined(_WINDOWS_) — the include guard that <windows.h> sets. This means:
+//  - Translation units that do NOT include <windows.h>: all aliases available
+//  - Translation units that DO include <windows.h>: conflicting aliases skipped,
+//    those files must use sd::DataType::NAME for the conflicting names.
+// IMPORTANT: Files that include <windows.h> must do so BEFORE including this
+// header, so that _WINDOWS_ is already defined when this guard is checked.
 // ============================================================================
-#if !defined(_WIN32)
+
+  // These names do NOT conflict with any Windows SDK types
   static constexpr auto INHERIT = sd::DataType::INHERIT;
-  static constexpr auto BOOL = sd::DataType::BOOL;
   static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
   static constexpr auto HALF = sd::DataType::HALF;
   static constexpr auto HALF2 = sd::DataType::HALF2;
   static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
   static constexpr auto DOUBLE = sd::DataType::DOUBLE;
-  static constexpr auto INT8 = sd::DataType::INT8;
-  static constexpr auto INT16 = sd::DataType::INT16;
-  static constexpr auto INT32 = sd::DataType::INT32;
-  static constexpr auto INT64 = sd::DataType::INT64;
-  static constexpr auto UINT8 = sd::DataType::UINT8;
-  static constexpr auto UINT16 = sd::DataType::UINT16;
-  static constexpr auto UINT32 = sd::DataType::UINT32;
-  static constexpr auto UINT64 = sd::DataType::UINT64;
   static constexpr auto QINT8 = sd::DataType::QINT8;
   static constexpr auto QINT16 = sd::DataType::QINT16;
   static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
@@ -70,6 +67,19 @@
   static constexpr auto UTF32 = sd::DataType::UTF32;
   static constexpr auto ANY = sd::DataType::ANY;
   static constexpr auto AUTO = sd::DataType::AUTO;
+
+  // These names conflict with Windows SDK typedefs from basetsd.h / minwindef.h.
+  // Only define them when <windows.h> has NOT been included (_WINDOWS_ is its guard).
+#if !defined(_WINDOWS_)
+  static constexpr auto BOOL = sd::DataType::BOOL;
+  static constexpr auto INT8 = sd::DataType::INT8;
+  static constexpr auto INT16 = sd::DataType::INT16;
+  static constexpr auto INT32 = sd::DataType::INT32;
+  static constexpr auto INT64 = sd::DataType::INT64;
+  static constexpr auto UINT8 = sd::DataType::UINT8;
+  static constexpr auto UINT16 = sd::DataType::UINT16;
+  static constexpr auto UINT32 = sd::DataType::UINT32;
+  static constexpr auto UINT64 = sd::DataType::UINT64;
 #endif
 
   using LongType = sd::LongType;

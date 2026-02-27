@@ -15,16 +15,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+// Platform-specific includes for dynamic loading — must be BEFORE project headers
+// so that _WINDOWS_ is defined before types.h constexpr alias guards are checked
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <helpers/DynamicKernelLoader.h>
 #include <ops/declarable/OpRegistrator.h>
 
 #include <sstream>
 #include <unordered_set>
 
-// Platform-specific includes for dynamic loading
-#ifdef _WIN32
-#include <windows.h>
-#else
+#ifndef _WIN32
 #include <dlfcn.h>
 #include <dirent.h>
 #include <fnmatch.h>
