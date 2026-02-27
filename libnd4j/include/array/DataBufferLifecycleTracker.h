@@ -174,21 +174,21 @@ class DataBufferLifecycleTracker {
    * Allocations made while an op context is set will be tagged with it.
    */
   static void setCurrentOpContext(const std::string& opName) {
-    _currentOpContext = opName;
+    currentOpContextRef() = opName;
   }
 
   /**
    * Clear the current operation context for this thread.
    */
   static void clearCurrentOpContext() {
-    _currentOpContext.clear();
+    currentOpContextRef().clear();
   }
 
   /**
    * Get the current operation context for this thread.
    */
   static const std::string& getCurrentOpContext() {
-    return _currentOpContext;
+    return currentOpContextRef();
   }
 
   /**
@@ -256,7 +256,7 @@ class DataBufferLifecycleTracker {
     record.segment = segment;
 
     // Capture current operation context
-    record.opContext = _currentOpContext;
+    record.opContext = currentOpContextRef();
 
     // Update per-op statistics
     const std::string& opKey = record.opContext.empty() ? "(unknown)" : record.opContext;
@@ -994,12 +994,12 @@ class DataBufferLifecycleTracker {
   // Per-operation statistics
   mutable std::map<std::string, DataBufferPerOpStats> _perOpStats;
 
-  // Thread-local operation context
-  static thread_local std::string _currentOpContext;
+  // Thread-local operation context (function-local to avoid macOS duplicate symbols)
+  static std::string& currentOpContextRef() {
+    static thread_local std::string _ctx;
+    return _ctx;
+  }
 };
-
-// Define thread-local storage
-inline thread_local std::string DataBufferLifecycleTracker::_currentOpContext;
 
 } // namespace array
 } // namespace sd

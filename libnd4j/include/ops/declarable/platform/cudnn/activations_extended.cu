@@ -141,7 +141,7 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
   NDArray temp2(input->shapeInfo(), input->dataType(), false, contextPtr);
 
   // Compute: temp1 = x^3
-  input->applyScalar(scalar::Pow, 3.0, temp1);
+  input->applyScalar(scalar::Pow, 3.0, &temp1);
 
   // temp1 = 0.044715 * x^3
   temp1 *= 0.044715;
@@ -173,7 +173,7 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
   temp2 += 1.0;
 
   // output = 0.5 * x * (1 + tanh(...))
-  output->assign(*input);
+  output->assign(input);
   *output *= temp2;
   *output *= 0.5;
 
@@ -223,7 +223,7 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
 
   // Compute softplus using log(1 + exp(x))
   // For numerical stability, we use: softplus(x) = max(x, 0) + log(1 + exp(-abs(x)))
-  input->applyTransform(transform::SoftPlus, softplusResult);
+  input->applyTransform(transform::SoftPlus, &softplusResult);
 
   // Compute tanh(softplus(x))
   NDArray tanhResult(input->shapeInfo(), input->dataType(), false, contextPtr);
@@ -244,7 +244,7 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
   NDArray::registerSpecialUse({&tanhResult}, {&softplusResult});
 
   // Multiply by x: output = x * tanh(softplus(x))
-  input->applyPairwiseTransform(pairwise::Multiply, tanhResult, *output);
+  input->applyPairwiseTransform(pairwise::Multiply, &tanhResult, output);
 
   auto cudaErr = cudaStreamSynchronize(*contextPtr->getCudaStream());
   if (cudaErr != 0) throw cuda_exception::build("mish CUDNN: cudaStreamSynchronize failed!", cudaErr);
@@ -288,7 +288,7 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
 
   // Step 1: temp = x + 3
   NDArray temp(input->shapeInfo(), input->dataType(), false, contextPtr);
-  input->applyScalar(scalar::Add, 3.0, temp);
+  input->applyScalar(scalar::Add, 3.0, &temp);
 
   // Step 2: temp = relu6(temp) = clipped_relu(temp, 6)
   NDArray relu6Result(input->shapeInfo(), input->dataType(), false, contextPtr);
@@ -309,7 +309,7 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
   NDArray::registerSpecialUse({&relu6Result}, {&temp});
 
   // Step 3: output = x * relu6(x + 3) / 6
-  input->applyPairwiseTransform(pairwise::Multiply, relu6Result, *output);
+  input->applyPairwiseTransform(pairwise::Multiply, &relu6Result, output);
   *output /= 6.0;
 
   auto cudaErr = cudaStreamSynchronize(*contextPtr->getCudaStream());
@@ -353,7 +353,7 @@ PLATFORM_IMPL(hardsigmoid, ENGINE_CUDA) {
 
   // Step 1: temp = x + 3
   NDArray temp(input->shapeInfo(), input->dataType(), false, contextPtr);
-  input->applyScalar(scalar::Add, 3.0, temp);
+  input->applyScalar(scalar::Add, 3.0, &temp);
 
   // Step 2: output = relu6(temp) = clipped_relu(temp, 6)
   ActivationDescExt actDesc;
