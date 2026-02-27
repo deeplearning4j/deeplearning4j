@@ -78,7 +78,12 @@ set(TOKENIZERS_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/tokenizers-build")
 if(PLATFORM STREQUAL "windows")
     set(WRAPPER_LIB_NAME "tokenizers_wrapper")
     set(LIB_SUFFIX ".dll")
-    set(STATIC_LIB_SUFFIX ".lib")
+    # MinGW uses .a for static libraries, MSVC uses .lib
+    if(MINGW)
+        set(STATIC_LIB_SUFFIX ".a")
+    else()
+        set(STATIC_LIB_SUFFIX ".lib")
+    endif()
 elseif(PLATFORM STREQUAL "darwin")
     set(WRAPPER_LIB_NAME "tokenizers_wrapper")
     set(LIB_SUFFIX ".dylib")
@@ -190,7 +195,8 @@ elseif(PLATFORM STREQUAL "darwin")
         BUILD_WITH_INSTALL_RPATH TRUE
     )
 elseif(PLATFORM STREQUAL "windows")
-    # Windows-specific settings
+    # Windows-specific settings: Rust static libs need Windows system libraries
+    target_link_libraries(${WRAPPER_LIB_NAME} PRIVATE ws2_32 userenv bcrypt ntdll)
     set_target_properties(${WRAPPER_LIB_NAME} PROPERTIES
         WINDOWS_EXPORT_ALL_SYMBOLS TRUE
     )
