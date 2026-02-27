@@ -492,7 +492,9 @@
 // (which uses UnsignedLong = uint64_t) already covers unsigned long. Including TTYPE_PLATFORM_UINT64
 // would create duplicate template instantiations. Only include it on non-__LP64__ systems where
 // uint64_t is unsigned long long and we need unsigned long as a separate type.
-#if defined(__LP64__)
+// On Windows (MSVC and MinGW), unsigned long is 32-bit (covered by UINT32), and uint64_t is
+// unsigned long long (covered by TTYPE_UINT64), so TTYPE_PLATFORM_UINT64 is not needed.
+#if defined(__LP64__) || defined(_WIN32)
 #define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64
 #else
 #define SD_LONG_TYPES_L TTYPE_INT64 TTYPE_UINT64 TTYPE_PLATFORM_UINT64
