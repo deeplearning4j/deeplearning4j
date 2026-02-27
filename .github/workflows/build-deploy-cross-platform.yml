@@ -294,7 +294,7 @@ jobs:
           # - libtokenizers: just built and deployed in previous step
           # - tokenizers-native-preset, tokenizers-native: just built and deployed
           # - codegen modules not needed for deployment
-          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native \
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j,!:libtokenizers,!:tokenizers-native-preset,!:tokenizers-native,!:python4j-core,!:python4j-numpy \
             -DskipTestResourceEnforcement=true \
             -Djavacpp.platform=${{ matrix.platform }} \
             -Dmaven.javadoc.failOnError=false \

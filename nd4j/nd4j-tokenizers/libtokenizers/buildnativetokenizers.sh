@@ -201,6 +201,13 @@ CMAKE_ARGS=(
     "-DJAVACPP_PLATFORM=${JAVACPP_PLATFORM}"
 )
 
+# On Windows/MSYS2, force MinGW Makefiles generator (otherwise cmake picks Visual Studio)
+case "${PLATFORM}" in
+    mingw*|cygwin*|msys*|windows*)
+        CMAKE_ARGS+=("-G" "MinGW Makefiles")
+        ;;
+esac
+
 # Explicitly pass compiler if set (critical for ABI compatibility)
 if [[ -n "${CC}" ]]; then
     CMAKE_ARGS+=("-DCMAKE_C_COMPILER=${CC}")
