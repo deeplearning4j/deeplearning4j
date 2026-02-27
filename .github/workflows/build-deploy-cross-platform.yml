@@ -1,11 +1,8 @@
+name: Build & Deploy Cross-Platform (Java modules)
+
 on:
   workflow_dispatch:
     inputs:
-      buildThreads:
-        description: 'Build threads for libnd4j. Used to control memory usage of builds.'
-        required: true
-        default: 2
-
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
@@ -17,14 +14,14 @@ on:
         default: 1.0.0-M3
 
       snapshotVersion:
-        description: 'Release version target'
+        description: 'Snapshot version target'
         required: false
         default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default:
+        default: ''
 
       serverId:
         description: 'Server id to publish to'
@@ -37,39 +34,68 @@ on:
         default: ubuntu-22.04
 
       debug_enabled:
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        description: 'Run the build with tmate debugging enabled'
         required: false
         default: false
+
 jobs:
-   linux-x86_64:
+  linux-x86_64:
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
+
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Configure swap (8GB)
+        shell: bash
+        run: |
+          sudo fallocate -l 8G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1G count=8 status=progress
+          sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+          sudo sysctl vm.swappiness=60
+          sudo sysctl vm.overcommit_memory=2
+          sudo sysctl vm.overcommit_ratio=80
+          free -h
+
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
-      - name: Cache cmake install
+
+      - name: Cache cmake
         uses: actions/cache@v4
         id: cache-cmake
         with:
           path: /opt/cmake
           key: ${{ runner.os }}-${{ runner.arch }}-cmake
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-cmake
-      - name: Cache protobuf install
+
+      - name: Cache protobuf
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
           key: ${{ runner.os }}-${{ runner.arch }}-protobuf
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-protobuf
+
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
+
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-      - name: Set up Java for publishing to OSSRH
+
+      - name: Set up Java for publishing
         uses: actions/setup-java@v4
         with:
           java-version: 11
@@ -80,11 +106,43 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
-        
-        
 
+      - name: Configure Maven snapshot repository
+        shell: bash
+        run: |
+          # Merge snapshot repo into the settings.xml that setup-java created
+          # so we can resolve nd4j-native jars from snapshots
+          SETTINGS_FILE="${HOME}/.m2/settings.xml"
+          if [ ! -f "$SETTINGS_FILE" ]; then
+            mkdir -p ~/.m2
+            cat > "$SETTINGS_FILE" << 'SETTINGS'
+          <settings>
+            <profiles>
+              <profile>
+                <id>sonatype-snapshots</id>
+                <repositories>
+                  <repository>
+                    <id>central-portal-snapshots</id>
+                    <name>Central Portal Snapshots</name>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+                    <releases><enabled>false</enabled></releases>
+                    <snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots>
+                  </repository>
+                </repositories>
+              </profile>
+            </profiles>
+            <activeProfiles>
+              <activeProfile>sonatype-snapshots</activeProfile>
+            </activeProfiles>
+          </settings>
+          SETTINGS
+          else
+            # settings.xml already exists from setup-java; inject the snapshot profile
+            # Insert before </settings>
+            sed -i 's|</settings>|<profiles><profile><id>sonatype-snapshots</id><repositories><repository><id>central-portal-snapshots</id><name>Central Portal Snapshots</name><url>https://central.sonatype.com/repository/maven-snapshots/</url><releases><enabled>false</enabled></releases><snapshots><enabled>true</enabled><updatePolicy>always</updatePolicy></snapshots></repository></repositories></profile></profiles><activeProfiles><activeProfile>sonatype-snapshots</activeProfile></activeProfiles></settings>|' "$SETTINGS_FILE"
+          fi
 
-      - name: Build on  linux-x86_64
+      - name: Build and deploy
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -98,42 +156,34 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-
+          MAVEN_OPTS: -Xmx2g
         run: |
-          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
-          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "release version ${{ github.event.inputs.releaseVersion }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
-          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
-          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
-          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
-          echo "server id ${{ github.event.inputs.serverId }}"
-          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
-
-          sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
-          sudo apt-get autoremove
-          sudo apt-get clean
-          command="mvn   -Possrh -pl !:blas-lapack-generator,!:libnd4j-gen  -DskipTestResourceEnforcement=true -Djavacpp.platform=linux-x86_64 --batch-mode deploy -DskipTests"
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-                    echo "Performing release"
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-                   else
-                       echo "Running build and deploying to snapshots"
-                       eval "$command"
-          fi
 
+          # Build all Java modules, skip libnd4j native build (already on snapshots)
+          # Exclude codegen modules that aren't needed for deployment
+          command="mvn -pl !:blas-lapack-generator,!:libnd4j-gen,!:libnd4j \
+            -DskipTestResourceEnforcement=true \
+            -Djavacpp.platform=linux-x86_64 \
+            -Dmaven.javadoc.failOnError=false \
+            --no-transfer-progress --batch-mode \
+            deploy -DskipTests"
 
           if [ "$PERFORM_RELEASE" == 1 ]; then
-                        echo "Performing release"
-                        bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-                       else
-                           echo "Running build and deploying to snapshots"
-                           eval "$command"
+            echo "Performing release"
+            bash ${GITHUB_WORKSPACE}/release-specified-component.sh \
+              "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+          else
+            echo "Running build and deploying to snapshots"
+            eval "$command"
           fi
 
-   
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile 2>/dev/null || true
