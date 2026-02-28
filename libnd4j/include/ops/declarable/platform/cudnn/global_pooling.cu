@@ -59,7 +59,7 @@ static void globalAvgPool2dCUDNN(const LaunchContext* context, NDArray* input, N
 
   // Create pooling descriptor - global pooling means kernel size equals spatial dims
   PoolingDesc poolDesc;
-  poolDesc.set(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
+  poolDesc.set2D(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
   const float alpha32 = 1.0f, beta32 = 0.0f;
@@ -108,7 +108,7 @@ static void globalMaxPool2dCUDNN(const LaunchContext* context, NDArray* input, N
 
   // Create pooling descriptor - global pooling means kernel size equals spatial dims
   PoolingDesc poolDesc;
-  poolDesc.set(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
+  poolDesc.set2D(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
   const float alpha32 = 1.0f, beta32 = 0.0f;
@@ -163,7 +163,7 @@ static void globalAvgPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
 
   // Create pooling descriptor
   PoolingDesc poolDesc;
-  poolDesc.set(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
+  poolDesc.set2D(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
   const float alpha32 = 1.0f, beta32 = 0.0f;
@@ -221,7 +221,7 @@ static void globalMaxPool2dBpCUDNN(const LaunchContext* context, NDArray* input,
 
   // Create pooling descriptor
   PoolingDesc poolDesc;
-  poolDesc.set(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
+  poolDesc.set2D(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, H, W, 0, 0, 1, 1);
 
   // Scaling parameters
   const float alpha32 = 1.0f, beta32 = 0.0f;
