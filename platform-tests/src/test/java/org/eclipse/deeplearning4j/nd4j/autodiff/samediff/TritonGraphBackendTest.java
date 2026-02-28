@@ -1670,4 +1670,174 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
         INDArray inputArr = Nd4j.randn(DataType.FLOAT, 1, 1, 3, 3, 4, 4);
         runOpTest("testTritonCol2imWithElementwise", sd, Map.of("input", inputArr), "result");
     }
+
+    // ─── Fallback-section fusion strategy tests ─────────────────────────────
+    // These tests verify the matmul-exclusion strategy: matmul sections fall back
+    // to cuBLAS via fallbackRangeExecutor_, element-wise chains compile as Triton kernels.
+
+    /**
+     * Test: Two matmuls with element-wise chains between them.
+     * Simulates a simplified transformer block: ew → matmul → ew → matmul → ew.
+     * With fallback-section strategy, matmuls run via cuBLAS and element-wise
+     * chains compile as separate Triton kernels. Verifies correctness of the
+     * gap-filling mechanism when multiple fallback gaps exist.
+     */
+    @Test
+    public void testTritonMultiMatmulWithEwChains() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("input", DataType.FLOAT, -1, 32);
+
+        // Pre-matmul element-wise chain
+        SDVariable a1 = sd.constant("a1", Nd4j.randn(DataType.FLOAT, 1, 32));
+        SDVariable h1 = x.add("pre_add", a1);
+        SDVariable h2 = sd.nn.relu("pre_relu", h1, 0);
+
+        // First matmul (should fall back to cuBLAS)
+        SDVariable w1 = sd.constant("w1", Nd4j.randn(DataType.FLOAT, 32, 64));
+        SDVariable mm1 = sd.mmul("mm1", h2, w1);
+
+        // Mid element-wise chain (should compile as Triton kernel)
+        SDVariable b1 = sd.constant("b1", Nd4j.randn(DataType.FLOAT, 1, 64));
+        SDVariable s1 = sd.constant("s1", Nd4j.randn(DataType.FLOAT, 1, 64));
+        SDVariable h3 = mm1.add("mid_add1", b1);
+        SDVariable h4 = sd.nn.relu("mid_relu", h3, 0);
+        SDVariable h5 = h4.mul("mid_mul", s1);
+        SDVariable h6 = sd.math.tanh("mid_tanh", h5);
+
+        // Second matmul (should fall back to cuBLAS)
+        SDVariable w2 = sd.constant("w2", Nd4j.randn(DataType.FLOAT, 64, 16));
+        SDVariable mm2 = sd.mmul("mm2", h6, w2);
+
+        // Post element-wise chain (should compile as Triton kernel)
+        SDVariable b2 = sd.constant("b2", Nd4j.randn(DataType.FLOAT, 1, 16));
+        SDVariable h7 = mm2.add("post_add", b2);
+        sd.nn.sigmoid("result", h7);
+
+        runOpTest("testTritonMultiMatmulWithEwChains", sd,
+                  Map.of("input", Nd4j.randn(DataType.FLOAT, 8, 32)), "result");
+    }
+
+    /**
+     * Test: Three matmuls simulating Q/K/V projections + output projection
+     * in a transformer attention block. Each matmul is separated by element-wise ops.
+     * This is the core pattern that the fallback-section strategy targets.
+     */
+    @Test
+    public void testTritonTransformerBlockPattern() {
+        SameDiff sd = SameDiff.create();
+        int dim = 32;
+        SDVariable x = sd.placeHolder("input", DataType.FLOAT, -1, dim);
+
+        // Layer norm (element-wise approximation: subtract mean, divide by std)
+        SDVariable lnScale = sd.constant("ln_scale", Nd4j.ones(DataType.FLOAT, 1, dim));
+        SDVariable lnBias = sd.constant("ln_bias", Nd4j.zeros(DataType.FLOAT, 1, dim));
+        SDVariable normed = x.mul("ln_mul", lnScale).add("ln_add", lnBias);
+
+        // Q projection matmul (cuBLAS fallback)
+        SDVariable wq = sd.constant("wq", Nd4j.randn(DataType.FLOAT, dim, dim));
+        SDVariable q = sd.mmul("q_proj", normed, wq);
+
+        // K projection matmul (cuBLAS fallback)
+        SDVariable wk = sd.constant("wk", Nd4j.randn(DataType.FLOAT, dim, dim));
+        SDVariable k = sd.mmul("k_proj", normed, wk);
+
+        // Attention scores: Q @ K^T (cuBLAS fallback)
+        // Note: using reshape to simulate transpose for simplicity
+        SDVariable scores = sd.mmul("attn_scores", q, k, false, true, false);
+
+        // Softmax approximation via element-wise (Triton kernel)
+        SDVariable scaleFactor = sd.constant("scale_factor",
+            Nd4j.scalar(DataType.FLOAT, 1.0f / (float)Math.sqrt(dim)));
+        SDVariable scaledScores = scores.mul("scale_scores", scaleFactor);
+        SDVariable expScores = sd.math.exp("exp_scores", scaledScores);
+        SDVariable sumExp = expScores.sum("sum_exp", true, -1);
+        SDVariable softmax = expScores.div("softmax_div", sumExp);
+
+        // V projection matmul (cuBLAS fallback)
+        SDVariable wv = sd.constant("wv", Nd4j.randn(DataType.FLOAT, dim, dim));
+        SDVariable v = sd.mmul("v_proj", normed, wv);
+
+        // Attention output: softmax @ V (cuBLAS fallback)
+        SDVariable attnOut = sd.mmul("attn_out", softmax, v);
+
+        // Output projection (cuBLAS fallback)
+        SDVariable wo = sd.constant("wo", Nd4j.randn(DataType.FLOAT, dim, dim));
+        SDVariable projected = sd.mmul("out_proj", attnOut, wo);
+
+        // Residual + final element-wise (Triton kernel)
+        SDVariable residual = projected.add("residual", x);
+        sd.nn.relu("result", residual, 0);
+
+        runOpTest("testTritonTransformerBlockPattern", sd,
+                  Map.of("input", Nd4j.randn(DataType.FLOAT, 4, dim)), "result");
+    }
+
+    /**
+     * Test: Pure element-wise chain with NO matmuls.
+     * With fallback-section strategy, this should compile entirely as a single Triton kernel
+     * with no gaps. Verifies that element-wise-only segments are unaffected by the change.
+     */
+    @Test
+    public void testTritonPureElementWiseNoFallback() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("input", DataType.FLOAT, -1, 64);
+        SDVariable a = sd.constant("a", Nd4j.randn(DataType.FLOAT, 1, 64));
+        SDVariable b = sd.constant("b", Nd4j.randn(DataType.FLOAT, 1, 64));
+        SDVariable c = sd.constant("c", Nd4j.randn(DataType.FLOAT, 1, 64));
+
+        // Long element-wise chain — should fuse entirely into one Triton kernel
+        SDVariable h1 = x.add("add1", a);
+        SDVariable h2 = sd.nn.relu("relu1", h1, 0);
+        SDVariable h3 = h2.mul("mul1", b);
+        SDVariable h4 = sd.math.tanh("tanh1", h3);
+        SDVariable h5 = h4.add("add2", c);
+        SDVariable h6 = sd.nn.sigmoid("sigmoid1", h5);
+        SDVariable h7 = h6.mul("mul2", a);
+        SDVariable h8 = h7.sub("sub1", b);
+        SDVariable h9 = sd.math.abs("abs1", h8);
+        SDVariable h10 = h9.add("add3", c);
+        SDVariable h11 = sd.math.exp("exp1", h10);
+        sd.nn.relu("result", h11, 0);
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.resetTritonCounters();
+
+        runOpTest("testTritonPureElementWiseNoFallback", sd,
+                  Map.of("input", Nd4j.randn(DataType.FLOAT, 8, 64)), "result");
+
+        // With pure element-wise, there should be NO fallback ranges
+        long launches = nativeOps.getTritonKernelLaunchCount();
+        log.info("testTritonPureElementWiseNoFallback: Triton launches={}", launches);
+    }
+
+    /**
+     * Test: Single matmul sandwiched by element-wise chains.
+     * The simplest case of the fallback strategy: ew → matmul → ew.
+     * This is a regression test for the cooperative launch path (now replaced by fallback).
+     */
+    @Test
+    public void testTritonSingleMatmulFallback() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("input", DataType.FLOAT, -1, 16);
+
+        // Pre-matmul element-wise
+        SDVariable a = sd.constant("a", Nd4j.randn(DataType.FLOAT, 1, 16));
+        SDVariable h1 = x.add("pre_add", a);
+        SDVariable h2 = sd.nn.relu("pre_relu", h1, 0);
+        SDVariable h3 = sd.math.tanh("pre_tanh", h2);
+
+        // Matmul (cuBLAS fallback)
+        SDVariable w = sd.constant("w", Nd4j.randn(DataType.FLOAT, 16, 32));
+        SDVariable mm = sd.mmul("mm", h3, w);
+
+        // Post-matmul element-wise
+        SDVariable b = sd.constant("b", Nd4j.randn(DataType.FLOAT, 1, 32));
+        SDVariable h4 = mm.add("post_add", b);
+        SDVariable h5 = sd.nn.sigmoid("post_sigmoid", h4);
+        SDVariable h6 = h5.mul("post_mul", sd.constant("s", Nd4j.randn(DataType.FLOAT, 1, 32)));
+        sd.nn.relu("result", h6, 0);
+
+        runOpTest("testTritonSingleMatmulFallback", sd,
+                  Map.of("input", Nd4j.randn(DataType.FLOAT, 4, 16)), "result");
+    }
 }

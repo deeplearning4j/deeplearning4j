@@ -175,28 +175,40 @@ public class TestSmolDoclingOptimizedPipeline {
         log.info("STEP 3 DONE: {}ms", importTime);
 
         // Explicit DSP/native compilation for all models (no lazy compile during decode).
+        // Skip precompilation when a non-Triton execution mode is requested via system property,
+        // because precompile overrides the native plan's graph execution mode to TRITON.
+        String gemProp = System.getProperty("nd4j.dsp.graphExecutionMode");
         String dspModeProp = System.getProperty("vlm.test.dsp.compilation.mode", "MAX_AUTOTUNE");
-        String dspModeCanonical = normalizePropertyToken(dspModeProp);
-        DspCompilationMode dspMode;
-        try {
-            dspMode = DspCompilationMode.valueOf(dspModeCanonical);
-        } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    "Invalid vlm.test.dsp.compilation.mode='" + dspModeProp + "' (normalized='" + dspModeCanonical +
-                            "'). Expected one of: " + Arrays.toString(DspCompilationMode.values()), e);
+        boolean skipPrecompile = "SLOT_BY_SLOT".equalsIgnoreCase(gemProp)
+                || "CUDA_GRAPHS".equalsIgnoreCase(gemProp)
+                || "AUTO".equalsIgnoreCase(gemProp)
+                || "NONE".equalsIgnoreCase(dspModeProp);
+
+        if (!skipPrecompile) {
+            String dspModeCanonical = normalizePropertyToken(dspModeProp);
+            DspCompilationMode dspMode;
+            try {
+                dspMode = DspCompilationMode.valueOf(dspModeCanonical);
+            } catch (Exception e) {
+                throw new IllegalArgumentException(
+                        "Invalid vlm.test.dsp.compilation.mode='" + dspModeProp + "' (normalized='" + dspModeCanonical +
+                                "'). Expected one of: " + Arrays.toString(DspCompilationMode.values()), e);
+            }
+            String tritonProfile = configureTritonCompileProfile(dspMode);
+            if (Nd4j.getNativeOps().isTritonAvailable()) {
+                Nd4j.getNativeOps().resetTritonCounters();
+            }
+            log.info("STEP 3b: DSP/native precompile all models (requestedMode='{}', normalized='{}', selectedMode={}, tritonProfile={})",
+                    dspModeProp, dspModeCanonical, dspMode, tritonProfile);
+            logTritonKnobs("Environment before precompile");
+            logTritonCounters("before-precompile");
+            precompileModelForPipeline(visionEncoder, "vision encoder", dspMode);
+            precompileModelForPipeline(decoder, "decoder", dspMode);
+            precompileModelForPipeline(embedTokens, "embed tokens", dspMode);
+            logTritonCounters("after-precompile");
+        } else {
+            log.info("STEP 3b: SKIPPING precompile (graphExecutionMode={}, dsp.compilation.mode={})", gemProp, dspModeProp);
         }
-        String tritonProfile = configureTritonCompileProfile(dspMode);
-        if (Nd4j.getNativeOps().isTritonAvailable()) {
-            Nd4j.getNativeOps().resetTritonCounters();
-        }
-        log.info("STEP 3b: DSP/native precompile all models (requestedMode='{}', normalized='{}', selectedMode={}, tritonProfile={})",
-                dspModeProp, dspModeCanonical, dspMode, tritonProfile);
-        logTritonKnobs("Environment before precompile");
-        logTritonCounters("before-precompile");
-        precompileModelForPipeline(visionEncoder, "vision encoder", dspMode);
-        precompileModelForPipeline(decoder, "decoder", dspMode);
-        precompileModelForPipeline(embedTokens, "embed tokens", dspMode);
-        logTritonCounters("after-precompile");
 
         // ==================== STEP 4: Load, Tile, and Preprocess Image ====================
         log.info("STEP 4: Loading and tiling image...");
@@ -575,9 +587,9 @@ public class TestSmolDoclingOptimizedPipeline {
             Nd4j.getEnvironment().setTritonBuildThreads(intProp("vlm.test.triton.buildThreads", 4));
             Nd4j.getEnvironment().setTritonCacheEnabled(boolProp("vlm.test.triton.cacheEnabled", true));
             Nd4j.getEnvironment().setTritonAlwaysCompile(boolProp("vlm.test.triton.alwaysCompile", false));
-            Nd4j.getEnvironment().setTritonMaxSubsegmentOps(intProp("vlm.test.triton.maxSubsegmentOps", 192));
-            Nd4j.getEnvironment().setTritonMaxSubsegmentSections(intProp("vlm.test.triton.maxSubsegmentSections", 8));
-            Nd4j.getEnvironment().setTritonNumWarps(intProp("vlm.test.triton.numWarps", 4));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentOps(intProp("vlm.test.triton.maxSubsegmentOps", 0));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentSections(intProp("vlm.test.triton.maxSubsegmentSections", 0));
+            Nd4j.getEnvironment().setTritonNumWarps(intProp("vlm.test.triton.numWarps", 8));
             Nd4j.getEnvironment().setTritonNumStages(intProp("vlm.test.triton.numStages", 2));
             Nd4j.getEnvironment().setTritonNumCTAs(intProp("vlm.test.triton.numCTAs", 1));
             Nd4j.getEnvironment().setTritonMaxNreg(intProp("vlm.test.triton.maxNreg", 0));
@@ -588,11 +600,26 @@ public class TestSmolDoclingOptimizedPipeline {
             Nd4j.getEnvironment().setTritonDumpArgs(boolProp("vlm.test.triton.dumpArgs", false));
             Nd4j.getEnvironment().setTritonKernelDump(boolProp("vlm.test.triton.kernelDump", false));
             Nd4j.getEnvironment().setTritonLogAllPatterns(boolProp("vlm.test.triton.logAllPatterns", false));
-            Nd4j.getEnvironment().setTritonCoopTargetBlocks(intProp("vlm.test.triton.coopTargetBlocks", 512));
+            Nd4j.getEnvironment().setTritonCoopTargetBlocks(intProp("vlm.test.triton.coopTargetBlocks", 0));
+            Nd4j.getEnvironment().setTritonCooperativeLaunch(boolProp("vlm.test.triton.cooperativeLaunch", false));
             return profile;
         }
 
         if ("MAX_PERF".equals(profile) || "MAX_AUTOTUNE".equals(profile)) {
+            // Single fused kernel, no cooperative launch, no splitting, max warps
+            Nd4j.getEnvironment().setTritonBuildThreads(intProp("vlm.test.triton.buildThreads", 4));
+            Nd4j.getEnvironment().setTritonCacheEnabled(boolProp("vlm.test.triton.cacheEnabled", true));
+            Nd4j.getEnvironment().setTritonAlwaysCompile(boolProp("vlm.test.triton.alwaysCompile", false));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentOps(intProp("vlm.test.triton.maxSubsegmentOps", 0));
+            Nd4j.getEnvironment().setTritonMaxSubsegmentSections(intProp("vlm.test.triton.maxSubsegmentSections", 0));
+            Nd4j.getEnvironment().setTritonNumWarps(intProp("vlm.test.triton.numWarps", 8));
+            Nd4j.getEnvironment().setTritonNumStages(intProp("vlm.test.triton.numStages", 2));
+            Nd4j.getEnvironment().setTritonNumCTAs(intProp("vlm.test.triton.numCTAs", 1));
+            Nd4j.getEnvironment().setTritonMaxNreg(intProp("vlm.test.triton.maxNreg", 0));
+            Nd4j.getEnvironment().setTritonEnableFpFusion(boolProp("vlm.test.triton.enableFpFusion", true));
+            Nd4j.getEnvironment().setTritonDisableLineInfo(boolProp("vlm.test.triton.disableLineInfo", true));
+            Nd4j.getEnvironment().setTritonCoopTargetBlocks(intProp("vlm.test.triton.coopTargetBlocks", 0));
+            Nd4j.getEnvironment().setTritonCooperativeLaunch(boolProp("vlm.test.triton.cooperativeLaunch", false));
             Nd4j.getEnvironment().setTritonVerbose(boolProp("vlm.test.triton.verbose", false));
             Nd4j.getEnvironment().setTritonDumpSections(boolProp("vlm.test.triton.dumpSections", false));
             Nd4j.getEnvironment().setTritonDumpArgs(boolProp("vlm.test.triton.dumpArgs", false));

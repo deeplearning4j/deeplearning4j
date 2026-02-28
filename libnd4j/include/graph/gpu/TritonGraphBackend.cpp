@@ -32,6 +32,7 @@
 
 // MLIR core for ModuleOp used in compileToGpuBinary cleanup
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/Verifier.h>
 
 // Disk cache for compiled PTX
 #include <sys/stat.h>
@@ -790,6 +791,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     return !singleQueryTile;
   };
 
+  // Only ELEMENTWISE sections are compiled as Triton kernels — everything else
+  // runs via fallbackRangeExecutor_ (cuBLAS for matmuls, native attention, etc.).
+  // Complex ops (reductions, normalizations, gathers, etc.) need their native
+  // implementations for correctness; element-wise chains benefit from fusion
+  // by eliminating intermediate global memory round-trips.
+  auto isFallbackSection = [](const KernelSection& section) -> bool {
+    return section.type != KernelSectionType::ELEMENTWISE &&
+           section.type != KernelSectionType::IDENTITY;
+  };
+
   auto makeRange = [&](int startSec, int endSec) -> SubSegmentRange {
     SubSegmentRange r;
     r.startSectionIdx = startSec;
@@ -873,70 +884,32 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 #endif
 
   for (int secIdx = 0; secIdx < static_cast<int>(sections.size());) {
+    // Non-elementwise sections are skipped —
+    // they become gaps filled by fallbackRangeExecutor_ (cuBLAS/native).
+    if (isFallbackSection(sections[secIdx])) {
+      sd_printf("TritonGraphBackend: section %d [%d-%d] type=%d excluded (cuBLAS fallback)\n",
+                secIdx, sections[secIdx].startSlot, sections[secIdx].endSlot,
+                static_cast<int>(sections[secIdx].type));
+      secIdx++;
+      continue;
+    }
+
     if (isStandaloneSection(sections[secIdx])) {
       pendingRanges.push_back(makeRange(secIdx, secIdx));
       secIdx++;
       continue;
     }
 
+    // Merge consecutive element-wise-compatible sections into one compile range.
     int runStart = secIdx;
     int runEnd = secIdx;
     while (runEnd + 1 < static_cast<int>(sections.size()) &&
-           !isStandaloneSection(sections[runEnd + 1])) {
+           !isStandaloneSection(sections[runEnd + 1]) &&
+           !isFallbackSection(sections[runEnd + 1])) {
       runEnd++;
     }
 
-    // If this run has multiple sections, check if cooperative launch is feasible.
-    // Multi-section kernels need cooperative launch when sections have different
-    // grid mappings (e.g., elementwise + matmul). If the max section grid exceeds
-    // the device's cooperative capacity, pre-split into individual sections to
-    // avoid a compile-fail-split cycle.
-    bool needsPreSplit = false;
-#ifdef SD_CUDA
-    if (cooperativeEnabled && runEnd > runStart && preCheckSmCount > 0) {
-      // Find max grid requirement across sections in this run
-      int maxSectionGrid = 0;
-      bool hasNonElementwise = false;
-      for (int s = runStart; s <= runEnd; s++) {
-        if (sections[s].gridRequirement > maxSectionGrid) {
-          maxSectionGrid = sections[s].gridRequirement;
-        }
-        if (sections[s].type != KernelSectionType::ELEMENTWISE) {
-          hasNonElementwise = true;
-        }
-      }
-      if (hasNonElementwise && maxSectionGrid > 0) {
-        // Estimate shared memory: matmul sections typically use 49152+ bytes
-        int estimatedSharedMem = 0;
-        for (int s = runStart; s <= runEnd; s++) {
-          if (sections[s].type == KernelSectionType::MATMUL) {
-            estimatedSharedMem = std::max(estimatedSharedMem, 49152);
-          } else if (sections[s].type == KernelSectionType::FUSED_ATTENTION) {
-            estimatedSharedMem = std::max(estimatedSharedMem, 49152);
-          }
-        }
-        unsigned long long maxCoopBlocks = estimateMaxCooperativeBlocks(4, estimatedSharedMem);
-        if (static_cast<unsigned long long>(maxSectionGrid) > maxCoopBlocks) {
-          sd_printf("TritonGraphBackend: pre-splitting multi-section run [sec %d-%d, slots %d-%d] "
-                    "into individual sections: maxGrid=%d exceeds cooperative capacity=%llu "
-                    "(smCount=%d)\n",
-                    runStart, runEnd,
-                    sections[runStart].startSlot, sections[runEnd].endSlot,
-                    maxSectionGrid, maxCoopBlocks, preCheckSmCount);
-          needsPreSplit = true;
-        }
-      }
-    }
-#endif
-
-    if (needsPreSplit) {
-      // Emit each section as its own compile range
-      for (int s = runStart; s <= runEnd; s++) {
-        pendingRanges.push_back(makeRange(s, s));
-      }
-    } else {
-      pendingRanges.push_back(makeRange(runStart, runEnd));
-    }
+    pendingRanges.push_back(makeRange(runStart, runEnd));
     secIdx = runEnd + 1;
   }
 
@@ -1993,6 +1966,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       return status;
     }
     totalKernelLaunches_++;
+
+
     if (subKernel.endSlot_ + 1 > nextSlotToRun) {
       nextSlotToRun = subKernel.endSlot_ + 1;
     }
@@ -2020,6 +1995,147 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
 #ifdef SD_CUDA
+  // ── Compose attention present_key / present_value outputs ──
+  // The Triton attention kernel only writes output[0] (attention result).
+  // output[1] (present_key) = concat(past_key, current_key) along seq dim
+  // output[2] (present_value) = concat(past_value, current_value) along seq dim
+  // With static KV cache, present output has SAME shape as past input [B,H,maxKvLen,D].
+  // We write ONLY the current token's K/V to the LAST position of the present buffer.
+  // Then kvScatter reads present[lastPos] → static_buffer[cachePos].
+  //
+  // NOTE: composePresentKv post-processing runs for ALL attention slots regardless of
+  // whether they ran via Triton or via cuBLAS/native fallback. Neither the Triton attention
+  // kernel nor the native multi_head_attention op writes present_key/present_value —
+  // this scatter of current K/V projections into the present buffer is always needed.
+
+  // File-based diagnostic logging (sd_printf goes to stderr which surefire doesn't capture)
+  static int composePresentKvCallCount = 0;
+  FILE* kvLog = nullptr;
+  if (composePresentKvCallCount < 5) {
+    kvLog = fopen("/tmp/triton_compose_kv.log", "a");
+  }
+
+  int attnCount = 0;
+  for (int si = seg.startSlot; si <= seg.endSlot; si++) {
+    if (slots[si].opName.empty()) continue;
+    bool isAttn = (slots[si].opName == "onnx_multi_head_attention" ||
+                   slots[si].opName == "multi_head_attention");
+    if (!isAttn) continue;
+    if (slots[si].numInputs <= 4 || slots[si].numOutputs < 2) continue;
+
+    // Inputs: [0]=Q, [1]=K(current), [2]=V(current), [3]=bias, [4]=past_key, [5]=past_value
+    int currentKeySrc = slots[si].inputSourceIndices[1];
+    int currentValueSrc = (slots[si].numInputs > 2) ? slots[si].inputSourceIndices[2] : -1;
+
+    int presentKeyOut = slots[si].outputSlotIndices[1];
+    int presentValueOut = (slots[si].numOutputs >= 3) ? slots[si].outputSlotIndices[2] : -1;
+
+    if (kvLog && attnCount == 0) {
+      fprintf(kvLog, "=== composePresentKv call #%d (seg[%d-%d], capture=%d) ===\n",
+              composePresentKvCallCount, seg.startSlot, seg.endSlot, streamCaptureActive ? 1 : 0);
+      fprintf(kvLog, "  attn slot=%d opName='%s' numInputs=%d numOutputs=%d\n",
+              si, slots[si].opName.c_str(), slots[si].numInputs, slots[si].numOutputs);
+      fprintf(kvLog, "  currentKeySrc=%d currentValueSrc=%d presentKeyOut=%d presentValueOut=%d\n",
+              currentKeySrc, currentValueSrc, presentKeyOut, presentValueOut);
+    }
+
+    // Lambda: scatter current K/V into present output at the LAST seq position.
+    // kvScatter then reads present[lastPos] → static_buffer[cachePos].
+    auto scatterCurrentToPresent = [&](int currentSlot, int presentSlot, const char* label) {
+      // Resolve current K/V array (positive = output slot, negative = external input)
+      NDArray* currentArr = nullptr;
+      if (currentSlot < 0) {
+        int extIdx = -(currentSlot + 1);
+        if (extIdx >= 0 && extIdx < numExternalInputs && externalInputs[extIdx])
+          currentArr = externalInputs[extIdx];
+        if (kvLog) fprintf(kvLog, "  %s: currentSlot=%d → extIdx=%d arr=%p\n", label, currentSlot, extIdx, (void*)currentArr);
+      } else if (currentSlot >= 0 && currentSlot < totalOutputSlots && outputSlots[currentSlot]) {
+        currentArr = outputSlots[currentSlot];
+        if (kvLog) fprintf(kvLog, "  %s: currentSlot=%d → outputSlot arr=%p\n", label, currentSlot, (void*)currentArr);
+      } else {
+        if (kvLog) fprintf(kvLog, "  %s: currentSlot=%d INVALID (total=%d, arr=%p)\n", label, currentSlot, totalOutputSlots,
+                           currentSlot >= 0 && currentSlot < totalOutputSlots ? (void*)outputSlots[currentSlot] : nullptr);
+      }
+      if (!currentArr) {
+        if (kvLog) fprintf(kvLog, "  %s: SKIP - no current array\n", label);
+        return;
+      }
+
+      if (presentSlot < 0 || presentSlot >= totalOutputSlots || !outputSlots[presentSlot]) {
+        if (kvLog) fprintf(kvLog, "  %s: SKIP - presentSlot=%d invalid (total=%d, arr=%p)\n", label, presentSlot,
+                           totalOutputSlots, presentSlot >= 0 && presentSlot < totalOutputSlots ? (void*)outputSlots[presentSlot] : nullptr);
+        return;
+      }
+      auto* presentArr = outputSlots[presentSlot];
+
+      auto currentBuf = currentArr->dataBuffer();
+      auto presentBuf = presentArr->dataBuffer();
+      if (!currentBuf || !presentBuf || !currentBuf->special() || !presentBuf->special()) {
+        if (kvLog) fprintf(kvLog, "  %s: SKIP - null buffer (curBuf=%p curSpecial=%p presBuf=%p presSpecial=%p)\n",
+                           label, (void*)currentBuf, currentBuf ? currentBuf->special() : nullptr,
+                           (void*)presentBuf, presentBuf ? presentBuf->special() : nullptr);
+        return;
+      }
+
+      if (kvLog && attnCount == 0) {
+        fprintf(kvLog, "  %s: currentRank=%d currentShape=[", label, currentArr->rankOf());
+        for (int d = 0; d < currentArr->rankOf(); d++) fprintf(kvLog, "%s%lld", d?",":"", currentArr->sizeAt(d));
+        fprintf(kvLog, "] presentRank=%d presentShape=[", presentArr->rankOf());
+        for (int d = 0; d < presentArr->rankOf(); d++) fprintf(kvLog, "%s%lld", d?",":"", presentArr->sizeAt(d));
+        fprintf(kvLog, "]\n");
+      }
+
+      // Present is [B, H, seqLen, D] (4D BHSD)
+      if (presentArr->rankOf() != 4) {
+        if (kvLog) fprintf(kvLog, "  %s: SKIP - presentRank=%d != 4\n", label, presentArr->rankOf());
+        return;
+      }
+      int numHeads = static_cast<int>(presentArr->sizeAt(1));
+      int seqLen = static_cast<int>(presentArr->sizeAt(2));
+      int headDim = static_cast<int>(presentArr->sizeAt(3));
+      int lastPos = seqLen - 1;
+
+      size_t elemSize = presentArr->sizeOfT();
+      char* dstBase = static_cast<char*>(presentBuf->special());
+      char* srcBase = static_cast<char*>(currentBuf->special());
+
+      // Scatter per-head: src[h*headDim..] → dst[h*seqLen*headDim + lastPos*headDim..]
+      for (int h = 0; h < numHeads; h++) {
+        size_t dstOffset = static_cast<size_t>(h * seqLen + lastPos) * headDim * elemSize;
+        size_t srcOffset = static_cast<size_t>(h) * headDim * elemSize;
+        cudaMemcpyAsync(dstBase + dstOffset, srcBase + srcOffset, headDim * elemSize,
+                        cudaMemcpyDeviceToDevice, static_cast<cudaStream_t>(actualStream));
+      }
+      if (kvLog && attnCount == 0) {
+        fprintf(kvLog, "  %s: DONE scatter %d heads × %d headDim at lastPos=%d (seqLen=%d)\n",
+                label, numHeads, headDim, lastPos, seqLen);
+      }
+    };
+
+    scatterCurrentToPresent(currentKeySrc, presentKeyOut, "KEY");
+    scatterCurrentToPresent(currentValueSrc, presentValueOut, "VAL");
+    attnCount++;
+  }
+
+  if (kvLog) {
+    if (attnCount > 0) {
+      fprintf(kvLog, "composePresentKv: processed %d attention layers\n", attnCount);
+    } else {
+      // Debug: dump first few op names to see what's in the segment
+      fprintf(kvLog, "composePresentKv: NO attention ops found in seg[%d-%d]\n", seg.startSlot, seg.endSlot);
+      int dumped = 0;
+      for (int si = seg.startSlot; si <= seg.endSlot && dumped < 20; si++) {
+        if (!slots[si].opName.empty()) {
+          fprintf(kvLog, "  slot[%d] opName='%s' numIn=%d numOut=%d\n",
+                  si, slots[si].opName.c_str(), slots[si].numInputs, slots[si].numOutputs);
+          dumped++;
+        }
+      }
+    }
+    fclose(kvLog);
+    composePresentKvCallCount++;
+  }
+
   // Synchronize the execution stream to ensure all Triton kernels complete
   // before the caller reads output buffers. Without this, Java-side copyBuffer
   // on a different stream races with the async kernel, producing stale output.
@@ -2127,6 +2243,60 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
             static_cast<int>(irModule.launchPhases.size()),
             irModule.gridX, irModule.gridY, irModule.gridZ,
             irModule.blockX, irModule.blockY, irModule.blockZ);
+
+  // Early MLIR verification to catch type mismatches before expensive compilation
+  {
+    auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
+    if (mlir::failed(mlir::verify(*mod))) {
+      std::string irDump;
+      llvm::raw_string_ostream os(irDump);
+      mod->print(os, mlir::OpPrintingFlags().enableDebugInfo());
+      FILE* f = fopen("/tmp/triton_ir_verify_fail.mlir", "w");
+      if (f) { fprintf(f, "%s", irDump.c_str()); fclose(f); }
+      sd_printf("TritonGraphBackend: MLIR verification FAILED for [%d-%d]. "
+                "IR dumped to /tmp/triton_ir_verify_fail.mlir (%d bytes)\n",
+                startSlot, endSlot, static_cast<int>(irDump.size()));
+      cleanupModule();
+      return result;
+    }
+
+    // Dump MLIR IR of first few compiled kernels for debugging
+    static int irDumpCount = 0;
+    if (irDumpCount < 10) {
+      std::string irDump;
+      llvm::raw_string_ostream os(irDump);
+      mod->print(os);
+      char fname[256];
+      snprintf(fname, sizeof(fname), "/tmp/triton_ir_dump_%03d_slots_%d_%d.mlir",
+               irDumpCount, startSlot, endSlot);
+      FILE* f = fopen(fname, "w");
+      if (f) {
+        fprintf(f, "// Kernel: %s\n", irModule.kernelName.c_str());
+        fprintf(f, "// Slots: [%d-%d]\n", startSlot, endSlot);
+        fprintf(f, "// Args: %d (indirect=%d)\n",
+                static_cast<int>(irModule.args.size()), irModule.useIndirectArgs ? 1 : 0);
+        fprintf(f, "// Grid: %ux%ux%u Block: %ux%ux%u\n",
+                irModule.gridX, irModule.gridY, irModule.gridZ,
+                irModule.blockX, irModule.blockY, irModule.blockZ);
+        fprintf(f, "// Args detail:\n");
+        for (int a = 0; a < static_cast<int>(irModule.args.size()); a++) {
+          auto& arg = irModule.args[a];
+          fprintf(f, "//   [%d] slot=%d output=%d dtype=%d shape=[",
+                  a, arg.slotIndex, arg.isOutput ? 1 : 0, static_cast<int>(arg.dtype));
+          for (size_t d = 0; d < arg.shape.size(); d++) {
+            if (d > 0) fprintf(f, ",");
+            fprintf(f, "%lld", (long long)arg.shape[d]);
+          }
+          fprintf(f, "]\n");
+        }
+        fprintf(f, "\n%s", irDump.c_str());
+        fclose(f);
+        sd_printf("TritonGraphBackend: dumped MLIR IR to %s (%d bytes)\n",
+                  fname, static_cast<int>(irDump.size()));
+      }
+      irDumpCount++;
+    }
+  }
 
 #ifdef SD_CUDA
   // ── Early cooperative launch capacity check ──

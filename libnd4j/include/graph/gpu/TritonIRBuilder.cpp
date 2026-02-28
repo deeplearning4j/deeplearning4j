@@ -1556,15 +1556,36 @@ mlir::Value TritonIRBuilder::splatConstantF32(mlir::OpBuilder& builder, mlir::Lo
     auto scalar = builder.create<mlir::arith::ConstantOp>(loc, elemType, scalarAttr);
     return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
   }
-  // Fallback: assume float
+  // Fallback: cast to actual element type to avoid tt.splat type mismatch
+  // The tensor element type must match the scalar type exactly
   auto scalarAttr = builder.getFloatAttr(builder.getF32Type(), static_cast<double>(val));
-  auto scalar = builder.create<mlir::arith::ConstantOp>(loc, builder.getF32Type(), scalarAttr);
-  return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
+  mlir::Value scalarVal = builder.create<mlir::arith::ConstantOp>(loc, builder.getF32Type(), scalarAttr);
+  // If tensorType element type isn't f32, we need to cast
+  if (elemType != builder.getF32Type()) {
+    if (mlir::isa<mlir::FloatType>(elemType)) {
+      scalarVal = builder.create<mlir::arith::ExtFOp>(loc, elemType, scalarVal, nullptr);
+    } else if (elemType.isSignlessInteger()) {
+      scalarVal = builder.create<mlir::arith::FPToSIOp>(loc, elemType, scalarVal);
+    } else {
+      // Last resort: rebuild tensorType with f32 element type
+      tensorType = mlir::RankedTensorType::get(tensorType.getShape(), builder.getF32Type());
+    }
+  }
+  return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalarVal);
 }
 
 mlir::Value TritonIRBuilder::splatConstantI32(mlir::OpBuilder& builder, mlir::Location loc,
                                                mlir::RankedTensorType tensorType, int val) {
+  auto elemType = tensorType.getElementType();
+  if (elemType.isSignlessInteger()) {
+    // Create scalar matching the tensor's actual integer bit width
+    int bitWidth = elemType.getIntOrFloatBitWidth();
+    auto scalar = builder.create<mlir::arith::ConstantIntOp>(loc, val, bitWidth);
+    return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
+  }
+  // Fallback: i32 (and rebuild tensorType to match)
   auto scalar = builder.create<mlir::arith::ConstantIntOp>(loc, val, 32);
+  tensorType = mlir::RankedTensorType::get(tensorType.getShape(), builder.getI32Type());
   return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
 }
 
@@ -1629,10 +1650,10 @@ static mlir::Value castTo(mlir::OpBuilder& builder, mlir::Location loc,
       // go through f32 to avoid invalid TruncFOp/ExtFOp on same-width types
       auto f32Ty = builder.getF32Type();
       auto f32TensorType = mlir::RankedTensorType::get(tensorTy.getShape(), f32Ty);
-      auto widened = builder.create<mlir::arith::ExtFOp>(loc, f32TensorType, val);
+      auto widened = builder.create<mlir::arith::ExtFOp>(loc, f32TensorType, val, nullptr);
       return builder.create<mlir::arith::TruncFOp>(loc, targetTensorType, widened);
     } else if (dstBits > srcBits) {
-      return builder.create<mlir::arith::ExtFOp>(loc, targetTensorType, val);
+      return builder.create<mlir::arith::ExtFOp>(loc, targetTensorType, val, nullptr);
     } else {
       return builder.create<mlir::arith::TruncFOp>(loc, targetTensorType, val);
     }
@@ -2742,9 +2763,17 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
 void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                                 mlir::Value qPtr, mlir::Value kPtr,
                                                 mlir::Value vPtr, mlir::Value outPtr,
-                                                int batchSize, int numHeads, int seqQ, int seqK,
+                                                int batchSize, int numQHeads, int numKvHeads,
+                                                int seqQ, int seqK,
                                                 int headDim, float scale,
-                                                int blockM, int blockN) {
+                                                int blockM, int blockN,
+                                                bool qIsBSHD, bool kIsBSHD,
+                                                mlir::Value biasPtr,
+                                                const std::vector<LongType>& biasShape) {
+  // GQA: numQHeads >= numKvHeads, each KV head serves (numQHeads/numKvHeads) Q heads
+  if (numKvHeads <= 0) numKvHeads = numQHeads;
+  int kvGroupSize = (numKvHeads > 0) ? (numQHeads / numKvHeads) : 1;
+  if (kvGroupSize < 1) kvGroupSize = 1;
   auto f32Type = builder.getF32Type();
   auto i32Type = builder.getI32Type();
 
@@ -2758,16 +2787,20 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   }
   bool needsHdMask = (headDimPadded != headDim);
 
-  // Program IDs: pid0 = batch * num_heads, pid1 = query tile index
+  // Program IDs: pid0 = batch * numQHeads + qHeadIdx, pid1 = query tile index
   auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
       loc, i32Type, mlir::triton::ProgramIDDim::X);
   auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
       loc, i32Type, mlir::triton::ProgramIDDim::Y);
 
-  // Decompose pid0 into batch and head indices
-  auto numHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numHeads, 32);
-  auto headIdx = builder.create<mlir::arith::RemSIOp>(loc, pid0, numHeadsConst);
-  auto batchIdx = builder.create<mlir::arith::DivSIOp>(loc, pid0, numHeadsConst);
+  // Decompose pid0 into batch and Q head indices
+  auto numQHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numQHeads, 32);
+  auto numKvHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numKvHeads, 32);
+  auto headIdx = builder.create<mlir::arith::RemSIOp>(loc, pid0, numQHeadsConst);   // Q head index [0, numQHeads)
+  auto batchIdx = builder.create<mlir::arith::DivSIOp>(loc, pid0, numQHeadsConst);
+  // GQA: map Q head to KV head — kvHeadIdx = headIdx / kvGroupSize
+  auto kvGroupSizeConst = builder.create<mlir::arith::ConstantIntOp>(loc, kvGroupSize, 32);
+  auto kvHeadIdx = builder.create<mlir::arith::DivSIOp>(loc, headIdx, kvGroupSizeConst);
 
   // Query tile offset
   auto blockMConst = builder.create<mlir::arith::ConstantIntOp>(loc, blockM, 32);
@@ -2785,28 +2818,52 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto splatQOffset = builder.create<mlir::triton::SplatOp>(loc, i32BmType, qOffset);
   auto qIndices = builder.create<mlir::arith::AddIOp>(loc, splatQOffset, rangeM);
 
-  // Compute base offset into Q/K/V/Out buffers:
-  // Layout is [batch, heads, seq, headDim] (BHSD)
-  // base = (batchIdx * numHeads * seqLen * headDim) + (headIdx * seqLen * headDim)
+  // Compute base offset into Q/K/V/Out buffers.
+  // BHSD (4D): [batch, heads, seq, headDim] — base = batch*NH*S*HD + head*S*HD, rowStride=HD
+  // BSHD (3D): [batch, seq, NH*HD]         — base = batch*S*NH*HD + head*HD,   rowStride=NH*HD
   auto seqQConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqQ, 32);
   auto seqKConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqK, 32);
   auto headDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
 
-  // Q base: batch * numHeads * seqQ * headDim + head * seqQ * headDim
-  auto qStride0 = builder.create<mlir::arith::MulIOp>(loc, numHeadsConst,
-      builder.create<mlir::arith::MulIOp>(loc, seqQConst, headDimConst));
-  auto qStride1 = builder.create<mlir::arith::MulIOp>(loc, seqQConst, headDimConst);
-  auto qBase = builder.create<mlir::arith::AddIOp>(loc,
-      builder.create<mlir::arith::MulIOp>(loc, batchIdx, qStride0),
-      builder.create<mlir::arith::MulIOp>(loc, headIdx, qStride1));
+  mlir::Value qBase, qRowStride;
+  if (qIsBSHD) {
+    // BSHD: [batch, seqQ, numQHeads*headDim]
+    auto nhTimesHd = builder.create<mlir::arith::MulIOp>(loc, numQHeadsConst, headDimConst);
+    auto qStride0 = builder.create<mlir::arith::MulIOp>(loc, seqQConst, nhTimesHd);
+    qBase = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, batchIdx, qStride0),
+        builder.create<mlir::arith::MulIOp>(loc, headIdx, headDimConst));
+    qRowStride = nhTimesHd;
+  } else {
+    // BHSD: [batch, numQHeads, seqQ, headDim]
+    auto qStride0 = builder.create<mlir::arith::MulIOp>(loc, numQHeadsConst,
+        builder.create<mlir::arith::MulIOp>(loc, seqQConst, headDimConst));
+    auto qStride1 = builder.create<mlir::arith::MulIOp>(loc, seqQConst, headDimConst);
+    qBase = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, batchIdx, qStride0),
+        builder.create<mlir::arith::MulIOp>(loc, headIdx, qStride1));
+    qRowStride = headDimConst;
+  }
 
-  // K/V base: batch * numHeads * seqK * headDim + head * seqK * headDim
-  auto kvStride0 = builder.create<mlir::arith::MulIOp>(loc, numHeadsConst,
-      builder.create<mlir::arith::MulIOp>(loc, seqKConst, headDimConst));
-  auto kvStride1 = builder.create<mlir::arith::MulIOp>(loc, seqKConst, headDimConst);
-  auto kvBase = builder.create<mlir::arith::AddIOp>(loc,
-      builder.create<mlir::arith::MulIOp>(loc, batchIdx, kvStride0),
-      builder.create<mlir::arith::MulIOp>(loc, headIdx, kvStride1));
+  mlir::Value kvBase, kvRowStride;
+  if (kIsBSHD) {
+    // BSHD: [batch, seqK, numKvHeads*headDim] — use kvHeadIdx for GQA
+    auto kvNhTimesHd = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst, headDimConst);
+    auto kvStride0 = builder.create<mlir::arith::MulIOp>(loc, seqKConst, kvNhTimesHd);
+    kvBase = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, batchIdx, kvStride0),
+        builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimConst));
+    kvRowStride = kvNhTimesHd;
+  } else {
+    // BHSD: [batch, numKvHeads, seqK, headDim] — use kvHeadIdx for GQA
+    auto kvStride0 = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst,
+        builder.create<mlir::arith::MulIOp>(loc, seqKConst, headDimConst));
+    auto kvStride1 = builder.create<mlir::arith::MulIOp>(loc, seqKConst, headDimConst);
+    kvBase = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, batchIdx, kvStride0),
+        builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, kvStride1));
+    kvRowStride = headDimConst;
+  }
 
   // Load Q tile [BLOCK_M, headDim]
   // Q pointer offsets: qBase + qIndices[:, None] * headDim + rangeHd[None, :]
@@ -2815,9 +2872,9 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
 
   auto i32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, i32Type);
   auto f32BmHdType = mlir::RankedTensorType::get({blockM, headDimPadded}, f32Type);
-  auto hdSplat = builder.create<mlir::triton::SplatOp>(loc,
-      mlir::RankedTensorType::get({blockM, 1}, i32Type), headDimConst);
-  auto qRowOffsets = builder.create<mlir::arith::MulIOp>(loc, qMExpanded, hdSplat);
+  auto qRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockM, 1}, i32Type), qRowStride);
+  auto qRowOffsets = builder.create<mlir::arith::MulIOp>(loc, qMExpanded, qRowStrideSplat);
   auto qRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmHdType, qRowOffsets);
   auto hdBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmHdType, hdExpanded);
   auto qOffsets2D = builder.create<mlir::arith::AddIOp>(loc, qRowBroadcast, hdBroadcast);
@@ -2898,9 +2955,9 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
 
   auto i32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, i32Type);
   auto f32BnHdType = mlir::RankedTensorType::get({blockN, headDimPadded}, f32Type);
-  auto hdSplatK = builder.create<mlir::triton::SplatOp>(loc,
-      mlir::RankedTensorType::get({blockN, 1}, i32Type), headDimConst);
-  auto kRowOffsets = builder.create<mlir::arith::MulIOp>(loc, kNExpanded, hdSplatK);
+  auto kvRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
+      mlir::RankedTensorType::get({blockN, 1}, i32Type), kvRowStride);
+  auto kRowOffsets = builder.create<mlir::arith::MulIOp>(loc, kNExpanded, kvRowStrideSplat);
   auto kRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, kRowOffsets);
   auto hdBroadcastK = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, hdExpandedK);
   auto kOffsets2D = builder.create<mlir::arith::AddIOp>(loc, kRowBroadcast, hdBroadcastK);
@@ -2941,6 +2998,7 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto kTransposed = builder.create<mlir::triton::TransOp>(loc, kLoaded, transposeOrder);
 
   auto f32BmBnType = mlir::RankedTensorType::get({blockM, blockN}, f32Type);
+  auto i32BmBnType = mlir::RankedTensorType::get({blockM, blockN}, i32Type);
   auto qkZeroInit = splatConstantF32(builder, loc, f32BmBnType, 0.0f);
   auto qk = builder.create<mlir::triton::DotOp>(
       loc, f32BmBnType, qScaled, kTransposed, qkZeroInit,
@@ -2953,6 +3011,74 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto kMaskBmBn = builder.create<mlir::triton::BroadcastOp>(loc, i1BmBnType, kMask1DExp);
   auto qkMasked = builder.create<mlir::arith::SelectOp>(loc, kMaskBmBn, qk, negInfSplat);
 
+  // Apply attention bias/mask if provided
+  // Bias shape: [B, H, seqQ, seqK] (rank 4 per-head) or [B, seqQ, seqK] (rank 3)
+  // Load bias tile [BM, BN] and add to QK scores — this applies the attention mask
+  // (valid positions have bias=0.0, masked/padding positions have bias=-inf)
+  mlir::Value qkWithBias = qkMasked;
+  if (biasPtr) {
+    int biasRank = static_cast<int>(biasShape.size());
+    // Determine bias strides based on rank:
+    // Rank 4: [B, H, seqQ, seqK] → offset = b*H*seqQ*seqK + h*seqQ*seqK + q*seqK + k
+    // Rank 3: [B, seqQ, seqK]    → offset = b*seqQ*seqK + q*seqK + k (no head dim)
+    int biasNumHeads = (biasRank >= 4) ? static_cast<int>(biasShape[1]) : 0;
+    int biasSeqQ = (biasRank >= 4) ? static_cast<int>(biasShape[2]) :
+                   (biasRank >= 3) ? static_cast<int>(biasShape[1]) : seqQ;
+    int biasSeqK = (biasRank >= 4) ? static_cast<int>(biasShape[3]) :
+                   (biasRank >= 3) ? static_cast<int>(biasShape[2]) : seqK;
+
+    auto biasSeqKConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasSeqK, 32);
+
+    // Compute scalar base offset for this (batch, head)
+    // headSliceSize = biasSeqQ * biasSeqK
+    auto biasSeqQConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasSeqQ, 32);
+    auto headSliceSize = builder.create<mlir::arith::MulIOp>(loc, biasSeqQConst, biasSeqKConst);
+
+    mlir::Value biasBaseScalar;
+    if (biasRank >= 4 && biasNumHeads > 1) {
+      // 4D per-head: offset = batch * (H * seqQ * seqK) + head * (seqQ * seqK)
+      auto biasNumHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasNumHeads, 32);
+      auto batchSliceSize = builder.create<mlir::arith::MulIOp>(loc, biasNumHeadsConst, headSliceSize);
+      auto batchOffset = builder.create<mlir::arith::MulIOp>(loc, batchIdx, batchSliceSize);
+      auto headOffset = builder.create<mlir::arith::MulIOp>(loc, headIdx, headSliceSize);
+      biasBaseScalar = builder.create<mlir::arith::AddIOp>(loc, batchOffset, headOffset);
+    } else {
+      // 3D or 4D with H=1: offset = batch * (seqQ * seqK)
+      biasBaseScalar = builder.create<mlir::arith::MulIOp>(loc, batchIdx, headSliceSize);
+    }
+
+    // Q row offsets within bias: qIndices * biasSeqK  → [BM, 1] → broadcast to [BM, BN]
+    auto qBiasRowExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, qIndices, 1);  // [BM, 1]
+    auto biasSeqKSplat = builder.create<mlir::triton::SplatOp>(loc,
+        mlir::RankedTensorType::get({blockM, 1}, i32Type), biasSeqKConst);
+    auto biasRowOffsets = builder.create<mlir::arith::MulIOp>(loc, qBiasRowExpanded, biasSeqKSplat);
+    auto biasRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, biasRowOffsets);
+
+    // K column offsets: kIndices → [1, BN] → broadcast to [BM, BN]
+    auto kBiasColExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, kIndices, 0);  // [1, BN]
+    auto kBiasColBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BmBnType, kBiasColExpanded);
+
+    // Final: base + qRow*seqK + kCol
+    auto biasBaseOffsets = builder.create<mlir::arith::AddIOp>(loc, biasRowBroadcast, kBiasColBroadcast);
+    auto biasBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BmBnType, biasBaseScalar);
+    auto biasFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, biasBaseSplat, biasBaseOffsets);
+
+    // Create bias pointer tensor and load
+    auto biasPtrType = mlir::cast<mlir::triton::PointerType>(biasPtr.getType());
+    auto biasPtrTensorType = mlir::RankedTensorType::get({blockM, blockN}, biasPtrType);
+    auto biasSplat = builder.create<mlir::triton::SplatOp>(loc, biasPtrTensorType, biasPtr);
+    auto biasPtrs = builder.create<mlir::triton::AddPtrOp>(loc, biasPtrTensorType, biasSplat, biasFinalOffsets);
+
+    // Bias mask: same as kMaskBmBn (valid Q and K positions)
+    auto biasLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        biasPtrs, kMaskBmBn, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto biasLoaded = castTo(builder, loc, biasLoadedRaw, f32Type);
+
+    // Add bias to QK scores: qk_biased = qk_masked + bias
+    qkWithBias = builder.create<mlir::arith::AddFOp>(loc, qkMasked, biasLoaded);
+  }
+
   // Online softmax update:
   // m_new = max(m_i, row_max(qk))
   // correction = exp(m_i - m_new)
@@ -2961,9 +3087,9 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   // acc = acc * splat(correction) + dot(p, V)
 
   // row_max(qk) -> reduce along axis 1
-  mlir::Value qkMaskedVal = qkMasked;
+  mlir::Value qkFinalVal = qkWithBias;
   auto rowMaxOp = builder.create<mlir::triton::ReduceOp>(loc,
-      mlir::ValueRange{qkMaskedVal}, /*axis=*/1);
+      mlir::ValueRange{qkFinalVal}, /*axis=*/1);
   {
     auto& region = rowMaxOp.getCombineOp();
     auto* block = builder.createBlock(&region, {}, {f32Type, f32Type}, {loc, loc});
@@ -2984,7 +3110,7 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   // p = exp(qk - splat(m_new)) -> [BM, BN]
   auto mNewSplat = builder.create<mlir::triton::ExpandDimsOp>(loc, mNew, 1);  // [BM, 1]
   auto mNewBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, f32BmBnType, mNewSplat);
-  auto qkShifted = builder.create<mlir::arith::SubFOp>(loc, qkMasked, mNewBroadcast);
+  auto qkShifted = builder.create<mlir::arith::SubFOp>(loc, qkWithBias, mNewBroadcast);
   auto p = builder.create<mlir::math::ExpOp>(loc, qkShifted);
 
   // row_sum(p) -> reduce along axis 1
@@ -3057,9 +3183,10 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                          mlir::triton::CacheModifier::NONE,
                                          mlir::triton::EvictionPolicy::NORMAL);
 
-  sd_printf("TritonIRBuilder: emitted fused attention kernel batch=%d heads=%d seqQ=%d seqK=%d "
-            "headDim=%d scale=%f BM=%d BN=%d\n",
-            batchSize, numHeads, seqQ, seqK, headDim, scale, blockM, blockN);
+  sd_printf("TritonIRBuilder: emitted fused attention kernel batch=%d qHeads=%d kvHeads=%d seqQ=%d seqK=%d "
+            "headDim=%d scale=%f BM=%d BN=%d kvGroupSize=%d hasBias=%d\n",
+            batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim, scale, blockM, blockN, kvGroupSize,
+            biasPtr ? 1 : 0);
 }
 
 // ─── Module construction ────────────────────────────────────────────────────
@@ -3815,9 +3942,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         if (ssaIt != ssaValues.end()) {
           int midArgIdx = inputArgIt->second;
           auto midFuncArg = getBufferArg(midArgIdx);
-          auto midDtype = resolveDtypeLocal(inputSrc);
-          auto midElemType = getMLIRType(builder, midDtype);
-          auto midPtrType = mlir::triton::PointerType::get(midElemType, 1);
+          // Derive pointer type from actual function arg (consistent with load side)
+          auto midPtrType = mlir::cast<mlir::triton::PointerType>(midFuncArg.getType());
+          auto midElemType = midPtrType.getPointeeType();
           auto midPtrTensorType = mlir::RankedTensorType::get({blockSize}, midPtrType);
           auto midSplatPtr = builder.create<mlir::triton::SplatOp>(loc, midPtrTensorType, midFuncArg);
           auto midPtrs = builder.create<mlir::triton::AddPtrOp>(loc, midPtrTensorType, midSplatPtr, offsets);
@@ -3845,10 +3972,14 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       int argIdx = inputArgIt->second;
       auto inputPtrArg = getBufferArg(argIdx);
 
-      auto elemType = getMLIRType(builder, inputArgs[argIdx].dtype);
+      // Derive pointer/element types from the ACTUAL function arg type, NOT from
+      // result.args[argIdx].dtype which can disagree with the function signature
+      // (e.g., when the output slot's live array has been released and dtype
+      // resolution falls back to a different source).
+      auto ptrType = mlir::cast<mlir::triton::PointerType>(inputPtrArg.getType());
+      auto elemType = ptrType.getPointeeType();
       auto f32Type = builder.getF32Type();
       auto f32TensorType = mlir::RankedTensorType::get({blockSize}, f32Type);
-      auto ptrType = mlir::triton::PointerType::get(elemType, 1);
       auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
       // Segmented reduction: for each output offset i (from the block's offsets vector),
@@ -4145,39 +4276,67 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
     } else if (cat == TritonOpCategory::FUSED_ATTENTION) {
       // ─── FUSED ATTENTION: Q@K^T + scale + softmax + @V in one kernel ───
-      // Resolves Q, K, V inputs, extracts dimensions, calls emitFusedAttentionKernel.
-      // emitFusedAttentionKernel creates its own 2D program IDs internally.
+      // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
       if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
         int qSrc = slot.inputSourceIndices[0];
         int kSrc = slot.inputSourceIndices[1];
         int vSrc = slot.inputSourceIndices[2];
         int outSlot = slot.outputSlotIndices[0];
 
-        NDArray* qArr = resolveArr(qSrc);
-        NDArray* kArr = resolveArr(kSrc);
-        NDArray* vArr = resolveArr(vSrc);
+        // Check for past_key/past_value (inputs 4 and 5)
+        bool hasPastKv = false;
+        int pastKeySrc = -1, pastValueSrc = -1;
+        if (slot.numInputs > 4) {
+          pastKeySrc = slot.inputSourceIndices[4];
+          NDArray* pastKeyArr = resolveArr(pastKeySrc);
+          if (pastKeyArr && pastKeyArr->rankOf() == 4 && pastKeyArr->lengthOf() > 1) {
+            hasPastKv = true;
+          }
+        }
+        if (hasPastKv && slot.numInputs > 5) {
+          pastValueSrc = slot.inputSourceIndices[5];
+        }
 
-        // Extract attention dimensions: [batch, heads, seq, headDim]
-        int batchSize = 1, numHeads = 1, seqQ = 1, seqK = 1, headDim = 64;
+        int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
+        int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
+
+        NDArray* qArr = resolveArr(qSrc);
+        NDArray* effectiveKArr = resolveArr(effectiveKSrc);
+
+        // Extract attention dimensions
+        int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 64;
+        bool qIsBSHD = false;
         if (qArr && qArr->rankOf() >= 4) {
           batchSize = static_cast<int>(qArr->sizeAt(0));
-          numHeads = static_cast<int>(qArr->sizeAt(1));
+          numQHeads = static_cast<int>(qArr->sizeAt(1));
           seqQ = static_cast<int>(qArr->sizeAt(2));
           headDim = static_cast<int>(qArr->sizeAt(3));
         } else if (qArr && qArr->rankOf() == 3) {
-          // [batch, seq, headDim] — single head
+          // 3D BSHD: [batch, seq, numQHeads*headDim]
           batchSize = static_cast<int>(qArr->sizeAt(0));
           seqQ = static_cast<int>(qArr->sizeAt(1));
-          headDim = static_cast<int>(qArr->sizeAt(2));
+          int hidden = static_cast<int>(qArr->sizeAt(2));
+          numQHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+          if (numQHeads <= 0) numQHeads = 1;
+          headDim = hidden / numQHeads;
+          qIsBSHD = true;
         }
-        if (kArr && kArr->rankOf() >= 4) {
-          seqK = static_cast<int>(kArr->sizeAt(2));
-        } else if (kArr && kArr->rankOf() == 3) {
-          seqK = static_cast<int>(kArr->sizeAt(1));
+        // Extract KV head count from past_key (4D BHSD: [B, KvHeads, seqK, HD])
+        if (hasPastKv && effectiveKArr && effectiveKArr->rankOf() == 4) {
+          numKvHeads = static_cast<int>(effectiveKArr->sizeAt(1));
+          headDim = static_cast<int>(effectiveKArr->sizeAt(3));
         }
+        if (numKvHeads <= 0) numKvHeads = numQHeads;
+        if (effectiveKArr && effectiveKArr->rankOf() >= 4) {
+          seqK = static_cast<int>(effectiveKArr->sizeAt(2));
+        } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
+          seqK = static_cast<int>(effectiveKArr->sizeAt(1));
+        }
+
+        bool kIsBSHD = hasPastKv ? false : qIsBSHD;
         float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
         auto attnTile = chooseFusedAttentionTileConfig(
-            batchSize, numHeads, seqQ, seqK, headDim);
+            batchSize, numQHeads, seqQ, seqK, headDim);
         if (!attnTile.fitsSharedMem) {
           std::string msg = "TritonIRBuilder: fused attention '" + slot.opName + "' at slot " +
                             std::to_string(si) + " cannot fit shared memory (headDim=" +
@@ -4189,32 +4348,47 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
         int blockM = attnTile.blockM;
         int blockN = attnTile.blockN;
-        if (attnTile.adjustedForSharedMem) {
-          sd_printf("TritonIRBuilder: adjusted fused attention tile for slot %d "
-                    "(headDim=%d, seqQ=%d, seqK=%d) -> BM=%d BN=%d (estimatedSmem=%d, limit=%d)\n",
-                    si, headDim, seqQ, seqK,
-                    blockM, blockN,
-                    attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes);
-        }
 
         auto qPtr = getSlotArgPtr(qSrc);
-        auto kPtr = getSlotArgPtr(kSrc);
-        auto vPtr = getSlotArgPtr(vSrc);
+        auto kPtr = getSlotArgPtr(effectiveKSrc);
+        auto vPtr = getSlotArgPtr(effectiveVSrc);
         auto outPtr = getSlotArgPtr(outSlot);
 
         if (qPtr && kPtr && vPtr && outPtr) {
           emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
-                                   batchSize, numHeads, seqQ, seqK, headDim,
-                                   scale, blockM, blockN);
+                                   batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
+                                   scale, blockM, blockN, qIsBSHD, kIsBSHD,
+                                   mlir::Value(), std::vector<LongType>());
 
-          // Load result back for downstream SSA consumers
+          // output[0] = attention result
           DataType outDtype = FLOAT32;
           NDArray* outArr = resolveArr(outSlot);
           if (outArr) outDtype = outArr->dataType();
           auto loaded = loadBackFromBuffer(outSlot, outDtype);
-          if (loaded) {
-            for (int o = 0; o < slot.numOutputs; o++) {
-              ssaValues[slot.outputSlotIndices[o]] = loaded;
+          if (loaded) ssaValues[outSlot] = loaded;
+
+          // output[1] = present_key (pass-through effective key)
+          if (slot.numOutputs >= 2) {
+            if (ssaValues.count(effectiveKSrc)) {
+              ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
+            } else {
+              DataType kDtype = FLOAT32;
+              NDArray* kArr2 = resolveArr(effectiveKSrc);
+              if (kArr2) kDtype = kArr2->dataType();
+              auto kLoaded = loadBackFromBuffer(effectiveKSrc, kDtype);
+              if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+            }
+          }
+          // output[2] = present_value (pass-through effective value)
+          if (slot.numOutputs >= 3) {
+            if (ssaValues.count(effectiveVSrc)) {
+              ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
+            } else {
+              DataType vDtype = FLOAT32;
+              NDArray* vArr2 = resolveArr(effectiveVSrc);
+              if (vArr2) vDtype = vArr2->dataType();
+              auto vLoaded = loadBackFromBuffer(effectiveVSrc, vDtype);
+              if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
             }
           }
         } else {
@@ -5131,6 +5305,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     externalOutputs.insert(idx);
   }
 
+  // NOTE: K/V projection external output forcing removed — attention ops now run via
+  // cuBLAS fallback (isFallbackSection) and handle their own present_key/present_value outputs.
+
   std::vector<TritonKernelArg> outputArgs;
   {
     std::unordered_set<int> seenOutputSlots;
@@ -5602,8 +5779,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             if (argIt == slotToArgIdx.end()) continue;
             auto funcArg = getBufferArg(argIt->second);
             auto& argDesc = result.args[argIt->second];
-            auto elemType = getMLIRType(builder, argDesc.dtype);
-            auto ptrType = mlir::triton::PointerType::get(elemType, 1);
+            // Derive pointer type from actual function arg (avoids dtype mismatch)
+            auto ptrType = mlir::cast<mlir::triton::PointerType>(funcArg.getType());
+            auto elemType = ptrType.getPointeeType();
             auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
             // Broadcast indexing: if input is smaller than max output, use modular offsets
@@ -5771,11 +5949,10 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             auto argIt = slotToArgIdx.find(outIdx);
             if (argIt == slotToArgIdx.end()) continue;
 
-            DataType dt = resolveDtype(outIdx);
-
             auto funcArg = getBufferArg(argIt->second);
-            auto elemType = getMLIRType(builder, dt);
-            auto ptrType = mlir::triton::PointerType::get(elemType, 1);
+            // Derive pointer type from actual function arg (avoids dtype mismatch)
+            auto ptrType = mlir::cast<mlir::triton::PointerType>(funcArg.getType());
+            auto elemType = ptrType.getPointeeType();
             auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
             auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
             auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
@@ -5922,6 +6099,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
       case KernelSectionType::FUSED_ATTENTION: {
         // ── Attention section: emit fused attention kernel ──
+        // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
         bool loggedAttnTileAdjust = false;
         for (int si = sec.startSlot; si <= sec.endSlot; si++) {
           auto& slot = slots[si];
@@ -5933,24 +6111,62 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           int vSrc = slot.inputSourceIndices[2];
           int outSlot = slot.outputSlotIndices[0];
 
+          // Check for past_key/past_value (inputs 4 and 5)
+          bool hasPastKv = false;
+          int pastKeySrc = -1, pastValueSrc = -1;
+          if (slot.numInputs > 4) {
+            pastKeySrc = slot.inputSourceIndices[4];
+            auto pastKeyShape = resolveShape(pastKeySrc);
+            if (pastKeyShape.size() == 4 && shapeLength(pastKeyShape) > 1) {
+              hasPastKv = true;
+            }
+          }
+          if (hasPastKv && slot.numInputs > 5) {
+            pastValueSrc = slot.inputSourceIndices[5];
+          }
+
+          // Use past_key as effective K source when available (has full KV cache positions)
+          int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
+          int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
+
           auto qShape = resolveShape(qSrc);
-          auto kShape = resolveShape(kSrc);
-          int batchSize = 1, numHeads = 1, seqQ = 1, seqK = 1, headDim = 1;
+          auto effectiveKShape = resolveShape(effectiveKSrc);
+          int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 1;
+          bool isBSHD = false;
+
           if (qShape.size() >= 4) {
+            // 4D BHSD: [batch, numQHeads, seqQ, headDim]
             batchSize = static_cast<int>(qShape[0]);
-            numHeads = static_cast<int>(qShape[1]);
+            numQHeads = static_cast<int>(qShape[1]);
             seqQ = static_cast<int>(qShape[2]);
             headDim = static_cast<int>(qShape[3]);
           } else if (qShape.size() == 3) {
+            // 3D BSHD: [batch, seqQ, numQHeads*headDim]
             batchSize = static_cast<int>(qShape[0]);
             seqQ = static_cast<int>(qShape[1]);
-            headDim = static_cast<int>(qShape[2]);
+            int hidden = static_cast<int>(qShape[2]);
+            numQHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+            if (numQHeads <= 0) numQHeads = 1;
+            headDim = hidden / numQHeads;
+            isBSHD = true;
           }
-          if (kShape.size() >= 4) seqK = static_cast<int>(kShape[2]);
-          else if (kShape.size() == 3) seqK = static_cast<int>(kShape[1]);
+          // Extract KV head count from past_key shape (4D BHSD: [B,KvHeads,seqK,HD])
+          if (hasPastKv && effectiveKShape.size() == 4) {
+            numKvHeads = static_cast<int>(effectiveKShape[1]);
+            headDim = static_cast<int>(effectiveKShape[3]);
+          }
+          // Default: MHA (KV heads = Q heads)
+          if (numKvHeads <= 0) numKvHeads = numQHeads;
+          // seqK from effective K source
+          if (effectiveKShape.size() >= 4) seqK = static_cast<int>(effectiveKShape[2]);
+          else if (effectiveKShape.size() == 3) seqK = static_cast<int>(effectiveKShape[1]);
+
+          // past_key is always 4D BHSD; current key follows Q layout
+          bool kIsBSHD = hasPastKv ? false : isBSHD;
+
           float scale = 1.0f / std::sqrt(static_cast<float>(std::max(headDim, 1)));
           auto attnTile = chooseFusedAttentionTileConfig(
-              batchSize, numHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
+              batchSize, numQHeads, seqQ, seqK, headDim, attentionSharedMemLimitBytes);
           if (!attnTile.fitsSharedMem) {
             std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " +
                               std::to_string(si) + " cannot fit shared memory (headDim=" +
@@ -5964,26 +6180,68 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           int blockN = attnTile.blockN;
           if (attnTile.adjustedForSharedMem && !loggedAttnTileAdjust) {
             sd_printf("TritonIRBuilder::buildSectionedModule: adjusted attention tiles for section [%d-%d] "
-                      "to BM=%d BN=%d (headDim=%d, seqQ=%d, seqK=%d, estimatedSmem=%d, limit=%d)\n",
+                      "to BM=%d BN=%d (headDim=%d, seqQ=%d, seqK=%d, estimatedSmem=%d, limit=%d) "
+                      "(hasPastKv=%d, numQHeads=%d, numKvHeads=%d, isBSHD=%d)\n",
                       sec.startSlot, sec.endSlot,
                       blockM, blockN, headDim, seqQ, seqK,
-                      attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes);
+                      attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes,
+                      hasPastKv ? 1 : 0, numQHeads, numKvHeads, isBSHD ? 1 : 0);
             loggedAttnTileAdjust = true;
           }
 
           auto qPtr = getSlotArgPtr(qSrc);
-          auto kPtr = getSlotArgPtr(kSrc);
-          auto vPtr = getSlotArgPtr(vSrc);
+          auto kPtr = getSlotArgPtr(effectiveKSrc);
+          auto vPtr = getSlotArgPtr(effectiveVSrc);
           auto outPtr = getSlotArgPtr(outSlot);
+
+          // Extract attention bias/mask from input[3] if available and non-scalar
+          mlir::Value attnBiasPtr;
+          std::vector<LongType> attnBiasShape;
+          if (slot.numInputs > 3) {
+            int biasSrc = slot.inputSourceIndices[3];
+            auto bShape = resolveShape(biasSrc);
+            // Only use bias if it's a real tensor (rank >= 3, length > 1)
+            if (bShape.size() >= 3 && shapeLength(bShape) > 1) {
+              attnBiasPtr = getSlotArgPtr(biasSrc);
+              attnBiasShape = bShape;
+              if (attnBiasPtr) {
+                sd_printf("TritonIRBuilder: attention bias at slot %d: shape=[", si);
+                for (size_t d = 0; d < bShape.size(); d++) {
+                  if (d) sd_printf(",");
+                  sd_printf("%lld", bShape[d]);
+                }
+                sd_printf("] — will apply to QK scores\n");
+              }
+            }
+          }
 
           if (qPtr && kPtr && vPtr && outPtr) {
             emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
-                                     batchSize, numHeads, seqQ, seqK, headDim,
-                                     scale, blockM, blockN);
+                                     batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
+                                     scale, blockM, blockN, isBSHD, kIsBSHD,
+                                     attnBiasPtr, attnBiasShape);
+            // output[0] = attention result (loaded from output buffer)
             DataType outDtype = resolveDtype(outSlot);
             auto loaded = loadBlock(outSlot, outDtype);
-            if (loaded) {
-              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            if (loaded) ssaValues[outSlot] = loaded;
+
+            // output[1] = present_key (pass-through effective key SSA)
+            // output[2] = present_value (pass-through effective value SSA)
+            if (slot.numOutputs >= 2) {
+              if (ssaValues.count(effectiveKSrc)) {
+                ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
+              } else {
+                auto kLoaded = loadBlock(effectiveKSrc, resolveDtype(effectiveKSrc));
+                if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+              }
+            }
+            if (slot.numOutputs >= 3) {
+              if (ssaValues.count(effectiveVSrc)) {
+                ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
+              } else {
+                auto vLoaded = loadBlock(effectiveVSrc, resolveDtype(effectiveVSrc));
+                if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+              }
             }
           } else {
             std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " + std::to_string(si) +
@@ -7178,25 +7436,56 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
         NDArray* qArr = resolveArray(slots[i].inputSourceIndices[0]);
         if (qArr && qArr->rankOf() >= 3) {
           int rank = qArr->rankOf();
-          currentSection.headDim = static_cast<int>(qArr->sizeAt(rank - 1));
-          currentSection.seqQ = static_cast<int>(qArr->sizeAt(rank - 2));
           if (rank >= 4) {
+            // 4D BHSD: [batch, numHeads, seqQ, headDim]
+            currentSection.headDim = static_cast<int>(qArr->sizeAt(rank - 1));
+            currentSection.seqQ = static_cast<int>(qArr->sizeAt(rank - 2));
             currentSection.numHeads = static_cast<int>(qArr->sizeAt(rank - 3));
             currentSection.batchSize = 1;
             for (int d = 0; d < rank - 3; d++)
               currentSection.batchSize *= static_cast<int>(qArr->sizeAt(d));
+            currentSection.attnQIsBSHD = false;
           } else {
-            currentSection.numHeads = 1;
+            // 3D BSHD: [batch, seqQ, numHeads*headDim]
             currentSection.batchSize = static_cast<int>(qArr->sizeAt(0));
+            currentSection.seqQ = static_cast<int>(qArr->sizeAt(1));
+            int hidden = static_cast<int>(qArr->sizeAt(2));
+            int nh = (slots[i].numIArgs > 0 && slots[i].iArgs) ? static_cast<int>(slots[i].iArgs[0]) : 1;
+            if (nh <= 0) nh = 1;
+            currentSection.numHeads = nh;
+            currentSection.headDim = hidden / nh;
+            currentSection.attnQIsBSHD = true;
           }
           currentSection.attentionScale = 1.0f / std::sqrt(static_cast<float>(currentSection.headDim));
         }
-        if (slots[i].numInputs >= 2) {
-          NDArray* kArr = resolveArray(slots[i].inputSourceIndices[1]);
-          if (kArr && kArr->rankOf() >= 2) {
-            currentSection.seqK = static_cast<int>(kArr->sizeAt(kArr->rankOf() - 2));
+
+        // Determine effective K source: use past_key (input 4) if available
+        bool hasPastKv = false;
+        int effectiveKInputIdx = 1;
+        if (slots[i].numInputs > 4) {
+          NDArray* pastKeyArr = resolveArray(slots[i].inputSourceIndices[4]);
+          if (pastKeyArr && pastKeyArr->rankOf() == 4) {
+            auto pastKeyLen = pastKeyArr->sizeAt(pastKeyArr->rankOf() - 2);
+            if (pastKeyLen > 1) {
+              hasPastKv = true;
+              effectiveKInputIdx = 4;
+            }
           }
         }
+
+        NDArray* kArr = (effectiveKInputIdx < slots[i].numInputs) ?
+            resolveArray(slots[i].inputSourceIndices[effectiveKInputIdx]) : nullptr;
+        if (kArr && kArr->rankOf() >= 2) {
+          currentSection.seqK = static_cast<int>(kArr->sizeAt(kArr->rankOf() - 2));
+          currentSection.attnKIsBSHD = hasPastKv ? false : currentSection.attnQIsBSHD;
+          // GQA: extract KV head count from past_key (4D: [B, KvHeads, seqK, HD])
+          if (hasPastKv && kArr->rankOf() == 4) {
+            currentSection.numKvHeads = static_cast<int>(kArr->sizeAt(1));
+            currentSection.headDim = static_cast<int>(kArr->sizeAt(3));
+          }
+        }
+        // Default: MHA (numKvHeads = numHeads)
+        if (currentSection.numKvHeads <= 0) currentSection.numKvHeads = currentSection.numHeads;
       }
     }
 
@@ -8399,9 +8688,12 @@ void TritonIRBuilder::emitAttentionSection(mlir::OpBuilder& builder, mlir::Locat
   int blockN = attnTile.blockN;
   emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                             section.batchSize, section.numHeads,
+                            section.numKvHeads > 0 ? section.numKvHeads : section.numHeads,
                             section.seqQ, section.seqK,
                             section.headDim, section.attentionScale,
-                            blockM, blockN);
+                            blockM, blockN,
+                            section.attnQIsBSHD, section.attnKIsBSHD,
+                            mlir::Value(), std::vector<LongType>());
 }
 
 void TritonIRBuilder::emitSplitSection(mlir::OpBuilder& builder, mlir::Location loc,

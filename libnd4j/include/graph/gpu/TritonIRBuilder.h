@@ -93,7 +93,10 @@ struct KernelSection {
 
   // Attention-specific dimensions (valid when type == FUSED_ATTENTION)
   int batchSize, numHeads, seqQ, seqK, headDim;
+  int numKvHeads = 0;  // KV heads for GQA (0 = same as numHeads, i.e. MHA)
   float attentionScale;
+  bool attnQIsBSHD = false;
+  bool attnKIsBSHD = false;
 
   // Data movement dimensions
   int gatherAxis;             // Gather/scatter axis
@@ -134,10 +137,10 @@ struct TritonOpMapping {
  * Kernel argument descriptor for wiring NDArray buffers to kernel parameters.
  */
 struct TritonKernelArg {
-  int slotIndex;              // >=0: output slot, <0: -(externalIndex+1)
-  int outputIndex;            // Which output of the slot (usually 0)
-  bool isOutput;              // true if this is a kernel output (written)
-  DataType dtype;
+  int slotIndex = 0;          // >=0: output slot, <0: -(externalIndex+1)
+  int outputIndex = 0;        // Which output of the slot (usually 0)
+  bool isOutput = false;      // true if this is a kernel output (written)
+  DataType dtype = FLOAT32;   // Default to FLOAT32 to avoid UB from uninitialized enum
   std::vector<LongType> shape;
 };
 
@@ -408,9 +411,13 @@ class TritonIRBuilder {
   static void emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                         mlir::Value qPtr, mlir::Value kPtr,
                                         mlir::Value vPtr, mlir::Value outPtr,
-                                        int batchSize, int numHeads, int seqQ, int seqK,
+                                        int batchSize, int numQHeads, int numKvHeads,
+                                        int seqQ, int seqK,
                                         int headDim, float scale,
-                                        int blockM, int blockN);
+                                        int blockM, int blockN,
+                                        bool qIsBSHD, bool kIsBSHD,
+                                        mlir::Value biasPtr,
+                                        const std::vector<LongType>& biasShape);
 
   // Map an nd4j DataType to an MLIR element type
   static mlir::Type getMLIRType(mlir::OpBuilder& builder, DataType dtype);

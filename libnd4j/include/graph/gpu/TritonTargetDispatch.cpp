@@ -683,6 +683,45 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
     return result;
   }
 
+  // Pre-pass SplatOp type validation (diagnostic for 'tt.splat' type mismatch errors)
+  {
+    bool splatTypeError = false;
+    moduleOp->walk([&](mlir::triton::SplatOp op) {
+      auto scalarType = op.getSrc().getType();
+      auto resultTensorType = mlir::dyn_cast<mlir::RankedTensorType>(op.getResult().getType());
+      if (resultTensorType) {
+        auto elemType = resultTensorType.getElementType();
+        if (scalarType != elemType) {
+          std::string scalarStr, elemStr, opStr;
+          llvm::raw_string_ostream scalarOS(scalarStr), elemOS(elemStr), opOS(opStr);
+          scalarType.print(scalarOS);
+          elemType.print(elemOS);
+          op->print(opOS);
+          sd_printf("SPLAT TYPE MISMATCH: scalar=%s, tensor_elem=%s\n  op: %s\n",
+                    scalarStr.c_str(), elemStr.c_str(), opStr.c_str());
+          // Also dump to file for full diagnostics
+          FILE* f = fopen("/tmp/triton_splat_mismatch.txt", "a");
+          if (f) {
+            fprintf(f, "MISMATCH: scalar=%s tensor_elem=%s\n  %s\n",
+                    scalarStr.c_str(), elemStr.c_str(), opStr.c_str());
+            fclose(f);
+          }
+          splatTypeError = true;
+        }
+      }
+    });
+    if (splatTypeError) {
+      // Dump full TTIR for diagnosis
+      FILE* diagFile = fopen("/tmp/triton_ttir_splat_error.txt", "w");
+      if (diagFile) {
+        fprintf(diagFile, "%s", preDump.c_str());
+        fclose(diagFile);
+      }
+      sd_printf("TritonTargetDispatch::compile[%lld]: SplatOp type mismatch detected! "
+                "Full TTIR dumped to /tmp/triton_ttir_splat_error.txt\n", compileId);
+    }
+  }
+
   // Phase 1-2: TTIR -> TTGIR
   const auto phase12Start = std::chrono::steady_clock::now();
   sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR START\n", compileId);

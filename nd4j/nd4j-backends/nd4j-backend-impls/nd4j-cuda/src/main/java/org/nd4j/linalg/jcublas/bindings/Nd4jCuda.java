@@ -1802,14 +1802,9 @@ public static final int
 // #include <array/InteropDataBuffer.h>
 // #include <array/TadPack.h>
 // #include <cnpy/cnpy.h>
-// #ifdef _WIN32
-// #include <windows.h>
-// #include <dbghelp.h>
-// Windows-specific backtrace implementation
-// #else
+// #ifndef _WIN32
 // #include <execinfo.h>
 // #include <unistd.h>
-// Unix-style backtrace implementation
 // #endif
 // #include <graph/GraphState.h>
 // #include <graph/ResultWrapper.h>

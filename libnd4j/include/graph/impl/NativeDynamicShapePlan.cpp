@@ -4594,7 +4594,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                   backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
     }
-    if (compiledCount == 0) {
+    if (compiledCount == 0 && failedCount > 0) {
+      // All ops FAILED compilation — real failure.
       if (isStrictNoFallbackMode(graphExecutionMode_)) {
         sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has zero compiled ops "
                   "(failed=%d). Forced backend mode prohibits fallback.\n",
@@ -4606,6 +4607,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
       seg.captureFailed = true;
       return Status::KERNEL_FAILURE;
+    }
+    if (compiledCount == 0 && failedCount == 0) {
+      // All sections are intentional fallback (e.g., all non-elementwise).
+      // The compiled segment has 0 sub-kernels; executeSegment will run
+      // everything via fallbackRangeExecutor_.
+      sd_printf("%s: segment [%d-%d] has only fallback sections (no compilation needed). "
+                "Will run entirely via slot-by-slot fallback.\n",
+                backendName, seg.startSlot, seg.endSlot);
     }
     if (failedCount > 0) {
       if (isStrictNoFallbackMode(graphExecutionMode_)) {
