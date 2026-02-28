@@ -59,37 +59,37 @@ jobs:
         helper: [ onednn, compile, "" ]
         extension: [ avx2, avx512, "" ]
         include:
-          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+          - mvn_ext: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags
-          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          - debug_enabled: ${{ github.event.inputs.debug_enabled || 'false' }}
             experimental: true
             name: Debug enabled
-          - runs_on: ${{ github.event.inputs.runsOn }}
+          - runs_on: ${{ github.event.inputs.runsOn || 'windows-2022' }}
             experimental: true
             name: OS to run on
-          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
+          - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl || '' }}
             experimental: true
             name: OS to run on
-          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging || '0' }}
             experimental: true
             name: Whether to deploy to release staging or not
-          - release_version: ${{ github.event.inputs.releaseVersion }}
+          - release_version: ${{ github.event.inputs.releaseVersion || '1.0.0-M3' }}
             experimental: true
             name: Release version
-          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion || '1.0.0-SNAPSHOT' }}
             experimental: true
             name: Snapshot version
-          - server_id: ${{ github.event.inputs.serverId }}
+          - server_id: ${{ github.event.inputs.serverId || 'central' }}
             experimental: true
             name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId || '' }}
             experimental: true
             name: The release repository to run on
-          - mvn_flags: ${{ github.event.inputs.mvnFlags }}
+          - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -107,6 +107,7 @@ jobs:
         uses: ./.github/actions/setup-ccache-windows
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
+          cache-family: x86_64
           max-size: '5G'
 
       - name: Show ccache stats before build
@@ -240,7 +241,7 @@ jobs:
             $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
           }
           
-          $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
+          $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
           if ( "${{ matrix.helper }}" -eq "compile" ) {
              $mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.triton=ON -Dlibnd4j.classifier=windows-x86_64-compile"
           } elseif ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
