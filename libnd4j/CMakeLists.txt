@@ -42,15 +42,13 @@ if(CCACHE_PROGRAM)
     else()
         message(STATUS "✅ Found ccache: ${CCACHE_PROGRAM}")
 
-        # IMPORTANT: Don't use sloppiness settings - they cause stale cache issues
-        # Instead, we use depend_mode for accurate dependency tracking
-        # and file_clone for faster cache operations on supported filesystems
+        # Use compiler_check=content for reliable cache hits across different build dirs.
+        # file_clone speeds up cache operations on supported filesystems.
+        # IMPORTANT: Do NOT clear sloppiness or override depend_mode here — CI actions
+        # configure these settings before CMake runs. Overriding them causes poor hit rates
+        # (43% instead of 80%+) because nvcc doesn't support depend_mode well.
         execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compiler_check=content ERROR_QUIET)
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=depend_mode=true ERROR_QUIET)
         execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=file_clone=true ERROR_QUIET)
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=inode_cache=false ERROR_QUIET)
-        # Remove any old sloppiness settings that might cause stale caches
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=sloppiness= ERROR_QUIET)
 
         # Use FORCE to ensure cache is always updated and avoid inconsistent builds
         # On Windows CUDA builds: skip C/CXX caching to reserve all cache space for
@@ -65,7 +63,7 @@ if(CCACHE_PROGRAM)
             set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "C++ compiler launcher" FORCE)
         endif()
         # CUDA launcher will be set after project() if needed
-        message(STATUS "Ccache enabled with depend_mode for accurate change detection")
+        message(STATUS "Ccache enabled (sloppiness/depend_mode deferred to CI action config)")
     endif()
 else()
     message(STATUS "ℹ️  Ccache not found - install with: sudo apt-get install ccache (or brew install ccache)")

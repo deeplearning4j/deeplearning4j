@@ -299,7 +299,7 @@ jobs:
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
           
-          set "CCACHE_DIR=%USERPROFILE%\ccache"
+          set "CCACHE_DIR=%USERPROFILE%\.ccache"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
           
           where bash
