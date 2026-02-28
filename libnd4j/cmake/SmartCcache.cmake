@@ -1,23 +1,15 @@
-# SmartCcache.cmake - Intelligent ccache integration that respects file changes
+# SmartCcache.cmake - Intelligent ccache integration
 #
-# This module creates a wrapper script that:
-# 1. Checks if the source file has been modified (via mtime tracking)
-# 2. Uses CCACHE_RECACHE=1 ONLY for files that have CHANGED since last build
-# 3. For new/unknown files, lets ccache use its normal content-based caching
-# 4. Maintains separate caches for different CUDA compute capabilities
+# Windows: No wrapper needed — ccache.conf and action.yml handle all settings.
+#          The C/CXX launcher stays as plain ccache (set by CMakeLists.txt).
+#          CUDA uses nvcc_filter.py which chains ccache separately.
 #
-# Key insight: Only force recache when we KNOW a file changed (stored hash differs).
-# If we've never seen a file before, let ccache handle it normally - it may already
-# have the correct object cached from a previous build or shared cache.
-#
-# Compute capability support: Different GPU architectures (sm_50, sm_80, sm_89, etc.)
-# produce different object files from the same source. We track each architecture
-# separately to ensure correct cache behavior when switching between builds.
+# Linux/macOS: Uses smart_ccache.sh bash wrapper for hash-based change detection
+#              and CCACHE_RECACHE support.
 
 option(SD_SMART_CCACHE "Enable smart ccache wrapper that detects file changes" ON)
 option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
 
-# Only proceed if we have ccache and smart mode is enabled
 # Detect Windows robustly by checking if cmd.exe exists, since WIN32/MSVC/CMAKE_HOST_SYSTEM_NAME
 # may not be set correctly under MSYS2/MinGW cmake.
 set(_SD_IS_WINDOWS FALSE)
@@ -36,79 +28,39 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
     # Check if the launcher is ccache
     get_filename_component(LAUNCHER_NAME "${CMAKE_CXX_COMPILER_LAUNCHER}" NAME)
     if(LAUNCHER_NAME MATCHES "ccache")
-        message(STATUS "Enabling smart ccache wrapper for change detection")
-
         set(CCACHE_PATH "${CMAKE_CXX_COMPILER_LAUNCHER}")
-
-        # Base directory for hash caches (separate files per architecture)
-        set(FILE_HASH_CACHE_DIR "${CMAKE_BINARY_DIR}/.ccache_hashes")
-
-        # Default hash cache file (for non-CUDA compilations)
-        set(FILE_HASH_CACHE "${FILE_HASH_CACHE_DIR}/default")
-
-        # Lock file for atomic updates
-        set(FILE_HASH_LOCK "${CMAKE_BINARY_DIR}/.ccache_file_hashes.lock")
-
-        # Create hash cache directory
-        file(MAKE_DIRECTORY "${FILE_HASH_CACHE_DIR}")
 
         if(_SD_IS_WINDOWS)
             # ================================================================
-            # Windows: Use Python-based smart ccache wrapper (smart_ccache.py)
-            # Bash scripts can't be invoked via CreateProcess, and .cmd wrappers
-            # break MSYS2 path translation. But python.exe as a multi-element
-            # CMAKE_*_COMPILER_LAUNCHER works perfectly — MSYS sh.exe can exec
-            # .exe files directly, same pattern as CUDA's nvcc_filter.py chain.
+            # Windows: Use plain ccache directly (no Python wrapper).
+            # The ccache.conf and setup-ccache-windows action already configure:
+            #   - sloppiness, compression, hash_dir, compiler_check
+            # Adding a Python wrapper just adds ~100ms overhead per file and
+            # risks deadlocks with MSYS Makefiles generator.
+            # CUDA ccache is handled separately via nvcc_filter.py --ccache=.
             # ================================================================
-            find_package(Python3 COMPONENTS Interpreter QUIET)
-            if(NOT Python3_FOUND)
-                find_program(Python3_EXECUTABLE NAMES python3 python)
-            endif()
+            message(STATUS "Smart ccache (Windows): using plain ccache (no wrapper)")
+            message(STATUS "  ccache: ${CCACHE_PATH}")
 
-            set(_SMART_CCACHE_PY "${CMAKE_CURRENT_LIST_DIR}/smart_ccache.py")
-            if(Python3_EXECUTABLE AND EXISTS "${_SMART_CCACHE_PY}")
-                set(_SC_DEBUG_ARG "")
-                if(SD_CCACHE_DEBUG)
-                    set(_SC_DEBUG_ARG "--debug")
-                endif()
+            # Store plain ccache path for ExternalProject use.
+            set(SD_PLAIN_CCACHE_PATH "${CCACHE_PATH}" CACHE FILEPATH
+                "Plain ccache path for ExternalProject" FORCE)
 
-                # Use python.exe directly as multi-element launcher list.
-                # MSYS sh.exe executes .exe files via normal POSIX exec path,
-                # preserving path translation correctly.
-                # Keep args minimal — smart_ccache.py is a thin wrapper now.
-                set(CMAKE_C_COMPILER_LAUNCHER
-                    "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
-                    "--ccache=${CCACHE_PATH}" ${_SC_DEBUG_ARG} "--"
-                    CACHE STRING "C compiler launcher (smart ccache)" FORCE)
-                set(CMAKE_CXX_COMPILER_LAUNCHER
-                    "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
-                    "--ccache=${CCACHE_PATH}" ${_SC_DEBUG_ARG} "--"
-                    CACHE STRING "CXX compiler launcher (smart ccache)" FORCE)
-
-                # Store plain ccache path for ExternalProject use.
-                # ExternalProject passes launcher via -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=
-                # which only supports a single path — so external projects use plain ccache.
-                set(SD_PLAIN_CCACHE_PATH "${CCACHE_PATH}" CACHE FILEPATH
-                    "Plain ccache path for ExternalProject (smart ccache can't be passed as FILEPATH)" FORCE)
-
-                message(STATUS "Smart ccache (Windows/Python): ${_SMART_CCACHE_PY}")
-                message(STATUS "  Python: ${Python3_EXECUTABLE}")
-            else()
-                if(NOT Python3_EXECUTABLE)
-                    message(STATUS "Smart ccache SKIPPED on Windows: Python3 not found")
-                else()
-                    message(STATUS "Smart ccache SKIPPED on Windows: ${_SMART_CCACHE_PY} not found")
-                endif()
-            endif()
         else()
-        # ================================================================
-        # Linux/macOS: Use bash-based smart ccache wrapper (smart_ccache.sh)
-        # ================================================================
-        set(SMART_CCACHE_SCRIPT "${CMAKE_BINARY_DIR}/smart_ccache.sh")
+            # ================================================================
+            # Linux/macOS: Use bash-based smart ccache wrapper (smart_ccache.sh)
+            # ================================================================
+            message(STATUS "Enabling smart ccache wrapper for change detection")
 
-        # Generate wrapper script
-        # Note: BUILD_DIR is used to detect generated files which should skip mtime check
-        file(WRITE "${SMART_CCACHE_SCRIPT}" "#!/bin/bash
+            # Base directory for hash caches (separate files per architecture)
+            set(FILE_HASH_CACHE_DIR "${CMAKE_BINARY_DIR}/.ccache_hashes")
+            set(FILE_HASH_LOCK "${CMAKE_BINARY_DIR}/.ccache_file_hashes.lock")
+            file(MAKE_DIRECTORY "${FILE_HASH_CACHE_DIR}")
+
+            set(SMART_CCACHE_SCRIPT "${CMAKE_BINARY_DIR}/smart_ccache.sh")
+
+            # Generate wrapper script
+            file(WRITE "${SMART_CCACHE_SCRIPT}" "#!/bin/bash
 # Smart ccache wrapper - forces recompile for modified source files
 # Generated by CMake SmartCcache.cmake
 #
@@ -116,11 +68,6 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
 # - If file is NEW (not in hash cache): let ccache use content-based caching (may hit!)
 # - If file is KNOWN and UNCHANGED: let ccache use content-based caching (will hit)
 # - If file is KNOWN and CHANGED: force recompile with CCACHE_RECACHE=1
-#
-# Compute Capability Support:
-# - Different GPU architectures (sm_50, sm_80, sm_89, etc.) produce different binaries
-# - We maintain separate hash caches per architecture combination
-# - This ensures switching between CUDA builds doesn't cause incorrect cache behavior
 
 CCACHE=\"${CCACHE_PATH}\"
 HASH_CACHE_DIR=\"${FILE_HASH_CACHE_DIR}\"
@@ -133,17 +80,12 @@ export CCACHE_SLOPPINESS=\"include_file_mtime,pch_defines,time_macros,file_stat_
 
 # ==============================================================================
 # Extract compute capability / architecture from command line arguments
-# This handles various CUDA architecture specification formats:
-#   -arch=sm_XX           (simple arch flag)
-#   -gencode arch=compute_XX,code=sm_XX  (gencode flags, may appear multiple times)
-#   --gpu-architecture=sm_XX  (long form)
 # ==============================================================================
 extract_cuda_arch() {
     local arch_list=\"\"
     local prev_arg=\"\"
 
     for arg in \"\$@\"; do
-        # Handle -arch=sm_XX or --gpu-architecture=sm_XX
         if [[ \"\$arg\" =~ ^-arch=sm_([0-9]+) ]] || [[ \"\$arg\" =~ ^--gpu-architecture=sm_([0-9]+) ]]; then
             local sm_ver=\"\${BASH_REMATCH[1]}\"
             if [[ -n \"\$arch_list\" ]]; then
@@ -153,10 +95,8 @@ extract_cuda_arch() {
             fi
         fi
 
-        # Handle -gencode arch=compute_XX,code=sm_XX
         if [[ \"\$arg\" =~ code=sm_([0-9]+) ]]; then
             local sm_ver=\"\${BASH_REMATCH[1]}\"
-            # Check if this architecture is already in the list
             if [[ ! \"\$arch_list\" =~ (^|_)\${sm_ver}(_|\$) ]]; then
                 if [[ -n \"\$arch_list\" ]]; then
                     arch_list=\"\${arch_list}_\${sm_ver}\"
@@ -166,7 +106,6 @@ extract_cuda_arch() {
             fi
         fi
 
-        # Handle separated form: -arch sm_XX (space separated)
         if [[ \"\$prev_arg\" == \"-arch\" ]] && [[ \"\$arg\" =~ ^sm_([0-9]+) ]]; then
             local sm_ver=\"\${BASH_REMATCH[1]}\"
             if [[ -n \"\$arch_list\" ]]; then
@@ -182,22 +121,13 @@ extract_cuda_arch() {
     echo \"\$arch_list\"
 }
 
-# Determine the architecture suffix for cache file
 CUDA_ARCH=\"\$(extract_cuda_arch \"\$@\")\"
 
-# Optional segment + shape partitioning for smarter metadata granularity.
-# External projects (like Triton/LLVM) can set:
-#   SD_SMART_CCACHE_SEGMENT=triton_llvm|triton|...
-#   SD_SMART_CCACHE_SHAPE_KEY=<stable-build-shape-key>
-# ccache still owns object-level hashing; this only scopes our change-tracking files.
 SEGMENT_KEY=\"\${SD_SMART_CCACHE_SEGMENT:-default}\"
 SHAPE_KEY=\"\${SD_SMART_CCACHE_SHAPE_KEY:-base}\"
-
-# Keep file names portable/safe
 SEGMENT_KEY=\"\${SEGMENT_KEY//[^A-Za-z0-9_.-]/_}\"
 SHAPE_KEY=\"\${SHAPE_KEY//[^A-Za-z0-9_.-]/_}\"
 
-# Select hash cache file based on segment + shape + architecture
 if [[ -n \"\$CUDA_ARCH\" ]]; then
     HASH_CACHE=\"\${HASH_CACHE_DIR}/\${SEGMENT_KEY}__\${SHAPE_KEY}__cuda_sm_\${CUDA_ARCH}\"
 else
@@ -208,26 +138,19 @@ if [[ \"\$DEBUG\" == \"ON\" ]]; then
     if [[ -n \"\$CUDA_ARCH\" ]]; then
         echo \"[SMART_CCACHE] CUDA architecture detected: sm_\${CUDA_ARCH}\" >&2
     fi
-    echo \"[SMART_CCACHE] Segment key: \$SEGMENT_KEY\" >&2
-    echo \"[SMART_CCACHE] Shape key: \$SHAPE_KEY\" >&2
     echo \"[SMART_CCACHE] Hash cache file: \$HASH_CACHE\" >&2
 fi
 
-# Ensure cache directory exists
 mkdir -p \"\$HASH_CACHE_DIR\" 2>/dev/null
 
-# Find the source file in arguments (look for .cpp, .c, .cc, .cxx, .cu files)
-# Handle both absolute and relative paths
 SOURCE_FILE=\"\"
 for arg in \"\$@\"; do
     case \"\$arg\" in
         *.cpp|*.c|*.cc|*.cxx|*.cu|*.C|*.CC|*.CPP|*.CXX|*.CU)
-            # Check if file exists (handles absolute paths)
             if [[ -f \"\$arg\" ]]; then
                 SOURCE_FILE=\"\$arg\"
                 break
             fi
-            # For relative paths, try to resolve from current directory
             if [[ ! \"\$arg\" = /* ]] && [[ -f \"\$(pwd)/\$arg\" ]]; then
                 SOURCE_FILE=\"\$(pwd)/\$arg\"
                 break
@@ -236,32 +159,23 @@ for arg in \"\$@\"; do
     esac
 done
 
-# Function to update hash cache with file locking (handles parallel builds)
 update_hash_cache() {
     local file=\"\$1\"
     local hash=\"\$2\"
 
-    # Use flock for atomic updates (file descriptor 9)
     exec 9>\"\$HASH_LOCK\"
     flock -x 9
 
-    # Remove old entry and add new one
     if [[ -f \"\$HASH_CACHE\" ]]; then
         grep -v \"^\$file:\" \"\$HASH_CACHE\" > \"\$HASH_CACHE.tmp\" 2>/dev/null || true
         mv \"\$HASH_CACHE.tmp\" \"\$HASH_CACHE\" 2>/dev/null || true
     fi
     echo \"\$file:\$hash\" >> \"\$HASH_CACHE\"
 
-    # Release lock
     exec 9>&-
 }
 
-# If we found a source file, check if it changed
-# IMPORTANT: Skip mtime check for generated files (files in BUILD_DIR)
-# Generated files are regenerated by cmake with new mtime but same content
-# Let ccache handle them with its content-based caching
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
-    # Check if this is a generated file (in build directory)
     IS_GENERATED=0
     case \"\$SOURCE_FILE\" in
         \"\$BUILD_DIR\"*)
@@ -270,16 +184,12 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     esac
 
     if [[ \$IS_GENERATED -eq 1 ]]; then
-        # Generated file - let ccache use content-based caching
         if [[ \"\$DEBUG\" == \"ON\" ]]; then
             echo \"[SMART_CCACHE] Generated file, using ccache content hash: \$SOURCE_FILE\" >&2
         fi
     else
-        # Source file - use content hash to detect all changes reliably
-        # cksum is fast and catches edits that don't change file size
         CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
 
-        # Get stored hash (with locking to avoid read during write)
         STORED_HASH=\"\"
         if [[ -f \"\$HASH_CACHE\" ]]; then
             exec 9>\"\$HASH_LOCK\"
@@ -288,33 +198,18 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
             exec 9>&-
         fi
 
-        # Compare and decide
-        # KEY FIX: Only force recache if we have a STORED hash that DIFFERS
-        # If no stored hash (new file), let ccache try its cache first!
         if [[ -n \"\$STORED_HASH\" && \"\$CURRENT_HASH\" != \"\$STORED_HASH\" ]]; then
-            # File CHANGED since we last saw it - force recompile
             if [[ \"\$DEBUG\" == \"ON\" ]]; then
                 echo \"[SMART_CCACHE] File changed, forcing recompile: \$SOURCE_FILE\" >&2
-                echo \"[SMART_CCACHE]   stored: \$STORED_HASH -> current: \$CURRENT_HASH\" >&2
-                if [[ -n \"\$CUDA_ARCH\" ]]; then
-                    echo \"[SMART_CCACHE]   CUDA arch: sm_\$CUDA_ARCH\" >&2
-                fi
             fi
             export CCACHE_RECACHE=1
-            # Update hash cache with new value
             update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
         elif [[ -z \"\$STORED_HASH\" ]]; then
-            # NEW file - let ccache try its cache, then record the hash
             if [[ \"\$DEBUG\" == \"ON\" ]]; then
                 echo \"[SMART_CCACHE] New file, using ccache (may hit cache): \$SOURCE_FILE\" >&2
-                if [[ -n \"\$CUDA_ARCH\" ]]; then
-                    echo \"[SMART_CCACHE]   CUDA arch: sm_\$CUDA_ARCH\" >&2
-                fi
             fi
-            # Record hash so we can detect future changes
             update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
         else
-            # File unchanged - normal ccache operation (will hit cache)
             if [[ \"\$DEBUG\" == \"ON\" ]]; then
                 echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
             fi
@@ -322,21 +217,12 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
     fi
 fi
 
-# ==============================================================================
-# Expand nvcc --options-file (response file) arguments inline.
-# ccache strips --options-file during preprocessing, losing all -I paths.
-# This causes preprocessor errors and zero cache hits for CUDA files.
-# We read the response file contents and splice them into the argument list
-# so ccache sees the actual flags on the command line.
-# ==============================================================================
+# Expand nvcc --options-file response files inline for ccache visibility
 EXPANDED_ARGS=()
 while [[ \$# -gt 0 ]]; do
     if [[ \"\$1\" == \"--options-file\" && -n \"\$2\" && -f \"\$2\" ]]; then
-        # Read the response file and split into args (handles quoted paths)
         while IFS= read -r line || [[ -n \"\$line\" ]]; do
-            # Skip empty lines and comments
             [[ -z \"\$line\" || \"\$line\" == \\#* ]] && continue
-            # Split the line on whitespace, respecting double quotes
             eval 'for word in '\"\$line\"'; do EXPANDED_ARGS+=(\"\$word\"); done'
         done < \"\$2\"
         if [[ \"\$DEBUG\" == \"ON\" ]]; then
@@ -349,63 +235,47 @@ while [[ \$# -gt 0 ]]; do
     fi
 done
 
-# Execute ccache with expanded arguments
 exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
 ")
 
-        # Make executable
-        file(CHMOD "${SMART_CCACHE_SCRIPT}"
-             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                         GROUP_READ GROUP_EXECUTE
-                         WORLD_READ WORLD_EXECUTE)
+            # Make executable
+            file(CHMOD "${SMART_CCACHE_SCRIPT}"
+                 PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                             GROUP_READ GROUP_EXECUTE
+                             WORLD_READ WORLD_EXECUTE)
 
-        # Override the compiler launcher to use our wrapper
-        set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-        set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-        # Also set CUDA compiler launcher for nvcc
-        set(CMAKE_CUDA_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+            # Override the compiler launcher to use our wrapper
+            set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+            set(CMAKE_CUDA_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
 
-        # Store plain ccache path for ExternalProject use (smart_ccache.sh can't
-        # be passed as FILEPATH to ExternalProject either, due to .sh skip rules).
-        set(SD_PLAIN_CCACHE_PATH "${CCACHE_PATH}" CACHE FILEPATH
-            "Plain ccache path for ExternalProject" FORCE)
+            # Store plain ccache path for ExternalProject use
+            set(SD_PLAIN_CCACHE_PATH "${CCACHE_PATH}" CACHE FILEPATH
+                "Plain ccache path for ExternalProject" FORCE)
 
-        message(STATUS "Smart ccache wrapper: ${SMART_CCACHE_SCRIPT}")
-        message(STATUS "Smart ccache wrapper enabled for C, CXX, and CUDA compilers")
-        endif() # end else (Linux/macOS bash wrapper)
+            message(STATUS "Smart ccache wrapper: ${SMART_CCACHE_SCRIPT}")
+            message(STATUS "Smart ccache wrapper enabled for C, CXX, and CUDA compilers")
 
-        # Provide a target to clear ALL hash caches (forces full recompile check)
-        add_custom_target(clear_ccache_hashes
-            COMMAND ${CMAKE_COMMAND} -E remove_directory "${FILE_HASH_CACHE_DIR}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${FILE_HASH_CACHE_DIR}"
-            COMMENT "Clearing all ccache file hash caches (all architectures) - next build will recheck all files"
-        )
+            # Provide targets for hash cache management
+            add_custom_target(clear_ccache_hashes
+                COMMAND ${CMAKE_COMMAND} -E remove_directory "${FILE_HASH_CACHE_DIR}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${FILE_HASH_CACHE_DIR}"
+                COMMENT "Clearing all ccache file hash caches"
+            )
 
-        # Provide a target to list current hash caches (for debugging)
-        add_custom_target(list_ccache_hashes
-            COMMAND ${CMAKE_COMMAND} -E echo "=== Smart ccache hash cache files ==="
-            COMMAND ls -la "${FILE_HASH_CACHE_DIR}" 2>/dev/null || echo "No cache files yet"
-            COMMAND ${CMAKE_COMMAND} -E echo "=== End cache files ==="
-            COMMENT "Listing ccache hash cache files"
-        )
-
-        message(STATUS "Smart ccache compute capability support enabled")
-        message(STATUS "  Hash cache directory: ${FILE_HASH_CACHE_DIR}")
-        message(STATUS "  Each CUDA architecture gets its own cache file")
+            message(STATUS "  Hash cache directory: ${FILE_HASH_CACHE_DIR}")
+        endif() # end Windows vs Linux/macOS
 
     endif()
 endif()
 
-# Provide a function to force recompile of specific files
-# Usage: force_recompile_files(file1.cpp file2.cpp ...)
-# Note: This clears the file from ALL architecture caches
+# Function to force recompile of specific files (Linux/macOS only)
 function(force_recompile_files)
-    if(SD_SMART_CCACHE)
+    if(SD_SMART_CCACHE AND NOT _SD_IS_WINDOWS)
         set(HASH_CACHE_DIR "${CMAKE_BINARY_DIR}/.ccache_hashes")
         foreach(file ${ARGN})
             get_filename_component(abs_file "${file}" ABSOLUTE)
             if(EXISTS "${abs_file}")
-                # Remove from ALL hash cache files to force recompile for all architectures
                 file(GLOB CACHE_FILES "${HASH_CACHE_DIR}/*")
                 foreach(cache_file ${CACHE_FILES})
                     execute_process(
@@ -421,64 +291,4 @@ function(force_recompile_files)
             endif()
         endforeach()
     endif()
-endfunction()
-
-# Provide a function to force recompile for a specific architecture only
-# Usage: force_recompile_files_for_arch("80" file1.cpp file2.cpp ...)
-function(force_recompile_files_for_arch ARCH)
-    if(SD_SMART_CCACHE)
-        set(HASH_CACHE "${CMAKE_BINARY_DIR}/.ccache_hashes/cuda_sm_${ARCH}")
-        if(EXISTS "${HASH_CACHE}")
-            foreach(file ${ARGN})
-                get_filename_component(abs_file "${file}" ABSOLUTE)
-                if(EXISTS "${abs_file}")
-                    execute_process(
-                        COMMAND grep -v "^${abs_file}:" "${HASH_CACHE}"
-                        OUTPUT_FILE "${HASH_CACHE}.tmp"
-                        ERROR_QUIET
-                    )
-                    if(EXISTS "${HASH_CACHE}.tmp")
-                        file(RENAME "${HASH_CACHE}.tmp" "${HASH_CACHE}")
-                    endif()
-                    message(STATUS "Forcing recompile (sm_${ARCH}): ${file}")
-                endif()
-            endforeach()
-        else()
-            message(STATUS "No cache file for sm_${ARCH} - nothing to clear")
-        endif()
-    endif()
-endfunction()
-
-# Function to clear hash cache for a specific architecture
-# Usage: clear_arch_ccache_hashes("80")  or clear_arch_ccache_hashes("86_89")
-function(clear_arch_ccache_hashes ARCH)
-    if(SD_SMART_CCACHE)
-        set(HASH_CACHE "${CMAKE_BINARY_DIR}/.ccache_hashes/cuda_sm_${ARCH}")
-        if(EXISTS "${HASH_CACHE}")
-            file(REMOVE "${HASH_CACHE}")
-            message(STATUS "Cleared ccache hashes for sm_${ARCH}")
-        else()
-            message(STATUS "No cache file for sm_${ARCH} - nothing to clear")
-        endif()
-    endif()
-endfunction()
-
-# Alternative: Use git to detect changed files
-# This is more robust but requires git
-function(detect_git_changed_files OUTPUT_VAR)
-    execute_process(
-        COMMAND git diff --name-only HEAD
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_CHANGED
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    execute_process(
-        COMMAND git diff --name-only --cached HEAD
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-        OUTPUT_VARIABLE GIT_STAGED
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    set(${OUTPUT_VAR} "${GIT_CHANGED}\n${GIT_STAGED}" PARENT_SCOPE)
 endfunction()
