@@ -105,6 +105,7 @@ jobs:
         uses: ./.github/actions/setup-ccache-windows
         with:
           cache-suffix: cuda-12.9-${{ matrix.helper }}
+          cache-family: cuda-12.9
           max-size: '8G'
 
       - name: Show ccache stats before build

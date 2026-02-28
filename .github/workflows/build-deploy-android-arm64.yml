@@ -84,6 +84,7 @@ jobs:
         uses: ./.github/actions/setup-ccache-linux
         with:
           cache-suffix: android-arm64-${{ matrix.helper }}
+          cache-family: android-arm64
           max-size: '5G'
 
       - name: Show ccache stats before build

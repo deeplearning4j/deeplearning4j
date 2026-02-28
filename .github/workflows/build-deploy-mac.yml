@@ -118,6 +118,7 @@ jobs:
         uses: ./.github/actions/setup-ccache-macos
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
+          cache-family: x86_64
           max-size: '5G'
 
       - name: Show ccache stats before build

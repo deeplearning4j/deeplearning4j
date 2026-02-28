@@ -6,6 +6,10 @@ inputs:
     description: 'Suffix for cache key (e.g., cuda-12.6)'
     required: false
     default: ''
+  cache-family:
+    description: 'Broad cache family prefix for cross-variant sharing (e.g., x86_64 for CPU, cuda-12.9 for CUDA). When set, enables fallback to any cache within the same family, so helper/extension variants share a common base.'
+    required: false
+    default: ''
   max-size:
     description: 'Maximum cache size (e.g., 5G)'
     required: false
@@ -62,17 +66,34 @@ runs:
         Add-Content -Path $env:GITHUB_OUTPUT -Value "restore-key=$restoreKey"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "save-key=$saveKey"
 
+    - name: Compute restore keys
+      id: ccache-restore-keys
+      shell: bash
+      run: |
+        PREFIX="ccache-windows-${{ runner.arch }}"
+        {
+          echo "keys<<RESTORE_KEYS_EOF"
+          echo "${PREFIX}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-"
+          echo "${PREFIX}-${{ inputs.cache-suffix }}-master-"
+          echo "${PREFIX}-${{ inputs.cache-suffix }}-main-"
+          echo "${PREFIX}-${{ inputs.cache-suffix }}-"
+          FAMILY="${{ inputs.cache-family }}"
+          SUFFIX="${{ inputs.cache-suffix }}"
+          if [ -n "$FAMILY" ] && [ "$FAMILY" != "$SUFFIX" ]; then
+            echo "${PREFIX}-${FAMILY}-${{ github.ref_name }}-"
+            echo "${PREFIX}-${FAMILY}-master-"
+            echo "${PREFIX}-${FAMILY}-"
+          fi
+          echo "RESTORE_KEYS_EOF"
+        } >> "$GITHUB_OUTPUT"
+
     - name: Restore ccache
       id: ccache-restore
       uses: actions/cache/restore@v4
       with:
         path: ~/.ccache
         key: ${{ steps.ccache-keys.outputs.restore-key }}
-        restore-keys: |
-          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-
-          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-master-
-          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-main-
-          ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-
+        restore-keys: ${{ steps.ccache-restore-keys.outputs.keys }}
 
     - name: Configure ccache
       continue-on-error: true
