@@ -166,30 +166,52 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
             echo \"[SMART_CCACHE] Generated file, using ccache content hash: \$SOURCE_FILE\" >&2
         fi
     else
-        CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-
-        STORED_HASH=\"\"
-        if [[ -f \"\$HASH_CACHE\" ]]; then
+        if [[ ! -f \"\$HASH_CACHE\" ]]; then
+            # Clean build: hash cache doesn't exist yet. Skip cksum/flock overhead.
+            # Just let ccache handle caching. Populate hash in background for next build.
+            if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                echo \"[SMART_CCACHE] Clean build (no cache), skipping hash: \$SOURCE_FILE\" >&2
+            fi
+            # Background: compute hash and store it without blocking compilation
+            ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+              if [[ -n \"\$CURRENT_HASH\" ]]; then
+                  exec 9>\"\$HASH_LOCK\"
+                  flock -x 9
+                  echo \"\$SOURCE_FILE:\$CURRENT_HASH\" >> \"\$HASH_CACHE\"
+                  exec 9>&-
+              fi
+            ) &
+        else
+            # Subsequent build: hash cache exists. Check for changes.
+            STORED_HASH=\"\"
             exec 9>\"\$HASH_LOCK\"
             flock -s 9
             STORED_HASH=\"\$(grep \"^\$SOURCE_FILE:\" \"\$HASH_CACHE\" 2>/dev/null | tail -1 | cut -d: -f2-)\"
             exec 9>&-
-        fi
 
-        if [[ -n \"\$STORED_HASH\" && \"\$CURRENT_HASH\" != \"\$STORED_HASH\" ]]; then
-            if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                echo \"[SMART_CCACHE] File changed, forcing recompile: \$SOURCE_FILE\" >&2
-            fi
-            export CCACHE_RECACHE=1
-            update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
-        elif [[ -z \"\$STORED_HASH\" ]]; then
-            if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                echo \"[SMART_CCACHE] New file, using ccache (may hit cache): \$SOURCE_FILE\" >&2
-            fi
-            update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
-        else
-            if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
+            if [[ -z \"\$STORED_HASH\" ]]; then
+                # New file in subsequent build — let ccache handle it, update hash in background
+                if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                    echo \"[SMART_CCACHE] New file, using ccache (may hit cache): \$SOURCE_FILE\" >&2
+                fi
+                ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+                  if [[ -n \"\$CURRENT_HASH\" ]]; then
+                      update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
+                  fi
+                ) &
+            else
+                CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+                if [[ \"\$CURRENT_HASH\" != \"\$STORED_HASH\" ]]; then
+                    if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                        echo \"[SMART_CCACHE] File changed, forcing recompile: \$SOURCE_FILE\" >&2
+                    fi
+                    export CCACHE_RECACHE=1
+                    update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
+                else
+                    if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                        echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
+                    fi
+                fi
             fi
         fi
     fi
