@@ -78,7 +78,7 @@ void cblas_xerbla(int p, char *rout, char *form, ...);
 void MKL_Set_Num_Threads(int num);
 int MKL_Domain_Set_Num_Threads(int num, int domain);
 int MKL_Set_Num_Threads_Local(int num);
-#elif defined(__OPENBLAS) || defined(HAVE_OPENBLAS)
+#elif defined(__OPENBLAS) || HAVE_OPENBLAS
 void openblas_set_num_threads(int num);
 #else
 // No BLAS thread control available

@@ -402,7 +402,7 @@ void setOpenBlasThreads(int threads) {
 #if defined(HAVE_MKL) || defined(__MKL)
   // MKL uses mkl_set_num_threads
   mkl_set_num_threads(threads);
-#elif defined(__OPENBLAS) || defined(HAVE_OPENBLAS)
+#elif defined(__OPENBLAS) || HAVE_OPENBLAS
   // OpenBLAS thread control
   openblas_set_num_threads(threads);
 #else
