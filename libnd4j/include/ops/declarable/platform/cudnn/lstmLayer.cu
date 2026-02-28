@@ -203,13 +203,31 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}, 0, false)->dup('c') : inputWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (inputWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = inputWeights->permute(dims, 0, false);
+    } else {
+      pPtr = inputWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    inputWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}, 0, false)->dup('c')
-                                                        : recurrentWeights->transpose()->dup('c');
+    NDArray* pPtr;
+    if (recurrentWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = recurrentWeights->permute(dims, 0, false);
+    } else {
+      pPtr = recurrentWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    recurrentWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -229,7 +247,12 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   }
 
   if (dataFormat == 1) {
-    permutedX = input->permute({1, 0, 2}, 0, false)->dup('c');
+    std::vector<LongType> dims = {1, 0, 2};
+    auto* pPtr = input->permute(dims, 0, false);
+    auto* dPtr = pPtr->dup('c');
+    permutedX = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     argX = &permutedX;
   }
 
@@ -281,7 +304,7 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
   NDArray *argSeqNdArray = nullptr;
   NDArray seqArrIntData;
   if (seqLengthArray) {
-    auto isCContiguous = [](const NDArray& a) {
+    auto isCContiguous = [](NDArray& a) {
       auto r = a.rankOf(); auto s = a.shapeOf(); auto st = a.stridesOf();
       sd::LongType exp = 1;
       for (int i = r - 1; i >= 0; --i) { if (s[i] == 1) continue; if (st[i] != exp) return false; exp *= s[i]; }
@@ -291,15 +314,23 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
       argSeqNdArray = seqLengthArray;
     } else {
       if (seqLengthArray->dataType() != INT32) {
-        seqArrIntData = seqLengthArray->cast(INT32);
-        if (!isCContiguous(seqArrIntData)) seqArrIntData = seqArrIntData->dup('c');
+        auto* cPtr = seqLengthArray->cast(INT32);
+        seqArrIntData = std::move(*cPtr);
+        delete cPtr;
+        if (!isCContiguous(seqArrIntData)) {
+          auto* dPtr = seqArrIntData.dup('c');
+          seqArrIntData = std::move(*dPtr);
+          delete dPtr;
+        }
       } else {
-        seqArrIntData = seqLengthArray->dup('c');
+        auto* dPtr = seqLengthArray->dup('c');
+        seqArrIntData = std::move(*dPtr);
+        delete dPtr;
       }
       argSeqNdArray = &seqArrIntData;
     }
   } else {
-    seqArrIntData = NDArray('c', std::vector<LongType>{batchSize}, INT32, contextPtr);
+    seqArrIntData = NDArray('c', std::vector<LongType>{(LongType)batchSize}, INT32, contextPtr);
     seqArrIntData.assign(maxSeqLength);
     argSeqNdArray = &seqArrIntData;
   }
@@ -418,13 +449,31 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}).dup('c') : inputWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (inputWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = inputWeights->permute(dims, false, false);
+    } else {
+      pPtr = inputWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    inputWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}).dup('c')
-                                                        : recurrentWeights->transpose().dup('c');
+    NDArray* pPtr;
+    if (recurrentWeights->rankOf() == 3) {
+      std::vector<LongType> dims = {0, 2, 1};
+      pPtr = recurrentWeights->permute(dims, false, false);
+    } else {
+      pPtr = recurrentWeights->transpose();
+    }
+    auto* dPtr = pPtr->dup('c');
+    recurrentWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 

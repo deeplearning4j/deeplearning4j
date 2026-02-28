@@ -193,11 +193,19 @@ void cudnn_simple_rnn_old(LaunchContext *contextPtr, NDArray *input, NDArray *in
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT = inputWeights->transpose().dup('c');
+    auto* tPtr = inputWeights->transpose();
+    auto* dPtr = tPtr->dup('c');
+    inputWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete tPtr;
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->transpose().dup('c');
+    auto* tPtr = recurrentWeights->transpose();
+    auto* dPtr = tPtr->dup('c');
+    recurrentWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete tPtr;
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -256,7 +264,7 @@ void cudnn_simple_rnn_v8(LaunchContext *contextPtr, NDArray *input, NDArray *seq
   NDArray *argSeqNdArray = nullptr;
   NDArray seqArrIntData;
   if (seqLengthArray) {
-    auto isCContiguous = [](const NDArray& a) {
+    auto isCContiguous = [](NDArray& a) {
       auto r = a.rankOf(); auto s = a.shapeOf(); auto st = a.stridesOf();
       sd::LongType exp = 1;
       for (int i = r - 1; i >= 0; --i) { if (s[i] == 1) continue; if (st[i] != exp) return false; exp *= s[i]; }
@@ -266,15 +274,23 @@ void cudnn_simple_rnn_v8(LaunchContext *contextPtr, NDArray *input, NDArray *seq
       argSeqNdArray = seqLengthArray;
     } else {
       if (seqLengthArray->dataType() != INT32) {
-        seqArrIntData = seqLengthArray->cast(INT32);
-        if (!isCContiguous(seqArrIntData)) seqArrIntData = seqArrIntData.dup('c');
+        auto* cPtr = seqLengthArray->cast(INT32);
+        seqArrIntData = std::move(*cPtr);
+        delete cPtr;
+        if (!isCContiguous(seqArrIntData)) {
+          auto* dPtr = seqArrIntData.dup('c');
+          seqArrIntData = std::move(*dPtr);
+          delete dPtr;
+        }
       } else {
-        seqArrIntData = seqLengthArray->dup('c');
+        auto* dPtr = seqLengthArray->dup('c');
+        seqArrIntData = std::move(*dPtr);
+        delete dPtr;
       }
       argSeqNdArray = &seqArrIntData;
     }
   } else {
-    seqArrIntData = NDArray('c', std::vector<LongType>{batchSize}, INT32, contextPtr);
+    seqArrIntData = NDArray('c', std::vector<LongType>{(LongType)batchSize}, INT32, contextPtr);
     seqArrIntData.assign(maxSeqLength);
     argSeqNdArray = &seqArrIntData;
   }
@@ -381,11 +397,19 @@ void cudnn_simple_rnn_v8(LaunchContext *contextPtr, NDArray *input, NDArray *seq
   uint8_t *inputWeightsData = nullptr;
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
-    inputWeightsT = inputWeights->transpose().dup('c');
+    auto* tPtr = inputWeights->transpose();
+    auto* dPtr = tPtr->dup('c');
+    inputWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete tPtr;
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->transpose().dup('c');
+    auto* tPtr = recurrentWeights->transpose();
+    auto* dPtr = tPtr->dup('c');
+    recurrentWeightsT = std::move(*dPtr);
+    delete dPtr;
+    delete tPtr;
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
 
@@ -462,7 +486,7 @@ PLATFORM_CHECK(simple_rnn, ENGINE_CUDA) {
   req.expectEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'c') &&
       req.expectEq(makeInfoVariable(Wx->dataType(), TYPE_MSG_INPUT2), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
       req.expectEq(makeInfoVariable(Wh->dataType(), TYPE_MSG_INPUT3), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-      req.expectEq(makeInfoVariable(b->dataType(), TYPE_MSG_INPUT4), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+      req.expectEq(makeInfoVariable(b->dataType(), TYPE_MSG_INPUT), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
       req.expectIn(makeInfoVariable(xType, TYPE_MSG_INPUT0), {HALF, FLOAT32, DOUBLE}) &&
       req.expectEq(makeInfoVariable(hI->ordering(), ORDERING_MSG_INPUT1), 'c') &&
       req.expectEq(makeInfoVariable(h->ordering(), ORDERING_MSG_OUTPUT0), 'c');

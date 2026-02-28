@@ -64,15 +64,20 @@ static void sconv2dDepthwiseCUDNN(const LaunchContext* context, NDArray* input, 
   // where groups = iC for depthwise. So effectively [iC*mC, 1, kH, kW] when mC=1
   // We need to permute weights to match cuDNN's expected format
   NDArray weightsPermuted;
-  if (wFormat == 0) {
-    // [kH, kW, iC, mC] -> need to reshape/permute for cuDNN
-    weightsPermuted = weightsDepth->permute({2, 3, 0, 1}).dup('c');  // [iC, mC, kH, kW]
-  } else if (wFormat == 1) {
-    // [mC, iC, kH, kW] -> need to transpose first two dims
-    weightsPermuted = weightsDepth->permute({1, 0, 2, 3}).dup('c');  // [iC, mC, kH, kW]
-  } else {
-    // [mC, kH, kW, iC] -> permute
-    weightsPermuted = weightsDepth->permute({3, 0, 1, 2}).dup('c');  // [iC, mC, kH, kW]
+  {
+    std::vector<LongType> dims;
+    if (wFormat == 0) {
+      dims = {2, 3, 0, 1};  // [kH, kW, iC, mC] -> [iC, mC, kH, kW]
+    } else if (wFormat == 1) {
+      dims = {1, 0, 2, 3};  // [mC, iC, kH, kW] -> [iC, mC, kH, kW]
+    } else {
+      dims = {3, 0, 1, 2};  // [mC, kH, kW, iC] -> [iC, mC, kH, kW]
+    }
+    auto* pPtr = weightsDepth->permute(dims, false, false);
+    auto* dPtr = pPtr->dup('c');
+    weightsPermuted = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
   }
 
   // weights descriptor - cuDNN depthwise expects [iC, mC, kH, kW]
@@ -155,15 +160,23 @@ static void sconv2dPointwiseCUDNN(const LaunchContext* context, NDArray* input, 
 
   // Permute weights to cuDNN format [oC, iC, kH, kW]
   NDArray weightsPermuted;
-  if (wFormat == 0) {
-    // [1, 1, iC*mC, oC] -> [oC, iC*mC, 1, 1]
-    weightsPermuted = weightsPoint->permute({3, 2, 0, 1}).dup('c');
-  } else if (wFormat == 1) {
+  if (wFormat == 1) {
     // [oC, iC*mC, 1, 1] -> already in correct format
-    weightsPermuted = weightsPoint->dup('c');
+    auto* dPtr = weightsPoint->dup('c');
+    weightsPermuted = std::move(*dPtr);
+    delete dPtr;
   } else {
-    // [oC, 1, 1, iC*mC] -> [oC, iC*mC, 1, 1]
-    weightsPermuted = weightsPoint->permute({0, 3, 1, 2}).dup('c');
+    std::vector<LongType> dims;
+    if (wFormat == 0) {
+      dims = {3, 2, 0, 1};  // [1, 1, iC*mC, oC] -> [oC, iC*mC, 1, 1]
+    } else {
+      dims = {0, 3, 1, 2};  // [oC, 1, 1, iC*mC] -> [oC, iC*mC, 1, 1]
+    }
+    auto* pPtr = weightsPoint->permute(dims, false, false);
+    auto* dPtr = pPtr->dup('c');
+    weightsPermuted = std::move(*dPtr);
+    delete dPtr;
+    delete pPtr;
   }
 
   // weights descriptor [oC, iC, 1, 1]
