@@ -113,7 +113,10 @@ runs:
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
-          Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERTYPE=nvcc"
+          # Note: CCACHE_COMPILERTYPE is NOT set here — let ccache auto-detect.
+          # Setting it to "nvcc" globally breaks GCC/MinGW CPU builds (100%
+          # preprocessing failure). CUDA builds set it via CMakeLists.txt only
+          # for the CUDA compiler launcher path.
 
           # Verify ccache is accessible
           & $ccacheExe --version
