@@ -293,11 +293,30 @@ def main():
     lock_path = os.path.join(os.path.dirname(hash_dir), '.ccache_file_hashes.lock')
     os.makedirs(hash_dir, exist_ok=True)
 
-    # Set sloppiness
+    # Set sloppiness (must match ccache.conf from setup-ccache-windows action)
     os.environ['CCACHE_SLOPPINESS'] = (
-        'include_file_mtime,pch_defines,time_macros,file_stat_matches,'
-        'clang_index_store,locale,random_seed'
+        'file_macro,include_file_ctime,include_file_mtime,pch_defines,'
+        'time_macros,file_stat_matches,clang_index_store,locale,random_seed'
     )
+
+    # Auto-detect compiler type from compiler basename to help ccache.
+    # When ccache is invoked from Python (not MSYS sh.exe), auto-detection
+    # may fail since the execution context is different.
+    if 'CCACHE_COMPILERTYPE' not in os.environ:
+        compiler_base = os.path.basename(compiler).lower()
+        if 'g++' in compiler_base or 'gcc' in compiler_base or 'mingw' in compiler_base:
+            os.environ['CCACHE_COMPILERTYPE'] = 'gcc'
+        elif 'clang' in compiler_base:
+            os.environ['CCACHE_COMPILERTYPE'] = 'clang'
+        elif 'nvcc' in compiler_base:
+            os.environ['CCACHE_COMPILERTYPE'] = 'nvcc'
+
+    # Enable ccache logging on Windows to diagnose preprocessing failures
+    if _IS_WINDOWS:
+        log_dir = os.path.join(build_dir, '.ccache_logs') if build_dir else None
+        if log_dir:
+            os.makedirs(log_dir, exist_ok=True)
+            os.environ['CCACHE_LOGFILE'] = os.path.join(log_dir, 'ccache.log')
 
     # Determine architecture for cache partitioning
     cuda_arch = extract_cuda_arch(args)
@@ -351,20 +370,24 @@ def main():
                         print(f"[smart_ccache] Unchanged: {source_file}", file=sys.stderr)
 
     # Expand response files (for nvcc/ccache compatibility)
+    # For GCC @file args: ccache handles these natively, so we pass them through.
+    # We only expand --options-file (nvcc-specific) since ccache doesn't understand those.
     expanded_args = []
     j = 0
     while j < len(args):
         arg = args[j]
         if arg == '--options-file' and j + 1 < len(args):
-            expanded_args.extend(expand_response_file(args[j + 1]))
+            rsp_path = args[j + 1]
+            if _IS_WINDOWS:
+                rsp_path = msys_to_windows_path(rsp_path)
+            expanded_args.extend(expand_response_file(rsp_path))
             j += 2
             continue
         if arg.startswith('--options-file='):
-            expanded_args.extend(expand_response_file(arg[len('--options-file='):]))
-            j += 1
-            continue
-        if arg.startswith('@') and len(arg) > 1 and os.path.isfile(arg[1:]):
-            expanded_args.extend(expand_response_file(arg[1:]))
+            rsp_path = arg[len('--options-file='):]
+            if _IS_WINDOWS:
+                rsp_path = msys_to_windows_path(rsp_path)
+            expanded_args.extend(expand_response_file(rsp_path))
             j += 1
             continue
         expanded_args.append(arg)
@@ -376,6 +399,11 @@ def main():
         compiler = msys_to_windows_path(compiler)
         converted_args = []
         for a in expanded_args:
+            # Convert @file response file paths
+            if a.startswith('@') and len(a) > 1:
+                rsp_path = a[1:]
+                converted_rsp = msys_to_windows_path(rsp_path)
+                a = '@' + converted_rsp
             # Convert paths in -I, -L, -isystem args
             for prefix in ('-I', '-L', '-isystem'):
                 if a.startswith(prefix + '/'):
@@ -400,14 +428,41 @@ def main():
     # On first invocation, log key details for diagnostics
     global _log_count
     _log_count += 1
-    if _log_count <= 2:
+    if _log_count <= _MAX_VERBOSE_LOGS:
         print(f"[smart_ccache] compiler: {compiler}", file=sys.stderr)
         print(f"[smart_ccache] ccache: {ccache_path}", file=sys.stderr)
         print(f"[smart_ccache] cwd: {os.getcwd()}", file=sys.stderr)
-        print(f"[smart_ccache] args ({len(expanded_args)}): {expanded_args[:5]}...", file=sys.stderr)
+        print(f"[smart_ccache] args ({len(expanded_args)}): {expanded_args[:8]}...", file=sys.stderr)
+        # Show @file args specifically
+        at_files = [a for a in expanded_args if a.startswith('@')]
+        if at_files:
+            print(f"[smart_ccache] @files: {at_files}", file=sys.stderr)
+            for af in at_files:
+                rsp = af[1:]
+                exists = os.path.isfile(rsp)
+                print(f"[smart_ccache]   {af} exists={exists}", file=sys.stderr)
+                if exists:
+                    try:
+                        with open(rsp, 'r') as rf:
+                            content = rf.read(500)
+                        print(f"[smart_ccache]   content: {content[:200]}", file=sys.stderr)
+                    except Exception as e:
+                        print(f"[smart_ccache]   read error: {e}", file=sys.stderr)
+        # Show source file
+        src = [a for a in expanded_args if os.path.splitext(a)[1].lower() in _SOURCE_EXTENSIONS]
+        if src:
+            print(f"[smart_ccache] source: {src}", file=sys.stderr)
+        if _IS_WINDOWS:
+            print(f"[smart_ccache] PATH (first 3): {os.environ.get('PATH', '').split(os.pathsep)[:3]}", file=sys.stderr)
+            print(f"[smart_ccache] CCACHE_COMPILERTYPE: {os.environ.get('CCACHE_COMPILERTYPE', 'unset')}", file=sys.stderr)
 
-    result = subprocess.run(cmd)
-    sys.exit(result.returncode)
+    # Use os.execvp on Unix (replaces this process, like bash exec) or
+    # subprocess.run on Windows (execvp doesn't work reliably on Windows).
+    if _IS_WINDOWS:
+        result = subprocess.run(cmd)
+        sys.exit(result.returncode)
+    else:
+        os.execvp(cmd[0], cmd)
 
 
 if __name__ == '__main__':
