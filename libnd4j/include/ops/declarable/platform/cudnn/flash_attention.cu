@@ -39,7 +39,9 @@
   }
 #endif
 
-#if CUDNN_VERSION >= 8900
+// TODO: Full flash attention implementation disabled pending nvcc compilation fix.
+// The PLATFORM_IMPL registrator fails to recognize the declared class type in nvcc.
+#if 0 // CUDNN_VERSION >= 8900
 
 namespace sd {
 namespace ops {
