@@ -22,42 +22,7 @@ import re
 import subprocess
 import zlib
 
-# Portable file locking
-try:
-    import fcntl as _fcntl
-except ImportError:
-    _fcntl = None
-
-try:
-    import msvcrt as _msvcrt
-except ImportError:
-    _msvcrt = None
-
-
-def _lock_file(f, exclusive=True):
-    """Acquire a file lock (shared or exclusive), cross-platform."""
-    if _fcntl is not None:
-        op = _fcntl.LOCK_EX if exclusive else _fcntl.LOCK_SH
-        _fcntl.flock(f.fileno(), op)
-    elif _msvcrt is not None:
-        import struct
-        # Lock 1 byte at position 0
-        if exclusive:
-            _msvcrt.locking(f.fileno(), _msvcrt.LK_LOCK, 1)
-        else:
-            # msvcrt doesn't have shared locks; use exclusive
-            _msvcrt.locking(f.fileno(), _msvcrt.LK_LOCK, 1)
-
-
-def _unlock_file(f):
-    """Release a file lock, cross-platform."""
-    if _fcntl is not None:
-        _fcntl.flock(f.fileno(), _fcntl.LOCK_UN)
-    elif _msvcrt is not None:
-        try:
-            _msvcrt.locking(f.fileno(), _msvcrt.LK_UNLCK, 1)
-        except OSError:
-            pass
+    # No file locking needed — per-file hash storage eliminates contention
 
 
 _SOURCE_EXTENSIONS = {'.cpp', '.c', '.cc', '.cxx', '.cu'}
@@ -152,45 +117,38 @@ def find_source_file(args):
     return None
 
 
-def read_hash_cache(cache_path, lock_path):
-    """Read the hash cache file, returning a dict of {filepath: hash}."""
-    cache = {}
-    if not os.path.isfile(cache_path):
-        return cache
+def _hash_file_path(cache_dir, source_file):
+    """Get the per-source-file hash cache path.
+
+    Uses a stable hash of the source path to avoid filesystem issues with
+    long paths or special characters. Each source file gets its own hash
+    file, eliminating all locking contention.
+    """
+    # Use CRC32 of the path for a short, stable filename
+    path_hash = zlib.crc32(source_file.encode('utf-8')) & 0xffffffff
+    return os.path.join(cache_dir, f"{path_hash:08x}.hash")
+
+
+def read_stored_hash(cache_dir, source_file):
+    """Read the stored hash for a single source file."""
+    hash_path = _hash_file_path(cache_dir, source_file)
     try:
-        with open(lock_path, 'a+') as lf:
-            _lock_file(lf, exclusive=False)
-            try:
-                with open(cache_path, 'r', encoding='utf-8', errors='replace') as f:
-                    for line in f:
-                        line = line.strip()
-                        idx = line.find(':')
-                        if idx > 0:
-                            cache[line[:idx]] = line[idx + 1:]
-            finally:
-                _unlock_file(lf)
+        if os.path.isfile(hash_path):
+            with open(hash_path, 'r', encoding='utf-8') as f:
+                return f.read().strip()
     except OSError:
         pass
-    return cache
+    return ''
 
 
-def update_hash_cache(cache_path, lock_path, filepath, new_hash):
-    """Update a single entry in the hash cache file."""
+def write_stored_hash(cache_dir, source_file, content_hash):
+    """Write the hash for a single source file."""
+    hash_path = _hash_file_path(cache_dir, source_file)
     try:
-        with open(lock_path, 'a+') as lf:
-            _lock_file(lf, exclusive=True)
-            try:
-                lines = []
-                if os.path.isfile(cache_path):
-                    with open(cache_path, 'r', encoding='utf-8', errors='replace') as f:
-                        lines = [l for l in f.readlines() if not l.startswith(filepath + ':')]
-                lines.append(f"{filepath}:{new_hash}\n")
-                with open(cache_path, 'w', encoding='utf-8') as f:
-                    f.writelines(lines)
-            finally:
-                _unlock_file(lf)
+        with open(hash_path, 'w', encoding='utf-8') as f:
+            f.write(content_hash)
     except OSError as e:
-        print(f"[smart_ccache] WARNING: failed to update hash cache: {e}", file=sys.stderr)
+        print(f"[smart_ccache] WARNING: failed to write hash: {e}", file=sys.stderr)
 
 
 def expand_response_file(rsp_path):
@@ -290,7 +248,6 @@ def main():
     if not build_dir:
         build_dir = os.getcwd()
 
-    lock_path = os.path.join(os.path.dirname(hash_dir), '.ccache_file_hashes.lock')
     os.makedirs(hash_dir, exist_ok=True)
 
     # Set sloppiness (must match ccache.conf from setup-ccache-windows action)
@@ -311,26 +268,22 @@ def main():
         elif 'nvcc' in compiler_base:
             os.environ['CCACHE_COMPILERTYPE'] = 'nvcc'
 
-    # Note: Do NOT set CCACHE_LOGFILE here — parallel compilations writing to the
-    # same log file causes contention and deadlocks. Use SD_CCACHE_DEBUG to enable
-    # per-invocation stderr logging instead.
-
     # Determine architecture for cache partitioning
     cuda_arch = extract_cuda_arch(args)
 
-    # Segment/shape keys from environment
+    # Per-file hash cache directory (includes segment/shape/arch for partitioning)
     segment_key = re.sub(r'[^A-Za-z0-9_.\-]', '_',
                          os.environ.get('SD_SMART_CCACHE_SEGMENT', 'default'))
     shape_key = re.sub(r'[^A-Za-z0-9_.\-]', '_',
                        os.environ.get('SD_SMART_CCACHE_SHAPE_KEY', 'base'))
-
     if cuda_arch:
-        cache_file = os.path.join(hash_dir, f"{segment_key}__{shape_key}__cuda_sm_{cuda_arch}")
+        cache_subdir = os.path.join(hash_dir, f"{segment_key}__{shape_key}__cuda_sm_{cuda_arch}")
     else:
-        cache_file = os.path.join(hash_dir, f"{segment_key}__{shape_key}__default")
+        cache_subdir = os.path.join(hash_dir, f"{segment_key}__{shape_key}__default")
+    os.makedirs(cache_subdir, exist_ok=True)
 
     if debug:
-        print(f"[smart_ccache] cache_file={cache_file}", file=sys.stderr)
+        print(f"[smart_ccache] cache_dir={cache_subdir}", file=sys.stderr)
         if cuda_arch:
             print(f"[smart_ccache] CUDA arch: sm_{cuda_arch}", file=sys.stderr)
 
@@ -346,8 +299,7 @@ def main():
         else:
             current_hash = compute_file_hash(source_file)
             if current_hash:
-                cache = read_hash_cache(cache_file, lock_path)
-                stored_hash = cache.get(source_file, '')
+                stored_hash = read_stored_hash(cache_subdir, source_file)
 
                 if stored_hash and current_hash != stored_hash:
                     # File CHANGED — force recompile
@@ -355,12 +307,12 @@ def main():
                         print(f"[smart_ccache] CHANGED, forcing recache: {source_file}",
                               file=sys.stderr)
                     os.environ['CCACHE_RECACHE'] = '1'
-                    update_hash_cache(cache_file, lock_path, source_file, current_hash)
+                    write_stored_hash(cache_subdir, source_file, current_hash)
                 elif not stored_hash:
                     # NEW file — let ccache try, record hash
                     if debug:
                         print(f"[smart_ccache] New file: {source_file}", file=sys.stderr)
-                    update_hash_cache(cache_file, lock_path, source_file, current_hash)
+                    write_stored_hash(cache_subdir, source_file, current_hash)
                 else:
                     # Unchanged
                     if debug:
