@@ -64,6 +64,33 @@ _SOURCE_EXTENSIONS = {'.cpp', '.c', '.cc', '.cxx', '.cu'}
 _MAX_VERBOSE_LOGS = 5
 _log_count = 0
 
+# Detect if we're on Windows (MSYS2 environment)
+_IS_WINDOWS = sys.platform == 'win32' or os.name == 'nt'
+
+
+def msys_to_windows_path(path):
+    """Convert MSYS2-style paths (/c/...) to Windows paths (C:/...).
+
+    When MSYS sh.exe invokes a native Windows Python, it translates some
+    argument paths but not all. This ensures any remaining MSYS paths are
+    converted to Windows format that native Windows tools can resolve.
+    """
+    if not _IS_WINDOWS or not path:
+        return path
+    # /c/... -> C:/...
+    m = re.match(r'^/([a-zA-Z])(/.*)', path)
+    if m:
+        return m.group(1).upper() + ':' + m.group(2)
+    # /mingw64/... -> C:/msys64/mingw64/... (common MSYS2 prefix)
+    if path.startswith('/mingw64/') or path.startswith('/mingw32/'):
+        msys_root = os.environ.get('MSYSTEM_PREFIX', 'C:/msys64' + path[:path.index('/', 1)])
+        # Try to find the MSYS root
+        for root in ['C:/msys64', 'D:/msys64', os.environ.get('MSYS2_ROOT', '')]:
+            if root and os.path.isdir(root + path):
+                return root + path
+        return path  # Can't resolve, return as-is
+    return path
+
 
 def compute_file_hash(path):
     """Fast content hash using CRC32 + file size (mirrors cksum behavior)."""
@@ -111,8 +138,13 @@ def find_source_file(args):
     for arg in args:
         ext = os.path.splitext(arg)[1].lower()
         if ext in _SOURCE_EXTENSIONS:
+            # Try as-is
             if os.path.isfile(arg):
                 return os.path.abspath(arg)
+            # Try with MSYS path conversion
+            converted = msys_to_windows_path(arg)
+            if converted != arg and os.path.isfile(converted):
+                return os.path.abspath(converted)
             # Try relative to cwd
             full = os.path.join(os.getcwd(), arg)
             if os.path.isfile(full):
@@ -338,6 +370,23 @@ def main():
         expanded_args.append(arg)
         j += 1
 
+    # Convert MSYS paths to Windows paths for native Windows tools
+    if _IS_WINDOWS:
+        ccache_path = msys_to_windows_path(ccache_path) if ccache_path else ccache_path
+        compiler = msys_to_windows_path(compiler)
+        converted_args = []
+        for a in expanded_args:
+            # Convert paths in -I, -L, -isystem args
+            for prefix in ('-I', '-L', '-isystem'):
+                if a.startswith(prefix + '/'):
+                    a = prefix + msys_to_windows_path(a[len(prefix):])
+                    break
+            # Convert standalone paths
+            if a.startswith('/') and not a.startswith('//'):
+                a = msys_to_windows_path(a)
+            converted_args.append(a)
+        expanded_args = converted_args
+
     # Build command
     cmd = []
     if ccache_path:
@@ -347,6 +396,15 @@ def main():
 
     if debug:
         print(f"[smart_ccache] cmd ({len(cmd)} args): {' '.join(cmd[:10])}...", file=sys.stderr)
+
+    # On first invocation, log key details for diagnostics
+    global _log_count
+    _log_count += 1
+    if _log_count <= 2:
+        print(f"[smart_ccache] compiler: {compiler}", file=sys.stderr)
+        print(f"[smart_ccache] ccache: {ccache_path}", file=sys.stderr)
+        print(f"[smart_ccache] cwd: {os.getcwd()}", file=sys.stderr)
+        print(f"[smart_ccache] args ({len(expanded_args)}): {expanded_args[:5]}...", file=sys.stderr)
 
     result = subprocess.run(cmd)
     sys.exit(result.returncode)
