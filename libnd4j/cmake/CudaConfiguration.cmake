@@ -514,7 +514,7 @@ function(build_cuda_compiler_flags CUDA_ARCH_FLAGS)
             unset(CMAKE_CUDA_HOST_COMPILER)
         endif()
 
-        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17 -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/Zc:preprocessor-")
+        set(LOCAL_CUDA_FLAGS "${LOCAL_CUDA_FLAGS} -Xcompiler=/std:c++17 -Xcompiler=/bigobj -Xcompiler=/EHsc -Xcompiler=/Zc:preprocessor")
         set(CMAKE_CXX_FLAGS "" PARENT_SCOPE)
     else()
         # Unix/Linux
