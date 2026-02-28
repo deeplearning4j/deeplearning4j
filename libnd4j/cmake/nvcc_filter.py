@@ -46,6 +46,20 @@ def should_filter_arg(arg):
         return True
     if arg in ('-FS', '/FS'):
         return True
+    # Filter bare MSVC flags that leak from CMAKE_CXX_FLAGS into CUDA response files.
+    # These are not valid nvcc flags — nvcc interprets /Flag as an input file, causing
+    # "A single input file is required" errors.
+    # Note: flags already wrapped in -Xcompiler are valid and kept.
+    if arg in ('/Gy', '/bigobj', '/EHsc', '/GR', '/MD', '/MDd', '/MT', '/MTd',
+               '/O1', '/O2', '/Ob0', '/Ob1', '/Ob2', '/Od', '/Oi', '/Os', '/Ot',
+               '/Ox', '/RTC1', '/RTCs', '/RTCu', '/W0', '/W1', '/W2', '/W3', '/W4',
+               '/WX', '/Zi', '/ZI', '/Z7', '/GL', '/Gm', '/Gd', '/Gr', '/Gz'):
+        return True
+    if arg.startswith('/Zc:'):
+        return True
+    # Filter GCC flags that are not valid for nvcc
+    if arg.startswith('-ftemplate-depth='):
+        return True
     return False
 
 
