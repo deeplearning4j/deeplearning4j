@@ -54,59 +54,13 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
 
         if(_SD_IS_WINDOWS)
             # ================================================================
-            # Windows: Use Python-based smart ccache wrapper (smart_ccache.py)
-            # Bash scripts can't be invoked via CreateProcess on Windows.
-            # We generate a .cmd wrapper so CMAKE_*_COMPILER_LAUNCHER is a
-            # single file path — multi-element lists break when passed to
-            # ExternalProject via -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=...
+            # Windows: Smart ccache wrapper not supported (bash scripts can't
+            # run via CreateProcess, and .cmd wrappers break MSYS2 path
+            # translation causing 100% preprocessing failures in ccache).
+            # Plain ccache is used directly — set by CMakeLists.txt before
+            # this module is included.
             # ================================================================
-            find_package(Python3 COMPONENTS Interpreter QUIET)
-            if(NOT Python3_FOUND)
-                find_program(Python3_EXECUTABLE NAMES python3 python)
-            endif()
-
-            set(_SMART_CCACHE_PY "${CMAKE_CURRENT_LIST_DIR}/smart_ccache.py")
-            if(Python3_EXECUTABLE AND EXISTS "${_SMART_CCACHE_PY}")
-                set(_SMART_CCACHE_DEBUG_FLAG "")
-                if(SD_CCACHE_DEBUG)
-                    set(_SMART_CCACHE_DEBUG_FLAG " --debug")
-                endif()
-
-                # Generate a .cmd wrapper that invokes Python + smart_ccache.py
-                # with all the baked-in arguments. This way the launcher is a
-                # single executable path that works with ExternalProject too.
-                set(_SMART_CCACHE_CMD "${CMAKE_BINARY_DIR}/smart_ccache.cmd")
-                # Convert paths to native Windows format for the .cmd file
-                file(TO_NATIVE_PATH "${Python3_EXECUTABLE}" _PY_NATIVE)
-                file(TO_NATIVE_PATH "${_SMART_CCACHE_PY}" _SCRIPT_NATIVE)
-                file(TO_NATIVE_PATH "${CCACHE_PATH}" _CCACHE_NATIVE)
-                file(TO_NATIVE_PATH "${FILE_HASH_CACHE_DIR}" _HASHDIR_NATIVE)
-                file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}" _BUILDDIR_NATIVE)
-                file(WRITE "${_SMART_CCACHE_CMD}"
-"@echo off\r
-\"${_PY_NATIVE}\" \"${_SCRIPT_NATIVE}\" --ccache=\"${_CCACHE_NATIVE}\" --hash-dir=\"${_HASHDIR_NATIVE}\" --build-dir=\"${_BUILDDIR_NATIVE}\"${_SMART_CCACHE_DEBUG_FLAG} -- %*\r
-")
-
-                # Set single-file launcher for C/CXX
-                set(CMAKE_C_COMPILER_LAUNCHER "${_SMART_CCACHE_CMD}"
-                    CACHE STRING "C compiler launcher (smart ccache via .cmd)" FORCE)
-                set(CMAKE_CXX_COMPILER_LAUNCHER "${_SMART_CCACHE_CMD}"
-                    CACHE STRING "CXX compiler launcher (smart ccache via .cmd)" FORCE)
-                # CUDA launcher uses nvcc_filter.py chain (set in CMakeLists.txt)
-                # so we don't override it here — nvcc_filter.py already handles
-                # ccache integration and response file expansion for CUDA.
-
-                message(STATUS "Smart ccache (Windows): ${_SMART_CCACHE_CMD}")
-                message(STATUS "  Python: ${Python3_EXECUTABLE}")
-                message(STATUS "  Script: ${_SMART_CCACHE_PY}")
-                message(STATUS "  Hash dir: ${FILE_HASH_CACHE_DIR}")
-            else()
-                if(NOT Python3_EXECUTABLE)
-                    message(STATUS "Smart ccache SKIPPED on Windows: Python3 not found")
-                else()
-                    message(STATUS "Smart ccache SKIPPED on Windows: ${_SMART_CCACHE_PY} not found")
-                endif()
-            endif()
+            message(STATUS "Smart ccache SKIPPED on Windows (plain ccache used directly)")
         else()
         # ================================================================
         # Linux/macOS: Use bash-based smart ccache wrapper (smart_ccache.sh)
