@@ -33,7 +33,9 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
+#if !defined(_MSC_VER)
 #include <cxxabi.h>  // For __cxa_demangle (kernel name demangling)
+#endif
 
 namespace sd {
 namespace cuda {
@@ -503,6 +505,7 @@ static std::string memcpyKindName(cudaMemcpyKind kind) {
 static std::string demangleKernelName(const char* mangled) {
     if (mangled == nullptr || mangled[0] == '\0') return "<unknown>";
 
+#if !defined(_MSC_VER)
     int status = 0;
     char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
     if (status == 0 && demangled != nullptr) {
@@ -515,7 +518,8 @@ static std::string demangleKernelName(const char* mangled) {
         }
         return result;
     }
-    // Demangling failed — return raw name
+#endif
+    // Demangling not available or failed — return raw name
     return std::string(mangled);
 }
 
