@@ -209,13 +209,13 @@ def expand_response_file(rsp_path):
             lambda m: '-Xcompiler=' + m.group(1).strip().replace(' ', ','),
             line
         )
-        # Simple tokenizer respecting quotes
+        # Simple tokenizer respecting quotes (strips quotes — they're
+        # shell-level artifacts that must be removed for direct subprocess args)
         current = []
         in_quote = False
         for ch in line:
             if ch == '"':
                 in_quote = not in_quote
-                current.append(ch)
             elif ch == ' ' and not in_quote:
                 if current:
                     tokens.append(''.join(current))

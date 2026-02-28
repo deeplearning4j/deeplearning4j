@@ -88,7 +88,7 @@ def parse_response_file(rsp_path):
         print(f"[nvcc_filter] === Response file: {rsp_path} ===", file=sys.stderr)
         print(f"[nvcc_filter] Line count: {len(lines)}", file=sys.stderr)
         for i, line in enumerate(lines[:30]):
-            print(f"[nvcc_filter]   L{i}: {line[:300]}", file=sys.stderr)
+            print(f"[nvcc_filter]   L{i}: {line[:2000]}", file=sys.stderr)
         if len(lines) > 30:
             print(f"[nvcc_filter]   ... ({len(lines) - 30} more lines)", file=sys.stderr)
 
@@ -107,14 +107,17 @@ def parse_response_file(rsp_path):
         if line != orig_line:
             modified = True
 
-        # Split line into tokens (respecting quotes)
+        # Split line into tokens (respecting quotes, stripping them)
+        # Quotes are shell-level artifacts; when expanding args for direct
+        # subprocess invocation, they must be removed to avoid literal quotes
+        # confusing nvcc (e.g., -I"path" -> -Ipath as a direct arg).
         tokens = []
         current = []
         in_quote = False
         for ch in line:
             if ch == '"':
                 in_quote = not in_quote
-                current.append(ch)
+                # Don't append the quote character — strip it
             elif ch == ' ' and not in_quote:
                 if current:
                     tokens.append(''.join(current))
@@ -270,7 +273,9 @@ def main():
         result = subprocess.run(cmd)
         if result.returncode != 0:
             print(f"\n[nvcc_filter] === NVCC FAILED (exit {result.returncode}) ===", file=sys.stderr)
-            print(f"[nvcc_filter] Command ({len(cmd)} args): {' '.join(cmd[:15])}{'...' if len(cmd) > 15 else ''}", file=sys.stderr)
+            print(f"[nvcc_filter] Full command ({len(cmd)} args):", file=sys.stderr)
+            for ci, ca in enumerate(cmd):
+                print(f"[nvcc_filter]   [{ci}] {ca}", file=sys.stderr)
             if ccache_path:
                 print(f"[nvcc_filter] ccache was: {ccache_path}", file=sys.stderr)
             for tf in temp_files:
