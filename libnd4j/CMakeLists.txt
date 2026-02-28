@@ -237,6 +237,12 @@ if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
             if(CCACHE_PROGRAM AND NOT CCACHE_SKIP_REASON)
                 set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}" "--ccache=${CCACHE_PROGRAM}"
                     CACHE STRING "CUDA compiler launcher (nvcc filter + ccache)" FORCE)
+                # Disable response files for CUDA includes — ccache can't parse them.
+                # This forces CMake to put include dirs on the command line directly.
+                set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES 0)
+                set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS 0)
+                # Tell ccache this is nvcc (helps with arg parsing)
+                set(ENV{CCACHE_COMPILERTYPE} "nvcc")
                 message(STATUS "Windows CUDA: nvcc_filter.py + ccache enabled (${CCACHE_PROGRAM})")
             else()
                 set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}"

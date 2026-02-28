@@ -113,6 +113,7 @@ runs:
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
+          Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERTYPE=nvcc"
 
           # Verify ccache is accessible
           & $ccacheExe --version
