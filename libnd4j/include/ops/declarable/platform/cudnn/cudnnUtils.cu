@@ -54,9 +54,9 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv2dCUDNNP
   uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
 
   if (isNCHW)
-    (*uNewInput)({0, 0, 0, 0, 0, input->sizeAt(2), 0, input->sizeAt(3)}).assign(input);
+    (*uNewInput)({0, 0, 0, 0, 0, input->sizeAt(2), 0, input->sizeAt(3)}).assign(*input);
   else
-    (*uNewInput)({0, 0, 0, input->sizeAt(1), 0, input->sizeAt(2), 0, 0}).assign(input);
+    (*uNewInput)({0, 0, 0, input->sizeAt(1), 0, input->sizeAt(2), 0, 0}).assign(*input);
 
   if (gradI != nullptr)
     uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
@@ -91,9 +91,9 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv3dCUDNNP
   uNewInput.reset(new NDArray(input->ordering(), newShape, input->dataType(), input->getContext()));
 
   if (isNCDHW)
-    (*uNewInput)({0, 0, 0, 0, 0, input->sizeAt(2), 0, input->sizeAt(3), 0, input->sizeAt(4)}).assign(input);
+    (*uNewInput)({0, 0, 0, 0, 0, input->sizeAt(2), 0, input->sizeAt(3), 0, input->sizeAt(4)}).assign(*input);
   else
-    (*uNewInput)({0, 0, 0, input->sizeAt(1), 0, input->sizeAt(2), 0, input->sizeAt(3), 0, 0}).assign(input);
+    (*uNewInput)({0, 0, 0, input->sizeAt(1), 0, input->sizeAt(2), 0, input->sizeAt(3), 0, 0}).assign(*input);
 
   if (gradI != nullptr)
     uNewGradI.reset(new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext()));
