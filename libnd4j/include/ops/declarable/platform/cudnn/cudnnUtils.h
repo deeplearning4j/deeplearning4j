@@ -210,6 +210,7 @@ DECLARE_PLATFORM(layer_norm_bp, ENGINE_CUDA);
 // Attention operations
 DECLARE_PLATFORM(dot_product_attention, ENGINE_CUDA);
 DECLARE_PLATFORM(multi_head_attention, ENGINE_CUDA);
+DECLARE_PLATFORM(flash_attention, ENGINE_CUDA);
 
 // Spatial transformer operations
 DECLARE_PLATFORM(affine_grid, ENGINE_CUDA);

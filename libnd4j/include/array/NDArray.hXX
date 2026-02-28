@@ -2349,7 +2349,20 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     template NDArray &NDArray::operator=(GET_SECOND(T) scalar); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES_ALL),OPERATOR_TEMPLATE)
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template NDArray &NDArray::operator=(bool scalar);
+template NDArray &NDArray::operator=(int8_t scalar);
+template NDArray &NDArray::operator=(int16_t scalar);
+template NDArray &NDArray::operator=(int32_t scalar);
+template NDArray &NDArray::operator=(sd::LongType scalar);
+template NDArray &NDArray::operator=(uint8_t scalar);
+template NDArray &NDArray::operator=(uint16_t scalar);
+template NDArray &NDArray::operator=(uint32_t scalar);
+template NDArray &NDArray::operator=(uint64_t scalar);
+template NDArray &NDArray::operator=(float16 scalar);
+template NDArray &NDArray::operator=(float scalar);
+template NDArray &NDArray::operator=(double scalar);
+template NDArray &NDArray::operator=(bfloat16 scalar);
 
 
 
@@ -2403,7 +2416,20 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     template SD_LIB_EXPORT void NDArray::assign( GET_SECOND(T) &value, bool allowParallelism); \
 ))
 
-ITERATE_LIST((SD_COMMON_TYPES_ALL),ASSIGN_SCALAR)
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::assign(bool &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(int8_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(int16_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(int32_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(sd::LongType &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(uint8_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(uint16_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(uint32_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(uint64_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(float16 &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(float &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(double &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign(bfloat16 &value, bool allowParallelism);
 
 //////////////////////////////////////////////////////////////////////////
 NDArray *NDArray::detach() {
@@ -5723,7 +5749,19 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const GET_SECOND(T) scalar, NDArray *target, ExtraArguments *extraParams); \
 ))
-ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE__APPLY_SCALAR_BOOL)
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const float16 scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const bfloat16 scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const float scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const double scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const int8_t scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const uint8_t scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const int16_t scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const int32_t scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const sd::LongType scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const uint16_t scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const uint32_t scalar, NDArray *target, ExtraArguments *extraParams);
+template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, const uint64_t scalar, NDArray *target, ExtraArguments *extraParams);
 
 template <>
 SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::BoolOps op, NDArray *scalar, NDArray *target,
@@ -6113,7 +6151,20 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const GET_SECOND(T) value); \
 ))
-ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_I_J);
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const bool value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const int8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const int16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const int32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const uint8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const uint16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const uint32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const uint64_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const float16 value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const float value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const double value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const bfloat16 value);
 
 //////////////////////////////////////////////////////////////////////////
 // This method sets value in 3D matrix to position i,j,k
@@ -6143,7 +6194,19 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const GET_SECOND(T) value); \
 ))
-ITERATE_LIST((SD_NUMERIC_TYPES),INSTANTIATE_P_I_J_K);
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const float16 value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const bfloat16 value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const float value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const double value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const int8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const uint8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const int16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const int32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const uint16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const uint32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const uint64_t value);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -6169,7 +6232,20 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const GET_SECOND(T) value); \
 ))
-ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_I_J_K_L);
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const bool value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const int8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const int16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const int32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const sd::LongType value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const uint8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const uint16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const uint32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const uint64_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const float16 value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const float value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const double value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, const bfloat16 value);
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -6361,7 +6437,20 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     CONCAT(EXPAND_TYPE_APPLY_, GET_SECOND(T))(INSTANTIATE_P_FOR_TYPE) \
 ))
-ITERATE_LIST((SD_COMMON_TYPES_ALL),INSTANTIATE_P_SINGLE);
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const bool value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const int8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const int16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const int32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const uint8_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const uint16_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const uint32_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const uint64_t value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const float16 value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const float value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const double value);
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const bfloat16 value);
 
 
 // In NDArray.cpp, wrap the string template instantiations:
@@ -6399,7 +6488,8 @@ EVAL(SD_IF_SINGLE_ALIAS_COMPILED_DECL( \
     GET_FIRST(T), \
     template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value); \
 ))
-ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
+// Explicit instantiations (replacing ITERATE_LIST for MSVC compatibility)
+template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const std::string value);
 #undef INSTANTIATE_P_SINGLE_STRING
 
 // Explicit instantiations for u16string and u32string that StringUtils uses
