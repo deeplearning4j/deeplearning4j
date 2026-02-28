@@ -18,8 +18,7 @@ option(SD_SMART_CCACHE "Enable smart ccache wrapper that detects file changes" O
 option(SD_CCACHE_DEBUG "Enable debug output for smart ccache" OFF)
 
 # Only proceed if we have ccache and smart mode is enabled
-# Skip on Windows: the wrapper is a bash script that cannot be executed via CreateProcess.
-# We detect Windows robustly by checking if cmd.exe exists, since WIN32/MSVC/CMAKE_HOST_SYSTEM_NAME
+# Detect Windows robustly by checking if cmd.exe exists, since WIN32/MSVC/CMAKE_HOST_SYSTEM_NAME
 # may not be set correctly under MSYS2/MinGW cmake.
 set(_SD_IS_WINDOWS FALSE)
 if(WIN32 OR MSVC OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
@@ -33,14 +32,12 @@ if(NOT _SD_IS_WINDOWS)
     endif()
 endif()
 
-if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT _SD_IS_WINDOWS)
+if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
     # Check if the launcher is ccache
     get_filename_component(LAUNCHER_NAME "${CMAKE_CXX_COMPILER_LAUNCHER}" NAME)
     if(LAUNCHER_NAME MATCHES "ccache")
         message(STATUS "Enabling smart ccache wrapper for change detection")
 
-        # Create the wrapper script
-        set(SMART_CCACHE_SCRIPT "${CMAKE_BINARY_DIR}/smart_ccache.sh")
         set(CCACHE_PATH "${CMAKE_CXX_COMPILER_LAUNCHER}")
 
         # Base directory for hash caches (separate files per architecture)
@@ -54,6 +51,54 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER AND NOT _SD_IS_WINDOWS)
 
         # Create hash cache directory
         file(MAKE_DIRECTORY "${FILE_HASH_CACHE_DIR}")
+
+        if(_SD_IS_WINDOWS)
+            # ================================================================
+            # Windows: Use Python-based smart ccache wrapper (smart_ccache.py)
+            # Bash scripts can't be invoked via CreateProcess on Windows.
+            # ================================================================
+            find_package(Python3 COMPONENTS Interpreter QUIET)
+            if(NOT Python3_FOUND)
+                find_program(Python3_EXECUTABLE NAMES python3 python)
+            endif()
+
+            set(_SMART_CCACHE_PY "${CMAKE_CURRENT_LIST_DIR}/smart_ccache.py")
+            if(Python3_EXECUTABLE AND EXISTS "${_SMART_CCACHE_PY}")
+                set(_SMART_CCACHE_DEBUG_FLAG "")
+                if(SD_CCACHE_DEBUG)
+                    set(_SMART_CCACHE_DEBUG_FLAG "--debug")
+                endif()
+
+                # For C/CXX compilers
+                set(CMAKE_C_COMPILER_LAUNCHER
+                    "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
+                    "--ccache=${CCACHE_PATH}" "--hash-dir=${FILE_HASH_CACHE_DIR}"
+                    "--build-dir=${CMAKE_BINARY_DIR}" ${_SMART_CCACHE_DEBUG_FLAG} "--"
+                    CACHE STRING "C compiler launcher (smart ccache via Python)" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER
+                    "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
+                    "--ccache=${CCACHE_PATH}" "--hash-dir=${FILE_HASH_CACHE_DIR}"
+                    "--build-dir=${CMAKE_BINARY_DIR}" ${_SMART_CCACHE_DEBUG_FLAG} "--"
+                    CACHE STRING "CXX compiler launcher (smart ccache via Python)" FORCE)
+                # CUDA launcher uses nvcc_filter.py chain (set in CMakeLists.txt)
+                # so we don't override it here — nvcc_filter.py already handles
+                # ccache integration and response file expansion for CUDA.
+
+                message(STATUS "Smart ccache (Windows/Python): ${_SMART_CCACHE_PY}")
+                message(STATUS "  Python: ${Python3_EXECUTABLE}")
+                message(STATUS "  Hash dir: ${FILE_HASH_CACHE_DIR}")
+            else()
+                if(NOT Python3_EXECUTABLE)
+                    message(STATUS "Smart ccache SKIPPED on Windows: Python3 not found")
+                else()
+                    message(STATUS "Smart ccache SKIPPED on Windows: ${_SMART_CCACHE_PY} not found")
+                endif()
+            endif()
+        else()
+        # ================================================================
+        # Linux/macOS: Use bash-based smart ccache wrapper (smart_ccache.sh)
+        # ================================================================
+        set(SMART_CCACHE_SCRIPT "${CMAKE_BINARY_DIR}/smart_ccache.sh")
 
         # Generate wrapper script
         # Note: BUILD_DIR is used to detect generated files which should skip mtime check
@@ -316,6 +361,7 @@ exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
 
         message(STATUS "Smart ccache wrapper: ${SMART_CCACHE_SCRIPT}")
         message(STATUS "Smart ccache wrapper enabled for C, CXX, and CUDA compilers")
+        endif() # end else (Linux/macOS bash wrapper)
 
         # Provide a target to clear ALL hash caches (forces full recompile check)
         add_custom_target(clear_ccache_hashes
