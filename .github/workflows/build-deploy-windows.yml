@@ -387,21 +387,6 @@ jobs:
           echo === ccache stats after build ===
           %USERPROFILE%\ccache\ccache.exe -sv
 
-      - name: Show smart_ccache debug logs
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          Write-Host "=== smart_ccache debug logs ==="
-          $logDir = "$env:GITHUB_WORKSPACE\libnd4j\blasbuild\cpu\.ccache_logs"
-          if (Test-Path "$logDir\ccache.log") {
-            Write-Host "--- ccache.log (first 200 lines) ---"
-            Get-Content "$logDir\ccache.log" -TotalCount 200
-          } else {
-            Write-Host "No ccache.log found at $logDir"
-            Get-ChildItem -Path "$env:GITHUB_WORKSPACE\libnd4j\blasbuild" -Recurse -Filter "*.log" -ErrorAction SilentlyContinue | Select-Object FullName
-          }
-
       - name: Save ccache (always)
         if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
         uses: actions/cache/save@v4

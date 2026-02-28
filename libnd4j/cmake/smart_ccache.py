@@ -61,7 +61,7 @@ def _unlock_file(f):
 
 
 _SOURCE_EXTENSIONS = {'.cpp', '.c', '.cc', '.cxx', '.cu'}
-_MAX_VERBOSE_LOGS = 5
+_MAX_VERBOSE_LOGS = 2
 _log_count = 0
 
 # Detect if we're on Windows (MSYS2 environment)
@@ -311,12 +311,9 @@ def main():
         elif 'nvcc' in compiler_base:
             os.environ['CCACHE_COMPILERTYPE'] = 'nvcc'
 
-    # Enable ccache logging on Windows to diagnose preprocessing failures
-    if _IS_WINDOWS:
-        log_dir = os.path.join(build_dir, '.ccache_logs') if build_dir else None
-        if log_dir:
-            os.makedirs(log_dir, exist_ok=True)
-            os.environ['CCACHE_LOGFILE'] = os.path.join(log_dir, 'ccache.log')
+    # Note: Do NOT set CCACHE_LOGFILE here — parallel compilations writing to the
+    # same log file causes contention and deadlocks. Use SD_CCACHE_DEBUG to enable
+    # per-invocation stderr logging instead.
 
     # Determine architecture for cache partitioning
     cuda_arch = extract_cuda_arch(args)
