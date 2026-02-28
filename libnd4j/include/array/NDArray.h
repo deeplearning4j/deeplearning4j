@@ -1617,6 +1617,7 @@ struct TemplatedGetter {
       return v;
     } else {
       THROW_EXCEPTION("Invalid type conversion in TemplatedGetter");
+      return R{};  // unreachable, but silences MSVC C4716
     }
   }
 };
@@ -1632,6 +1633,16 @@ struct TemplatedGetter<bfloat16, float16> {
     auto b = reinterpret_cast<bfloat16 const *>(buffer);
     float intermediate = static_cast<float>(b[index]);
     auto v = static_cast<float16>(intermediate);
+    return v;
+  }
+};
+
+template <>
+struct TemplatedGetter<float16, bfloat16> {
+  static bfloat16 get(void  *buffer, LongType index) {
+    auto b = reinterpret_cast<float16 const *>(buffer);
+    float intermediate = static_cast<float>(b[index]);
+    auto v = static_cast<bfloat16>(intermediate);
     return v;
   }
 };

@@ -322,7 +322,7 @@ SD_KERNEL void printDeviceBufferKernel(void* buffer, sd::LongType offset, sd::Lo
   }
 }
 
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 // Wrapper function to launch the kernel
@@ -335,7 +335,7 @@ void launchPrintDeviceBufferKernel(void* buffer, sd::LongType offset, sd::LongTy
   cudaStreamSynchronize(*stream);
   sd::DebugHelper::checkErrorCode(stream, "printBufferDebug kernel failed");
 }
-BUILD_SINGLE_TEMPLATE( SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE( void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
 
 
 template <typename T>

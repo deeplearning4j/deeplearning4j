@@ -289,7 +289,7 @@ static void globalAvgPool3dCUDNN(const LaunchContext* context, NDArray* input, N
   int windowDims[3] = {D, H, W};
   int padding[3] = {0, 0, 0};
   int stride[3] = {1, 1, 1};
-  poolDesc.set(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, 3, windowDims, padding, stride);
+  poolDesc.set(CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING, CUDNN_PROPAGATE_NAN, 3, &windowDims[0], &padding[0], &stride[0]);
 
   // Scaling parameters
   const float alpha32 = 1.0f, beta32 = 0.0f;
@@ -354,7 +354,7 @@ static void globalMaxPool3dCUDNN(const LaunchContext* context, NDArray* input, N
   int windowDims[3] = {D, H, W};
   int padding[3] = {0, 0, 0};
   int stride[3] = {1, 1, 1};
-  poolDesc.set(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, 3, windowDims, padding, stride);
+  poolDesc.set(CUDNN_POOLING_MAX, CUDNN_PROPAGATE_NAN, 3, &windowDims[0], &padding[0], &stride[0]);
 
   // Scaling parameters
   const float alpha32 = 1.0f, beta32 = 0.0f;
