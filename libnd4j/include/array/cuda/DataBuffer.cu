@@ -197,11 +197,35 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
   return reinterpret_cast<void *>(type + offset);
 }
 
-#define PRIMARYOFFSET(T) template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(sd::LongType offset);
-ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
+// Explicit template instantiations for primaryAtOffset and specialAtOffset
+// (ITERATE_LIST macro doesn't work with MSVC old preprocessor on Windows CUDA)
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<bool>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<float16>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<bfloat16>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<float>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<double>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<int8_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<uint8_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<int16_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<int32_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<sd::LongType>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<uint16_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<uint32_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<uint64_t>(sd::LongType offset);
 
-#define SPECIALOFFSET(T) template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<GET_SECOND(T)>(sd::LongType offset);
-ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<bool>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<float16>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<bfloat16>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<float>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<double>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<int8_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<uint8_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<int16_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<int32_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<sd::LongType>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<uint16_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<uint32_t>(sd::LongType offset);
+template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<uint64_t>(sd::LongType offset);
 
 
 template <typename T>

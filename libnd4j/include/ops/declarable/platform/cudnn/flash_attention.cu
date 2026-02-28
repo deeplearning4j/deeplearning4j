@@ -95,7 +95,7 @@ static void flashAttentionCUDNN(const LaunchContext* context,
 
     // Create output in permuted format
     std::vector<LongType> outPermShape = {batch, numHeads, seqQ, headDim};
-    outPermuted = new NDArray('c', outPermShape, query->dataType(), const_cast<LaunchContext*>(context));
+    outPermuted = new NDArray('c', outPermShape, query->dataType(), query->getContext());
     needsPermute = true;
   } else {
     // For 3D, reshape to 4D: [batch, seq, dim] -> [batch, 1, seq, dim]

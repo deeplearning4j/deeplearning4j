@@ -306,12 +306,36 @@ LongType ConstantHelper::getCachedAmount(int deviceId) {
 
 // Explicit template instantiations for SpecialTypeConverter::convertGeneric
 // These are needed because BUILD_DOUBLE_SELECTOR expands to call these with (DOUBLE, SD_COMMON_TYPES) and (INT64, SD_COMMON_TYPES)
-#define INSTANTIATE_CONVERT_DOUBLE(T) template void SpecialTypeConverter::convertGeneric<double, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
-ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_DOUBLE)
-#undef INSTANTIATE_CONVERT_DOUBLE
+// #define INSTANTIATE_CONVERT_DOUBLE(T) template void SpecialTypeConverter::convertGeneric<double, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
+// ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_DOUBLE)
+template void SpecialTypeConverter::convertGeneric<double, bool>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, float16>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, bfloat16>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, float>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, double>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, int8_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, uint8_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, int16_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, int32_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, sd::LongType>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, uint16_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, uint32_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<double, uint64_t>(sd::Pointer*, void*, sd::LongType, void*);
 
-#define INSTANTIATE_CONVERT_LONG(T) template void SpecialTypeConverter::convertGeneric<LongType, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
-ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_LONG)
-#undef INSTANTIATE_CONVERT_LONG
+// #define INSTANTIATE_CONVERT_LONG(T) template void SpecialTypeConverter::convertGeneric<LongType, GET_SECOND(T)>(sd::Pointer*, void*, sd::LongType, void*);
+// ITERATE_LIST((SD_COMMON_TYPES), INSTANTIATE_CONVERT_LONG)
+template void SpecialTypeConverter::convertGeneric<LongType, bool>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, float16>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, bfloat16>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, float>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, double>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, int8_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, uint8_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, int16_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, int32_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, sd::LongType>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, uint16_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, uint32_t>(sd::Pointer*, void*, sd::LongType, void*);
+template void SpecialTypeConverter::convertGeneric<LongType, uint64_t>(sd::Pointer*, void*, sd::LongType, void*);
 
 }  // namespace sd

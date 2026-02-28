@@ -547,9 +547,11 @@ void processColumns(LongType currentRow, LongType rowNum, T *compoundBuf, LongTy
   };
   samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
 }
-#define INSTANTIATE_PROCESS_COLUMNS(T) template void processColumns<GET_SECOND(T)>(LongType currentRow, LongType rowNum, GET_SECOND(T) *compoundBuf, LongType const *compoundShape);
-ITERATE_LIST((SD_FLOAT_NATIVE), INSTANTIATE_PROCESS_COLUMNS)
-#undef INSTANTIATE_PROCESS_COLUMNS
+// #define INSTANTIATE_PROCESS_COLUMNS(T) template void processColumns<GET_SECOND(T)>(LongType currentRow, LongType rowNum, GET_SECOND(T) *compoundBuf, LongType const *compoundShape);
+// ITERATE_LIST((SD_FLOAT_NATIVE), INSTANTIATE_PROCESS_COLUMNS)
+template void processColumns<float>(LongType currentRow, LongType rowNum, float *compoundBuf, LongType const *compoundShape);
+template void processColumns<double>(LongType currentRow, LongType rowNum, double *compoundBuf, LongType const *compoundShape);
+template void processColumns<float16>(LongType currentRow, LongType rowNum, float16 *compoundBuf, LongType const *compoundShape);
 
 template <typename T>
 static void swapRows(T *matrixBuf, LongType const *matrixShape, LongType theFirst, LongType theSecond) {

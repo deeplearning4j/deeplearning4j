@@ -113,7 +113,20 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
   }
 }
 
-#define PRINT_BUFFER(T) template SD_LIB_EXPORT void NDArray::printCurrentBuffer<GET_SECOND(T)>(const bool host, const char* msg, const int precision);
-ITERATE_LIST((SD_COMMON_TYPES), PRINT_BUFFER)
+// #define PRINT_BUFFER(T) template SD_LIB_EXPORT void NDArray::printCurrentBuffer<GET_SECOND(T)>(const bool host, const char* msg, const int precision);
+// ITERATE_LIST((SD_COMMON_TYPES), PRINT_BUFFER)
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<bool>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<float16>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<bfloat16>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<int8_t>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<uint8_t>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<int16_t>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<int32_t>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<uint16_t>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<uint32_t>(const bool host, const char* msg, const int precision);
+template SD_LIB_EXPORT void NDArray::printCurrentBuffer<uint64_t>(const bool host, const char* msg, const int precision);
 
 }  // namespace sd
