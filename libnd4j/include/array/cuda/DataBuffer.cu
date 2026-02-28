@@ -40,7 +40,7 @@
 
 namespace sd {
 
-// Definition of thread-local graph execution flag (declared in DataBuffer.h)
+// Definition of thread-local graph execution flag (declared in DataBuffer.h and DebugHelper.h)
 thread_local bool tl_graphExecutionActive = false;
 thread_local cudaStream_t tl_graphCaptureStream = nullptr;
 
