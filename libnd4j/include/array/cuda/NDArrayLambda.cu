@@ -451,7 +451,7 @@ class NDArrayLambdaCuda {
 
 // Implementation of the NDArray Lambda methods for CUDA
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyLambda(std::function<T(T)>& func, NDArray* target) {
+void NDArray::applyLambda(std::function<T(T)>& func, NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
     THROW_EXCEPTION(
@@ -475,7 +475,7 @@ SD_LIB_EXPORT void NDArray::applyLambda(std::function<T(T)>& func, NDArray* targ
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>& func, NDArray* target) {
+void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>& func, NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
     THROW_EXCEPTION(
@@ -499,7 +499,7 @@ SD_LIB_EXPORT void NDArray::applyIndexedLambda(std::function<T(sd::LongType, T)>
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other,  std::function<T(T, T)>& func,
+void NDArray::applyPairwiseLambda(NDArray* other,  std::function<T(T, T)>& func,
                                                 NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
@@ -533,7 +533,7 @@ SD_LIB_EXPORT void NDArray::applyPairwiseLambda(NDArray* other,  std::function<T
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::function<T(sd::LongType, T, T)>& func,
+void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::function<T(sd::LongType, T, T)>& func,
                                                        NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())
@@ -564,7 +564,7 @@ SD_LIB_EXPORT void NDArray::applyIndexedPairwiseLambda(NDArray* other,  std::fun
 }
 
 template <typename T>
-SD_LIB_EXPORT void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
+void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
                                                   std::function<T(T, T, T)>& func, NDArray* target) {
 // Validate types
   if (dataType() != DataTypeUtils::fromT<T>())

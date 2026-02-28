@@ -25,8 +25,19 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
+#include <cublas_v2.h>
 
 #include "cudnnUtils.h"
+
+#ifndef CHECK_CUBLAS_STATUS
+#define CHECK_CUBLAS_STATUS(call)                                                       \
+  {                                                                                      \
+    cublasStatus_t status = (call);                                                      \
+    if (status != CUBLAS_STATUS_SUCCESS) {                                                \
+      THROW_EXCEPTION("cuBLAS error in flash_attention");                                \
+    }                                                                                    \
+  }
+#endif
 
 #if CUDNN_VERSION >= 8900
 
@@ -84,7 +95,7 @@ static void flashAttentionCUDNN(const LaunchContext* context,
 
     // Create output in permuted format
     std::vector<LongType> outPermShape = {batch, numHeads, seqQ, headDim};
-    outPermuted = new NDArray('c', outPermShape, query->dataType(), context);
+    outPermuted = new NDArray('c', outPermShape, query->dataType(), const_cast<LaunchContext*>(context));
     needsPermute = true;
   } else {
     // For 3D, reshape to 4D: [batch, seq, dim] -> [batch, 1, seq, dim]
@@ -124,7 +135,7 @@ static void flashAttentionCUDNN(const LaunchContext* context,
 
   // Create temporary scores tensor [batch, numHeads, seqQ, seqKV]
   std::vector<LongType> scoresShape = {batch, numHeads, seqQ, seqKV};
-  NDArray scores('c', scoresShape, query->dataType(), context);
+  NDArray scores('c', scoresShape, query->dataType(), const_cast<LaunchContext*>(context));
 
   // Step 1: Q @ K^T with scale
   // cuDNN batched GEMM: compute attention scores
