@@ -75,15 +75,14 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
                 # Use python.exe directly as multi-element launcher list.
                 # MSYS sh.exe executes .exe files via normal POSIX exec path,
                 # preserving path translation correctly.
+                # Keep args minimal — smart_ccache.py is a thin wrapper now.
                 set(CMAKE_C_COMPILER_LAUNCHER
                     "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
-                    "--ccache=${CCACHE_PATH}" "--hash-dir=${FILE_HASH_CACHE_DIR}"
-                    "--build-dir=${CMAKE_BINARY_DIR}" ${_SC_DEBUG_ARG} "--"
+                    "--ccache=${CCACHE_PATH}" ${_SC_DEBUG_ARG} "--"
                     CACHE STRING "C compiler launcher (smart ccache)" FORCE)
                 set(CMAKE_CXX_COMPILER_LAUNCHER
                     "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
-                    "--ccache=${CCACHE_PATH}" "--hash-dir=${FILE_HASH_CACHE_DIR}"
-                    "--build-dir=${CMAKE_BINARY_DIR}" ${_SC_DEBUG_ARG} "--"
+                    "--ccache=${CCACHE_PATH}" ${_SC_DEBUG_ARG} "--"
                     CACHE STRING "CXX compiler launcher (smart ccache)" FORCE)
 
                 # Store plain ccache path for ExternalProject use.
@@ -94,7 +93,6 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
 
                 message(STATUS "Smart ccache (Windows/Python): ${_SMART_CCACHE_PY}")
                 message(STATUS "  Python: ${Python3_EXECUTABLE}")
-                message(STATUS "  Hash dir: ${FILE_HASH_CACHE_DIR}")
             else()
                 if(NOT Python3_EXECUTABLE)
                     message(STATUS "Smart ccache SKIPPED on Windows: Python3 not found")
