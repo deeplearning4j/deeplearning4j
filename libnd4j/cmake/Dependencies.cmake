@@ -265,12 +265,17 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to host build if available
-        # Skip .sh wrappers — bash scripts can't run as Win32 processes
+        # Smart ccache uses a multi-element list (python + script + args) which can't
+        # be passed as FILEPATH. Fall back to SD_PLAIN_CCACHE_PATH for ExternalProject.
         if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND HOST_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND HOST_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
         endif()
         if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND HOST_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND HOST_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
         endif()
 
         ExternalProject_Add(flatbuffers_host
@@ -301,12 +306,16 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to target build if available
-        # Skip .sh wrappers — bash scripts can't run as Win32 processes
-        if(CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
+        # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
+        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND TARGET_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH})
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND TARGET_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND TARGET_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH})
         endif()
 
         # Only add cross-compilation arguments if they are defined
@@ -412,12 +421,16 @@ function(setup_flatbuffers)
         )
 
         # Pass compiler launcher (ccache/sccache) to native build if available
-        # Skip .sh wrappers on Windows — bash scripts can't run as Win32 processes
-        if(CMAKE_C_COMPILER_LAUNCHER AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
+        # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
+        if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER})
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH})
         endif()
-        if(CMAKE_CXX_COMPILER_LAUNCHER AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
+        if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
             list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER})
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND NATIVE_CMAKE_ARGS -DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH})
         endif()
 
         ExternalProject_Add(flatbuffers_external
@@ -569,14 +582,20 @@ function(setup_onednn)
     )
 
     # Pass compiler launcher (ccache/sccache) to OneDNN build if available
-    # Skip .sh wrappers — bash scripts can't run as Win32 processes
+    # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
     if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}" AND NOT CMAKE_C_COMPILER_LAUNCHER MATCHES "\\.sh$")
         list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
         message(STATUS "   Passing C compiler launcher to OneDNN: ${CMAKE_C_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+        message(STATUS "   Passing plain ccache to OneDNN C: ${SD_PLAIN_CCACHE_PATH}")
     endif()
     if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}" AND NOT CMAKE_CXX_COMPILER_LAUNCHER MATCHES "\\.sh$")
         list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
         message(STATUS "   Passing CXX compiler launcher to OneDNN: ${CMAKE_CXX_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND ONEDNN_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
+        message(STATUS "   Passing plain ccache to OneDNN CXX: ${SD_PLAIN_CCACHE_PATH}")
     endif()
 
     # Pass Android cross-compilation args to OneDNN (same pattern as FlatBuffers)
@@ -1240,13 +1259,18 @@ function(setup_triton)
         endif()
 
         # Pass SmartCcache / compiler launcher to LLVM build
+        # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
         if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
             list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
             message(STATUS "   Passing C compiler launcher to LLVM build: ${CMAKE_C_COMPILER_LAUNCHER}")
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
         endif()
         if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
             list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
             message(STATUS "   Passing CXX compiler launcher to LLVM build: ${CMAKE_CXX_COMPILER_LAUNCHER}")
+        elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+            list(APPEND TRITON_LLVM_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
         endif()
 
         set(TRITON_LLVM_URL "https://github.com/llvm/llvm-project/archive/${TRITON_LLVM_COMMIT}.tar.gz")
@@ -1348,11 +1372,16 @@ function(setup_triton)
     endif()
 
     # Pass compiler launcher if available
+    # Smart ccache multi-element lists can't be passed as FILEPATH; fall back to plain ccache.
     if(CMAKE_C_COMPILER_LAUNCHER AND EXISTS "${CMAKE_C_COMPILER_LAUNCHER}")
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${CMAKE_C_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
     endif()
     if(CMAKE_CXX_COMPILER_LAUNCHER AND EXISTS "${CMAKE_CXX_COMPILER_LAUNCHER}")
         list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${CMAKE_CXX_COMPILER_LAUNCHER}")
+    elseif(SD_PLAIN_CCACHE_PATH AND EXISTS "${SD_PLAIN_CCACHE_PATH}")
+        list(APPEND TRITON_CMAKE_ARGS "-DCMAKE_CXX_COMPILER_LAUNCHER:FILEPATH=${SD_PLAIN_CCACHE_PATH}")
     endif()
 
     # Build-time-only SmartCcache partition key for Triton external build.

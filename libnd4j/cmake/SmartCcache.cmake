@@ -54,13 +54,54 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
 
         if(_SD_IS_WINDOWS)
             # ================================================================
-            # Windows: Smart ccache wrapper not supported (bash scripts can't
-            # run via CreateProcess, and .cmd wrappers break MSYS2 path
-            # translation causing 100% preprocessing failures in ccache).
-            # Plain ccache is used directly — set by CMakeLists.txt before
-            # this module is included.
+            # Windows: Use Python-based smart ccache wrapper (smart_ccache.py)
+            # Bash scripts can't be invoked via CreateProcess, and .cmd wrappers
+            # break MSYS2 path translation. But python.exe as a multi-element
+            # CMAKE_*_COMPILER_LAUNCHER works perfectly — MSYS sh.exe can exec
+            # .exe files directly, same pattern as CUDA's nvcc_filter.py chain.
             # ================================================================
-            message(STATUS "Smart ccache SKIPPED on Windows (plain ccache used directly)")
+            find_package(Python3 COMPONENTS Interpreter QUIET)
+            if(NOT Python3_FOUND)
+                find_program(Python3_EXECUTABLE NAMES python3 python)
+            endif()
+
+            set(_SMART_CCACHE_PY "${CMAKE_CURRENT_LIST_DIR}/smart_ccache.py")
+            if(Python3_EXECUTABLE AND EXISTS "${_SMART_CCACHE_PY}")
+                set(_SC_DEBUG_ARG "")
+                if(SD_CCACHE_DEBUG)
+                    set(_SC_DEBUG_ARG "--debug")
+                endif()
+
+                # Use python.exe directly as multi-element launcher list.
+                # MSYS sh.exe executes .exe files via normal POSIX exec path,
+                # preserving path translation correctly.
+                set(CMAKE_C_COMPILER_LAUNCHER
+                    "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
+                    "--ccache=${CCACHE_PATH}" "--hash-dir=${FILE_HASH_CACHE_DIR}"
+                    "--build-dir=${CMAKE_BINARY_DIR}" ${_SC_DEBUG_ARG} "--"
+                    CACHE STRING "C compiler launcher (smart ccache)" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER
+                    "${Python3_EXECUTABLE}" "${_SMART_CCACHE_PY}"
+                    "--ccache=${CCACHE_PATH}" "--hash-dir=${FILE_HASH_CACHE_DIR}"
+                    "--build-dir=${CMAKE_BINARY_DIR}" ${_SC_DEBUG_ARG} "--"
+                    CACHE STRING "CXX compiler launcher (smart ccache)" FORCE)
+
+                # Store plain ccache path for ExternalProject use.
+                # ExternalProject passes launcher via -DCMAKE_C_COMPILER_LAUNCHER:FILEPATH=
+                # which only supports a single path — so external projects use plain ccache.
+                set(SD_PLAIN_CCACHE_PATH "${CCACHE_PATH}" CACHE FILEPATH
+                    "Plain ccache path for ExternalProject (smart ccache can't be passed as FILEPATH)" FORCE)
+
+                message(STATUS "Smart ccache (Windows/Python): ${_SMART_CCACHE_PY}")
+                message(STATUS "  Python: ${Python3_EXECUTABLE}")
+                message(STATUS "  Hash dir: ${FILE_HASH_CACHE_DIR}")
+            else()
+                if(NOT Python3_EXECUTABLE)
+                    message(STATUS "Smart ccache SKIPPED on Windows: Python3 not found")
+                else()
+                    message(STATUS "Smart ccache SKIPPED on Windows: ${_SMART_CCACHE_PY} not found")
+                endif()
+            endif()
         else()
         # ================================================================
         # Linux/macOS: Use bash-based smart ccache wrapper (smart_ccache.sh)
@@ -325,6 +366,11 @@ exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
         set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
         # Also set CUDA compiler launcher for nvcc
         set(CMAKE_CUDA_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+
+        # Store plain ccache path for ExternalProject use (smart_ccache.sh can't
+        # be passed as FILEPATH to ExternalProject either, due to .sh skip rules).
+        set(SD_PLAIN_CCACHE_PATH "${CCACHE_PATH}" CACHE FILEPATH
+            "Plain ccache path for ExternalProject" FORCE)
 
         message(STATUS "Smart ccache wrapper: ${SMART_CCACHE_SCRIPT}")
         message(STATUS "Smart ccache wrapper enabled for C, CXX, and CUDA compilers")
