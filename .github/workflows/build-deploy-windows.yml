@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 4
+        default: 2
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -89,7 +89,7 @@ jobs:
           - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '2' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -133,8 +133,8 @@ jobs:
               $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'" -ErrorAction SilentlyContinue
               if ($currentPagefile) { $currentPagefile.Delete() }
               wmic pagefileset create name="C:\\pagefile.sys" 2>$null
-              wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=12288,MaximumSize=12288 2>$null
-              Write-Host "Pagefile configured to 12 GB for the duration of this job."
+              wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=24576,MaximumSize=24576 2>$null
+              Write-Host "Pagefile configured to 24 GB for the duration of this job."
           }
           catch {
               Write-Host "Pagefile configuration failed. Continuing..."
@@ -295,11 +295,13 @@ jobs:
 
       - name: Run windows cpu build
         shell: cmd
+        timeout-minutes: 120
         run: |
           call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
-          
+
+          set "MAVEN_OPTS=-Xmx1g"
           set "CCACHE_DIR=%USERPROFILE%\.ccache"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
           
