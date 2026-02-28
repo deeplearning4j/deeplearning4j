@@ -8,12 +8,13 @@ as an input file, triggering: "A single input file is required".
 This wrapper:
 1. Intercepts --options-file arguments
 2. Reads and filters the response file content
-3. Writes a cleaned response file
-4. Passes all other args through, filtering direct -Fd/-FS flags
-5. Invokes the real nvcc with cleaned arguments
+3. When ccache is enabled, expands response files into direct args (ccache can't parse --options-file)
+4. When ccache is disabled, writes a cleaned response file
+5. Passes all other args through, filtering direct -Fd/-FS flags
+6. Invokes the real nvcc (optionally via ccache) with cleaned arguments
 
 Usage (via CMAKE_CUDA_COMPILER_LAUNCHER):
-    python nvcc_filter.py nvcc.exe [args...]
+    python nvcc_filter.py [--ccache=<path>] nvcc.exe [args...]
 """
 
 import sys
@@ -53,7 +54,7 @@ def fix_xcompiler_quoting(arg):
 
     CMake generates -Xcompiler=" /GR /EHsc" which breaks in Ninja .rsp files
     because the space splits it into multiple tokens. Convert to comma-separated:
-    -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc
+    -Xcompiler=" /GR /EHsc" -> -Xcompiler=/GR,/EHsc
     """
     # Match -Xcompiler= followed by a quoted value with spaces
     m = re.match(r'^(-Xcompiler[=:])["\']\s*(.*?)\s*["\']$', arg)
@@ -63,52 +64,40 @@ def fix_xcompiler_quoting(arg):
         # Replace spaces with commas
         fixed = prefix + value.replace(' ', ',')
         return fixed
-    # Also handle case where quotes were already stripped but spaces remain
-    # (shouldn't happen in rsp, but handle for direct args)
     return arg
 
 
-def filter_response_file(rsp_path):
-    """Read a response file, filter problematic flags, write cleaned version.
+def parse_response_file(rsp_path):
+    """Read a response file and return filtered tokens.
 
-    Returns path to the cleaned response file (may be a new temp file).
+    Returns (filtered_tokens, was_modified) tuple.
     """
     global _log_count
 
     if not os.path.isfile(rsp_path):
-        return rsp_path
+        return [], False
 
-    # Read in binary to preserve exact content for comparison
     with open(rsp_path, 'rb') as f:
         raw_content = f.read()
 
-    # Decode and normalize line endings to \n for processing
     content = raw_content.decode('utf-8', errors='replace')
-    # Detect original line ending style
-    has_crlf = b'\r\n' in raw_content
-    line_ending = '\r\n' if has_crlf else '\n'
-
     lines = content.splitlines()
 
-    # Dump first few response files for diagnostics
     _log_count += 1
     if _log_count <= _MAX_VERBOSE_LOGS:
         print(f"[nvcc_filter] === Response file: {rsp_path} ===", file=sys.stderr)
-        print(f"[nvcc_filter] Line count: {len(lines)}, CRLF: {has_crlf}", file=sys.stderr)
+        print(f"[nvcc_filter] Line count: {len(lines)}", file=sys.stderr)
         for i, line in enumerate(lines[:30]):
             print(f"[nvcc_filter]   L{i}: {line[:300]}", file=sys.stderr)
         if len(lines) > 30:
             print(f"[nvcc_filter]   ... ({len(lines) - 30} more lines)", file=sys.stderr)
 
-    filtered_lines = []
-    removed_lines = []
+    all_tokens = []
+    removed_count = 0
     modified = False
+
     for line in lines:
-        # First, fix -Xcompiler quoting at the raw line level BEFORE tokenizing.
-        # CMake puts -Xcompiler=" /GR /EHsc" in CMAKE_CUDA_FLAGS, and this gets
-        # written literally into the .rsp file. nvcc's rsp parser splits on spaces
-        # even inside quotes, so /GR becomes a separate "input file".
-        # Fix: -Xcompiler=" /GR /EHsc" → -Xcompiler=/GR,/EHsc (comma-separated, no quotes)
+        # Fix -Xcompiler quoting at the raw line level
         orig_line = line
         line = re.sub(
             r'-Xcompiler[=:]"[ ]*([^"]*)"',
@@ -135,40 +124,42 @@ def filter_response_file(rsp_path):
         if current:
             tokens.append(''.join(current))
 
-        kept_tokens = []
-        removed_tokens = []
         for t in tokens:
             if should_filter_arg(t):
-                removed_tokens.append(t)
+                removed_count += 1
             else:
-                # Also fix any remaining -Xcompiler quoting at the token level
-                kept_tokens.append(fix_xcompiler_quoting(t))
+                all_tokens.append(fix_xcompiler_quoting(t))
 
-        if removed_tokens:
-            removed_lines.append((line, removed_tokens))
+    if _log_count <= _MAX_VERBOSE_LOGS:
+        if removed_count:
+            print(f"[nvcc_filter] Filtered {removed_count} tokens from {rsp_path}", file=sys.stderr)
+        if modified:
+            print(f"[nvcc_filter] Fixed -Xcompiler quoting in {rsp_path}", file=sys.stderr)
 
-        if kept_tokens:
-            filtered_lines.append(' '.join(kept_tokens))
+    return all_tokens, (removed_count > 0 or modified)
 
-    if removed_lines or modified:
-        new_content = line_ending.join(filtered_lines) + line_ending
-        if _log_count <= _MAX_VERBOSE_LOGS:
-            if removed_lines:
-                print(f"[nvcc_filter] FILTERED {len(removed_lines)} lines:", file=sys.stderr)
-                for orig_line, removed_toks in removed_lines:
-                    print(f"[nvcc_filter]   REMOVED tokens: {removed_toks}", file=sys.stderr)
-            if modified:
-                print(f"[nvcc_filter] Fixed -Xcompiler quoting in {rsp_path}", file=sys.stderr)
 
-        # Write filtered content to a new temp file in the same directory
+def filter_response_file(rsp_path):
+    """Read a response file, filter problematic flags, write cleaned version.
+
+    Returns path to the cleaned response file (may be a new temp file).
+    Used when ccache is NOT enabled (response files are kept as-is).
+    """
+    tokens, was_modified = parse_response_file(rsp_path)
+
+    if was_modified:
+        # Detect original line ending style
+        with open(rsp_path, 'rb') as f:
+            raw = f.read()
+        line_ending = '\r\n' if b'\r\n' in raw else '\n'
+
+        new_content = ' '.join(tokens) + line_ending
         rsp_dir = os.path.dirname(rsp_path) or '.'
         fd, tmp_path = tempfile.mkstemp(suffix='.rsp', dir=rsp_dir, prefix='nvcc_filtered_')
         with os.fdopen(fd, 'w', encoding='utf-8', newline='') as f:
             f.write(new_content)
         return tmp_path
     else:
-        if _log_count <= _MAX_VERBOSE_LOGS:
-            print(f"[nvcc_filter] No modifications needed", file=sys.stderr)
         return rsp_path
 
 
@@ -178,9 +169,6 @@ def main():
         sys.exit(1)
 
     # Parse optional --ccache=<path> to chain ccache with nvcc.
-    # When specified, the final command becomes: ccache nvcc <filtered_args>
-    # This enables caching of CUDA compilations on Windows where the SmartCcache
-    # bash wrapper cannot run.
     ccache_path = None
     arg_start = 1
     if sys.argv[1].startswith('--ccache='):
@@ -197,7 +185,6 @@ def main():
     nvcc = sys.argv[arg_start]
     args = sys.argv[arg_start + 1:]
 
-    # Dump all args for first invocation
     global _log_count
     if _log_count == 0:
         print(f"[nvcc_filter] nvcc: {nvcc}", file=sys.stderr)
@@ -209,6 +196,11 @@ def main():
     temp_files = []
     direct_filtered = []
 
+    # When ccache is enabled, we EXPAND response files into direct args.
+    # ccache can't parse nvcc's --options-file format, so it fails to find
+    # the source file and flags. Expanding gives ccache direct visibility.
+    use_expanded = ccache_path is not None
+
     i = 0
     while i < len(args):
         arg = args[i]
@@ -216,31 +208,44 @@ def main():
         # Handle --options-file <path> (two separate args)
         if arg == '--options-file' and i + 1 < len(args):
             rsp_path = args[i + 1]
-            new_rsp = filter_response_file(rsp_path)
-            filtered_args.append('--options-file')
-            filtered_args.append(new_rsp)
-            if new_rsp != rsp_path:
-                temp_files.append(new_rsp)
+            if use_expanded:
+                # Expand response file into direct args for ccache
+                tokens, _ = parse_response_file(rsp_path)
+                filtered_args.extend(tokens)
+            else:
+                new_rsp = filter_response_file(rsp_path)
+                filtered_args.append('--options-file')
+                filtered_args.append(new_rsp)
+                if new_rsp != rsp_path:
+                    temp_files.append(new_rsp)
             i += 2
             continue
 
         # Handle --options-file=<path> (combined)
         if arg.startswith('--options-file='):
             rsp_path = arg[len('--options-file='):]
-            new_rsp = filter_response_file(rsp_path)
-            filtered_args.append('--options-file=' + new_rsp)
-            if new_rsp != rsp_path:
-                temp_files.append(new_rsp)
+            if use_expanded:
+                tokens, _ = parse_response_file(rsp_path)
+                filtered_args.extend(tokens)
+            else:
+                new_rsp = filter_response_file(rsp_path)
+                filtered_args.append('--options-file=' + new_rsp)
+                if new_rsp != rsp_path:
+                    temp_files.append(new_rsp)
             i += 1
             continue
 
         # Handle @<path> response file syntax
         if arg.startswith('@') and len(arg) > 1:
             rsp_path = arg[1:]
-            new_rsp = filter_response_file(rsp_path)
-            filtered_args.append('@' + new_rsp)
-            if new_rsp != rsp_path:
-                temp_files.append(new_rsp)
+            if use_expanded:
+                tokens, _ = parse_response_file(rsp_path)
+                filtered_args.extend(tokens)
+            else:
+                new_rsp = filter_response_file(rsp_path)
+                filtered_args.append('@' + new_rsp)
+                if new_rsp != rsp_path:
+                    temp_files.append(new_rsp)
             i += 1
             continue
 
@@ -255,17 +260,19 @@ def main():
     if direct_filtered and _log_count <= _MAX_VERBOSE_LOGS:
         print(f"[nvcc_filter] Direct args filtered: {direct_filtered}", file=sys.stderr)
 
+    if use_expanded and _log_count <= _MAX_VERBOSE_LOGS:
+        print(f"[nvcc_filter] Expanded response files for ccache ({len(filtered_args)} args)", file=sys.stderr)
+
     try:
         cmd = [nvcc] + filtered_args
         if ccache_path:
-            # Prepend ccache to cache the nvcc compilation.
-            # ccache hashes the command line + source and caches the output .obj.
             cmd = [ccache_path] + cmd
         result = subprocess.run(cmd)
         if result.returncode != 0:
-            # On failure, dump the full command and rsp file content for debugging
             print(f"\n[nvcc_filter] === NVCC FAILED (exit {result.returncode}) ===", file=sys.stderr)
-            print(f"[nvcc_filter] Command: {nvcc} {' '.join(filtered_args[:10])}{'...' if len(filtered_args) > 10 else ''}", file=sys.stderr)
+            print(f"[nvcc_filter] Command ({len(cmd)} args): {' '.join(cmd[:15])}{'...' if len(cmd) > 15 else ''}", file=sys.stderr)
+            if ccache_path:
+                print(f"[nvcc_filter] ccache was: {ccache_path}", file=sys.stderr)
             for tf in temp_files:
                 if os.path.isfile(tf):
                     with open(tf, 'r', encoding='utf-8', errors='replace') as f:
@@ -276,7 +283,6 @@ def main():
             print(f"[nvcc_filter] === END FAILURE DUMP ===\n", file=sys.stderr)
         sys.exit(result.returncode)
     finally:
-        # Cleanup temp files
         for tf in temp_files:
             try:
                 os.unlink(tf)

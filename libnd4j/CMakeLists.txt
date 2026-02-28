@@ -231,12 +231,18 @@ if(WIN32 AND SD_CUDA AND CMAKE_CUDA_COMPILER)
     if(Python3_FOUND)
         set(_NVCC_FILTER "${CMAKE_CURRENT_SOURCE_DIR}/cmake/nvcc_filter.py")
         if(EXISTS "${_NVCC_FILTER}")
-            # Do NOT chain ccache with nvcc on Windows — ccache mishandles nvcc's
-            # response files and dependency flags, causing "A single input file is required".
-            # ccache for C/C++ (cl.exe) is still configured separately via CMAKE_C/CXX_COMPILER_LAUNCHER.
-            set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}"
-                CACHE STRING "CUDA compiler launcher (nvcc flag filter)" FORCE)
-            message(STATUS "Windows CUDA: nvcc_filter.py wrapper enabled via ${Python3_EXECUTABLE} (ccache disabled for CUDA)")
+            # Chain ccache with nvcc via nvcc_filter.py. The filter expands response
+            # files into direct args when ccache is present, so ccache can properly
+            # identify source files for caching.
+            if(CCACHE_PROGRAM AND NOT CCACHE_SKIP_REASON)
+                set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}" "--ccache=${CCACHE_PROGRAM}"
+                    CACHE STRING "CUDA compiler launcher (nvcc filter + ccache)" FORCE)
+                message(STATUS "Windows CUDA: nvcc_filter.py + ccache enabled (${CCACHE_PROGRAM})")
+            else()
+                set(CMAKE_CUDA_COMPILER_LAUNCHER "${Python3_EXECUTABLE}" "${_NVCC_FILTER}"
+                    CACHE STRING "CUDA compiler launcher (nvcc flag filter)" FORCE)
+                message(STATUS "Windows CUDA: nvcc_filter.py wrapper enabled (no ccache)")
+            endif()
         else()
             message(WARNING "nvcc_filter.py not found at ${_NVCC_FILTER}")
         endif()
@@ -255,9 +261,9 @@ if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON
         set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}" CACHE STRING "CUDA compiler launcher" FORCE)
         message(STATUS "Enabled ccache for CUDA compilation")
     else()
-        # Windows: ccache is NOT used for CUDA (nvcc) — causes "A single input file" errors.
-        # ccache is still used for C/C++ (cl.exe) via CMAKE_C/CXX_COMPILER_LAUNCHER.
-        message(STATUS "Windows CUDA ccache: DISABLED (incompatible with nvcc on Windows)")
+        # Windows: ccache for CUDA is configured via nvcc_filter.py --ccache= above.
+        # nvcc_filter.py expands response files so ccache can identify source files.
+        message(STATUS "Windows CUDA ccache: configured via nvcc_filter.py chain")
     endif()
 
     # Configure ccache settings for optimal CUDA caching (both platforms)
