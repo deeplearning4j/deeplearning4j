@@ -245,10 +245,26 @@ exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
                          WORLD_READ WORLD_EXECUTE)
 
         # Override the compiler launcher to use our wrapper
-        set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-        set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-        # Also set CUDA compiler launcher for nvcc
-        set(CMAKE_CUDA_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+        # On Windows, .sh scripts need bash to execute them
+        if(_SD_IS_WINDOWS)
+            find_program(_BASH_PROGRAM bash PATHS "C:/msys64/usr/bin" "C:/msys64/mingw64/bin")
+            if(_BASH_PROGRAM)
+                set(CMAKE_C_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+                set(CMAKE_CUDA_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+            else()
+                # Fallback: use ccache directly without smart wrapper on Windows
+                message(WARNING "bash not found — smart ccache wrapper disabled, using ccache directly")
+                set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+                set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+            endif()
+        else()
+            set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+            # Also set CUDA compiler launcher for nvcc
+            set(CMAKE_CUDA_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+        endif()
 
         # Store plain ccache path for ExternalProject use (smart_ccache.sh can't
         # be passed as FILEPATH to ExternalProject either, due to .sh skip rules).

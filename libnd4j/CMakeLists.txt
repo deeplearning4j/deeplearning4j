@@ -8,7 +8,11 @@ cmake_minimum_required(VERSION 3.15)
 # cause constant cache invalidation, making ccache overhead > benefit
 # See: Build 265 analysis - 32% hit rate with 55% slower builds
 find_program(CCACHE_PROGRAM ccache)
-# Fallback for environments where Homebrew locations are not on PATH
+# Windows: also try ccache.exe (find_program may need explicit name on some generators)
+if(NOT CCACHE_PROGRAM AND (WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows"))
+    find_program(CCACHE_PROGRAM ccache.exe)
+endif()
+# Fallback for environments where ccache is not on PATH
 if(NOT CCACHE_PROGRAM)
     set(_CCACHE_FALLBACK_PATHS
         "/home/linuxbrew/.linuxbrew/bin"  # Linuxbrew default
@@ -16,6 +20,10 @@ if(NOT CCACHE_PROGRAM)
         "/usr/local/Homebrew/bin"         # macOS Intel (alt)
         "/usr/local/bin"
     )
+    # Windows: GitHub Actions setup-ccache-windows installs to %USERPROFILE%\ccache
+    if(WIN32 OR CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        list(APPEND _CCACHE_FALLBACK_PATHS "$ENV{USERPROFILE}/ccache")
+    endif()
     find_program(CCACHE_PROGRAM ccache PATHS ${_CCACHE_FALLBACK_PATHS} NO_DEFAULT_PATH)
     unset(_CCACHE_FALLBACK_PATHS)
 
