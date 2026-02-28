@@ -34,7 +34,9 @@
 #include <fstream>
 #include <iomanip>
 #if !defined(_MSC_VER)
+#if !defined(_MSC_VER)
 #include <cxxabi.h>  // For __cxa_demangle (kernel name demangling)
+#endif
 #endif
 
 namespace sd {
