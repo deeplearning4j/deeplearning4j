@@ -537,6 +537,7 @@ template <typename T>
 static Status _dynamicStitchFunctorBP(std::vector<NDArray *> const &inputs, std::vector<NDArray *> const &indices,
                                       NDArray *gradInput, std::vector<NDArray *> &outputList) {
   THROW_EXCEPTION("Not implemented yet");
+  return Status::OK;  // unreachable
 }
 
 Status dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const &inputs,
