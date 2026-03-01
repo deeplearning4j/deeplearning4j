@@ -315,12 +315,12 @@ void AttentionHelper::applyAttentionScores(NDArray *scores, NDArray *value, NDAr
     // Then attentionLogits = attentionLogits + maskedVals
 
     // Step 1: Create temporary result array with same shape as attentionLogits
-    NDArray tempResult(attentionLogits->shapeInfo(), attentionLogits->dataType(), false, attentionLogits->getContext());
+    NDArray tempResult(attentionLogits->shapeInfo(), false, attentionLogits->getContext(), true);
 
     // Step 2: Compute maskedVals = numericMask * largeVal - largeVal
     // Use broadcast Add: result = attentionLogits + (numericMask * largeVal - largeVal)
     // First compute the mask offset term
-    NDArray maskScaled(numericMask->shapeInfo(), numericMask->dataType(), false, numericMask->getContext());
+    NDArray maskScaled(numericMask->shapeInfo(), false, numericMask->getContext(), true);
     numericMask->applyScalar(sd::scalar::Multiply, largeVal, &maskScaled);
     maskScaled.applyScalar(sd::scalar::Subtract, largeVal, &maskScaled);
 

@@ -437,7 +437,7 @@ PLATFORM_IMPL(avgpool2d_global_bp, ENGINE_CUDA) {
   const bool isNCHW = block.getIArguments()->size() > 0 ? I_ARG(0) == 0 : true;
 
   // Compute forward pass result for backward
-  NDArray output(gradO->shapeInfo(), gradO->dataType(), false, block.launchContext());
+  NDArray output(gradO->shapeInfo(), false, block.launchContext(), true);
   globalAvgPool2dCUDNN(block.launchContext(), input, &output, isNCHW);
 
   globalAvgPool2dBpCUDNN(block.launchContext(), input, gradO, &output, gradI, isNCHW);
@@ -468,7 +468,7 @@ PLATFORM_IMPL(maxpool2d_global_bp, ENGINE_CUDA) {
   const bool isNCHW = block.getIArguments()->size() > 0 ? I_ARG(0) == 0 : true;
 
   // Compute forward pass result for backward
-  NDArray output(gradO->shapeInfo(), gradO->dataType(), false, block.launchContext());
+  NDArray output(gradO->shapeInfo(), false, block.launchContext(), true);
   globalMaxPool2dCUDNN(block.launchContext(), input, &output, isNCHW);
 
   globalMaxPool2dBpCUDNN(block.launchContext(), input, gradO, &output, gradI, isNCHW);

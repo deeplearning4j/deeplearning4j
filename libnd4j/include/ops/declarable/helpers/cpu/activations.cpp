@@ -248,7 +248,7 @@ void logSoftmax(LaunchContext* context, NDArray* input, NDArray* output, const i
     auto maxAlongDim = input->reduceAlongDimension(reduce::Max, &dimVector, true);
     auto inputMinusMax = *input - *maxAlongDim;
     // Compute exp(x - max) into a temp array
-    NDArray expTemp(output->shapeInfo(), output->dataType(), false, context);
+    NDArray expTemp(output->shapeInfo(), false, const_cast<LaunchContext*>(context), true);
     inputMinusMax->applyTransform(transform::Exp, &expTemp);
     auto sumExp = expTemp.reduceAlongDimension(reduce::Sum, &dimVector, true);
     sumExp->applyTransform(transform::Log, sumExp);

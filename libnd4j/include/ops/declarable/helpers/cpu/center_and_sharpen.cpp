@@ -72,7 +72,7 @@ void centerAndSharpenBp(NDArray* input, NDArray* center, NDArray* gradOutput,
     auto dim = input->sizeAt(1);
 
     // First compute the forward softmax output (needed for backward)
-    NDArray softmaxOut(input->shapeInfo(), input->dataType(), false, context);
+    NDArray softmaxOut(input->shapeInfo(), false, const_cast<LaunchContext*>(context), true);
     centerAndSharpen(input, center, &softmaxOut, temperature, context);
 
     dLdCenter->nullify();

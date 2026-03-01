@@ -137,7 +137,7 @@ static void lrnBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gr
 
   // We need the forward output for backward pass
   // Create a temporary array to hold the forward pass result
-  NDArray lrnOutput(input->shapeInfo(), input->dataType(), false, context);
+  NDArray lrnOutput(input->shapeInfo(), false, const_cast<LaunchContext*>(context), true);
 
   NDArray::prepareSpecialUse({&lrnOutput}, {input});
 

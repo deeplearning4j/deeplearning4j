@@ -270,7 +270,7 @@ PLATFORM_IMPL(relu_bp, ENGINE_CUDA) {
 
   // For ReLU backward, we need the forward output
   // Create temporary array for forward pass result
-  NDArray output(input->shapeInfo(), input->dataType(), false, block.launchContext());
+  NDArray output(input->shapeInfo(), false, block.launchContext(), true);
   activationCUDNN(block.launchContext(), input, &output, CUDNN_ACTIVATION_RELU);
 
   activationBpCUDNN(block.launchContext(), input, gradO, &output, gradI, CUDNN_ACTIVATION_RELU);
@@ -301,7 +301,7 @@ PLATFORM_IMPL(sigmoid_bp, ENGINE_CUDA) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  NDArray output(input->shapeInfo(), input->dataType(), false, block.launchContext());
+  NDArray output(input->shapeInfo(), false, block.launchContext(), true);
   activationCUDNN(block.launchContext(), input, &output, CUDNN_ACTIVATION_SIGMOID);
 
   activationBpCUDNN(block.launchContext(), input, gradO, &output, gradI, CUDNN_ACTIVATION_SIGMOID);
@@ -332,7 +332,7 @@ PLATFORM_IMPL(tanh_bp, ENGINE_CUDA) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  NDArray output(input->shapeInfo(), input->dataType(), false, block.launchContext());
+  NDArray output(input->shapeInfo(), false, block.launchContext(), true);
   activationCUDNN(block.launchContext(), input, &output, CUDNN_ACTIVATION_TANH);
 
   activationBpCUDNN(block.launchContext(), input, gradO, &output, gradI, CUDNN_ACTIVATION_TANH);
@@ -365,7 +365,7 @@ PLATFORM_IMPL(elu_bp, ENGINE_CUDA) {
 
   double alpha = block.getTArguments()->size() > 0 ? T_ARG(0) : 1.0;
 
-  NDArray output(input->shapeInfo(), input->dataType(), false, block.launchContext());
+  NDArray output(input->shapeInfo(), false, block.launchContext(), true);
   activationCUDNN(block.launchContext(), input, &output, CUDNN_ACTIVATION_ELU, alpha);
 
   activationBpCUDNN(block.launchContext(), input, gradO, &output, gradI, CUDNN_ACTIVATION_ELU, alpha);
@@ -398,7 +398,7 @@ PLATFORM_IMPL(relu6_bp, ENGINE_CUDA) {
 
   double ceiling = block.getTArguments()->size() > 0 ? T_ARG(0) : 6.0;
 
-  NDArray output(input->shapeInfo(), input->dataType(), false, block.launchContext());
+  NDArray output(input->shapeInfo(), false, block.launchContext(), true);
   activationCUDNN(block.launchContext(), input, &output, CUDNN_ACTIVATION_CLIPPED_RELU, ceiling);
 
   activationBpCUDNN(block.launchContext(), input, gradO, &output, gradI, CUDNN_ACTIVATION_CLIPPED_RELU, ceiling);

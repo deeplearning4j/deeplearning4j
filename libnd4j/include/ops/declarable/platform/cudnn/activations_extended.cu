@@ -137,8 +137,8 @@ PLATFORM_IMPL(gelu, ENGINE_CUDA) {
 
   // Create temp arrays for intermediate results
   auto contextPtr = block.launchContext();
-  NDArray temp1(input->shapeInfo(), input->dataType(), false, contextPtr);
-  NDArray temp2(input->shapeInfo(), input->dataType(), false, contextPtr);
+  NDArray temp1(input->shapeInfo(), false, contextPtr, true);
+  NDArray temp2(input->shapeInfo(), false, contextPtr, true);
 
   // Compute: temp1 = x^3
   input->applyScalar(scalar::Pow, 3.0, &temp1);
@@ -219,14 +219,14 @@ PLATFORM_IMPL(mish, ENGINE_CUDA) {
   // Step 3: Multiply by x
 
   // Create temp array for softplus result
-  NDArray softplusResult(input->shapeInfo(), input->dataType(), false, contextPtr);
+  NDArray softplusResult(input->shapeInfo(), false, contextPtr, true);
 
   // Compute softplus using log(1 + exp(x))
   // For numerical stability, we use: softplus(x) = max(x, 0) + log(1 + exp(-abs(x)))
   input->applyTransform(transform::SoftPlus, &softplusResult);
 
   // Compute tanh(softplus(x))
-  NDArray tanhResult(input->shapeInfo(), input->dataType(), false, contextPtr);
+  NDArray tanhResult(input->shapeInfo(), false, contextPtr, true);
 
   ActivationDescExt actDesc;
   actDesc.set(CUDNN_ACTIVATION_TANH, CUDNN_PROPAGATE_NAN, 0.0);
@@ -287,11 +287,11 @@ PLATFORM_IMPL(hardswish, ENGINE_CUDA) {
   // Using clipped relu for relu6
 
   // Step 1: temp = x + 3
-  NDArray temp(input->shapeInfo(), input->dataType(), false, contextPtr);
+  NDArray temp(input->shapeInfo(), false, contextPtr, true);
   input->applyScalar(scalar::Add, 3.0, &temp);
 
   // Step 2: temp = relu6(temp) = clipped_relu(temp, 6)
-  NDArray relu6Result(input->shapeInfo(), input->dataType(), false, contextPtr);
+  NDArray relu6Result(input->shapeInfo(), false, contextPtr, true);
 
   ActivationDescExt actDesc;
   actDesc.set(CUDNN_ACTIVATION_CLIPPED_RELU, CUDNN_PROPAGATE_NAN, 6.0);
@@ -352,7 +352,7 @@ PLATFORM_IMPL(hardsigmoid, ENGINE_CUDA) {
   // Hard Sigmoid: relu6(x + 3) / 6
 
   // Step 1: temp = x + 3
-  NDArray temp(input->shapeInfo(), input->dataType(), false, contextPtr);
+  NDArray temp(input->shapeInfo(), false, contextPtr, true);
   input->applyScalar(scalar::Add, 3.0, &temp);
 
   // Step 2: output = relu6(temp) = clipped_relu(temp, 6)

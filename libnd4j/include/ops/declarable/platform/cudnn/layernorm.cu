@@ -254,9 +254,9 @@ PLATFORM_IMPL(layer_norm_bp, ENGINE_CUDA) {
   double epsilon = block.getTArguments()->size() > 0 ? T_ARG(0) : 1e-5;
 
   // Compute forward pass to get mean/variance
-  NDArray mean(gamma->shapeInfo(), gamma->dataType(), false, block.launchContext());
-  NDArray variance(gamma->shapeInfo(), gamma->dataType(), false, block.launchContext());
-  NDArray tempOutput(input->shapeInfo(), input->dataType(), false, block.launchContext());
+  NDArray mean(gamma->shapeInfo(), false, block.launchContext(), true);
+  NDArray variance(gamma->shapeInfo(), false, block.launchContext(), true);
+  NDArray tempOutput(input->shapeInfo(), false, block.launchContext(), true);
 
   layerNormCUDNN(block.launchContext(), input, gamma, beta, &tempOutput, &mean, &variance, normAxes, epsilon);
 
