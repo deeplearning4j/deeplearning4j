@@ -251,13 +251,20 @@ exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
             if(_BASH_PROGRAM)
                 set(CMAKE_C_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
                 set(CMAKE_CXX_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-                set(CMAKE_CUDA_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+                # Do NOT override CMAKE_CUDA_COMPILER_LAUNCHER on Windows.
+                # nvcc_filter.py --ccache= (set in CMakeLists.txt) already handles:
+                #   1. MSVC flag filtering (removing unsupported /flags)
+                #   2. Response file expansion for ccache visibility
+                #   3. Chaining ccache correctly
+                # Overriding it with smart_ccache.sh loses the flag filtering,
+                # causing 5% ccache hit rate instead of 70%+.
+                message(STATUS "Smart ccache: NOT overriding CUDA launcher (nvcc_filter.py handles it)")
             else()
                 # Fallback: use ccache directly without smart wrapper on Windows
                 message(WARNING "bash not found — smart ccache wrapper disabled, using ccache directly")
                 set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
                 set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
-                set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+                # Don't set CUDA launcher here either — nvcc_filter.py should handle it
             endif()
         else()
             set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
