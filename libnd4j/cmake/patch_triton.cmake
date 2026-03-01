@@ -94,6 +94,45 @@ if(REMOVE_AMD)
     endif()
 endif()
 
+# === Part 1b: Remove test libraries from bin/ link targets (always applied) ===
+# Even with TRITON_BUILD_TESTING=OFF, Triton's bin/CMakeLists.txt unconditionally
+# links TritonTestAnalysis, TritonTestDialect, and TritonTestProton into triton-opt
+# and other tools. Since test libs aren't built, this causes LNK1181 on Windows.
+set(_BIN_CMAKE_ALWAYS "${SOURCE_DIR}/bin/CMakeLists.txt")
+if(EXISTS "${_BIN_CMAKE_ALWAYS}")
+    file(READ "${_BIN_CMAKE_ALWAYS}" _bin_content_test)
+    set(_test_lib_patterns
+        "TritonTestAnalysis"
+        "TritonTestDialect"
+        "TritonTestProton"
+    )
+    foreach(_pat IN LISTS _test_lib_patterns)
+        string(REGEX REPLACE "[^\n]*${_pat}[^\n]*\n?" "" _bin_content_test "${_bin_content_test}")
+    endforeach()
+    file(WRITE "${_BIN_CMAKE_ALWAYS}" "${_bin_content_test}")
+    message(STATUS "Patched ${_BIN_CMAKE_ALWAYS}: removed test library references (TritonTestAnalysis, TritonTestDialect, TritonTestProton)")
+endif()
+
+# Also remove test registrations from RegisterTritonDialects.h
+set(_REG_H_ALWAYS "${SOURCE_DIR}/bin/RegisterTritonDialects.h")
+if(EXISTS "${_REG_H_ALWAYS}")
+    file(READ "${_REG_H_ALWAYS}" _reg_test_content)
+    set(_test_reg_patterns
+        "registerTestAlias"
+        "registerTestAxisInfo"
+        "registerTestAllocation"
+        "registerTestMembar"
+        "registerTestDialect"
+        "registerTestProton"
+        "TritonTest"
+    )
+    foreach(_pat IN LISTS _test_reg_patterns)
+        string(REGEX REPLACE "[^\n]*${_pat}[^\n]*\n?" "" _reg_test_content "${_reg_test_content}")
+    endforeach()
+    file(WRITE "${_REG_H_ALWAYS}" "${_reg_test_content}")
+    message(STATUS "Patched ${_REG_H_ALWAYS}: removed test registration references")
+endif()
+
 # === Part 2: NegFOp and TanhOp patches (always applied) ===
 
 # Patch TritonToTritonGPUPass.cpp — add NegFOp and TanhOp as legal op patterns
@@ -212,6 +251,65 @@ if(EXISTS "${_TRITON_GPU_IR_CMAKE}")
     endif()
 else()
     message(WARNING "TritonGPU/IR/CMakeLists.txt NOT FOUND at ${_TRITON_GPU_IR_CMAKE}")
+endif()
+
+# === Part 6: Fix NVGPUToLLVM and TritonNVIDIAGPUToLLVM missing tablegen dependencies ===
+#
+# Triton's nvidia backend targets transitively include headers that need various
+# tablegen-generated .h.inc files, but don't declare dependencies on the tablegen
+# targets. With parallel builds (-j8+), compilation starts before tablegen finishes.
+# Fix: add ALL tablegen targets as dependencies to avoid whack-a-mole.
+
+set(_ALL_TABLEGEN_TARGETS
+    TritonTableGen TritonTransformsIncGen TritonConversionPassIncGen
+    TritonGPUTableGen TritonGPUAttrDefsIncGen TritonGPUCTAAttrIncGen
+    TritonGPUOpInterfacesIncGen TritonGPUTypeInterfacesIncGen
+    TritonGPUConversionPassIncGen TritonGPUTransformsIncGen
+    TritonNvidiaGPUTableGen TritonNvidiaGPUAttrDefsIncGen
+    TritonNvidiaGPUOpInterfacesIncGen TritonNvidiaGPUTransformsIncGen
+    TritonInstrumentTableGen TritonInstrumentTransformsIncGen
+    NVGPUTableGen NVGPUAttrDefsIncGen NVGPUConversionPassIncGen
+    NVWSTableGen NVWSAttrDefsIncGen NVWSTransformsIncGen
+    NVHopperTransformsIncGen
+    GluonTableGen GluonTransformsIncGen LLVMIRIncGen
+)
+
+# Helper: append add_dependencies for all tablegen targets to a CMakeLists.txt
+macro(patch_add_tablegen_deps CMAKE_FILE TARGET_NAME)
+    if(EXISTS "${CMAKE_FILE}")
+        file(READ "${CMAKE_FILE}" _patch_content)
+        string(FIND "${_patch_content}" "nd4j_tablegen_deps" _already_patched)
+        if(_already_patched EQUAL -1)
+            set(_dep_block "\n# [nd4j patch] nd4j_tablegen_deps: ensure all tablegen .h.inc files exist before compiling\n")
+            foreach(_tgt IN LISTS _ALL_TABLEGEN_TARGETS)
+                string(APPEND _dep_block "if(TARGET ${_tgt})\n  add_dependencies(${TARGET_NAME} ${_tgt})\nendif()\n")
+            endforeach()
+            file(APPEND "${CMAKE_FILE}" "${_dep_block}")
+            message(STATUS "Patched ${CMAKE_FILE}: added all tablegen dependencies to ${TARGET_NAME}")
+        else()
+            message(STATUS "${CMAKE_FILE}: tablegen dependency fix already applied")
+        endif()
+    endif()
+endmacro()
+
+patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/lib/NVGPUToLLVM/CMakeLists.txt" "NVGPUToLLVM")
+patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/lib/TritonNVIDIAGPUToLLVM/CMakeLists.txt" "TritonNVIDIAGPUToLLVM")
+
+# === Part 7: Disable test subdirectory build (Triton 3.6.0) ===
+# Even with TRITON_BUILD_TESTING=OFF, the test/ subdir may still be added.
+# Comment it out if present in the root CMakeLists.txt.
+set(_TRITON_ROOT_CMAKE "${SOURCE_DIR}/CMakeLists.txt")
+if(EXISTS "${_TRITON_ROOT_CMAKE}")
+    file(READ "${_TRITON_ROOT_CMAKE}" _root_content)
+    string(FIND "${_root_content}" "add_subdirectory(test)" _has_test)
+    if(NOT _has_test EQUAL -1)
+        string(REPLACE
+            "add_subdirectory(test)"
+            "# add_subdirectory(test)  # Removed: TRITON_BUILD_TESTING=OFF"
+            _root_content "${_root_content}")
+        file(WRITE "${_TRITON_ROOT_CMAKE}" "${_root_content}")
+        message(STATUS "Patched ${_TRITON_ROOT_CMAKE}: disabled test subdirectory")
+    endif()
 endif()
 
 message(STATUS "Triton patching complete (SOURCE_DIR=${SOURCE_DIR})")
