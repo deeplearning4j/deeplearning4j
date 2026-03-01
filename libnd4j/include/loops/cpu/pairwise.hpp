@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+#pragma once
+
 //
 // Created by remote on 2018-09-20.
 //

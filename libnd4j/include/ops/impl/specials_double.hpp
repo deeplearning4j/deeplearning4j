@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+#pragma once
+
 //
 // @author raver119@gmail.com, created on 07.10.2017.
 // @author Yurii Shyrma (iuriish@yahoo.com)

@@ -16,6 +16,8 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
+#pragma once
+
 //
 // Created by raver on 4/9/2018.
 //

@@ -17,6 +17,7 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+#pragma once
 template <typename T>
 SD_LIB_HIDDEN void NDArray::applyTriplewiseLambda(NDArray* second, NDArray* third,
                                                   std::function<T(T, T, T)>& func, NDArray* target) {

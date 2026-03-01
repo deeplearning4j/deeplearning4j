@@ -21,6 +21,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
+#pragma once
+
 #include <array/NDArray.h>
 #include <helpers/Loops.h>
 #include <cstring>

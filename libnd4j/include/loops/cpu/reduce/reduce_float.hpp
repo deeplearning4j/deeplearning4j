@@ -1,3 +1,4 @@
+#pragma once
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/Loops.h>
 #include <helpers/OmpLaunchHelper.h>
