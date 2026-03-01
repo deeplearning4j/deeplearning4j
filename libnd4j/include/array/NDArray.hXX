@@ -6838,7 +6838,7 @@ ResultSet NDArray::allExamples()  {
 
 ////////////////////////////////////////////////////////////////////////
 NDArray *NDArray::like() {
-  NDArray *ret = new  NDArray(shapeInfo(), this->dataType(), false, getContext());
+  NDArray *ret = new  NDArray(shapeInfo(), false, getContext(), true);
   return ret;
 }
 

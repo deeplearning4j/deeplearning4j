@@ -324,7 +324,7 @@ GatherResult TensorPartitioner::reduce(
     }
 
     // Create output with same shape as first partition
-    result.result = std::shared_ptr<NDArray>(new NDArray(partitions[0]->shapeInfo(), partitions[0]->dataType()));
+    result.result = std::shared_ptr<NDArray>(new NDArray(partitions[0]->shapeInfo(), false, LaunchContext::defaultContext(), true));
     result.result->assign(partitions[0]);
 
     // Sum all partitions

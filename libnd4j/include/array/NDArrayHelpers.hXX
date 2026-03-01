@@ -74,8 +74,7 @@ NDArray* scalarArrayOpHelper(NDArray* arr, T scalar, sd::scalar::Ops op, bool in
     delete tmp;
     return arr;
   } else {
-    NDArray *result = new NDArray(arr->shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr->dataType(), DataTypeUtils::fromT<T>()),
-                                  false, arr->getContext());
+    NDArray *result = new NDArray(arr->shapeInfo(), false, arr->getContext(), true);
     NDArray::prepareSpecialUse({result}, {arr, tmp});
     NativeOpExecutioner::execScalar(arr->getContext(), op,
                                     arr->buffer(), arr->shapeInfo(), arr->specialBuffer(), arr->specialShapeInfo(),

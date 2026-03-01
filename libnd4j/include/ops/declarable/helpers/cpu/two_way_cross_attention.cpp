@@ -122,7 +122,7 @@ void twoWayCrossAttentionBp(
         delete imageKT;
         scaleMatrix(logits1, scale);
 
-        NDArray attnWeights1(logits1.shapeInfo(), logits1.dataType(), false, context);
+        NDArray attnWeights1(logits1.shapeInfo(), false, context, true);
         attnWeights1.assign(&logits1);
         applySoftmax2D(attnWeights1);
 
@@ -139,7 +139,7 @@ void twoWayCrossAttentionBp(
         delete attnWeights1T;
 
         // dL/dLogits1 through softmax backward
-        NDArray dLdLogits1(dLdAttn1.shapeInfo(), dLdAttn1.dataType(), false, context);
+        NDArray dLdLogits1(dLdAttn1.shapeInfo(), false, context, true);
         softmaxBackward(attnWeights1, dLdAttn1, dLdLogits1);
         scaleMatrix(dLdLogits1, scale);
 
@@ -164,7 +164,7 @@ void twoWayCrossAttentionBp(
         delete tokenKT;
         scaleMatrix(logits2, scale);
 
-        NDArray attnWeights2(logits2.shapeInfo(), logits2.dataType(), false, context);
+        NDArray attnWeights2(logits2.shapeInfo(), false, context, true);
         attnWeights2.assign(&logits2);
         applySoftmax2D(attnWeights2);
 
@@ -181,7 +181,7 @@ void twoWayCrossAttentionBp(
         delete attnWeights2T;
 
         // dL/dLogits2 through softmax backward
-        NDArray dLdLogits2(dLdAttn2.shapeInfo(), dLdAttn2.dataType(), false, context);
+        NDArray dLdLogits2(dLdAttn2.shapeInfo(), false, context, true);
         softmaxBackward(attnWeights2, dLdAttn2, dLdLogits2);
         scaleMatrix(dLdLogits2, scale);
 

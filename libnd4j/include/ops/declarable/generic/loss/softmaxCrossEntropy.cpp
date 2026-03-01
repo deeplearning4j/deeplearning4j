@@ -274,7 +274,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
   NDArray* cLabels = labels->cast(weights->dataType());
   NDArray* newLabels = cLabels;
   if (labelsSmoothing != 0.) {
-    newLabels = new NDArray(labels->shapeInfo(), dLdl->dataType(), false, block.launchContext());
+    newLabels = new NDArray(labels->shapeInfo(), false, block.launchContext(), true);
     NDArray* term1 = (1.f - labelsSmoothing) * (*cLabels);
     NDArray* term2 = (*term1) + (labelsSmoothing / cLabels->sizeAt(1));
     delete term1;
