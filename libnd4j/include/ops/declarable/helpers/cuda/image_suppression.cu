@@ -100,14 +100,16 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
 template <typename T>
 static  inline T similirityV3_(NDArray& boxes, LongType i, LongType j) {
   const T zero = static_cast<T>(0.f);
-  const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
-  const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
-  const T ymaxI = math::sd_max(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
-  const T xmaxI = math::sd_max(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
-  const T yminJ = math::sd_min(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
-  const T xminJ = math::sd_min(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
-  const T ymaxJ = math::sd_max(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
-  const T xmaxJ = math::sd_max(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+  const T bi0 = boxes.t<T>(i, 0), bi1 = boxes.t<T>(i, 1), bi2 = boxes.t<T>(i, 2), bi3 = boxes.t<T>(i, 3);
+  const T bj0 = boxes.t<T>(j, 0), bj1 = boxes.t<T>(j, 1), bj2 = boxes.t<T>(j, 2), bj3 = boxes.t<T>(j, 3);
+  const T yminI = math::sd_min(bi0, bi2);
+  const T xminI = math::sd_min(bi1, bi3);
+  const T ymaxI = math::sd_max(bi0, bi2);
+  const T xmaxI = math::sd_max(bi1, bi3);
+  const T yminJ = math::sd_min(bj0, bj2);
+  const T xminJ = math::sd_min(bj1, bj3);
+  const T ymaxJ = math::sd_max(bj0, bj2);
+  const T xmaxJ = math::sd_max(bj1, bj3);
   const T areaI = (ymaxI - yminI) * (xmaxI - xminI);
   const T areaJ = (ymaxJ - yminJ) * (xmaxJ - xminJ);
   if (areaI <= zero || areaJ <= zero) {
