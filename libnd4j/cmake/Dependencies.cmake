@@ -1244,6 +1244,8 @@ function(setup_triton)
                 # LLVM_BUILD_TOOLS must stay ON because mlir-tblgen is needed by Triton.
                 -DLLVM_INCLUDE_TESTS=OFF
                 -DLLVM_INCLUDE_BENCHMARKS=OFF
+                -DLLVM_BUILD_EXAMPLES=OFF
+                -DLLVM_INCLUDE_EXAMPLES=OFF
                 -DMLIR_INCLUDE_TESTS=OFF
                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
