@@ -276,7 +276,7 @@ jobs:
 
       - name: Run windows cpu build
         shell: cmd
-        timeout-minutes: 180
+        timeout-minutes: 360
         run: |
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
