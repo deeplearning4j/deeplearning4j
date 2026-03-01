@@ -251,6 +251,16 @@ public class StaticKvCacheDecodeLoop {
                             kvNames.keyNames, kvNames.valueNames, maxKvLen, cachePos);
                     cachePos++;
                 }
+                // Close present KV outputs — scatter already copied data into static buffers.
+                // Without this, 60 tensors × ~4.5MB = ~270MB leaked per step.
+                for (String pn : kvNames.keyNames) {
+                    INDArray pv = decoderOutputs.get(pn);
+                    if (pv != null && !pv.wasClosed()) { pv.setCloseable(true); pv.close(); }
+                }
+                for (String pn : kvNames.valueNames) {
+                    INDArray pv = decoderOutputs.get(pn);
+                    if (pv != null && !pv.wasClosed()) { pv.setCloseable(true); pv.close(); }
+                }
             } else {
                 // Step 0 (prefill): transition to static KV
                 long prefillSeqLen = currentSeqLen;
