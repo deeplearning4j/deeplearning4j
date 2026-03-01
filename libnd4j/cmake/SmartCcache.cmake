@@ -54,7 +54,7 @@ BUILD_DIR=\"${CMAKE_BINARY_DIR}\"
 DEBUG=${SD_CCACHE_DEBUG}
 
 # Set sloppiness for all files to ensure cacheability
-export CCACHE_SLOPPINESS=\"include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed\"
+export CCACHE_SLOPPINESS=\"file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed\"
 
 # ==============================================================================
 # Extract compute capability / architecture from command line arguments
