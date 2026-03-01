@@ -41,7 +41,7 @@
 // 4KB padding — enough to absorb any realistic op overrun
 static constexpr size_t GLOBAL_NEW_PADDING = 4096;
 
-#if defined(__ANDROID__) || defined(__APPLE__) || defined(_MSC_VER)
+#if defined(__ANDROID__) || defined(__APPLE__) || defined(_MSC_VER) || defined(_WIN32)
 #define SD_ALLOC_VIS
 #else
 #define SD_ALLOC_VIS __attribute__((visibility("hidden")))

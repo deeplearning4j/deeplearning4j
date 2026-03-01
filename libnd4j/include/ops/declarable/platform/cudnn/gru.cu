@@ -479,7 +479,7 @@ PLATFORM_CHECK(gru, ENGINE_CUDA) {
   req.expectEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'c') &&
       req.expectEq(makeInfoVariable(Wx->dataType(), TYPE_MSG_INPUT2), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
       req.expectEq(makeInfoVariable(Wh->dataType(), TYPE_MSG_INPUT3), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
-      req.expectEq(makeInfoVariable(b->dataType(), TYPE_MSG_INPUT), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
+      req.expectEq(makeInfoVariable(b->dataType(), TYPE_MSG_INPUT_ "#4"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
       req.expectIn(makeInfoVariable(xType, TYPE_MSG_INPUT0), {HALF, FLOAT32, DOUBLE}) &&
       req.expectEq(makeInfoVariable(hI->ordering(), ORDERING_MSG_INPUT1), 'c') &&
       req.expectEq(makeInfoVariable(h->ordering(), ORDERING_MSG_OUTPUT0), 'c');
