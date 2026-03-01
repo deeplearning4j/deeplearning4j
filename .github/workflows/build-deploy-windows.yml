@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 2
+        default: 4
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -99,7 +99,7 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Setup ccache
         id: setup-ccache
@@ -108,7 +108,7 @@ jobs:
         with:
           cache-suffix: x86_64-${{ matrix.helper }}-${{ matrix.extension }}
           cache-family: x86_64
-          max-size: '5G'
+          max-size: '8G'
 
       - name: Show ccache stats before build
         if: always()
@@ -181,52 +181,33 @@ jobs:
           # Clear Azure artifacts cache
           Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-          # Optimize Windows Component Store
-          try {
-              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-              Write-Host "Optimized Windows Component Store"
-          }
-          catch {
-              Write-Host "Failed to optimize Windows Component Store. Continuing..."
-          }
-
           # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-      - name: Install environment
+      - name: Install MSYS2 and dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg
+            mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool
+            mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran
+            mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git
+            mingw-w64-x86_64-SDL2 mingw-w64-i686-SDL2 mingw-w64-x86_64-ragel
+            mingw-w64-x86_64-vulkan-headers mingw-w64-i686-vulkan-headers
+            mingw-w64-x86_64-vulkan-loader mingw-w64-i686-vulkan-loader
+
+      - name: Install build tools
         shell: cmd
-        env:
-          GITHUB_EVENT_HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          cd /d %USERPROFILE%
-
-          echo Installing MSYS2
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm pkg-config"
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar unzip p7zip zip autoconf autoconf-archive automake libtool make patch gnupg"
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git mingw-w64-x86_64-SDL2 mingw-w64-i686-SDL2 mingw-w64-x86_64-ragel mingw-w64-x86_64-vulkan-headers mingw-w64-i686-vulkan-headers mingw-w64-x86_64-vulkan-loader mingw-w64-i686-vulkan-loader"
-          set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\usr\bin;%PATH%"
-
-          C:\msys64\usr\bin\bash -lc "pacman -Q"
-
-          echo Installing Windows SDK 8.1
-          curl -Lo sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
-          sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
-
-          echo Removing broken stuff from WSL, MSYS2, etc
-          rm "C:/msys64/usr/bin/curl.exe" "C:/msys64/mingw32/bin/curl.exe" "C:/msys64/mingw64/bin/curl.exe"
-          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/timeout.exe" "C:/msys64/usr/bin/python.exe" "C:/msys64/usr/bin/python3.exe"
-          rm "C:/ProgramData/chocolatey/bin/gfortran.exe" "C:/msys64/mingw32/bin/gfortran.exe" "C:/msys64/mingw32/bin/python.exe" "C:/msys64/mingw32/bin/python3.exe"
-          rm "C:/Strawberry/c/bin/gfortran.exe" "C:/msys64/mingw64/bin/gfortran.exe" "C:/msys64/mingw64/bin/python.exe" "C:/msys64/mingw64/bin/python3.exe"
-          rm "C:/msys64/mingw32/bin/clang-cl.exe" "C:/msys64/mingw64/bin/clang-cl.exe" "C:/msys64/mingw32/bin/cmake.exe" "C:/msys64/mingw64/bin/cmake.exe"
-          rm "C:/Strawberry/c/lib/libz.a" "C:/Strawberry/c/lib/libzlib.a" "C:/Strawberry/c/lib/libzdll.a" "C:/Strawberry/c/bin/cmake.exe"
+          echo Removing conflicting binaries from MSYS2
+          del /f "C:\msys64\usr\bin\link.exe" 2>nul
+          del /f "C:\msys64\usr\bin\timeout.exe" 2>nul
 
           curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz || curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
           bash -c "tar -xzf apache-maven-3.6.3-bin.tar.gz -C 'C:/Program Files/'"
-
-          python -m pip install gdown || python -m pip install gdown
-
-          echo Using GCC from pacman -S toolchain install (pinned versions removed from MSYS2 repo)
 
       - name: Set mvn build command based on matrix
         shell: powershell
@@ -297,44 +278,31 @@ jobs:
         shell: cmd
         timeout-minutes: 120
         run: |
-          call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
 
-          set "MAVEN_OPTS=-Xmx1g"
+          set "MAVEN_OPTS=-Xmx3g -XX:+UseG1GC"
           set "CCACHE_DIR=%USERPROFILE%\.ccache"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
-          
-          where bash
-          where curl
-          where git
+          set "CMAKE_BUILD_PARALLEL_LEVEL=4"
+
+          REM Raise OOM killer thresholds for CI with large pagefile
+          set "OOM_MEMORY_THRESHOLD=95"
+          set "OOM_CRITICAL_THRESHOLD=98"
+          set "OOM_VELOCITY_THRESHOLD=15"
+
           where cl
           where gcc
           where cmake
           where mvn
-          where python
-          where python3
           where ccache
-          
-          bash --version
-          git --version
+
           cl
-          gcc --version
           cmake --version
           call mvn -version
-          python --version
-          ccache --version -sv
+          ccache -sv
           df -h
-          wmic pagefile list /format:list
-          
-          set MAKEJ=%NUMBER_OF_PROCESSORS%
-          echo Fetching %GITHUB_REPOSITORY%@%GITHUB_SHA%
-          git init
-          git fetch --depth 1 https://github.com/%GITHUB_REPOSITORY% %GITHUB_SHA%
-          git checkout %GITHUB_SHA%
-          git submodule update --init --recursive
-          git submodule foreach --recursive "git reset --hard"
-          
+
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
           echo "release version ${{ matrix.release_version }}"
@@ -342,10 +310,9 @@ jobs:
           echo "debug enabled ${{ matrix.debug_enabled }}"
           echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
           echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
-          
+
           if "%PERFORM_RELEASE%"=="1" (
                echo "Running release"
                bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
@@ -361,9 +328,8 @@ jobs:
           )
           set MVN_EXIT=%ERRORLEVEL%
 
-          ccache --version -sv
+          ccache -sv
           df -h
-          wmic pagefile list /format:list
 
           exit /b %MVN_EXIT%
         env:

@@ -539,7 +539,15 @@ if ! [[ "${CPU_COUNT}" =~ ^[0-9]+$ ]] || [[ "${CPU_COUNT}" -lt 1 ]]; then
     CPU_COUNT=1
 fi
 
-LOAD_LIMIT=$((CPU_COUNT * 3 / 4))
+# Use MAKEJ + 1 as load limit when explicitly set (CI), otherwise 75% of CPU count
+if [[ -n "${LIBND4J_LOAD_LIMIT:-}" ]]; then
+    LOAD_LIMIT="${LIBND4J_LOAD_LIMIT}"
+elif [[ "${MAKEJ}" -gt 1 ]]; then
+    # In CI with explicit -j, trust the caller and set load limit = MAKEJ + 1
+    LOAD_LIMIT=$((MAKEJ + 1))
+else
+    LOAD_LIMIT=$((CPU_COUNT * 3 / 4))
+fi
 if [[ "${LOAD_LIMIT}" -lt 1 ]]; then
     LOAD_LIMIT=1
 fi

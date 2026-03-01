@@ -177,15 +177,6 @@ jobs:
           # Clear Azure artifacts cache
           Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
 
-          # Optimize Windows Component Store
-          try {
-              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-              Write-Host "Optimized Windows Component Store"
-          }
-          catch {
-              Write-Host "Failed to optimize Windows Component Store. Continuing..."
-          }
-
           # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free

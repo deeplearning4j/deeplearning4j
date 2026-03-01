@@ -181,15 +181,6 @@ jobs:
               Write-Host "Cleared Azure artifacts cache"
           }
           
-          # Optimize Windows Component Store
-          try {
-              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
-              Write-Host "Optimized Windows Component Store"
-          }
-          catch {
-              Write-Host "Failed to optimize Windows Component Store. Continuing..."
-          }
-          
           # Show final disk space
           Write-Host "Final disk space:"
           Get-PSDrive C | Select-Object Used,Free
