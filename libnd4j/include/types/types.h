@@ -51,7 +51,21 @@
 // Code that needs bare conflicting names on Windows must use sd::DataType::NAME.
 // ============================================================================
 
-  // These names do NOT conflict with any Windows SDK types — always available
+  // Undefine Windows SDK macros that conflict with our DataType aliases.
+  // wtypes.h defines DOUBLE, FLOAT, HALF as macros (e.g. #define DOUBLE double)
+#ifdef _WIN32
+  #ifdef DOUBLE
+    #undef DOUBLE
+  #endif
+  #ifdef FLOAT
+    #undef FLOAT
+  #endif
+  #ifdef HALF
+    #undef HALF
+  #endif
+#endif
+
+  // These names should be safe on all platforms after the above undefs
   static constexpr auto INHERIT = sd::DataType::INHERIT;
   static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
   static constexpr auto HALF = sd::DataType::HALF;
