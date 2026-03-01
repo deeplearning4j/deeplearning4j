@@ -574,6 +574,26 @@ function(create_and_link_library)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
 
         # =========================================================================
+        # UNITY BUILD EXCLUSIONS
+        # =========================================================================
+        # Generated template-instantiation compilation units (e.g. specials_single_direct_*.cpp,
+        # pairwise_instantiation_*.cpp, etc.) each #include the same impl header for
+        # their type slice. In unity builds, multiple such .cpp files get merged into
+        # one TU, causing redefinition errors — #pragma once fails on MinGW GCC due
+        # to mixed-slash relative paths (..\..\include/...).
+        # These files are intentionally split for parallel compilation and type-based
+        # chunking, so excluding them from unity batching is correct.
+        # =========================================================================
+        if(SD_UNITY_BUILD)
+            foreach(_src ${ALL_SOURCES})
+                get_filename_component(_dir "${_src}" DIRECTORY)
+                if(_dir MATCHES "compilation_units|cpu_instantiations|cuda_instantiations")
+                    set_source_files_properties(${_src} PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+                endif()
+            endforeach()
+        endif()
+
+        # =========================================================================
         # NOTE ON EXCEPTION TABLE REDUCTION (ABANDONED APPROACH)
         # =========================================================================
         # We attempted to use -fno-exceptions to reduce .gcc_except_table sections
