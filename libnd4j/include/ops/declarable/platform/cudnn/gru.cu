@@ -215,8 +215,8 @@ void cudnn_gru_old(LaunchContext *contextPtr, NDArray *input, NDArray *inputWeig
   NDArray permutedX, outputH;
 
   if (outputActivations != nullptr && outputActivations->ordering() != 'c') {
-    outputH = NDArray('c', std::vector<LongType>{maxSeqLength, batchSize, (numDirections * hiddenSize)},
-                      outputActivations->dataType(), contextPtr);
+    std::vector<LongType> outputHShape = {maxSeqLength, batchSize, (numDirections * hiddenSize)};
+    outputH = NDArray('c', outputHShape, outputActivations->dataType(), contextPtr);
     argOutput = &outputH;
   }
 
@@ -289,7 +289,8 @@ void cudnn_gru_v8(LaunchContext *contextPtr, NDArray *input, NDArray *seqLengthA
       argSeqNdArray = &seqArrIntData;
     }
   } else {
-    seqArrIntData = NDArray('c', std::vector<LongType>{(LongType)batchSize}, INT32, contextPtr);
+    std::vector<LongType> seqShape{(LongType)batchSize};
+    seqArrIntData = NDArray('c', seqShape, INT32, contextPtr);
     seqArrIntData.assign(maxSeqLength);
     argSeqNdArray = &seqArrIntData;
   }
