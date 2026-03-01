@@ -124,6 +124,9 @@ if(EXISTS "${_REG_H_ALWAYS}")
         "registerTestMembar"
         "registerTestDialect"
         "registerTestProton"
+        "registerTestAlignment"
+        "registerTestLoopPeeling"
+        "registerTestScopeId"
         "TritonTest"
     )
     foreach(_pat IN LISTS _test_reg_patterns)
@@ -295,9 +298,10 @@ endmacro()
 patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/lib/NVGPUToLLVM/CMakeLists.txt" "NVGPUToLLVM")
 patch_add_tablegen_deps("${SOURCE_DIR}/third_party/nvidia/lib/TritonNVIDIAGPUToLLVM/CMakeLists.txt" "TritonNVIDIAGPUToLLVM")
 
-# === Part 7: Disable test subdirectory build (Triton 3.6.0) ===
+# === Part 7: Disable test and bin subdirectory builds (Triton 3.6.0) ===
 # Even with TRITON_BUILD_TESTING=OFF, the test/ subdir may still be added.
-# Comment it out if present in the root CMakeLists.txt.
+# The bin/ subdir builds triton-opt which links test libraries we don't need.
+# We only need the Triton libraries, not the triton-opt binary.
 set(_TRITON_ROOT_CMAKE "${SOURCE_DIR}/CMakeLists.txt")
 if(EXISTS "${_TRITON_ROOT_CMAKE}")
     file(READ "${_TRITON_ROOT_CMAKE}" _root_content)
@@ -307,9 +311,18 @@ if(EXISTS "${_TRITON_ROOT_CMAKE}")
             "add_subdirectory(test)"
             "# add_subdirectory(test)  # Removed: TRITON_BUILD_TESTING=OFF"
             _root_content "${_root_content}")
-        file(WRITE "${_TRITON_ROOT_CMAKE}" "${_root_content}")
         message(STATUS "Patched ${_TRITON_ROOT_CMAKE}: disabled test subdirectory")
     endif()
+    # Also disable bin/ subdirectory (triton-opt links test libraries)
+    string(FIND "${_root_content}" "add_subdirectory(bin)" _has_bin)
+    if(NOT _has_bin EQUAL -1)
+        string(REPLACE
+            "add_subdirectory(bin)"
+            "# add_subdirectory(bin)  # Removed: we don't need triton-opt"
+            _root_content "${_root_content}")
+        message(STATUS "Patched ${_TRITON_ROOT_CMAKE}: disabled bin subdirectory (triton-opt)")
+    endif()
+    file(WRITE "${_TRITON_ROOT_CMAKE}" "${_root_content}")
 endif()
 
 message(STATUS "Triton patching complete (SOURCE_DIR=${SOURCE_DIR})")
