@@ -193,7 +193,7 @@ endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     add_compile_options(/Gy)  # Function-level linking
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF /OPT:ICF")
-    add_compile_options(/bigobj /EHsc /Zc:preprocessor)
+    add_compile_options(/bigobj /EHsc /Zc:preprocessor /MP)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()

@@ -631,6 +631,9 @@ MLIR_VERSION="${MLIR_VERSION:-18}"
 MLIR_GPU="${MLIR_GPU:-OFF}"
 TRITON="${TRITON:-OFF}"
 
+# Unity build - combines source files for faster compilation
+UNITY_BUILD="${UNITY_BUILD:-OFF}"
+
 # OOM Killer configuration
 # Monitors memory usage during build and kills processes if threshold is exceeded
 OOM_KILLER_ENABLED="${OOM_KILLER_ENABLED:-ON}"
@@ -1609,6 +1612,13 @@ do
             print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
             shift # past argument
             ;;
+        --unity-build)
+            UNITY_BUILD="$value"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "green" "✓ Unity build enabled - combining source files for faster compilation"
+            fi
+            shift # past argument
+            ;;
         --oom-killer)
             OOM_KILLER_ENABLED="$value"
             if [[ "$value" == "ON" ]]; then
@@ -2537,6 +2547,7 @@ if [ "$MLIR" == "ON" ]; then
     fi
 fi
 TRITON_CMAKE="-DSD_TRITON=${TRITON}"
+UNITY_BUILD_CMAKE="-DSD_UNITY_BUILD=${UNITY_BUILD}"
 
 echo PACKAGING           = "${PACKAGING}"
 echo BUILD               = "${BUILD}"
@@ -2566,6 +2577,7 @@ echo MLIR                = "$MLIR"
 echo MLIR_VERSION        = "$MLIR_VERSION"
 echo MLIR_GPU            = "$MLIR_GPU"
 echo TRITON              = "$TRITON"
+echo UNITY_BUILD         = "$UNITY_BUILD"
 echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
 echo USE_LTO             = "$USE_LTO"
 echo CUDA_LTO            = "$CUDA_LTO"
@@ -2628,6 +2640,8 @@ if [ "$PREPROCESS" == "ON" ]; then
             $KERNEL_CMAKE \
             $MLIR_ARG \
             $TRITON_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -2660,6 +2674,8 @@ if [ "$PREPROCESS" == "ON" ]; then
             $KERNEL_CMAKE \
             $MLIR_ARG \
             $TRITON_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             "$SHARED_LIBS_ARG" \
             "$OPERATIONS_ARG" \
             "$DATATYPES_ARG" \
@@ -2726,6 +2742,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         $KERNEL_CMAKE \
         $MLIR_ARG \
         $TRITON_CMAKE \
+        $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -2766,6 +2783,7 @@ else
         $KERNEL_CMAKE \
         $MLIR_ARG \
         $TRITON_CMAKE \
+        $UNITY_BUILD_CMAKE \
         "$SHARED_LIBS_ARG" \
         "$MINIFIER_ARG" \
         "$OPERATIONS_ARG" \
@@ -2958,6 +2976,8 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             $TRITON_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
             $MKL_CMAKE \
             $BLAS_CMAKE \
@@ -2970,6 +2990,8 @@ if [ "$BUILD_PPSTEP" == "ON" ]; then
             "$ARCH_ARG" \
             "$NAME_ARG" \
             $TRITON_CMAKE \
+        $UNITY_BUILD_CMAKE \
+            $UNITY_BUILD_CMAKE \
             -DOPENBLAS_PATH="$OPENBLAS_PATH" \
             $MKL_CMAKE \
             $BLAS_CMAKE \
