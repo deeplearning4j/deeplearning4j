@@ -53,7 +53,8 @@ def should_filter_arg(arg):
     if arg in ('/Gy', '/bigobj', '/EHsc', '/GR', '/MD', '/MDd', '/MT', '/MTd',
                '/O1', '/O2', '/Ob0', '/Ob1', '/Ob2', '/Od', '/Oi', '/Os', '/Ot',
                '/Ox', '/RTC1', '/RTCs', '/RTCu', '/W0', '/W1', '/W2', '/W3', '/W4',
-               '/WX', '/Zi', '/ZI', '/Z7', '/GL', '/Gm', '/Gd', '/Gr', '/Gz'):
+               '/WX', '/Zi', '/ZI', '/Z7', '/GL', '/Gm', '/Gd', '/Gr', '/Gz',
+               '/MP'):
         return True
     if arg.startswith('/Zc:'):
         return True
