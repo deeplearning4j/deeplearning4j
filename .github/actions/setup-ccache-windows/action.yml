@@ -97,25 +97,32 @@ runs:
 
     - name: Configure ccache
       continue-on-error: true
-      shell: cmd
+      shell: pwsh
       run: |
-        set "CCACHE_DIR=%USERPROFILE%\.ccache"
-        if not exist "%CCACHE_DIR%" mkdir "%CCACHE_DIR%"
+        $ccacheDir = "$env:USERPROFILE\.ccache"
+        if (-not (Test-Path $ccacheDir)) { New-Item -ItemType Directory -Path $ccacheDir -Force | Out-Null }
 
-        REM Create ccache configuration
-        set "CCACHE_CONFIGPATH=%CCACHE_DIR%\ccache.conf"
-        (echo max_size = ${{ inputs.max-size }})> "%CCACHE_CONFIGPATH%"
-        (echo compression = true)>> "%CCACHE_CONFIGPATH%"
-        (echo compression_level = 1)>> "%CCACHE_CONFIGPATH%"
-        (echo hash_dir = false)>> "%CCACHE_CONFIGPATH%"
-        (echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed,system_headers)>> "%CCACHE_CONFIGPATH%"
-        (echo compiler_check = content)>> "%CCACHE_CONFIGPATH%"
-        (echo depend_mode = true)>> "%CCACHE_CONFIGPATH%"
-        (echo inode_cache = true)>> "%CCACHE_CONFIGPATH%"
-        (echo file_clone = true)>> "%CCACHE_CONFIGPATH%"
+        $configPath = "$ccacheDir\ccache.conf"
+        # Remove any stale config from cache restore before writing fresh one
+        if (Test-Path $configPath) { Remove-Item $configPath -Force }
 
-        echo === ccache configuration ===
-        type "%CCACHE_CONFIGPATH%"
+        $config = @"
+        max_size = ${{ inputs.max-size }}
+        compression = true
+        compression_level = 1
+        hash_dir = false
+        sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed,system_headers
+        compiler_check = content
+        depend_mode = true
+        inode_cache = true
+        file_clone = true
+        "@
+        # Trim leading whitespace from each line (YAML indentation)
+        $config = ($config -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }) -join "`n"
+        Set-Content -Path $configPath -Value $config -Encoding ASCII -NoNewline
+
+        Write-Host "=== ccache configuration ==="
+        Get-Content $configPath
 
     - name: Add ccache to PATH
       continue-on-error: true
