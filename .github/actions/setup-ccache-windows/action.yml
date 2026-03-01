@@ -104,15 +104,15 @@ runs:
 
         REM Create ccache configuration
         set "CCACHE_CONFIGPATH=%CCACHE_DIR%\ccache.conf"
-        echo max_size = ${{ inputs.max-size }}> "%CCACHE_CONFIGPATH%"
-        echo compression = true>> "%CCACHE_CONFIGPATH%"
-        echo compression_level = 1>> "%CCACHE_CONFIGPATH%"
-        echo hash_dir = false>> "%CCACHE_CONFIGPATH%"
-        echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed,system_headers>> "%CCACHE_CONFIGPATH%"
-        echo compiler_check = content>> "%CCACHE_CONFIGPATH%"
-        echo depend_mode = true>> "%CCACHE_CONFIGPATH%"
-        echo inode_cache = true>> "%CCACHE_CONFIGPATH%"
-        echo file_clone = true>> "%CCACHE_CONFIGPATH%"
+        (echo max_size = ${{ inputs.max-size }})> "%CCACHE_CONFIGPATH%"
+        (echo compression = true)>> "%CCACHE_CONFIGPATH%"
+        (echo compression_level = 1)>> "%CCACHE_CONFIGPATH%"
+        (echo hash_dir = false)>> "%CCACHE_CONFIGPATH%"
+        (echo sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed,system_headers)>> "%CCACHE_CONFIGPATH%"
+        (echo compiler_check = content)>> "%CCACHE_CONFIGPATH%"
+        (echo depend_mode = true)>> "%CCACHE_CONFIGPATH%"
+        (echo inode_cache = true)>> "%CCACHE_CONFIGPATH%"
+        (echo file_clone = true)>> "%CCACHE_CONFIGPATH%"
 
         echo === ccache configuration ===
         type "%CCACHE_CONFIGPATH%"
