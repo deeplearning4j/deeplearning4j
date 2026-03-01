@@ -623,7 +623,8 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
     sd::LongType xIndex;
     COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xPos, xIndex);
     if (sd::math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
-      maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs<T,T>(compoundBuffer[xIndex]));
+      T absVal = sd::math::sd_abs<T,T>(compoundBuffer[xIndex]);
+      maxValue = maxValue > absVal ? maxValue : absVal;
       result = rowCounter;
     }
   }

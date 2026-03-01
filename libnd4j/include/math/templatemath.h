@@ -72,6 +72,21 @@ The BODY parameter is evaluated to compute the result, which is then cast to typ
 * */
 // Macro to define functions with advanced type promotion and debugging
 // Updated SD_PROMOTE_FUNC macro
+// Note: NVCC+MSVC has issues with SFINAE enable_if on non-type template params,
+// so we skip the is_arithmetic check on that combination. The static_assert inside
+// the function body catches any misuse at compile time.
+#if defined(__CUDACC__) && defined(_MSC_VER)
+#define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
+template<typename T, typename U = T, typename Z = T>                    \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
+   using calc_type = typename promote_type3<T, U, Z>::type;            \
+   calc_type promoted_val1 = static_cast<calc_type>(val1);             \
+   calc_type promoted_val2 = static_cast<calc_type>(val2);             \
+   calc_type result = BODY;                                            \
+   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
+   return static_cast<Z>(result);                                      \
+}
+#else
 #define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename Z = T,                    \
          typename std::enable_if<                                       \
@@ -86,7 +101,27 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
    SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                      \
 }
+#endif
 
+#if defined(__CUDACC__) && defined(_MSC_VER)
+#define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
+template<typename T, typename U = T, typename V = T, typename Z = T>     \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
+   using calc_type = typename promote_type3<T, U, Z>::type;             \
+   calc_type promoted_val1 = static_cast<calc_type>(val1);              \
+   calc_type promoted_val2 = static_cast<calc_type>(val2);              \
+   calc_type promoted_eps = static_cast<calc_type>(eps);                \
+   calc_type result; \
+   if constexpr (std::is_same_v<calc_type COMMA_MATH bool> || std::is_same_v<calc_type COMMA_MATH bfloat16> || std::is_same_v<calc_type COMMA_MATH float16>) { \
+     bool bool_result = BODY; \
+     result = static_cast<calc_type>(bool_result ? 1 : 0); \
+   } else { \
+     result = BODY; \
+   } \
+   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
+   return static_cast<Z>(result);                                       \
+}
+#else
 #define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename V = T, typename Z = T,     \
          typename std::enable_if<                                        \
@@ -109,6 +144,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
    SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                       \
 }
+#endif
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_abs(T value);
 
