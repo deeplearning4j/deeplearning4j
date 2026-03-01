@@ -1776,6 +1776,19 @@ inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, 
 }
 #endif // HAS_LONG
 
+#ifdef HAS_UINT64
+// On Windows, unsigned long is 32-bit, so unsigned long long needs its own specialization
+template <>
+inline SD_DEVICE unsigned long long sd_atomicMin<unsigned long long>(unsigned long long* address, unsigned long long val) {
+  unsigned long long old = *address, assumed;
+  do {
+    assumed = old;
+    old = ::atomicCAS(address, assumed, val < assumed ? val : assumed);
+  } while (assumed != old);
+  return old;
+}
+#endif // HAS_UINT64
+
 #ifdef HAS_INT16
 template <>
 inline SD_DEVICE int16_t sd_atomicMin<int16_t>(int16_t* address, int16_t val) {
@@ -2124,6 +2137,19 @@ inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, 
 }
 #endif // HAS_LONG
 
+#ifdef HAS_UINT64
+// On Windows, unsigned long is 32-bit, so unsigned long long needs its own specialization
+template <>
+inline SD_DEVICE unsigned long long sd_atomicMax<unsigned long long>(unsigned long long* address, unsigned long long val) {
+  unsigned long long old = *address, assumed;
+  do {
+    assumed = old;
+    old = ::atomicCAS(address, assumed, val > assumed ? val : assumed);
+  } while (assumed != old);
+  return old;
+}
+#endif // HAS_UINT64
+
 #ifdef HAS_DOUBLE
 template <>
 inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
@@ -2167,6 +2193,12 @@ inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
       static_cast<int>(val)));
 }
 #endif // LONG_MAX == 2147483647L
+
+// On Windows, unsigned long long is a distinct type from long long (sd::LongType)
+template <>
+inline SD_DEVICE unsigned long long sd_atomicAdd<unsigned long long>(unsigned long long* address, unsigned long long val) {
+  return ::atomicAdd(address, val);
+}
 #endif // HAS_LONG
 
 // Use CUDA's native atomicAdd for uint32_t (available on all compute capabilities)
