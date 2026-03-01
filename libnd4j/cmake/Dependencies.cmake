@@ -568,9 +568,14 @@ function(setup_onednn)
     set(ONEDNN_URL "https://github.com/uxlfoundation/oneDNN/archive/refs/tags/v${ONEDNN_VERSION}.tar.gz")
 
     # Build CMAKE_ARGS list for OneDNN
+    if(WIN32)
+        set(ONEDNN_LIB_DIR "lib")
+    else()
+        set(ONEDNN_LIB_DIR "lib64")
+    endif()
     set(ONEDNN_CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
-            -DCMAKE_INSTALL_LIBDIR=lib64
+            -DCMAKE_INSTALL_LIBDIR=${ONEDNN_LIB_DIR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DDNNL_LIBRARY_TYPE=STATIC
             -DDNNL_BUILD_TESTS=OFF
@@ -632,8 +637,8 @@ function(setup_onednn)
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
             BUILD_BYPRODUCTS
                 "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
-                "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a"
-                "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"
+                "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/libdnnl.a"
+                "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/dnnl.lib"
             TIMEOUT           900
             LOG_DOWNLOAD      OFF
             LOG_CONFIGURE     OFF
@@ -644,9 +649,9 @@ function(setup_onednn)
     add_library(onednn_interface INTERFACE)
     target_include_directories(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/include")
     if(WIN32)
-        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib")
+        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/dnnl.lib")
     else()
-        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a")
+        target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/libdnnl.a")
     endif()
     add_dependencies(onednn_interface onednn_external)
     set(ONEDNN onednn_interface PARENT_SCOPE)
