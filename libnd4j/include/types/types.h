@@ -65,13 +65,11 @@
   #endif
 #endif
 
-  // These names should be safe on all platforms after the above undefs
+  // These names should be safe on all platforms
   static constexpr auto INHERIT = sd::DataType::INHERIT;
   static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
-  static constexpr auto HALF = sd::DataType::HALF;
   static constexpr auto HALF2 = sd::DataType::HALF2;
   static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
-  static constexpr auto DOUBLE = sd::DataType::DOUBLE;
   static constexpr auto QINT8 = sd::DataType::QINT8;
   static constexpr auto QINT16 = sd::DataType::QINT16;
   static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
@@ -80,6 +78,16 @@
   static constexpr auto UTF32 = sd::DataType::UTF32;
   static constexpr auto ANY = sd::DataType::ANY;
   static constexpr auto AUTO = sd::DataType::AUTO;
+
+  // DOUBLE, HALF conflict with Windows SDK typedefs in wtypesbase.h
+  // (typedef double DOUBLE; etc.) — typedefs, not macros, so #undef doesn't help.
+  // Only exclude when windows.h has been included (detected via _WINDOWS_ guard).
+  // libnd4j C++ build doesn't include windows.h — these are fine there.
+  // JNI bindings (jnind4jcpu.cpp) DO include windows.h, causing the conflict.
+#if !defined(_WINDOWS_) && !defined(_INC_WINDOWS)
+  static constexpr auto DOUBLE = sd::DataType::DOUBLE;
+  static constexpr auto HALF = sd::DataType::HALF;
+#endif
 
   // These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
 #if !defined(_WIN32)
