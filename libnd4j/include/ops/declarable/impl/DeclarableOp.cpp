@@ -32,6 +32,9 @@
 
 #if defined(SD_GCC_FUNCTRACE)
 #include <ops/declarable/OpExecutionLogger.h>
+// Define thread_local storage here (single translation unit) to avoid
+// MinGW/GCC multiple TLS init function definitions from inline thread_local in header
+thread_local std::string sd::ops::OpExecutionLogger::_currentOpName;
 #endif
 
 #include <cstdarg>

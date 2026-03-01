@@ -265,8 +265,8 @@ private:
     static thread_local std::string _currentOpName;
 };
 
-// Define thread-local storage
-inline thread_local std::string OpExecutionLogger::_currentOpName;
+// thread_local storage defined in DeclarableOp.cpp (not here - inline thread_local
+// causes multiple TLS init function definitions on MinGW/GCC)
 
 } // namespace ops
 } // namespace sd
