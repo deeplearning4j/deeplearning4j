@@ -293,7 +293,6 @@ jobs:
           
           if [ "${{ matrix.helper }}" == "compile" ]; then
              HELPER_FLAGS="-Djavacpp.platform.extension=-compile \
-               -Dlibnd4j.triton=ON \
                -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile"
           elif [ "${{ matrix.helper }}" == "armcompute" ]; then
              HELPER_FLAGS="-Dlibnd4j.helper=${{ matrix.helper }} \
