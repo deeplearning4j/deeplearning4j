@@ -141,8 +141,14 @@ update_hash_cache() {
     local file=\"\$1\"
     local hash=\"\$2\"
 
+    # Use non-blocking lock (-n) to avoid deadlocks on Windows/MSYS2.
+    # If the lock can't be acquired, skip the write — hash will be
+    # populated on the next build.
     exec 9>\"\$HASH_LOCK\"
-    flock -x 9
+    if ! flock -n -x 9 2>/dev/null; then
+        exec 9>&-
+        return
+    fi
 
     if [[ -f \"\$HASH_CACHE\" ]]; then
         grep -v \"^\$file:\" \"\$HASH_CACHE\" > \"\$HASH_CACHE.tmp\" 2>/dev/null || true
@@ -172,22 +178,31 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
             if [[ \"\$DEBUG\" == \"ON\" ]]; then
                 echo \"[SMART_CCACHE] Clean build (no cache), skipping hash: \$SOURCE_FILE\" >&2
             fi
-            # Background: compute hash and store it without blocking compilation
+            # Background: compute hash and store it without blocking compilation.
+            # Use non-blocking flock (-n) to avoid deadlocks on Windows/MSYS2.
             ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
               if [[ -n \"\$CURRENT_HASH\" ]]; then
                   exec 9>\"\$HASH_LOCK\"
-                  flock -x 9
-                  echo \"\$SOURCE_FILE:\$CURRENT_HASH\" >> \"\$HASH_CACHE\"
-                  exec 9>&-
+                  if flock -n -x 9 2>/dev/null; then
+                      echo \"\$SOURCE_FILE:\$CURRENT_HASH\" >> \"\$HASH_CACHE\"
+                      exec 9>&-
+                  else
+                      exec 9>&-
+                  fi
               fi
             ) &
         else
             # Subsequent build: hash cache exists. Check for changes.
+            # Use non-blocking shared lock to avoid deadlocks on Windows/MSYS2.
+            # If lock can't be acquired, treat as unknown file (let ccache handle it).
             STORED_HASH=\"\"
             exec 9>\"\$HASH_LOCK\"
-            flock -s 9
-            STORED_HASH=\"\$(grep \"^\$SOURCE_FILE:\" \"\$HASH_CACHE\" 2>/dev/null | tail -1 | cut -d: -f2-)\"
-            exec 9>&-
+            if flock -n -s 9 2>/dev/null; then
+                STORED_HASH=\"\$(grep \"^\$SOURCE_FILE:\" \"\$HASH_CACHE\" 2>/dev/null | tail -1 | cut -d: -f2-)\"
+                exec 9>&-
+            else
+                exec 9>&-
+            fi
 
             if [[ -z \"\$STORED_HASH\" ]]; then
                 # New file in subsequent build — let ccache handle it, update hash in background
