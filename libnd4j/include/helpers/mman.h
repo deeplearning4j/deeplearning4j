@@ -25,6 +25,9 @@
 #define _SYS_MMAN_H_
 #include <errno.h>
 #include <io.h>
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 
 #ifndef FILE_MAP_EXECUTE

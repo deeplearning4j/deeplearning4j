@@ -18,6 +18,7 @@
 // Platform-specific includes for dynamic loading — must be BEFORE project headers
 // so that _WINDOWS_ is defined before types.h constexpr alias guards are checked
 #ifdef _WIN32
+#define NOMINMAX  // Prevent windows.h from defining min/max macros
 #include <windows.h>
 #endif
 

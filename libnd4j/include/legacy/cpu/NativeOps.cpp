@@ -25,6 +25,9 @@
 // On Windows, include windows.h early so _WINDOWS_ is defined before types.h
 // constexpr alias guards are evaluated (avoids BOOL/INT64/etc. typedef conflicts)
 #ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 #endif
 
