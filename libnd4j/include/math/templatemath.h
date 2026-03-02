@@ -75,7 +75,7 @@ The BODY parameter is evaluated to compute the result, which is then cast to typ
 // Note: NVCC+MSVC has issues with SFINAE enable_if on non-type template params,
 // so we skip the is_arithmetic check on that combination. The static_assert inside
 // the function body catches any misuse at compile time.
-#if defined(__CUDACC__) && defined(_MSC_VER)
+#if defined(_MSC_VER)
 #define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename Z = T>                    \
 SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
@@ -103,7 +103,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
 }
 #endif
 
-#if defined(__CUDACC__) && defined(_MSC_VER)
+#if defined(_MSC_VER)
 #define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename V = T, typename Z = T>     \
 SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
