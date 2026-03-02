@@ -1313,8 +1313,10 @@ do
     case $key in
          --extract-instantiations)
         EXTRACT_INSTANTIATIONS="$value"
-        print_colored "blue" "✓ Template instantiation extraction enabled"
-        print_colored "yellow" "Build will extract instantiations and exit"
+        if [[ "$value" == "ON" ]]; then
+            print_colored "blue" "✓ Template instantiation extraction enabled"
+            print_colored "yellow" "Build will extract instantiations and exit"
+        fi
         shift # past argument
         ;;
 
@@ -1604,12 +1606,16 @@ do
             ;;
         --cmake-only|--configure-only)
             CMAKE_ONLY="$value"
-            print_colored "blue" "✓ CMake-only mode enabled - will exit after configuration"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "blue" "✓ CMake-only mode enabled - will exit after configuration"
+            fi
             shift # past argument
             ;;
         --link-only)
             LINK_ONLY="$value"
-            print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
+            if [[ "$value" == "ON" ]]; then
+                print_colored "blue" "✓ Link-only mode enabled - will skip compilation and only relink"
+            fi
             shift # past argument
             ;;
         --unity-build)
@@ -2008,7 +2014,7 @@ case "$OS" in
         # Do something under Windows NT platform
         if [ "$CHIP" == "cuda" ]; then
             export CMAKE_COMMAND="cmake -G \"Ninja\""
-            export MAKE_COMMAND="ninja"
+            export MAKE_COMMAND="ninja -j${MAKEJ}"
             export CC="cl.exe"
             export CXX="cl.exe"
             PARALLEL="true"
@@ -2019,7 +2025,7 @@ case "$OS" in
             # prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
             # may show up
             export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
-            export MAKE_COMMAND="make"
+            export MAKE_COMMAND="make -j${MAKEJ} -l${LOAD_LIMIT}"
             export CC=gcc
             export CXX=g++
             PARALLEL="true"
