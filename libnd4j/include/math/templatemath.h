@@ -2124,8 +2124,10 @@ inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, 
 }
 #endif // HAS_LONG
 
-#ifdef HAS_UINT64
-// uint64_t specialization for atomicMax (unsigned 64-bit)
+// On Linux x86_64, uint64_t == unsigned long, so the unsigned long specialization
+// above (line ~1830) already covers uint64_t. Only compile this when they differ
+// (e.g., Windows where uint64_t = unsigned long long).
+#if defined(HAS_UINT64) && !defined(__linux__)
 template <>
 inline SD_DEVICE uint64_t sd_atomicMax<uint64_t>(uint64_t* address, uint64_t val) {
   unsigned long long* address_as_ull = reinterpret_cast<unsigned long long*>(address);
