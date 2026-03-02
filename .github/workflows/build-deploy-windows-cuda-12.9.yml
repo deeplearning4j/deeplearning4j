@@ -11,7 +11,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 1
+        default: 4
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
@@ -87,7 +87,7 @@ jobs:
           - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '1' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
