@@ -295,7 +295,7 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, NDArr
       delete block1Ptr;
       Householder<T>::mulLeft(block1, tail, coeff);
 
-      NDArray *block2Ptr = tRef({0, math::sd_min<int>(ind3, k + 3) + 1, k, k + 3}, true);
+      NDArray *block2Ptr = tRef({0, math::sd_min(ind3, k + 3) + 1, k, k + 3}, true);
       NDArray block2 = *block2Ptr;
       delete block2Ptr;
       Householder<T>::mulRight(block2, tail, coeff);
@@ -356,7 +356,7 @@ void Schur<T>::calcFromHessenberg() {
   NDArray uRef = *u;
   T norm = static_cast<T>(0);
   for (int j = 0; j < numCols; ++j) {
-    NDArray *viewPtr = tRef({0, math::sd_min<int>(numCols, j + 2), j, j + 1});
+    NDArray *viewPtr = tRef({0, math::sd_min(numCols, j + 2), j, j + 1});
     auto sum = viewPtr->reduceNumber(reduce::ASum);
     norm += sum->template t<T>(0);
     delete viewPtr;

@@ -1076,7 +1076,7 @@ LongType* ShapeUtils::matrixProductShape(LongType* theFirstShape, LongType* theS
   } else if ((shape::isVector(tmpA) && shape::isScalar(tmpB)) || (shape::isScalar(tmpA) && shape::isVector(tmpB))) {
     // element-wise
     shape[0] = 1;
-    shape[1] = (LongType)sd::math::sd_max<LongType>(shape::length(tmpA), shape::length(tmpB));
+    shape[1] = (LongType)sd::math::sd_max(static_cast<LongType>(shape::length(tmpA)), static_cast<LongType>(shape::length(tmpB)));
   } else if (shape::isRowVector(tmpA) && shape::isRowVector(tmpB)) {
     // dot case
     shape[0] = 1;

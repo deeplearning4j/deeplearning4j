@@ -39,7 +39,7 @@ JacobiSVD<T>::JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, con
 
   _rows = static_cast<int>(matrix.sizeAt(0));
   _cols = static_cast<int>(matrix.sizeAt(1));
-  _diagSize = math::sd_min<int>(_rows, _cols);
+  _diagSize = math::sd_min(_rows, _cols);
 
   _calcU = calcU;
   _calcV = calcV;
@@ -208,8 +208,8 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
   }
 
   maxElem =
-      math::sd_max<T>(maxElem, math::sd_max<T>(math::sd_abs<T,T>(block.t<T>(p, p)), math::sd_abs<T,T>(block.t<T>(q, q))));
-  T threshold = math::sd_max<T>(almostZero, precision * maxElem);
+      math::sd_max(maxElem, math::sd_max(math::sd_abs<T,T>(block.t<T>(p, p)), math::sd_abs<T,T>(block.t<T>(q, q))));
+  T threshold = math::sd_max(almostZero, precision * maxElem);
 
   return math::sd_abs<T,T>(block.t<T>(p, q)) > threshold || math::sd_abs<T,T>(block.t<T>(q, p)) > threshold;
 }
@@ -402,7 +402,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
     for (int p = 1; p < _diagSize; ++p) {
       for (int q = 0; q < p; ++q) {
-        T threshold = math::sd_max<T>(almostZero, precision * maxDiagElem);
+        T threshold = math::sd_max(almostZero, precision * maxDiagElem);
 
         if (math::sd_abs<T,T>(_m.t<T>(p, q)) > threshold || math::sd_abs<T,T>(_m.t<T>(q, p)) > threshold) {
           stop = false;
@@ -420,8 +420,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
           if (_calcV) mulRotationOnRight(p, q, _v, rotRight);
 
-          maxDiagElem = math::sd_max<T>(
-              maxDiagElem, math::sd_max<T>(math::sd_abs<T,T>(_m.t<T>(p, p)), math::sd_abs<T,T>(_m.t<T>(q, q))));
+          maxDiagElem = math::sd_max(
+              maxDiagElem, math::sd_max(math::sd_abs<T,T>(_m.t<T>(p, p)), math::sd_abs<T,T>(_m.t<T>(q, q))));
 
           delete rotLeftTranspose;
         }

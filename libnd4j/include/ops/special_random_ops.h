@@ -90,8 +90,8 @@ class Choice {
     sd::LongType yLength = shape::length(yShapeBuffer);
 
     int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
@@ -205,8 +205,8 @@ class GaussianDistribution {
     auto middle = zLength % 2 + zLength / 2;
 
     int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
 
     sd::graph::RandomGenerator *rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
     const T mean = extraArguments[0];
@@ -311,8 +311,8 @@ class BinomialDistribution {
     sd::LongType zLength = shape::length(zShapeBuffer);
 
     int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
 
     T prob = extraArguments[1];
     sd::LongType zRank = shape::rank(zShapeBuffer);
@@ -408,8 +408,8 @@ class BinomialDistributionEx {
     sd::LongType zLength = shape::length(zShapeBuffer);
 
     int elementsPerThread = zLength / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
@@ -535,8 +535,8 @@ class TruncatedNormalDistribution {
     T ds = sd::math::sd_abs<T,T>(stddev) * (T)2.0f;
     sd::LongType middle = zLength / 2 + (zLength % 2);
     int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
     sd::LongType zRank = shape::rank(zShapeBuffer);
     sd::LongType *zShape = shape::shapeOf(zShapeBuffer);
     sd::LongType *zStride = shape::stride(zShapeBuffer);
@@ -686,8 +686,8 @@ class LogNormalDistribution {
     auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
     int elementsPerThread = middle / TAD_THRESHOLD;
-    int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-    _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+    int _threads = sd::math::sd_max(1, elementsPerThread);
+    _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
 
     auto rng = reinterpret_cast<sd::graph::RandomGenerator *>(state);
 

@@ -233,8 +233,8 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   auto reduce = colVec0.reduceNumber(reduce::AMax);
   T maxElem0 = reduce->template t<T>(0);
  delete reduce;
-  T eps = math::sd_max<T>(almostZero, DataTypeUtils::eps<T>() * maxElem);
-  T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(maxElem0, maxElem);
+  T eps = math::sd_max(almostZero, DataTypeUtils::eps<T>() * maxElem);
+  T epsBig = (T)8. * DataTypeUtils::eps<T>() * math::sd_max(maxElem0, maxElem);
 
   if (diagInterval.template t<T>(0) < epsBig) diagInterval.template r<T>(0) = epsBig;
 
@@ -435,7 +435,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
     bool useBisection = fPrev * fCur > (T)0.;
     while (fCur != (T).0 &&
            math::sd_abs<T,T>(muCur - muPrev) >
-           (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
+           (T)8. * DataTypeUtils::eps<T>() * math::sd_max(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
            math::sd_abs<T,T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection) {
       T a = (fCur - fPrev) / ((T)1. / muCur - (T)1. / muPrev);
       T jac = fCur - a / muCur;
@@ -470,7 +470,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *
-             math::sd_max<T>(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
+             math::sd_max(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
         T midShifted = (leftShifted + rightShifted) / (T)2.;
         fMid = secularEq(midShifted, col0, diag, permut, *diagShifted, shift);
         if (fLeft * fMid < (T)0.)

@@ -40,7 +40,7 @@ SD_HOST void TypeCast::convertFromQuantized(Pointer *extras, void *dx, LongType 
 
   for (LongType e = 0; e < N; e++) {
     z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<int8_t>()) *
-                          sd::math::sd_max<float>(amin, amax));
+                          sd::math::sd_max(amin, amax));
   }
 }
 
@@ -81,7 +81,7 @@ SD_HOST void TypeCast::convertToQuantized(Pointer *extras, void *dx, LongType N,
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       rz[e] = static_cast<char>(sd::math::sd_round<float, char>(1.0f * static_cast<float>(x[e]) /
-                                                                sd::math::sd_max<float>(amax, amin) * max_byte));
+                                                                sd::math::sd_max(amax, amin) * max_byte));
     }
   };
 

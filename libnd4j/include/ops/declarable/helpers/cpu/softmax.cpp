@@ -64,7 +64,7 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
    T val = inBuff[inOffset];
    // Skip Inf and NaN when finding max
    if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
-     max = sd::math::sd_max<T>(max, val);
+     max = sd::math::sd_max(max, val);
    }
  }
 
@@ -87,14 +87,14 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
    }
    // Clamp the difference to prevent overflow in exp
    T diff = val - max;
-   diff = sd::math::sd_max<T>(clampMin, sd::math::sd_min<T>(clampMax, diff));
+   diff = sd::math::sd_max(clampMin, sd::math::sd_min(clampMax, diff));
    T r = sd::math::sd_exp<T, T>(diff);
    outBuff[outOffset] = r;
    sum += r;
  }
 
  // Add small epsilon to prevent division by zero
- sum = sd::math::sd_max<T>(sum, static_cast<T>(1e-6f));
+ sum = sd::math::sd_max(sum, static_cast<T>(1e-6f));
 
  // Normalize
  for (int i = 0; i < length; i++) {
@@ -180,7 +180,7 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
      for (sd::LongType j = 0; j < tadLen; ++j) {
        T val = inBuff[j];
        if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
-         max = sd::math::sd_max<T>(max, val);
+         max = sd::math::sd_max(max, val);
        }
      }
      if (max == -DataTypeUtils::max<T>()) max = static_cast<T>(0.0f);
@@ -191,13 +191,13 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
          val = (val > 0 || std::isnan(static_cast<float>(val))) ? clampMax + max : clampMin + max;
        }
        T diff = val - max;
-       diff = sd::math::sd_max<T>(clampMin, sd::math::sd_min<T>(clampMax, diff));
+       diff = sd::math::sd_max(clampMin, sd::math::sd_min(clampMax, diff));
        T temp = sd::math::sd_exp<T, T>(diff);
        outBuff[j] = temp;
        sum += temp;
      }
 
-     sum = sd::math::sd_max<T>(sum, sumEps);
+     sum = sd::math::sd_max(sum, sumEps);
      for (sd::LongType j = 0; j < tadLen; ++j) outBuff[j] /= sum;
    }
  };
@@ -259,7 +259,7 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
          COORDS2INDEX(tadRank, tadStride, tadCoords, offset);
          T val = inBuff[offset];
          if (!std::isinf(static_cast<float>(val)) && !std::isnan(static_cast<float>(val))) {
-           max = sd::math::sd_max<T>(max, val);
+           max = sd::math::sd_max(max, val);
          }
        }
 
@@ -280,14 +280,14 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
          }
          // Clamp the difference to prevent overflow in exp
          T diff = val - max;
-         diff = sd::math::sd_max<T>(clampMin, sd::math::sd_min<T>(clampMax, diff));
+         diff = sd::math::sd_max(clampMin, sd::math::sd_min(clampMax, diff));
          T temp = sd::math::sd_exp<T, T>(diff);
          outBuff[offset] = temp;
          sum += temp;
        }
 
        // Add small epsilon to prevent division by zero
-       sum = sd::math::sd_max<T>(sum, static_cast<T>(1e-6f));
+       sum = sd::math::sd_max(sum, static_cast<T>(1e-6f));
 
        // Normalize using INDEX2COORDS/COORDS2INDEX
        for (sd::LongType j = 0; j < tadLen; ++j) {

@@ -40,5 +40,5 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
 
   auto yLen = shape::length(hScalarShapeInfo);
   samediff::Threads::parallel_tad(func, 0, yLen, 1,
-                                  sd::math::sd_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
+                                  sd::math::sd_min(yLen, sd::Environment::getInstance().maxMasterThreads()));
 }

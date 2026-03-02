@@ -366,7 +366,7 @@ Variable *Context::getVariable(int idx) {
     auto type = DataTypeUtils::asString(array->dataType());
     float m = std::numeric_limits<float>::quiet_NaN();
     if (!array->isEmpty()) {
-      LongType maxLen = sd::math::sd_min<LongType>(16, array->lengthOf() - 1);
+      LongType maxLen = sd::math::sd_min(16, array->lengthOf() - 1);
 
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
                 this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());

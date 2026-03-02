@@ -26,8 +26,8 @@ static void _compare_elem(NDArray* input, bool isStrictlyIncreasing, bool& outpu
   auto length = shape::length(input->shapeInfo());
 
   int elementsPerThread = length / ELEMENT_THRESHOLD;
-  int num_threads = sd::math::sd_max<int>(1, elementsPerThread);
-  num_threads = sd::math::sd_min<int>(num_threads, omp_get_max_threads());
+  int num_threads = sd::math::sd_max(1, elementsPerThread);
+  num_threads = sd::math::sd_min(num_threads, omp_get_max_threads());
   sd::LongType sumt = 0;
 
   if (isStrictlyIncreasing) {

@@ -53,7 +53,7 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
   for (sd::LongType i = 0; i < length; i++) {
     INDEX2COORDS(i, rank, shape, coords);
     COORDS2INDEX(rank, stride, coords, offset);
-    max = sd::math::sd_max<T>(max, inBuff[offset]);
+    max = sd::math::sd_max(max, inBuff[offset]);
   }
 
   // Calculate exponentials and sum

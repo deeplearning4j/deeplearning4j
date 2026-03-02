@@ -523,8 +523,8 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
   const auto tadLength = shape::length(tadShapeInfo);
 
   int elementsPerThread = n / TAD_THRESHOLD;
-  int _threads = sd::math::sd_max<int>(1, elementsPerThread);
-  _threads = sd::math::sd_min<int>(_threads, sd::Environment::getInstance().maxThreads());
+  int _threads = sd::math::sd_max(1, elementsPerThread);
+  _threads = sd::math::sd_min(_threads, sd::Environment::getInstance().maxThreads());
 
   sd::LongType tadRank = shape::rank(tadShapeInfo);
   sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);

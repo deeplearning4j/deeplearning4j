@@ -74,7 +74,7 @@ struct StridedSliceDenseSpec {
 
       for (int e = 0; e < sparse_spec.dims; e++) {
         if ((1 << e) & sparse_spec.ellipsis_mask) {
-          int next_index = sd::math::sd_min<int>(
+          int next_index = sd::math::sd_min(
               this->dims - (sparse_spec.dims - e) + 1 + sparse_spec.num_add_axis_after_ellipsis, this->dims);
 
           for (; full_index < next_index; full_index++) {

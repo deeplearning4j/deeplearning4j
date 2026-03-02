@@ -43,7 +43,7 @@ static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z)
 
   sd::LongType distance = 0;
   auto lengthOf = x.lengthOf();
-  int maxThreads = sd::math::sd_min<int>(256, omp_get_max_threads());
+  int maxThreads = sd::math::sd_min(256, omp_get_max_threads());
   sd::LongType intermediate[256];
 
   // nullify temp values

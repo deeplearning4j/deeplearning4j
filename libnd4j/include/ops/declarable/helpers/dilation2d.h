@@ -40,7 +40,7 @@ SD_INLINE Status outputSize(LaunchContext *context, const LongType inSize, const
   int kEff = (k - 1) * d + 1;
   if (isSameMode) {
     *outSize = (inSize + s - 1) / s;
-    const int padding_needed = sd::math::sd_max<LongType>(0, (*outSize - 1) * s + kEff - inSize);
+    const int padding_needed = sd::math::sd_max(0, (*outSize - 1) * s + kEff - inSize);
 
     *padding_before = padding_needed / 2;
     *padding_after = padding_needed - *padding_before;

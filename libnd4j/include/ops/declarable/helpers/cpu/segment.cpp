@@ -43,7 +43,7 @@ static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output
     for (sd::LongType e = 1; e < indices->lengthOf(); e++) {
       if (idx == indices->e<sd::LongType>(e)) {
         // max
-        val = sd::math::sd_max<T>(val, input->t<T>(e));
+        val = sd::math::sd_max(val, input->t<T>(e));
       } else {
         idx = indices->e<sd::LongType>(e);
         val = input->t<T>(e);
@@ -88,7 +88,7 @@ static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output
     for (sd::LongType e = 1; e < indices->lengthOf(); e++) {
       if (idx == indices->e<sd::LongType>(e)) {
         // min
-        val = sd::math::sd_min<T>(val, input->t<T>(e));
+        val = sd::math::sd_min(val, input->t<T>(e));
       } else {
         idx = indices->e<sd::LongType>(e);
         val = input->t<T>(e);

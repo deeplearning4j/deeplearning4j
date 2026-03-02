@@ -33,5 +33,5 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext *lc, int op
   auto zLen = shape::length(hZShapeInfo);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
-      sd::math::sd_max<int>(1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      sd::math::sd_max(1, sd::math::sd_min(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }

@@ -68,12 +68,12 @@ DECLARE_SHAPE_FN(evaluate_reduction_shape) {
   if (keepDims) {
     if (oldFormat) {
       // for oldFormat we can't go below rank 2
-      length = sd::math::sd_max<int>(2, length);
+      length = sd::math::sd_max(2, length);
     }
   } else {
     length -= axis.size();
     if (oldFormat) {
-      length = sd::math::sd_max<int>(2, length);
+      length = sd::math::sd_max(2, length);
     }
   }
 

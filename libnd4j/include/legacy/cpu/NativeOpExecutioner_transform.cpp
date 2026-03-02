@@ -38,7 +38,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
   };
 
   samediff::Threads::parallel_do(
-      func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+      func, sd::math::sd_max(1, sd::math::sd_min(shape::length(hZShapeInfo) / 1024,
                                                            sd::Environment::getInstance().maxMasterThreads())));
 }
 
@@ -57,7 +57,7 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, co
   };
 
   samediff::Threads::parallel_do(
-      func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+      func, sd::math::sd_max(1, sd::math::sd_min(shape::length(hZShapeInfo) / 1024,
                                                            sd::Environment::getInstance().maxMasterThreads())));
 }
 
@@ -107,7 +107,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext *lc, int opNum, co
   };
 
   samediff::Threads::parallel_do(
-      func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+      func, sd::math::sd_max(1, sd::math::sd_min(shape::length(hZShapeInfo) / 1024,
                                                            sd::Environment::getInstance().maxMasterThreads())));
 }
 
@@ -126,6 +126,6 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
   };
 
   samediff::Threads::parallel_do(
-      func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+      func, sd::math::sd_max(1, sd::math::sd_min(shape::length(hZShapeInfo) / 1024,
                                                            sd::Environment::getInstance().maxMasterThreads())));
 }

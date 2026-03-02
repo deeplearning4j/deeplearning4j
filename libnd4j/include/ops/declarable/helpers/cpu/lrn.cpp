@@ -74,9 +74,9 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
       // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
       // we store each squared sum in corresponding element of y array
       for (sd::LongType j = 0; j < tadLen; ++j) {
-        const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+        const sd::LongType begin = sd::math::sd_max(0, j - depth);
         const sd::LongType last = depth + j + 1;
-        const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
+        const sd::LongType end = sd::math::sd_min(last, tadLen);
 
         sd::LongType coords[SD_MAX_RANK];
         sd::LongType inOff, outOff;
@@ -184,9 +184,9 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
       // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
       // we store each squared sum in corresponding element of y array
       for (sd::LongType j = 0; j < tadLen; ++j) {
-        const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+        const sd::LongType begin = sd::math::sd_max(0, j - depth);
         const sd::LongType last = depth + j + 1;
-        const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
+        const sd::LongType end = sd::math::sd_min(last, tadLen);
 
         sd::LongType jInCoords[SD_MAX_RANK], jGradCoords[SD_MAX_RANK];
         sd::LongType jInOff, jGradOff;
@@ -242,9 +242,9 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
       Y prev = static_cast<Y>(0);
       // second loop calculates derivatives using information gained in first loop above
       for (sd::LongType j = 0; j < tadLen; ++j) {
-        const sd::LongType begin = sd::math::sd_max<int>(0, j - depth);
+        const sd::LongType begin = sd::math::sd_max(0, j - depth);
         const sd::LongType last = depth + j + 1;
-        const sd::LongType end = sd::math::sd_min<int>(last, tadLen);
+        const sd::LongType end = sd::math::sd_min(last, tadLen);
 
         sd::LongType jInCoords[SD_MAX_RANK], jGradCoords[SD_MAX_RANK];
         sd::LongType jInOff, jGradOff;

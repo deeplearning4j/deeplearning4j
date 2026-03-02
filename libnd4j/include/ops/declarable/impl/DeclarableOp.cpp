@@ -1208,7 +1208,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       bool isEmpty = array->isEmpty();
       bool isScalar = array->isScalar();
       int lengthOf = array->lengthOf();
-      sd::LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
+      sd::LongType len = sd::math::sd_min(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
       auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 

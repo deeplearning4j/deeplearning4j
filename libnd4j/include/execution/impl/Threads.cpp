@@ -41,7 +41,7 @@ int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
   auto optimalThreads = sd::math::sd_max<sd::UnsignedLong>(1, numberOfElements / 1024);
 
   // now return the smallest value
-  return sd::math::sd_min<int>(optimalThreads, maxThreads);
+  return sd::math::sd_min(optimalThreads, maxThreads);
 }
 
 Span3::Span3(int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ) {
@@ -276,7 +276,7 @@ int ThreadsHelper::numberOfThreads2d(int maxThreads, uint64_t iters_x, uint64_t 
   uint64_t  typeCastedMaxThreads =  static_cast<uint64_t>(maxThreads);
   // in some cases there's nothing to think about, part 1
   if (iters_x < typeCastedMaxThreads && iters_y < typeCastedMaxThreads)
-    return sd::math::sd_max<int>(iters_x, iters_y);
+    return sd::math::sd_max(iters_x, iters_y);
 
   auto remX = iters_x % maxThreads;
   auto remY = iters_y % maxThreads;

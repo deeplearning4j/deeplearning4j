@@ -179,7 +179,7 @@ void GraphProfile::printOut() {
     });
 
     sd_printf("\nTop 50 reports by EXEC:\n", "");
-    auto limit = sd::math::sd_min<int>(50, sorted.size());
+    auto limit = sd::math::sd_min(50, sorted.size());
     for (int e = 0; e < limit; e++) {
       sorted[e]->printOut();
     }

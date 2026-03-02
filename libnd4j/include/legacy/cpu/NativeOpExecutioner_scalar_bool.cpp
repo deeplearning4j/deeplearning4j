@@ -38,6 +38,6 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext *lc, int opNum, const
       func, 0, zLen, 1,
       !allowParallelism
       ? 1
-      : sd::math::sd_max<int>(
-          1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
+      : sd::math::sd_max(
+          1, sd::math::sd_min(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }

@@ -458,7 +458,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
       for(int i = 0; i < chunks; i++) {
         int start = i * chunkSize;
         int potentialEnd = start + chunkSize;
-        int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+        int end = sd::math::sd_min(targetsLen,potentialEnd);
         samediff::Threads::parallel_tad(func,start,end,1);
       }
 
@@ -753,7 +753,7 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
       for(int i = 0; i < chunks; i++) {
         int start = i * chunkSize;
         int potentialEnd = start + chunkSize;
-        int end = sd::math::sd_min<int>(targetsLen,potentialEnd);
+        int end = sd::math::sd_min(targetsLen,potentialEnd);
         samediff::Threads::parallel_tad(func,start,end,1);
       }
     }
