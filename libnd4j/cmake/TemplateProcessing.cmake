@@ -1611,6 +1611,18 @@ function(genCompilation FL_ITEM generated_sources_var)
 endfunction()
 
 # ============================================================================
+# Write-if-changed helper: only updates the file (and its mtime) when content
+# actually differs.  This prevents Make from recompiling unchanged generated
+# files on every CMake reconfigure.
+# ============================================================================
+function(write_file_if_changed file_path content)
+    set(_tmp "${file_path}.tmp")
+    file(WRITE "${_tmp}" "${content}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_tmp}" "${file_path}")
+    file(REMOVE "${_tmp}")
+endfunction()
+
+# ============================================================================
 # Direct instantiation file creation
 # ============================================================================
 
@@ -1838,7 +1850,7 @@ function(create_direct_instantiation_file_impl template_file combinations output
         # Write chunk if limit reached (now counting actual template instantiations)
         if(instantiation_count GREATER_EQUAL ${MULTI_PASS_CHUNK_SIZE})
             set(chunk_file "${output_dir}/${template_name}_direct_${chunk_index}.${file_extension}")
-            file(WRITE "${chunk_file}" "${chunk_content}")
+            write_file_if_changed("${chunk_file}" "${chunk_content}")
             list(APPEND local_generated_sources "${chunk_file}")
 
             set(chunk_content "${file_header}")
@@ -1856,12 +1868,12 @@ function(create_direct_instantiation_file_impl template_file combinations output
         else()
             set(chunk_file "${output_dir}/${template_name}_direct_final.${file_extension}")
         endif()
-        file(WRITE "${chunk_file}" "${chunk_content}")
+        write_file_if_changed("${chunk_file}" "${chunk_content}")
         list(APPEND local_generated_sources "${chunk_file}")
     endif()
 
     set(${generated_sources_var} ${local_generated_sources} PARENT_SCOPE)
-    
+
     if(IS_CUDA_FILE)
         message(STATUS "✅ Generated CUDA instantiation files for ${template_name}: ${total_instantiations} instantiations")
     else()

@@ -113,7 +113,6 @@ runs:
         hash_dir = false
         sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
         compiler_check = content
-        run_second_cpp = true
         inode_cache = true
         file_clone = true
         "@

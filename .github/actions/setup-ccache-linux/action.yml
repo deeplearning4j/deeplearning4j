@@ -93,9 +93,6 @@ runs:
         ccache --set-config=compiler_check=content
         ccache --set-config=base_dir=${GITHUB_WORKSPACE}
 
-        # For CUDA support
-        ccache --set-config=run_second_cpp=true
-
         # Show configuration
         echo "=== ccache configuration ==="
         ccache --show-config
@@ -106,6 +103,7 @@ runs:
         echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
         echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
         echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        echo "CMAKE_CUDA_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
 
         # Add ccache to PATH
         echo "/usr/lib/ccache" >> $GITHUB_PATH
