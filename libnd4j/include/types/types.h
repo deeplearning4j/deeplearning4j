@@ -25,34 +25,22 @@
 #define SD_COMMON_TYPES_HEADER_INCLUDE
 
 #include <system/type_boilerplate.h>
-#include <types/bfloat16.h>
-#include <types/float16.h>
-#include <types/float8.h>
-#include <types/int16.h>
-#include <types/int8.h>
-#include <types/uint16.h>
-#include <types/uint8.h>
-#include <types/utf8string.h>
-#include <types/types_impl.h>
-#include <type_traits>
 
 // ============================================================================
-// DATATYPE ALIASES
+// DATATYPE ALIASES — declared at file scope BEFORE other type headers
 // ============================================================================
-// Provide global constexpr aliases for the DataType enum values so that bare
-// names like FLOAT32, DOUBLE, INT64 etc. can be used throughout the codebase.
+// These must come BEFORE bfloat16.h/float16.h which contain namespace std {}
+// blocks for numeric_limits specializations. On MSVC (especially with NVCC),
+// those namespace std {} blocks can confuse the compiler's scope tracking,
+// causing subsequent file-scope declarations to be misinterpreted.
 //
 // On Windows (MinGW/MSVC), some names (BOOL, INT8..INT64, UINT8..UINT64)
 // conflict with typedefs from basetsd.h/minwindef.h that get included via
 // standard headers. These conflicting aliases are only defined on non-Windows.
-// The TTYPE macro system still works on Windows because:
-//  - case labels use qualified sd::DataType::TOKEN lookup (finds enum member)
-//  - SD_CAT concatenation operates on tokens (typedefs don't affect preprocessor)
-// Code that needs bare conflicting names on Windows must use sd::DataType::NAME.
 // ============================================================================
 
-  // Undefine Windows SDK macros that conflict with our DataType aliases.
-  // wtypes.h defines DOUBLE, FLOAT, HALF as macros (e.g. #define DOUBLE double)
+// Undefine Windows SDK macros that conflict with our DataType aliases.
+// wtypes.h defines DOUBLE, FLOAT, HALF as macros (e.g. #define DOUBLE double)
 #ifdef _WIN32
   #ifdef DOUBLE
     #undef DOUBLE
@@ -65,46 +53,55 @@
   #endif
 #endif
 
-// All DataType aliases and type aliases live in namespace sd to avoid
-// MSVC scope confusion after namespace std {} blocks in bfloat16.h/float16.h.
-// Since most libnd4j code is inside namespace sd, bare names still work.
-namespace sd {
+// These names should be safe on all platforms
+static constexpr auto INHERIT = sd::DataType::INHERIT;
+static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
+static constexpr auto HALF2 = sd::DataType::HALF2;
+static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
+static constexpr auto QINT8 = sd::DataType::QINT8;
+static constexpr auto QINT16 = sd::DataType::QINT16;
+static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
+static constexpr auto UTF8 = sd::DataType::UTF8;
+static constexpr auto UTF16 = sd::DataType::UTF16;
+static constexpr auto UTF32 = sd::DataType::UTF32;
+static constexpr auto ANY = sd::DataType::ANY;
+static constexpr auto AUTO = sd::DataType::AUTO;
 
-  // These names should be safe on all platforms
-  static constexpr auto INHERIT = DataType::INHERIT;
-  static constexpr auto FLOAT8 = DataType::FLOAT8;
-  static constexpr auto HALF2 = DataType::HALF2;
-  static constexpr auto FLOAT32 = DataType::FLOAT32;
-  static constexpr auto QINT8 = DataType::QINT8;
-  static constexpr auto QINT16 = DataType::QINT16;
-  static constexpr auto BFLOAT16 = DataType::BFLOAT16;
-  static constexpr auto UTF8 = DataType::UTF8;
-  static constexpr auto UTF16 = DataType::UTF16;
-  static constexpr auto UTF32 = DataType::UTF32;
-  static constexpr auto ANY = DataType::ANY;
-  static constexpr auto AUTO = DataType::AUTO;
-
-  // DOUBLE, HALF conflict with Windows SDK typedefs in wtypesbase.h
-  // (typedef double DOUBLE; etc.) — typedefs, not macros, so #undef doesn't help.
-  // Only exclude when windows.h has been included (detected via _WINDOWS_ guard).
+// DOUBLE, HALF conflict with Windows SDK typedefs in wtypesbase.h
+// (typedef double DOUBLE; etc.) — typedefs, not macros, so #undef doesn't help.
+// Only exclude when windows.h has been included (detected via _WINDOWS_ guard).
 #if !defined(_WINDOWS_) && !defined(_INC_WINDOWS)
-  static constexpr auto DOUBLE = DataType::DOUBLE;
-  static constexpr auto HALF = DataType::HALF;
+static constexpr auto DOUBLE = sd::DataType::DOUBLE;
+static constexpr auto HALF = sd::DataType::HALF;
 #endif
 
-  // These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
+// These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
 #if !defined(_WIN32)
-  static constexpr auto BOOL = DataType::BOOL;
-  static constexpr auto INT8 = DataType::INT8;
-  static constexpr auto INT16 = DataType::INT16;
-  static constexpr auto INT32 = DataType::INT32;
-  static constexpr auto INT64 = DataType::INT64;
-  static constexpr auto UINT8 = DataType::UINT8;
-  static constexpr auto UINT16 = DataType::UINT16;
-  static constexpr auto UINT32 = DataType::UINT32;
-  static constexpr auto UINT64 = DataType::UINT64;
+static constexpr auto BOOL = sd::DataType::BOOL;
+static constexpr auto INT8 = sd::DataType::INT8;
+static constexpr auto INT16 = sd::DataType::INT16;
+static constexpr auto INT32 = sd::DataType::INT32;
+static constexpr auto INT64 = sd::DataType::INT64;
+static constexpr auto UINT8 = sd::DataType::UINT8;
+static constexpr auto UINT16 = sd::DataType::UINT16;
+static constexpr auto UINT32 = sd::DataType::UINT32;
+static constexpr auto UINT64 = sd::DataType::UINT64;
 #endif
 
+// Now include the remaining type headers (which contain namespace std {} blocks)
+#include <types/bfloat16.h>
+#include <types/float16.h>
+#include <types/float8.h>
+#include <types/int16.h>
+#include <types/int8.h>
+#include <types/uint16.h>
+#include <types/uint8.h>
+#include <types/utf8string.h>
+#include <types/types_impl.h>
+#include <type_traits>
+
+// Type aliases in namespace sd
+namespace sd {
   using stdstring = std::string;
   using u32string = std::u32string;
   using u16string = std::u16string;
@@ -121,7 +118,6 @@ namespace sd {
 #if defined(__linux__) && !defined(__ANDROID__)
   using PlatformUInt64 = unsigned long;
 #endif
-
 }  // namespace sd
 
 // File-scope using declarations for types needed outside namespace sd
