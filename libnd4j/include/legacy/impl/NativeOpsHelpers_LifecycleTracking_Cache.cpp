@@ -53,7 +53,11 @@ namespace {
         if (enabled == -1) {
             const char* env_val = std::getenv("SD_AUTO_CACHE_CLEANUP");
             if (env_val != nullptr) {
+#ifdef _WIN32
+                enabled = (strcmp(env_val, "0") != 0 && _stricmp(env_val, "false") != 0) ? 1 : 0;
+#else
                 enabled = (strcmp(env_val, "0") != 0 && strcasecmp(env_val, "false") != 0) ? 1 : 0;
+#endif
             } else {
                 enabled = 0;  // DISABLED by default - cache clearing during operation causes use-after-free
             }
