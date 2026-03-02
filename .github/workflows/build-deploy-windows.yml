@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 4
+        default: 8
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -89,7 +89,7 @@ jobs:
           - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '8' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -284,7 +284,7 @@ jobs:
           set "MAVEN_OPTS=-Xmx3g -XX:+UseG1GC"
           set "CCACHE_DIR=%USERPROFILE%\.ccache"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
-          set "CMAKE_BUILD_PARALLEL_LEVEL=4"
+          set "CMAKE_BUILD_PARALLEL_LEVEL=8"
 
           REM Raise OOM killer thresholds for CI with large pagefile
           set "OOM_MEMORY_THRESHOLD=95"
