@@ -2789,8 +2789,18 @@ using portable_function = std::function<Signature>;
 
 #ifndef __JAVACPP_HACK__
 // ======== Host/Device Decorators ========
-#if IS_CUDA_ENVIRONMENT
+// Note: HOST_DEVICE is used ONLY in LAMBDA macros below.
+// On Windows NVCC (MSVC), extended __host__ __device__ lambdas require the enclosing
+// function to have external linkage, which fails for many template helper functions.
+// Since the CUDA applyLambda implementation doesn't actually execute the lambda on
+// the device (it uses a separate kernel), we can safely omit __host__ __device__
+// from lambdas on Windows NVCC.
+#if IS_CUDA_ENVIRONMENT && !defined(_MSC_VER)
 #define HOST_DEVICE __host__ __device__
+#define DEVICE_ONLY __device__
+#define HOST_ONLY __host__
+#elif IS_CUDA_ENVIRONMENT && defined(_MSC_VER)
+#define HOST_DEVICE
 #define DEVICE_ONLY __device__
 #define HOST_ONLY __host__
 #else
