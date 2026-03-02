@@ -65,45 +65,46 @@
   #endif
 #endif
 
+// All DataType aliases and type aliases live in namespace sd to avoid
+// MSVC scope confusion after namespace std {} blocks in bfloat16.h/float16.h.
+// Since most libnd4j code is inside namespace sd, bare names still work.
+namespace sd {
+
   // These names should be safe on all platforms
-  static constexpr auto INHERIT = sd::DataType::INHERIT;
-  static constexpr auto FLOAT8 = sd::DataType::FLOAT8;
-  static constexpr auto HALF2 = sd::DataType::HALF2;
-  static constexpr auto FLOAT32 = sd::DataType::FLOAT32;
-  static constexpr auto QINT8 = sd::DataType::QINT8;
-  static constexpr auto QINT16 = sd::DataType::QINT16;
-  static constexpr auto BFLOAT16 = sd::DataType::BFLOAT16;
-  static constexpr auto UTF8 = sd::DataType::UTF8;
-  static constexpr auto UTF16 = sd::DataType::UTF16;
-  static constexpr auto UTF32 = sd::DataType::UTF32;
-  static constexpr auto ANY = sd::DataType::ANY;
-  static constexpr auto AUTO = sd::DataType::AUTO;
+  static constexpr auto INHERIT = DataType::INHERIT;
+  static constexpr auto FLOAT8 = DataType::FLOAT8;
+  static constexpr auto HALF2 = DataType::HALF2;
+  static constexpr auto FLOAT32 = DataType::FLOAT32;
+  static constexpr auto QINT8 = DataType::QINT8;
+  static constexpr auto QINT16 = DataType::QINT16;
+  static constexpr auto BFLOAT16 = DataType::BFLOAT16;
+  static constexpr auto UTF8 = DataType::UTF8;
+  static constexpr auto UTF16 = DataType::UTF16;
+  static constexpr auto UTF32 = DataType::UTF32;
+  static constexpr auto ANY = DataType::ANY;
+  static constexpr auto AUTO = DataType::AUTO;
 
   // DOUBLE, HALF conflict with Windows SDK typedefs in wtypesbase.h
   // (typedef double DOUBLE; etc.) — typedefs, not macros, so #undef doesn't help.
   // Only exclude when windows.h has been included (detected via _WINDOWS_ guard).
-  // libnd4j C++ build doesn't include windows.h — these are fine there.
-  // JNI bindings (jnind4jcpu.cpp) DO include windows.h, causing the conflict.
 #if !defined(_WINDOWS_) && !defined(_INC_WINDOWS)
-  static constexpr auto DOUBLE = sd::DataType::DOUBLE;
-  static constexpr auto HALF = sd::DataType::HALF;
+  static constexpr auto DOUBLE = DataType::DOUBLE;
+  static constexpr auto HALF = DataType::HALF;
 #endif
 
   // These names conflict with Windows SDK typedefs (basetsd.h / minwindef.h)
 #if !defined(_WIN32)
-  static constexpr auto BOOL = sd::DataType::BOOL;
-  static constexpr auto INT8 = sd::DataType::INT8;
-  static constexpr auto INT16 = sd::DataType::INT16;
-  static constexpr auto INT32 = sd::DataType::INT32;
-  static constexpr auto INT64 = sd::DataType::INT64;
-  static constexpr auto UINT8 = sd::DataType::UINT8;
-  static constexpr auto UINT16 = sd::DataType::UINT16;
-  static constexpr auto UINT32 = sd::DataType::UINT32;
-  static constexpr auto UINT64 = sd::DataType::UINT64;
+  static constexpr auto BOOL = DataType::BOOL;
+  static constexpr auto INT8 = DataType::INT8;
+  static constexpr auto INT16 = DataType::INT16;
+  static constexpr auto INT32 = DataType::INT32;
+  static constexpr auto INT64 = DataType::INT64;
+  static constexpr auto UINT8 = DataType::UINT8;
+  static constexpr auto UINT16 = DataType::UINT16;
+  static constexpr auto UINT32 = DataType::UINT32;
+  static constexpr auto UINT64 = DataType::UINT64;
 #endif
 
-  using LongType = sd::LongType;
-  using UnsignedLong = sd::UnsignedLong;
   using stdstring = std::string;
   using u32string = std::u32string;
   using u16string = std::u16string;
@@ -120,6 +121,12 @@
 #if defined(__linux__) && !defined(__ANDROID__)
   using PlatformUInt64 = unsigned long;
 #endif
+
+}  // namespace sd
+
+// File-scope using declarations for types needed outside namespace sd
+using LongType = sd::LongType;
+using UnsignedLong = sd::UnsignedLong;
 
   // ============================================================================
 // SELECTIVE RENDERING INTEGRATION
