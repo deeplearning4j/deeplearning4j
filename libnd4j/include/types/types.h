@@ -120,9 +120,25 @@ namespace sd {
 #endif
 }  // namespace sd
 
-// File-scope using declarations for types needed outside namespace sd
+// File-scope using declarations for types needed outside namespace sd.
+// The TTYPE macros (e.g. TTYPE_INT8 → SignedChar) expand at file scope inside
+// BUILD_SINGLE_SELECTOR etc., so these names must be visible without sd:: prefix.
+// None of these conflict with std or Windows SDK names.
 using LongType = sd::LongType;
 using UnsignedLong = sd::UnsignedLong;
+using SignedChar = sd::SignedChar;
+using UnsignedChar = sd::UnsignedChar;
+using Int16Type = sd::Int16Type;
+using Int32Type = sd::Int32Type;
+using UInt16Type = sd::UInt16Type;
+using UInt32Type = sd::UInt32Type;
+using UInt64Type = sd::UInt64Type;
+using stdstring = sd::stdstring;
+using u16string = sd::u16string;
+using u32string = sd::u32string;
+#if defined(__linux__) && !defined(__ANDROID__)
+using PlatformUInt64 = sd::PlatformUInt64;
+#endif
 
   // ============================================================================
 // SELECTIVE RENDERING INTEGRATION
