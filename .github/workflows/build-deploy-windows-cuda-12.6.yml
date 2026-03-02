@@ -81,7 +81,7 @@ jobs:
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '2' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '8' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -196,7 +196,7 @@ jobs:
             $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j,:nd4j-cuda-12.6-platform"
            }
           
-          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+          $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
           
           if ( "${{ matrix.helper }}" -eq "compile" ) {
                 $mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-compile"
