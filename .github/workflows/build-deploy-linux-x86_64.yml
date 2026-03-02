@@ -351,7 +351,7 @@ jobs:
           ccache --show-stats --verbose || ccache -sv || ccache -s
 
       - name: Save ccache (always)
-        if: always() && !cancelled() && steps.setup-ccache.outputs.save-key != ''
+        if: always() && steps.setup-ccache.outputs.save-key != ''
         uses: actions/cache/save@v4
         with:
           path: ~/.ccache
