@@ -1310,6 +1310,77 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
    setTritonMaxNreg(maxNreg);
 #endif
  }
+
+ const char* tritonAllowFallbackCaptureVar = std::getenv("ND4J_TRITON_ALLOW_FALLBACK_CAPTURE");
+ if (tritonAllowFallbackCaptureVar != nullptr) {
+   std::string val(tritonAllowFallbackCaptureVar);
+   setTritonAllowFallbackCapture(val != "false" && val != "0" && val != "no");
+ }
+
+ const char* tritonGraphCaptureVar = std::getenv("ND4J_TRITON_GRAPH_CAPTURE");
+ if (tritonGraphCaptureVar != nullptr) {
+   std::string val(tritonGraphCaptureVar);
+   setTritonGraphCapture(val != "false" && val != "0" && val != "no");
+ }
+
+ const char* tritonDumpGraphDotVar = std::getenv("ND4J_TRITON_DUMP_GRAPH_DOT");
+ if (tritonDumpGraphDotVar != nullptr) {
+   std::string val(tritonDumpGraphDotVar);
+   setTritonDumpGraphDot(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ // Triton CUDA graph replay configuration knobs — all default OFF
+ auto readBoolEnv = [](const char* name) -> int {
+   const char* v = std::getenv(name);
+   if (!v) return -1;
+   std::string s(v);
+   return (s == "1" || s == "true" || s == "TRUE" || s == "ON") ? 1 : 0;
+ };
+ { int v = readBoolEnv("ND4J_TRITON_GRAPH_CTX_PUSH");     if (v >= 0) setTritonGraphCtxPush(v); }
+ { int v = readBoolEnv("ND4J_TRITON_GRAPH_REINSTANTIATE"); if (v >= 0) setTritonGraphReinstantiate(v); }
+ { int v = readBoolEnv("ND4J_TRITON_GRAPH_AUTOFREE");      if (v >= 0) setTritonGraphAutoFree(v); }
+ { int v = readBoolEnv("ND4J_TRITON_GRAPH_DOT_VERBOSE");   if (v >= 0) setTritonGraphDotVerbose(v); }
+ { int v = readBoolEnv("ND4J_TRITON_COMPILE_ALL");         if (v >= 0) setTritonCompileAll(v); }
+
+ const char* tritonExcludeOpsVar = std::getenv("ND4J_TRITON_EXCLUDE_OPS");
+ if (tritonExcludeOpsVar != nullptr) {
+   setTritonExcludeOps(std::string(tritonExcludeOpsVar));
+ }
+
+ const char* tritonIncludeTypesVar = std::getenv("ND4J_TRITON_INCLUDE_TYPES");
+ if (tritonIncludeTypesVar != nullptr) {
+   setTritonIncludeTypes(std::string(tritonIncludeTypesVar));
+ }
+
+ const char* tritonSkipKernelsVar = std::getenv("ND4J_TRITON_SKIP_KERNELS");
+ if (tritonSkipKernelsVar != nullptr) {
+   std::string val(tritonSkipKernelsVar);
+   setTritonSkipKernels(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ const char* tritonVerifyKernelsVar = std::getenv("ND4J_TRITON_VERIFY_KERNELS");
+ if (tritonVerifyKernelsVar != nullptr) {
+   std::string val(tritonVerifyKernelsVar);
+   setTritonVerifyKernels(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ const char* dspCastEliminationVar = std::getenv("ND4J_DSP_CAST_ELIMINATION");
+ if (dspCastEliminationVar != nullptr) {
+   std::string val(dspCastEliminationVar);
+   setDspCastElimination(val != "false" && val != "0" && val != "no");
+ }
+
+ const char* dspMatmulSegmentationVar = std::getenv("ND4J_DSP_MATMUL_SEGMENTATION");
+ if (dspMatmulSegmentationVar != nullptr) {
+   std::string val(dspMatmulSegmentationVar);
+   setDspMatmulSegmentation(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ const char* dspFp16ComputeVar = std::getenv("ND4J_DSP_FP16_COMPUTE");
+ if (dspFp16ComputeVar != nullptr) {
+   std::string val(dspFp16ComputeVar);
+   setDspFp16Compute(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
 }
 #endif
 
@@ -1733,6 +1804,57 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setTritonOverrideDir(const std::string& overrideDir) {
     _tritonOverrideDir = overrideDir;
+  }
+
+  void Environment::setTritonAllowFallbackCapture(bool allow) {
+    _tritonAllowFallbackCapture.store(allow);
+  }
+
+  void Environment::setTritonSkipKernels(bool skip) {
+    _tritonSkipKernels.store(skip);
+  }
+
+  void Environment::setTritonVerifyKernels(bool verify) {
+    _tritonVerifyKernels.store(verify);
+  }
+
+  bool Environment::isTritonExcludedOp(const std::string& opName) const {
+    if (_tritonExcludeOps.empty()) return false;
+    // Parse comma-separated exclusion list and check for match.
+    // Supports both exact match and case-insensitive match.
+    std::string lower;
+    lower.reserve(opName.size());
+    for (char c : opName) lower += static_cast<char>(std::tolower(c));
+
+    size_t start = 0;
+    while (start < _tritonExcludeOps.size()) {
+      size_t end = _tritonExcludeOps.find(',', start);
+      if (end == std::string::npos) end = _tritonExcludeOps.size();
+      // Trim whitespace
+      size_t s = start, e = end;
+      while (s < e && std::isspace(_tritonExcludeOps[s])) s++;
+      while (e > s && std::isspace(_tritonExcludeOps[e - 1])) e--;
+      if (e > s) {
+        std::string token;
+        token.reserve(e - s);
+        for (size_t i = s; i < e; i++) token += static_cast<char>(std::tolower(_tritonExcludeOps[i]));
+        if (token == lower) return true;
+      }
+      start = end + 1;
+    }
+    return false;
+  }
+
+  void Environment::setDspCastElimination(bool enabled) {
+    _dspCastElimination.store(enabled);
+  }
+
+  void Environment::setDspMatmulSegmentation(bool enabled) {
+    _dspMatmulSegmentation.store(enabled);
+  }
+
+  void Environment::setDspFp16Compute(bool enabled) {
+    _dspFp16Compute.store(enabled);
   }
 
   void Environment::setTritonOverrideArch(const std::string& overrideArch) {

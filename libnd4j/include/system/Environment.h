@@ -167,6 +167,42 @@ class SD_LIB_EXPORT Environment {
   std::string _tritonOverrideDir;
   std::string _tritonOverrideArch;
 
+  // Triton + CUDA graph integration
+  std::atomic<bool> _tritonAllowFallbackCapture{true};  // allow fallback executor during CUDA graph capture
+  std::atomic<bool> _tritonGraphCapture{true};           // enable CUDA graph capture of Triton execution
+  std::atomic<bool> _tritonDumpGraphDot{false};          // dump captured graph to DOT file for debugging
+  std::atomic<bool> _tritonGraphCtxPush{false};          // push primary CUDA context during graph capture
+  std::atomic<bool> _tritonGraphReinstantiate{false};    // re-instantiate graph exec before each replay
+  std::atomic<bool> _tritonGraphAutoFree{false};         // use cudaGraphInstantiateFlagAutoFreeOnLaunch
+  std::atomic<bool> _tritonGraphDotVerbose{false};       // use verbose flags for DOT export (may poison driver state)
+
+  // Triton compilation scope — when true, Triton compiles ALL section types except
+  // ops listed in the exclusion list. Default false = only ELEMENTWISE/IDENTITY compiled.
+  std::atomic<bool> _tritonCompileAll{false};
+
+  // Comma-separated list of nd4j op names to EXCLUDE from Triton compilation.
+  // These ops fall back to cuBLAS/native execution. Typical exclusions:
+  //   "matmul,mmul,tensormmul" — keep GEMMs on cuBLAS (usually faster)
+  //   "matmul,softmax" — keep matmul on cuBLAS, softmax on native
+  // Empty string = no exclusions (compile everything through Triton).
+  // Set via ND4J_TRITON_EXCLUDE_OPS env var.
+  std::string _tritonExcludeOps;
+
+  // When tritonCompileAll=true, only compile these section types (plus ELEMENTWISE/IDENTITY).
+  // Comma-separated type names: "CONST_GEN,SHAPE_MANIP,GATHER,CONCAT,SPLIT,STACK,REDUCTION,ATTENTION"
+  // Empty = compile ALL types (original compileAll behavior).
+  // Set via ND4J_TRITON_INCLUDE_TYPES env var.
+  std::string _tritonIncludeTypes;
+
+  // Triton debugging flags
+  std::atomic<bool> _tritonSkipKernels{false};       // skip Triton kernels, run native fallback instead
+  std::atomic<bool> _tritonVerifyKernels{false};     // run both Triton and native, compare outputs
+
+  // DSP optimization flags
+  std::atomic<bool> _dspCastElimination{true};      // eliminate redundant cast pairs in FusionPass
+  std::atomic<bool> _dspMatmulSegmentation{false};   // break segments at matmul boundaries
+  std::atomic<bool> _dspFp16Compute{false};          // auto-cast FP32 matmul inputs to FP16 for TensorCore
+
   Environment();
 
  public:
@@ -498,6 +534,46 @@ class SD_LIB_EXPORT Environment {
   void setTritonOverrideDir(const std::string& overrideDir);
   std::string tritonOverrideArch() const { return _tritonOverrideArch; }
   void setTritonOverrideArch(const std::string& overrideArch);
+
+  // Triton + CUDA graph integration
+  bool tritonAllowFallbackCapture() { return _tritonAllowFallbackCapture.load(); }
+  void setTritonAllowFallbackCapture(bool allow);
+  bool tritonGraphCapture() { return _tritonGraphCapture.load(); }
+  void setTritonGraphCapture(bool enable) { _tritonGraphCapture.store(enable); }
+  bool tritonDumpGraphDot() { return _tritonDumpGraphDot.load(); }
+  void setTritonDumpGraphDot(bool dump) { _tritonDumpGraphDot.store(dump); }
+  bool tritonGraphCtxPush() { return _tritonGraphCtxPush.load(); }
+  void setTritonGraphCtxPush(bool v) { _tritonGraphCtxPush.store(v); }
+  bool tritonGraphReinstantiate() { return _tritonGraphReinstantiate.load(); }
+  void setTritonGraphReinstantiate(bool v) { _tritonGraphReinstantiate.store(v); }
+  bool tritonGraphAutoFree() { return _tritonGraphAutoFree.load(); }
+  void setTritonGraphAutoFree(bool v) { _tritonGraphAutoFree.store(v); }
+  bool tritonGraphDotVerbose() { return _tritonGraphDotVerbose.load(); }
+  void setTritonGraphDotVerbose(bool v) { _tritonGraphDotVerbose.store(v); }
+
+  // Triton compilation scope
+  bool tritonCompileAll() { return _tritonCompileAll.load(); }
+  void setTritonCompileAll(bool v) { _tritonCompileAll.store(v); }
+  std::string tritonExcludeOps() const { return _tritonExcludeOps; }
+  void setTritonExcludeOps(const std::string& ops) { _tritonExcludeOps = ops; }
+  bool isTritonExcludedOp(const std::string& opName) const;
+
+  std::string tritonIncludeTypes() const { return _tritonIncludeTypes; }
+  void setTritonIncludeTypes(const std::string& types) { _tritonIncludeTypes = types; }
+
+  // Triton debugging flags
+  bool tritonSkipKernels() { return _tritonSkipKernels.load(); }
+  void setTritonSkipKernels(bool skip);
+  bool tritonVerifyKernels() { return _tritonVerifyKernels.load(); }
+  void setTritonVerifyKernels(bool verify);
+
+  // DSP optimization flags
+  bool dspCastElimination() { return _dspCastElimination.load(); }
+  void setDspCastElimination(bool enabled);
+  bool dspMatmulSegmentation() { return _dspMatmulSegmentation.load(); }
+  void setDspMatmulSegmentation(bool enabled);
+  bool dspFp16Compute() { return _dspFp16Compute.load(); }
+  void setDspFp16Compute(bool enabled);
 
   // Process environment path helpers used by native backends.
   std::string homeDirectory() const;
