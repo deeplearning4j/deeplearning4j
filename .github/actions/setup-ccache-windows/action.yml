@@ -113,8 +113,9 @@ runs:
         hash_dir = false
         sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
         compiler_check = content
-        inode_cache = true
-        file_clone = true
+        inode_cache = false
+        file_clone = false
+        temporary_dir = $env:TEMP\ccache_tmp
         "@
         # Trim leading whitespace from each line (YAML indentation)
         $config = ($config -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }) -join "`n"
@@ -152,6 +153,22 @@ runs:
         } else {
           Write-Host "WARNING: ccache.exe not found at $ccacheExe - skipping ccache setup"
           Write-Host "Build will proceed without ccache (slower but functional)"
+        }
+
+    - name: Clean stale ccache locks and verify integrity
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $ccacheExe = "$env:USERPROFILE\ccache\ccache.exe"
+        $ccacheDir = "$env:USERPROFILE\.ccache"
+        if (Test-Path $ccacheExe) {
+          # Remove any stale .lock files left by cancelled builds
+          Get-ChildItem -Path $ccacheDir -Filter "*.lock" -Recurse -ErrorAction SilentlyContinue |
+            ForEach-Object { Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue; Write-Host "Removed stale lock: $($_.Name)" }
+          # Run cleanup to remove broken cache entries
+          & $ccacheExe --cleanup 2>$null
+          # Zero stats for this build
+          & $ccacheExe -z 2>$null
         }
 
     - name: Show ccache stats before build

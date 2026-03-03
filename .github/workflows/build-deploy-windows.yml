@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 8
+        default: 4
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -89,7 +89,7 @@ jobs:
           - mvn_flags: ${{ github.event.inputs.mvnFlags || '' }}
             experimental: true
             name: Extra maven flags to use as part of the build
-          - build_threads: ${{ github.event.inputs.buildThreads || '8' }}
+          - build_threads: ${{ github.event.inputs.buildThreads || '4' }}
             experimental: true
             name: The number of threads to build libnd4j with
 
@@ -118,6 +118,36 @@ jobs:
           echo === ccache stats before build ===
           %USERPROFILE%\ccache\ccache.exe -sv
 
+      - name: Disable Windows Defender real-time monitoring
+        continue-on-error: true
+        shell: powershell
+        run: |
+          # Disable real-time monitoring to prevent scanning every compiled .obj/.o file
+          Set-MpPreference -DisableRealtimeMonitoring $true
+          Write-Host "Windows Defender real-time monitoring disabled"
+
+          # Add exclusions as fallback in case DisableRealtimeMonitoring is not allowed
+          $excludePaths = @(
+            "$env:GITHUB_WORKSPACE",
+            "C:\msys64",
+            "$env:USERPROFILE\.m2",
+            "$env:USERPROFILE\ccache"
+          )
+          foreach ($path in $excludePaths) {
+            Add-MpPreference -ExclusionPath $path -ErrorAction SilentlyContinue
+          }
+
+          $excludeProcesses = @("gcc.exe", "g++.exe", "make.exe", "cmake.exe", "java.exe", "ccache.exe")
+          foreach ($proc in $excludeProcesses) {
+            Add-MpPreference -ExclusionProcess $proc -ErrorAction SilentlyContinue
+          }
+
+          $excludeExtensions = @(".obj", ".o", ".h", ".hpp", ".cpp", ".lib", ".dll", ".exe", ".jar")
+          foreach ($ext in $excludeExtensions) {
+            Add-MpPreference -ExclusionExtension $ext -ErrorAction SilentlyContinue
+          }
+          Write-Host "Windows Defender exclusions added for build paths, processes, and extensions"
+
       - name: Free Disk Space (Windows)
         continue-on-error: true
         shell: powershell
@@ -127,7 +157,7 @@ jobs:
           Write-Host "Initial disk space:"
           Get-PSDrive C | Select-Object Used,Free
 
-          # Configure pagefile to 12 GB
+          # Configure pagefile to 24 GB
           try {
               wmic computersystem set AutomaticManagedPagefile=False 2>$null
               $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'" -ErrorAction SilentlyContinue
@@ -284,7 +314,7 @@ jobs:
           set "MAVEN_OPTS=-Xmx3g -XX:+UseG1GC"
           set "CCACHE_DIR=%USERPROFILE%\.ccache"
           set "PATH=C:\hostedtoolcache\windows\Python\3.10.11\x64;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin;%ProgramFiles%\apache-maven-3.6.3\bin;%PATH%"
-          set "CMAKE_BUILD_PARALLEL_LEVEL=8"
+          set "CMAKE_BUILD_PARALLEL_LEVEL=4"
 
           REM Raise OOM killer thresholds for CI with large pagefile
           set "OOM_MEMORY_THRESHOLD=95"
