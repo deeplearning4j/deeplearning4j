@@ -108,6 +108,17 @@ runs:
         # Add ccache to PATH
         echo "/usr/lib/ccache" >> $GITHUB_PATH
 
+    - name: Clean stale ccache locks and verify integrity
+      shell: bash
+      run: |
+        CCACHE_DIR="${HOME}/.ccache"
+        # Remove any stale .lock files left by cancelled builds
+        find "${CCACHE_DIR}" -name "*.lock" -type f -delete 2>/dev/null && echo "Cleaned stale locks" || true
+        # Run cleanup to remove broken cache entries
+        ccache --cleanup 2>/dev/null || true
+        # Zero stats for this build
+        ccache -z 2>/dev/null || true
+
     - name: Show ccache stats before build
       shell: bash
       run: |
