@@ -36,9 +36,10 @@
 #include <vector>
 namespace sd {
 
+#ifndef __JAVACPP_HACK__
 /**
  * Thread-local flag indicating graph execution/capture is in progress.
- * When true, syncToPrimary() skips D2H transfers — data must stay
+ * When true, syncToPrimary() skips D2H transfers -- data must stay
  * on the compute device during graph execution. Applies to all graph
  * backends: CUDA Graphs (capture/replay), oneDNN Graph, and ACL
  * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
@@ -52,9 +53,7 @@ extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
  * Some capture-safe paths must enqueue work on the exact captured stream;
  * using a different stream can invalidate capture.
  */
-#ifndef __JAVACPP_HACK__
 extern SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream;
-#endif
 #endif
 
 /**
@@ -64,17 +63,14 @@ extern SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream;
  * After capture, these are transferred to CudaGraphHandle for lifetime management.
  */
 extern SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
-
-#ifndef __JAVACPP_HACK__
 /**
  * Thread-local cache for PointersManager H2D copies during CUDA graph capture.
- * Maps {content_hash ^ size} → device pointer. When the same data is uploaded
+ * Maps {content_hash ^ size} -> device pointer. When the same data is uploaded
  * multiple times during capture (e.g., dimension arrays [0,1] used by many ops),
  * the cached device pointer is returned without creating a redundant memcpy node.
  * Cleared at the start of each capture.
  */
 extern SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
-#endif
 
 /**
  * Capture workspace: pre-allocated GPU buffer used during CUDA graph capture
@@ -87,6 +83,16 @@ extern SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_capture
 extern SD_TLS_EXPORT thread_local void* tl_captureWorkspace;
 extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize;
 extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset;
+
+/**
+ * cuBLAS workspace buffer and size for graph capture.
+ * Set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
+ * Read by MmulHelper after cublasSetStream resets workspace.
+ * (cublasSetStream resets user-provided workspace per cuBLAS docs.)
+ */
+extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
+extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+#endif  // __JAVACPP_HACK__
 
 class SD_LIB_EXPORT DataBuffer {
  private:
