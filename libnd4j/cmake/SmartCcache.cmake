@@ -46,14 +46,17 @@ if(SD_SMART_CCACHE AND CMAKE_CXX_COMPILER_LAUNCHER)
 # - If file is NEW (not in hash cache): let ccache use content-based caching (may hit!)
 # - If file is KNOWN and UNCHANGED: let ccache use content-based caching (will hit)
 # - If file is KNOWN and CHANGED: force recompile with CCACHE_RECACHE=1
+#
+# Hash storage: per-source-file hash files (lockless).
+# Each source gets its own hash file keyed by path checksum.
+# No locking needed since each compilation touches a different source file.
 
 CCACHE=\"${CCACHE_PATH}\"
 HASH_CACHE_DIR=\"${FILE_HASH_CACHE_DIR}\"
-HASH_LOCK=\"${FILE_HASH_LOCK}\"
 BUILD_DIR=\"${CMAKE_BINARY_DIR}\"
 DEBUG=${SD_CCACHE_DEBUG}
 
-# Detect Windows/MSYS2 — needed for platform-specific locking and process management
+# Detect Windows/MSYS2
 IS_MSYS=0
 case \"\$(uname -o 2>/dev/null)\" in
     Msys|Cygwin|MS/Windows) IS_MSYS=1 ;;
@@ -107,26 +110,20 @@ extract_cuda_arch() {
 
 CUDA_ARCH=\"\$(extract_cuda_arch \"\$@\")\"
 
+mkdir -p \"\$HASH_CACHE_DIR\" 2>/dev/null
+
+# Build a suffix for hash file names from segment/shape/arch keys
 SEGMENT_KEY=\"\${SD_SMART_CCACHE_SEGMENT:-default}\"
 SHAPE_KEY=\"\${SD_SMART_CCACHE_SHAPE_KEY:-base}\"
 SEGMENT_KEY=\"\${SEGMENT_KEY//[^A-Za-z0-9_.-]/_}\"
 SHAPE_KEY=\"\${SHAPE_KEY//[^A-Za-z0-9_.-]/_}\"
-
 if [[ -n \"\$CUDA_ARCH\" ]]; then
-    HASH_CACHE=\"\${HASH_CACHE_DIR}/\${SEGMENT_KEY}__\${SHAPE_KEY}__cuda_sm_\${CUDA_ARCH}\"
+    VARIANT_SUFFIX=\"\${SEGMENT_KEY}__\${SHAPE_KEY}__sm_\${CUDA_ARCH}\"
 else
-    HASH_CACHE=\"\${HASH_CACHE_DIR}/\${SEGMENT_KEY}__\${SHAPE_KEY}__default\"
+    VARIANT_SUFFIX=\"\${SEGMENT_KEY}__\${SHAPE_KEY}\"
 fi
 
-if [[ \"\$DEBUG\" == \"ON\" ]]; then
-    if [[ -n \"\$CUDA_ARCH\" ]]; then
-        echo \"[SMART_CCACHE] CUDA architecture detected: sm_\${CUDA_ARCH}\" >&2
-    fi
-    echo \"[SMART_CCACHE] Hash cache file: \$HASH_CACHE\" >&2
-fi
-
-mkdir -p \"\$HASH_CACHE_DIR\" 2>/dev/null
-
+# Find the source file in the compiler arguments
 SOURCE_FILE=\"\"
 for arg in \"\$@\"; do
     case \"\$arg\" in
@@ -143,62 +140,17 @@ for arg in \"\$@\"; do
     esac
 done
 
-# Platform-aware locking: flock on Linux/macOS, mkdir-based on Windows/MSYS2.
-# Windows has mandatory file locks — exec 9>\"file\" blocks when another process
-# holds an exclusive flock, causing deadlocks even with flock -n.
-# mkdir is atomic on all platforms and doesn't require FD manipulation.
-acquire_lock() {
-    if [[ \$IS_MSYS -eq 1 ]]; then
-        # mkdir-based lock: atomic, no FD issues on Windows
-        local attempts=0
-        while ! mkdir \"\$HASH_LOCK.d\" 2>/dev/null; do
-            attempts=\$((attempts + 1))
-            if [[ \$attempts -ge 20 ]]; then
-                # Stale lock — remove and retry once (process may have died)
-                rm -rf \"\$HASH_LOCK.d\" 2>/dev/null
-                if ! mkdir \"\$HASH_LOCK.d\" 2>/dev/null; then
-                    return 1
-                fi
-                break
-            fi
-            # Brief sleep to avoid busy-spin (MSYS2 sleep supports fractions)
-            sleep 0.05
-        done
-        return 0
-    else
-        # Linux/macOS: flock with non-blocking to avoid deadlocks
-        exec 9>\"\$HASH_LOCK\"
-        if ! flock -n -x 9 2>/dev/null; then
-            exec 9>&-
-            return 1
-        fi
-        return 0
-    fi
-}
-
-release_lock() {
-    if [[ \$IS_MSYS -eq 1 ]]; then
-        rm -rf \"\$HASH_LOCK.d\" 2>/dev/null
-    else
-        exec 9>&-
-    fi
-}
-
-update_hash_cache() {
-    local file=\"\$1\"
-    local hash=\"\$2\"
-
-    if ! acquire_lock; then
-        return
-    fi
-
-    if [[ -f \"\$HASH_CACHE\" ]]; then
-        grep -v \"^\$file:\" \"\$HASH_CACHE\" > \"\$HASH_CACHE.tmp\" 2>/dev/null || true
-        mv \"\$HASH_CACHE.tmp\" \"\$HASH_CACHE\" 2>/dev/null || true
-    fi
-    echo \"\$file:\$hash\" >> \"\$HASH_CACHE\"
-
-    release_lock
+# ==============================================================================
+# Per-file hash: lockless, zero contention.
+# Each source file gets its own hash file: HASH_CACHE_DIR/<path_hash>__<variant>
+# Since each ninja job compiles a different source file, no two jobs touch the
+# same hash file, eliminating all locking.
+# ==============================================================================
+get_hash_file() {
+    local src=\"\$1\"
+    # Use cksum of the path string as a short unique key
+    local path_hash=\"\$(echo -n \"\$src\" | cksum | cut -d' ' -f1)\"
+    echo \"\${HASH_CACHE_DIR}/\${path_hash}__\${VARIANT_SUFFIX}\"
 }
 
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
@@ -214,70 +166,29 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
             echo \"[SMART_CCACHE] Generated file, using ccache content hash: \$SOURCE_FILE\" >&2
         fi
     else
-        if [[ ! -f \"\$HASH_CACHE\" ]]; then
-            # Clean build: hash cache doesn't exist yet. Skip cksum/lock overhead.
-            # Just let ccache handle caching. Populate hash for next build.
-            if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                echo \"[SMART_CCACHE] Clean build (no cache), skipping hash: \$SOURCE_FILE\" >&2
-            fi
-            if [[ \$IS_MSYS -eq 1 ]]; then
-                # Windows/MSYS2: run synchronously — background subshells become
-                # orphans after exec replaces this process, accumulating until deadlock.
-                CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-                if [[ -n \"\$CURRENT_HASH\" ]]; then
-                    update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
+        HASH_FILE=\"\$(get_hash_file \"\$SOURCE_FILE\")\"
+        CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+
+        if [[ -f \"\$HASH_FILE\" ]]; then
+            STORED_HASH=\"\$(cat \"\$HASH_FILE\" 2>/dev/null)\"
+            if [[ -n \"\$CURRENT_HASH\" && \"\$CURRENT_HASH\" != \"\$STORED_HASH\" ]]; then
+                if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                    echo \"[SMART_CCACHE] File changed, forcing recompile: \$SOURCE_FILE\" >&2
                 fi
+                export CCACHE_RECACHE=1
+                echo \"\$CURRENT_HASH\" > \"\$HASH_FILE\" 2>/dev/null
             else
-                # Linux/macOS: background is safe — child processes are reaped normally.
-                ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-                  if [[ -n \"\$CURRENT_HASH\" ]]; then
-                      acquire_lock && {
-                          echo \"\$SOURCE_FILE:\$CURRENT_HASH\" >> \"\$HASH_CACHE\"
-                          release_lock
-                      }
-                  fi
-                ) &
+                if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                    echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
+                fi
             fi
         else
-            # Subsequent build: hash cache exists. Check for changes.
-            STORED_HASH=\"\"
-            if acquire_lock; then
-                STORED_HASH=\"\$(grep \"^\$SOURCE_FILE:\" \"\$HASH_CACHE\" 2>/dev/null | tail -1 | cut -d: -f2-)\"
-                release_lock
+            # New file: let ccache handle it, save hash for next build
+            if [[ \"\$DEBUG\" == \"ON\" ]]; then
+                echo \"[SMART_CCACHE] New file, saving hash: \$SOURCE_FILE\" >&2
             fi
-
-            if [[ -z \"\$STORED_HASH\" ]]; then
-                # New file in subsequent build — let ccache handle it, update hash
-                if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                    echo \"[SMART_CCACHE] New file, using ccache (may hit cache): \$SOURCE_FILE\" >&2
-                fi
-                if [[ \$IS_MSYS -eq 1 ]]; then
-                    # Windows/MSYS2: synchronous to avoid orphaned subshells
-                    CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-                    if [[ -n \"\$CURRENT_HASH\" ]]; then
-                        update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
-                    fi
-                else
-                    # Linux/macOS: background is safe
-                    ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-                      if [[ -n \"\$CURRENT_HASH\" ]]; then
-                          update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
-                      fi
-                    ) &
-                fi
-            else
-                CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-                if [[ \"\$CURRENT_HASH\" != \"\$STORED_HASH\" ]]; then
-                    if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                        echo \"[SMART_CCACHE] File changed, forcing recompile: \$SOURCE_FILE\" >&2
-                    fi
-                    export CCACHE_RECACHE=1
-                    update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
-                else
-                    if [[ \"\$DEBUG\" == \"ON\" ]]; then
-                        echo \"[SMART_CCACHE] Unchanged, cache hit expected: \$SOURCE_FILE\" >&2
-                    fi
-                fi
+            if [[ -n \"\$CURRENT_HASH\" ]]; then
+                echo \"\$CURRENT_HASH\" > \"\$HASH_FILE\" 2>/dev/null
             fi
         fi
     fi
@@ -311,15 +222,27 @@ exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
                          WORLD_READ WORLD_EXECUTE)
 
         # Override the compiler launcher to use our wrapper
-        # On Windows, skip smart wrapper entirely — use plain ccache.
-        # MSYS2 bash startup overhead (100-500ms per invocation) causes builds to
-        # freeze when 8+ parallel compilations each spawn bash. Plain ccache uses
-        # content hashing which handles change detection without the wrapper.
+        # On Windows, .sh scripts need bash to execute them
         if(_SD_IS_WINDOWS)
-            message(STATUS "Smart ccache: disabled on Windows (using plain ccache to avoid MSYS2 bash overhead)")
-            set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
-            set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
-            # Do NOT set CMAKE_CUDA_COMPILER_LAUNCHER — nvcc_filter.py handles it
+            find_program(_BASH_PROGRAM bash PATHS "C:/msys64/usr/bin" "C:/msys64/mingw64/bin")
+            if(_BASH_PROGRAM)
+                set(CMAKE_C_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
+                # Do NOT override CMAKE_CUDA_COMPILER_LAUNCHER on Windows.
+                # nvcc_filter.py --ccache= (set in CMakeLists.txt) already handles:
+                #   1. MSVC flag filtering (removing unsupported /flags)
+                #   2. Response file expansion for ccache visibility
+                #   3. Chaining ccache correctly
+                # Overriding it with smart_ccache.sh loses the flag filtering,
+                # causing 5% ccache hit rate instead of 70%+.
+                message(STATUS "Smart ccache: NOT overriding CUDA launcher (nvcc_filter.py handles it)")
+            else()
+                # Fallback: use ccache directly without smart wrapper on Windows
+                message(WARNING "bash not found -- smart ccache wrapper disabled, using ccache directly")
+                set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+                set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+                # Don't set CUDA launcher here either -- nvcc_filter.py should handle it
+            endif()
         else()
             set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
             set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
