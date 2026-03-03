@@ -53,6 +53,12 @@ HASH_LOCK=\"${FILE_HASH_LOCK}\"
 BUILD_DIR=\"${CMAKE_BINARY_DIR}\"
 DEBUG=${SD_CCACHE_DEBUG}
 
+# Detect Windows/MSYS2 — needed for platform-specific locking and process management
+IS_MSYS=0
+case \"\$(uname -o 2>/dev/null)\" in
+    Msys|Cygwin|MS/Windows) IS_MSYS=1 ;;
+esac
+
 # Set sloppiness for all files to ensure cacheability
 export CCACHE_SLOPPINESS=\"file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed\"
 
@@ -137,16 +143,52 @@ for arg in \"\$@\"; do
     esac
 done
 
+# Platform-aware locking: flock on Linux/macOS, mkdir-based on Windows/MSYS2.
+# Windows has mandatory file locks — exec 9>\"file\" blocks when another process
+# holds an exclusive flock, causing deadlocks even with flock -n.
+# mkdir is atomic on all platforms and doesn't require FD manipulation.
+acquire_lock() {
+    if [[ \$IS_MSYS -eq 1 ]]; then
+        # mkdir-based lock: atomic, no FD issues on Windows
+        local attempts=0
+        while ! mkdir \"\$HASH_LOCK.d\" 2>/dev/null; do
+            attempts=\$((attempts + 1))
+            if [[ \$attempts -ge 20 ]]; then
+                # Stale lock — remove and retry once (process may have died)
+                rm -rf \"\$HASH_LOCK.d\" 2>/dev/null
+                if ! mkdir \"\$HASH_LOCK.d\" 2>/dev/null; then
+                    return 1
+                fi
+                break
+            fi
+            # Brief sleep to avoid busy-spin (MSYS2 sleep supports fractions)
+            sleep 0.05
+        done
+        return 0
+    else
+        # Linux/macOS: flock with non-blocking to avoid deadlocks
+        exec 9>\"\$HASH_LOCK\"
+        if ! flock -n -x 9 2>/dev/null; then
+            exec 9>&-
+            return 1
+        fi
+        return 0
+    fi
+}
+
+release_lock() {
+    if [[ \$IS_MSYS -eq 1 ]]; then
+        rm -rf \"\$HASH_LOCK.d\" 2>/dev/null
+    else
+        exec 9>&-
+    fi
+}
+
 update_hash_cache() {
     local file=\"\$1\"
     local hash=\"\$2\"
 
-    # Use non-blocking lock (-n) to avoid deadlocks on Windows/MSYS2.
-    # If the lock can't be acquired, skip the write — hash will be
-    # populated on the next build.
-    exec 9>\"\$HASH_LOCK\"
-    if ! flock -n -x 9 2>/dev/null; then
-        exec 9>&-
+    if ! acquire_lock; then
         return
     fi
 
@@ -156,7 +198,7 @@ update_hash_cache() {
     fi
     echo \"\$file:\$hash\" >> \"\$HASH_CACHE\"
 
-    exec 9>&-
+    release_lock
 }
 
 if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
@@ -173,47 +215,56 @@ if [[ -n \"\$SOURCE_FILE\" && -f \"\$SOURCE_FILE\" ]]; then
         fi
     else
         if [[ ! -f \"\$HASH_CACHE\" ]]; then
-            # Clean build: hash cache doesn't exist yet. Skip cksum/flock overhead.
-            # Just let ccache handle caching. Populate hash in background for next build.
+            # Clean build: hash cache doesn't exist yet. Skip cksum/lock overhead.
+            # Just let ccache handle caching. Populate hash for next build.
             if [[ \"\$DEBUG\" == \"ON\" ]]; then
                 echo \"[SMART_CCACHE] Clean build (no cache), skipping hash: \$SOURCE_FILE\" >&2
             fi
-            # Background: compute hash and store it without blocking compilation.
-            # Use non-blocking flock (-n) to avoid deadlocks on Windows/MSYS2.
-            ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-              if [[ -n \"\$CURRENT_HASH\" ]]; then
-                  exec 9>\"\$HASH_LOCK\"
-                  if flock -n -x 9 2>/dev/null; then
-                      echo \"\$SOURCE_FILE:\$CURRENT_HASH\" >> \"\$HASH_CACHE\"
-                      exec 9>&-
-                  else
-                      exec 9>&-
+            if [[ \$IS_MSYS -eq 1 ]]; then
+                # Windows/MSYS2: run synchronously — background subshells become
+                # orphans after exec replaces this process, accumulating until deadlock.
+                CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+                if [[ -n \"\$CURRENT_HASH\" ]]; then
+                    update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
+                fi
+            else
+                # Linux/macOS: background is safe — child processes are reaped normally.
+                ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+                  if [[ -n \"\$CURRENT_HASH\" ]]; then
+                      acquire_lock && {
+                          echo \"\$SOURCE_FILE:\$CURRENT_HASH\" >> \"\$HASH_CACHE\"
+                          release_lock
+                      }
                   fi
-              fi
-            ) &
+                ) &
+            fi
         else
             # Subsequent build: hash cache exists. Check for changes.
-            # Use non-blocking shared lock to avoid deadlocks on Windows/MSYS2.
-            # If lock can't be acquired, treat as unknown file (let ccache handle it).
             STORED_HASH=\"\"
-            exec 9>\"\$HASH_LOCK\"
-            if flock -n -s 9 2>/dev/null; then
+            if acquire_lock; then
                 STORED_HASH=\"\$(grep \"^\$SOURCE_FILE:\" \"\$HASH_CACHE\" 2>/dev/null | tail -1 | cut -d: -f2-)\"
-                exec 9>&-
-            else
-                exec 9>&-
+                release_lock
             fi
 
             if [[ -z \"\$STORED_HASH\" ]]; then
-                # New file in subsequent build — let ccache handle it, update hash in background
+                # New file in subsequent build — let ccache handle it, update hash
                 if [[ \"\$DEBUG\" == \"ON\" ]]; then
                     echo \"[SMART_CCACHE] New file, using ccache (may hit cache): \$SOURCE_FILE\" >&2
                 fi
-                ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
-                  if [[ -n \"\$CURRENT_HASH\" ]]; then
-                      update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
-                  fi
-                ) &
+                if [[ \$IS_MSYS -eq 1 ]]; then
+                    # Windows/MSYS2: synchronous to avoid orphaned subshells
+                    CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+                    if [[ -n \"\$CURRENT_HASH\" ]]; then
+                        update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
+                    fi
+                else
+                    # Linux/macOS: background is safe
+                    ( CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
+                      if [[ -n \"\$CURRENT_HASH\" ]]; then
+                          update_hash_cache \"\$SOURCE_FILE\" \"\$CURRENT_HASH\"
+                      fi
+                    ) &
+                fi
             else
                 CURRENT_HASH=\"\$(cksum \"\$SOURCE_FILE\" 2>/dev/null | cut -d' ' -f1,2)\"
                 if [[ \"\$CURRENT_HASH\" != \"\$STORED_HASH\" ]]; then
