@@ -3132,7 +3132,6 @@ else
     # deadlocking the build. Linux uses /proc/meminfo (~0ms), macOS uses vm_stat (~1ms).
     # Windows GitHub Actions runners handle OOM at the OS level.
     if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
-        local _oom_platform
         _oom_platform=$(detect_oom_platform)
         if [[ "$_oom_platform" == "windows" ]]; then
             print_colored "yellow" "OOM monitor auto-disabled on Windows (powershell.exe polling causes deadlocks)"
