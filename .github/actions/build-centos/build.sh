@@ -1,14 +1,22 @@
 #!/bin/bash
 env
 ## Based on the javacpp presets github actions centos 7 build at https://github.com/bytedeco/javacpp-presets/
-# CentOS 7 is EOL — switch mirrorlist to vault.centos.org
-sed -i 's/mirrorlist=http:\/\/mirrorlist.centos.org/##mirrorlist=http:\/\/mirrorlist.centos.org/g' /etc/yum.repos.d/CentOS-*.repo
-sed -i 's/#baseurl=http:\/\/mirror.centos.org/baseurl=http:\/\/vault.centos.org/g' /etc/yum.repos.d/CentOS-*.repo
+
+# CentOS 7 is EOL — fix ALL repo files to use vault.centos.org
+fix_centos_repos() {
+  for f in /etc/yum.repos.d/*.repo; do
+    [ -f "$f" ] || continue
+    sed -i 's|^mirrorlist=|##mirrorlist=|g' "$f"
+    sed -i 's|^#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' "$f"
+    sed -i 's|^#baseurl=http://mirror\.centos\.org|baseurl=http://vault.centos.org|g' "$f"
+  done
+}
+
+fix_centos_repos
 SCL_ENABLE="devtoolset-7"
 yum -y update && yum -y install wget unzip centos-release-scl-rh epel-release
-# Also fix SCL repo mirrors after centos-release-scl-rh is installed
-sed -i 's/mirrorlist=http:\/\/mirrorlist.centos.org/##mirrorlist=http:\/\/mirrorlist.centos.org/g' /etc/yum.repos.d/CentOS-SCL-*.repo 2>/dev/null || true
-sed -i 's/#baseurl=http:\/\/mirror.centos.org/baseurl=http:\/\/vault.centos.org/g' /etc/yum.repos.d/CentOS-SCL-*.repo 2>/dev/null || true
+# Fix newly installed SCL repo files too
+fix_centos_repos
 echo "Downloading java from azul"
 cd /opt && wget https://cdn.azul.com/zulu/bin/zulu11.58.15-ca-jdk11.0.16-linux_x64.zip
 echo "Downloaded azul java"
