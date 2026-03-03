@@ -41,20 +41,21 @@
 namespace sd {
 
 // Definition of thread-local graph execution flag (declared in DataBuffer.h and DebugHelper.h)
-thread_local bool tl_graphExecutionActive = false;
-thread_local cudaStream_t tl_graphCaptureStream = nullptr;
+// SD_TLS_EXPORT needed on Windows/MinGW so __emutls symbols are exported from DLL.
+SD_TLS_EXPORT thread_local bool tl_graphExecutionActive = false;
+SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream = nullptr;
 
 // Thread-local accumulator for pinned host buffers during CUDA graph capture.
 // Transferred to CudaGraphHandle after successful capture; freed on capture abort.
-thread_local std::vector<void*> tl_capturedHostPtrs;
+SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
 
 // Cache for PointersManager H2D copies during capture — deduplicates dimension arrays
-thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
 
 // Capture workspace: pre-allocated GPU buffer for eliminating cudaMallocAsync nodes
-thread_local void* tl_captureWorkspace = nullptr;
-thread_local size_t tl_captureWorkspaceSize = 0;
-thread_local size_t tl_captureWorkspaceOffset = 0;
+SD_TLS_EXPORT thread_local void* tl_captureWorkspace = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize = 0;
+SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
@@ -831,6 +832,33 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::deleteSpecial() {
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
+    // During CUDA graph capture, skip ALL GPU memory frees for non-workspace buffers.
+    // Recording cudaFreeAsync for graph-external memory creates MemFree graph nodes
+    // that reference stale addresses on cudaGraphLaunch → SIGSEGV.
+    // The memory stays allocated; it will be freed when the NDArray is deleted
+    // AFTER capture completes (via flushPendingClose or normal destruction).
+    // Workspace-allocated memory is managed by the workspace lifecycle, not freed individually.
+    if (tl_graphExecutionActive && _workspace == nullptr) {
+      // Check if this buffer is within the capture workspace (bump-allocated during capture)
+      bool inWorkspace = false;
+      if (tl_captureWorkspace != nullptr) {
+        char* wsStart = static_cast<char*>(tl_captureWorkspace);
+        char* wsEnd = wsStart + tl_captureWorkspaceSize;
+        char* p = static_cast<char*>(_specialBuffer);
+        inWorkspace = (p >= wsStart && p < wsEnd);
+      }
+      if (!inWorkspace) {
+        // Non-workspace buffer — do NOT free, do NOT reset pointer.
+        // Caller (NDArray destructor or flushPendingClose) will retry after capture.
+        return;
+      }
+      // Workspace buffer — fall through to reset pointer (no actual CUDA free needed)
+      _specialBuffer = nullptr;
+      _specialDeviceId.store(-1);
+      _isOwnerSpecial = false;
+      return;
+    }
+
     // Use the tracked device ID where special buffer was actually allocated
     // This is critical for multi-GPU: buffer may have been allocated on a different device
     // due to failover during OOM, and we must free from the correct device context
@@ -839,7 +867,7 @@ void DataBuffer::deleteSpecial() {
       // Fallback to _deviceId if _specialDeviceId not set (legacy code path)
       bufferDeviceId = _deviceId.load();
     }
-    
+
     auto currentDeviceId = AffinityManager::currentDeviceId();
     bool switchedDevice = false;
 
@@ -854,17 +882,8 @@ void DataBuffer::deleteSpecial() {
     array::DataBufferLifecycleTracker::getInstance().recordDeallocation(
         _specialBuffer,array::BufferType::SPECIAL);
 #endif
-    // During CUDA graph capture, we must use the captured stream for cudaFreeAsync.
-    // The default RELEASE_SPECIAL_WITH_DEVICE passes nullptr (legacy default stream),
-    // which implicitly synchronizes with all named streams and breaks capture (error 901).
-    if (tl_graphExecutionActive && _workspace == nullptr) {
-      cudaStream_t capturedStream = captureSafeStreamOrDefault();
-      int deviceIdToUse = (bufferDeviceId >= 0) ? bufferDeviceId : 0;
-      sd::memory::CudaMemoryPool::getInstance().free(reinterpret_cast<void*>(p), deviceIdToUse, capturedStream);
-    } else {
-      // Use device-aware free - critical for multi-GPU correctness
-      RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
-    }
+    // Use device-aware free - critical for multi-GPU correctness
+    RELEASE_SPECIAL_WITH_DEVICE(p, bufferDeviceId, _workspace);
 
     // count out towards DataBuffer device, only if we're not in workspace
     if (_workspace == nullptr) {

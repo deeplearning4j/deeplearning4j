@@ -44,9 +44,7 @@ namespace sd {
  * Dynamic Fusion. Set by NativeDynamicShapePlan around graph segment
  * execution, cleared when execution completes or is aborted.
  */
-// Note: thread_local variables must NOT use SD_LIB_EXPORT on MSVC
-// (error C2492: data with thread storage duration may not have dll interface)
-extern thread_local bool tl_graphExecutionActive;
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 
 #ifdef SD_CUDA
 /**
@@ -55,7 +53,7 @@ extern thread_local bool tl_graphExecutionActive;
  * using a different stream can invalidate capture.
  */
 #ifndef __JAVACPP_HACK__
-extern thread_local cudaStream_t tl_graphCaptureStream;
+extern SD_TLS_EXPORT thread_local cudaStream_t tl_graphCaptureStream;
 #endif
 #endif
 
@@ -65,7 +63,7 @@ extern thread_local cudaStream_t tl_graphCaptureStream;
  * during capture so graph replay reads from valid addresses.
  * After capture, these are transferred to CudaGraphHandle for lifetime management.
  */
-extern thread_local std::vector<void*> tl_capturedHostPtrs;
+extern SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
 
 #ifndef __JAVACPP_HACK__
 /**
@@ -75,7 +73,7 @@ extern thread_local std::vector<void*> tl_capturedHostPtrs;
  * the cached device pointer is returned without creating a redundant memcpy node.
  * Cleared at the start of each capture.
  */
-extern thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+extern SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
 #endif
 
 /**
@@ -86,9 +84,9 @@ extern thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache
  * CudaMemoryPool::free becomes a no-op for addresses within this workspace.
  * The workspace buffer persists for graph lifetime (stored on GraphSegment).
  */
-extern thread_local void* tl_captureWorkspace;
-extern thread_local size_t tl_captureWorkspaceSize;
-extern thread_local size_t tl_captureWorkspaceOffset;
+extern SD_TLS_EXPORT thread_local void* tl_captureWorkspace;
+extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize;
+extern SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset;
 
 class SD_LIB_EXPORT DataBuffer {
  private:

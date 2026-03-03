@@ -31,17 +31,18 @@ namespace sd {
 
 // Definition of thread-local graph execution flag (declared in DataBuffer.h)
 // Set during graph segment execution (oneDNN Graph, ACL Dynamic Fusion).
-thread_local bool tl_graphExecutionActive = false;
+// SD_TLS_EXPORT needed on Windows/MinGW so __emutls symbols are exported from DLL.
+SD_TLS_EXPORT thread_local bool tl_graphExecutionActive = false;
 
 // Thread-local accumulator for pinned host buffers during graph capture (CUDA only).
 // On CPU builds, this is unused but must be defined to satisfy the linker.
-thread_local std::vector<void*> tl_capturedHostPtrs;
-thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
+SD_TLS_EXPORT thread_local std::vector<void*> tl_capturedHostPtrs;
+SD_TLS_EXPORT thread_local std::unordered_map<uint64_t, void*> tl_captureReplicateCache;
 
 // CPU stubs for CUDA graph capture workspace variables (declared in DataBuffer.h)
-thread_local void* tl_captureWorkspace = nullptr;
-thread_local size_t tl_captureWorkspaceSize = 0;
-thread_local size_t tl_captureWorkspaceOffset = 0;
+SD_TLS_EXPORT thread_local void* tl_captureWorkspace = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize = 0;
+SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {

@@ -35,7 +35,7 @@
 #include "execution/cuda/LaunchDims.h"
 
 // Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
-extern thread_local bool tl_graphExecutionActive;
+extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 
 namespace sd {
 
@@ -463,6 +463,36 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  NDArray* castB = nullptr;
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effB = const_cast<NDArray*>(B);
+
+ // FP16 compute: auto-cast both-FP32 matmul inputs to HALF for TensorCore throughput.
+ // cublasSgemmEx handles HALF×HALF→FLOAT32 with FP32 accumulation (~2x throughput on sm_60+).
+ if (aType == FLOAT32 && bType == FLOAT32 && cType == FLOAT32 && major >= 6
+     && Environment::getInstance().dspFp16Compute()) {
+   if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+       && tl_castIdxB < tl_castCacheB.size()) {
+     NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
+     cachedA->assign(effA);
+     effA = cachedA;
+     NDArray* cachedB = tl_castCacheB[tl_castIdxB++];
+     cachedB->assign(effB);
+     effB = cachedB;
+   } else {
+     castA = effA->cast(HALF);
+     effA = castA;
+     castB = effB->cast(HALF);
+     effB = castB;
+     if (!tl_graphExecutionActive) {
+       auto* shapeA = castA->getShapeAsVector();
+       auto* persistentA = new NDArray(castA->ordering(), *shapeA, HALF, castA->getContext());
+       delete shapeA;
+       tl_castCacheA.push_back(persistentA);
+       auto* shapeB = castB->getShapeAsVector();
+       auto* persistentB = new NDArray(castB->ordering(), *shapeB, HALF, castB->getContext());
+       delete shapeB;
+       tl_castCacheB.push_back(persistentB);
+     }
+   }
+ }
 
  if (aType != bType && cType == FLOAT32 && major >= 6) {
    if (aType == FLOAT32 && bType == HALF) {
