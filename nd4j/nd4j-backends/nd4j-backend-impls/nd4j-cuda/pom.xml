@@ -189,6 +189,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <!-- ISO-8859-1: JavaCPP-generated bindings may contain non-ASCII from
+                         C++ header comments. On Windows, encoding mismatches produce invalid
+                         UTF-8. ISO-8859-1 accepts all byte values, and the non-ASCII is
+                         only in comments so it doesn't affect compiled output. -->
+                    <encoding>ISO-8859-1</encoding>
+                </configuration>
             </plugin>
 
         </plugins>

@@ -119,6 +119,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <encoding>ISO-8859-1</encoding>
                     <source>11</source>
                     <target>11</target>
                 </configuration>
