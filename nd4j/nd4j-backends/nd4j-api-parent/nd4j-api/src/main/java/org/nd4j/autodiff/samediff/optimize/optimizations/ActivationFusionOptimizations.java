@@ -104,7 +104,11 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
             }
 
             String sigmoidInput = sigmoidInputs.get(0);
-            if (!sigmoidInput.equals(rawInputVar)) {
+            // Compare through cast/identity/reshape ops — mixed-precision models
+            // insert casts (e.g., FP16→FP32 before sigmoid) that break exact matching
+            String strippedSigmoidInput = stripTrivialOps(sd, helper, sigmoidInput);
+            String strippedRawInput = stripTrivialOps(sd, helper, rawInputVar);
+            if (!strippedSigmoidInput.equals(strippedRawInput)) {
                 // This is sigmoid(a) * b where a != b, not the swish pattern
                 return false;
             }
@@ -256,5 +260,31 @@ public class ActivationFusionOptimizations extends BaseOptimizerSet {
                 return false;
             }
         }
+    }
+
+    /**
+     * Strips through cast, identity, expand_dims, squeeze, reshape ops to find the
+     * underlying variable. Used to compare variables across mixed-precision cast boundaries.
+     */
+    private static String stripTrivialOps(SameDiff sd, OptimizationHelper helper, String varName) {
+        String current = varName;
+        for (int i = 0; i < 8; i++) {
+            Variable v = helper != null ? helper.getVariable(current) : sd.getVariables().get(current);
+            if (v == null) break;
+            String producerOpName = v.getOutputOfOp();
+            if (producerOpName == null) break;
+            SameDiffOp p = sd.getOps().get(producerOpName);
+            if (p == null || p.getOp() == null || p.getInputsToOp() == null || p.getInputsToOp().isEmpty()) break;
+            String opName = p.getOp().opName();
+            if (opName == null) break;
+            opName = opName.toLowerCase();
+            if ("cast".equals(opName) || "identity".equals(opName) || "expand_dims".equals(opName)
+                    || "squeeze".equals(opName) || "reshape".equals(opName)) {
+                current = p.getInputsToOp().get(0);
+            } else {
+                break;
+            }
+        }
+        return current;
     }
 }

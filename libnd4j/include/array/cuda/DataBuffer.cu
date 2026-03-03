@@ -57,6 +57,11 @@ SD_TLS_EXPORT thread_local void* tl_captureWorkspace = nullptr;
 SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize = 0;
 SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 
+// cuBLAS workspace buffer+size set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
+// MmulHelper::reapplyCublasWorkspace() reads these after cublasSetStream resets workspace.
+SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
+
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {

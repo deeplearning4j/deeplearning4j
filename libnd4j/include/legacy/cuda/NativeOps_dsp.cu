@@ -182,6 +182,12 @@ int executeDynamicShapePlan(
       return static_cast<int>(status);
     }
 
+    // Clear any stale error from previous failed operations (e.g., graph capture failures).
+    // Without this, a successful DSP execution leaves a stale errorCode/errorMessage that
+    // causes subsequent standalone ops (e.g., token_sample) to spuriously fail when
+    // CudaExecutioner checks lastErrorCode() after execCustomOp2.
+    setError(0, "");
+
     // Write output arrays back to context so Java can read them
     for (int i = 0; i < numOutputs; i++) {
       if (outputPtrs[i] != nullptr) {

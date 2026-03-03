@@ -1030,4 +1030,120 @@ public class CudaEnvironment implements Environment {
     public void setTritonOverrideArch(String overrideArch) {
         e.setTritonOverrideArch(overrideArch);
     }
+
+    // Triton + CUDA graph integration
+    @Override
+    public boolean tritonAllowFallbackCapture() {
+        return e.tritonAllowFallbackCapture();
+    }
+
+    @Override
+    public void setTritonAllowFallbackCapture(boolean allow) {
+        e.setTritonAllowFallbackCapture(allow);
+    }
+
+    @Override
+    public boolean tritonGraphCapture() {
+        return e.tritonGraphCapture();
+    }
+
+    @Override
+    public void setTritonGraphCapture(boolean enable) {
+        e.setTritonGraphCapture(enable);
+    }
+
+    @Override
+    public boolean tritonDumpGraphDot() {
+        return e.tritonDumpGraphDot();
+    }
+
+    @Override
+    public void setTritonDumpGraphDot(boolean dump) {
+        e.setTritonDumpGraphDot(dump);
+    }
+
+    // Triton debugging flags
+    @Override
+    public boolean tritonSkipKernels() {
+        return e.tritonSkipKernels();
+    }
+
+    @Override
+    public void setTritonSkipKernels(boolean skip) {
+        e.setTritonSkipKernels(skip);
+    }
+
+    @Override
+    public boolean tritonVerifyKernels() {
+        return e.tritonVerifyKernels();
+    }
+
+    @Override
+    public void setTritonVerifyKernels(boolean verify) {
+        e.setTritonVerifyKernels(verify);
+    }
+
+    // Triton compilation scope
+    @Override
+    public boolean tritonCompileAll() {
+        return e.tritonCompileAll();
+    }
+
+    @Override
+    public void setTritonCompileAll(boolean v) {
+        e.setTritonCompileAll(v);
+    }
+
+    @Override
+    public String tritonExcludeOps() {
+        BytePointer p = e.tritonExcludeOps();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonExcludeOps(String ops) {
+        e.setTritonExcludeOps(ops);
+    }
+
+    @Override
+    public String tritonIncludeTypes() {
+        BytePointer p = e.tritonIncludeTypes();
+        return p == null ? "" : p.getString();
+    }
+
+    @Override
+    public void setTritonIncludeTypes(String types) {
+        e.setTritonIncludeTypes(types);
+    }
+
+    // DSP optimization flags
+    @Override
+    public boolean dspCastElimination() {
+        return e.dspCastElimination();
+    }
+
+    @Override
+    public void setDspCastElimination(boolean enabled) {
+        e.setDspCastElimination(enabled);
+    }
+
+    @Override
+    public boolean dspMatmulSegmentation() {
+        return e.dspMatmulSegmentation();
+    }
+
+    @Override
+    public void setDspMatmulSegmentation(boolean enabled) {
+        e.setDspMatmulSegmentation(enabled);
+    }
+
+    @Override
+    public boolean dspFp16Compute() {
+        return e.dspFp16Compute();
+    }
+
+    @Override
+    public void setDspFp16Compute(boolean enabled) {
+        e.setDspFp16Compute(enabled);
+    }
 }

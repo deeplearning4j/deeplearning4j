@@ -204,7 +204,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
         System.out.println("  libnd4j.calltrace property: " + calltraceProperty);
         System.out.println("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
         System.out.println("==============================================");
-        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
+        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "SD_TLS_EXPORT", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED", "DEFAULT_ENGINE").cppTypes().annotations())
                 .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
@@ -354,7 +354,12 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("sd::LaunchContext").skip())
                 .put(new Info(OpExclusionUtils.getPrefixedShapeFunctions()).skip())
                 .put(new Info(getSkipClasses()).skip())
-                .put(new Info("ErrorResult").skip());
+                .put(new Info("ErrorResult").skip())
+                // Skip thread-local variables from DataBuffer.h — not callable from Java
+                .put(new Info("sd::tl_graphExecutionActive", "sd::tl_captureWorkspace",
+                        "sd::tl_captureWorkspaceSize", "sd::tl_captureWorkspaceOffset",
+                        "sd::tl_capturedHostPtrs", "sd::tl_captureReplicateCache",
+                        "sd::tl_graphCaptureStream").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
 

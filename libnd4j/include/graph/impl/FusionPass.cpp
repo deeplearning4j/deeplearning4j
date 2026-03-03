@@ -23,6 +23,7 @@
 #include <graph/NativeDynamicShapePlan.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
+#include <system/Environment.h>
 
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 
@@ -265,6 +266,52 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
 
     // Track which slots are already part of a fusion (no overlapping fusions)
     std::vector<bool> fused(numSlots, false);
+
+    // Pass 0: Cast elimination — remove redundant cast pairs (A→B followed by B→A)
+    // Like pytorch.compile, we eliminate redundant type conversions to reduce kernel launches
+    // and memory bandwidth waste. 261 FP16↔FP32 cast ops in SmolDocling are prime targets.
+    if (Environment::getInstance().dspCastElimination()) {
+        int castsEliminated = 0;
+        for (int i = 0; i < numSlots; i++) {
+            if (fused[i]) continue;
+            std::string nameI = getOpName(slots[i]);
+            if (nameI != "cast") continue;
+            if (slots[i].numOutputs != 1 || slots[i].numInputs != 1) continue;
+            if (slots[i].numIArgs < 1) continue;
+
+            int castTypeA = static_cast<int>(slots[i].iArgs[0]);  // target dtype of first cast
+            int outputIdx = slots[i].outputSlotIndices[0];
+
+            // Find the consumer of this cast's output
+            for (int j = i + 1; j < numSlots; j++) {
+                if (fused[j]) continue;
+                std::string nameJ = getOpName(slots[j]);
+                if (nameJ != "cast") continue;
+                if (slots[j].numInputs != 1 || slots[j].numOutputs != 1) continue;
+                if (slots[j].numIArgs < 1) continue;
+                if (slots[j].inputSourceIndices[0] != outputIdx) continue;
+
+                // Verify this is actually a reverse cast: first cast converts A→B (castTypeA = B),
+                // second cast must convert back B→A. The second cast's target type (iArgs[0])
+                // must differ from the first cast's target type AND must match the first cast's
+                // input dtype. Also the first cast must be only consumed by this second cast.
+                int castTypeB = static_cast<int>(slots[j].iArgs[0]);
+                if (castTypeA == castTypeB) continue;  // same target type = not a reverse cast
+                if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) break;
+
+                // Mark both as identity ops (skip execution, wire through)
+                slots[i].isIdentityOp = true;
+                slots[j].isIdentityOp = true;
+                fused[i] = true;
+                fused[j] = true;
+                castsEliminated += 2;
+                break;
+            }
+        }
+        if (castsEliminated > 0) {
+            sd_printf("FusionPass: cast elimination removed %d redundant cast ops\n", castsEliminated);
+        }
+    }
 
     // Pass 1: Detect element-wise chains
     for (int i = 0; i < numSlots; i++) {
@@ -660,24 +707,36 @@ int FusionPass::applyFusions(
                                 int prevOutputSlotIdx = -1;
                                 if (ci > 0) {
                                     prevOutputSlotIdx = slots[fusion.slotIndices[ci - 1]].outputSlotIndices[0];
-                                } else {
-                                    // Head slot: primary input is inputSourceIndices[0]
-                                    // Secondary is whatever is NOT that
-                                    // (for head binary op, both inputs are "external" to the chain)
-                                    // The chain input is input 0, secondary is input 1
-                                    // But actually the head's primary chain input could be either index
                                 }
 
-                                for (int k = 0; k < slots[si].numInputs; k++) {
-                                    int srcIdx = slots[si].inputSourceIndices[k];
-                                    if (ci == 0) {
-                                        // Head binary op: secondary is the external input (srcIdx < 0)
-                                        if (srcIdx < 0) {
-                                            secondarySources[ci] = srcIdx;
-                                            break;
-                                        }
+                                if (ci == 0) {
+                                    // Head binary op: check if both inputs come from the same source
+                                    // (e.g., mul(y,y) for squaring). In that case, secondary = primary.
+                                    int src0 = slots[si].inputSourceIndices[0];
+                                    int src1 = slots[si].inputSourceIndices[1];
+                                    if (src0 == src1) {
+                                        // Self-op (e.g., x*x): secondary is the same as primary
+                                        secondarySources[ci] = src0;
                                     } else {
-                                        // Non-head: secondary is whichever input is NOT from prev chain slot
+                                        // Head binary op: secondary is the external input (srcIdx < 0)
+                                        // or the non-primary internal input
+                                        for (int k = 0; k < slots[si].numInputs; k++) {
+                                            int srcIdx = slots[si].inputSourceIndices[k];
+                                            if (srcIdx < 0) {
+                                                secondarySources[ci] = srcIdx;
+                                                break;
+                                            }
+                                        }
+                                        // If no external found, use the non-primary internal source
+                                        if (secondarySources[ci] == INT32_MIN) {
+                                            // Primary is input 0 by default; secondary is input 1
+                                            secondarySources[ci] = src1;
+                                        }
+                                    }
+                                } else {
+                                    // Non-head: secondary is whichever input is NOT from prev chain slot
+                                    for (int k = 0; k < slots[si].numInputs; k++) {
+                                        int srcIdx = slots[si].inputSourceIndices[k];
                                         if (srcIdx != prevOutputSlotIdx) {
                                             secondarySources[ci] = srcIdx;
                                             break;

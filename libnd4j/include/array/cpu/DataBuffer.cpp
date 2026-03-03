@@ -44,6 +44,10 @@ SD_TLS_EXPORT thread_local void* tl_captureWorkspace = nullptr;
 SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceSize = 0;
 SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 
+// CPU stubs for cuBLAS workspace thread-locals (declared in DataBuffer.h)
+SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
+
 void DataBuffer::expand(const uint64_t size) {
   if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer

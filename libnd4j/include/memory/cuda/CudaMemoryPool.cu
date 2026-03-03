@@ -643,16 +643,22 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     return;
   }
 
-  // During CUDA graph capture, skip frees for addresses within the capture workspace.
-  // These workspace allocations are managed by the workspace buffer lifecycle, not
-  // individually freed. This eliminates cudaGraphMemFreeNode from the captured graph.
+  // During CUDA graph capture, skip ALL frees to avoid recording MemFree graph nodes.
+  // Workspace addresses: managed by the workspace buffer lifecycle (bump allocator).
+  // Non-workspace (graph-external) addresses: cudaFreeAsync records a MemFree graph node
+  // for memory allocated OUTSIDE the capture. On cudaGraphLaunch, the MemFree node
+  // references a stale/invalid address → SIGSEGV. DataBuffer::deleteSpecial() is the
+  // primary guard (returns early during capture for non-workspace memory), but this
+  // serves as defense-in-depth for any code path that bypasses DataBuffer.
   if (tl_graphExecutionActive && tl_captureWorkspace != nullptr) {
     char* wsStart = static_cast<char*>(tl_captureWorkspace);
     char* wsEnd = wsStart + tl_captureWorkspaceSize;
     char* p = static_cast<char*>(ptr);
     if (p >= wsStart && p < wsEnd) {
-      return;  // Within workspace — no-op
+      return;  // Within workspace — no-op (managed by workspace lifecycle)
     }
+    // Non-workspace memory during capture — also skip to prevent MemFree graph nodes
+    return;
   }
 
   cudaStream_t freeStream = resolveCaptureStream(stream);

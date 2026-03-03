@@ -201,10 +201,11 @@ bool CudaGraphHandle::instantiate() {
         cudaSetDevice(_deviceId);
     }
 
-    cudaGraphNode_t errorNode;
-    char logBuffer[1024] = {0};
-
-    cudaError_t err = cudaGraphInstantiate(&_graphExec, _graph, &errorNode, logBuffer, sizeof(logBuffer));
+    // Use non-deprecated cudaGraphInstantiateWithFlags (CUDA 12.0+).
+    // AutoFreeOnLaunch configurable via ND4J_TRITON_GRAPH_AUTOFREE env var (default OFF).
+    unsigned long long instantiateFlags = Environment::getInstance().tritonGraphAutoFree()
+        ? cudaGraphInstantiateFlagAutoFreeOnLaunch : 0;
+    cudaError_t err = cudaGraphInstantiateWithFlags(&_graphExec, _graph, instantiateFlags);
 
     // Restore device
     if (_deviceId != prevDevice) {
@@ -212,10 +213,12 @@ bool CudaGraphHandle::instantiate() {
     }
 
     if (err != cudaSuccess) {
-        sd_printf("CudaGraphHandle::instantiate failed: %s\n", cudaGetErrorString(err));
-        if (strlen(logBuffer) > 0) {
-            sd_printf("Graph instantiation log: %s\n", logBuffer);
-        }
+        sd_printf("CudaGraphHandle::instantiate failed: %s (err=%d)\n",
+                  cudaGetErrorString(err), (int)err);
+        // Try to get more info from graph validation
+        size_t numNodes = 0;
+        cudaGraphGetNodes(_graph, nullptr, &numNodes);
+        sd_printf("  Graph has %zu nodes, deviceId=%d\n", numNodes, _deviceId);
         _state = GraphState::ERROR;
         return false;
     }
@@ -224,6 +227,47 @@ bool CudaGraphHandle::instantiate() {
         std::chrono::high_resolution_clock::now().time_since_epoch()
     ).count();
     _instantiateTimeMs = endTime - startTime;
+
+    _state = GraphState::INSTANTIATED;
+    return true;
+}
+
+bool CudaGraphHandle::reInstantiate() {
+    std::lock_guard<std::mutex> lock(_mutex);
+
+    if (_graph == nullptr) {
+        sd_print("CudaGraphHandle::reInstantiate - No graph to instantiate from\n");
+        return false;
+    }
+
+    // Destroy old exec
+    if (_graphExec != nullptr) {
+        cudaGraphExecDestroy(_graphExec);
+        _graphExec = nullptr;
+    }
+
+    // Set device
+    int prevDevice;
+    cudaGetDevice(&prevDevice);
+    if (_deviceId != prevDevice) {
+        cudaSetDevice(_deviceId);
+    }
+
+    // Re-create exec from the same captured graph
+    unsigned long long instantiateFlags = Environment::getInstance().tritonGraphAutoFree()
+        ? cudaGraphInstantiateFlagAutoFreeOnLaunch : 0;
+    cudaError_t err = cudaGraphInstantiateWithFlags(&_graphExec, _graph, instantiateFlags);
+
+    if (_deviceId != prevDevice) {
+        cudaSetDevice(prevDevice);
+    }
+
+    if (err != cudaSuccess) {
+        sd_printf("CudaGraphHandle::reInstantiate failed: %s (err=%d)\n",
+                  cudaGetErrorString(err), (int)err);
+        _state = GraphState::ERROR;
+        return false;
+    }
 
     _state = GraphState::INSTANTIATED;
     return true;
@@ -290,6 +334,13 @@ bool CudaGraphHandle::launchAsync(cudaStream_t stream, cudaEvent_t completionEve
 
     _state = GraphState::EXECUTING;
 
+    // Ensure correct device before launch — graph was captured on _deviceId
+    int prevDevice;
+    cudaGetDevice(&prevDevice);
+    if (_deviceId != prevDevice) {
+        cudaSetDevice(_deviceId);
+    }
+
     // Record start time for execution timeline
     double startTime = std::chrono::duration<double, std::milli>(
         std::chrono::high_resolution_clock::now().time_since_epoch()
@@ -339,6 +390,10 @@ bool CudaGraphHandle::launchAsync(cudaStream_t stream, cudaEvent_t completionEve
             lastEntry.success = false;
             lastEntry.errorMessage = cudaGetErrorString(err);
         }
+        // Restore device
+        if (_deviceId != prevDevice) {
+            cudaSetDevice(prevDevice);
+        }
         return false;
     }
 
@@ -351,6 +406,11 @@ bool CudaGraphHandle::launchAsync(cudaStream_t stream, cudaEvent_t completionEve
         auto& lastEntry = _executionTimeline.back();
         lastEntry.durationMs = endTime - startTime;
         lastEntry.success = true;
+    }
+
+    // Restore device
+    if (_deviceId != prevDevice) {
+        cudaSetDevice(prevDevice);
     }
 
     _state = GraphState::INSTANTIATED;  // Ready for next launch
@@ -557,6 +617,9 @@ std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
                 cudaKernelNodeParams params;
                 memset(&params, 0, sizeof(params));
                 err = cudaGraphKernelNodeGetParams(nodes[i], &params);
+                if (err != cudaSuccess) {
+                    cudaGetLastError();  // Clear sticky error from failed param query
+                }
                 if (err == cudaSuccess && params.func != nullptr) {
                     // Get kernel name from function pointer
                     const char* name = nullptr;
@@ -564,6 +627,12 @@ std::vector<CudaGraphNodeInfo> CudaGraphHandle::getDetailedNodeInfo() const {
                     if (nameErr == cudaSuccess && name != nullptr) {
                         info.kernelName = demangleKernelName(name);
                     } else {
+                        // Clear sticky error from cudaFuncGetName failure.
+                        // Driver-API CUfunction handles (e.g., from Triton's cuModuleGetFunction)
+                        // are not recognized by the runtime API's cudaFuncGetName, which sets
+                        // cudaErrorInvalidDeviceFunction. If not cleared, this sticky error
+                        // propagates to cudaGraphLaunch and causes SIGSEGV.
+                        cudaGetLastError();
                         // Fallback: show raw function pointer
                         std::ostringstream oss;
                         oss << "func@" << params.func;

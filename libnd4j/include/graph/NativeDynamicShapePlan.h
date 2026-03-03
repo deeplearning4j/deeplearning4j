@@ -228,6 +228,7 @@ struct GraphSegment {
   // NOT set for OOM failures — those use the retry mechanism below.
   bool captureFailed;
 
+
   // OOM retry mechanism: instead of permanently disabling capture on allocation failures,
   // retry after a cooldown period. Memory pressure decreases as other segments get captured
   // (graph replay uses less memory than slot-by-slot due to kernel fusion).
@@ -278,6 +279,12 @@ struct GraphSegment {
   // Persists for graph lifetime — kernel params reference these addresses.
   void* captureWorkspacePtr = nullptr;
   size_t captureWorkspaceBytes = 0;
+
+  // Pinned host pointers accumulated during graph capture.
+  // PointersManager::replicatePointer allocates pinned memory for H2D copies
+  // during capture — the graph's memcpy nodes reference these addresses on replay.
+  // MUST persist for graph lifetime; freed when graph is destroyed/invalidated.
+  std::vector<void*> capturedHostPtrs;
 
   // ── NVRTC JIT kernel ────────────────────────────────────────────────────
   // When JIT mode is enabled, element-wise segments are compiled into a

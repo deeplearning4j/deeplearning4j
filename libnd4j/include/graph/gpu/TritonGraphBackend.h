@@ -89,6 +89,13 @@ class TritonGraphBackend : public GraphBackend {
   static void setFallbackRangeExecutor(FallbackRangeExecutor executor);
   static void clearFallbackRangeExecutor();
 
+  // Refresh all indirect arg table pinned host buffers with current NDArray
+  // specialBuffer() addresses. Must be called before CUDA graph replay so the
+  // graph's H2D memcpy nodes transfer up-to-date buffer pointers to device.
+  Status refreshArgTablesForReplay(GraphSegment& seg,
+                                   NDArray** externalInputs, int numExternalInputs,
+                                   NDArray** outputSlots, int totalOutputSlots);
+
   // Counters for diagnostics and testing
   LongType getTotalKernelLaunches() const { return totalKernelLaunches_; }
   LongType getTotalCacheHits() const { return totalCacheHits_; }
@@ -193,11 +200,15 @@ class TritonGraphBackend : public GraphBackend {
     int endSlot;
     LongType shapeKey;
     int deviceId;
+    bool compileAll;         // Whether tritonCompileAll was enabled at compile time
+    size_t excludeOpsHash;   // Hash of tritonExcludeOps string (0 if empty)
     bool operator==(const SegmentCacheKey& o) const {
       return startSlot == o.startSlot &&
              endSlot == o.endSlot &&
              shapeKey == o.shapeKey &&
-             deviceId == o.deviceId;
+             deviceId == o.deviceId &&
+             compileAll == o.compileAll &&
+             excludeOpsHash == o.excludeOpsHash;
     }
   };
   struct SegmentCacheHash {
@@ -206,6 +217,8 @@ class TritonGraphBackend : public GraphBackend {
       h ^= std::hash<int>()(k.endSlot) << 1;
       h ^= std::hash<LongType>()(k.shapeKey) << 2;
       h ^= std::hash<int>()(k.deviceId) << 3;
+      h ^= std::hash<bool>()(k.compileAll) << 4;
+      h ^= std::hash<size_t>()(k.excludeOpsHash) << 5;
       return h;
     }
   };

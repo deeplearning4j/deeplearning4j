@@ -175,7 +175,12 @@ public class StaticKvCacheDecodeLoop {
         boolean kvScatterInCpp = false;  // When true, C++ handles KV scatter — skip Java side
 
         // Reusable input arrays — avoids per-step allocation of masks/position_ids
+        // Also used for CUDA graph replay: fixed-address buffers for inputs_embeds/input_ids
+        // prevent address key mismatch that would invalidate captured graphs.
         Map<String, INDArray> reusableInputs = new HashMap<>();
+        // Fixed-address decode buffers (allocated once, data copied each step)
+        INDArray reusableEmbeddings = null;  // [1, 1, hiddenSize]
+        INDArray reusableInputIds = null;    // [1, 1]
 
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
@@ -213,8 +218,8 @@ public class StaticKvCacheDecodeLoop {
 
             long tAfterDecoder = System.nanoTime();
 
-            // Diagnostic: present KV shapes at steps 1-3
-            if (step >= 1 && step <= 3) {
+            // Diagnostic: present KV shapes at steps 1-3 (skip when C++ KV scatter manages outputs)
+            if (step >= 1 && step <= 3 && !kvScatterInCpp) {
                 logPresentKvDiagnostics(step, decoderOutputs, kvNames);
             }
 
@@ -232,9 +237,13 @@ public class StaticKvCacheDecodeLoop {
                 if (logitsRaw.closeable()) logitsRaw.close();
                 logitsRaw = floatLogits;
             }
+            // Note: DSP outputs may have isConstant flags. We clear the stale native
+            // error state before token_sample exec instead of calling setCloseable(true),
+            // because setCloseable makes the DSP's frozen output closeable, and closing
+            // it destroys the DSP's internal output slot cache → fallback to Java path.
 
-            // Diagnostic: top logit values at steps 1-3
-            if (step >= 1 && step <= 3) {
+            // Diagnostic: top logit values at steps 0-3
+            if (step <= 3) {
                 logLogitsDiagnostics(step, logitsRaw);
             }
 
@@ -253,13 +262,35 @@ public class StaticKvCacheDecodeLoop {
                 }
                 // Close present KV outputs — scatter already copied data into static buffers.
                 // Without this, 60 tensors × ~4.5MB = ~270MB leaked per step.
-                for (String pn : kvNames.keyNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null && !pv.wasClosed()) { pv.setCloseable(true); pv.close(); }
-                }
-                for (String pn : kvNames.valueNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null && !pv.wasClosed()) { pv.setCloseable(true); pv.close(); }
+                // Skip when C++ KV scatter is active — C++ manages these buffer lifecycles.
+                if (!kvScatterInCpp) {
+                    int kvClosed = 0;
+                    long kvClosedBytes = 0;
+                    int kvSkippedClosed = 0, kvSkippedNull = 0;
+                    for (String pn : kvNames.keyNames) {
+                        INDArray pv = decoderOutputs.get(pn);
+                        if (pv == null) { kvSkippedNull++; continue; }
+                        if (pv.wasClosed() || pv.data() == null) { kvSkippedClosed++; continue; }
+                        long bytes = pv.data().length() * pv.data().getElementSize();
+                        pv.setCloseable(true);
+                        pv.close();
+                        kvClosed++;
+                        kvClosedBytes += bytes;
+                    }
+                    for (String pn : kvNames.valueNames) {
+                        INDArray pv = decoderOutputs.get(pn);
+                        if (pv == null) { kvSkippedNull++; continue; }
+                        if (pv.wasClosed() || pv.data() == null) { kvSkippedClosed++; continue; }
+                        long bytes = pv.data().length() * pv.data().getElementSize();
+                        pv.setCloseable(true);
+                        pv.close();
+                        kvClosed++;
+                        kvClosedBytes += bytes;
+                    }
+                    if (step < 5 || step % 10 == 0) {
+                        log.info("  [KV-CLOSE] step={} closed={} ({}MB) skippedClosed={} skippedNull={}",
+                                step, kvClosed, kvClosedBytes / (1024 * 1024), kvSkippedClosed, kvSkippedNull);
+                    }
                 }
             } else {
                 // Step 0 (prefill): transition to static KV
@@ -273,14 +304,24 @@ public class StaticKvCacheDecodeLoop {
                 cachePos = prefillSeqLen;
                 usingStaticKv = true;
 
-                // Close prefill KV outputs
-                for (String pn : kvNames.keyNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null) { pv.setCloseable(true); pv.close(); }
-                }
-                for (String pn : kvNames.valueNames) {
-                    INDArray pv = decoderOutputs.get(pn);
-                    if (pv != null) { pv.setCloseable(true); pv.close(); }
+                // Close prefill KV outputs — but ONLY when DSP native executor is NOT active.
+                // When DSP is active, the C++ slotArrayCache_ still holds raw NDArray* pointers
+                // to these outputs. Java close() calls opaqueNDArray.close() which deletes the
+                // C++ NDArray, leaving slotArrayCache_ with dangling pointers → use-after-free
+                // at the next execution step. The DSP will evict stale arrays naturally when
+                // shapes change (prefill [1,h,679,d] → decode [1,h,699,d]).
+                InferenceSession prefillSession = decoder.getOrCreateSession();
+                boolean dspActive = prefillSession.getDynamicShapePlanExecutor() != null
+                        && prefillSession.getDynamicShapePlanExecutor().getCurrentPlan() != null;
+                if (!dspActive) {
+                    for (String pn : kvNames.keyNames) {
+                        INDArray pv = decoderOutputs.get(pn);
+                        if (pv != null) { pv.setCloseable(true); pv.close(); }
+                    }
+                    for (String pn : kvNames.valueNames) {
+                        INDArray pv = decoderOutputs.get(pn);
+                        if (pv != null) { pv.setCloseable(true); pv.close(); }
+                    }
                 }
 
                 // Freeze shapes for CUDA graph capture
@@ -322,6 +363,13 @@ public class StaticKvCacheDecodeLoop {
             // Sample next token via native GPU op — pass logits directly (rank-3 supported)
             long tSampStart = System.nanoTime();
 
+            // Pre-allocate output array to avoid calculateOutputShape on constant ShapeInfo.
+            // DSP outputs may have constant ShapeInfo flags that cause calculateOutputShape
+            // to fail when token_sample tries to infer output shapes internally.
+            long batchSize = logitsRaw.rank() == 3 ? logitsRaw.size(0) :
+                    (logitsRaw.rank() == 2 ? logitsRaw.size(0) : 1);
+            INDArray tokenOutput = Nd4j.createUninitialized(DataType.INT64, batchSize);
+
             TokenSample tokenSampleOp;
             if (samplingConfig.isGreedy()) {
                 tokenSampleOp = new TokenSample(logitsRaw);
@@ -332,6 +380,11 @@ public class StaticKvCacheDecodeLoop {
                         samplingConfig.getTopP(),
                         samplingConfig.getSeed() != null ? samplingConfig.getSeed() : 0L);
             }
+            tokenSampleOp.addOutputArgument(tokenOutput);
+            // Clear stale native error state from DSP graph capture failures.
+            // DSP may leave non-zero errorCode after capture failure even though
+            // execution succeeded via slot-by-slot fallback.
+            Nd4j.getNativeOps().clearLastError();
             INDArray tokenResult = Nd4j.getExecutioner().exec(tokenSampleOp)[0];
             int nextTokenId = tokenResult.getInt(0);
             long tSampArgmax = System.nanoTime();
@@ -419,20 +472,49 @@ public class StaticKvCacheDecodeLoop {
             INDArray prevEmbeddings = currentEmbeddings;
             if (embeddingTable != null) {
                 // Direct lookup: single row from embedding table, reshaped to [1, 1, hiddenSize]
-                currentEmbeddings = embeddingTable.getRow(nextTokenId).reshape(1, 1, resolvedHiddenSize);
-                INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
-                if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
-                    currentInputIds.setCloseable(true);
-                    currentInputIds.close();
+                INDArray rowEmbed = embeddingTable.getRow(nextTokenId).reshape(1, 1, resolvedHiddenSize);
+                // Use fixed-address buffer for CUDA graph replay stability
+                if (usingStaticKv) {
+                    if (reusableEmbeddings == null) {
+                        reusableEmbeddings = rowEmbed.dup();
+                    } else {
+                        reusableEmbeddings.assign(rowEmbed);
+                    }
+                    currentEmbeddings = reusableEmbeddings;
+                } else {
+                    currentEmbeddings = rowEmbed;
                 }
-                currentInputIds = newTokenTensor;
+                if (usingStaticKv) {
+                    if (reusableInputIds == null) {
+                        reusableInputIds = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                    } else {
+                        reusableInputIds.putScalar(0, 0, nextTokenId);
+                    }
+                    currentInputIds = reusableInputIds;
+                } else {
+                    INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
+                    if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
+                        currentInputIds.setCloseable(true);
+                        currentInputIds.close();
+                    }
+                    currentInputIds = newTokenTensor;
+                }
             } else {
                 // Fallback: full SameDiff execution
                 INDArray newTokenTensor = Nd4j.createFromArray(new int[]{nextTokenId}).reshape(1, 1).castTo(DataType.LONG);
                 Map<String, INDArray> newEmbedOutputs = embedTokens.output(
                         Map.of(resolvedEmbedInputName, newTokenTensor), resolvedEmbedOutputNames);
                 for (var entry : newEmbedOutputs.entrySet()) {
-                    currentEmbeddings = entry.getValue();
+                    if (usingStaticKv) {
+                        if (reusableEmbeddings == null) {
+                            reusableEmbeddings = entry.getValue().dup();
+                        } else {
+                            reusableEmbeddings.assign(entry.getValue());
+                        }
+                        currentEmbeddings = reusableEmbeddings;
+                    } else {
+                        currentEmbeddings = entry.getValue();
+                    }
                 }
                 if (currentInputIds != null && currentInputIds != newTokenTensor && !currentInputIds.wasClosed()) {
                     currentInputIds.setCloseable(true);
@@ -441,7 +523,11 @@ public class StaticKvCacheDecodeLoop {
                 currentInputIds = newTokenTensor;
                 embedTokens.clearPlaceholders(false);
             }
-            if (prevEmbeddings != null && !prevEmbeddings.wasClosed()) {
+            // Close previous embeddings — but NOT if it's the same object as
+            // currentEmbeddings (reusableEmbeddings is updated in-place via assign(),
+            // so prevEmbeddings == currentEmbeddings == reusableEmbeddings).
+            if (prevEmbeddings != null && prevEmbeddings != currentEmbeddings
+                    && !prevEmbeddings.wasClosed()) {
                 prevEmbeddings.setCloseable(true);
                 prevEmbeddings.close();
             }
@@ -553,17 +639,40 @@ public class StaticKvCacheDecodeLoop {
     }
 
     private void logLogitsDiagnostics(int step, INDArray logits) {
-        INDArray lastLogitsDiag = logits.rank() == 3
-                ? logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all())
-                : logits.getRow(0);
-        INDArray topK = Nd4j.argMax(lastLogitsDiag);
-        int topId = topK.getInt(0);
-        float topVal = lastLogitsDiag.getFloat(topId);
-        float logitsMin = lastLogitsDiag.minNumber().floatValue();
-        float logitsMean = lastLogitsDiag.meanNumber().floatValue();
-        log.info("  [DIAG] step={} logits: topId={} topVal={} min={} mean={} shape={}",
-                step, topId, topVal, logitsMin, logitsMean,
-                Arrays.toString(lastLogitsDiag.shape()));
+        try {
+            INDArray lastLogitsDiag = logits.rank() == 3
+                    ? logits.get(NDArrayIndex.point(0), NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all())
+                    : logits.getRow(0);
+            // Use only getFloat() — CUDA reduction ops (min/max/mean/argmax) fail on
+            // constant-flagged DSP output arrays. getFloat() works on any array.
+            int len = (int) lastLogitsDiag.length();
+            int topId = 0;
+            float topVal = lastLogitsDiag.getFloat(0);
+            float logitsMin = topVal, logitsMax = topVal;
+            double logitsSum = topVal;
+            boolean hasNaN = Float.isNaN(topVal);
+            for (int i = 1; i < len; i++) {
+                float v = lastLogitsDiag.getFloat(i);
+                if (Float.isNaN(v)) hasNaN = true;
+                if (v > topVal) { topVal = v; topId = i; }
+                if (v < logitsMin) logitsMin = v;
+                if (v > logitsMax) logitsMax = v;
+                logitsSum += v;
+            }
+            float logitsMean = (float) (logitsSum / len);
+            boolean allZero = logitsMax == 0.0f && logitsMin == 0.0f;
+            StringBuilder first10 = new StringBuilder();
+            int show = Math.min(10, len);
+            for (int i = 0; i < show; i++) {
+                if (i > 0) first10.append(", ");
+                first10.append(String.format("%.4f", lastLogitsDiag.getFloat(i)));
+            }
+            log.info("  [DIAG] step={} logits: topId={} topVal={} min={} max={} mean={} hasNaN={} allZero={} shape={} first10=[{}]",
+                    step, topId, topVal, logitsMin, logitsMax, logitsMean, hasNaN, allZero,
+                    Arrays.toString(lastLogitsDiag.shape()), first10);
+        } catch (Exception e) {
+            log.warn("  [DIAG] step={} logits diagnostics failed: {}", step, e.getMessage());
+        }
     }
 
     private static long percentile(List<Long> values, int percentile) {

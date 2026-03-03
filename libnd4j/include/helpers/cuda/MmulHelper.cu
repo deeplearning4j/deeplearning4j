@@ -37,7 +37,22 @@
 // Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
 extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 
+// cuBLAS workspace buffer+size set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
+// cublasSetStream() resets the user-provided workspace (cuBLAS docs), so we must
+// re-apply it after every cublasSetStream call during graph capture.  Without this,
+// cuBLAS falls back to internal cudaMallocAsync → MemAlloc/MemFree graph nodes
+// that SIGSEGV the driver on graph replay.
+extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
+extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+
 namespace sd {
+
+// Re-apply cuBLAS workspace after cublasSetStream during graph capture.
+static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
+  if (tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
+  }
+}
 
 // Thread-local persistent cast cache for CUDA graph capture.
 // During non-capture execution, cast results are cached here.
@@ -549,6 +564,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  auto status = cublasSetStream_v2(*handle, *stream);
  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", status);
+ reapplyCublasWorkspace(*handle);
 
  if (!typeDouble && !typeFloat && !typeHalf && !typeIntFloat && !typeHalfFloat) {
    dim3 dims = getMMulDims(C->lengthOf(),DataTypeUtils::sizeOf(cType));
@@ -681,6 +697,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
  auto status = cublasSetStream_v2(*handle, *stream);
  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
+ reapplyCublasWorkspace(*handle);
 
  if (!typeDouble && !typeFloat) {
    dim3 dims = getGemVDims(M);
@@ -1066,6 +1083,7 @@ bool MmulHelper::tryBlasStridedBatched(NDArray* A, NDArray* B, NDArray* C,
   auto handle = reinterpret_cast<cublasHandle_t*>(A->getContext()->getCublasHandle());
   auto stream = A->getContext()->getCudaStream();
   cublasSetStream(*handle, *stream);
+  reapplyCublasWorkspace(*handle);
 
   NDArray::prepareSpecialUse({C}, {A, B});
 

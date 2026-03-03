@@ -25,6 +25,12 @@
 #include <cublas_v2.h>
 #include <helpers/cublasHelper.h>
 
+// Thread-local cuBLAS workspace for MmulHelper to re-apply after cublasSetStream.
+// cublasSetStream resets the user-provided workspace (per cuBLAS docs), so
+// MmulHelper::reapplyCublasWorkspace() reads these to restore it.
+extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
+extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+
 namespace sd {
 namespace graph {
 
@@ -71,6 +77,11 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   if (status != CUBLAS_STATUS_SUCCESS) {
     sd_printf("NativeDynamicShapePlan: cublasSetWorkspace failed: %d\n", static_cast<int>(status));
   }
+
+  // Store in thread-locals so MmulHelper can re-apply after cublasSetStream
+  // (cublasSetStream resets the user-provided workspace per cuBLAS docs).
+  tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
+  tl_cublasWorkspaceSize = cublasWorkspaceSize_;
 }
 
 void NativeDynamicShapePlan::restoreCublasWorkspaceAfterCapture(void* stream) {
@@ -79,6 +90,10 @@ void NativeDynamicShapePlan::restoreCublasWorkspaceAfterCapture(void* stream) {
   if (handlePtr == nullptr) return;
 
   cublasSetWorkspace(*handlePtr, nullptr, 0);
+
+  // Clear thread-locals so MmulHelper stops re-applying workspace
+  tl_cublasWorkspacePtr = nullptr;
+  tl_cublasWorkspaceSize = 0;
 }
 
 }  // namespace graph

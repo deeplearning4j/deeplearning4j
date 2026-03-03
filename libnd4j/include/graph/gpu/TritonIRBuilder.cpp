@@ -246,8 +246,8 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["Sqrt"]      = {"Sqrt",      TritonOpCategory::UNARY_ELEMENTWISE,  "math.sqrt",      false};
   table["square"]    = {"square",    TritonOpCategory::UNARY_ELEMENTWISE,  "arith.mulf",     true};
   table["Square"]    = {"Square",    TritonOpCategory::UNARY_ELEMENTWISE,  "arith.mulf",     true};
-  table["pow"]       = {"pow",       TritonOpCategory::UNARY_ELEMENTWISE,  "custom.pow",     true};
-  table["Pow"]       = {"Pow",       TritonOpCategory::UNARY_ELEMENTWISE,  "custom.pow",     true};
+  table["pow"]       = {"pow",       TritonOpCategory::BINARY_ELEMENTWISE,  "custom.pow",     true};
+  table["Pow"]       = {"Pow",       TritonOpCategory::BINARY_ELEMENTWISE,  "custom.pow",     true};
   table["clamp"]     = {"clamp",     TritonOpCategory::UNARY_ELEMENTWISE,  "arith.maximumf", true};
   table["ClipByValue"] = {"ClipByValue", TritonOpCategory::UNARY_ELEMENTWISE, "arith.maximumf", true};
   table["clipbyvalue"] = {"clipbyvalue", TritonOpCategory::UNARY_ELEMENTWISE, "arith.maximumf", true};
@@ -1464,10 +1464,16 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
     numWarps = std::max(1, static_cast<int>(dims.y) / 32);
     numStages = 3;
   } else if (hasReduction || hasNormalization) {
-    // Use getReduceDims for reduction-heavy segments
+    // Segmented reductions use bar.sync (block-local barrier) before reading
+    // intermediate results.  This requires a SINGLE grid block to process ALL
+    // elements, otherwise blocks that haven't finished writing their portion of
+    // the intermediate buffer will be read by other blocks that race ahead.
+    // Set BLOCK_SIZE >= maxOutputLen so one block covers all elements.
     int xLength = static_cast<int>(std::min(maxOutputLen, static_cast<LongType>(INT_MAX)));
-    dim3 dims = getReduceDims(xLength > 0 ? xLength : 1);
-    blockSize = static_cast<int>(dims.y);  // Use reduction block width as tile size
+    // Round up to next power of 2 (Triton requirement)
+    int p = 64;
+    while (p < xLength) p <<= 1;
+    blockSize = std::min(p, 4096);  // cap at 4096 (128 warps max on modern GPUs)
     numWarps = std::max(1, blockSize / 32);
     numStages = 2;
   } else {
@@ -1866,6 +1872,13 @@ mlir::Value TritonIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mli
     auto product = builder.create<mlir::arith::MulFOp>(loc, lhs, rhs);
     auto isZero = builder.create<mlir::arith::CmpFOp>(loc, mlir::arith::CmpFPredicate::OEQ, rhs, zero);
     return builder.create<mlir::arith::SelectOp>(loc, isZero, zero, product);
+  }
+  if (opIr == "custom.pow") {
+    // pow(base, exponent) = exp(exponent * log(base))
+    // lhs = base, rhs = exponent (both tensors)
+    auto logBase = builder.create<mlir::math::LogOp>(loc, lhs);
+    auto eLogBase = builder.create<mlir::arith::MulFOp>(loc, rhs, logBase);
+    return builder.create<mlir::math::ExpOp>(loc, eLogBase);
   }
 
   sd_printf("TritonIRBuilder::emitBinaryElementwise: unknown op '%s'\n", opIr.c_str());
@@ -3369,6 +3382,38 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   std::vector<TritonKernelArg> inputArgs;
   std::unordered_set<int> seenInputs;
 
+  // Pre-scan: identify external inputs that are ONLY consumed by CONST_GEN ops.
+  // CONST_GEN ops (shape_of, create, zeros_like, etc.) generate output from metadata
+  // (shape/dtype/tArgs) without reading input data buffers. Their external inputs may
+  // have null DataBuffers at execution time (freed by Java GC after metadata was captured
+  // at compile time). Skip adding these as kernel args since the generated MLIR won't
+  // actually load from them.
+  std::unordered_set<int> constGenOnlyInputs;
+  {
+    std::unordered_map<int, bool> inputHasNonConstGenConsumer;
+    for (int i = startSlot; i <= endSlot; i++) {
+      auto cat = getOpCategory(slots[i].opName);
+      bool isConstGen = (cat == TritonOpCategory::CONSTANT_GENERATION);
+      for (int inp = 0; inp < slots[i].numInputs; inp++) {
+        int srcIdx = slots[i].inputSourceIndices[inp];
+        if (srcIdx >= 0) continue;  // Only care about external inputs here
+        auto it = inputHasNonConstGenConsumer.find(srcIdx);
+        if (it == inputHasNonConstGenConsumer.end()) {
+          inputHasNonConstGenConsumer[srcIdx] = !isConstGen;
+        } else if (!isConstGen) {
+          it->second = true;
+        }
+      }
+    }
+    for (auto& kv : inputHasNonConstGenConsumer) {
+      if (!kv.second) constGenOnlyInputs.insert(kv.first);
+    }
+    if (!constGenOnlyInputs.empty()) {
+      sd_printf("TritonIRBuilder::buildModule: skipping %d external inputs consumed only by CONST_GEN ops\n",
+                static_cast<int>(constGenOnlyInputs.size()));
+    }
+  }
+
   for (int i = startSlot; i <= endSlot; i++) {
     for (int inp = 0; inp < slots[i].numInputs; inp++) {
       int srcIdx = slots[i].inputSourceIndices[inp];
@@ -3376,6 +3421,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       seenInputs.insert(srcIdx);
 
       if (srcIdx < 0) {
+        // Skip external inputs only consumed by CONST_GEN ops — they don't need data buffers
+        if (constGenOnlyInputs.count(srcIdx)) continue;
         int extIdx = -(srcIdx + 1);
         if (extIdx < numExternalInputs && externalInputs[extIdx]) {
           TritonKernelArg arg;
@@ -3568,6 +3615,23 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     result.blockZ = 1;
   }
 
+  // Segmented reductions require a SINGLE grid block: the bar.sync barrier
+  // used to synchronize intermediate buffer writes before the reduction loop
+  // is block-local and cannot synchronize across grid blocks.  With dynamic
+  // grid the launch would create ceil(nElements/BLOCK_SIZE) blocks, and
+  // blocks that finish writing their slice of the intermediate would race
+  // ahead into the reduction loop before other blocks finish, reading stale
+  // or zeroed data for the unwritten portion.
+  bool hasReduction = std::find(categories.begin(), categories.end(),
+      TritonOpCategory::REDUCTION) != categories.end();
+  bool hasNormalization = std::find(categories.begin(), categories.end(),
+      TritonOpCategory::NORMALIZATION) != categories.end();
+  if (hasReduction || hasNormalization) {
+    result.useDynamicGrid = false;
+    result.gridX = 1;
+    sd_printf("TritonIRBuilder::buildModule: forced single-block grid for segmented reduction (BLOCK_SIZE=%d)\n", blockSize);
+  }
+
   // ── Kernel body: 1D element-wise pattern ──
   //
   //   pid = tt.get_program_id(0)
@@ -3713,8 +3777,25 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     opsEmitted++;
 
     if (cat == TritonOpCategory::BINARY_ELEMENTWISE) {
-      // Binary: needs two inputs
+      // Binary: needs two inputs (except pow which can be unary with scalar exponent in tArgs)
       if (slot.numInputs < 2) {
+        // Special case: pow with scalar exponent in tArgs (unary mode)
+        std::string opLower2 = slot.opName;
+        std::transform(opLower2.begin(), opLower2.end(), opLower2.begin(), ::tolower);
+        if (opLower2 == "pow" && slot.numInputs >= 1) {
+          int inputSrc = slot.inputSourceIndices[0];
+          auto inputIt = ssaValues.find(inputSrc);
+          if (inputIt != ssaValues.end()) {
+            auto opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
+            for (int o = 0; o < slot.numOutputs; o++) {
+              ssaValues[slot.outputSlotIndices[o]] = opResult;
+            }
+          } else {
+            sd_printf("TritonIRBuilder: missing SSA value for unary pow at slot %d (src=%d)\n",
+                      si, inputSrc);
+          }
+          continue;
+        }
         sd_printf("TritonIRBuilder: binary op '%s' at slot %d has < 2 inputs\n",
                   slot.opName.c_str(), si);
         continue;
@@ -4881,6 +4962,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   // 2d: Store outputs — tt.store for each output arg
+  // Use per-output masks when outputs have different element counts to prevent
+  // buffer overflows. In a fused kernel covering multiple independent chains,
+  // different outputs can have different sizes (e.g., main hidden state [1,960]
+  // vs RoPE frequencies [1,480]). Without per-output masks, the global n_elements
+  // from the largest output would allow writes past smaller buffers.
   int outputArgBase = static_cast<int>(inputArgs.size());
   for (int a = 0; a < static_cast<int>(outputArgs.size()); a++) {
     auto& arg = outputArgs[a];
@@ -4903,7 +4989,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     // Cast SSA value to match output element type if needed
     mlir::Value storeVal = castTo(builder, loc, ssaIt->second, elemType);
 
-    builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, mask,
+    // Per-output mask: use the output's actual element count to prevent buffer overflow
+    mlir::Value storeMask = mask;  // Default: global mask (offsets < n_elements)
+    LongType outElements = 1;
+    for (auto d : arg.shape) outElements *= d;
+    if (outElements > 0 && outElements < static_cast<LongType>(maxOutputElements)) {
+      // This output is smaller than the largest — use a tighter mask
+      auto outN = builder.create<mlir::arith::ConstantIntOp>(
+          loc, static_cast<int>(std::min(outElements, static_cast<LongType>(2147483647))), 32);
+      auto splatOutN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, outN);
+      storeMask = builder.create<mlir::arith::CmpIOp>(
+          loc, mlir::arith::CmpIPredicate::slt, offsets, splatOutN);
+    }
+
+    builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, storeMask,
                                            mlir::triton::CacheModifier::NONE,
                                            mlir::triton::EvictionPolicy::NORMAL);
   }
@@ -4915,7 +5014,20 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   result.mlirContext = mlirContext;  // Store for proper cleanup
   result.valid = true;
   result.useIndirectArgs = useIndirectArgs;
-  result.useDynamicGrid = false;
+
+  // Element-wise kernels MUST use dynamic grid: the grid size depends on n_elements
+  // passed at launch time. A fixed grid of 1 block only processes BLOCK_SIZE elements,
+  // leaving larger outputs partially computed (stale data from previous step).
+  // Reductions/normalizations stay fixed at 1 block (set earlier at line ~3589)
+  // because they use block-local bar.sync barriers.
+  bool hasReductionOrNorm = false;
+  for (auto cat : categories) {
+    if (cat == TritonOpCategory::REDUCTION || cat == TritonOpCategory::NORMALIZATION) {
+      hasReductionOrNorm = true;
+      break;
+    }
+  }
+  result.useDynamicGrid = !hasReductionOrNorm;
   result.requiredGrid = static_cast<int>(
       std::min<LongType>(static_cast<LongType>(result.gridX) * result.gridY,
                          static_cast<LongType>(2147483647)));
@@ -5813,7 +5925,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           const auto& mapping = it->second;
 
           if (cat == TritonOpCategory::BINARY_ELEMENTWISE) {
-            if (slot.numInputs < 2) continue;
+            if (slot.numInputs < 2) {
+              // Unary pow fallback: pow with scalar exponent in tArgs
+              std::string opLower2 = slot.opName;
+              std::transform(opLower2.begin(), opLower2.end(), opLower2.begin(), ::tolower);
+              if (opLower2 == "pow" && slot.numInputs >= 1) {
+                auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
+                if (inputIt != ssaValues.end()) {
+                  auto opResult = emitUnaryElementwise(builder, loc, mapping, slot, inputIt->second, blockSize);
+                  for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+                }
+              }
+              continue;
+            }
             auto lhsIt = ssaValues.find(slot.inputSourceIndices[0]);
             auto rhsIt = ssaValues.find(slot.inputSourceIndices[1]);
             if (lhsIt == ssaValues.end() || rhsIt == ssaValues.end()) continue;
@@ -6995,6 +7119,29 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
     }
   }
 
+  // Pre-scan: skip external inputs consumed only by CONST_GEN ops (same as buildModule)
+  std::unordered_set<int> constGenOnlyInputs;
+  {
+    std::unordered_map<int, bool> inputHasNonConstGenConsumer;
+    for (int i = startSlot; i <= endSlot; i++) {
+      auto cat = getOpCategory(slots[i].opName);
+      bool isConstGen = (cat == TritonOpCategory::CONSTANT_GENERATION);
+      for (int inp = 0; inp < slots[i].numInputs; inp++) {
+        int srcIdx = slots[i].inputSourceIndices[inp];
+        if (srcIdx >= 0) continue;
+        auto it = inputHasNonConstGenConsumer.find(srcIdx);
+        if (it == inputHasNonConstGenConsumer.end()) {
+          inputHasNonConstGenConsumer[srcIdx] = !isConstGen;
+        } else if (!isConstGen) {
+          it->second = true;
+        }
+      }
+    }
+    for (auto& kv : inputHasNonConstGenConsumer) {
+      if (!kv.second) constGenOnlyInputs.insert(kv.first);
+    }
+  }
+
   std::vector<TritonKernelArg> inputArgs;
   std::unordered_set<int> seenInputs;
   for (int i = startSlot; i <= endSlot; i++) {
@@ -7003,6 +7150,7 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
       if (seenInputs.count(srcIdx)) continue;
       seenInputs.insert(srcIdx);
       if (srcIdx < 0) {
+        if (constGenOnlyInputs.count(srcIdx)) continue;
         int extIdx = -(srcIdx + 1);
         if (extIdx < numExternalInputs && externalInputs[extIdx]) {
           TritonKernelArg arg;
@@ -7281,18 +7429,38 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
   // element-wise sections and SSA-forwarded. For autoregressive decode (seq=1),
   // permute [0,2,1,3] on [1,1,H,D] is identity; for general seq>1, permute
   // would need actual reordering via a transposed store at the section boundary.
+  //
+  // CONSTANT_GENERATION (shape_of, create, set_scalar, ones_like, zeros_like) is
+  // NOT merged because these ops produce outputs with different element counts than
+  // data ops (e.g., shape_of produces [rank] while data ops produce [batch,seq,dim]).
+  // A single n_elements kernel parameter can't cover both sizes — the smaller one
+  // wins and larger outputs get partially written, causing accuracy bugs.
+  // REDUCTION and NORMALIZATION are NOT merged into ELEMENTWISE sections.
+  // These ops have multi-input semantics (e.g., rms_norm takes x AND weight)
+  // and the 1D element-wise emission handler only passes the first input to
+  // emitNormalizationOp/emitReductionOp, silently dropping weight/scale params.
+  // Keeping them as separate sections ensures they fall back to the correct
+  // native CUDA implementation via fallbackRangeExecutor_.
   auto canMergeWithElementwise = [](KernelSectionType type) -> bool {
     switch (type) {
       case KernelSectionType::ELEMENTWISE:
       case KernelSectionType::IDENTITY:
-      case KernelSectionType::CONSTANT_GENERATION:
       case KernelSectionType::SHAPE_MANIPULATION:
-      case KernelSectionType::REDUCTION:
-      case KernelSectionType::NORMALIZATION:
         return true;
       default:
         return false;
     }
+  };
+
+  // Helper: compute total output elements for an op's first output
+  auto getOutputElements = [&](int slotIdx) -> LongType {
+    if (slotIdx < 0 || slotIdx > endSlot) return 0;
+    auto& slot = slots[slotIdx];
+    if (slot.numOutputs <= 0) return 0;
+    int outIdx = slot.outputSlotIndices[0];
+    NDArray* outArr = resolveArray(outIdx);
+    if (outArr) return outArr->lengthOf();
+    return 0;
   };
 
   KernelSection currentSection;
@@ -7302,6 +7470,12 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
 
   auto firstCat = getOpCategory(slots[startSlot].opName);
   currentSection.type = categoryToSectionType(firstCat, slots[startSlot].opName);
+
+  // Track the element count for the current element-wise section.
+  // All ops in the same section must have compatible element counts for
+  // the 1D grid kernel to work correctly. When element count changes,
+  // we must start a new section.
+  LongType currentSectionElements = getOutputElements(startSlot);
 
   for (int i = startSlot; i <= endSlot; i++) {
     auto cat = getOpCategory(slots[i].opName);
@@ -7330,8 +7504,22 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       // Data movement ops that don't merge with element-wise
       startNewSection = true;
     } else if (canMergeWithElementwise(currentSection.type) && canMergeWithElementwise(sectionType)) {
-      // Both are element-wise compatible — merge
-      startNewSection = false;
+      // Both are element-wise compatible — check element count compatibility.
+      // The 1D kernel uses a single n_elements for the grid and mask.
+      // Ops with different output element counts cannot share the same grid:
+      // - If n_elements is too small, larger outputs get partially written (stale data)
+      // - If n_elements is too large, smaller outputs get buffer overflows
+      // Identity and shape manipulation ops (reshape, squeeze, expand_dims) don't
+      // change element count, so they're always safe to merge. Only break when
+      // the actual data-producing op has a different element count.
+      LongType opElements = getOutputElements(i);
+      if (opElements > 0 && currentSectionElements > 0 && opElements != currentSectionElements) {
+        // Element count changed — must start new section
+        // Exception: scalar ops (1 element) are broadcast-compatible with any size
+        if (opElements != 1 && currentSectionElements != 1) {
+          startNewSection = true;
+        }
+      }
     }
 
     if (startNewSection && currentSection.numOps > 0) {
@@ -7340,10 +7528,21 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
       currentSection = KernelSection();
       currentSection.startSlot = i;
       currentSection.type = sectionType;
+      // Reset element count for the new section
+      currentSectionElements = getOutputElements(i);
     }
 
     currentSection.endSlot = i;
     currentSection.numOps++;
+
+    // Update section element count — use the largest non-scalar output
+    // to handle cases where the first op in a section is a scalar
+    if (canMergeWithElementwise(currentSection.type)) {
+      LongType opElements = getOutputElements(i);
+      if (opElements > currentSectionElements) {
+        currentSectionElements = opElements;
+      }
+    }
 
     // Extract matmul dimensions
     if (sectionType == KernelSectionType::MATMUL) {

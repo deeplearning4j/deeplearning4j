@@ -385,6 +385,11 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
       seg.captureWorkspacePtr = nullptr;
       seg.captureWorkspaceBytes = 0;
     }
+    // Free pinned host pointers from graph capture (PointersManager H2D sources)
+    for (auto* ptr : seg.capturedHostPtrs) {
+      cudaFreeHost(ptr);
+    }
+    seg.capturedHostPtrs.clear();
     // Free JIT kernel handle
     delete seg.jitKernel;
     seg.jitKernel = nullptr;
@@ -865,6 +870,21 @@ Status NativeDynamicShapePlan::execute(
 
     if (ok) {
       auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
+
+      // For Triton-captured graphs (no capture buffers), refresh the indirect
+      // arg table pinned host buffers with current NDArray specialBuffer() addresses.
+      // The graph's H2D memcpy nodes read from these pinned buffers on each replay,
+      // so they must contain current device pointers (not capture-time addresses).
+#if HAVE_TRITON
+      if (seg.captureBuffers.empty()) {
+        auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+        if (tritonBackend != nullptr) {
+          tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
+                                                   outputSlots_, totalOutputSlots_);
+        }
+      }
+#endif
+
       // No sync needed before graph launch — capture buffer copies are on the
       // same stream (cudaStr), so they are ordered before the graph launch.
       if (seg.cachedGraph->launchAsync(cudaStr)) {
@@ -1239,6 +1259,10 @@ Status NativeDynamicShapePlan::execute(
             segment.captureFailed = true;
             // Clear sticky CUDA errors from the failed graph attempt
             cudaGetLastError();
+            // Clear the errorReference so stale error messages don't persist
+            // and cause subsequent standalone ops to fail spuriously
+            LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
+            LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
             // Clear outputSlots AND slotArrayCache for this segment's range.
             // View-capable ops during failed capture may have cached views whose
             // DataBuffers point into freed capture buffers.
@@ -1477,11 +1501,64 @@ Status NativeDynamicShapePlan::execute(
 
 Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+  // Detect if we're running inside a CUDA graph capture. During capture, we must NOT:
+  // - Call cudaStreamSynchronize (breaks capture)
+  // - Call flushPendingClose (records cudaFreeAsync for external memory → invalid graph)
+  // - Call cudaMemPoolTrimTo (driver API, breaks capture)
+  // - Delete/free any non-workspace GPU memory (MemFree nodes for external allocs crash on launch)
+  bool streamIsCapturing = false;
+#ifdef SD_CUDA
+  if (stream != nullptr) {
+    cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
+    cudaStreamIsCapturing(*static_cast<cudaStream_t*>(stream), &capStat);
+    streamIsCapturing = (capStat != cudaStreamCaptureStatusNone);
+  }
+#endif
+
   for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
     Status status;
+    bool retriedAfterTrim = false;
+executeSlot_retry:
     try {
       status = executeSlot(stepIdx, externalArrays, numExt, stream);
     } catch (const std::exception& e) {
+      std::string msg = e.what();
+      // OOM retry: if allocation failed, sync + trim pool and retry once.
+      // After Triton compilation loads many cubin modules, the pool may have
+      // fragmented reserved memory. Trimming releases unused reserved blocks.
+      // SKIP during CUDA graph capture — sync/free/trim all break capture.
+      if (!streamIsCapturing &&
+          !retriedAfterTrim && (msg.find("cannot allocate") != std::string::npos ||
+                                 msg.find("out of memory") != std::string::npos ||
+                                 msg.find("Error code: [2]") != std::string::npos)) {
+        retriedAfterTrim = true;
+        sd_printf("NativeDynamicShapePlan: slot %d (%s) OOM, flushing pending frees and retrying...\n",
+                  stepIdx, slots_[stepIdx].opName.c_str());
+        cudaGetLastError();  // Clear non-sticky CUDA error
+        // Flush deferred closes (triggers cudaFreeAsync on stream 0),
+        // then sync both execution stream and stream 0 so freed memory
+        // returns to the pool before we retry the allocation.
+        if (stream) {
+          cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
+          cudaStreamSynchronize(execStr);
+        }
+        flushPendingClose(stream);
+        // Frees land on stream 0 — sync it so pool reclaims the memory
+        cudaStreamSynchronize(static_cast<cudaStream_t>(nullptr));
+        // Trim the memory pool — release reserved-but-unused blocks back to
+        // the driver. Critical after Triton compilation loads cubin modules
+        // that consume GPU memory outside the pool.
+        {
+          cudaMemPool_t pool = nullptr;
+          int dev = 0;
+          cudaGetDevice(&dev);
+          if (cudaDeviceGetMemPool(&pool, dev) == cudaSuccess && pool != nullptr) {
+            cudaMemPoolTrimTo(pool, 0);
+            sd_printf("NativeDynamicShapePlan: trimmed memory pool on device %d\n", dev);
+          }
+        }
+        goto executeSlot_retry;
+      }
       char buf[512];
       snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
                stepIdx, slots_[stepIdx].opName.c_str(), e.what());
@@ -1541,8 +1618,12 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
-    // Mid-execution flush of evicted arrays
-    if ((stepIdx % 100 == 99) || pendingCloseBytes_ > 256ULL * 1024 * 1024) {
+    // Mid-execution flush of evicted arrays.
+    // SKIP during CUDA graph capture — flushPendingClose calls delete which triggers
+    // cudaFreeAsync for graph-external memory, creating invalid MemFree graph nodes
+    // that cause SIGSEGV on cudaGraphLaunch. Deferred to after capture completes.
+    if (!streamIsCapturing &&
+        ((stepIdx % 100 == 99) || pendingCloseBytes_ > 256ULL * 1024 * 1024)) {
       flushPendingClose(stream);
     }
 
@@ -1910,6 +1991,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         seg.captureWorkspacePtr = nullptr;
         seg.captureWorkspaceBytes = 0;
       }
+      // Free pinned host ptrs from graph capture (H2D memcpy sources)
+      for (auto* ptr : seg.capturedHostPtrs) {
+        cudaFreeHost(ptr);
+      }
+      seg.capturedHostPtrs.clear();
     }
   }
 
@@ -2109,7 +2195,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   // graph capture on a named stream, this cross-stream allocation breaks capture.
   // By providing an explicit workspace, cuBLAS uses our buffer instead.
   // 32MB covers workspace needs for most GEMM sizes on modern GPUs.
-  static const size_t CUBLAS_WORKSPACE_SIZE = 32 * 1024 * 1024;  // 32 MB
+  static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;  // 256 MB
   ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
   setCublasWorkspaceForCapture(stream);
 
@@ -2935,10 +3021,23 @@ Status NativeDynamicShapePlan::executeSlot(
         // Resolve secondary input
         if (secSrc >= 0) {
           secondaryInputs[ci] = outputSlots_[secSrc];
+          // Cross-segment recovery from slotArrayCache_
+          if (secondaryInputs[ci] == nullptr && secSrc < totalOutputSlots_ && slotArrayCache_[secSrc] != nullptr) {
+            secondaryInputs[ci] = slotArrayCache_[secSrc];
+            outputSlots_[secSrc] = slotArrayCache_[secSrc];
+          }
         } else {
           int extIdx = -(secSrc + 1);
           if (extIdx < numExt) secondaryInputs[ci] = externalArrays[extIdx];
         }
+      }
+      // Safety: head binary op with both inputs from same source (e.g., mul(y,y))
+      // If secondary is still null but this is a binary op, use primaryInput
+      if (ci == 0 && secondaryInputs[ci] == nullptr &&
+          sd::ops::helpers::isBinaryFusedOp(fusedOps[ci]) &&
+          slot.numInputs == 2 &&
+          slot.inputSourceIndices[0] == slot.inputSourceIndices[1]) {
+        secondaryInputs[ci] = primaryInput;
       }
     }
 
@@ -4098,6 +4197,10 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
       seg.captureWorkspacePtr = nullptr;
       seg.captureWorkspaceBytes = 0;
     }
+    for (auto* ptr : seg.capturedHostPtrs) {
+      cudaFreeHost(ptr);
+    }
+    seg.capturedHostPtrs.clear();
 #endif
   }
 
@@ -4125,6 +4228,21 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     return !slots_[idx].isDataDependent;
   };
 
+  // Matmul segmentation: when enabled, break segments at matmul/attention ops.
+  // This creates separate segments for element-wise chains between matmuls,
+  // allowing Triton to fuse each chain into a single kernel (like pytorch.compile).
+  // Matmul ops themselves run via cuBLAS fallback within their own tiny segments.
+  const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
+
+  auto isMatmulOrAttention = [this](int idx) -> bool {
+    const std::string& name = slots_[idx].opName;
+    return name == "matmul" || name == "mmul" || name == "batched_gemm"
+        || name == "tensormmul" || name == "fp8_matmul" || name == "smooth_quant"
+        || name == "awq_matmul" || name == "column_parallel_linear"
+        || name == "row_parallel_linear" || name == "multi_lora_matmul"
+        || name == "fused_gemm_swiglu" || name == "multi_head_attention";
+  };
+
   GraphSegment current;
   current.startSlot = 0;
   current.isCapturable = isSlotCapturableFrozen(0);
@@ -4135,7 +4253,17 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     int currentSize = i - current.startSlot;
     bool sizeLimit = (current.isCapturable && currentSize >= MAX_FROZEN_SEGMENT_SIZE);
 
-    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit) {
+    // When matmul segmentation is enabled, break before and after matmul/attention ops.
+    // This isolates element-wise chains for Triton fusion while matmuls run via cuBLAS.
+    bool matmulBreak = false;
+    if (matmulSegmentation) {
+      bool thisIsMatmul = isMatmulOrAttention(i);
+      bool prevIsMatmul = isMatmulOrAttention(i - 1);
+      // Break when transitioning from non-matmul to matmul or matmul to non-matmul
+      if (thisIsMatmul != prevIsMatmul) matmulBreak = true;
+    }
+
+    if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak) {
       current.endSlot = i - 1;
       segments_.push_back(current);
       current = GraphSegment();
@@ -4171,8 +4299,9 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     sd_printf("NativeDSP::rebuildSegments: ... and %d more data-dependent slots\n",
               dataDepCount - 10);
   }
-  sd_printf("NativeDSP::rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep)\n",
-            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount);
+  sd_printf("NativeDSP::rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep, matmulSeg=%d)\n",
+            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
+            static_cast<int>(matmulSegmentation));
 }
 
 // ─── Adaptive segment splitting ───────────────────────────────────────────────
@@ -4560,11 +4689,80 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
   // First execution: run slot-by-slot warmup BEFORE compilation.
   if (seg.executionCount == 0) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    if (warmupStatus == Status::OK) {
+      seg.executionCount++;
+    }
+    return warmupStatus;
   }
 
   // Compute shape key for cache lookup
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
+
+  // Diagnostic: scan all slotArrayCache_ entries for freed DataBuffers.
+  // Java may have closed DSP output arrays between steps (e.g., prefill KV outputs via
+  // setCloseable(true)+close()), deleting the C++ NDArray and leaving dangling pointers.
+  // Run on EVERY execution — stale entries can appear between any two steps.
+  {
+    int invalidCount = 0;
+    for (int si = seg.startSlot; si <= seg.endSlot && si < totalOutputSlots_; si++) {
+      NDArray* cached = slotArrayCache_[si];
+      if (cached != nullptr && !cached->isEmpty()) {
+        auto* db = cached->dataBuffer();
+        if (db == nullptr || !db->isValid()) {
+          sd_printf("NativeDSP::executeSegmentWithGpuGraph: STALE slotArrayCache_[%d] detected "
+                    "(arr=%p, db=%p, dbValid=%d, frozenConst=%d). Invalidating.\n",
+                    si, (void*)cached, (void*)db, db ? (db->isValid() ? 1 : 0) : -1,
+                    slots_[si].frozenConstantSlot ? 1 : 0);
+          slotArrayCache_[si] = nullptr;
+          if (outputSlots_[si] == cached) outputSlots_[si] = nullptr;
+          // If this was a frozenConstantSlot (e.g. shape_of, zeros_like), its
+          // executeSlot() returns OK immediately without re-computing.  With its
+          // cached array gone the output stays nullptr, breaking downstream ops.
+          // Clear the flag so the op re-executes and re-populates the cache.
+          if (si < numSlots_ && slots_[si].frozenConstantSlot) {
+            slots_[si].frozenConstantSlot = false;
+          }
+          invalidCount++;
+        }
+      }
+    }
+    // Also scan external inputs (skip empty arrays — they legitimately have no DataBuffer)
+    for (int ei = 0; ei < numExt; ei++) {
+      NDArray* ext = externalArrays[ei];
+      if (ext != nullptr && !ext->isEmpty()) {
+        auto* db = ext->dataBuffer();
+        if (db == nullptr || !db->isValid()) {
+          sd_printf("NativeDSP::executeSegmentWithGpuGraph: STALE externalInput[%d] detected "
+                    "(arr=%p, db=%p, dbValid=%d)\n",
+                    ei, (void*)ext, (void*)db, db ? (db->isValid() ? 1 : 0) : -1);
+          invalidCount++;
+        }
+      }
+    }
+    if (invalidCount > 0) {
+      sd_printf("NativeDSP::executeSegmentWithGpuGraph: found %d stale entries in slot/external arrays\n",
+                invalidCount);
+      // Stale external inputs have null DataBuffers — proceeding would SIGSEGV
+      // when the GPU kernel tries to read from a freed buffer. Invalidate the
+      // cached graph so it gets re-captured with fresh pointers on the next call.
+#ifdef SD_CUDA
+      seg.cachedGraph.reset();
+      seg.cachedShapeKey = 0;
+      for (auto* ptr : seg.capturedHostPtrs) {
+        cudaFreeHost(ptr);
+      }
+      seg.capturedHostPtrs.clear();
+#endif
+      seg.captureFailed = false;
+      sd_printf("NativeDSP::executeSegmentWithGpuGraph: invalidated graph for seg[%d-%d] "
+                "due to %d stale entries — executing slot-by-slot this step\n",
+                seg.startSlot, seg.endSlot, invalidCount);
+      // Execute slot-by-slot as a one-time fallback instead of returning
+      // KERNEL_FAILURE (which aborts in forced-backend modes like TRITON).
+      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
+    }
+  }
 
   // Compile once per stable shape; skip cache probe on steady-state replay.
   // This keeps the hot path focused on dispatch instead of repeated compile checks.
@@ -4636,22 +4834,49 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // have released intermediate arrays via releaseAtStep_, leaving entries null.
   // First restore from slotArrayCache_, then allocate any remaining nulls
   // using cached shape info from warmup.
+  //
+  // IMPORTANT: Java may close() output arrays between execution steps (e.g.,
+  // prefill KV outputs via setCloseable(true)+close()). This frees the underlying
+  // DataBuffer while slotArrayCache_ still holds the NDArray*. Validate the
+  // DataBuffer before reusing — invalidate entries pointing to freed buffers.
   for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
     NativeSlot& slot = slots_[stepIdx];
     // Restore input slot entries that may have been released
     for (int i = 0; i < slot.numInputs; i++) {
       int srcIdx = slot.inputSourceIndices[i];
       if (srcIdx >= 0 && srcIdx < totalOutputSlots_ &&
-          outputSlots_[srcIdx] == nullptr && slotArrayCache_[srcIdx] != nullptr) {
-        outputSlots_[srcIdx] = slotArrayCache_[srcIdx];
+          outputSlots_[srcIdx] == nullptr && slotArrayCache_[srcIdx] != nullptr &&
+          !slotArrayCache_[srcIdx]->isEmpty()) {
+        // Validate DataBuffer before restoring — Java close() may have freed it
+        auto* db = slotArrayCache_[srcIdx]->dataBuffer();
+        if (db == nullptr || !db->isValid()) {
+          slotArrayCache_[srcIdx] = nullptr;
+          // Clear frozenConstantSlot on the SOURCE slot so its op re-executes
+          if (srcIdx < numSlots_ && slots_[srcIdx].frozenConstantSlot) {
+            slots_[srcIdx].frozenConstantSlot = false;
+          }
+        } else {
+          outputSlots_[srcIdx] = slotArrayCache_[srcIdx];
+        }
       }
     }
     // Restore or allocate output slot entries
     for (int i = 0; i < slot.numOutputs; i++) {
       int slotIdx = slot.outputSlotIndices[i];
       if (slotIdx < 0 || slotIdx >= totalOutputSlots_) continue;
-      if (slotArrayCache_[slotIdx] != nullptr) {
-        outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
+      if (slotArrayCache_[slotIdx] != nullptr && !slotArrayCache_[slotIdx]->isEmpty()) {
+        // Validate DataBuffer before restoring — Java close() may have freed it
+        auto* db = slotArrayCache_[slotIdx]->dataBuffer();
+        if (db == nullptr || !db->isValid()) {
+          slotArrayCache_[slotIdx] = nullptr;
+          // Clear frozenConstantSlot so the op re-executes instead of
+          // returning OK with a null/stale output
+          if (stepIdx < numSlots_ && slots_[stepIdx].frozenConstantSlot) {
+            slots_[stepIdx].frozenConstantSlot = false;
+          }
+        } else {
+          outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
+        }
       } else if (outputSlots_[slotIdx] == nullptr) {
         // Allocate from cached shape info (populated during warmup)
         const LongType* shapeInfo = nullptr;
@@ -4668,7 +4893,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             if (extIdx < numExt) srcArr = externalArrays[extIdx];
           } else if (srcIdx < totalOutputSlots_) {
             srcArr = outputSlots_[srcIdx];
-            if (!srcArr) srcArr = slotArrayCache_[srcIdx];
+            if (!srcArr && slotArrayCache_[srcIdx] != nullptr) {
+              auto* db = slotArrayCache_[srcIdx]->dataBuffer();
+              if (db != nullptr && db->isValid()) {
+                srcArr = slotArrayCache_[srcIdx];
+              } else {
+                slotArrayCache_[srcIdx] = nullptr;
+              }
+            }
           }
           if (srcArr) shapeInfo = srcArr->shapeInfo();
         }
@@ -4692,29 +4924,64 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 #ifdef SD_CUDA
   cudaStream_t cudaStr = (stream != nullptr)
       ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  bool allowTritonCudaGraphReplay = shapesFrozen_ && (segments_.size() == 1);
+  bool allowTritonCudaGraphReplay = Environment::getInstance().tritonGraphCapture() &&
+                                    shapesFrozen_ && (segments_.size() == 1);
   LongType segInputAddrKey = computeSegmentInputAddrKey(seg, externalArrays, numExt);
 
   // Triton-captured graphs use direct external buffer addresses (no capture buffers),
   // so replay is valid only when both shape key and input-address key match.
   if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
       seg.cachedGraph != nullptr &&
-      seg.cachedGraph->getState() == cuda::GraphState::INSTANTIATED &&
+      (seg.cachedGraph->getState() == cuda::GraphState::INSTANTIATED ||
+       seg.cachedGraph->getState() == cuda::GraphState::COMPLETED) &&
       seg.cachedShapeKey == segShapeKey &&
       seg.capturedInputAddrKey == segInputAddrKey) {
-    if (seg.cachedGraph->launchAsync(cudaStr)) {
-      if (traceEnabled_) {
-        sd_printf("NativeDSP::executeSegmentWithGpuGraph: replayed %s graph seg[%d-%d]\n",
-                  backendName, seg.startSlot, seg.endSlot);
+    // Refresh Triton arg table pinned buffers before replay
+#if HAVE_TRITON
+    {
+      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
+      if (tritonBackend != nullptr) {
+        tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
+                                                 outputSlots_, totalOutputSlots_);
       }
-      seg.executionCount++;
-      totalGraphReplays_++;
-      return Status::OK;
     }
-    // Launch failed — clear stale graph and fall through to direct Triton execution.
-    seg.cachedGraph.reset();
-    seg.capturedInputAddrKey = 0;
-    cudaGetLastError();
+#endif
+    // Ensure all prior async work on this stream completes before replay.
+    cudaStreamSynchronize(cudaStr);
+    cudaGetLastError();  // Clear any sticky errors
+
+    // Replay strategy: configurable via ND4J_TRITON_GRAPH_REINSTANTIATE.
+    // Default (OFF): direct replay of existing graphExec.
+    // ON: destroy and re-instantiate graphExec from graph template before each replay.
+    {
+      bool replayOk = false;
+      if (Environment::getInstance().tritonGraphReinstantiate()) {
+        if (!seg.cachedGraph->reInstantiate()) {
+          sd_printf("NativeDSP: Triton graph reInstantiate FAILED for seg[%d-%d]\n",
+                    seg.startSlot, seg.endSlot);
+        } else {
+          replayOk = seg.cachedGraph->launchAsync(cudaStr);
+        }
+      } else {
+        replayOk = seg.cachedGraph->launchAsync(cudaStr);
+      }
+      if (replayOk) {
+        seg.executionCount++;
+        totalGraphReplays_++;
+        return Status::OK;
+      }
+      // Launch failed — clear stale graph and fall through to direct Triton execution.
+      sd_printf("NativeDSP: Triton graph replay FAILED for seg[%d-%d], "
+                "falling back to direct execution\n", seg.startSlot, seg.endSlot);
+      seg.cachedGraph.reset();
+      seg.capturedInputAddrKey = 0;
+      seg.captureFailed = true;
+      for (auto* ptr : seg.capturedHostPtrs) {
+        cudaFreeHost(ptr);
+      }
+      seg.capturedHostPtrs.clear();
+      cudaGetLastError();
+    }
   }
 
   if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
@@ -4724,6 +4991,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       seg.capturedInputAddrKey != segInputAddrKey) {
     seg.cachedGraph.reset();
     seg.capturedInputAddrKey = 0;
+    for (auto* ptr : seg.capturedHostPtrs) { cudaFreeHost(ptr); }
+    seg.capturedHostPtrs.clear();
   }
 
   if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
@@ -4731,6 +5000,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       seg.cachedShapeKey != segShapeKey) {
     seg.cachedGraph.reset();
     seg.capturedInputAddrKey = 0;
+    for (auto* ptr : seg.capturedHostPtrs) { cudaFreeHost(ptr); }
+    seg.capturedHostPtrs.clear();
   }
 #endif
 
@@ -4754,10 +5025,28 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           gapSeg.executionCount = seg.executionCount;
           gapSeg.captureFailed = seg.captureFailed;
 
-          bool wasGraphExecutionActive = tl_graphExecutionActive;
-          tl_graphExecutionActive = false;
+          // Check if the stream is currently being captured (CUDA graph recording).
+          // During capture: keep tl_graphExecutionActive=true so fallback ops use the
+          // pre-allocated capture workspace for any allocations. The workspace must be
+          // set up before beginCapture (see shouldCaptureTritonGraph block below).
+          // Outside capture: set tl_graphExecutionActive=false so fallback ops use
+          // normal allocation paths (cudaMallocAsync) and sync guards work normally.
+          bool streamIsCapturing = false;
+#ifdef SD_CUDA
+          if (stream != nullptr) {
+            cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
+            cudaStreamIsCapturing(*static_cast<cudaStream_t*>(stream), &capStat);
+            streamIsCapturing = (capStat != cudaStreamCaptureStatusNone);
+          }
+#endif
+          bool savedGraphActive = tl_graphExecutionActive;
+          if (!streamIsCapturing) {
+            tl_graphExecutionActive = false;
+          }
+          // When capturing, tl_graphExecutionActive stays true — ops allocate from
+          // capture workspace and cuBLAS/cuDNN calls get recorded into the graph.
           auto gapStatus = executeSegmentSlotBySlot(gapSeg, externalArrays, numExt, stream);
-          tl_graphExecutionActive = wasGraphExecutionActive;
+          tl_graphExecutionActive = savedGraphActive;
           return gapStatus;
         });
     tritonFallbackGuard.active = true;
@@ -4779,53 +5068,356 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   bool shouldCaptureTritonGraph = allowTritonCudaGraphReplay &&
                                   seg.captureBuffers.empty() &&
                                   seg.cachedGraph == nullptr &&
+                                  !seg.captureFailed &&
                                   seg.executionCount >= 2 &&
                                   seg.executionCount <= 4 &&
                                   cudaStr != nullptr;
   if (shouldCaptureTritonGraph) {
+    // Set up capture workspace BEFORE beginCapture — cudaMalloc must be outside capture.
+    // Fallback ops (matmul, attention, concat) need temporary buffers during execution.
+    // With tl_graphExecutionActive=true, CudaMemoryPool allocates from this workspace
+    // instead of calling cudaMallocAsync (which fails during capture).
+    static size_t TRITON_CAPTURE_WORKSPACE_SIZE = []() -> size_t {
+      const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
+      size_t mb = 512;  // default
+      if (envVal != nullptr) {
+        int parsed = std::atoi(envVal);
+        if (parsed > 0 && parsed <= 4096) mb = static_cast<size_t>(parsed);
+      }
+      return mb * 1024ULL * 1024ULL;
+    }();
+
+    if (seg.captureWorkspacePtr == nullptr) {
+      cudaError_t wsErr = cudaMalloc(&seg.captureWorkspacePtr, TRITON_CAPTURE_WORKSPACE_SIZE);
+      if (wsErr == cudaSuccess) {
+        seg.captureWorkspaceBytes = TRITON_CAPTURE_WORKSPACE_SIZE;
+        sd_printf("NativeDSP: allocated %zuMB Triton capture workspace for seg[%d-%d]\n",
+                  TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
+      } else {
+        cudaGetLastError();
+        seg.captureWorkspacePtr = nullptr;
+        seg.captureWorkspaceBytes = 0;
+        sd_printf("NativeDSP: WARNING - Triton capture workspace allocation failed (%s)\n",
+                  cudaGetErrorString(wsErr));
+      }
+    }
+
+    // Set thread-local workspace for CudaMemoryPool during capture
+    tl_captureWorkspace = seg.captureWorkspacePtr;
+    tl_captureWorkspaceSize = seg.captureWorkspaceBytes;
+    tl_captureWorkspaceOffset = 0;
+    tl_capturedHostPtrs.clear();
+    tl_captureReplicateCache.clear();
+    // Set capture stream so captureSafeStreamOrDefault() routes ops to the correct stream
+    cudaStream_t prevCaptureStream = tl_graphCaptureStream;
+    tl_graphCaptureStream = cudaStr;
+
+    // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
+    // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
+    // graph capture on a named stream, this cross-stream allocation breaks capture,
+    // producing invalid graph nodes that SIGSEGV on cudaGraphLaunch.
+    static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;  // 256 MB
+    ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
+    setCublasWorkspaceForCapture(stream);
+
+    // Reset MmulHelper cast cache indices so capture reuses pre-allocated HALF buffers
+    // in the same order as the warmup execution (avoids capture workspace temporaries)
+    MmulHelper::resetCastCacheIndices();
+
+    // Synchronize before capture to ensure all prior async work is complete
+    cudaStreamSynchronize(cudaStr);
+    // Clear any sticky CUDA error before capture — stale errors from prior operations
+    // (e.g., cudaFuncGetName on driver-API functions) contaminate capture and launch.
+    cudaGetLastError();
+
+    // Configurable: push primary CUDA context during capture.
+    // Default OFF — the non-Triton path works without it. Pushing and then popping
+    // after capture may cause SIGSEGV on replay (null pointer inside libcuda.so).
+    // Enable via ND4J_TRITON_GRAPH_CTX_PUSH=1 for debugging.
+    int tritonCaptureDevice = 0;
+    cudaGetDevice(&tritonCaptureDevice);
+    CUcontext primaryCtx = nullptr;
+    CUcontext prevCtx = nullptr;
+    bool didPushCtx = false;
+    if (Environment::getInstance().tritonGraphCtxPush()) {
+      CUdevice cuDev;
+      cuDeviceGet(&cuDev, tritonCaptureDevice);
+      cuDevicePrimaryCtxRetain(&primaryCtx, cuDev);
+      cuCtxGetCurrent(&prevCtx);
+      if (prevCtx != primaryCtx) {
+        cuCtxPushCurrent(primaryCtx);
+        didPushCtx = true;
+        sd_printf("NativeDSP: Triton capture pushed primary ctx %p (was %p) for device %d\n",
+                  (void*)primaryCtx, (void*)prevCtx, tritonCaptureDevice);
+      }
+    }
+
     auto handle = std::make_shared<sd::cuda::CudaGraphHandle>();
-    bool captureOk = handle->beginCapture(cudaStr, cudaStreamCaptureModeGlobal);
+    bool captureOk = handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed);
     if (captureOk) {
+      sd_printf("NativeDSP: Triton graph capture started for seg[%d-%d] execCount=%d\n",
+                seg.startSlot, seg.endSlot, seg.executionCount);
       tl_graphExecutionActive = true;
+
+      // Query node count mid-capture to verify operations are being recorded
+      size_t midCaptureNodes = handle->getNumNodesDuringCapture(cudaStr);
+      sd_printf("NativeDSP: Triton capture mid-check: %zu nodes recorded before executeSegment\n",
+                midCaptureNodes);
+
       auto captureStatus = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                                    outputSlots_, totalOutputSlots_, stream);
       tl_graphExecutionActive = false;
 
+      // Check for CUDA errors generated during capture — these become invalid graph nodes.
+      // Don't use cudaGetLastError (which clears) — peek first for diagnostics.
+      {
+        cudaError_t capPhaseErr = cudaPeekAtLastError();
+        if (capPhaseErr != cudaSuccess) {
+          sd_printf("NativeDSP: WARNING - CUDA error during Triton capture phase: %s (%d)\n",
+                    cudaGetErrorString(capPhaseErr), (int)capPhaseErr);
+          // Clear it so endCapture can proceed (the graph may still be partially valid)
+          cudaGetLastError();
+        }
+      }
+
+      // Query node count after execution to see how many ops were captured
+      size_t postExecNodes = 0;
+      {
+        cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
+        cudaGraph_t capGraph = nullptr;
+        unsigned long long capId = 0;
+        auto capErr = cudaStreamGetCaptureInfo_v2(cudaStr, &capStat, &capId, &capGraph, nullptr, nullptr);
+        if (capErr == cudaSuccess && capGraph != nullptr) {
+          cudaGraphGetNodes(capGraph, nullptr, &postExecNodes);
+        }
+      }
+      sd_printf("NativeDSP: Triton capture post-exec: %zu nodes, captureStatus=%d\n",
+                postExecNodes, static_cast<int>(captureStatus));
+      fflush(stdout); fflush(stderr);
+
       bool endOk = false;
       if (captureStatus == Status::OK) {
         endOk = handle->endCapture(cudaStr);
-      } else if (handle->isCapturing()) {
-        // Ensure stream capture state is closed before fallback execution.
-        handle->endCapture(cudaStr);
+      } else {
+        sd_printf("NativeDSP: Triton capture execution FAILED status=%d for seg[%d-%d]\n",
+                  static_cast<int>(captureStatus), seg.startSlot, seg.endSlot);
+        fflush(stdout); fflush(stderr);
+        if (handle->isCapturing()) {
+          handle->endCapture(cudaStr);
+        }
       }
-      bool instantiateOk = endOk && handle->instantiate();
-      bool launchOk = instantiateOk && handle->launchAsync(cudaStr);
+
+      if (endOk) {
+        size_t numGraphNodes = handle->getNumNodes();
+        sd_printf("NativeDSP: Triton capture endOk: graph has %zu nodes\n", numGraphNodes);
+        fflush(stdout); fflush(stderr);
+      }
+
+      if (endOk) {
+        auto stats = handle->getStatistics();
+        sd_printf("NativeDSP: Triton graph stats: %d kernels, %d memcpys, %d memsets, "
+                  "%d memAllocs, %d memFrees, %d hostCallbacks, %d events, %d empty\n",
+                  stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
+                  stats.numMemAllocs, stats.numMemFrees,
+                  stats.numHostCallbacks, stats.numEvents, stats.numEmpty);
+        fflush(stdout); fflush(stderr);
+        if (stats.numMemAllocs > 0 || stats.numMemFrees > 0) {
+          sd_printf("NativeDSP: Triton graph has %d MemAlloc + %d MemFree nodes "
+                    "(paired alloc/free from cuBLAS internal workspace — CUDA 12+ handles these on replay).\n",
+                    stats.numMemAllocs, stats.numMemFrees);
+        }
+        if (stats.numHostCallbacks > 0) {
+          sd_printf("NativeDSP: WARNING - Graph has %d host callback nodes!\n",
+                    stats.numHostCallbacks);
+        }
+      }
+
+      // Skip DOT dump by default for Triton graphs — cudaGraphDebugDotPrint with verbose
+      // flags may also call cudaGraphKernelNodeGetParams internally, causing the same
+      // cudaErrorInvalidDeviceFunction poisoning as getDetailedNodeInfo().
+      if (endOk && Environment::getInstance().tritonDumpGraphDot()) {
+        cudaGraphDebugDotPrint(handle->getGraph(), "/tmp/triton_graph_debug.dot", 0);
+        sd_printf("NativeDSP: Triton graph dumped to /tmp/triton_graph_debug.dot\n");
+        fflush(stdout); fflush(stderr);
+      }
+
+      // Skip getDetailedNodeInfo() for Triton graphs — it calls cudaFuncGetName on each
+      // kernel node, which returns cudaErrorInvalidDeviceFunction (error 98) for Triton
+      // kernels loaded via cuModuleLoadDataEx (driver API). The 658+ consecutive errors
+      // poison the CUDA error state and cause cudaGraphLaunch to SIGSEGV.
+      // Use getNumNodes() for basic stats instead (no per-node introspection).
+      bool allKernelsValid = true;
+      if (endOk) {
+#ifdef SD_CUDA
+        size_t totalNodes = handle->getNumNodes();
+        sd_printf("NativeDSP: Triton graph has %zu nodes (skipping per-node inspection to avoid error-98 poisoning)\n",
+                  totalNodes);
+        fflush(stdout); fflush(stderr);
+        // Ensure no sticky errors before instantiation
+        cudaGetLastError();
+#endif
+      }
+
+      bool instantiateOk = endOk && allKernelsValid && handle->instantiate();
+      if (instantiateOk) {
+        sd_printf("NativeDSP: Triton graph instantiated OK (graphExec=%p), about to launch...\n",
+                  handle->getGraphExec());
+        fflush(stdout); fflush(stderr);
+      }
+
+      // Try launch with pre/post sync to catch async errors
+      bool launchOk = false;
+      if (instantiateOk) {
+        // Sync before launch to ensure no pending errors
+        cudaStreamSynchronize(cudaStr);
+        auto preErr = cudaGetLastError();
+        if (preErr != cudaSuccess) {
+          sd_printf("NativeDSP: WARNING - pre-launch CUDA error: %s\n",
+                    cudaGetErrorString(preErr));
+        }
+
+        // Refresh Triton arg table pinned buffers before first launch.
+        // During capture, the arg tables were populated from outputSlots_.
+        // Between endCapture and launch, async frees on other streams may
+        // have invalidated some device pointers. Re-resolve all pointers
+        // from the current outputSlots_ (slotArrayCache_) to ensure the
+        // graph's H2D memcpy nodes transfer valid addresses.
+#if HAVE_TRITON
+        {
+          // Temporarily store shape key so refreshArgTablesForReplay can find
+          // the compiled segment. seg hasn't been stored yet, so use local.
+          LongType savedShapeKey = seg.shapeKey;
+          seg.shapeKey = segShapeKey;
+          auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
+          if (tritonBackend != nullptr) {
+            tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
+                                                     outputSlots_, totalOutputSlots_);
+          }
+          seg.shapeKey = savedShapeKey;
+        }
+#endif
+
+        // Launch on the capture stream.
+        sd_printf("NativeDSP: Triton graph launching on capture stream %p (device=%d)\n",
+                  (void*)cudaStr, tritonCaptureDevice);
+        launchOk = handle->launchAsync(cudaStr);
+      }
 
       if (launchOk) {
         seg.cachedGraph = handle;
         seg.cachedShapeKey = segShapeKey;
         seg.capturedInputAddrKey = segInputAddrKey;
-        if (traceEnabled_) {
-          sd_printf("NativeDSP::executeSegmentWithGpuGraph: captured %s graph seg[%d-%d]\n",
-                    backendName, seg.startSlot, seg.endSlot);
+
+        // Export graph stats and DOT file for diagnostics
+        auto stats = handle->getStatistics();
+        sd_printf("NativeDSP: Triton graph CAPTURED and launched for seg[%d-%d]: "
+                  "%d kernels, %d memcpy, %d memset, %d memAlloc, %d memFree "
+                  "(workspace=%zuMB, offset=%zu)\n",
+                  seg.startSlot, seg.endSlot,
+                  stats.numKernels, stats.numMemcpyH2D + stats.numMemcpyD2H + stats.numMemcpyD2D,
+                  stats.numMemsets, stats.numMemAllocs, stats.numMemFrees,
+                  seg.captureWorkspaceBytes / (1024*1024), tl_captureWorkspaceOffset);
+        // Write DOT file for offline analysis.
+        // Default: non-verbose (flag 0). Verbose queries kernel node params via
+        // cudaFuncGetName, which returns cudaErrorInvalidDeviceFunction for
+        // Triton CUfunction handles and may poison driver state.
+        // Enable via ND4J_TRITON_GRAPH_DOT_VERBOSE=1 for debugging.
+        {
+          std::string dotPath = "/tmp/triton_graph_captured.dot";
+          unsigned int dotFlags = Environment::getInstance().tritonGraphDotVerbose()
+              ? cudaGraphDebugDotFlagsVerbose : 0;
+          auto dotErr = cudaGraphDebugDotPrint(handle->getGraph(), dotPath.c_str(), dotFlags);
+          if (dotErr == cudaSuccess) {
+            sd_printf("NativeDSP: Exported Triton graph DOT to %s (verbose=%d)\n",
+                      dotPath.c_str(), dotFlags != 0);
+          }
+          cudaGetLastError(); // Clear any error from dot print
+        }
+        // Write stats to a file the test can read
+        {
+          FILE* f = fopen("/tmp/triton_graph_stats.txt", "w");
+          if (f) {
+            fprintf(f, "segment=%d-%d\n", seg.startSlot, seg.endSlot);
+            fprintf(f, "kernels=%d\n", stats.numKernels);
+            fprintf(f, "memcpyH2D=%d\n", stats.numMemcpyH2D);
+            fprintf(f, "memcpyD2H=%d\n", stats.numMemcpyD2H);
+            fprintf(f, "memcpyD2D=%d\n", stats.numMemcpyD2D);
+            fprintf(f, "memsets=%d\n", stats.numMemsets);
+            fprintf(f, "memAllocs=%d\n", stats.numMemAllocs);
+            fprintf(f, "memFrees=%d\n", stats.numMemFrees);
+            fprintf(f, "hostCallbacks=%d\n", stats.numHostCallbacks);
+            fprintf(f, "events=%d\n", stats.numEvents);
+            fprintf(f, "childGraphs=%d\n", stats.numChildGraphs);
+            fprintf(f, "totalNodes=%zu\n", handle->getNumNodes());
+            fclose(f);
+          }
         }
         status = Status::OK;
         usedTritonGraphCapture = true;
       } else {
-        // Capture/instantiate failed — clear sticky CUDA errors and continue with direct dispatch.
+        sd_printf("NativeDSP: Triton graph capture/instantiate/launch FAILED for seg[%d-%d] "
+                  "(endOk=%d instantiateOk=%d launchOk=%d)\n",
+                  seg.startSlot, seg.endSlot,
+                  static_cast<int>(endOk), static_cast<int>(instantiateOk),
+                  static_cast<int>(launchOk));
         cudaGetLastError();
       }
     } else {
-      // Could not begin stream capture on this execution path — fall back to direct dispatch.
+      sd_printf("NativeDSP: Triton graph capture beginCapture FAILED for seg[%d-%d]\n",
+                seg.startSlot, seg.endSlot);
       cudaGetLastError();
+    }
+
+    // Restore primary CUDA context if we pushed it
+    if (didPushCtx) {
+      CUcontext dummy;
+      cuCtxPopCurrent(&dummy);
+      CUdevice cuDev;
+      cuDeviceGet(&cuDev, tritonCaptureDevice);
+      cuDevicePrimaryCtxRelease(cuDev);
+    }
+
+    // Restore cuBLAS workspace to default (undo setCublasWorkspaceForCapture)
+    restoreCublasWorkspaceAfterCapture(stream);
+
+    // Reset thread-local state after capture attempt
+    tl_captureWorkspace = nullptr;
+    tl_captureWorkspaceSize = 0;
+    tl_captureWorkspaceOffset = 0;
+    tl_graphCaptureStream = prevCaptureStream;
+    // Pinned host ptrs: graph's H2D memcpy nodes reference these on replay.
+    // On success: move to segment so they persist for graph lifetime.
+    // On failure: free immediately (no graph to replay).
+    if (usedTritonGraphCapture) {
+      seg.capturedHostPtrs = std::move(tl_capturedHostPtrs);
+      sd_printf("NativeDSP: preserved %zu pinned host ptrs for Triton graph replay\n",
+                seg.capturedHostPtrs.size());
+    } else {
+      for (auto* ptr : tl_capturedHostPtrs) {
+        cudaFreeHost(ptr);
+      }
+    }
+    tl_capturedHostPtrs.clear();
+    tl_captureReplicateCache.clear();
+
+    // Flush arrays that accumulated in pendingClose_ during capture.
+    // flushPendingClose was skipped inside capture to avoid recording
+    // cudaFreeAsync MemFree graph nodes for external memory. Safe to free now.
+    if (!pendingClose_.empty()) {
+      flushPendingClose(stream);
     }
   }
 #endif
 
   if (!usedTritonGraphCapture) {
     tl_graphExecutionActive = true;
-    status = backend->executeSegment(seg, slots_, externalArrays, numExt,
-                                     outputSlots_, totalOutputSlots_, stream);
+    try {
+      status = backend->executeSegment(seg, slots_, externalArrays, numExt,
+                                       outputSlots_, totalOutputSlots_, stream);
+    } catch (...) {
+      tl_graphExecutionActive = false;
+      throw;  // Re-throw after cleanup
+    }
     tl_graphExecutionActive = false;
   }
 

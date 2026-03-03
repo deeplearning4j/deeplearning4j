@@ -241,6 +241,7 @@ public:
 
     // Instantiation
     bool instantiate();
+    bool reInstantiate();    // Destroy old exec, create fresh one from same graph
     bool updateFromGraph();  // Update exec from modified graph
 
     // Execution

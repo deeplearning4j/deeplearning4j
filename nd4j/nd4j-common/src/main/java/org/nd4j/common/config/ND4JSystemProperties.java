@@ -686,6 +686,101 @@ public class ND4JSystemProperties {
      */
     public static final String DSP_EXECUTION_TIMING = "nd4j.dsp.executionTiming";
 
+    // ---- Triton + CUDA Graph Integration ----
+
+    /**
+     * Applicability: Triton graph backend with CUDA graphs<br>
+     * Description: When true, fallback executor (cuBLAS/native ops) is allowed during
+     * CUDA graph capture. This records Triton fused kernels + cuBLAS matmuls + native
+     * attention into a single CUDA graph for minimal kernel launch overhead.
+     * Similar to how pytorch.compile captures entire subgraphs.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_ALLOW_FALLBACK_CAPTURE = "nd4j.triton.allowFallbackCapture";
+
+    /**
+     * Applicability: Triton + CUDA graph integration<br>
+     * Description: Enable CUDA graph capture of Triton execution. When disabled, Triton
+     * kernels execute directly each step without capture/replay.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_GRAPH_CAPTURE = "nd4j.triton.graphCapture";
+
+    /**
+     * Applicability: Triton debugging<br>
+     * Description: Dump captured Triton CUDA graph to DOT file at /tmp/triton_graph_debug.dot
+     * for visualization and debugging.
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_DUMP_GRAPH_DOT = "nd4j.triton.dumpGraphDot";
+
+    /**
+     * Applicability: Triton debugging<br>
+     * Description: Skip Triton sub-kernel execution and run native slot-by-slot fallback instead.
+     * Useful for isolating Triton kernel accuracy issues.
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_SKIP_KERNELS = "nd4j.triton.skipKernels";
+
+    /**
+     * Applicability: Triton debugging<br>
+     * Description: Run both Triton and native execution for each sub-kernel and compare outputs.
+     * Logs mismatches to help identify which specific kernel produces wrong results.
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_VERIFY_KERNELS = "nd4j.triton.verifyKernels";
+
+    /**
+     * Applicability: Triton compilation scope<br>
+     * Description: When true, Triton compiles ALL section types (matmul, reduction, normalization,
+     * attention, gather, etc.) instead of only elementwise/identity. Ops listed in
+     * {@link #TRITON_EXCLUDE_OPS} still fall back to cuBLAS/native.
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_COMPILE_ALL = "nd4j.triton.compileAll";
+
+    /**
+     * Applicability: Triton compilation scope<br>
+     * Description: Comma-separated list of nd4j op names to EXCLUDE from Triton compilation.
+     * These ops fall back to cuBLAS/native even when tritonCompileAll=true.
+     * Example: "matmul,mmul,tensormmul" keeps GEMMs on cuBLAS (usually faster).
+     * <p>
+     * Default: "" (empty = no exclusions)
+     */
+    public static final String TRITON_EXCLUDE_OPS = "nd4j.triton.excludeOps";
+
+    /**
+     * Applicability: DSP FusionPass<br>
+     * Description: Enable cast elimination pass that removes redundant FP16↔FP32 cast pairs.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_CAST_ELIMINATION = "nd4j.dsp.castElimination";
+
+    /**
+     * Applicability: DSP frozen-shapes segment building<br>
+     * Description: Break mega-segments at matmul/attention boundaries so element-wise
+     * chains between matmuls get separate Triton fusion.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_MATMUL_SEGMENTATION = "nd4j.dsp.matmulSegmentation";
+
+    /**
+     * Applicability: CUDA matmul (MmulHelper)<br>
+     * Description: Auto-cast FP32 matmul inputs to FP16 for TensorCore GEMM with FP32 accumulation.
+     * Provides 2x throughput on GPUs with compute capability >= 6.0.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_FP16_COMPUTE = "nd4j.dsp.fp16Compute";
+
     private ND4JSystemProperties() {
     }
 }

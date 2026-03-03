@@ -1018,4 +1018,142 @@ public interface Environment {
      * Set Triton target architecture override.
      */
     default void setTritonOverrideArch(String overrideArch) {}
+
+    // ============== Triton + CUDA Graph Integration ==============
+
+    /**
+     * Whether fallback executor (cuBLAS/native ops) is allowed during CUDA graph capture.
+     * When true, segments with fallback ranges can be captured as a single CUDA graph
+     * containing both Triton kernels and native cuBLAS/attention calls.
+     * This is the key to minimizing kernel launch overhead (like pytorch.compile).
+     * @return true if fallback during capture is allowed (default: true)
+     */
+    default boolean tritonAllowFallbackCapture() {
+        return true;
+    }
+
+    /**
+     * Set whether fallback executor is allowed during CUDA graph capture.
+     */
+    default void setTritonAllowFallbackCapture(boolean allow) {}
+
+    /**
+     * Whether CUDA graph capture of Triton execution is enabled.
+     * When disabled, Triton kernels execute directly each step (no capture/replay).
+     * @return true if graph capture is enabled (default: true)
+     */
+    default boolean tritonGraphCapture() {
+        return true;
+    }
+
+    /**
+     * Set whether CUDA graph capture of Triton execution is enabled.
+     */
+    default void setTritonGraphCapture(boolean enable) {}
+
+    /**
+     * Whether to dump captured Triton graph to DOT file for debugging.
+     * @return true if DOT dump is enabled (default: false)
+     */
+    default boolean tritonDumpGraphDot() {
+        return false;
+    }
+
+    /**
+     * Set whether to dump captured Triton graph to DOT file.
+     */
+    default void setTritonDumpGraphDot(boolean dump) {}
+
+    /**
+     * Whether Triton sub-kernels should be skipped and native fallback used instead.
+     * For debugging Triton accuracy issues.
+     * @return true if Triton kernels are skipped (default: false)
+     */
+    default boolean tritonSkipKernels() {
+        return false;
+    }
+
+    default void setTritonSkipKernels(boolean skip) {}
+
+    /**
+     * Whether Triton sub-kernel outputs should be verified against native execution.
+     * Runs both Triton and native, compares outputs, logs mismatches.
+     * @return true if verification is enabled (default: false)
+     */
+    default boolean tritonVerifyKernels() {
+        return false;
+    }
+
+    default void setTritonVerifyKernels(boolean verify) {}
+
+    /**
+     * Whether Triton compiles ALL section types (not just elementwise).
+     * When true, ops not in the exclusion list are compiled through Triton IR.
+     * When false (default), only ELEMENTWISE/IDENTITY sections are compiled.
+     * @return true if compile-all mode is enabled (default: false)
+     */
+    default boolean tritonCompileAll() {
+        return false;
+    }
+
+    default void setTritonCompileAll(boolean v) {}
+
+    /**
+     * Comma-separated list of nd4j op names to EXCLUDE from Triton compilation.
+     * These ops fall back to cuBLAS/native execution even when tritonCompileAll=true.
+     * Example: "matmul,mmul,tensormmul" keeps GEMMs on cuBLAS.
+     * @return the exclusion list (default: empty string = no exclusions)
+     */
+    default String tritonExcludeOps() {
+        return "";
+    }
+
+    default void setTritonExcludeOps(String ops) {}
+
+    /**
+     * When tritonCompileAll=true, only compile these section types (plus ELEMENTWISE/IDENTITY).
+     * Comma-separated: "CONST_GEN,SHAPE_MANIP,GATHER,CONCAT,SPLIT,STACK,REDUCTION,ATTENTION,MATMUL"
+     * Empty = compile ALL types (original compileAll behavior).
+     */
+    default String tritonIncludeTypes() {
+        return "";
+    }
+
+    default void setTritonIncludeTypes(String types) {}
+
+    // ============== DSP Optimization Flags ==============
+
+    /**
+     * Whether cast elimination pass is enabled in FusionPass.
+     * Removes redundant cast pairs (e.g., FP16->FP32 followed by FP32->FP16).
+     * @return true if cast elimination is enabled (default: true)
+     */
+    default boolean dspCastElimination() {
+        return true;
+    }
+
+    default void setDspCastElimination(boolean enabled) {}
+
+    /**
+     * Whether matmul segmentation is enabled in frozen-shapes rebuild.
+     * Breaks mega-segments at matmul boundaries so element-wise chains between
+     * matmuls get separate Triton fusion.
+     * @return true if matmul segmentation is enabled (default: false)
+     */
+    default boolean dspMatmulSegmentation() {
+        return false;
+    }
+
+    default void setDspMatmulSegmentation(boolean enabled) {}
+
+    /**
+     * Whether FP16 compute is enabled for matmuls.
+     * Auto-casts FP32 matmul inputs to FP16 for TensorCore GEMM with FP32 accumulation.
+     * @return true if FP16 compute is enabled (default: false)
+     */
+    default boolean dspFp16Compute() {
+        return false;
+    }
+
+    default void setDspFp16Compute(boolean enabled) {}
 }

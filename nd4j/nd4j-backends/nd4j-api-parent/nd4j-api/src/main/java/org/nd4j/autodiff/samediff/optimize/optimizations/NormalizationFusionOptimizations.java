@@ -132,8 +132,32 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             }
 
             SameDiffOp normalizedOp = producerOp(sd, helper, normalizedVar);
-            if (normalizedOp == null || normalizedOp.getInputsToOp() == null || normalizedOp.getInputsToOp().size() != 2) {
-                log.debug("RMSNorm: normalizedOp null or wrong input count for var {}", normalizedVar);
+            if (normalizedOp == null || normalizedOp.getInputsToOp() == null) {
+                log.debug("RMSNorm: normalizedOp null for var {}", normalizedVar);
+                return null;
+            }
+
+            // Strip cast ops wrapping the normalization output (mixed-precision models
+            // cast FP32→FP16 after div/mul before the final gamma multiply)
+            Set<String> castOpsToRemove = new LinkedHashSet<>();
+            Set<String> castVarsToRemove = new LinkedHashSet<>();
+            for (int depth = 0; depth < 4; depth++) {
+                if ("cast".equals(opName(normalizedOp))) {
+                    castOpsToRemove.add(normalizedOp.getName());
+                    castVarsToRemove.add(normalizedVar);
+                    normalizedVar = normalizedOp.getInputsToOp().get(0);
+                    normalizedOp = producerOp(sd, helper, normalizedVar);
+                    if (normalizedOp == null || normalizedOp.getInputsToOp() == null) {
+                        log.debug("RMSNorm: normalizedOp null after stripping cast for var {}", normalizedVar);
+                        return null;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if (normalizedOp.getInputsToOp().size() != 2) {
+                log.debug("RMSNorm: normalizedOp wrong input count for var {}", normalizedVar);
                 return null;
             }
 
@@ -331,11 +355,15 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             }
 
             RmsNormMatch m = new RmsNormMatch();
-            m.xVar = xVar;
+            // Use the pre-cast x so fused rms_norm produces output in the original type
+            // (e.g., FP16 if the model is mixed-precision). The intermediate FP32 cast
+            // and all internal ops will be removed; rms_norm handles precision internally.
+            m.xVar = stripTrivial(sd, helper, xVar);
             m.gammaVar = gammaVar;
             m.epsilon = epsilon;
 
             m.opsToRemove.add(finalMul.getName());
+            m.opsToRemove.addAll(castOpsToRemove);
             m.opsToRemove.add(normalizedOpName);
             if (normFactorHasOnlyConsumer) {
                 m.opsToRemove.add(normFactorOp.getName());
@@ -348,6 +376,7 @@ public class NormalizationFusionOptimizations extends BaseOptimizerSet {
             m.opsToRemove.addAll(shapeOpsToRemove);
 
             m.varsToRemove.add(finalOutputVar);
+            m.varsToRemove.addAll(castVarsToRemove);
             m.varsToRemove.add(normalizedVar);
             if (normFactorHasOnlyConsumer) {
                 m.varsToRemove.add(normFactorVar);

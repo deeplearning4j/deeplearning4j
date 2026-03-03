@@ -213,7 +213,7 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
         System.out.println("  libnd4j.calltrace property: " + calltraceProperty);
         System.out.println("  SD_GCC_FUNCTRACE will be: " + (funcTrace ? "DEFINED" : "UNDEFINED"));
         System.out.println("==============================================");
-        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "CUBLASWINAPI",
+        infoMap.put(new Info("thread_local", "SD_LIB_EXPORT", "SD_INLINE", "SD_TLS_EXPORT", "CUBLASWINAPI",
                         "SD_HOST", "SD_DEVICE", "SD_KERNEL", "SD_HOST_DEVICE", "SD_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueNDArray").pointerTypes("org.nd4j.nativeblas.OpaqueNDArray"))
@@ -322,7 +322,12 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("sd::IndicesList").purify())
                 .put(new Info("shape::cuMalloc").skip())
-                .put(new Info("ErrorResult").skip());
+                .put(new Info("ErrorResult").skip())
+                // Skip thread-local variables from DataBuffer.h — not callable from Java
+                .put(new Info("sd::tl_graphExecutionActive", "sd::tl_captureWorkspace",
+                        "sd::tl_captureWorkspaceSize", "sd::tl_captureWorkspaceOffset",
+                        "sd::tl_capturedHostPtrs", "sd::tl_captureReplicateCache",
+                        "sd::tl_graphCaptureStream").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());

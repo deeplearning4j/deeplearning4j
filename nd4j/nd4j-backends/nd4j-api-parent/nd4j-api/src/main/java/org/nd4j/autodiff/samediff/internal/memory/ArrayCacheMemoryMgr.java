@@ -75,6 +75,10 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     // TreeMap.ceilingEntry(requiredElements) finds the smallest buffer >= needed in O(log n).
     private static ThreadLocal<Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>>> capacityArrays = new ThreadLocal<>();
 
+    // Deferred close: DataBuffers from non-closeable arrays dropped by release().
+    // These can't be closed immediately (views may share the buffer). Close at end of execution.
+    private static ThreadLocal<IdentityHashMap<DataBuffer, Boolean>> deferredCloseBuffers = new ThreadLocal<>();
+
     private static boolean enableCache = Boolean
             .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_ENABLE, "false"));
 
@@ -102,6 +106,41 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             lruCacheValues.set(new LinkedHashMap<>());
             return lruCacheValues.get();
         }
+    }
+
+    static IdentityHashMap<DataBuffer, Boolean> getDeferredCloseBuffers() {
+        IdentityHashMap<DataBuffer, Boolean> map = deferredCloseBuffers.get();
+        if (map == null) {
+            map = new IdentityHashMap<>();
+            deferredCloseBuffers.set(map);
+        }
+        return map;
+    }
+
+    /**
+     * Close all deferred DataBuffers (from non-closeable arrays dropped by release()).
+     * Call this at the end of execution when all ops are done and no views are active.
+     * @param protectedBuffers DataBuffers that must NOT be closed (constants, results, etc.)
+     * @return number of buffers closed and total bytes freed
+     */
+    public static long[] closeDeferredBuffers(IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
+        IdentityHashMap<DataBuffer, Boolean> deferred = getDeferredCloseBuffers();
+        int closed = 0;
+        long closedBytes = 0;
+        for (DataBuffer buf : deferred.keySet()) {
+            if (buf.wasClosed()) continue;
+            if (protectedBuffers != null && protectedBuffers.containsKey(buf)) continue;
+            if (buf.isConstant()) continue;
+            try {
+                closedBytes += buf.length() * buf.getElementSize();
+                buf.close();
+                closed++;
+            } catch (Exception e) {
+                // non-fatal
+            }
+        }
+        deferred.clear();
+        return new long[]{closed, closedBytes};
     }
 
     public static void setCacheDefaults() {
@@ -430,8 +469,15 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                         array);
             }
 
-            // Handle non-closeable arrays (views, constants, etc.)
+            // Handle non-closeable arrays (views, oversized buffers, etc.)
+            // closeable() returns false when length() < data().length(). We can't close them
+            // here because views may still share the DataBuffer with live arrays. Instead,
+            // accumulate them for deferred close at the end of execution when all ops are done.
             if (!array.closeable()) {
+                DataBuffer buf = array.data();
+                if (buf != null && !buf.isConstant() && !buf.wasClosed()) {
+                    getDeferredCloseBuffers().put(buf, Boolean.TRUE);
+                }
                 return;
             }
 
@@ -489,8 +535,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     }
                     currentCacheSize.addAndGet(-nextBytes);
 
-                    if (nextOldest.closeable()) {
-                        nextOldest.close();
+                    // Don't close evicted arrays immediately! Their DataBuffers may be
+                    // shared with views (from reshape/permute/transpose ops) that are still
+                    // in use by downstream ops during execution. Closing the DataBuffer
+                    // here would zero out those views, causing all-zero propagation.
+                    // Instead, defer close to end of execution when all ops are done.
+                    DataBuffer evictBuf = nextOldest.data();
+                    if (evictBuf != null && !evictBuf.isConstant() && !evictBuf.wasClosed()) {
+                        getDeferredCloseBuffers().put(evictBuf, Boolean.TRUE);
                     }
                 }
 

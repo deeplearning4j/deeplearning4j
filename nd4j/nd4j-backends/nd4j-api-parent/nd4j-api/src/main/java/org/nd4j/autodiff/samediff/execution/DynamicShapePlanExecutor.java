@@ -334,6 +334,14 @@ public class DynamicShapePlanExecutor implements Closeable {
     private OpaqueNDArray[] cachedInputOpaques;
     private INDArray[] cachedInputArrays;
 
+    /** Strong references to ALL OpaqueNDArrays currently registered in the C++ context.
+     *  Prevents GC from collecting OpaqueNDArray wrappers (and thus deleting the C++ NDArray
+     *  objects they wrap) while the C++ context holds raw NDArray* pointers to them.
+     *  Without this, the DeallocatorService can delete C++ NDArrays between steps,
+     *  leaving dangling pointers that cause SIGSEGV or "db=(nil)" stale buffer errors.
+     *  Always populated after setting inputs, regardless of frozen/non-frozen state. */
+    private OpaqueNDArray[] contextInputRefs;
+
     /** Bitmap: true for external inputs that are placeholders (may be modified on host).
      *  Only these need syncToSpecial on the frozen fast path. Constants never change. */
     private boolean[] inputIsPlaceholder;
@@ -341,6 +349,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** True once dummy outputs have been set on the context for frozen execution.
      *  After the first frozen call, C++ manages its own output slots — skip dummy setup. */
     private boolean frozenOutputsInitialized;
+
+    /** Count of frozen executeNative() calls. Used to force full input re-set on the
+     *  first few calls (warmup + Triton compile) to prevent stale OpaqueNDArray pointers. */
+    private int frozenCallCount;
 
     /** Cached execution stream pointer. Avoids 2 JNI calls per step. */
     private Pointer cachedExecStream;
@@ -515,8 +527,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             zeroCopyOutputCache = null;
             cachedInputOpaques = null;
             cachedInputArrays = null;
+            contextInputRefs = null;
             inputIsPlaceholder = null;
             frozenOutputsInitialized = false;
+            frozenCallCount = 0;
             cachedExecStream = null;
             execStreamCached = false;
         }
@@ -4048,6 +4062,26 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Use a separate array so we don't corrupt cachedInputArrays (needed for identity comparison).
             extInputs = new INDArray[extKeys.length];
             System.arraycopy(cachedInputArrays, 0, extInputs, 0, extKeys.length);
+            // Re-resolve any inputs whose DataBuffer has been freed between steps.
+            // This can happen when setCloseable(true)+close() is called on KV outputs
+            // that share a DataBuffer with past_key_values inputs, or when deferred
+            // close evicts constant DataBuffers during long Triton compilations.
+            for (int i = 0; i < extKeys.length; i++) {
+                if (extInputs[i] != null) {
+                    DataBuffer db = extInputs[i].data();
+                    if (db == null || db.wasClosed()) {
+                        SDVariable var = sd.getVariable(extKeys[i]);
+                        if (var != null && (var.getVariableType() == VariableType.CONSTANT
+                                || var.getVariableType() == VariableType.VARIABLE)) {
+                            INDArray fresh = var.getArr();
+                            if (fresh != null) {
+                                extInputs[i] = fresh;
+                                cachedInputArrays[i] = fresh;
+                            }
+                        }
+                    }
+                }
+            }
             if (placeholderArrays != null && !placeholderArrays.isEmpty()
                     && inputIsPlaceholder != null) {
                 for (int i = 0; i < extKeys.length; i++) {
@@ -4097,15 +4131,33 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         OpaqueContext opContext = cachedOpContext;
         {
-            // Set inputs on context — when frozen, only update inputs that changed
+            // Set inputs on context — when frozen, only update inputs that changed.
             if (shapesFrozen && cachedInputOpaques != null
                     && cachedInputOpaques.length == extInputs.length) {
                 // Fast path: only re-set inputs where the INDArray identity changed.
                 // For same-identity placeholder inputs (modified via putScalar), sync to device.
                 // Constants/variables are never modified on host — skip sync entirely.
                 for (int i = 0; i < extInputs.length; i++) {
-                    if (extInputs[i] != cachedInputArrays[i]) {
-                        // New array reference — full fromINDArray + setGraphContextInputArray
+                    // Check both identity AND DataBuffer validity. An external input can be
+                    // the same Java object but have its DataBuffer freed between steps (e.g.,
+                    // when setCloseable(true) + close() is called on a KV output that shares
+                    // a DataBuffer with a past_key_values input, or when deferredClose evicts it).
+                    // In that case, re-resolve from SameDiff to get a fresh DataBuffer.
+                    boolean staleBuffer = false;
+                    if (extInputs[i] != null) {
+                        DataBuffer db = extInputs[i].data();
+                        if (db == null || db.wasClosed()) {
+                            staleBuffer = true;
+                            // Re-resolve from SameDiff to get a fresh array
+                            SDVariable var = sd.getVariable(extKeys[i]);
+                            if (var != null && (var.getVariableType() == VariableType.CONSTANT
+                                    || var.getVariableType() == VariableType.VARIABLE)) {
+                                extInputs[i] = var.getArr();
+                            }
+                        }
+                    }
+                    if (extInputs[i] != cachedInputArrays[i] || staleBuffer) {
+                        // New array reference or stale buffer — full fromINDArray + setGraphContextInputArray
                         OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
                         nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
                         cachedInputOpaques[i] = opaqueIn;
@@ -4123,10 +4175,17 @@ public class DynamicShapePlanExecutor implements Closeable {
                     // else: constant/variable — no sync needed
                 }
             } else {
-                // First call or non-frozen: set all inputs
+                // First call or non-frozen: set all inputs and keep strong refs.
+                // contextInputRefs prevents GC from collecting OpaqueNDArrays (and thus
+                // deleting the C++ NDArray objects they wrap) while the C++ context holds
+                // raw NDArray* pointers to them. Without this, closeable arrays (variables,
+                // placeholders) whose OpaqueNDArrays are not marked constant can be deleted
+                // by the DeallocatorService between steps, causing db=(nil) SIGSEGV.
+                contextInputRefs = new OpaqueNDArray[extInputs.length];
                 for (int i = 0; i < extInputs.length; i++) {
                     OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
                     nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                    contextInputRefs[i] = opaqueIn;
                 }
                 // Cache for subsequent frozen calls
                 if (shapesFrozen) {
@@ -4185,6 +4244,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                 nativeOps.clearDynamicShapePlanCaches(nativePlanHandle);
             }
 
+            // Track frozen call count for input re-set logic
+            if (shapesFrozen) frozenCallCount++;
+
             // Execute the plan in C++
             long execStart = System.nanoTime();
             int status = nativeOps.executeDynamicShapePlan(
@@ -4199,6 +4261,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                 throw new RuntimeException("Native plan execution failed with status " + status +
                         ": " + (errMsg != null ? errMsg : "unknown error"));
             }
+
+            // Clear stale error from internal DSP events (e.g., graph capture failure
+            // that was handled gracefully via slot-by-slot fallback). Without this,
+            // subsequent standalone ops read the stale error via lastErrorCode().
+            nativeOps.clearLastError();
 
             // Extract output arrays from context.
             // C++ wrote NDArray* pointers back into the context's output slots.
@@ -4354,8 +4421,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         configuredGraphExecutionMode = GraphExecutionMode.AUTO;
         cachedInputOpaques = null;
         cachedInputArrays = null;
+        contextInputRefs = null;
         inputIsPlaceholder = null;
         frozenOutputsInitialized = false;
+        frozenCallCount = 0;
         cachedExecStream = null;
         execStreamCached = false;
     }
@@ -4408,8 +4477,10 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Clear cached input/output state
         cachedInputOpaques = null;
         cachedInputArrays = null;
+        contextInputRefs = null;
         inputIsPlaceholder = null;
         frozenOutputsInitialized = false;
+        frozenCallCount = 0;
         cachedExecStream = null;
         execStreamCached = false;
 

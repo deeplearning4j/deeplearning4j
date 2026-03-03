@@ -21,6 +21,7 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonGraphBackend.h>
+#include <execution/LaunchContext.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 #include <system/common.h>
@@ -30,8 +31,9 @@
 #include <cuda_runtime.h>
 #endif
 
-// MLIR core for ModuleOp used in compileToGpuBinary cleanup
+// MLIR core for ModuleOp and MLIRContext used in compileToGpuBinary cleanup
 #include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/MLIRContext.h>
 #include <mlir/IR/Verifier.h>
 
 // Disk cache for compiled PTX
@@ -733,7 +735,10 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   const int compileDevice = -1;
 #endif
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey, compileDevice};
+    auto& cacheEnv = Environment::getInstance();
+  bool cacheCompileAll = cacheEnv.tritonCompileAll();
+  size_t cacheExcludeHash = std::hash<std::string>()(cacheEnv.tritonExcludeOps());
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, shapeKey, compileDevice, cacheCompileAll, cacheExcludeHash};
 
   {
     std::lock_guard<std::mutex> lock(cacheMtx_);
@@ -785,25 +790,116 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   std::deque<SubSegmentRange> pendingRanges;
 
   auto isStandaloneSection = [](const KernelSection& section) -> bool {
-    if (section.type != KernelSectionType::FUSED_ATTENTION) return false;
+    // FUSED_ATTENTION: standalone unless single query tile
+    if (section.type == KernelSectionType::FUSED_ATTENTION) {
+      int batchHeads = std::max(1, section.batchSize) * std::max(1, section.numHeads);
+      bool singleQueryTile = section.gridRequirement <= batchHeads;
+      return !singleQueryTile;
+    }
 
-    // Mixed sectioned kernels currently launch as a 1D cooperative grid.
-    // Attention sections are safe to merge only when they require a single
-    // query tile (gridY == 1), i.e. gridRequirement == batchHeads.
-    // Multi-tile attention (prefill-style seqQ > tile) must stay standalone.
-    int batchHeads = std::max(1, section.batchSize) * std::max(1, section.numHeads);
-    bool singleQueryTile = section.gridRequirement <= batchHeads;
-    return !singleQueryTile;
+    // Non-elementwise/identity sections must NOT merge with adjacent elementwise
+    // sections — mixing section types in a single kernel can produce incorrect IR.
+    // Each non-default section type compiles as its own standalone kernel.
+    if (section.type != KernelSectionType::ELEMENTWISE &&
+        section.type != KernelSectionType::IDENTITY) {
+      return true;
+    }
+
+    return false;
   };
 
-  // Only ELEMENTWISE sections are compiled as Triton kernels — everything else
-  // runs via fallbackRangeExecutor_ (cuBLAS for matmuls, native attention, etc.).
-  // Complex ops (reductions, normalizations, gathers, etc.) need their native
-  // implementations for correctness; element-wise chains benefit from fusion
-  // by eliminating intermediate global memory round-trips.
-  auto isFallbackSection = [](const KernelSection& section) -> bool {
-    return section.type != KernelSectionType::ELEMENTWISE &&
-           section.type != KernelSectionType::IDENTITY;
+  // Determine which sections are compiled as Triton kernels vs native fallback.
+  // Default mode: only ELEMENTWISE/IDENTITY compiled, everything else uses cuBLAS/native.
+  // When tritonCompileAll=true: compile ALL section types EXCEPT those containing
+  // ops in the exclusion list (ND4J_TRITON_EXCLUDE_OPS). This allows fine-grained
+  // control, e.g. keeping matmul on cuBLAS while compiling reductions/norms via Triton.
+  auto& compileEnv = Environment::getInstance();
+  bool compileAll = compileEnv.tritonCompileAll();
+
+  // Parse tritonIncludeTypes into a set of allowed section types for compileAll mode
+  std::unordered_set<KernelSectionType> includedTypes;
+  {
+    std::string includeStr = compileEnv.tritonIncludeTypes();
+    if (!includeStr.empty()) {
+      std::istringstream iss(includeStr);
+      std::string token;
+      while (std::getline(iss, token, ',')) {
+        // Trim whitespace
+        size_t start = token.find_first_not_of(" \t");
+        size_t end = token.find_last_not_of(" \t");
+        if (start == std::string::npos) continue;
+        token = token.substr(start, end - start + 1);
+        // Map type name to enum
+        if (token == "CONST_GEN" || token == "CONSTANT_GENERATION")
+          includedTypes.insert(KernelSectionType::CONSTANT_GENERATION);
+        else if (token == "SHAPE_MANIP" || token == "SHAPE_MANIPULATION")
+          includedTypes.insert(KernelSectionType::SHAPE_MANIPULATION);
+        else if (token == "GATHER")
+          includedTypes.insert(KernelSectionType::GATHER);
+        else if (token == "GATHER_ND")
+          includedTypes.insert(KernelSectionType::GATHER_ND);
+        else if (token == "CONCAT")
+          includedTypes.insert(KernelSectionType::CONCAT);
+        else if (token == "SPLIT")
+          includedTypes.insert(KernelSectionType::SPLIT);
+        else if (token == "SPLIT_V")
+          includedTypes.insert(KernelSectionType::SPLIT_V);
+        else if (token == "STACK")
+          includedTypes.insert(KernelSectionType::STACK);
+        else if (token == "REDUCTION")
+          includedTypes.insert(KernelSectionType::REDUCTION);
+        else if (token == "NORMALIZATION")
+          includedTypes.insert(KernelSectionType::NORMALIZATION);
+        else if (token == "ATTENTION" || token == "FUSED_ATTENTION")
+          includedTypes.insert(KernelSectionType::FUSED_ATTENTION);
+        else if (token == "MATMUL")
+          includedTypes.insert(KernelSectionType::MATMUL);
+        else if (token == "TILE")
+          includedTypes.insert(KernelSectionType::TILE);
+        else if (token == "STRIDED_SLICE")
+          includedTypes.insert(KernelSectionType::STRIDED_SLICE);
+        else if (token == "SCATTER_ND")
+          includedTypes.insert(KernelSectionType::SCATTER_ND);
+        else if (token == "SCATTER_ND_UPDATE")
+          includedTypes.insert(KernelSectionType::SCATTER_ND_UPDATE);
+        else if (token == "CONVOLUTION")
+          includedTypes.insert(KernelSectionType::CONVOLUTION);
+        else
+          sd_printf("TritonGraphBackend: unknown include type '%s'\n", token.c_str());
+      }
+      if (!includedTypes.empty()) {
+        sd_printf("TritonGraphBackend: compileAll with include types filter (%d types)\n",
+                  static_cast<int>(includedTypes.size()));
+      }
+    }
+  }
+
+  auto isFallbackSection = [&](const KernelSection& section) -> bool {
+    if (!compileAll) {
+      // Default: only ELEMENTWISE and IDENTITY are compiled
+      return section.type != KernelSectionType::ELEMENTWISE &&
+             section.type != KernelSectionType::IDENTITY;
+    }
+
+    // compileAll mode with include types filter: only compile ELEMENTWISE, IDENTITY,
+    // and explicitly listed types
+    if (!includedTypes.empty()) {
+      if (section.type != KernelSectionType::ELEMENTWISE &&
+          section.type != KernelSectionType::IDENTITY &&
+          includedTypes.find(section.type) == includedTypes.end()) {
+        return true;  // Type not in whitelist → fallback
+      }
+    }
+
+    // Check op-level exclusion list
+    for (int si = section.startSlot; si <= section.endSlot; si++) {
+      if (si >= 0 && si < totalSlots && !slots[si].opName.empty()) {
+        if (compileEnv.isTritonExcludedOp(slots[si].opName)) {
+          return true;  // This section contains an excluded op → fallback
+        }
+      }
+    }
+    return false;
   };
 
   auto makeRange = [&](int startSec, int endSec) -> SubSegmentRange {
@@ -900,10 +996,18 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     if (isStandaloneSection(sections[secIdx])) {
+      sd_printf("TritonGraphBackend: section %d [%d-%d] type=%d STANDALONE (Triton compile)\n",
+                secIdx, sections[secIdx].startSlot, sections[secIdx].endSlot,
+                static_cast<int>(sections[secIdx].type));
       pendingRanges.push_back(makeRange(secIdx, secIdx));
       secIdx++;
       continue;
     }
+
+    // Log each compiled section
+    sd_printf("TritonGraphBackend: section %d [%d-%d] type=%d COMPILED (Triton)\n",
+              secIdx, sections[secIdx].startSlot, sections[secIdx].endSlot,
+              static_cast<int>(sections[secIdx].type));
 
     // Merge consecutive element-wise-compatible sections into one compile range.
     int runStart = secIdx;
@@ -912,6 +1016,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
            !isStandaloneSection(sections[runEnd + 1]) &&
            !isFallbackSection(sections[runEnd + 1])) {
       runEnd++;
+      sd_printf("TritonGraphBackend: section %d [%d-%d] type=%d MERGED into range starting at section %d\n",
+                runEnd, sections[runEnd].startSlot, sections[runEnd].endSlot,
+                static_cast<int>(sections[runEnd].type), runStart);
     }
 
     pendingRanges.push_back(makeRange(runStart, runEnd));
@@ -931,28 +1038,22 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   auto& env = Environment::getInstance();
-  const int maxOpsCap = std::max(0, env.tritonMaxSubsegmentOps());
+  const int envOpsCap = std::max(0, env.tritonMaxSubsegmentOps());
+  // When the environment cap is 0 (disabled), use MAX_COMPILABLE_OPS as default.
+  // Huge IR modules (>512 ops) cause LLVM register pressure explosions (441K virtual
+  // regs for 3840 ops) leading to SIGABRT. Set ND4J_TRITON_MAX_SUBSEGMENT_OPS=0
+  // to truly disable (not recommended).
+  const int maxOpsCap = (envOpsCap > 0) ? envOpsCap : MAX_COMPILABLE_OPS;
   const int maxSectionsCap = std::max(0, env.tritonMaxSubsegmentSections());
   const int maxParallelCompiles = std::max(1, getMaxParallelCompilations());
   sd_printf("TritonGraphBackend: adaptive section packing for [%d-%d] "
-            "(initialRanges=%d, opsCap=%d, sectionsCap=%d, compileThreads=%d)\n",
+            "(initialRanges=%d, opsCap=%d(env=%d), sectionsCap=%d, compileThreads=%d)\n",
             seg.startSlot, seg.endSlot,
             static_cast<int>(pendingRanges.size()),
-            maxOpsCap, maxSectionsCap, maxParallelCompiles);
-  if (maxOpsCap <= 0) {
-    sd_printf("TritonGraphBackend: ops cap disabled for [%d-%d] (runtime control); "
-              "set tritonMaxSubsegmentOps>0 to force additional splitting\n",
-              seg.startSlot, seg.endSlot);
-  }
+            maxOpsCap, envOpsCap, maxSectionsCap, maxParallelCompiles);
   if (maxSectionsCap <= 0) {
     sd_printf("TritonGraphBackend: section cap disabled for [%d-%d] (runtime control); "
               "set tritonMaxSubsegmentSections>0 to force additional splitting\n",
-              seg.startSlot, seg.endSlot);
-  }
-  if (maxParallelCompiles > 1 && pendingRanges.size() == 1 &&
-      maxOpsCap <= 0 && maxSectionsCap <= 0) {
-    sd_printf("TritonGraphBackend: initial work for [%d-%d] is a single range with caps disabled; "
-              "compile threads are configured but only one worker can run until the range is split\n",
               seg.startSlot, seg.endSlot);
   }
 
@@ -1487,6 +1588,26 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
   }
 #endif
 
+  // Pre-allocate output arrays for slots that don't have arrays yet.
+  // In compileAll mode, non-elementwise sections (reductions, gathers, etc.) are
+  // compiled into the Triton kernel instead of running via fallback. Their output
+  // arrays must exist before the kernel launches since args are resolved by pointer.
+  for (auto& argMapping : compiled.argSlotMapping) {
+    if (!argMapping.isOutput) continue;
+    if (argMapping.slotIndex < 0 || argMapping.slotIndex >= totalOutputSlots) continue;
+    if (outputSlots[argMapping.slotIndex] != nullptr) continue;
+    // Need to allocate — use shape/dtype from the arg mapping
+    if (argMapping.shape.empty()) {
+      sd_printf("TritonGraphBackend::executeSingleKernel: cannot pre-allocate slot %d — no shape info "
+                "(sub-segment [%d-%d])\n",
+                argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_);
+      return Status::KERNEL_FAILURE;
+    }
+    std::vector<LongType> shapeVec(argMapping.shape.begin(), argMapping.shape.end());
+    auto* newArr = new NDArray('c', shapeVec, argMapping.dtype, LaunchContext::defaultContext());
+    outputSlots[argMapping.slotIndex] = newArr;
+  }
+
   // Resolve all buffer pointers from the arg slot mapping
   std::vector<void*> bufferPtrs;
   bufferPtrs.reserve(numBufferArgs);
@@ -1508,13 +1629,30 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     }
     // Validate DataBuffer before accessing specialBuffer() — Java close() may have
     // deleted the NDArray or its DataBuffer, leaving outputSlots_ with a dangling pointer.
+    // Empty arrays (isEmpty=true, length=0) legitimately have no DataBuffer — they
+    // represent optional/unused inputs (e.g., attention mask placeholders). Handle them
+    // with a dummy pointer below (same as the zero-length specialBuffer() path).
     auto* db = arr->dataBuffer();
-    if (db == nullptr || !db->isValid()) {
+    if ((db == nullptr || !db->isValid()) && !arr->isEmpty() && arr->lengthOf() > 0) {
       sd_printf("TritonGraphBackend::executeSingleKernel: INVALID DataBuffer for arg slot %d "
-                "(sub-segment [%d-%d], isOutput=%d, arr=%p, db=%p, dbValid=%d)\n",
+                "(sub-segment [%d-%d], isOutput=%d, arr=%p, db=%p, dbValid=%d, "
+                "rank=%d, length=%lld, dtype=%d, isEmpty=%d)\n",
                 argMapping.slotIndex, compiled.startSlot_, compiled.endSlot_,
                 argMapping.isOutput ? 1 : 0, (void*)arr, (void*)db,
-                db ? (db->isValid() ? 1 : 0) : -1);
+                db ? (db->isValid() ? 1 : 0) : -1,
+                arr->rankOf(), (long long)arr->lengthOf(),
+                static_cast<int>(arr->dataType()), arr->isEmpty() ? 1 : 0);
+      // Log which slots in this sub-kernel consume this external input
+      if (argMapping.slotIndex < 0) {
+        for (int si = compiled.startSlot_; si <= compiled.endSlot_; si++) {
+          for (int inp = 0; inp < slots[si].numInputs; inp++) {
+            if (slots[si].inputSourceIndices[inp] == argMapping.slotIndex) {
+              sd_printf("  -> consumed by slot %d op='%s' (input #%d)\n",
+                        si, slots[si].opName.c_str(), inp);
+            }
+          }
+        }
+      }
       return Status::KERNEL_FAILURE;
     }
     void* sbuf = arr->specialBuffer();
@@ -1973,7 +2111,10 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   int currentDevice = -1;
   cudaGetDevice(&currentDevice);
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice};
+  auto& refreshEnv = Environment::getInstance();
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice,
+                      refreshEnv.tritonCompileAll(),
+                      std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -2061,7 +2202,10 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   }
 #endif
 
-  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, execDevice};
+  auto& execEnv = Environment::getInstance();
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, execDevice,
+                      execEnv.tritonCompileAll(),
+                      std::hash<std::string>()(execEnv.tritonExcludeOps())};
 
   CompiledSegment* compiledSeg = nullptr;
   {
@@ -2567,6 +2711,14 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       mod->erase();
       delete mod;
       irModule.mlirModule = nullptr;
+    }
+    // Free the MLIRContext that owns all MLIR memory for this compilation.
+    // Each sub-segment creates a new MLIRContext (~10-100MB for large kernels);
+    // failing to free it causes unbounded memory growth during multi-sub-segment
+    // compilation of VLM-scale graphs (3840 ops → many sub-segments).
+    if (irModule.mlirContext) {
+      delete static_cast<mlir::MLIRContext*>(irModule.mlirContext);
+      irModule.mlirContext = nullptr;
     }
   };
 

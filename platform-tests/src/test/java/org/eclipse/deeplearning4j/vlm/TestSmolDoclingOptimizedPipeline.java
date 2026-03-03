@@ -175,37 +175,71 @@ public class TestSmolDoclingOptimizedPipeline {
         log.info("STEP 3 DONE: {}ms", importTime);
 
         // Explicit DSP/native compilation for all models (no lazy compile during decode).
-        // Skip precompilation when a non-Triton execution mode is requested via system property,
-        // because precompile overrides the native plan's graph execution mode to TRITON.
+        // When a specific GraphExecutionMode is requested (CUDA_GRAPHS, SLOT_BY_SLOT, AUTO),
+        // compile the DSP plan with that execution mode directly (no Triton compilation needed).
+        // Only skip precompile when dsp.compilation.mode=NONE is explicitly requested.
         String gemProp = System.getProperty("nd4j.dsp.graphExecutionMode");
         String dspModeProp = System.getProperty("vlm.test.dsp.compilation.mode", "MAX_AUTOTUNE");
-        boolean skipPrecompile = "SLOT_BY_SLOT".equalsIgnoreCase(gemProp)
-                || "CUDA_GRAPHS".equalsIgnoreCase(gemProp)
-                || "AUTO".equalsIgnoreCase(gemProp)
-                || "NONE".equalsIgnoreCase(dspModeProp);
+        boolean skipPrecompile = "NONE".equalsIgnoreCase(dspModeProp);
+
+        // Check if a non-Triton execution mode is requested — compile DSP with that mode directly
+        GraphExecutionMode overrideMode = null;
+        if (gemProp != null) {
+            try {
+                overrideMode = GraphExecutionMode.valueOf(normalizePropertyToken(gemProp));
+            } catch (Exception e) {
+                log.warn("Invalid nd4j.dsp.graphExecutionMode='{}', ignoring", gemProp);
+            }
+        }
 
         if (!skipPrecompile) {
-            String dspModeCanonical = normalizePropertyToken(dspModeProp);
-            DspCompilationMode dspMode;
-            try {
-                dspMode = DspCompilationMode.valueOf(dspModeCanonical);
-            } catch (Exception e) {
-                throw new IllegalArgumentException(
-                        "Invalid vlm.test.dsp.compilation.mode='" + dspModeProp + "' (normalized='" + dspModeCanonical +
-                                "'). Expected one of: " + Arrays.toString(DspCompilationMode.values()), e);
+            // Also check if vlm.test.dsp.compilation.mode is actually a GraphExecutionMode name
+            // (e.g., SLOT_BY_SLOT, CUDA_GRAPHS, AUTO). If so, treat it as a non-Triton mode override.
+            if (overrideMode == null && dspModeProp != null) {
+                String dspModeCanonical = normalizePropertyToken(dspModeProp);
+                try {
+                    GraphExecutionMode gemFromDspProp = GraphExecutionMode.valueOf(dspModeCanonical);
+                    if (gemFromDspProp != GraphExecutionMode.TRITON) {
+                        overrideMode = gemFromDspProp;
+                        log.info("  vlm.test.dsp.compilation.mode='{}' is a GraphExecutionMode, using as override", dspModeProp);
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // Not a GraphExecutionMode — will be parsed as DspCompilationMode below
+                }
             }
-            String tritonProfile = configureTritonCompileProfile(dspMode);
-            if (Nd4j.getNativeOps().isTritonAvailable()) {
-                Nd4j.getNativeOps().resetTritonCounters();
+
+            if (overrideMode != null && overrideMode != GraphExecutionMode.TRITON) {
+                // Non-Triton mode: compile DSP plan with the requested execution mode.
+                // Uses REDUCE_OVERHEAD profile (no Triton compilation) with mode override.
+                log.info("STEP 3b: DSP precompile with execution mode {} (no Triton)", overrideMode);
+                precompileModelWithMode(visionEncoder, "vision encoder", overrideMode);
+                precompileModelWithMode(decoder, "decoder", overrideMode);
+                precompileModelWithMode(embedTokens, "embed tokens", overrideMode);
+            } else {
+                // Triton/default path: use DspCompilationMode profile
+                String dspModeCanonical = normalizePropertyToken(dspModeProp);
+                DspCompilationMode dspMode;
+                try {
+                    dspMode = DspCompilationMode.valueOf(dspModeCanonical);
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(
+                            "Invalid vlm.test.dsp.compilation.mode='" + dspModeProp + "' (normalized='" + dspModeCanonical +
+                                    "'). Expected one of: " + Arrays.toString(DspCompilationMode.values()) +
+                                    " or GraphExecutionMode values: " + Arrays.toString(GraphExecutionMode.values()), e);
+                }
+                String tritonProfile = configureTritonCompileProfile(dspMode);
+                if (Nd4j.getNativeOps().isTritonAvailable()) {
+                    Nd4j.getNativeOps().resetTritonCounters();
+                }
+                log.info("STEP 3b: DSP/native precompile all models (requestedMode='{}', normalized='{}', selectedMode={}, tritonProfile={})",
+                        dspModeProp, dspModeCanonical, dspMode, tritonProfile);
+                logTritonKnobs("Environment before precompile");
+                logTritonCounters("before-precompile");
+                precompileModelForPipeline(visionEncoder, "vision encoder", dspMode);
+                precompileModelForPipeline(decoder, "decoder", dspMode);
+                precompileModelForPipeline(embedTokens, "embed tokens", dspMode);
+                logTritonCounters("after-precompile");
             }
-            log.info("STEP 3b: DSP/native precompile all models (requestedMode='{}', normalized='{}', selectedMode={}, tritonProfile={})",
-                    dspModeProp, dspModeCanonical, dspMode, tritonProfile);
-            logTritonKnobs("Environment before precompile");
-            logTritonCounters("before-precompile");
-            precompileModelForPipeline(visionEncoder, "vision encoder", dspMode);
-            precompileModelForPipeline(decoder, "decoder", dspMode);
-            precompileModelForPipeline(embedTokens, "embed tokens", dspMode);
-            logTritonCounters("after-precompile");
         } else {
             log.info("STEP 3b: SKIPPING precompile (graphExecutionMode={}, dsp.compilation.mode={})", gemProp, dspModeProp);
         }
@@ -552,6 +586,22 @@ public class TestSmolDoclingOptimizedPipeline {
         String rawProfile = System.getProperty("vlm.test.triton.profile", defaultProfile);
         String profile = normalizePropertyToken(rawProfile);
 
+        // Op exclusion list and compile-all mode (applied after profile-specific settings)
+        // These are set early so profile-specific overrides can also adjust them.
+        boolean compileAll = boolProp("vlm.test.triton.compileAll", false);
+        String excludeOps = System.getProperty("vlm.test.triton.excludeOps", "");
+        String includeTypes = System.getProperty("vlm.test.triton.includeTypes", "");
+        Nd4j.getEnvironment().setTritonCompileAll(compileAll);
+        if (!excludeOps.isEmpty()) {
+            Nd4j.getEnvironment().setTritonExcludeOps(excludeOps);
+        }
+        if (!includeTypes.isEmpty()) {
+            Nd4j.getEnvironment().setTritonIncludeTypes(includeTypes);
+        }
+        if (compileAll) {
+            log.info("  Triton compile-all mode ENABLED, excludeOps='{}', includeTypes='{}'", excludeOps, includeTypes);
+        }
+
         if ("DEBUG_FAST".equals(profile)) {
             // Fast startup profile for validating Triton execution in debug runs.
             Nd4j.getEnvironment().setTritonBuildThreads(intProp("vlm.test.triton.buildThreads", 1));
@@ -673,6 +723,16 @@ public class TestSmolDoclingOptimizedPipeline {
 
     private static boolean boolProp(String key, boolean defaultValue) {
         return Boolean.parseBoolean(System.getProperty(key, Boolean.toString(defaultValue)));
+    }
+
+    private void precompileModelWithMode(SameDiff model, String label, GraphExecutionMode mode) {
+        List<String> modelOutputs = model.outputs() == null ? Collections.emptyList() : new ArrayList<>(model.outputs());
+        log.info("  Precompiling {} with mode {}: outputs={} ops={}", label, mode, modelOutputs, model.getOps().size());
+        long start = System.currentTimeMillis();
+        GraphExecutionMode effectiveMode = model.compileNativeDynamicShapePlan(modelOutputs, mode, true);
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("  {} precompile complete: requestedMode={} effectiveMode={} [{}ms]",
+                label, mode, effectiveMode, elapsed);
     }
 
     private void precompileModelForPipeline(SameDiff model, String label, DspCompilationMode mode) {
