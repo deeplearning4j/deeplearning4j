@@ -311,27 +311,15 @@ exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
                          WORLD_READ WORLD_EXECUTE)
 
         # Override the compiler launcher to use our wrapper
-        # On Windows, .sh scripts need bash to execute them
+        # On Windows, skip smart wrapper entirely — use plain ccache.
+        # MSYS2 bash startup overhead (100-500ms per invocation) causes builds to
+        # freeze when 8+ parallel compilations each spawn bash. Plain ccache uses
+        # content hashing which handles change detection without the wrapper.
         if(_SD_IS_WINDOWS)
-            find_program(_BASH_PROGRAM bash PATHS "C:/msys64/usr/bin" "C:/msys64/mingw64/bin")
-            if(_BASH_PROGRAM)
-                set(CMAKE_C_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-                set(CMAKE_CXX_COMPILER_LAUNCHER "${_BASH_PROGRAM}" "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
-                # Do NOT override CMAKE_CUDA_COMPILER_LAUNCHER on Windows.
-                # nvcc_filter.py --ccache= (set in CMakeLists.txt) already handles:
-                #   1. MSVC flag filtering (removing unsupported /flags)
-                #   2. Response file expansion for ccache visibility
-                #   3. Chaining ccache correctly
-                # Overriding it with smart_ccache.sh loses the flag filtering,
-                # causing 5% ccache hit rate instead of 70%+.
-                message(STATUS "Smart ccache: NOT overriding CUDA launcher (nvcc_filter.py handles it)")
-            else()
-                # Fallback: use ccache directly without smart wrapper on Windows
-                message(WARNING "bash not found — smart ccache wrapper disabled, using ccache directly")
-                set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
-                set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
-                # Don't set CUDA launcher here either — nvcc_filter.py should handle it
-            endif()
+            message(STATUS "Smart ccache: disabled on Windows (using plain ccache to avoid MSYS2 bash overhead)")
+            set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+            set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PATH}" CACHE STRING "" FORCE)
+            # Do NOT set CMAKE_CUDA_COMPILER_LAUNCHER — nvcc_filter.py handles it
         else()
             set(CMAKE_C_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
             set(CMAKE_CXX_COMPILER_LAUNCHER "${SMART_CCACHE_SCRIPT}" CACHE STRING "" FORCE)
