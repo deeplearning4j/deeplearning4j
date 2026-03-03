@@ -1244,6 +1244,15 @@ stop_oom_monitor() {
 run_with_oom_monitor() {
     local cmd="$1"
 
+    # Auto-disable OOM monitor on Windows (see comment near main build section)
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        local _oom_platform
+        _oom_platform=$(detect_oom_platform)
+        if [[ "$_oom_platform" == "windows" ]]; then
+            OOM_KILLER_ENABLED="OFF"
+        fi
+    fi
+
     if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
         # Validate threshold
         if [[ ! "$OOM_MEMORY_THRESHOLD" =~ ^[0-9]+$ ]] || \
@@ -3115,6 +3124,19 @@ else
             fi
             REMAINING=$(grep -c 'Xcompiler.*-Fd\|Xcompiler.*\/Fd\|Xcompiler.*\/FS' build.ninja 2>/dev/null || echo 0)
             print_colored "green" "Patched Ninja build files: removed $MATCH_COUNT MSVC PDB flag occurrences ($REMAINING remaining)"
+        fi
+    fi
+
+    # Auto-disable OOM monitor on Windows/MSYS2: powershell.exe startup is 500ms-2s,
+    # and the 1-second polling loop stacks PowerShell processes faster than they exit,
+    # deadlocking the build. Linux uses /proc/meminfo (~0ms), macOS uses vm_stat (~1ms).
+    # Windows GitHub Actions runners handle OOM at the OS level.
+    if [[ "$OOM_KILLER_ENABLED" == "ON" ]]; then
+        local _oom_platform
+        _oom_platform=$(detect_oom_platform)
+        if [[ "$_oom_platform" == "windows" ]]; then
+            print_colored "yellow" "OOM monitor auto-disabled on Windows (powershell.exe polling causes deadlocks)"
+            OOM_KILLER_ENABLED="OFF"
         fi
     fi
 
