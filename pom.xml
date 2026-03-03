@@ -632,12 +632,9 @@
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <version>${maven-central-publishing-plugin.version}</version>
-                <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>central</publishingServerId>
-                    <waitUntil>uploaded</waitUntil>
                     <autoPublish>${central.publishing.autoPublish}</autoPublish>
-                    <centralSnapshotsUrl>https://central.sonatype.com/repository/maven-snapshots/</centralSnapshotsUrl>
                 </configuration>
             </plugin>
 
