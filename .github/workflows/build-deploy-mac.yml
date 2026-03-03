@@ -159,12 +159,6 @@ jobs:
 
   
 
-      - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v1
-        env:
-            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
@@ -183,7 +177,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gpg1 gnu-sed unzip gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install gnu-sed unzip gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup libnd4j home if a download url is specified
@@ -232,7 +226,6 @@ jobs:
           echo "release repo id ${{ matrix.release_repo_id }}"
 
           gpg --version
-          gpg1 --version
           brew list
           brew list --cask
       
