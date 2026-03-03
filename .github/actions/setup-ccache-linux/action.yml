@@ -13,7 +13,7 @@ inputs:
   max-size:
     description: 'Maximum cache size (e.g., 5G)'
     required: false
-    default: '5G'
+    default: '8G'
 
 outputs:
   cache-hit:
@@ -87,11 +87,15 @@ runs:
         # Configure ccache settings optimized for CI
         ccache --set-config=max_size=${{ inputs.max-size }}
         ccache --set-config=compression=true
-        ccache --set-config=compression_level=6
+        ccache --set-config=compression_level=1
         ccache --set-config=hash_dir=false
         ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
         ccache --set-config=compiler_check=content
         ccache --set-config=base_dir=${GITHUB_WORKSPACE}
+        ccache --set-config=temporary_dir=/dev/shm/ccache_tmp
+        ccache --set-config=depend_mode=true
+        ccache --set-config=direct_mode=true
+        mkdir -p /dev/shm/ccache_tmp
 
         # Show configuration
         echo "=== ccache configuration ==="

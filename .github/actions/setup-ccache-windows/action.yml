@@ -13,7 +13,7 @@ inputs:
   max-size:
     description: 'Maximum cache size (e.g., 5G)'
     required: false
-    default: '5G'
+    default: '8G'
 
 outputs:
   cache-hit:
@@ -109,13 +109,15 @@ runs:
         $config = @"
         max_size = ${{ inputs.max-size }}
         compression = true
-        compression_level = 6
+        compression_level = 1
         hash_dir = false
         sloppiness = file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
         compiler_check = content
         inode_cache = false
         file_clone = false
         temporary_dir = $env:TEMP\ccache_tmp
+        depend_mode = true
+        direct_mode = true
         "@
         # Trim leading whitespace from each line (YAML indentation)
         $config = ($config -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }) -join "`n"
