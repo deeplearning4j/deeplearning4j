@@ -935,9 +935,9 @@ DECLARE_CUSTOM_OP(lora_matmul_bp, 5, 4, false, 0, 0);
 
 /**
  * LoHa (Low-Rank Hadamard Product) fused matrix multiplication.
- * Computes: output = input @ weight^T + scaling * input @ ((B1 @ A1) ⊙ (B2 @ A2))^T
+ * Computes: output = input @ weight^T + scaling * input @ ((B1 @ A1) * (B2 @ A2))^T
  *
- * Uses two low-rank decompositions with Hadamard product for effective rank up to dim².
+ * Uses two low-rank decompositions with Hadamard product for effective rank up to dim^2.
  *
  * Input params:
  *   0: input   - [batch, in_features]
