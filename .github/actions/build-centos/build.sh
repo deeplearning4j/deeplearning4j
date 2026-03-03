@@ -27,7 +27,7 @@ yum -y install $SCL_ENABLE rh-java-common-ant boost-devel ccache clang gcc-c++ g
 sed -i 's/_mm512_abs_pd (__m512 __A)/_mm512_abs_pd (__m512d __A)/g' /opt/rh/devtoolset-7/root/usr/lib/gcc/x86_64-redhat-linux/7/include/avx512fintrin.h
 source scl_source enable $SCL_ENABLE || true
 curl -LO https://github.com/Kitware/CMake/releases/download/v3.16.6/cmake-3.16.6-Linux-x86_64.tar.gz
-curl -LO https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
+curl -LO https://archive.apache.org/dist/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
 curl -LO https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.18.3.tar.gz
 tar -xzf cmake-3.16.6-Linux-x86_64.tar.gz -C /opt/
 mv /opt/cmake-3.16.6-Linux-x86_64 /opt/cmake
