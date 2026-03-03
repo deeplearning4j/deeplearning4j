@@ -281,7 +281,7 @@ jobs:
             -Dhttp.keepAlive=false \
             -Dmaven.wagon.http.pool=false \
             -Dmaven.wagon.http.retryHandler.count=3 \
-            -Possrh \
+            \
             -DskipTestResourceEnforcement=true \
             -Dmaven.javadoc.failOnError=false \
             -Djavacpp.platform=${LIBND4J_CLASSIFIER} \
