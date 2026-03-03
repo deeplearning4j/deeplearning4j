@@ -648,9 +648,11 @@ function(setup_onednn)
 
     add_library(onednn_interface INTERFACE)
     target_include_directories(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/include")
-    if(WIN32)
+    if(MSVC)
+        # MSVC produces dnnl.lib
         target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/dnnl.lib")
     else()
+        # GCC/MinGW/Clang all produce libdnnl.a (including MinGW on Windows where WIN32=true)
         target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/${ONEDNN_LIB_DIR}/libdnnl.a")
     endif()
     add_dependencies(onednn_interface onednn_external)
