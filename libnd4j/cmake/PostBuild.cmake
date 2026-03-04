@@ -129,10 +129,22 @@ else()
     string(REPLACE "#cmakedefine01 HAVE_TRITON" "#define HAVE_TRITON 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 endif()
 
+if(HAVE_MLIR)
+    string(REPLACE "#cmakedefine01 HAVE_MLIR" "#define HAVE_MLIR 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_MLIR" "#define HAVE_MLIR 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
 if(HAVE_MLX)
     string(REPLACE "#cmakedefine01 HAVE_MLX" "#define HAVE_MLX 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 else()
     string(REPLACE "#cmakedefine01 HAVE_MLX" "#define HAVE_MLX 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
+if(HAVE_NNAPI)
+    string(REPLACE "#cmakedefine01 HAVE_NNAPI" "#define HAVE_NNAPI 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_NNAPI" "#define HAVE_NNAPI 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 endif()
 
 if(SD_SELECTIVE_TYPES)
@@ -392,4 +404,3 @@ if(SD_PREPROCESS)
     message("✅ Preprocessing complete. Generated ${processed_count} preprocessed files in ${PREPROCESSED_DIR}")
     add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
 endif()
-

@@ -1656,7 +1656,8 @@ SD_LIB_EXPORT void setPlanJitMode(sd::Pointer planHandle, int mode);
  * Set the graph execution mode for DSP execution.
  * Controls which backend is used for segment execution.
  * @param planHandle  Handle from compileDynamicShapePlan()
- * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+ * @param mode  0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON,
+ *              6=MLX, 7=ARM_HYBRID, 8=NNAPI
  */
 SD_LIB_EXPORT void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode);
 

@@ -307,6 +307,21 @@ function(configure_cuda_linking main_target_name)
         target_link_libraries(${main_target_name} PUBLIC "-fopenmp")
     endif()
 
+    # SDZ SameDiff archives are ZIP/DEFLATE by default, so link zlib when available.
+    find_package(ZLIB QUIET)
+    if(ZLIB_FOUND)
+        set(_sdx_object_target "${main_target_name}_object")
+        if(TARGET ${_sdx_object_target})
+            target_compile_definitions(${_sdx_object_target} PUBLIC HAVE_ZLIB=1)
+            target_link_libraries(${_sdx_object_target} PUBLIC ZLIB::ZLIB)
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ZLIB::ZLIB)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ZLIB=1)
+        message(STATUS "🔗 Linking zlib for SDZ DEFLATE support")
+    else()
+        message(WARNING "⚠️ zlib not found - SDZ reader supports STORED ZIP entries only")
+    endif()
+
     install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 

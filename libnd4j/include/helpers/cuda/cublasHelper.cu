@@ -25,6 +25,7 @@
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
 
 #include "../cublasHelper.h"
 #include "config.h"
@@ -40,6 +41,19 @@ static void* handle_() {
   auto _handle = new cublasHandle_t();
   auto status = cublasCreate_v2(_handle);  // initialize CUBLAS context
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("cuBLAS handle creation failed !", status);
+
+  // Enable TF32 math mode on sm_80+ (Ampere and later) when configured.
+  // TF32 uses tensor cores for FP32 GEMMs with 10-bit mantissa precision,
+  // providing significant speedup for compute-bound operations.
+  if (sd::Environment::getInstance().cublasTf32Enabled()) {
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, deviceId);
+    if (prop.major >= 8) {
+      cublasSetMathMode(*_handle, CUBLAS_TF32_TENSOR_OP_MATH);
+    }
+  }
 
   return reinterpret_cast<void*>(_handle);
 }
