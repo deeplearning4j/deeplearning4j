@@ -198,6 +198,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspBatchZero{false};           // ND4J_DSP_BATCH_ZERO (default: off)
   std::atomic<bool> _dspBatchZeroVerbose{false};    // ND4J_DSP_BATCH_ZERO_VERBOSE — log every buffer
   std::atomic<bool> _dspBatchZeroGapOnly{true};     // ND4J_DSP_BATCH_ZERO_GAP_ONLY — only zero gap slots (default: true)
+  std::atomic<bool> _dspBatchZeroKernel{false};     // ND4J_DSP_BATCH_ZERO_KERNEL — use single kernel instead of N memsets
 
   // Triton debugging flags
   std::atomic<bool> _tritonSkipKernels{false};       // skip Triton kernels, run native fallback instead
@@ -207,6 +208,11 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspCastElimination{true};      // eliminate redundant cast pairs in FusionPass
   std::atomic<bool> _dspMatmulSegmentation{false};   // break segments at matmul boundaries
   std::atomic<bool> _dspFp16Compute{false};          // auto-cast FP32 matmul inputs to FP16 for TensorCore
+  std::atomic<bool> _cublasTf32Enabled{false};       // enable TF32 math mode for cuBLAS on sm_80+
+  std::atomic<bool> _dspCastSinkMatmul{false};       // sink FP16→FP32 casts through matmul ops
+  std::atomic<bool> _tritonConsolidatedArgTable{false}; // consolidate arg tables into single H2D copy
+  std::atomic<bool> _tritonArgDirtyTracking{false};  // skip arg table refresh for static-only sub-kernels
+  std::atomic<bool> _tritonSectionFusion{false};     // merge non-EW sections into mega-kernels
 
   Environment();
 
@@ -563,6 +569,8 @@ class SD_LIB_EXPORT Environment {
   void setDspBatchZeroVerbose(bool v) { _dspBatchZeroVerbose.store(v); }
   bool dspBatchZeroGapOnly() { return _dspBatchZeroGapOnly.load(); }
   void setDspBatchZeroGapOnly(bool v) { _dspBatchZeroGapOnly.store(v); }
+  bool dspBatchZeroKernel() { return _dspBatchZeroKernel.load(); }
+  void setDspBatchZeroKernel(bool v) { _dspBatchZeroKernel.store(v); }
 
   // Triton compilation scope
   bool tritonCompileAll() { return _tritonCompileAll.load(); }
@@ -587,6 +595,16 @@ class SD_LIB_EXPORT Environment {
   void setDspMatmulSegmentation(bool enabled);
   bool dspFp16Compute() { return _dspFp16Compute.load(); }
   void setDspFp16Compute(bool enabled);
+  bool cublasTf32Enabled() { return _cublasTf32Enabled.load(); }
+  void setCublasTf32Enabled(bool enabled);
+  bool dspCastSinkMatmul() { return _dspCastSinkMatmul.load(); }
+  void setDspCastSinkMatmul(bool enabled);
+  bool tritonConsolidatedArgTable() { return _tritonConsolidatedArgTable.load(); }
+  void setTritonConsolidatedArgTable(bool enabled);
+  bool tritonArgDirtyTracking() { return _tritonArgDirtyTracking.load(); }
+  void setTritonArgDirtyTracking(bool enabled);
+  bool tritonSectionFusion() { return _tritonSectionFusion.load(); }
+  void setTritonSectionFusion(bool enabled);
 
   // Process environment path helpers used by native backends.
   std::string homeDirectory() const;

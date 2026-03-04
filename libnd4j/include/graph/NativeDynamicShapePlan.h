@@ -39,7 +39,8 @@
 // GraphBackend.h defines CompilationAuditEntry and the GraphBackend base class.
 // Concrete backends are included conditionally in .cpp:
 //   GPU: TritonGraphBackend, NvrtcGraphBackend, PtxGraphBackend
-//   CPU: OneDnnGraphBackend, AclGraphBackend
+//   CPU: MlxGraphBackend, OneDnnGraphBackend, AclGraphBackend,
+//        NnapiGraphBackend, ArmHybridGraphBackend, MlirCpuGraphBackend
 #include <graph/GraphBackend.h>
 
 namespace sd {
@@ -815,12 +816,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void launchBatchZero(cudaStream_t stream);
   void freeBatchZeroResources();
   static void setBatchZeroActive(bool active);
+
+  // Registration-based batch-zero: during warmup, observe which buffers
+  // actually get nullified and save that exact list for capture.
+  // This replaces the pre-scan approach (collectBatchZeroTargets) which
+  // collected ~143 extra buffers for slots that don't actually execute.
+  void startBatchZeroRegistration();
+  void finishBatchZeroRegistration();
 #else
   void freeBatchZeroResources() {}
 #endif
 
-  // Available on all platforms (returns false on non-CUDA)
+  // Available on all platforms (returns false on non-CUDA, no-op stubs)
   static bool isBatchZeroActive();
+  static bool isBatchZeroRegistering();
+  static void registerBatchZeroBuffer(void* ptr, size_t bytes);
 };
 
 }  // namespace graph

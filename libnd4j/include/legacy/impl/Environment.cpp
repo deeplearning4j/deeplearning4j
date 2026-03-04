@@ -1344,6 +1344,7 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
  { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO");             if (v >= 0) setDspBatchZero(v); }
  { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_VERBOSE");     if (v >= 0) setDspBatchZeroVerbose(v); }
  { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_GAP_ONLY");    if (v >= 0) setDspBatchZeroGapOnly(v); }
+ { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_KERNEL");      if (v >= 0) setDspBatchZeroKernel(v); }
 
  const char* tritonExcludeOpsVar = std::getenv("ND4J_TRITON_EXCLUDE_OPS");
  if (tritonExcludeOpsVar != nullptr) {
@@ -1384,6 +1385,12 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
    std::string val(dspFp16ComputeVar);
    setDspFp16Compute(val == "1" || val == "true" || val == "TRUE" || val == "ON");
  }
+
+ { int v = readBoolEnv("ND4J_CUBLAS_TF32");                    if (v >= 0) setCublasTf32Enabled(v); }
+ { int v = readBoolEnv("ND4J_DSP_CAST_SINK_MATMUL");           if (v >= 0) setDspCastSinkMatmul(v); }
+ { int v = readBoolEnv("ND4J_TRITON_CONSOLIDATED_ARG_TABLE");   if (v >= 0) setTritonConsolidatedArgTable(v); }
+ { int v = readBoolEnv("ND4J_TRITON_ARG_DIRTY_TRACKING");       if (v >= 0) setTritonArgDirtyTracking(v); }
+ { int v = readBoolEnv("ND4J_TRITON_SECTION_FUSION");           if (v >= 0) setTritonSectionFusion(v); }
 }
 #endif
 
@@ -1858,6 +1865,26 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setDspFp16Compute(bool enabled) {
     _dspFp16Compute.store(enabled);
+  }
+
+  void Environment::setCublasTf32Enabled(bool enabled) {
+    _cublasTf32Enabled.store(enabled);
+  }
+
+  void Environment::setDspCastSinkMatmul(bool enabled) {
+    _dspCastSinkMatmul.store(enabled);
+  }
+
+  void Environment::setTritonConsolidatedArgTable(bool enabled) {
+    _tritonConsolidatedArgTable.store(enabled);
+  }
+
+  void Environment::setTritonArgDirtyTracking(bool enabled) {
+    _tritonArgDirtyTracking.store(enabled);
+  }
+
+  void Environment::setTritonSectionFusion(bool enabled) {
+    _tritonSectionFusion.store(enabled);
   }
 
   void Environment::setTritonOverrideArch(const std::string& overrideArch) {
