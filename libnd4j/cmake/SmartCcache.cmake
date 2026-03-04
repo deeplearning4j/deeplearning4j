@@ -215,11 +215,15 @@ done
 exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
 ")
 
-        # Make executable
-        file(CHMOD "${SMART_CCACHE_SCRIPT}"
-             PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                         GROUP_READ GROUP_EXECUTE
-                         WORLD_READ WORLD_EXECUTE)
+        # Make executable (file(CHMOD) requires CMake 3.19+, use chmod for older versions)
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.19")
+            file(CHMOD "${SMART_CCACHE_SCRIPT}"
+                 PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                             GROUP_READ GROUP_EXECUTE
+                             WORLD_READ WORLD_EXECUTE)
+        else()
+            execute_process(COMMAND chmod 755 "${SMART_CCACHE_SCRIPT}")
+        endif()
 
         # Override the compiler launcher to use our wrapper
         # On Windows, .sh scripts need bash to execute them
