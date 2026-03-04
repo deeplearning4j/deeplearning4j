@@ -96,6 +96,11 @@ class TritonGraphBackend : public GraphBackend {
                                    NDArray** externalInputs, int numExternalInputs,
                                    NDArray** outputSlots, int totalOutputSlots);
 
+  // Get the set of slot indices NOT covered by any sub-kernel (gap/fallback slots).
+  // Used by batch-zero to only zero gap op outputs (Triton sub-kernel outputs are
+  // NOT zeroed — they're fully written by the Triton kernel).
+  std::unordered_set<int> getGapSlots(const GraphSegment& seg, NativeSlot* slots) const;
+
   // Counters for diagnostics and testing
   LongType getTotalKernelLaunches() const { return totalKernelLaunches_; }
   LongType getTotalCacheHits() const { return totalCacheHits_; }
@@ -227,7 +232,7 @@ class TritonGraphBackend : public GraphBackend {
   // Negative cache: segment/shape/device keys that previously failed Triton compilation.
   // This avoids repeating expensive compile attempts for known-bad shapes on a given device.
   std::unordered_set<SegmentCacheKey, SegmentCacheHash> failedCache_;
-  std::mutex cacheMtx_;
+  mutable std::mutex cacheMtx_;
 
   // Most recent compilation audit
   std::vector<CompilationAuditEntry> lastCompilationAudit_;

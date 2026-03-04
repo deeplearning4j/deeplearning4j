@@ -5140,19 +5140,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     MmulHelper::resetCastCacheIndices();
 
     // ── Batch-zero preparation (OUTSIDE capture) ─────────────────────────
-    // Collect output buffers for gap (native fallback) slots only — NOT Triton
-    // sub-kernel outputs. Upload the buffer list to GPU so we can launch a single
-    // batch-zero kernel inside the capture instead of ~1000 individual memsets.
-    {
+    // Collect output buffers. When gapOnly=true (default), only gap (native fallback)
+    // slot outputs are zeroed. When gapOnly=false, ALL slot outputs are zeroed.
+    // Controlled by ND4J_DSP_BATCH_ZERO_GAP_ONLY env var.
+    if (Environment::getInstance().dspBatchZero()) {
       std::unordered_set<int> gapSlots;
+      if (Environment::getInstance().dspBatchZeroGapOnly()) {
 #if HAVE_TRITON
-      auto* tritonBE = dynamic_cast<TritonGraphBackend*>(backend);
-      if (tritonBE != nullptr) {
-        gapSlots = tritonBE->getGapSlots(seg, slots_);
-      } else
+        auto* tritonBE = dynamic_cast<TritonGraphBackend*>(backend);
+        if (tritonBE != nullptr) {
+          gapSlots = tritonBE->getGapSlots(seg, slots_);
+        } else
 #endif
-      {
-        // No Triton backend — all slots are gaps
+        {
+          for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
+        }
+      } else {
+        // Zero ALL slot outputs (not just gaps)
         for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
       }
       collectBatchZeroTargets(gapSlots);
@@ -5197,8 +5201,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // Launch batch-zero kernel INSIDE capture — this becomes a single graph node
       // that replaces ~1000 individual memset nodes. The kernel zeros all output
       // buffers for native fallback ops (matmul, cast, shape_manip, etc.).
-      launchBatchZero(cudaStr);
-      setBatchZeroActive(true);  // Tell slot execution to skip individual nullify
+      // Controlled by ND4J_DSP_BATCH_ZERO env var (default: disabled)
+      if (Environment::getInstance().dspBatchZero() && batchZeroDeviceCount_ > 0) {
+        launchBatchZero(cudaStr);
+        setBatchZeroActive(true);
+        sd_printf("NativeDSP: batch-zero ENABLED (%d buffers)\n", batchZeroDeviceCount_);
+      } else {
+        sd_printf("NativeDSP: batch-zero DISABLED (dspBatchZero=%d, buffers=%d)\n",
+                  (int)Environment::getInstance().dspBatchZero(), batchZeroDeviceCount_);
+      }
 
       // Query node count mid-capture to verify operations are being recorded
       size_t midCaptureNodes = handle->getNumNodesDuringCapture(cudaStr);

@@ -194,6 +194,11 @@ class SD_LIB_EXPORT Environment {
   // Set via ND4J_TRITON_INCLUDE_TYPES env var.
   std::string _tritonIncludeTypes;
 
+  // DSP batch-zero: replace per-slot memsets with a single batch kernel during graph capture
+  std::atomic<bool> _dspBatchZero{false};           // ND4J_DSP_BATCH_ZERO (default: off)
+  std::atomic<bool> _dspBatchZeroVerbose{false};    // ND4J_DSP_BATCH_ZERO_VERBOSE — log every buffer
+  std::atomic<bool> _dspBatchZeroGapOnly{true};     // ND4J_DSP_BATCH_ZERO_GAP_ONLY — only zero gap slots (default: true)
+
   // Triton debugging flags
   std::atomic<bool> _tritonSkipKernels{false};       // skip Triton kernels, run native fallback instead
   std::atomic<bool> _tritonVerifyKernels{false};     // run both Triton and native, compare outputs
@@ -550,6 +555,14 @@ class SD_LIB_EXPORT Environment {
   void setTritonGraphAutoFree(bool v) { _tritonGraphAutoFree.store(v); }
   bool tritonGraphDotVerbose() { return _tritonGraphDotVerbose.load(); }
   void setTritonGraphDotVerbose(bool v) { _tritonGraphDotVerbose.store(v); }
+
+  // DSP batch-zero
+  bool dspBatchZero() { return _dspBatchZero.load(); }
+  void setDspBatchZero(bool v) { _dspBatchZero.store(v); }
+  bool dspBatchZeroVerbose() { return _dspBatchZeroVerbose.load(); }
+  void setDspBatchZeroVerbose(bool v) { _dspBatchZeroVerbose.store(v); }
+  bool dspBatchZeroGapOnly() { return _dspBatchZeroGapOnly.load(); }
+  void setDspBatchZeroGapOnly(bool v) { _dspBatchZeroGapOnly.store(v); }
 
   // Triton compilation scope
   bool tritonCompileAll() { return _tritonCompileAll.load(); }

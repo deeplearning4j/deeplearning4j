@@ -875,6 +875,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   auto isFallbackSection = [&](const KernelSection& section) -> bool {
+    // SHAPE_MANIPULATION: always fallback to native. Native permute/reshape
+    // create zero-cost views (no data copy needed). Triton compilation would
+    // do actual data copies with no speedup for seq=1 decode. Additionally,
+    // multi-op standalone SHAPE_MANIP sections have cross-block data races
+    // (a later op's reordered reads may reference positions written by a
+    // different block in an earlier op, with no global barrier).
+    if (section.type == KernelSectionType::SHAPE_MANIPULATION) {
+      return true;
+    }
+
     if (!compileAll) {
       // Default: only ELEMENTWISE and IDENTITY are compiled
       return section.type != KernelSectionType::ELEMENTWISE &&
@@ -2646,6 +2656,54 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
 }
 
 // ─── Cache invalidation ────────────────────────────────────────────────────
+
+std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg, NativeSlot* slots) const {
+  std::unordered_set<int> gapSlots;
+
+  // Find the cached compiled segment for this segment's current shape key
+  int activeDevice = 0;
+#ifdef SD_CUDA
+  cudaGetDevice(&activeDevice);
+#endif
+  auto& gapEnv = sd::Environment::getInstance();
+  bool compileAll = gapEnv.tritonCompileAll();
+  size_t excludeOpsHash = std::hash<std::string>()(gapEnv.tritonExcludeOps());
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, activeDevice, compileAll, excludeOpsHash};
+
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  auto it = cache_.find(key);
+  if (it == cache_.end()) {
+    // No compiled segment — all slots are gaps
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      gapSlots.insert(s);
+    }
+    return gapSlots;
+  }
+
+  // Build set of slots covered by sub-kernels
+  std::unordered_set<int> coveredSlots;
+  for (const auto& sk : it->second.subKernels) {
+    for (int s = sk.startSlot_; s <= sk.endSlot_; s++) {
+      coveredSlots.insert(s);
+    }
+  }
+
+  // Gap slots = all segment slots NOT covered by any sub-kernel
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    if (coveredSlots.find(s) == coveredSlots.end()) {
+      gapSlots.insert(s);
+    }
+  }
+
+  sd_printf("NativeDSP: getGapSlots: seg[%d-%d] %d subKernels, %d covered, %d gap slots (of %d total)\n",
+            seg.startSlot, seg.endSlot,
+            static_cast<int>(it->second.subKernels.size()),
+            static_cast<int>(coveredSlots.size()),
+            static_cast<int>(gapSlots.size()),
+            seg.endSlot - seg.startSlot + 1);
+
+  return gapSlots;
+}
 
 void TritonGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);

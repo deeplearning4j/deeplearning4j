@@ -1341,6 +1341,9 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
  { int v = readBoolEnv("ND4J_TRITON_GRAPH_AUTOFREE");      if (v >= 0) setTritonGraphAutoFree(v); }
  { int v = readBoolEnv("ND4J_TRITON_GRAPH_DOT_VERBOSE");   if (v >= 0) setTritonGraphDotVerbose(v); }
  { int v = readBoolEnv("ND4J_TRITON_COMPILE_ALL");         if (v >= 0) setTritonCompileAll(v); }
+ { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO");             if (v >= 0) setDspBatchZero(v); }
+ { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_VERBOSE");     if (v >= 0) setDspBatchZeroVerbose(v); }
+ { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_GAP_ONLY");    if (v >= 0) setDspBatchZeroGapOnly(v); }
 
  const char* tritonExcludeOpsVar = std::getenv("ND4J_TRITON_EXCLUDE_OPS");
  if (tritonExcludeOpsVar != nullptr) {
