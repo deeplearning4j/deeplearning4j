@@ -61,7 +61,9 @@ runs:
       id: ccache-keys
       shell: pwsh
       run: |
-        $restoreKey = "ccache-windows-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}"
+        # Strip trailing dashes from suffix (empty helper/extension produces "x86_64--")
+        $suffix = "${{ inputs.cache-suffix }}" -replace '-+$', ''
+        $restoreKey = "ccache-windows-${{ runner.arch }}-${suffix}-${{ github.ref_name }}"
         $saveKey = "$restoreKey-${{ github.run_id }}-${{ github.run_attempt }}"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "restore-key=$restoreKey"
         Add-Content -Path $env:GITHUB_OUTPUT -Value "save-key=$saveKey"
@@ -71,14 +73,15 @@ runs:
       shell: bash
       run: |
         PREFIX="ccache-windows-${{ runner.arch }}"
+        # Strip trailing dashes from suffix
+        SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
         {
           echo "keys<<RESTORE_KEYS_EOF"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-master-"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-main-"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-"
+          echo "${PREFIX}-${SUFFIX}-${{ github.ref_name }}-"
+          echo "${PREFIX}-${SUFFIX}-master-"
+          echo "${PREFIX}-${SUFFIX}-main-"
+          echo "${PREFIX}-${SUFFIX}-"
           FAMILY="${{ inputs.cache-family }}"
-          SUFFIX="${{ inputs.cache-suffix }}"
           if [ -n "$FAMILY" ] && [ "$FAMILY" != "$SUFFIX" ]; then
             echo "${PREFIX}-${FAMILY}-${{ github.ref_name }}-"
             echo "${PREFIX}-${FAMILY}-master-"

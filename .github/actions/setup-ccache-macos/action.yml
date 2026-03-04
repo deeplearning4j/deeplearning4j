@@ -43,22 +43,25 @@ runs:
       id: ccache-keys
       shell: bash
       run: |
-        echo "restore-key=ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-        echo "save-key=ccache-macos-${{ runner.arch }}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+        # Strip trailing dashes from suffix (empty helper/extension produces "arm64--")
+        SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
+        echo "restore-key=ccache-macos-${{ runner.arch }}-${SUFFIX}-${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+        echo "save-key=ccache-macos-${{ runner.arch }}-${SUFFIX}-${{ github.ref_name }}-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
     - name: Compute restore keys
       id: ccache-restore-keys
       shell: bash
       run: |
         PREFIX="ccache-macos-${{ runner.arch }}"
+        # Strip trailing dashes from suffix
+        SUFFIX=$(echo "${{ inputs.cache-suffix }}" | sed 's/-*$//')
         {
           echo "keys<<RESTORE_KEYS_EOF"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-${{ github.ref_name }}-"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-master-"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-main-"
-          echo "${PREFIX}-${{ inputs.cache-suffix }}-"
+          echo "${PREFIX}-${SUFFIX}-${{ github.ref_name }}-"
+          echo "${PREFIX}-${SUFFIX}-master-"
+          echo "${PREFIX}-${SUFFIX}-main-"
+          echo "${PREFIX}-${SUFFIX}-"
           FAMILY="${{ inputs.cache-family }}"
-          SUFFIX="${{ inputs.cache-suffix }}"
           if [ -n "$FAMILY" ] && [ "$FAMILY" != "$SUFFIX" ]; then
             echo "${PREFIX}-${FAMILY}-${{ github.ref_name }}-"
             echo "${PREFIX}-${FAMILY}-master-"
@@ -85,11 +88,13 @@ runs:
         # Configure ccache settings optimized for CI
         ccache --set-config=max_size=${{ inputs.max-size }}
         ccache --set-config=compression=true
-        ccache --set-config=compression_level=6
+        ccache --set-config=compression_level=1
         ccache --set-config=hash_dir=false
         ccache --set-config=sloppiness=file_macro,include_file_ctime,include_file_mtime,pch_defines,time_macros,file_stat_matches,clang_index_store,locale,random_seed
         ccache --set-config=compiler_check=content
         ccache --set-config=base_dir=${GITHUB_WORKSPACE}
+        ccache --set-config=depend_mode=true
+        ccache --set-config=direct_mode=true
 
         # Show configuration
         echo "=== ccache configuration ==="
@@ -107,6 +112,17 @@ runs:
         if [ -d "$CCACHE_LIBEXEC" ]; then
           echo "$CCACHE_LIBEXEC" >> $GITHUB_PATH
         fi
+
+    - name: Clean stale ccache locks and verify integrity
+      shell: bash
+      run: |
+        CCACHE_DIR="${HOME}/.ccache"
+        # Remove any stale .lock files left by cancelled builds
+        find "${CCACHE_DIR}" -name "*.lock" -type f -delete 2>/dev/null && echo "Cleaned stale locks" || true
+        # Run cleanup to remove broken cache entries
+        ccache --cleanup 2>/dev/null || true
+        # Zero stats for this build
+        ccache -z 2>/dev/null || true
 
     - name: Show ccache stats before build
       shell: bash
