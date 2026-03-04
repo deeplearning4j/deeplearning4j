@@ -242,6 +242,29 @@ jobs:
           echo "=== ccache stats after build ==="
           ccache --show-stats --verbose || ccache -sv || ccache -s
 
+      - name: Dump ccache miss reasons (diagnostic)
+        if: always()
+        shell: bash
+        run: |
+          LOG="${HOME}/ccache-debug.log"
+          if [ -f "$LOG" ]; then
+            echo "=== First 5 cache misses ==="
+            grep -A3 "Result: cache miss" "$LOG" | head -40 || true
+            echo ""
+            echo "=== First 5 cache hits ==="
+            grep -A3 "Result: direct cache hit" "$LOG" | head -40 || true
+            echo ""
+            echo "=== Log stats ==="
+            echo "Total misses: $(grep -c 'Result: cache miss' "$LOG" 2>/dev/null || echo 0)"
+            echo "Total hits: $(grep -c 'Result:.*cache hit' "$LOG" 2>/dev/null || echo 0)"
+            echo ""
+            echo "=== First 3 full miss traces ==="
+            # Show the full trace for the first 3 misses
+            awk '/\[.*\] Compiler:/{trace=""} {trace=trace "\n" $0} /Result: cache miss/{count++; if(count<=3) print trace}' "$LOG" || true
+          else
+            echo "No ccache debug log found"
+          fi
+
       - name: Save ccache (always)
         if: always() && steps.setup-ccache.outputs.save-key != ''
         uses: actions/cache/save@v4

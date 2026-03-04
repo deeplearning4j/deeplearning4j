@@ -85,6 +85,9 @@ runs:
         export CCACHE_DIR="${HOME}/.ccache"
         mkdir -p "${CCACHE_DIR}"
 
+        # Remove stale config from cache restore before writing fresh one
+        rm -f "${CCACHE_DIR}/ccache.conf"
+
         # Configure ccache settings optimized for CI
         ccache --set-config=max_size=${{ inputs.max-size }}
         ccache --set-config=compression=true
@@ -95,6 +98,10 @@ runs:
         ccache --set-config=base_dir=${GITHUB_WORKSPACE}
         ccache --set-config=depend_mode=true
         ccache --set-config=direct_mode=true
+        ccache --set-config=inode_cache=false
+        ccache --set-config=file_clone=false
+        # Temporary: enable logging to diagnose low hit rate
+        ccache --set-config=log_file=${HOME}/ccache-debug.log
 
         # Show configuration
         echo "=== ccache configuration ==="
@@ -129,3 +136,5 @@ runs:
       run: |
         echo "=== ccache stats before build ==="
         ccache --show-stats --verbose || ccache -sv || ccache -s
+        # Clear debug log so we only capture this build's misses
+        : > "${HOME}/ccache-debug.log" 2>/dev/null || true
