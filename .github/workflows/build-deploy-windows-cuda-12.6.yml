@@ -225,7 +225,7 @@ jobs:
            } elseif ( "${{ matrix.helper }}" -ne "" ) {
               $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j"
           } elseif ( "${{ matrix.helper }}" -eq "" ) {
-            $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j,:nd4j-cuda-12.6-platform"
+            $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j"
            }
           
           $command="mvn ${{ matrix.mvn_ext }}  -Pcuda -Dlibnd4j.cuda.compile.skip=false -Dlibnd4j.chip=cuda -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dlibnd4j.oom.memory.threshold=95 -Dlibnd4j.oom.velocity.threshold=40 -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
