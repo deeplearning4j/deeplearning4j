@@ -114,6 +114,10 @@ runs:
         echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
         echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
         echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        # Disable PCH: CI runners get fresh Xcode SDK installs with new header mtimes,
+        # which invalidates all PCH-based ccache manifest entries (96%+ miss rate).
+        # PCH saves ~5% parse time but completely breaks ccache across runner restores.
+        echo "SD_DISABLE_PCH=1" >> $GITHUB_ENV
         # Temporary: enable logging via env var to diagnose low hit rate
         echo "CCACHE_LOGFILE=${HOME}/ccache-debug.log" >> $GITHUB_ENV
 

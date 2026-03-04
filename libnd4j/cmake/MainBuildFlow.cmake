@@ -557,6 +557,23 @@ function(configure_cpu_linking main_target_name)
     else()
         message(WARNING "⚠️ OpenMP not found on macOS — building without OpenMP support")
     endif()
+
+    # SDZ SameDiff archives are ZIP/DEFLATE by default, so link zlib when available.
+    find_package(ZLIB QUIET)
+    if(ZLIB_FOUND)
+        set(_sdx_object_target "${main_target_name}_object")
+        if(TARGET ${_sdx_object_target})
+            target_compile_definitions(${_sdx_object_target} PUBLIC HAVE_ZLIB=1)
+            target_link_libraries(${_sdx_object_target} PUBLIC ZLIB::ZLIB)
+        endif()
+        target_link_libraries(${main_target_name} PUBLIC ZLIB::ZLIB)
+        target_compile_definitions(${main_target_name} PUBLIC HAVE_ZLIB=1)
+        message(STATUS "🔗 Linking zlib for SDZ DEFLATE support")
+    else()
+        message(WARNING "⚠️ zlib not found - SDZ reader supports STORED ZIP entries only")
+    endif()
+
+    install(TARGETS ${main_target_name} DESTINATION .)
 endfunction()
 
 # NOTE: configure_cuda_linking() is defined in CudaConfiguration.cmake (included at line ~879).
@@ -773,7 +790,14 @@ function(create_and_link_library)
         # NOTE: PCH disabled for CUDA builds - nvcc doesn't support PCH well
         # This significantly speeds up builds by avoiding re-parsing 11,000+ lines of headers per file
         # PCH is ONLY enabled when SD_GCC_FUNCTRACE is OFF and NOT a CUDA build
-        if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA)
+        # SD_DISABLE_PCH env var: CI sets this because PCH breaks ccache across runner restores
+        # (fresh SDK installs have new header mtimes, invalidating all PCH manifest entries)
+        if(DEFINED ENV{SD_DISABLE_PCH})
+            set(_SD_PCH_DISABLED_BY_ENV TRUE)
+        else()
+            set(_SD_PCH_DISABLED_BY_ENV FALSE)
+        endif()
+        if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND NOT _SD_PCH_DISABLED_BY_ENV)
             message(STATUS "🚀 Enabling precompiled headers for ${OBJECT_LIB_NAME}")
             # On Windows, include <windows.h> first so that _WINDOWS_ is defined
             # before types.h processes its constexpr alias guards. Without this,
@@ -799,6 +823,8 @@ function(create_and_link_library)
             message(STATUS "✅ Precompiled headers enabled (op_boilerplate.h, type_boilerplate.h, templatemath.h, shape.h)")
         elseif(SD_CUDA)
             message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
+        elseif(_SD_PCH_DISABLED_BY_ENV)
+            message(STATUS "⚠️ Precompiled headers DISABLED by SD_DISABLE_PCH env var (CI ccache compatibility)")
         else()
             message(STATUS "⚠️ Precompiled headers DISABLED for functrace build (use clean build when switching)")
         endif()
@@ -1284,7 +1310,7 @@ endif()
 # NOTE: PCH disabled for CUDA builds - nvcc doesn't support PCH well
 # This dramatically reduces compile time by pre-compiling 11,000+ lines of headers
 # Users switching between functrace and normal builds should do a clean build
-if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND TARGET ${SD_LIBRARY_NAME})
+if(NOT SD_GCC_FUNCTRACE AND NOT SD_CUDA AND NOT _SD_PCH_DISABLED_BY_ENV AND TARGET ${SD_LIBRARY_NAME})
     if(WIN32)
         target_compile_definitions(${SD_LIBRARY_NAME} PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
         target_precompile_headers(${SD_LIBRARY_NAME} PRIVATE
@@ -1319,6 +1345,220 @@ elseif(SD_CUDA)
     message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
 elseif(SD_GCC_FUNCTRACE)
     message(STATUS "⚠️ Precompiled headers DISABLED for functrace build")
+endif()
+
+# SDX C runtime SDK packaging: stage runtime library + public C header for embedding.
+set(SDX_RUNTIME_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/dsp_runtime_c.h")
+set(SDX_RUNTIME_README "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/README.md")
+set(SDX_RUNTIME_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/../resources/dsp/manifest.schema.json")
+set(SDX_RUNTIME_BINDINGS_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/SdxRuntimePackage.cmake")
+set(SDX_RUNTIME_LANGUAGE_BINDINGS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/dsp/runtime/bindings")
+set(SDX_RUNTIME_SDK_DIR "${CMAKE_BINARY_DIR}/sdx-runtime-sdk" CACHE PATH
+    "Output directory for staged SDX C runtime SDK artifacts")
+
+if(TARGET ${SD_LIBRARY_NAME} AND EXISTS "${SDX_RUNTIME_HEADER}")
+    set(_sdx_sdk_include_dir "${SDX_RUNTIME_SDK_DIR}/include/dsp/runtime")
+    set(_sdx_sdk_lib_dir "${SDX_RUNTIME_SDK_DIR}/lib")
+    set(_sdx_sdk_schema_dir "${SDX_RUNTIME_SDK_DIR}/share/dsp")
+    set(_sdx_sdk_wrappers_dir "${SDX_RUNTIME_SDK_DIR}/wrappers")
+    set(_sdx_schema_stage_cmds "")
+    if(EXISTS "${SDX_RUNTIME_SCHEMA}")
+        list(APPEND _sdx_schema_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_schema_dir}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_SCHEMA}" "${_sdx_sdk_schema_dir}/manifest.schema.json")
+    endif()
+    set(_sdx_readme_stage_cmds "")
+    if(EXISTS "${SDX_RUNTIME_README}")
+        list(APPEND _sdx_readme_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_README}" "${_sdx_sdk_include_dir}/README.md")
+    endif()
+    set(_sdx_wrapper_stage_cmds "")
+    if(EXISTS "${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}")
+        list(APPEND _sdx_wrapper_stage_cmds
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_wrappers_dir}"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory "${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}" "${_sdx_sdk_wrappers_dir}")
+    endif()
+
+    add_custom_target(sdx_runtime_sdk
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_include_dir}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${_sdx_sdk_lib_dir}"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${SDX_RUNTIME_HEADER}" "${_sdx_sdk_include_dir}/dsp_runtime_c.h"
+        ${_sdx_readme_stage_cmds}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${SD_LIBRARY_NAME}>" "${_sdx_sdk_lib_dir}/$<TARGET_FILE_NAME:${SD_LIBRARY_NAME}>"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_LINKER_FILE:${SD_LIBRARY_NAME}>" "${_sdx_sdk_lib_dir}/$<TARGET_LINKER_FILE_NAME:${SD_LIBRARY_NAME}>"
+        ${_sdx_schema_stage_cmds}
+        ${_sdx_wrapper_stage_cmds}
+        DEPENDS ${SD_LIBRARY_NAME}
+        COMMENT "Staging SDX C runtime SDK artifacts in ${SDX_RUNTIME_SDK_DIR}"
+        VERBATIM
+    )
+
+    # Platform-specific binding packaging (zip/AAR/XCFramework where applicable).
+    set(_sdx_os "")
+    set(_sdx_arch_raw "${CMAKE_SYSTEM_PROCESSOR}")
+    if(NOT _sdx_arch_raw)
+        set(_sdx_arch_raw "${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    endif()
+    string(TOLOWER "${_sdx_arch_raw}" _sdx_arch)
+    if(_sdx_arch MATCHES "^(x86_64|amd64)$")
+        set(_sdx_arch "x86_64")
+    elseif(_sdx_arch MATCHES "^(aarch64|arm64)$")
+        set(_sdx_arch "arm64")
+    elseif(_sdx_arch MATCHES "^(armv7l|armv7)$")
+        set(_sdx_arch "armv7")
+    endif()
+
+    set(_sdx_android_abi "")
+    if(ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Android")
+        set(_sdx_os "android")
+        if(DEFINED CMAKE_ANDROID_ARCH_ABI AND NOT CMAKE_ANDROID_ARCH_ABI STREQUAL "")
+            set(_sdx_android_abi "${CMAKE_ANDROID_ARCH_ABI}")
+        elseif(DEFINED ANDROID_ABI AND NOT ANDROID_ABI STREQUAL "")
+            set(_sdx_android_abi "${ANDROID_ABI}")
+        endif()
+
+        if(_sdx_android_abi STREQUAL "arm64-v8a")
+            set(_sdx_arch "arm64")
+        elseif(_sdx_android_abi STREQUAL "armeabi-v7a")
+            set(_sdx_arch "armv7")
+        elseif(_sdx_android_abi STREQUAL "x86_64")
+            set(_sdx_arch "x86_64")
+        elseif(_sdx_android_abi STREQUAL "x86")
+            set(_sdx_arch "x86")
+        endif()
+
+        if(_sdx_android_abi STREQUAL "")
+            if(_sdx_arch STREQUAL "arm64")
+                set(_sdx_android_abi "arm64-v8a")
+            elseif(_sdx_arch STREQUAL "armv7")
+                set(_sdx_android_abi "armeabi-v7a")
+            elseif(_sdx_arch STREQUAL "x86_64")
+                set(_sdx_android_abi "x86_64")
+            elseif(_sdx_arch STREQUAL "x86")
+                set(_sdx_android_abi "x86")
+            endif()
+        endif()
+    elseif(IOS)
+        set(_sdx_os "ios")
+    elseif(APPLE)
+        set(_sdx_os "macos")
+    elseif(WIN32)
+        set(_sdx_os "windows")
+    else()
+        set(_sdx_os "linux")
+    endif()
+
+    set(_sdx_platform_id "${_sdx_os}-${_sdx_arch}")
+    if(IOS AND DEFINED CMAKE_OSX_SYSROOT AND CMAKE_OSX_SYSROOT MATCHES "iphonesimulator")
+        set(_sdx_platform_id "ios-simulator-${_sdx_arch}")
+    endif()
+
+    set(_sdx_have_cuda 0)
+    if(SD_CUDA)
+        set(_sdx_have_cuda 1)
+    endif()
+    set(_sdx_have_zluda 0)
+    if(HAVE_ZLUDA)
+        set(_sdx_have_zluda 1)
+    endif()
+    set(_sdx_have_triton 0)
+    if(HAVE_TRITON)
+        set(_sdx_have_triton 1)
+    endif()
+    set(_sdx_have_mlir 0)
+    if(HAVE_MLIR)
+        set(_sdx_have_mlir 1)
+    endif()
+    set(_sdx_have_mlx 0)
+    if(HAVE_MLX)
+        set(_sdx_have_mlx 1)
+    endif()
+    set(_sdx_have_nnapi 0)
+    if(HAVE_NNAPI)
+        set(_sdx_have_nnapi 1)
+    endif()
+    set(_sdx_have_onednn 0)
+    if(HAVE_ONEDNN)
+        set(_sdx_have_onednn 1)
+    endif()
+    set(_sdx_have_armcompute 0)
+    if(HAVE_ARMCOMPUTE)
+        set(_sdx_have_armcompute 1)
+    endif()
+
+    set(_sdx_enable_android_aar 0)
+    if(_sdx_os STREQUAL "android")
+        set(_sdx_enable_android_aar 1)
+    endif()
+
+    set(_sdx_enable_apple_xcframework 0)
+    if(APPLE)
+        set(_sdx_enable_apple_xcframework 1)
+    endif()
+
+    set(_sdx_runtime_variants "cpu")
+    if(_sdx_have_cuda)
+        list(APPEND _sdx_runtime_variants "cuda")
+    endif()
+    if(_sdx_have_zluda)
+        list(APPEND _sdx_runtime_variants "amd")
+    endif()
+    list(REMOVE_DUPLICATES _sdx_runtime_variants)
+
+    set(_sdx_binding_package_cmds "")
+    foreach(_sdx_variant IN LISTS _sdx_runtime_variants)
+        set(_sdx_default_gpu_target "AUTO")
+        if(_sdx_variant STREQUAL "cuda")
+            set(_sdx_default_gpu_target "CUDA")
+        elseif(_sdx_variant STREQUAL "amd")
+            set(_sdx_default_gpu_target "AMD")
+        endif()
+
+        list(APPEND _sdx_binding_package_cmds
+            COMMAND ${CMAKE_COMMAND}
+                "-DSDX_SDK_DIR=${SDX_RUNTIME_SDK_DIR}"
+                "-DSDX_PLATFORM_ID=${_sdx_platform_id}"
+                "-DSDX_OS=${_sdx_os}"
+                "-DSDX_ARCH=${_sdx_arch}"
+                "-DSDX_ANDROID_ABI=${_sdx_android_abi}"
+                "-DSDX_VARIANT=${_sdx_variant}"
+                "-DSDX_DEFAULT_GPU_TARGET=${_sdx_default_gpu_target}"
+                "-DSDX_LIBRARY_FILE=$<TARGET_FILE:${SD_LIBRARY_NAME}>"
+                "-DSDX_LINKER_FILE=$<TARGET_LINKER_FILE:${SD_LIBRARY_NAME}>"
+                "-DSDX_HEADER_FILE=${SDX_RUNTIME_HEADER}"
+                "-DSDX_README_FILE=${SDX_RUNTIME_README}"
+                "-DSDX_SCHEMA_FILE=${SDX_RUNTIME_SCHEMA}"
+                "-DSDX_BINDINGS_TEMPLATE_DIR=${SDX_RUNTIME_LANGUAGE_BINDINGS_DIR}"
+                "-DSDX_RUNTIME_ABI=1"
+                "-DSDX_HAVE_CUDA=${_sdx_have_cuda}"
+                "-DSDX_HAVE_ZLUDA=${_sdx_have_zluda}"
+                "-DSDX_HAVE_TRITON=${_sdx_have_triton}"
+                "-DSDX_HAVE_MLIR=${_sdx_have_mlir}"
+                "-DSDX_HAVE_MLX=${_sdx_have_mlx}"
+                "-DSDX_HAVE_NNAPI=${_sdx_have_nnapi}"
+                "-DSDX_HAVE_ONEDNN=${_sdx_have_onednn}"
+                "-DSDX_HAVE_ARMCOMPUTE=${_sdx_have_armcompute}"
+                "-DSDX_ENABLE_ANDROID_AAR=${_sdx_enable_android_aar}"
+                "-DSDX_ENABLE_APPLE_XCFRAMEWORK=${_sdx_enable_apple_xcframework}"
+                -P "${SDX_RUNTIME_BINDINGS_SCRIPT}")
+    endforeach()
+
+    if(EXISTS "${SDX_RUNTIME_BINDINGS_SCRIPT}")
+        add_custom_target(sdx_runtime_bindings ALL
+            ${_sdx_binding_package_cmds}
+            DEPENDS sdx_runtime_sdk
+            COMMENT "Packaging platform-specific SDX runtime bindings for ${_sdx_platform_id}"
+            VERBATIM
+        )
+    endif()
+
+    install(FILES "${SDX_RUNTIME_HEADER}" DESTINATION include/dsp/runtime)
+    if(EXISTS "${SDX_RUNTIME_README}")
+        install(FILES "${SDX_RUNTIME_README}" DESTINATION share/dsp/runtime)
+    endif()
+    if(EXISTS "${SDX_RUNTIME_SCHEMA}")
+        install(FILES "${SDX_RUNTIME_SCHEMA}" DESTINATION share/dsp)
+    endif()
 endif()
 
 include(PostBuild)
