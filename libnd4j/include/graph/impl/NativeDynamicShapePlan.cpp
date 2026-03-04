@@ -84,6 +84,11 @@
 namespace sd {
 namespace graph {
 
+// Non-CUDA fallback: batch-zero is never active on CPU
+#ifndef SD_CUDA
+bool NativeDynamicShapePlan::isBatchZeroActive() { return false; }
+#endif
+
 namespace {
 std::string normalizeOpName(const std::string& opName) {
   std::string normalized = opName;
@@ -401,6 +406,9 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     cublasWorkspaceBuffer_ = nullptr;
     cublasWorkspaceSize_ = 0;
   }
+
+  // Free batch-zero resources
+  freeBatchZeroResources();
 #endif
 }
 
@@ -1527,6 +1535,7 @@ executeSlot_retry:
       // After Triton compilation loads many cubin modules, the pool may have
       // fragmented reserved memory. Trimming releases unused reserved blocks.
       // SKIP during CUDA graph capture — sync/free/trim all break capture.
+#ifdef SD_CUDA
       if (!streamIsCapturing &&
           !retriedAfterTrim && (msg.find("cannot allocate") != std::string::npos ||
                                  msg.find("out of memory") != std::string::npos ||
@@ -1559,6 +1568,7 @@ executeSlot_retry:
         }
         goto executeSlot_retry;
       }
+#endif
       char buf[512];
       snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
                stepIdx, slots_[stepIdx].opName.c_str(), e.what());
@@ -3513,7 +3523,12 @@ Status NativeDynamicShapePlan::executeSlot(
         // Shape matches — reuse cached buffer.
         // ALWAYS nullify reused arrays. Some ops don't fully overwrite their output,
         // causing stale data accumulation across decode steps.
-        cached->nullify();
+        // When batch-zero is active (during graph capture), all output buffers
+        // have already been zeroed by a single batch kernel — skip individual nullify
+        // to avoid recording ~1000 extra memset graph nodes.
+        if (!isBatchZeroActive()) {
+          cached->nullify();
+        }
         outputs[i] = cached;
         outputSlots_[slotIdx] = cached;
         continue;
@@ -3567,13 +3582,13 @@ Status NativeDynamicShapePlan::executeSlot(
         NDArray* maxOut = nullptr;
         try {
           maxOut = new NDArray(order, maxShape, dt);
-          maxOut->nullify();  // Zero the entire buffer
+          if (!isBatchZeroActive()) maxOut->nullify();  // Zero the entire buffer
         } catch (const std::exception& e) {
           sd_printf("NativeDynamicShapePlan: max-allocation FAILED at slot %d (%s): %s\n",
                     stepIdx, slot.opName.c_str(), e.what());
           // Fall back to regular allocation
           maxOut = new NDArray(order, shape, dt);
-          if (slot.needsZeroedOutput) maxOut->nullify();
+          if (slot.needsZeroedOutput && !isBatchZeroActive()) maxOut->nullify();
         }
         
         outputs[i] = maxOut;
@@ -3595,7 +3610,7 @@ Status NativeDynamicShapePlan::executeSlot(
     NDArray* out = nullptr;
     try {
       out = new NDArray(order, shape, dt);
-      if (slot.needsZeroedOutput) {
+      if (slot.needsZeroedOutput && !isBatchZeroActive()) {
         out->nullify();
       }
     } catch (const std::exception& e) {
@@ -5124,6 +5139,26 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // in the same order as the warmup execution (avoids capture workspace temporaries)
     MmulHelper::resetCastCacheIndices();
 
+    // ── Batch-zero preparation (OUTSIDE capture) ─────────────────────────
+    // Collect output buffers for gap (native fallback) slots only — NOT Triton
+    // sub-kernel outputs. Upload the buffer list to GPU so we can launch a single
+    // batch-zero kernel inside the capture instead of ~1000 individual memsets.
+    {
+      std::unordered_set<int> gapSlots;
+#if HAVE_TRITON
+      auto* tritonBE = dynamic_cast<TritonGraphBackend*>(backend);
+      if (tritonBE != nullptr) {
+        gapSlots = tritonBE->getGapSlots(seg, slots_);
+      } else
+#endif
+      {
+        // No Triton backend — all slots are gaps
+        for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
+      }
+      collectBatchZeroTargets(gapSlots);
+      prepareBatchZeroDevice(cudaStr);
+    }
+
     // Synchronize before capture to ensure all prior async work is complete
     cudaStreamSynchronize(cudaStr);
     // Clear any sticky CUDA error before capture — stale errors from prior operations
@@ -5159,13 +5194,20 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                 seg.startSlot, seg.endSlot, seg.executionCount);
       tl_graphExecutionActive = true;
 
+      // Launch batch-zero kernel INSIDE capture — this becomes a single graph node
+      // that replaces ~1000 individual memset nodes. The kernel zeros all output
+      // buffers for native fallback ops (matmul, cast, shape_manip, etc.).
+      launchBatchZero(cudaStr);
+      setBatchZeroActive(true);  // Tell slot execution to skip individual nullify
+
       // Query node count mid-capture to verify operations are being recorded
       size_t midCaptureNodes = handle->getNumNodesDuringCapture(cudaStr);
-      sd_printf("NativeDSP: Triton capture mid-check: %zu nodes recorded before executeSegment\n",
-                midCaptureNodes);
+      sd_printf("NativeDSP: Triton capture mid-check: %zu nodes recorded before executeSegment (batchZero=%d buffers)\n",
+                midCaptureNodes, batchZeroDeviceCount_);
 
       auto captureStatus = backend->executeSegment(seg, slots_, externalArrays, numExt,
                                                    outputSlots_, totalOutputSlots_, stream);
+      setBatchZeroActive(false);
       tl_graphExecutionActive = false;
 
       // Check for CUDA errors generated during capture — these become invalid graph nodes.
