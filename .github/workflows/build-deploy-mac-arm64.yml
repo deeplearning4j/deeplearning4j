@@ -254,19 +254,29 @@ jobs:
             echo "=== Result summary ==="
             grep "Result:" "$LOG" | sed 's/.*Result: //' | sort | uniq -c | sort -rn | head -20
             echo ""
-            echo "=== First direct_cache_miss full trace (200 lines before) ==="
-            grep -n "direct_cache_miss" "$LOG" | head -1 | cut -d: -f1 | while read line; do
-              start=$((line - 200))
+            echo "=== First REAL source miss (not CMake test) ==="
+            # Find first cache_miss for a real .cpp/.cu file (not CMake test compiles)
+            grep -n "cache_miss" "$LOG" | while read entry; do
+              line=$(echo "$entry" | cut -d: -f1)
+              start=$((line - 100))
               [ $start -lt 1 ] && start=1
-              sed -n "${start},${line}p" "$LOG"
+              context=$(sed -n "${start},${line}p" "$LOG")
+              # Skip CMake test compiles
+              if echo "$context" | grep -q "CMakeFiles/cmTC_\|TryCompile\|CMakeScratch"; then
+                continue
+              fi
+              echo "=== Cache miss at line $line ==="
+              echo "$context"
+              break
             done
             echo ""
-            echo "=== First direct_cache_hit full trace (50 lines before) ==="
-            grep -n "direct_cache_hit" "$LOG" | head -1 | cut -d: -f1 | while read line; do
-              start=$((line - 50))
-              [ $start -lt 1 ] && start=1
-              sed -n "${start},${line}p" "$LOG"
-            done
+            echo "=== Compiler hash comparison ==="
+            grep "Hash of compiler" "$LOG" | sort -u | head -5
+            echo ""
+            echo "=== Unique manifest hash lookups (first 5 misses) ==="
+            grep "Looking for result" "$LOG" | head -5 || true
+            grep "No manifest" "$LOG" | head -5 || true
+            grep "Looking for.*in local" "$LOG" | head -5 || true
           elif [ -f "$LOG" ]; then
             echo "Log file exists but is empty"
           else
