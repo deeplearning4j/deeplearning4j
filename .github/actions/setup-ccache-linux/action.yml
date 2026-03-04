@@ -87,6 +87,9 @@ runs:
         export CCACHE_DIR="${HOME}/.ccache"
         mkdir -p "${CCACHE_DIR}"
 
+        # Remove stale config from cache restore before writing fresh one
+        rm -f "${CCACHE_DIR}/ccache.conf"
+
         # Configure ccache settings optimized for CI
         ccache --set-config=max_size=${{ inputs.max-size }}
         ccache --set-config=compression=true
@@ -98,6 +101,9 @@ runs:
         ccache --set-config=temporary_dir=/dev/shm/ccache_tmp
         ccache --set-config=depend_mode=true
         ccache --set-config=direct_mode=true
+        ccache --set-config=inode_cache=false
+        ccache --set-config=file_clone=false
+        ccache --set-config=pch_external_checksum=true
         mkdir -p /dev/shm/ccache_tmp
 
         # Show configuration

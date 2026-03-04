@@ -100,6 +100,10 @@ runs:
         ccache --set-config=direct_mode=true
         ccache --set-config=inode_cache=false
         ccache --set-config=file_clone=false
+        # CRITICAL: Use content-based checksum for PCH instead of mtime.
+        # CI runners have fresh Xcode SDK installs with new mtimes on system headers,
+        # which invalidates all PCH-based manifest entries from the restored cache.
+        ccache --set-config=pch_external_checksum=true
         # Show configuration
         echo "=== ccache configuration ==="
         ccache --show-config

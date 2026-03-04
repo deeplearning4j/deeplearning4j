@@ -118,6 +118,7 @@ runs:
         compiler_check = content
         inode_cache = false
         file_clone = false
+        pch_external_checksum = true
         temporary_dir = $env:TEMP\ccache_tmp
         depend_mode = true
         direct_mode = true
