@@ -185,7 +185,7 @@ jobs:
            echo "Building libnd4j from source"
            modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-          command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3    -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          command="mvn -X ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3    -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           if [ "${{ matrix.helper }}" == 'compile' ]; then
                  mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=linux-x86_64-compile"
           elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
