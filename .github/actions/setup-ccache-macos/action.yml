@@ -100,9 +100,6 @@ runs:
         ccache --set-config=direct_mode=true
         ccache --set-config=inode_cache=false
         ccache --set-config=file_clone=false
-        # Temporary: enable logging to diagnose low hit rate
-        ccache --set-config=log_file=${HOME}/ccache-debug.log
-
         # Show configuration
         echo "=== ccache configuration ==="
         ccache --show-config
@@ -113,6 +110,8 @@ runs:
         echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> $GITHUB_ENV
         echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
         echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        # Temporary: enable logging via env var to diagnose low hit rate
+        echo "CCACHE_LOGFILE=${HOME}/ccache-debug.log" >> $GITHUB_ENV
 
         # Add ccache symlinks directory to PATH (Homebrew creates these)
         CCACHE_LIBEXEC="$(brew --prefix)/opt/ccache/libexec"
