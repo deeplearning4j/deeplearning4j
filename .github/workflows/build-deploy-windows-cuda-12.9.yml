@@ -461,6 +461,13 @@ jobs:
               call "%GITHUB_WORKSPACE%\mvn-command.bat"
           )
 
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
+
       - name: Show ccache stats after build
         if: always()
         continue-on-error: true
@@ -468,6 +475,38 @@ jobs:
         run: |
           echo === ccache stats after build ===
           %USERPROFILE%\ccache\ccache.exe -sv
+
+      - name: Dump ccache miss reasons (diagnostic)
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          LOG="$USERPROFILE/ccache-debug.log"
+          if [ -f "$LOG" ] && [ -s "$LOG" ]; then
+            echo "=== Log file size ==="
+            ls -lh "$LOG"
+            echo ""
+            echo "=== Result summary ==="
+            grep "Result:" "$LOG" | sed 's/.*Result: //' | sort | uniq -c | sort -rn | head -20
+            echo ""
+            echo "=== First REAL source miss (not CMake test) ==="
+            grep -n "cache_miss" "$LOG" | while read entry; do
+              line=$(echo "$entry" | cut -d: -f1)
+              start=$((line - 50))
+              [ $start -lt 1 ] && start=1
+              context=$(sed -n "${start},${line}p" "$LOG")
+              if echo "$context" | grep -q "CMakeFiles/cmTC_\|TryCompile\|CMakeScratch"; then
+                continue
+              fi
+              echo "=== Cache miss at line $line ==="
+              echo "$context" | tail -20
+              break
+            done
+          elif [ -f "$LOG" ]; then
+            echo "Log file exists but is empty"
+          else
+            echo "No ccache debug log found at $LOG"
+          fi
 
       - name: Save ccache (always)
         if: always() && steps.setup-ccache.outputs.save-key != ''
