@@ -56,7 +56,8 @@ if(CCACHE_PROGRAM)
         # configure these settings before CMake runs. Overriding them causes poor hit rates
         # (43% instead of 80%+) because nvcc doesn't support depend_mode well.
         execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compiler_check=content ERROR_QUIET)
-        execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=file_clone=true ERROR_QUIET)
+        # NOTE: Do NOT set file_clone here — CI actions configure it to false.
+        # file_clone=true causes issues on CI runners with different filesystem layouts.
 
         # Use FORCE to ensure cache is always updated and avoid inconsistent builds
         # On Windows CUDA builds: skip C/CXX caching to reserve all cache space for

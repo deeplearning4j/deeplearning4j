@@ -149,6 +149,11 @@ runs:
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_DIR=$ccacheDir"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_COMPILERCHECK=content"
           Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE"
+          # Disable PCH: CI runners may have different system header mtimes across restores,
+          # which invalidates all PCH-based ccache manifest entries.
+          Add-Content -Path $env:GITHUB_ENV -Value "SD_DISABLE_PCH=1"
+          # Temporary: enable logging to diagnose cache hit rate
+          Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_LOGFILE=$env:USERPROFILE\ccache-debug.log"
           # Note: CCACHE_COMPILERTYPE is NOT set here — let ccache auto-detect.
           # Setting it to "nvcc" globally breaks GCC/MinGW CPU builds (100%
           # preprocessing failure). CUDA builds set it via CMakeLists.txt only
