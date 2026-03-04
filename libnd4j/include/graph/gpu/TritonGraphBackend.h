@@ -189,6 +189,21 @@ class TritonGraphBackend : public GraphBackend {
     std::vector<SlotRange> fallbackRanges;   // Slot ranges that must run slot-by-slot
     std::vector<CompilationAuditEntry> audit;  // Combined audit across all sub-kernels
 
+#ifdef SD_CUDA
+    // Consolidated arg table: single pinned host + device buffer for ALL sub-kernels.
+    // Each sub-kernel references an offset in this buffer instead of its own buffer.
+    // One cudaMemcpyAsync replaces N per-kernel copies (reduces graph nodes by ~N).
+    bool useConsolidatedArgTable = false;
+    void* consolidatedArgTableHostPinned = nullptr;
+    void* consolidatedArgTableDevice = nullptr;
+    size_t consolidatedArgTableBytes = 0;
+    int consolidatedArgTableDeviceId = -1;
+    // Per-kernel byte offsets into the consolidated buffer
+    std::vector<size_t> consolidatedArgTableOffsets;
+    // Per-kernel: whether this kernel has any dynamic (non-constant) args
+    std::vector<bool> hasDynamicArgs;
+#endif
+
     bool isValid() const {
       for (const auto& k : subKernels) {
         if (!k.gpuModule || !k.kernelFunction) return false;
@@ -293,11 +308,12 @@ class TritonGraphBackend : public GraphBackend {
                               const TritonIRModule& irModule,
                               const TritonCompiledBinary& binary) const;
 
-  // Execute a single compiled sub-kernel
+  // Execute a single compiled sub-kernel.
+  // When argTablePreCopied=true, skip per-kernel H2D memcpy (consolidated copy already done).
   Status executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,
                              NDArray** externalInputs, int numExternalInputs,
                              NDArray** outputSlots, int totalOutputSlots,
-                             void* stream);
+                             void* stream, bool argTablePreCopied = false);
 };
 
 }  // namespace graph

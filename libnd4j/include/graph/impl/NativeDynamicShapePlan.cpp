@@ -60,13 +60,13 @@
 #if HAVE_ARMCOMPUTE
 #include <graph/cpu/AclGraphBackend.h>
 #endif
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 #include <graph/cpu/MlirCpuGraphBackend.h>
 #if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
 #include <graph/cpu/ArmHybridGraphBackend.h>
 #endif
 #endif
-#if defined(HAVE_NNAPI)
+#if HAVE_NNAPI
 #include <graph/cpu/NnapiGraphBackend.h>
 #endif
 #if HAVE_MLX
@@ -87,6 +87,8 @@ namespace graph {
 // Non-CUDA fallback: batch-zero is never active on CPU
 #ifndef SD_CUDA
 bool NativeDynamicShapePlan::isBatchZeroActive() { return false; }
+bool NativeDynamicShapePlan::isBatchZeroRegistering() { return false; }
+void NativeDynamicShapePlan::registerBatchZeroBuffer(void*, size_t) {}
 #endif
 
 namespace {
@@ -3105,7 +3107,14 @@ Status NativeDynamicShapePlan::executeSlot(
         output = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
         slotArrayCache_[lastOutputSlotIdx] = output;
       }
-      output->nullify();  // Zero output before fused kernel writes to it
+      if (!isBatchZeroActive()) {
+        // Register buffer for batch-zero learning during warmup
+        if (isBatchZeroRegistering() && output->specialBuffer() != nullptr) {
+          registerBatchZeroBuffer(output->specialBuffer(),
+                                  output->dataBuffer()->getLenInBytes());
+        }
+        output->nullify();  // Zero output before fused kernel writes to it
+      }
     } else {
       sd_printf("NativeDSP::executeSlot: invalid output slot index for fused chain tail slot %d\n", lastSlotIdx);
       return Status::BAD_INPUT;
@@ -3230,13 +3239,33 @@ Status NativeDynamicShapePlan::executeSlot(
     // Nullify output arrays before re-execution to prevent stale data accumulation.
     // EXCEPTION 1: Skip in-place fused ops — their output IS the input (same NDArray).
     // EXCEPTION 2: Skip view producer outputs — they're views into input data.
+    // EXCEPTION 3: When batch-zero is active, all gap-slot outputs were pre-zeroed
+    //   by a single kernel at graph start — skip individual nullify to save ~800 graph nodes.
     if (!slot.inPlaceFused) {
-      auto& ctxOuts = ctx.fastpath_out();
-      for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
-        if (ctxOuts[i] == nullptr) continue;
-        int si = (i < slot.numOutputs) ? slot.outputSlotIndices[i] : -1;
-        if (si >= 0 && si < totalOutputSlots_ && slotIsViewProducer_[si]) continue;
-        ctxOuts[i]->nullify();
+      if (isBatchZeroActive()) {
+        // Batch-zero already zeroed these buffers — skip individual nullify
+        if (Environment::getInstance().dspBatchZeroVerbose()) {
+          auto& ctxOuts = ctx.fastpath_out();
+          int skipped = 0;
+          for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
+            if (ctxOuts[i] != nullptr) skipped++;
+          }
+          sd_printf("  batchZero-skip: slot %d (%s) skipped %d nullifies\n",
+                    stepIdx, slot.opName.c_str(), skipped);
+        }
+      } else {
+        auto& ctxOuts = ctx.fastpath_out();
+        for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
+          if (ctxOuts[i] == nullptr) continue;
+          int si = (i < slot.numOutputs) ? slot.outputSlotIndices[i] : -1;
+          if (si >= 0 && si < totalOutputSlots_ && slotIsViewProducer_[si]) continue;
+          // Register buffer for batch-zero learning during warmup
+          if (isBatchZeroRegistering() && ctxOuts[i]->specialBuffer() != nullptr) {
+            registerBatchZeroBuffer(ctxOuts[i]->specialBuffer(),
+                                    ctxOuts[i]->dataBuffer()->getLenInBytes());
+          }
+          ctxOuts[i]->nullify();
+        }
       }
     }
 
@@ -3527,6 +3556,11 @@ Status NativeDynamicShapePlan::executeSlot(
         // have already been zeroed by a single batch kernel — skip individual nullify
         // to avoid recording ~1000 extra memset graph nodes.
         if (!isBatchZeroActive()) {
+          // Register buffer for batch-zero learning during warmup
+          if (isBatchZeroRegistering() && cached->specialBuffer() != nullptr) {
+            registerBatchZeroBuffer(cached->specialBuffer(),
+                                    cached->dataBuffer()->getLenInBytes());
+          }
           cached->nullify();
         }
         outputs[i] = cached;
@@ -3582,13 +3616,25 @@ Status NativeDynamicShapePlan::executeSlot(
         NDArray* maxOut = nullptr;
         try {
           maxOut = new NDArray(order, maxShape, dt);
-          if (!isBatchZeroActive()) maxOut->nullify();  // Zero the entire buffer
+          if (!isBatchZeroActive()) {
+            if (isBatchZeroRegistering() && maxOut->specialBuffer() != nullptr) {
+              registerBatchZeroBuffer(maxOut->specialBuffer(),
+                                      maxOut->dataBuffer()->getLenInBytes());
+            }
+            maxOut->nullify();  // Zero the entire buffer
+          }
         } catch (const std::exception& e) {
           sd_printf("NativeDynamicShapePlan: max-allocation FAILED at slot %d (%s): %s\n",
                     stepIdx, slot.opName.c_str(), e.what());
           // Fall back to regular allocation
           maxOut = new NDArray(order, shape, dt);
-          if (slot.needsZeroedOutput && !isBatchZeroActive()) maxOut->nullify();
+          if (slot.needsZeroedOutput && !isBatchZeroActive()) {
+            if (isBatchZeroRegistering() && maxOut->specialBuffer() != nullptr) {
+              registerBatchZeroBuffer(maxOut->specialBuffer(),
+                                      maxOut->dataBuffer()->getLenInBytes());
+            }
+            maxOut->nullify();
+          }
         }
         
         outputs[i] = maxOut;
@@ -3611,6 +3657,10 @@ Status NativeDynamicShapePlan::executeSlot(
     try {
       out = new NDArray(order, shape, dt);
       if (slot.needsZeroedOutput && !isBatchZeroActive()) {
+        if (isBatchZeroRegistering() && out->specialBuffer() != nullptr) {
+          registerBatchZeroBuffer(out->specialBuffer(),
+                                  out->dataBuffer()->getLenInBytes());
+        }
         out->nullify();
       }
     } catch (const std::exception& e) {
@@ -4413,6 +4463,7 @@ void NativeDynamicShapePlan::maybeSplitUnstableSegments() {
 GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   if (cpuGraphBackendChecked_) return cpuGraphBackend_;
   cpuGraphBackendChecked_ = true;
+  const auto mode = graphExecutionMode_;
 
   // Respect explicit backend selection modes:
   // - SLOT_BY_SLOT: disable all graph backends
@@ -4420,39 +4471,39 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   //
   // GEM_CUDA_GRAPHS is treated as "graph replay mode" on non-CUDA builds
   // and intentionally maps to CPU graph backends (oneDNN/ACL).
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
+  if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
+      mode == GraphExecutionMode::GEM_TRITON ||
+      mode == GraphExecutionMode::GEM_NVRTC_JIT ||
+      mode == GraphExecutionMode::GEM_PTX_JIT) {
     cpuGraphBackend_ = nullptr;
     return nullptr;
   }
 
+  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
+                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
+
   // MLX is highest priority CPU backend on macOS/Apple Silicon
-  // When GEM_MLX is explicitly selected, force MLX and skip other backends
+  // When GEM_MLX is explicitly selected, force MLX and skip other backends.
 #if HAVE_MLX
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_MLX) {
+  if (mode == GraphExecutionMode::GEM_MLX || autoLikeMode) {
     auto& mlx = MlxGraphBackend::getInstance();
     if (mlx.isAvailable()) {
       cpuGraphBackend_ = &mlx;
-      sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend (forced)\n", "");
+      if (mode == GraphExecutionMode::GEM_MLX) {
+        sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend (forced)\n", "");
+      } else {
+        sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend\n", "");
+      }
       return cpuGraphBackend_;
     }
-    sd_printf("NativeDynamicShapePlan: GEM_MLX requested but MLX not available\n", "");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-  // In AUTO mode, MLX takes priority on Apple Silicon
-  {
-    auto& mlx = MlxGraphBackend::getInstance();
-    if (mlx.isAvailable()) {
-      cpuGraphBackend_ = &mlx;
-      sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend\n", "");
-      return cpuGraphBackend_;
+    if (mode == GraphExecutionMode::GEM_MLX) {
+      sd_printf("NativeDynamicShapePlan: GEM_MLX requested but MLX not available\n", "");
+      cpuGraphBackend_ = nullptr;
+      return nullptr;
     }
   }
 #else
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_MLX) {
+  if (mode == GraphExecutionMode::GEM_MLX) {
     sd_printf("NativeDynamicShapePlan: GEM_MLX requested but HAVE_MLX=0\n", "");
     cpuGraphBackend_ = nullptr;
     return nullptr;
@@ -4460,52 +4511,93 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
 #endif
 
 #if HAVE_ONEDNN
-  auto& onednn = OneDnnGraphBackend::getInstance();
-  if (onednn.isAvailable()) {
-    cpuGraphBackend_ = &onednn;
-    sd_printf("NativeDynamicShapePlan: using oneDNN Graph backend\n", "");
-    return cpuGraphBackend_;
+  if (autoLikeMode) {
+    auto& onednn = OneDnnGraphBackend::getInstance();
+    if (onednn.isAvailable()) {
+      cpuGraphBackend_ = &onednn;
+      sd_printf("NativeDynamicShapePlan: using oneDNN Graph backend\n", "");
+      return cpuGraphBackend_;
+    }
   }
 #endif
 
 #if HAVE_ARMCOMPUTE
-  auto& acl = AclGraphBackend::getInstance();
-  if (acl.isAvailable()) {
-    cpuGraphBackend_ = &acl;
-    sd_printf("NativeDynamicShapePlan: using ARM ACL backend\n", "");
-    return cpuGraphBackend_;
+  if (autoLikeMode) {
+    auto& acl = AclGraphBackend::getInstance();
+    if (acl.isAvailable()) {
+      cpuGraphBackend_ = &acl;
+      sd_printf("NativeDynamicShapePlan: using ARM ACL backend\n", "");
+      return cpuGraphBackend_;
+    }
   }
 #endif
 
-#if defined(HAVE_NNAPI)
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_NNAPI ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+#if HAVE_NNAPI
+  if (mode == GraphExecutionMode::GEM_NNAPI || autoLikeMode) {
     auto& nnapi = NnapiGraphBackend::getInstance();
     if (nnapi.isAvailable()) {
       cpuGraphBackend_ = &nnapi;
-      sd_printf("NativeDynamicShapePlan: using Android NNAPI backend\n", "");
+      if (mode == GraphExecutionMode::GEM_NNAPI) {
+        sd_printf("NativeDynamicShapePlan: using Android NNAPI backend (forced)\n", "");
+      } else {
+        sd_printf("NativeDynamicShapePlan: using Android NNAPI backend\n", "");
+      }
       return cpuGraphBackend_;
     }
+    if (mode == GraphExecutionMode::GEM_NNAPI) {
+      sd_printf("NativeDynamicShapePlan: GEM_NNAPI requested but NNAPI not available\n", "");
+      cpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (mode == GraphExecutionMode::GEM_NNAPI) {
+    sd_printf("NativeDynamicShapePlan: GEM_NNAPI requested but HAVE_NNAPI=0\n", "");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
   }
 #endif
 
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 #if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_ARM_HYBRID ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+  if (mode == GraphExecutionMode::GEM_ARM_HYBRID || autoLikeMode) {
     auto& armHybrid = ArmHybridGraphBackend::getInstance();
     if (armHybrid.isAvailable()) {
       cpuGraphBackend_ = &armHybrid;
-      sd_printf("NativeDynamicShapePlan: using ARM Hybrid (MLIR CPU + Vulkan) backend\n", "");
+      if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
+        sd_printf("NativeDynamicShapePlan: using ARM Hybrid (MLIR CPU + Vulkan) backend (forced)\n", "");
+      } else {
+        sd_printf("NativeDynamicShapePlan: using ARM Hybrid (MLIR CPU + Vulkan) backend\n", "");
+      }
+      return cpuGraphBackend_;
+    }
+    if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
+      sd_printf("NativeDynamicShapePlan: GEM_ARM_HYBRID requested but backend not available\n", "");
+      cpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
+    sd_printf("NativeDynamicShapePlan: GEM_ARM_HYBRID requested but this platform is not ARM Android/Linux\n", "");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#endif
+
+  if (autoLikeMode) {
+    auto& mlirBackend = MlirCpuGraphBackend::getInstance();
+    if (mlirBackend.isAvailable()) {
+      cpuGraphBackend_ = &mlirBackend;
+      sd_printf("NativeDynamicShapePlan: using MLIR CPU JIT backend\n", "");
       return cpuGraphBackend_;
     }
   }
-#endif
-  auto& mlirBackend = MlirCpuGraphBackend::getInstance();
-  if (mlirBackend.isAvailable()) {
-    cpuGraphBackend_ = &mlirBackend;
-    sd_printf("NativeDynamicShapePlan: using MLIR CPU JIT backend\n", "");
-    return cpuGraphBackend_;
+#else
+  if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
+    sd_printf("NativeDynamicShapePlan: GEM_ARM_HYBRID requested but HAVE_MLIR=0\n", "");
+    cpuGraphBackend_ = nullptr;
+    return nullptr;
   }
 #endif
 
@@ -5140,9 +5232,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     MmulHelper::resetCastCacheIndices();
 
     // ── Batch-zero preparation (OUTSIDE capture) ─────────────────────────
-    // Collect output buffers. When gapOnly=true (default), only gap (native fallback)
-    // slot outputs are zeroed. When gapOnly=false, ALL slot outputs are zeroed.
-    // Controlled by ND4J_DSP_BATCH_ZERO_GAP_ONLY env var.
+    // Collect output buffers that need zeroing. Only gap (native fallback) slot
+    // outputs are zeroed — Triton sub-kernels fully overwrite their outputs.
     if (Environment::getInstance().dspBatchZero()) {
       std::unordered_set<int> gapSlots;
       if (Environment::getInstance().dspBatchZeroGapOnly()) {
@@ -5156,7 +5247,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
         }
       } else {
-        // Zero ALL slot outputs (not just gaps)
         for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
       }
       collectBatchZeroTargets(gapSlots);

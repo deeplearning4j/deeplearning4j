@@ -789,7 +789,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   };
   std::deque<SubSegmentRange> pendingRanges;
 
-  auto isStandaloneSection = [](const KernelSection& section) -> bool {
+  bool sectionFusionEnabled = Environment::getInstance().tritonSectionFusion();
+
+  auto isStandaloneSection = [&](const KernelSection& section) -> bool {
     // FUSED_ATTENTION: standalone unless single query tile
     if (section.type == KernelSectionType::FUSED_ATTENTION) {
       int batchHeads = std::max(1, section.batchSize) * std::max(1, section.numHeads);
@@ -797,12 +799,18 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       return !singleQueryTile;
     }
 
-    // Non-elementwise/identity sections must NOT merge with adjacent elementwise
-    // sections — mixing section types in a single kernel can produce incorrect IR.
-    // Each non-default section type compiles as its own standalone kernel.
-    if (section.type != KernelSectionType::ELEMENTWISE &&
-        section.type != KernelSectionType::IDENTITY) {
-      return true;
+    // CONVOLUTION: complex 2D grid + shared memory tiling — always standalone
+    if (section.type == KernelSectionType::CONVOLUTION) return true;
+
+    // When section fusion is enabled, allow non-EW sections to merge with
+    // adjacent sections. buildSectionedModule() handles cross-section DAG
+    // analysis, barrier insertion (including DATA_MOVEMENT barriers), and
+    // multi-phase launch automatically.
+    if (!sectionFusionEnabled) {
+      if (section.type != KernelSectionType::ELEMENTWISE &&
+          section.type != KernelSectionType::IDENTITY) {
+        return true;
+      }
     }
 
     return false;
@@ -1019,7 +1027,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
               secIdx, sections[secIdx].startSlot, sections[secIdx].endSlot,
               static_cast<int>(sections[secIdx].type));
 
-    // Merge consecutive element-wise-compatible sections into one compile range.
+    // Merge consecutive non-standalone, non-fallback sections into one compile range.
     int runStart = secIdx;
     int runEnd = secIdx;
     while (runEnd + 1 < static_cast<int>(sections.size()) &&
@@ -1525,6 +1533,94 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
   }
 
+  // Consolidated arg table: allocate one large buffer for all indirect-args sub-kernels.
+  // Each kernel gets an offset into this single buffer, replacing N individual H2D copies
+  // with one copy during graph capture (N fewer graph nodes).
+  if (Environment::getInstance().tritonConsolidatedArgTable()) {
+    size_t totalArgTableBytes = 0;
+    compiledSeg.consolidatedArgTableOffsets.resize(compiledSeg.subKernels.size(), 0);
+    for (size_t ki = 0; ki < compiledSeg.subKernels.size(); ki++) {
+      auto& kernel = compiledSeg.subKernels[ki];
+      if (kernel.useIndirectArgs) {
+        // Align each sub-kernel's offset to 256 bytes for GPU cache line efficiency
+        size_t align = 256;
+        totalArgTableBytes = (totalArgTableBytes + align - 1) & ~(align - 1);
+        compiledSeg.consolidatedArgTableOffsets[ki] = totalArgTableBytes;
+        size_t kernelTableBytes = kernel.argSlotMapping.size() * sizeof(int64_t);
+        if (kernelTableBytes == 0) kernelTableBytes = sizeof(int64_t);
+        totalArgTableBytes += kernelTableBytes;
+      }
+    }
+
+    if (totalArgTableBytes > 0) {
+      // Allocate consolidated device buffer
+      auto allocErr = allocateDeviceBufferAsync(&compiledSeg.consolidatedArgTableDevice,
+                                                  totalArgTableBytes, preallocStream);
+      if (allocErr != cudaSuccess) {
+        sd_printf("TritonGraphBackend: failed allocating consolidated arg table (%zu bytes): %s\n",
+                  totalArgTableBytes, cudaGetErrorString(allocErr));
+        cudaGetLastError();
+        cleanupCompiledWorkspace();
+        return false;
+      }
+      // Allocate consolidated pinned host buffer
+      auto pinnedErr = cudaMallocHost(&compiledSeg.consolidatedArgTableHostPinned, totalArgTableBytes);
+      if (pinnedErr != cudaSuccess) {
+        sd_printf("TritonGraphBackend: failed allocating consolidated pinned arg table (%zu bytes): %s\n",
+                  totalArgTableBytes, cudaGetErrorString(pinnedErr));
+        cudaGetLastError();
+        cleanupCompiledWorkspace();
+        return false;
+      }
+      compiledSeg.consolidatedArgTableBytes = totalArgTableBytes;
+      compiledSeg.consolidatedArgTableDeviceId = compileDevice;
+      compiledSeg.useConsolidatedArgTable = true;
+
+      // Point each sub-kernel's cachedArgTableDevice to its offset in the consolidated buffer
+      for (size_t ki = 0; ki < compiledSeg.subKernels.size(); ki++) {
+        auto& kernel = compiledSeg.subKernels[ki];
+        if (kernel.useIndirectArgs) {
+          size_t offset = compiledSeg.consolidatedArgTableOffsets[ki];
+          kernel.cachedArgTableDevice = static_cast<char*>(compiledSeg.consolidatedArgTableDevice) + offset;
+          kernel.cachedArgTableDeviceId = compileDevice;
+          size_t kernelTableBytes = kernel.argSlotMapping.size() * sizeof(int64_t);
+          if (kernelTableBytes == 0) kernelTableBytes = sizeof(int64_t);
+          kernel.cachedArgTableBytes = kernelTableBytes;
+          // Point host pinned to offset in consolidated buffer too
+          kernel.cachedArgTableHostPinned = static_cast<char*>(compiledSeg.consolidatedArgTableHostPinned) + offset;
+          kernel.cachedArgTableHostPinnedBytes = kernelTableBytes;
+        }
+      }
+
+      sd_printf("TritonGraphBackend: consolidated arg table %zu bytes for %d sub-kernels in [%d-%d]\n",
+                totalArgTableBytes, static_cast<int>(compiledSeg.subKernels.size()),
+                seg.startSlot, seg.endSlot);
+    }
+  }
+
+  // Dirty tracking: classify each arg as static vs dynamic for refresh optimization
+  if (Environment::getInstance().tritonArgDirtyTracking()) {
+    compiledSeg.hasDynamicArgs.resize(compiledSeg.subKernels.size(), false);
+    for (size_t ki = 0; ki < compiledSeg.subKernels.size(); ki++) {
+      auto& kernel = compiledSeg.subKernels[ki];
+      if (!kernel.useIndirectArgs) continue;
+      for (auto& argMapping : kernel.argSlotMapping) {
+        // Dynamic args: external inputs (negative slot index) or non-constant slots
+        // Static args: constant weight slots (srcIdx < 0 in the plan = constant)
+        // For simplicity, mark as dynamic if slot index is negative (external input)
+        // or if the slot is in a non-frozen range
+        if (argMapping.slotIndex < 0) {
+          compiledSeg.hasDynamicArgs[ki] = true;
+          break;
+        }
+      }
+    }
+    int staticCount = 0;
+    for (bool d : compiledSeg.hasDynamicArgs) if (!d) staticCount++;
+    sd_printf("TritonGraphBackend: dirty tracking: %d/%d sub-kernels have static-only args (skip refresh)\n",
+              staticCount, static_cast<int>(compiledSeg.subKernels.size()));
+  }
+
   auto preallocSyncErr = cudaStreamSynchronize(preallocStream);
   if (preallocSyncErr != cudaSuccess) {
     sd_printf("TritonGraphBackend: pre-allocation stream sync failed for segment [%d-%d]: %s\n",
@@ -1562,7 +1658,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,
                                                 NDArray** externalInputs, int numExternalInputs,
                                                 NDArray** outputSlots, int totalOutputSlots,
-                                                void* stream) {
+                                                void* stream, bool argTablePreCopied) {
   int numBufferArgs = static_cast<int>(compiled.argSlotMapping.size());
   void* actualStream = (stream != nullptr) ? *static_cast<void**>(stream) : nullptr;
 
@@ -1862,39 +1958,46 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 
     argTableDevice = compiled.cachedArgTableDevice;
 
-    // Validate arg table pointer before copy
-    if (argTableDevice == nullptr) {
-      sd_printf("TritonGraphBackend: arg table device pointer is NULL for [%d-%d] "
-                "(tableBytes=%d, cachedDeviceId=%d, currentDevice=%d)\n",
-                compiled.startSlot_, compiled.endSlot_,
-                (int)tableBytes, compiled.cachedArgTableDeviceId, currentDevice);
-      return Status::KERNEL_FAILURE;
-    }
+    if (!argTablePreCopied) {
+      // Per-kernel H2D copy (standard path, or when consolidated copy is not in use).
+      // Each per-kernel copy creates a separate CUDA graph node during capture.
+      // Validate arg table pointer before copy
+      if (argTableDevice == nullptr) {
+        sd_printf("TritonGraphBackend: arg table device pointer is NULL for [%d-%d] "
+                  "(tableBytes=%d, cachedDeviceId=%d, currentDevice=%d)\n",
+                  compiled.startSlot_, compiled.endSlot_,
+                  (int)tableBytes, compiled.cachedArgTableDeviceId, currentDevice);
+        return Status::KERNEL_FAILURE;
+      }
 
-    // Check pointer alignment (CUDA requires at least 4-byte alignment for memcpy)
-    if (reinterpret_cast<uintptr_t>(argTableDevice) % 4 != 0) {
-      sd_printf("TritonGraphBackend: arg table device pointer %p is misaligned for [%d-%d] "
-                "(alignment=%zu, cachedDeviceId=%d)\n",
-                argTableDevice, compiled.startSlot_, compiled.endSlot_,
-                reinterpret_cast<uintptr_t>(argTableDevice) % 256,
-                compiled.cachedArgTableDeviceId);
-      return Status::KERNEL_FAILURE;
-    }
+      // Check pointer alignment (CUDA requires at least 4-byte alignment for memcpy)
+      if (reinterpret_cast<uintptr_t>(argTableDevice) % 4 != 0) {
+        sd_printf("TritonGraphBackend: arg table device pointer %p is misaligned for [%d-%d] "
+                  "(alignment=%zu, cachedDeviceId=%d)\n",
+                  argTableDevice, compiled.startSlot_, compiled.endSlot_,
+                  reinterpret_cast<uintptr_t>(argTableDevice) % 256,
+                  compiled.cachedArgTableDeviceId);
+        return Status::KERNEL_FAILURE;
+      }
 
-    // Copy host → device (async on the execution stream)
-    // Uses the persistent pinned host buffer — safe for CUDA graph capture/replay.
-    auto memcpyErr = cudaMemcpyAsync(argTableDevice, argTableHostPinned, tableBytes,
-                                     cudaMemcpyHostToDevice, cudaExecStream);
-    if (memcpyErr != cudaSuccess) {
-      sd_printf("TritonGraphBackend: failed to copy arg table (%d bytes) for [%d-%d]: %s "
-                "(devicePtr=%p, hostPtr=%p, cachedDeviceId=%d, currentDevice=%d, stream=%p)\n",
-                (int)tableBytes, compiled.startSlot_, compiled.endSlot_,
-                cudaGetErrorString(memcpyErr),
-                argTableDevice, argTableHostPinned,
-                compiled.cachedArgTableDeviceId, currentDevice, (void*)cudaExecStream);
-      cudaGetLastError();  // Clear the error so subsequent operations aren't poisoned
-      return Status::KERNEL_FAILURE;
+      // Copy host → device (async on the execution stream)
+      // Uses the persistent pinned host buffer — safe for CUDA graph capture/replay.
+      auto memcpyErr = cudaMemcpyAsync(argTableDevice, argTableHostPinned, tableBytes,
+                                       cudaMemcpyHostToDevice, cudaExecStream);
+      if (memcpyErr != cudaSuccess) {
+        sd_printf("TritonGraphBackend: failed to copy arg table (%d bytes) for [%d-%d]: %s "
+                  "(devicePtr=%p, hostPtr=%p, cachedDeviceId=%d, currentDevice=%d, stream=%p)\n",
+                  (int)tableBytes, compiled.startSlot_, compiled.endSlot_,
+                  cudaGetErrorString(memcpyErr),
+                  argTableDevice, argTableHostPinned,
+                  compiled.cachedArgTableDeviceId, currentDevice, (void*)cudaExecStream);
+        cudaGetLastError();  // Clear the error so subsequent operations aren't poisoned
+        return Status::KERNEL_FAILURE;
+      }
     }
+    // When argTablePreCopied=true, the consolidated copy in executeSegment already
+    // transferred the entire consolidated buffer to device. Per-kernel copy is skipped,
+    // reducing ~N graph nodes to 1.
 #endif
 
     // Kernel args: [argTablePtr, n_elements]
@@ -2139,11 +2242,24 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     compiledSeg = &it->second;
   }
 
+  bool useDirtyTracking = Environment::getInstance().tritonArgDirtyTracking()
+                          && !compiledSeg->hasDynamicArgs.empty();
+
   int refreshedCount = 0;
   int skippedCount = 0;
-  for (auto& subKernel : compiledSeg->subKernels) {
+  int dirtySkippedCount = 0;
+  for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
+    auto& subKernel = compiledSeg->subKernels[ki];
     if (!subKernel.useIndirectArgs || subKernel.cachedArgTableHostPinned == nullptr) {
       skippedCount++;
+      continue;
+    }
+
+    // Dirty tracking: skip sub-kernels with only static (constant weight) args.
+    // Their buffer pointers never change between steps, so no refresh needed.
+    if (useDirtyTracking && ki < compiledSeg->hasDynamicArgs.size()
+        && !compiledSeg->hasDynamicArgs[ki]) {
+      dirtySkippedCount++;
       continue;
     }
 
@@ -2170,10 +2286,10 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
     refreshedCount++;
   }
 
-  if (refreshedCount > 0) {
+  if (refreshedCount > 0 || dirtySkippedCount > 0) {
     sd_printf("TritonGraphBackend::refreshArgTablesForReplay: refreshed %d sub-kernels "
-              "(skipped %d non-indirect) for seg[%d-%d]\n",
-              refreshedCount, skippedCount, seg.startSlot, seg.endSlot);
+              "(skipped %d non-indirect, %d static-only) for seg[%d-%d]\n",
+              refreshedCount, skippedCount, dirtySkippedCount, seg.startSlot, seg.endSlot);
   }
   return Status::OK;
 #else
@@ -2273,6 +2389,61 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
             targetDevice, execDevice,
             tritonSkipKernels ? 1 : 0, tritonVerifyKernels ? 1 : 0);
 
+#ifdef SD_CUDA
+  // Consolidated arg table: do ONE H2D memcpy for all sub-kernels' arg tables
+  // instead of N per-kernel copies. Reduces CUDA graph nodes by ~N-1.
+  bool useConsolidated = compiledSeg->useConsolidatedArgTable;
+  bool consolidatedArgsCopied = false;
+  if (useConsolidated && compiledSeg->consolidatedArgTableHostPinned &&
+      compiledSeg->consolidatedArgTableDevice &&
+      compiledSeg->consolidatedArgTableBytes > 0) {
+    // Pre-populate all sub-kernels' arg tables in the consolidated host buffer
+    // with current buffer pointers. Same logic as refreshArgTablesForReplay but
+    // runs during both warmup and capture passes.
+    for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
+      auto& sk = compiledSeg->subKernels[ki];
+      if (!sk.useIndirectArgs || !sk.cachedArgTableHostPinned) continue;
+      auto* hostPinned = static_cast<int64_t*>(sk.cachedArgTableHostPinned);
+      int numArgs = static_cast<int>(sk.argSlotMapping.size());
+      for (int ai = 0; ai < numArgs; ai++) {
+        auto& argMap = sk.argSlotMapping[ai];
+        NDArray* arr = nullptr;
+        if (argMap.slotIndex < 0) {
+          int extIdx = -(argMap.slotIndex + 1);
+          if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
+        } else {
+          if (argMap.slotIndex < totalOutputSlots) arr = outputSlots[argMap.slotIndex];
+        }
+        if (arr) {
+          void* sbuf = arr->specialBuffer();
+          if (sbuf) hostPinned[ai] = reinterpret_cast<int64_t>(sbuf);
+        }
+      }
+    }
+    // ONE consolidated H2D memcpy — during graph capture this creates 1 graph node
+    // instead of ~N per-kernel nodes (typical savings: 500-1000 fewer nodes).
+    auto memcpyErr = cudaMemcpyAsync(
+        compiledSeg->consolidatedArgTableDevice,
+        compiledSeg->consolidatedArgTableHostPinned,
+        compiledSeg->consolidatedArgTableBytes,
+        cudaMemcpyHostToDevice,
+        static_cast<cudaStream_t>(actualStream));
+    if (memcpyErr != cudaSuccess) {
+      sd_printf("TritonGraphBackend: consolidated arg table H2D failed (%zu bytes): %s\n",
+                compiledSeg->consolidatedArgTableBytes, cudaGetErrorString(memcpyErr));
+      cudaGetLastError();
+      // Fall back to per-kernel copies
+    } else {
+      consolidatedArgsCopied = true;
+      sd_printf("TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
+                "(replaces %d per-kernel copies) for seg[%d-%d]\n",
+                compiledSeg->consolidatedArgTableBytes,
+                static_cast<int>(compiledSeg->subKernels.size()),
+                seg.startSlot, seg.endSlot);
+    }
+  }
+#endif
+
   int nextSlotToRun = seg.startSlot;
   for (int i = 0; i < (int)compiledSeg->subKernels.size(); i++) {
     auto& subKernel = compiledSeg->subKernels[i];
@@ -2341,7 +2512,13 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       auto status = executeSingleKernel(subKernel, slots,
                                          externalInputs, numExternalInputs,
                                          outputSlots, totalOutputSlots,
-                                         stream);
+                                         stream,
+#ifdef SD_CUDA
+                                         consolidatedArgsCopied
+#else
+                                         false
+#endif
+                                         );
       if (status != Status::OK) {
         sd_printf("TritonGraphBackend::executeSegment: sub-kernel %d/%d [%d-%d] failed\n",
                   i + 1, (int)compiledSeg->subKernels.size(),

@@ -681,14 +681,57 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  const int incx = X->strideAt(xLenDim);
  const int incy = Y->strideAt(yLenDim);
 
+ const int major = Environment::getInstance().capabilities()[AffinityManager::currentDeviceId()].first();
+
  const auto aType = A->dataType();
  const auto xType = X->dataType();
  const auto yType = Y->dataType();
 
- const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
+ // FP16 GEMV: auto-cast FP32 matrix-vector multiply inputs to HALF for bandwidth reduction.
+ // For M=1 GEMVs (decode-phase matmuls), memory bandwidth is the bottleneck — HALF halves traffic.
+ // We use cublasGemmEx treating the vector X as a [N,1] matrix, dispatching HALF×HALF→FP32.
+ NDArray* castA = nullptr;
+ NDArray* castX = nullptr;
+ NDArray* effA = const_cast<NDArray*>(A);
+ NDArray* effX = const_cast<NDArray*>(X);
 
- const bool typeDouble = AXY && aType == DOUBLE;
- const bool typeFloat = AXY && aType == FLOAT32;
+ if (aType == FLOAT32 && xType == FLOAT32 && yType == FLOAT32 && major >= 6
+     && Environment::getInstance().dspFp16Compute()) {
+   if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+       && tl_castIdxB < tl_castCacheB.size()) {
+     // During graph capture: reuse persistent HALF buffers
+     NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
+     cachedA->assign(effA);
+     effA = cachedA;
+     NDArray* cachedX = tl_castCacheB[tl_castIdxB++];
+     cachedX->assign(effX);
+     effX = cachedX;
+   } else {
+     castA = effA->cast(HALF);
+     effA = castA;
+     castX = effX->cast(HALF);
+     effX = castX;
+     if (!tl_graphExecutionActive) {
+       auto* shapeA = castA->getShapeAsVector();
+       auto* persistentA = new NDArray(castA->ordering(), *shapeA, HALF, castA->getContext());
+       delete shapeA;
+       tl_castCacheA.push_back(persistentA);
+       auto* shapeX = castX->getShapeAsVector();
+       auto* persistentX = new NDArray(castX->ordering(), *shapeX, HALF, castX->getContext());
+       delete shapeX;
+       tl_castCacheB.push_back(persistentX);
+     }
+   }
+ }
+
+ const auto effAType = effA->dataType();
+ const auto effXType = effX->dataType();
+
+ const bool AX(effAType == effXType), AY(effAType == yType), AXY(AX && AY);
+
+ const bool typeDouble = AXY && effAType == DOUBLE;
+ const bool typeFloat = AXY && effAType == FLOAT32;
+ const bool typeHalfFloat = AX && effAType == HALF && yType == FLOAT32 && major >= 6;
 
  std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
@@ -699,7 +742,7 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
  reapplyCublasWorkspace(*handle);
 
- if (!typeDouble && !typeFloat) {
+ if (!typeDouble && !typeFloat && !typeHalfFloat) {
    dim3 dims = getGemVDims(M);
    NDArray::prepareSpecialUse({Y}, {A, X});
 
@@ -711,16 +754,15 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
         X->specialShapeInfo(), Y->specialBuffer(), Y->specialShapeInfo(), incx, incy, 0, alpha, beta),
        SD_NUMERIC_TYPES)
    NDArray::registerSpecialUse({Y}, {A, X});
-   // Don't sync - let CUDA operations run asynchronously
 
  } else {
-   NDArray* pA(const_cast<NDArray*>(A));
+   NDArray* pA(const_cast<NDArray*>(effA));
 
-   bool aMcont = M == 1 || A->strideAt(0) == 1;
-   bool aNcont = N == 1 || A->strideAt(1) == 1;
+   bool aMcont = M == 1 || effA->strideAt(0) == 1;
+   bool aNcont = N == 1 || effA->strideAt(1) == 1;
 
    if (!aMcont && !aNcont) {
-     pA = A->dup('f');  // dup() already returns NDArray*, no need for new
+     pA = effA->dup('f');
      aMcont = true;
    }
 
@@ -730,25 +772,40 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
 
    const cublasOperation_t transAblas = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-   NDArray::prepareSpecialUse({Y}, {pA, X});
+   NDArray::prepareSpecialUse({Y}, {pA, effX});
 
-   // choose appropriate cuda gemm api depending on data types
    if (typeDouble) {
      status = cublasDgemv(*handle, transAblas, transA ? N : M, transA ? M : N, &alpha, (double*)pA->specialBuffer(),
-                          lda, (double*)X->specialBuffer(), incx, &beta, (double*)Y->specialBuffer(), incy);
+                          lda, (double*)effX->specialBuffer(), incx, &beta, (double*)Y->specialBuffer(), incy);
    } else if (typeFloat) {
      float alphaF(alpha), betaF(beta);
      status = cublasSgemv(*handle, transAblas, transA ? N : M, transA ? M : N, &alphaF, (float*)pA->specialBuffer(),
-                          lda, (float*)X->specialBuffer(), incx, &betaF, (float*)Y->specialBuffer(), incy);
+                          lda, (float*)effX->specialBuffer(), incx, &betaF, (float*)Y->specialBuffer(), incy);
+   } else if (typeHalfFloat) {
+     // FP16 GEMV via cublasGemmEx: treat vector X as [N,1] matrix → GEMM [M,N] × [N,1] = [M,1]
+     // HALF inputs with FP32 output and FP32 accumulation for precision.
+     float alphaF(alpha), betaF(beta);
+     status = cublasGemmEx(*handle, transAblas, CUBLAS_OP_N,
+                           transA ? N : M,  // m (rows of op(A))
+                           1,               // n = 1 (vector)
+                           transA ? M : N,  // k
+                           &alphaF,
+                           pA->specialBuffer(), CUDA_R_16F, lda,
+                           effX->specialBuffer(), CUDA_R_16F, N,  // ldb = N (contiguous vector)
+                           &betaF,
+                           Y->specialBuffer(), CUDA_R_32F, M,    // ldc = M
+                           CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
    }
 
    if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
-   NDArray::registerSpecialUse({Y}, {pA, X});
-   // Don't sync - let CUDA operations run asynchronously
+   NDArray::registerSpecialUse({Y}, {pA, effX});
 
-   if (pA != A) delete pA;
+   if (pA != effA) delete pA;
  }
+
+ delete castA;
+ delete castX;
 
  return Y;
 }////////////////////////////////////////////////////////////////////////////

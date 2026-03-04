@@ -1562,14 +1562,20 @@ mlir::Value TritonIRBuilder::splatConstantF32(mlir::OpBuilder& builder, mlir::Lo
     auto scalar = builder.create<mlir::arith::ConstantOp>(loc, elemType, scalarAttr);
     return builder.create<mlir::triton::SplatOp>(loc, tensorType, scalar);
   }
-  // Fallback: cast to actual element type to avoid tt.splat type mismatch
-  // The tensor element type must match the scalar type exactly
+  // Fallback: cast from f32 scalar to actual element type to avoid tt.splat type mismatch.
+  // The tensor element type must match the scalar type exactly.
   auto scalarAttr = builder.getFloatAttr(builder.getF32Type(), static_cast<double>(val));
   mlir::Value scalarVal = builder.create<mlir::arith::ConstantOp>(loc, builder.getF32Type(), scalarAttr);
   // If tensorType element type isn't f32, we need to cast
   if (elemType != builder.getF32Type()) {
     if (mlir::isa<mlir::FloatType>(elemType)) {
-      scalarVal = builder.create<mlir::arith::ExtFOp>(loc, elemType, scalarVal, nullptr);
+      unsigned srcBits = builder.getF32Type().getWidth();
+      unsigned dstBits = mlir::cast<mlir::FloatType>(elemType).getWidth();
+      if (dstBits > srcBits) {
+        scalarVal = builder.create<mlir::arith::ExtFOp>(loc, elemType, scalarVal);
+      } else {
+        scalarVal = builder.create<mlir::arith::TruncFOp>(loc, elemType, scalarVal);
+      }
     } else if (elemType.isSignlessInteger()) {
       scalarVal = builder.create<mlir::arith::FPToSIOp>(loc, elemType, scalarVal);
     } else {
@@ -3237,14 +3243,19 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
   // Mixed segments with non-element-wise ops → sectioned cooperative kernel.
   // This handles mega-segments (WHOLE_GRAPH) and segments containing matmul,
-  // attention, data movement, convolution, or permute ops that need their own
-  // grid mapping and cannot be fused into the 1D element-wise skeleton.
+  // attention, data movement, convolution, constant generation, or permute ops
+  // that need their own grid mapping and cannot be fused into the 1D element-wise
+  // skeleton.  CONSTANT_GENERATION ops (shape_of, zeros_like, ones_like, range)
+  // produce outputs with different element counts than data ops; the simple 1D
+  // skeleton uses a single n_elements for the whole kernel, so mixed EW+CONST_GEN
+  // segments would get the wrong element count for some ops.
   {
     bool hasNonElementwiseOps = false;
     for (int i = startSlot; i <= endSlot; i++) {
       auto cat = getOpCategory(slots[i].opName);
       if (cat == TritonOpCategory::MATMUL || cat == TritonOpCategory::FUSED_ATTENTION ||
-          cat == TritonOpCategory::DATA_MOVEMENT || cat == TritonOpCategory::CONVOLUTION) {
+          cat == TritonOpCategory::DATA_MOVEMENT || cat == TritonOpCategory::CONVOLUTION ||
+          cat == TritonOpCategory::CONSTANT_GENERATION) {
         hasNonElementwiseOps = true;
         break;
       }
@@ -4664,9 +4675,52 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           for (int d = 0; d < dataArr->rankOf(); d++) dataShape.push_back(dataArr->sizeAt(d));
           int numSplits = slot.numOutputs;
           int nElements = static_cast<int>(dataArr->lengthOf());
+          int rank = static_cast<int>(dataShape.size());
 
-          emitSplitSection(builder, loc, pid, blockSize,
-                           dataPtr, outPtrs, 0, numSplits, dataShape, nElements);
+          bool isSplitV = (opLower.find("split_v") != std::string::npos ||
+                           opLower.find("splitv") != std::string::npos);
+          int splitAxis = 0;
+          if (isSplitV) {
+            // SplitV iArgs: [splitDim, numSplit]
+            if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+          } else {
+            // Split iArgs: [numSplit, splitDim] (most common) or [splitDim]
+            if (slot.numIArgs > 1 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[1]);
+            else if (slot.numIArgs > 0 && slot.iArgs) splitAxis = static_cast<int>(slot.iArgs[0]);
+          }
+          if (splitAxis < 0) splitAxis += rank;
+          if (splitAxis < 0 || splitAxis >= rank) splitAxis = 0;
+
+          if (isSplitV && slot.numInputs >= 2) {
+            // SplitV: variable chunk sizes from input[1]
+            int sizesSrc = slot.inputSourceIndices[1];
+            NDArray* sizesArr = resolveArr(sizesSrc);
+            if (sizesArr && !dataShape.empty()) {
+              int axisOffset = 0;
+              for (int o2 = 0; o2 < slot.numOutputs && o2 < static_cast<int>(outPtrs.size()); o2++) {
+                int chunkAxisSize = (o2 < static_cast<int>(sizesArr->lengthOf()))
+                    ? static_cast<int>(sizesArr->e<int>(o2)) : 1;
+                std::vector<int> begins(rank, 0);
+                std::vector<int> ends;
+                for (int d = 0; d < rank; d++) ends.push_back(static_cast<int>(dataShape[d]));
+                begins[splitAxis] = axisOffset;
+                ends[splitAxis] = axisOffset + chunkAxisSize;
+                std::vector<int> strides(rank, 1);
+                int chunkTotalElements = 1;
+                for (int d = 0; d < rank; d++)
+                  chunkTotalElements *= (d == splitAxis) ? chunkAxisSize : static_cast<int>(dataShape[d]);
+                emitSliceSection(builder, loc, pid, blockSize, dataPtr, outPtrs[o2],
+                                 begins, ends, strides, dataShape, chunkTotalElements);
+                axisOffset += chunkAxisSize;
+              }
+            } else {
+              emitSplitSection(builder, loc, pid, blockSize,
+                               dataPtr, outPtrs, splitAxis, numSplits, dataShape, nElements);
+            }
+          } else {
+            emitSplitSection(builder, loc, pid, blockSize,
+                             dataPtr, outPtrs, splitAxis, numSplits, dataShape, nElements);
+          }
 
           // Load back each output for downstream SSA
           for (int o = 0; o < slot.numOutputs; o++) {
@@ -5274,6 +5328,19 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         // SHAPE_MANIPULATION (permute/transpose) reads cross-section intermediates
         // with permuted indices — thread N reads data written by thread M, so a
         // global barrier is required to ensure all stores complete before permuted loads.
+        return true;
+      // DATA_MOVEMENT ops use non-contiguous access patterns (indexed, strided,
+      // cascading-select). When consuming cross-section intermediates, thread N
+      // may read data written by thread M in a prior section, so a global barrier
+      // is required. Without this, gather reads partially-written data → corruption.
+      case KernelSectionType::GATHER:
+      case KernelSectionType::GATHER_ND:
+      case KernelSectionType::CONCAT:
+      case KernelSectionType::SPLIT:
+      case KernelSectionType::SPLIT_V:
+      case KernelSectionType::STACK:
+      case KernelSectionType::TILE:
+      case KernelSectionType::STRIDED_SLICE:
         return true;
       default:
         return false;
@@ -6041,12 +6108,118 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::CONSTANT_GENERATION) {
-            // Constant generation: forward SSA value or generate constant
-            if (slot.numInputs >= 1) {
-              auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
-              if (inputIt != ssaValues.end()) {
-                for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+            // Constant generation ops produce values independent of input data.
+            // Must emit proper constants — NOT forward input SSA values.
+            DataType outDtype = FLOAT32;
+            if (slot.numOutputs > 0) {
+              int outIdx = slot.outputSlotIndices[0];
+              outDtype = resolveDtype(outIdx);
+            }
+            auto cgElemType = getMLIRType(builder, outDtype);
+            auto cgTensorType = mlir::RankedTensorType::get({blockSize}, cgElemType);
+
+            std::string opLower3 = slot.opName;
+            std::transform(opLower3.begin(), opLower3.end(), opLower3.begin(), ::tolower);
+
+            mlir::Value cgResult;
+            // Helper to resolve NDArray* for a slot index in the sectioned module scope
+            auto secResolveArr = [&](int idx) -> NDArray* {
+              if (idx < 0) {
+                int extIdx = -(idx + 1);
+                if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx])
+                  return externalInputs[extIdx];
+                return nullptr;
               }
+              if (idx < totalOutputSlots && outputSlots && outputSlots[idx])
+                return outputSlots[idx];
+              return nullptr;
+            };
+
+            if (opLower3 == "ones_as" || opLower3 == "oneslike" || opLower3 == "ones_like") {
+              cgResult = splatConstantF32(builder, loc, cgTensorType, 1.0f);
+            } else if (opLower3 == "create" || opLower3 == "set_scalar") {
+              float fillVal = 0.0f;
+              if (slot.numTArgs > 0 && slot.tArgs) {
+                fillVal = static_cast<float>(slot.tArgs[0]);
+              } else if (slot.numOutputs > 0) {
+                int outIdx = slot.outputSlotIndices[0];
+                auto* arr = secResolveArr(outIdx);
+                if (arr && arr->lengthOf() > 0) {
+                  arr->syncToHost();
+                  fillVal = arr->e<float>(0);
+                }
+              }
+              cgResult = splatConstantF32(builder, loc, cgTensorType, fillVal);
+            } else if (opLower3 == "range") {
+              float start = 0.0f, step = 1.0f;
+              if (slot.numTArgs >= 1 && slot.tArgs) start = static_cast<float>(slot.tArgs[0]);
+              if (slot.numTArgs >= 3 && slot.tArgs) step = static_cast<float>(slot.tArgs[2]);
+              int rangeLen = blockSize;
+              if (slot.numOutputs > 0) {
+                int outIdx = slot.outputSlotIndices[0];
+                auto outShape = resolveShape(outIdx);
+                LongType outLen = shapeLength(outShape);
+                if (outLen > 0) rangeLen = static_cast<int>(outLen);
+              }
+              auto cgI32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getI32Type());
+              auto cgF32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getF32Type());
+              auto rangeLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, rangeLen, 32);
+              auto splatRangeLen = builder.create<mlir::triton::SplatOp>(loc, cgI32TensorTy, rangeLenConst);
+              auto modOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatRangeLen);
+              auto floatOffsets = builder.create<mlir::arith::SIToFPOp>(loc, cgF32TensorTy, modOffsets);
+              auto startSplat = splatConstantF32(builder, loc, cgF32TensorTy, start);
+              auto stepSplat = splatConstantF32(builder, loc, cgF32TensorTy, step);
+              auto scaled = builder.create<mlir::arith::MulFOp>(loc, floatOffsets, stepSplat);
+              cgResult = builder.create<mlir::arith::AddFOp>(loc, startSplat, scaled);
+              cgResult = castTo(builder, loc, cgResult, cgElemType);
+            } else if (opLower3 == "shape_of") {
+              bool emitted = false;
+              if (slot.numOutputs > 0) {
+                int outIdx = slot.outputSlotIndices[0];
+                auto* arr = secResolveArr(outIdx);
+                if (arr && arr->lengthOf() > 0) {
+                  arr->syncToHost();
+                  int outLen = static_cast<int>(arr->lengthOf());
+                  auto cgI32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getI32Type());
+                  auto cgF32TensorTy = mlir::RankedTensorType::get({blockSize}, builder.getF32Type());
+                  auto outLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, outLen, 32);
+                  auto splatOutLen = builder.create<mlir::triton::SplatOp>(loc, cgI32TensorTy, outLenConst);
+                  auto modOffs = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatOutLen);
+                  cgResult = splatConstantF32(builder, loc, cgF32TensorTy, 0.0f);
+                  for (int d = outLen - 1; d >= 0; d--) {
+                    float dimVal = static_cast<float>(arr->e<float>(d));
+                    auto dimConst = builder.create<mlir::arith::ConstantIntOp>(loc, d, 32);
+                    auto splatDim = builder.create<mlir::triton::SplatOp>(loc, cgI32TensorTy, dimConst);
+                    auto cmp = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq,
+                                                                     modOffs, splatDim);
+                    auto dimValSplat = splatConstantF32(builder, loc, cgF32TensorTy, dimVal);
+                    cgResult = builder.create<mlir::arith::SelectOp>(loc, cmp, dimValSplat, cgResult);
+                  }
+                  cgResult = castTo(builder, loc, cgResult, cgElemType);
+                  emitted = true;
+                }
+              }
+              if (!emitted) {
+                cgResult = splatConstantF32(builder, loc, cgTensorType, 0.0f);
+              }
+            } else if (opLower3 == "min_max_datatype") {
+              float val = 0.0f;
+              if (slot.numOutputs > 0) {
+                int outIdx = slot.outputSlotIndices[0];
+                auto* arr = secResolveArr(outIdx);
+                if (arr && arr->lengthOf() > 0) {
+                  arr->syncToHost();
+                  val = arr->e<float>(0);
+                }
+              }
+              cgResult = splatConstantF32(builder, loc, cgTensorType, val);
+            } else {
+              // Default: zero fill (zeros_like, zeros_as, zeroslike, unknown)
+              cgResult = splatConstantF32(builder, loc, cgTensorType, 0.0f);
+            }
+
+            if (cgResult) {
+              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = cgResult;
             }
           } else if (cat == TritonOpCategory::SHAPE_MANIPULATION) {
             // Shape ops (reshape, permute, etc.): SSA forwarding.

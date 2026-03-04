@@ -45,6 +45,8 @@
 #include <cstring>
 #include <string>
 #include <fstream>
+#include <algorithm>
+#include <cctype>
 
 using namespace sd;
 using namespace sd::graph;
@@ -265,8 +267,11 @@ sd::Pointer loadModelFromFile(const char* filePath) {
 
     // Determine file type by extension
     std::string path(filePath);
-    bool isSdz = path.size() > 4 && path.substr(path.size() - 4) == ".sdz";
-    bool isSdnb = path.size() > 5 && path.substr(path.size() - 5) == ".sdnb";
+    std::string pathLower = path;
+    std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    bool isSdz = pathLower.size() > 4 && pathLower.substr(pathLower.size() - 4) == ".sdz";
+    bool isSdnb = pathLower.size() > 5 && pathLower.substr(pathLower.size() - 5) == ".sdnb";
 
     if (isSdz) {
       handle->sdzReader = SdzReader::openFile(filePath);
@@ -298,6 +303,12 @@ sd::Pointer loadModelFromFile(const char* filePath) {
         }
         handle->model = handle->sdnbReader->loadAll();
       }
+    }
+
+    if (!handle->model.graph) {
+      sd_printf("loadModelFromFile: file did not yield a valid FlatGraph: %s\n", filePath);
+      delete handle;
+      return nullptr;
     }
 
     sd_printf("loadModelFromFile: loaded %d variables, %d placeholders from %s\n",
@@ -404,7 +415,7 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
     auto requested = static_cast<sd::graph::GraphExecutionMode>(mode);
     auto gem = requested;
     // Clamp to valid range
-    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_TRITON) {
+    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_NNAPI) {
       gem = sd::graph::GraphExecutionMode::GEM_AUTO;
     }
     reinterpret_cast<NativeDynamicShapePlan*>(planHandle)->setGraphExecutionMode(gem);
@@ -417,6 +428,9 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
       case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: requestedName = "NVRTC_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_PTX_JIT: requestedName = "PTX_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_TRITON: requestedName = "TRITON"; break;
+      case sd::graph::GraphExecutionMode::GEM_MLX: requestedName = "MLX"; break;
+      case sd::graph::GraphExecutionMode::GEM_ARM_HYBRID: requestedName = "ARM_HYBRID"; break;
+      case sd::graph::GraphExecutionMode::GEM_NNAPI: requestedName = "NNAPI"; break;
       default: break;
     }
 
@@ -428,6 +442,9 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
       case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: appliedName = "NVRTC_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_PTX_JIT: appliedName = "PTX_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_TRITON: appliedName = "TRITON"; break;
+      case sd::graph::GraphExecutionMode::GEM_MLX: appliedName = "MLX"; break;
+      case sd::graph::GraphExecutionMode::GEM_ARM_HYBRID: appliedName = "ARM_HYBRID"; break;
+      case sd::graph::GraphExecutionMode::GEM_NNAPI: appliedName = "NNAPI"; break;
       default: break;
     }
 

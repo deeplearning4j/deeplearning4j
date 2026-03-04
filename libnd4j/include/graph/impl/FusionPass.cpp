@@ -313,6 +313,55 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         }
     }
 
+    // Pass 0.5: Cast sink through matmul — mark FP16→FP32 casts as identity when
+    // their only consumer is a matmul. MmulHelper already handles mixed (HALF, FP32)
+    // inputs internally via cublasSgemmEx, so the explicit cast is redundant.
+    // This eliminates 261 cast kernel launches + FP32 temporaries.
+    if (Environment::getInstance().dspCastSinkMatmul()) {
+        int castsSunk = 0;
+        for (int i = 0; i < numSlots; i++) {
+            if (fused[i]) continue;
+            std::string nameI = getOpName(slots[i]);
+            if (nameI != "cast") continue;
+            if (slots[i].numOutputs != 1 || slots[i].numInputs != 1) continue;
+            if (slots[i].numIArgs < 1) continue;
+
+            int targetType = static_cast<int>(slots[i].iArgs[0]);
+            // Only sink FP16→FP32 casts (target must be FLOAT32=1)
+            if (targetType != static_cast<int>(FLOAT32)) continue;
+
+            // Check this cast is only consumed once
+            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
+
+            int outputIdx = slots[i].outputSlotIndices[0];
+
+            // Find the single consumer — must be a matmul
+            for (int j = i + 1; j < numSlots; j++) {
+                if (fused[j]) continue;
+                bool consumesOutput = false;
+                for (int k = 0; k < slots[j].numInputs; k++) {
+                    if (slots[j].inputSourceIndices[k] == outputIdx) {
+                        consumesOutput = true;
+                        break;
+                    }
+                }
+                if (!consumesOutput) continue;
+
+                std::string nameJ = getOpName(slots[j]);
+                if (nameJ == "matmul" || nameJ == "mmul" || nameJ == "tensormmul") {
+                    // Mark cast as identity — its output slot points to raw FP16 input
+                    slots[i].isIdentityOp = true;
+                    fused[i] = true;
+                    castsSunk++;
+                }
+                break;  // Found the consumer, stop searching
+            }
+        }
+        if (castsSunk > 0) {
+            sd_printf("FusionPass: cast sink through matmul eliminated %d cast ops\n", castsSunk);
+        }
+    }
+
     // Pass 1: Detect element-wise chains
     for (int i = 0; i < numSlots; i++) {
         if (fused[i]) continue;
