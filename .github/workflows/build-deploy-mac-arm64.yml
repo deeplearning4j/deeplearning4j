@@ -139,7 +139,7 @@ jobs:
               fi
               command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON --no-transfer-progress -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3     -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" == 'compile' ]; then
-                  mvn_ext=" -Posx-aarch64-protoc -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=macosx-arm64-compile"
+                  mvn_ext=" -Posx-aarch64-protoc -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=macosx-arm64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
               elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext="-Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
@@ -176,7 +176,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gnu-sed unzip gcc swig autoconf-archive automake libomp libtool libusb ant maven nasm xz pkg-config sdl bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python openblas
+             brew install gnu-sed unzip gcc swig autoconf-archive automake libomp libtool libusb ant maven nasm xz pkg-config sdl bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python openblas llvm
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup OpenBLAS for macOS ARM64
@@ -251,20 +251,26 @@ jobs:
             echo "=== Log file size ==="
             ls -lh "$LOG"
             echo ""
-            echo "=== First 100 lines ==="
-            head -100 "$LOG"
+            echo "=== Result summary ==="
+            grep "Result:" "$LOG" | sed 's/.*Result: //' | sort | uniq -c | sort -rn | head -20
             echo ""
-            echo "=== Lines containing 'miss' or 'hit' (first 30) ==="
-            grep -i "miss\|hit\|result" "$LOG" | head -30 || echo "(none found)"
+            echo "=== First direct_cache_miss full trace (200 lines before) ==="
+            grep -n "direct_cache_miss" "$LOG" | head -1 | cut -d: -f1 | while read line; do
+              start=$((line - 200))
+              [ $start -lt 1 ] && start=1
+              sed -n "${start},${line}p" "$LOG"
+            done
             echo ""
-            echo "=== Lines containing 'No' or 'not' (first 20) ==="
-            grep -i "no \|not \|error\|fail" "$LOG" | head -20 || echo "(none found)"
+            echo "=== First direct_cache_hit full trace (50 lines before) ==="
+            grep -n "direct_cache_hit" "$LOG" | head -1 | cut -d: -f1 | while read line; do
+              start=$((line - 50))
+              [ $start -lt 1 ] && start=1
+              sed -n "${start},${line}p" "$LOG"
+            done
           elif [ -f "$LOG" ]; then
             echo "Log file exists but is empty"
           else
             echo "No ccache debug log found at $LOG"
-            echo "Checking if log is elsewhere..."
-            find /Users/runner -name "ccache*log*" -o -name "ccache*debug*" 2>/dev/null | head -5 || true
           fi
 
       - name: Save ccache (always)
