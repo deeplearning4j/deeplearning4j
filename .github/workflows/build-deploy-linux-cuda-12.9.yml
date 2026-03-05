@@ -360,6 +360,31 @@ jobs:
           echo "=== ccache stats after build ==="
           ccache --show-stats --verbose || ccache -sv || ccache -s
 
+      - name: Dump ccache diagnostic log (first 200 misses)
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          LOG="${HOME}/ccache-debug.log"
+          if [ -f "$LOG" ]; then
+            echo "=== ccache log size ==="
+            wc -l "$LOG"
+            echo ""
+            echo "=== Miss reasons (top 30) ==="
+            grep -i "result: cache_miss" "$LOG" | head -30 || true
+            echo ""
+            echo "=== Preprocessing errors ==="
+            grep -i "preprocessing" "$LOG" | head -20 || true
+            echo ""
+            echo "=== PCH related ==="
+            grep -i "pch\|precompiled" "$LOG" | head -20 || true
+            echo ""
+            echo "=== File not in cache ==="
+            grep -i "not in.*cache\|No such" "$LOG" | head -20 || true
+          else
+            echo "No ccache log file found at $LOG"
+          fi
+
       - name: Save ccache (always)
         if: always() && steps.setup-ccache.outputs.save-key != ''
         uses: actions/cache/save@v4
