@@ -178,6 +178,13 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y libdw-dev libelf-dev libdwarf-dev
 
+      - name: Install LLVM/MLIR toolchain
+        if: matrix.helper == 'compile'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y llvm-18-dev mlir-18-tools || sudo apt-get install -y llvm-dev libmlir-dev mlir-tools || true
+
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake-install
@@ -252,7 +259,7 @@ jobs:
 
           # Updated conditional flags for the helper library
           if [ "${{ matrix.helper }}" == "compile" ]; then
-             mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile"
+             mvn_ext=" -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
           elif [ "${{ matrix.helper }}" == "onednn" ]; then
              mvn_ext=" -Dlibnd4j.helper=onednn -Djavacpp.platform.extension=-onednn -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-onednn"
           elif [ "${{ matrix.helper }}" != '' ]; then
@@ -509,6 +516,14 @@ jobs:
               echo "Command: ${COMMAND}"
               eval "${COMMAND}"
           fi
+
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
 
       - name: Show ccache stats after build
         if: always()

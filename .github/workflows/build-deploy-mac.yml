@@ -139,7 +139,7 @@ jobs:
               fi
               command="mvn ${{ matrix.mvn_ext }}  -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3     -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" == 'compile' ]; then
-                  mvn_ext=" -Posx-aarch64-protoc -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=macosx-x86_64-compile"
+                  mvn_ext=" -Posx-aarch64-protoc -Djavacpp.platform.extension=-compile -Dlibnd4j.classifier=macosx-x86_64-compile -Dlibnd4j.helpers=mlir -Dlibnd4j.mlir=ON"
               elif [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
@@ -177,7 +177,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gnu-sed unzip gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install gnu-sed unzip gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python llvm
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup libnd4j home if a download url is specified
@@ -238,6 +238,14 @@ jobs:
                   eval "${COMMAND}"
           fi
 
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
+
       - name: Show ccache stats after build
         if: always()
         shell: bash
@@ -251,4 +259,3 @@ jobs:
         with:
           path: ~/.ccache
           key: ${{ steps.setup-ccache.outputs.save-key }}
-

@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        helper: [armcompute, compile, ""]
+        helper: [armcompute, nnapi, compile, compile-nnapi, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
@@ -143,6 +143,13 @@ jobs:
             libdw-dev \
             libelf-dev \
             libdwarf-dev
+
+      - name: Install LLVM/MLIR toolchain
+        if: matrix.helper == 'compile' || matrix.helper == 'compile-nnapi'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y llvm-18-dev mlir-18-tools || sudo apt-get install -y llvm-dev libmlir-dev mlir-tools || true
 
       - name: Set up Java for publishing
         id: setup-java
@@ -256,12 +263,17 @@ jobs:
           else
              MODULES=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
+
+          ANDROID_API_LEVEL="21"
+          if [ "${{ matrix.helper }}" == "nnapi" ] || [ "${{ matrix.helper }}" == "compile-nnapi" ]; then
+            ANDROID_API_LEVEL="27"
+          fi
           
           CMAKE_ARGS="-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/libnd4j/cmake/android-arm64.cmake \
             -G Ninja \
             -DSD_ANDROID_BUILD=true \
             -DANDROID_ABI=arm64-v8a \
-            -DANDROID_PLATFORM=android-21 \
+            -DANDROID_PLATFORM=android-${ANDROID_API_LEVEL} \
             -DANDROID_NDK=${ANDROID_NDK} \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_MAKE_PROGRAM=/usr/bin/ninja \
@@ -293,8 +305,15 @@ jobs:
           
           if [ "${{ matrix.helper }}" == "compile" ]; then
              HELPER_FLAGS="-Djavacpp.platform.extension=-compile \
-               -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile"
-          elif [ "${{ matrix.helper }}" == "armcompute" ]; then
+               -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile \
+               -Dlibnd4j.helpers=mlir \
+               -Dlibnd4j.mlir=ON"
+          elif [ "${{ matrix.helper }}" == "compile-nnapi" ]; then
+             HELPER_FLAGS="-Djavacpp.platform.extension=-compile-nnapi \
+               -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-compile-nnapi \
+               -Dlibnd4j.helpers=mlir,nnapi \
+               -Dlibnd4j.mlir=ON"
+          elif [ "${{ matrix.helper }}" != "" ]; then
              HELPER_FLAGS="-Dlibnd4j.helper=${{ matrix.helper }} \
                -Djavacpp.platform.extension=-${{ matrix.helper }} \
                -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
@@ -313,6 +332,14 @@ jobs:
           else
               eval "${MAVEN_COMMAND}"
           fi
+
+      - name: Publish SDX runtime SDK artifacts
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/publish-sdx-runtime-sdk
+        with:
+          artifact-name: sdx-runtime-sdk-${{ github.job }}-${{ matrix.helper || 'default' }}-${{ matrix.extension || 'base' }}
+          threads: ${{ matrix.build_threads || github.event.inputs.buildThreads || 2 }}
 
       - name: Show ccache stats after build
         if: always()
