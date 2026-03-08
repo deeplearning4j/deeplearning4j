@@ -208,6 +208,12 @@ public class TestSmolDoclingOptimizedPipeline {
                 }
             }
 
+            // Set verify kernels flag for ALL modes (Triton, CUDA_GRAPHS, SLOT_BY_SLOT, etc.)
+            Nd4j.getEnvironment().setTritonVerifyKernels(boolProp("vlm.test.triton.verifyKernels", false));
+            if (Nd4j.getEnvironment().tritonVerifyKernels()) {
+                log.info("  Replay verify enabled (tritonVerifyKernels=true)");
+            }
+
             if (overrideMode != null && overrideMode != GraphExecutionMode.TRITON) {
                 // Non-Triton mode: compile DSP plan with the requested execution mode.
                 // Uses REDUCE_OVERHEAD profile (no Triton compilation) with mode override.
@@ -228,6 +234,22 @@ public class TestSmolDoclingOptimizedPipeline {
                                     " or GraphExecutionMode values: " + Arrays.toString(GraphExecutionMode.values()), e);
                 }
                 String tritonProfile = configureTritonCompileProfile(dspMode);
+
+                // Triton diagnostic flags (apply after profile, override profile defaults)
+                Nd4j.getEnvironment().setTritonGraphCapture(boolProp("vlm.test.triton.graphCapture", true));
+                Nd4j.getEnvironment().setTritonSkipKernels(boolProp("vlm.test.triton.skipKernels", false));
+                Nd4j.getEnvironment().setTritonVerifyKernels(boolProp("vlm.test.triton.verifyKernels", false));
+                Nd4j.getEnvironment().setTritonVerifyKeepNative(boolProp("vlm.test.triton.verifyKeepNative", false));
+                Nd4j.getEnvironment().setTritonVerifyFullSnapshot(boolProp("vlm.test.triton.verifyFullSnapshot", false));
+                Nd4j.getEnvironment().setTritonMaxSubKernelIndex(intProp("vlm.test.triton.maxSubKernelIndex", -1));
+                log.info("  Triton diagnostics: graphCapture={}, skipKernels={}, verifyKernels={}, verifyKeepNative={}, verifyFullSnapshot={}, maxSubKernelIndex={}",
+                        Nd4j.getEnvironment().tritonGraphCapture(),
+                        Nd4j.getEnvironment().tritonSkipKernels(),
+                        Nd4j.getEnvironment().tritonVerifyKernels(),
+                        Nd4j.getEnvironment().tritonVerifyKeepNative(),
+                        Nd4j.getEnvironment().tritonVerifyFullSnapshot(),
+                        Nd4j.getEnvironment().tritonMaxSubKernelIndex());
+
                 if (Nd4j.getNativeOps().isTritonAvailable()) {
                     Nd4j.getNativeOps().resetTritonCounters();
                 }

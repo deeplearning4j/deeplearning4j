@@ -21,6 +21,7 @@
 
 #include <array/NDArray.h>
 #include <graph/Context.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/MmulHelper.h>
 #include <ops/declarable/DeclarableOp.h>
@@ -91,6 +92,35 @@ enum NativeSourceType : int8_t {
 };
 
 /**
+ * Control flow type for DSP slots, mirroring DynamicShapeSlot.java CF constants.
+ */
+enum ControlFlowType : int8_t {
+  CF_NONE = 0,
+  CF_SWITCH = 1,
+  CF_MERGE = 2,
+  CF_ENTER = 3,
+  CF_EXIT = 4,
+  CF_NEXT_ITERATION = 5,
+  CF_LOOP_COND = 6,
+};
+
+/**
+ * Describes a while-loop region in the DSP plan.
+ * Mirrors DynamicShapePlan.LoopRegion in Java.
+ */
+struct LoopRegion {
+  int mergeSlot;        // Jump-back target (Merge)
+  int switchSlot;       // Switch that gates the loop
+  int nextIterSlot;     // NextIteration (triggers jump-back)
+  int exitSlot;         // Exit (output when loop ends)
+  int bodyStartSlot;    // First body slot after Switch
+  int bodyEndSlot;      // Last body slot (= nextIterSlot)
+
+  LoopRegion() : mergeSlot(-1), switchSlot(-1), nextIterSlot(-1),
+                 exitSlot(-1), bodyStartSlot(-1), bodyEndSlot(-1) {}
+};
+
+/**
  * Per-op descriptor with pre-compiled wiring for the native plan executor.
  * Mirrors DynamicShapeSlot.java but uses C++ types.
  *
@@ -140,6 +170,11 @@ struct NativeSlot {
 
   int targetDeviceId;                      // -1 = auto
 
+  // Control flow support
+  ControlFlowType controlFlowType;         // CF_NONE for regular ops
+  int loopBackTarget;                      // For NextIteration: step index of Merge to jump back to (-1 otherwise)
+  int loopRegionIndex;                     // Index into loopRegions_ (-1 if not in a loop)
+
   // Legacy op support for ops not registered in OpRegistrator
   // (exp, log, abs, neg, sqrt, sin, cos, etc.)
   // legacyOpType: 0=not legacy, 1=TransformSame, 2=TransformStrict,
@@ -181,6 +216,7 @@ struct NativeSlot {
         inPlaceFused(false), inPlaceFusedInputIdx(-1),
         isFusedChainHead(false), fusedChainLength(0), isFusedChainTail(false),
         targetDeviceId(-1),
+        controlFlowType(CF_NONE), loopBackTarget(-1), loopRegionIndex(-1),
         legacyOpType(0), legacyOpNum(-1), frozenConstantSlot(false),
         cachedShapeKey(0), shapeCacheValid(false), shapeStatic(false),
         frozenContextReady(false) {}
@@ -272,8 +308,16 @@ struct GraphSegment {
   };
   std::vector<CaptureBuffer> captureBuffers;
 
-  // Legacy address key (kept for fallback diagnostics but no longer used for invalidation)
+  // Legacy address key (kept for fallback diagnostics)
   LongType capturedInputAddrKey;
+
+  // Per-external-input device buffer addresses captured at graph capture time.
+  // On replay, each external input's specialBuffer() is compared against this
+  // snapshot. Any mismatch invalidates the graph (the CUDA graph has the old
+  // address baked into native-op kernel arguments; replaying with a different
+  // address reads stale data). This replaces the hash-based capturedInputAddrKey
+  // check which can miss changes due to CUDA pool address reuse collisions.
+  std::vector<void*> capturedExternalAddrs;
 
   // Capture workspace: pre-allocated GPU buffer for PointersManager temporaries.
   // Eliminates cudaMallocAsync/cudaFreeAsync graph nodes during capture.
@@ -477,11 +521,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int getTotalGraphReplays() const;
 
   /**
-   * Enable/disable CUDA Graphs for this plan.
+   * Enable/disable GPU graph capture for this plan.
    * Default: disabled (slot-by-slot execution).
    */
-  void setCudaGraphsEnabled(bool enabled) { cudaGraphsEnabled_ = enabled; }
-  bool isCudaGraphsEnabled() const { return cudaGraphsEnabled_; }
+  void setCudaGraphsEnabled(bool enabled) { gpuGraphCaptureEnabled_ = enabled; }
+  bool isCudaGraphsEnabled() const { return gpuGraphCaptureEnabled_; }
 
   /**
    * Set JIT compilation mode for segment execution.
@@ -499,11 +543,11 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     gpuGraphBackend_ = nullptr;
     cpuGraphBackendChecked_ = false;
     cpuGraphBackend_ = nullptr;
-    // Enable CUDA graphs as fallback for all modes except SLOT_BY_SLOT.
-    // JIT backends (Triton/NVRTC/PTX) need CUDA graph fallback when they
+    // Enable GPU graph capture as fallback for all modes except SLOT_BY_SLOT.
+    // JIT backends (Triton/NVRTC/PTX) need graph capture fallback when they
     // can't handle a segment (unsupported ops, etc).
     if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-      cudaGraphsEnabled_ = true;
+      gpuGraphCaptureEnabled_ = true;
     }
   }
   GraphExecutionMode getGraphExecutionMode() const { return graphExecutionMode_; }
@@ -528,7 +572,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       // (their input values never change → output shapes are constant).
       int oldSegCount = (int)segments_.size();
       rebuildSegmentsForFrozenShapes();
-      sd_printf("NativeDSP::setShapesFrozen: merged %d -> %d segments\n",
+      DSP_DIAG(SEGMENT, "setShapesFrozen: merged %d -> %d segments",
                 oldSegCount, (int)segments_.size());
       // Clear stale cast cache entries from prefill phase so warmup
       // repopulates with correctly-sized decode buffers
@@ -557,7 +601,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   /**
    * Enable/disable trace logging for DSP execution decisions.
    * When enabled, logs segment dispatch, graph capture/replay decisions,
-   * and error paths via sd_printf (to stderr).
+   * and error paths via DSP_DIAG macros (to stderr).
    * Controlled by -Dnd4j.dsp.trace system property.
    */
   void setTraceEnabled(bool enabled) { traceEnabled_ = enabled; }
@@ -659,6 +703,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int numSlots_;
   int totalOutputSlots_;
   int numExternalInputs_;
+  std::vector<std::string> externalInputNames_;  // name for each external input index
+  std::vector<bool> externalInputIsVariable_;    // true if VARIABLE or PLACEHOLDER (needs forced H2D before replay)
 
   // Release schedule: releaseAtStep_[stepIdx] = array of slot indices to release
   int** releaseAtStep_;
@@ -684,8 +730,8 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   std::vector<NDArray*> pendingClose_;
   size_t pendingCloseBytes_;
 
-  // CUDA Graphs control
-  bool cudaGraphsEnabled_;
+  // GPU graph capture control
+  bool gpuGraphCaptureEnabled_;
   int totalGraphReplays_;
 
   // NVRTC JIT mode
@@ -718,6 +764,14 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // (for ops not registered in OpRegistrator)
   std::vector<sd::ops::DeclarableOp*> ownedLegacyOps_;
 
+  // ── Control flow support ─────────────────────────────────────────────
+  bool hasControlFlow_;                    // True if any slot has controlFlowType != CF_NONE
+  LoopRegion* loopRegions_;                // Array of loop region descriptors (owned)
+  int numLoopRegions_;
+  bool* slotIsDead_;                       // Per-output-slot dead flag (reset each execute)
+  int slotIsDeadSize_;                     // = totalOutputSlots_
+  static constexpr int MAX_LOOP_ITERATIONS = 10000000;  // Safety limit
+
   // ── Untracked output cache ──────────────────────────────────────────
   // Ops with untracked outputs (outputSlotIndices[i] < 0) allocate a
   // temporary buffer every execution. During CUDA graph capture, these
@@ -741,52 +795,94 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
 
   // Internal methods
   void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);
-  Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
-  LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
-  LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
-#ifdef SD_CUDA
-  LongType computeSegmentInputAddrKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
-#endif
   void flushPendingClose(void* stream);
   void buildSegments();
   void rebuildSegmentsForFrozenShapes();
-  void maybeSplitUnstableSegments();
 
-  // Segment execution strategies
+  // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
+  Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
+  LongType computeShapeKey(NativeSlot& slot, NDArray** inputs, int numInputs);
+  void detectFrozenConstants();
+
+  // ── Segment management (NativeDynamicShapePlan_segments.cpp) ──
+  LongType computeSegmentShapeKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
+  void maybeSplitUnstableSegments();
   Status executeSegmentSlotBySlot(GraphSegment& seg, NDArray** externalArrays,
                                   int numExt, void* stream);
+  Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
+                                    int numExt, void* stream);
+  GraphBackend* getCpuGraphBackend();
+
+  // ── CUDA graph capture/replay (NativeDynamicShapePlan_cudagraph.cu) ──
 #ifdef SD_CUDA
+  LongType computeSegmentInputAddrKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
+  void snapshotExternalAddrs(GraphSegment& seg, NDArray** externalInputs, int numExt);
+  bool externalAddrsMatch(const GraphSegment& seg, NDArray** externalInputs, int numExt) const;
   Status executeSegmentWithGraph(GraphSegment& seg, NDArray** externalArrays,
                                  int numExt, void* stream);
   Status executeSegmentWithJit(GraphSegment& seg, NDArray** externalArrays,
                                int numExt, void* stream);
+
+  /**
+   * Replay verification: snapshot replay outputs, re-execute slot-by-slot with
+   * frozen context reset, and compare to detect divergence.
+   *
+   * Reusable by both the Triton path (gpubackend.cpp) and the CUDA_GRAPHS
+   * frozen fast path (cuda.cu). Requires cudaStreamSynchronize before calling.
+   *
+   * @param seg        The segment that was just replayed
+   * @param externalArrays External input arrays
+   * @param numExt     Number of external inputs
+   * @param stream     CUDA stream (for sync/memcpy)
+   * @param pathLabel  Label for log output (e.g. "TRITON" or "CUDA_GRAPHS")
+   */
+  void performReplayVerify(GraphSegment& seg, NDArray** externalArrays,
+                           int numExt, void* stream, const char* pathLabel);
 #endif
+
+  // ── Platform dispatch (NativeDynamicShapePlan_cuda.cu / _cuda_stubs.cpp) ──
+  // These methods abstract platform-specific (CUDA vs CPU) behavior.
+  // CUDA implementations are in _cuda.cu; CPU fallbacks in _cuda_stubs.cpp.
+  // The linker picks the right version based on the build configuration.
+  Status platformTryFrozenFastPath(NDArray** externalInputs, int numExternalInputs,
+                                    NDArray** requestedOutputs, int numRequestedOutputs, void* stream);
+  void platformPreExecuteSetup(NDArray** externalInputs, int numExternalInputs, void* stream);
+  bool platformShouldKeepSegmentCache(const GraphSegment& seg) const;
+  void platformPrecompileSegments(NDArray** externalInputs, int numExternalInputs);
+  bool platformBindSegmentDevice(const GraphSegment& seg);
+  bool platformShouldUseGraph(const GraphSegment& seg);
+  Status platformExecuteSegmentWithBackends(GraphSegment& seg, NDArray** externalInputs,
+                                             int numExternalInputs, void* stream, bool& usedGraph);
+  Status platformCheckPostSegment(GraphSegment& seg);
+  void platformScatterKvEntry(NDArray* presentKv, NDArray* staticBuf, int seqDim, int pos, void* stream);
+  void* platformBeginKvScatter(void* stream);
+  void platformEndKvScatter(void* savedState);
+  void platformMarkKvCaptureBuffersNeverSkip();
+  void platformCleanupSegmentForRebuild(GraphSegment& seg);
+  void platformFreePlanResources();
+  int platformCountCapturedGraphSegments() const;
+  void platformMaybeSplitIfEnabled();
+
+  // ── GPU graph backend (NativeDynamicShapePlan_gpubackend.cpp) ──
+  Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
+                                    int numExt, void* stream);
+  GraphBackend* getGpuGraphBackend();
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
   GraphBackend* cpuGraphBackend_;
   bool cpuGraphBackendChecked_;
 
-  Status executeSegmentWithCpuGraph(GraphSegment& seg, NDArray** externalArrays,
-                                    int numExt, void* stream);
-  GraphBackend* getCpuGraphBackend();
-
   // GPU graph backend (Triton GPU compiler)
   GraphBackend* gpuGraphBackend_;
   bool gpuGraphBackendChecked_;
 
-  Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
-                                    int numExt, void* stream);
-  GraphBackend* getGpuGraphBackend();
-
 #ifdef SD_CUDA
-  // Pre-allocated cuBLAS workspace for CUDA graph capture.
-  // During graph capture, cuBLAS internal cudaMalloc calls on stream 0
-  // break capture on the named stream. Providing an explicit workspace
-  // prevents cuBLAS from doing any internal allocations.
-  void* cublasWorkspaceBuffer_;
-  size_t cublasWorkspaceSize_;
+  // Pre-allocated cuBLAS workspace for GPU graph capture.
+  void* cublasWorkspaceBuffer_ = nullptr;
+  size_t cublasWorkspaceSize_ = 0;
   void ensureCublasWorkspace(size_t minBytes);
   void setCublasWorkspaceForCapture(void* stream);
+  void setCublasWorkspaceForWarmup();
   void restoreCublasWorkspaceAfterCapture(void* stream);
 #endif
 
