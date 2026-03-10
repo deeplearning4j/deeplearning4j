@@ -660,6 +660,10 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
     // Non-workspace memory during capture — also skip to prevent MemFree graph nodes
     return;
   }
+  // Note: tl_captureSkipFrees is NOT checked here — gap op temps allocated during
+  // capture via cudaMallocAsync need paired MemFree nodes (cudaFreeAsync).
+  // External memory is protected by DataBuffer::deleteSpecial() which checks
+  // tl_graphExecutionActive and returns early.
 
   cudaStream_t freeStream = resolveCaptureStream(stream);
 

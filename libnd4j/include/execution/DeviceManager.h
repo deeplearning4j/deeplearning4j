@@ -451,6 +451,9 @@ private:
     void initializeP2PConnections();
     void probeP2PCapabilities(int device1, int device2);
 
+    // CUDA dispatch helper (implemented in cuda/DeviceManager_cuda.cu)
+    void setCurrentDeviceCuda(const DeviceInfo& device);
+
     // Internal device lookup
     int findGlobalIndex(DeviceType type, int localIndex) const;
     DeviceInfo* findDevice(int globalIndex);

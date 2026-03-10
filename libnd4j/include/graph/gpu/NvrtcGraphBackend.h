@@ -21,6 +21,7 @@
 
 #include <graph/GraphBackend.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/gpu/JitGraphBackendCommon.h>
 
 #ifdef SD_CUDA
 
@@ -70,54 +71,15 @@ class NvrtcGraphBackend : public GraphBackend {
   static NvrtcGraphBackend& getInstance();
 
  private:
-  struct CompiledKernel {
-    void* gpuModule;
-    void* kernelFunction;
-    int numArgs;               // Total kernel arguments (inputs + outputs + n)
-
-    // Argument mapping: which arrays map to which kernel params
-    // Negative values = external input index (-(idx+1))
-    // Positive values = output slot index
-    struct ArgMapping {
-      int slotIndex;
-      bool isOutput;
-    };
-    std::vector<ArgMapping> argMap;
-
-    std::vector<CompilationAuditEntry> audit;
-
-    CompiledKernel() : gpuModule(nullptr), kernelFunction(nullptr), numArgs(0) {}
-  };
-
-  struct SegmentCacheKey {
-    int startSlot;
-    int endSlot;
-    LongType shapeKey;
-    bool operator==(const SegmentCacheKey& o) const {
-      return startSlot == o.startSlot && endSlot == o.endSlot && shapeKey == o.shapeKey;
-    }
-  };
-  struct SegmentCacheHash {
-    size_t operator()(const SegmentCacheKey& k) const {
-      size_t h = std::hash<int>()(k.startSlot);
-      h ^= std::hash<int>()(k.endSlot) << 1;
-      h ^= std::hash<LongType>()(k.shapeKey) << 2;
-      return h;
-    }
-  };
-
-  std::unordered_map<SegmentCacheKey, CompiledKernel, SegmentCacheHash> cache_;
+  std::unordered_map<JitSegmentCacheKey, JitCompiledKernel, JitSegmentCacheHash> cache_;
   std::mutex cacheMtx_;
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
-
-  // Minimum ops to attempt fusion
-  static constexpr int MIN_FUSIBLE_OPS = 2;
 
   // Generate CUDA C source for a fused element-wise chain
   std::string generateCudaSource(NativeSlot* slots, int startSlot, int endSlot,
                                   NDArray** externalInputs, int numExternalInputs,
                                   NDArray** outputSlots, int totalOutputSlots,
-                                  CompiledKernel& result);
+                                  JitCompiledKernel& result);
 
   // Get compute capability string for current device
   static std::string getComputeArch();

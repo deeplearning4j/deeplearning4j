@@ -25,7 +25,6 @@
 #include <loops/ReduceType.h>
 #include <loops/summarystatsreduce.h>
 #include <math/templatemath.h>
-#include <system/Environment.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
 

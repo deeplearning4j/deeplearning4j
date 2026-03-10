@@ -318,20 +318,10 @@ void Context::trackList(NDArrayList *list) {
 }
 
 int Context::getBranch() {
-  if (_variableSpace == nullptr) {
-    THROW_EXCEPTION("Context::getBranch: VariableSpace is null. Context was not properly initialized.");
-  }
-  if (_variableSpace->flowPath() == nullptr) {
-    return 0;  // Default branch when no flow path is set
-  }
-  return _variableSpace->flowPath()->branch(this->nodeId());
+  return 0;
 }
 
 void Context::setBranch(int branch) {
-  //_branch = branch;
-  if (_variableSpace != nullptr && _variableSpace->flowPath() != nullptr) {
-    _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
-  }
 }
 
 LongType Context::getOuterTime() { return this->_executionTime.first; }

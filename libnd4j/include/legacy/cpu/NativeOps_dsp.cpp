@@ -27,6 +27,7 @@
  *   - getPlanNumExternalInputs / getPlanNumRequestedOutputs / getPlanNumSlots
  */
 
+#include <graph/DspDiagnostics.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
@@ -36,6 +37,8 @@
 
 #include <cstring>
 #include <cstdio>
+#include <algorithm>
+#include <cctype>
 #include <string>
 
 using namespace sd;
@@ -62,23 +65,23 @@ struct LoadedModelHandle {
 sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType planSize) {
   try {
     if (serializedPlan == nullptr || planSize <= 0) {
-      sd_printf("compileDynamicShapePlan: null or empty plan data\n", "");
+      DSP_DIAG(COMPILE, "compileDynamicShapePlan: null or empty plan data");
       return nullptr;
     }
 
     auto* plan = NativeDynamicShapePlan::fromSerializedPlan(serializedPlan, planSize);
     if (plan == nullptr) {
-      sd_printf("compileDynamicShapePlan: failed to parse plan (%lld bytes)\n",
-                static_cast<long long>(planSize));
+      DSP_DIAG(COMPILE, "compileDynamicShapePlan: failed to parse plan (%lld bytes)",
+               static_cast<long long>(planSize));
       return nullptr;
     }
 
-    sd_printf("compileDynamicShapePlan: compiled plan with %d slots, %d external inputs, %d outputs\n",
-              plan->getNumSlots(), plan->getNumExternalInputs(), plan->getNumRequestedOutputs());
+    DSP_DIAG(COMPILE, "compiled plan: %d slots, %d inputs, %d outputs",
+             plan->getNumSlots(), plan->getNumExternalInputs(), plan->getNumRequestedOutputs());
 
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {
-    sd_printf("compileDynamicShapePlan: exception: %s\n", e.what());
+    DSP_DIAG(COMPILE, "compileDynamicShapePlan: exception: %s", e.what());
     return nullptr;
   }
 }
@@ -87,7 +90,6 @@ int executeDynamicShapePlan(
     sd::Pointer planHandle,
     OpaqueContext* opContext,
     sd::Pointer stream) {
-  (void)stream;  // CPU path currently executes with nullptr stream.
   // Keep Java-visible error reporting in sync with CUDA NativeOps_dsp behavior.
   auto setError = [](int code, const char* msg) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(code);
@@ -97,13 +99,13 @@ int executeDynamicShapePlan(
   try {
     if (planHandle == nullptr) {
       const char* msg = "executeDynamicShapePlan: null plan handle";
-      sd_printf("%s\n", msg);
+      DSP_DIAG(EXECUTE, "%s", msg);
       setError(1, msg);
       return 1;
     }
     if (opContext == nullptr) {
       const char* msg = "executeDynamicShapePlan: null opContext";
-      sd_printf("%s\n", msg);
+      DSP_DIAG(EXECUTE, "%s", msg);
       setError(1, msg);
       return 1;
     }
@@ -117,7 +119,7 @@ int executeDynamicShapePlan(
       char buf[256];
       snprintf(buf, sizeof(buf), "executeDynamicShapePlan: input count mismatch: got %d, expected %d",
                numInputs, plan->getNumExternalInputs());
-      sd_printf("%s\n", buf);
+      DSP_DIAG(EXECUTE, "%s", buf);
       setError(2, buf);
       return 2;
     }
@@ -125,7 +127,7 @@ int executeDynamicShapePlan(
       char buf[256];
       snprintf(buf, sizeof(buf), "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
                numOutputs, plan->getNumRequestedOutputs());
-      sd_printf("%s\n", buf);
+      DSP_DIAG(EXECUTE, "%s", buf);
       setError(3, buf);
       return 3;
     }
@@ -136,7 +138,7 @@ int executeDynamicShapePlan(
       if (inputPtrs[i] == nullptr) {
         char buf[256];
         snprintf(buf, sizeof(buf), "executeDynamicShapePlan: null input at index %d", i);
-        sd_printf("%s\n", buf);
+        DSP_DIAG(EXECUTE, "%s", buf);
         setError(4, buf);
         return 4;
       }
@@ -147,8 +149,10 @@ int executeDynamicShapePlan(
       outputPtrs[i] = opContext->outputArray(i);
     }
 
-    // CPU backend: stream is unused here (nullptr).
-    auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, nullptr);
+    // Pass through the execution stream from Java. CUDA-backed DSP execution relies on
+    // a consistent stream for Triton launches, KV scatter, and downstream consumers.
+    // CPU backends ignore the pointer inside NativeDynamicShapePlan::execute().
+    auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, stream);
 
     if (status != Status::OK) {
       const char* existingMsg = sd::LaunchContext::defaultContext()->errorReference()->errorMessage();
@@ -160,7 +164,7 @@ int executeDynamicShapePlan(
         snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d",
                  static_cast<int>(status));
       }
-      sd_printf("%s\n", buf);
+      DSP_DIAG(EXECUTE, "%s", buf);
       setError(static_cast<int>(status), buf);
       return static_cast<int>(status);
     }
@@ -173,7 +177,7 @@ int executeDynamicShapePlan(
 
     return 0;
   } catch (const std::exception& e) {
-    sd_printf("executeDynamicShapePlan: exception: %s\n", e.what());
+    DSP_DIAG(EXECUTE, "executeDynamicShapePlan: exception: %s", e.what());
     setError(-1, e.what());
     return -1;
   }
@@ -225,20 +229,23 @@ void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos) {
 sd::Pointer loadModelFromFile(const char* filePath) {
   try {
     if (filePath == nullptr) {
-      sd_printf("loadModelFromFile: null file path\n", "");
+      DSP_DIAG(COMPILE, "loadModelFromFile: null file path");
       return nullptr;
     }
 
     auto* handle = new LoadedModelHandle();
 
     std::string path(filePath);
-    bool isSdz = path.size() > 4 && path.substr(path.size() - 4) == ".sdz";
-    bool isSdnb = path.size() > 5 && path.substr(path.size() - 5) == ".sdnb";
+    std::string pathLower = path;
+    std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    bool isSdz = pathLower.size() > 4 && pathLower.substr(pathLower.size() - 4) == ".sdz";
+    bool isSdnb = pathLower.size() > 5 && pathLower.substr(pathLower.size() - 5) == ".sdnb";
 
     if (isSdz) {
       handle->sdzReader = SdzReader::openFile(filePath);
       if (!handle->sdzReader) {
-        sd_printf("loadModelFromFile: failed to open SDZ file: %s\n", filePath);
+        DSP_DIAG(COMPILE, "loadModelFromFile: failed to open SDZ file: %s", filePath);
         delete handle;
         return nullptr;
       }
@@ -246,7 +253,7 @@ sd::Pointer loadModelFromFile(const char* filePath) {
     } else if (isSdnb) {
       handle->sdnbReader = SdnbReader::openFile(filePath);
       if (!handle->sdnbReader) {
-        sd_printf("loadModelFromFile: failed to open SDNB file: %s\n", filePath);
+        DSP_DIAG(COMPILE, "loadModelFromFile: failed to open SDNB file: %s", filePath);
         delete handle;
         return nullptr;
       }
@@ -258,7 +265,7 @@ sd::Pointer loadModelFromFile(const char* filePath) {
       } else {
         handle->sdnbReader = SdnbReader::openFile(filePath);
         if (!handle->sdnbReader) {
-          sd_printf("loadModelFromFile: cannot open file as SDZ or SDNB: %s\n", filePath);
+          DSP_DIAG(COMPILE, "loadModelFromFile: cannot open file as SDZ or SDNB: %s", filePath);
           delete handle;
           return nullptr;
         }
@@ -266,14 +273,20 @@ sd::Pointer loadModelFromFile(const char* filePath) {
       }
     }
 
-    sd_printf("loadModelFromFile: loaded %d variables, %d placeholders from %s\n",
-              static_cast<int>(handle->model.variables.size()),
-              static_cast<int>(handle->model.placeholderNames.size()),
-              filePath);
+    if (!handle->model.graph) {
+      DSP_DIAG(COMPILE, "loadModelFromFile: file did not yield a valid FlatGraph: %s", filePath);
+      delete handle;
+      return nullptr;
+    }
+
+    DSP_DIAG(COMPILE, "loaded model: %d vars, %d placeholders from %s",
+             static_cast<int>(handle->model.variables.size()),
+             static_cast<int>(handle->model.placeholderNames.size()),
+             filePath);
 
     return reinterpret_cast<sd::Pointer>(handle);
   } catch (const std::exception& e) {
-    sd_printf("loadModelFromFile: exception: %s\n", e.what());
+    DSP_DIAG(COMPILE, "loadModelFromFile: exception: %s", e.what());
     return nullptr;
   }
 }
@@ -283,13 +296,13 @@ sd::Pointer compileModelPlan(
     sd::Pointer requestedOutputNames, int numOutputs) {
   try {
     if (modelHandle == nullptr) {
-      sd_printf("compileModelPlan: null model handle\n", "");
+      DSP_DIAG(COMPILE, "compileModelPlan: null model handle");
       return nullptr;
     }
 
     auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
     if (!handle->model.graph) {
-      sd_printf("compileModelPlan: model has no graph\n", "");
+      DSP_DIAG(COMPILE, "compileModelPlan: model has no graph");
       return nullptr;
     }
 
@@ -305,16 +318,16 @@ sd::Pointer compileModelPlan(
         handle->model.graph, handle->model.variables, outputs);
 
     if (!plan) {
-      sd_printf("compileModelPlan: failed to compile plan\n", "");
+      DSP_DIAG(COMPILE, "compileModelPlan: failed to compile plan");
       return nullptr;
     }
 
-    sd_printf("compileModelPlan: compiled %d slots, %d outputs\n",
-              plan->getNumSlots(), plan->getNumRequestedOutputs());
+    DSP_DIAG(COMPILE, "compiled model plan: %d slots, %d outputs",
+             plan->getNumSlots(), plan->getNumRequestedOutputs());
 
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {
-    sd_printf("compileModelPlan: exception: %s\n", e.what());
+    DSP_DIAG(COMPILE, "compileModelPlan: exception: %s", e.what());
     return nullptr;
   }
 }
@@ -367,7 +380,7 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
     auto requested = static_cast<sd::graph::GraphExecutionMode>(mode);
     auto gem = requested;
 
-    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_TRITON) {
+    if (gem < sd::graph::GraphExecutionMode::GEM_AUTO || gem > sd::graph::GraphExecutionMode::GEM_NNAPI) {
       gem = sd::graph::GraphExecutionMode::GEM_AUTO;
     }
 
@@ -391,6 +404,9 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
       case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: requestedName = "NVRTC_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_PTX_JIT: requestedName = "PTX_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_TRITON: requestedName = "TRITON"; break;
+      case sd::graph::GraphExecutionMode::GEM_MLX: requestedName = "MLX"; break;
+      case sd::graph::GraphExecutionMode::GEM_ARM_HYBRID: requestedName = "ARM_HYBRID"; break;
+      case sd::graph::GraphExecutionMode::GEM_NNAPI: requestedName = "NNAPI"; break;
       default: break;
     }
 
@@ -402,11 +418,14 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
       case sd::graph::GraphExecutionMode::GEM_NVRTC_JIT: appliedName = "NVRTC_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_PTX_JIT: appliedName = "PTX_JIT"; break;
       case sd::graph::GraphExecutionMode::GEM_TRITON: appliedName = "TRITON"; break;
+      case sd::graph::GraphExecutionMode::GEM_MLX: appliedName = "MLX"; break;
+      case sd::graph::GraphExecutionMode::GEM_ARM_HYBRID: appliedName = "ARM_HYBRID"; break;
+      case sd::graph::GraphExecutionMode::GEM_NNAPI: appliedName = "NNAPI"; break;
       default: break;
     }
 
-    sd_printf("NativeDSP::setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)\n",
-              mode, requestedName, static_cast<int>(gem), appliedName);
+    DSP_DIAG(BACKEND, "setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)",
+             mode, requestedName, static_cast<int>(gem), appliedName);
   }
 }
 
@@ -564,3 +583,59 @@ sd::LongType getTritonKernelLaunchCount() { return 0; }
 sd::LongType getTritonCacheHitCount() { return 0; }
 void resetTritonCounters() {}
 void invalidateTritonCache() {}
+
+// ─── DSP Diagnostics JNI bridge ──────────────────────────────────────────────
+
+void dspDiagSetCategories(int mask) {
+    sd::graph::DspDiagnostics::getInstance().setCategories(static_cast<uint32_t>(mask));
+}
+
+void dspDiagEnableCategories(int mask) {
+    sd::graph::DspDiagnostics::getInstance().enableCategories(static_cast<uint32_t>(mask));
+}
+
+void dspDiagDisableCategories(int mask) {
+    sd::graph::DspDiagnostics::getInstance().disableCategories(static_cast<uint32_t>(mask));
+}
+
+int dspDiagGetEnabledMask() {
+    return static_cast<int>(sd::graph::DspDiagnostics::getInstance().getEnabledMask());
+}
+
+void dspDiagSetLevel(int level) {
+    sd::graph::DspDiagnostics::getInstance().setLevel(
+        static_cast<sd::graph::DspDiagLevel>(level));
+}
+
+void dspDiagSetJsonPath(const char* path) {
+    if (path != nullptr) {
+        sd::graph::DspDiagnostics::getInstance().setJsonPath(path);
+    }
+}
+
+void dspDiagRecordJavaEvent(int category, int slotId, int segmentId,
+                             const char* opName, sd::LongType timingUs,
+                             const char* message) {
+    if (sd::graph::DspDiagnostics::getInstance().isEnabled(static_cast<uint32_t>(category))) {
+        sd::graph::DspDiagnostics::getInstance().recordEvent(
+            static_cast<uint32_t>(category), slotId, segmentId, -1,
+            opName, static_cast<int64_t>(timingUs), "%s", message != nullptr ? message : "");
+    }
+}
+
+const char* dspDiagGetPlanReport() {
+    // Thread-local static to hold the report string across JNI boundary
+    thread_local std::string reportBuf;
+    reportBuf = sd::graph::DspDiagnostics::getInstance().generatePlanReport();
+    return reportBuf.c_str();
+}
+
+const char* dspDiagGetJsonReport() {
+    thread_local std::string jsonBuf;
+    jsonBuf = sd::graph::DspDiagnostics::getInstance().generateJsonReport();
+    return jsonBuf.c_str();
+}
+
+void dspDiagClear() {
+    sd::graph::DspDiagnostics::getInstance().clear();
+}

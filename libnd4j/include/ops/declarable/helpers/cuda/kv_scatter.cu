@@ -19,6 +19,7 @@
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <array/NDArray.h>
 #include <helpers/DebugHelper.h>
+#include <execution/cuda/LaunchDims.h>
 #include <cuda_runtime.h>
 
 namespace sd {
@@ -66,9 +67,9 @@ static void kvScatterCudaLauncher(const cudaStream_t* stream,
     auto output = reinterpret_cast<T*>(vOutput);
 
     auto numSlices = batch * heads;
-    int threads = 256;
+    dim3 launchDims = getLaunchDims("kv_scatter");
 
-    kvScatterKernel<T><<<numSlices, threads, 0, *stream>>>(
+    kvScatterKernel<T><<<numSlices, launchDims.y, launchDims.z, *stream>>>(
         present, output, batch, heads, srcSeqLen, dstSeqLen, dim, lastPos, cachePos);
     DebugHelper::checkGlobalErrorCode("kvScatter kernel failed");
 }
@@ -94,6 +95,94 @@ void kvScatter(NDArray* present, NDArray* output,
                           SD_FLOAT_TYPES);
 
     NDArray::registerSpecialUse({output}, {present});
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Batched KV scatter: single kernel launch for all mappings
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Batched kernel: each block handles one (mapping, head) pair.
+ * Grid: total_slices = sum(entries[i].heads) across all entries
+ * Block: 256 threads, grid-stride over dim
+ */
+template <typename T>
+__global__ void kvScatterBatchedKernel(const KvScatterEntry* __restrict__ entries,
+                                        const int* __restrict__ entrySliceOffsets,
+                                        int numEntries,
+                                        int totalSlices) {
+    int globalSlice = blockIdx.x;
+    if (globalSlice >= totalSlices) return;
+
+    // Binary search for the entry this block belongs to
+    int lo = 0, hi = numEntries - 1;
+    while (lo < hi) {
+        int mid = (lo + hi) / 2;
+        if (entrySliceOffsets[mid + 1] <= globalSlice) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    int entryIdx = lo;
+    const KvScatterEntry& e = entries[entryIdx];
+
+    int localSlice = globalSlice - entrySliceOffsets[entryIdx];
+    auto h = static_cast<LongType>(localSlice);
+
+    auto srcOffset = h * e.srcSeqLen * e.dim + e.lastPos * e.dim;
+    auto dstOffset = h * e.dstSeqLen * e.dim + e.cachePos * e.dim;
+
+    auto* src = reinterpret_cast<const T*>(e.srcPtr);
+    auto* dst = reinterpret_cast<T*>(e.dstPtr);
+
+    for (LongType d = threadIdx.x; d < e.dim; d += blockDim.x) {
+        dst[dstOffset + d] = src[srcOffset + d];
+    }
+}
+
+template <typename T>
+static void kvScatterBatchedCudaLauncher(const cudaStream_t* stream,
+                                          const KvScatterEntry* entries, int numEntries) {
+    // Compute prefix sums of slice counts (on host, then copy to device)
+    std::vector<int> offsets(numEntries + 1);
+    offsets[0] = 0;
+    for (int i = 0; i < numEntries; i++) {
+        offsets[i + 1] = offsets[i] + static_cast<int>(entries[i].heads);
+    }
+    int totalSlices = offsets[numEntries];
+
+    // Allocate device memory for entries and offsets
+    KvScatterEntry* dEntries = nullptr;
+    int* dOffsets = nullptr;
+    cudaMallocAsync(&dEntries, numEntries * sizeof(KvScatterEntry), *stream);
+    cudaMallocAsync(&dOffsets, (numEntries + 1) * sizeof(int), *stream);
+    cudaMemcpyAsync(dEntries, entries, numEntries * sizeof(KvScatterEntry),
+                    cudaMemcpyHostToDevice, *stream);
+    cudaMemcpyAsync(dOffsets, offsets.data(), (numEntries + 1) * sizeof(int),
+                    cudaMemcpyHostToDevice, *stream);
+
+    dim3 launchDims = getLaunchDims("kv_scatter");
+    kvScatterBatchedKernel<T><<<totalSlices, launchDims.y, launchDims.z, *stream>>>(
+        dEntries, dOffsets, numEntries, totalSlices);
+
+    cudaFreeAsync(dEntries, *stream);
+    cudaFreeAsync(dOffsets, *stream);
+
+    DebugHelper::checkGlobalErrorCode("kvScatterBatched kernel failed");
+}
+
+BUILD_SINGLE_TEMPLATE(void kvScatterBatchedCudaLauncher, (const cudaStream_t* stream, const KvScatterEntry* entries, int numEntries), SD_FLOAT_TYPES);
+
+void kvScatterBatched(const KvScatterEntry* entries, int numEntries,
+                       DataType dtype, LaunchContext* context) {
+    if (numEntries == 0) return;
+
+    auto stream = context->getCudaStream();
+
+    BUILD_SINGLE_SELECTOR(dtype, kvScatterBatchedCudaLauncher,
+                          (stream, entries, numEntries),
+                          SD_FLOAT_TYPES);
 }
 
 }  // namespace helpers

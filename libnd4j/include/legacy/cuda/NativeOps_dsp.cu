@@ -28,6 +28,7 @@
  */
 
 #include <cuda.h>
+#include <graph/DspDiagnostics.h>
 #include <legacy/NativeOps.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
@@ -72,23 +73,23 @@ struct LoadedModelHandle {
 sd::Pointer compileDynamicShapePlan(sd::Pointer serializedPlan, sd::LongType planSize) {
   try {
     if (serializedPlan == nullptr || planSize <= 0) {
-      sd_printf("compileDynamicShapePlan: null or empty plan data\n", "");
+      DSP_DIAG(COMPILE, "compileDynamicShapePlan: null or empty plan data");
       return nullptr;
     }
 
     auto* plan = NativeDynamicShapePlan::fromSerializedPlan(serializedPlan, planSize);
     if (plan == nullptr) {
-      sd_printf("compileDynamicShapePlan: failed to parse plan (%lld bytes)\n",
-                static_cast<long long>(planSize));
+      DSP_DIAG(COMPILE, "compileDynamicShapePlan: failed to parse plan (%lld bytes)",
+               static_cast<long long>(planSize));
       return nullptr;
     }
 
-    sd_printf("compileDynamicShapePlan: compiled plan with %d slots, %d external inputs, %d outputs\n",
-              plan->getNumSlots(), plan->getNumExternalInputs(), plan->getNumRequestedOutputs());
+    DSP_DIAG(COMPILE, "compiled plan: %d slots, %d inputs, %d outputs",
+             plan->getNumSlots(), plan->getNumExternalInputs(), plan->getNumRequestedOutputs());
 
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {
-    sd_printf("compileDynamicShapePlan: exception: %s\n", e.what());
+    DSP_DIAG(COMPILE, "compileDynamicShapePlan: exception: %s", e.what());
     return nullptr;
   }
 }
@@ -106,13 +107,13 @@ int executeDynamicShapePlan(
   try {
     if (planHandle == nullptr) {
       const char* msg = "executeDynamicShapePlan: null plan handle";
-      sd_printf("%s\n", msg);
+      DSP_DIAG(EXECUTE, "%s", msg);
       setError(1, msg);
       return 1;
     }
     if (opContext == nullptr) {
       const char* msg = "executeDynamicShapePlan: null opContext";
-      sd_printf("%s\n", msg);
+      DSP_DIAG(EXECUTE, "%s", msg);
       setError(1, msg);
       return 1;
     }
@@ -128,7 +129,7 @@ int executeDynamicShapePlan(
       char buf[256];
       snprintf(buf, sizeof(buf), "executeDynamicShapePlan: input count mismatch: got %d, expected %d",
                numInputs, plan->getNumExternalInputs());
-      sd_printf("%s\n", buf);
+      DSP_DIAG(EXECUTE, "%s", buf);
       setError(2, buf);
       return 2;
     }
@@ -136,7 +137,7 @@ int executeDynamicShapePlan(
       char buf[256];
       snprintf(buf, sizeof(buf), "executeDynamicShapePlan: output count mismatch: got %d, expected %d",
                numOutputs, plan->getNumRequestedOutputs());
-      sd_printf("%s\n", buf);
+      DSP_DIAG(EXECUTE, "%s", buf);
       setError(3, buf);
       return 3;
     }
@@ -148,7 +149,7 @@ int executeDynamicShapePlan(
       if (inputPtrs[i] == nullptr) {
         char buf[256];
         snprintf(buf, sizeof(buf), "executeDynamicShapePlan: null input at index %d", i);
-        sd_printf("%s\n", buf);
+        DSP_DIAG(EXECUTE, "%s", buf);
         setError(4, buf);
         return 4;
       }
@@ -177,7 +178,7 @@ int executeDynamicShapePlan(
         snprintf(buf, sizeof(buf), "executeDynamicShapePlan: plan execution failed with status %d",
                  static_cast<int>(status));
       }
-      sd_printf("%s\n", buf);
+      DSP_DIAG(EXECUTE, "%s", buf);
       setError(static_cast<int>(status), buf);
       // Clear any sticky CUDA errors left by the failed execution
       cudaGetLastError();
@@ -199,7 +200,7 @@ int executeDynamicShapePlan(
 
     return 0;
   } catch (const std::exception& e) {
-    sd_printf("executeDynamicShapePlan: exception: %s\n", e.what());
+    DSP_DIAG(EXECUTE, "executeDynamicShapePlan: exception: %s", e.what());
     // Clear any sticky CUDA errors and ensure stream is not in capture mode
     cudaGetLastError();
     if (stream != nullptr) {
@@ -259,7 +260,7 @@ void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos) {
 sd::Pointer loadModelFromFile(const char* filePath) {
   try {
     if (filePath == nullptr) {
-      sd_printf("loadModelFromFile: null file path\n", "");
+      DSP_DIAG(COMPILE, "loadModelFromFile: null file path");
       return nullptr;
     }
 
@@ -276,7 +277,7 @@ sd::Pointer loadModelFromFile(const char* filePath) {
     if (isSdz) {
       handle->sdzReader = SdzReader::openFile(filePath);
       if (!handle->sdzReader) {
-        sd_printf("loadModelFromFile: failed to open SDZ file: %s\n", filePath);
+        DSP_DIAG(COMPILE, "loadModelFromFile: failed to open SDZ file: %s", filePath);
         delete handle;
         return nullptr;
       }
@@ -284,7 +285,7 @@ sd::Pointer loadModelFromFile(const char* filePath) {
     } else if (isSdnb) {
       handle->sdnbReader = SdnbReader::openFile(filePath);
       if (!handle->sdnbReader) {
-        sd_printf("loadModelFromFile: failed to open SDNB file: %s\n", filePath);
+        DSP_DIAG(COMPILE, "loadModelFromFile: failed to open SDNB file: %s", filePath);
         delete handle;
         return nullptr;
       }
@@ -297,7 +298,7 @@ sd::Pointer loadModelFromFile(const char* filePath) {
       } else {
         handle->sdnbReader = SdnbReader::openFile(filePath);
         if (!handle->sdnbReader) {
-          sd_printf("loadModelFromFile: cannot open file as SDZ or SDNB: %s\n", filePath);
+          DSP_DIAG(COMPILE, "loadModelFromFile: cannot open file as SDZ or SDNB: %s", filePath);
           delete handle;
           return nullptr;
         }
@@ -306,19 +307,19 @@ sd::Pointer loadModelFromFile(const char* filePath) {
     }
 
     if (!handle->model.graph) {
-      sd_printf("loadModelFromFile: file did not yield a valid FlatGraph: %s\n", filePath);
+      DSP_DIAG(COMPILE, "loadModelFromFile: file did not yield a valid FlatGraph: %s", filePath);
       delete handle;
       return nullptr;
     }
 
-    sd_printf("loadModelFromFile: loaded %d variables, %d placeholders from %s\n",
-              static_cast<int>(handle->model.variables.size()),
-              static_cast<int>(handle->model.placeholderNames.size()),
-              filePath);
+    DSP_DIAG(COMPILE, "loaded model: %d vars, %d placeholders from %s",
+             static_cast<int>(handle->model.variables.size()),
+             static_cast<int>(handle->model.placeholderNames.size()),
+             filePath);
 
     return reinterpret_cast<sd::Pointer>(handle);
   } catch (const std::exception& e) {
-    sd_printf("loadModelFromFile: exception: %s\n", e.what());
+    DSP_DIAG(COMPILE, "loadModelFromFile: exception: %s", e.what());
     return nullptr;
   }
 }
@@ -328,14 +329,14 @@ sd::Pointer compileModelPlan(
     sd::Pointer requestedOutputNames, int numOutputs) {
   try {
     if (modelHandle == nullptr) {
-      sd_printf("compileModelPlan: null model handle\n", "");
+      DSP_DIAG(COMPILE, "compileModelPlan: null model handle");
       return nullptr;
     }
 
     auto* handle = reinterpret_cast<LoadedModelHandle*>(modelHandle);
 
     if (!handle->model.graph) {
-      sd_printf("compileModelPlan: model has no graph\n", "");
+      DSP_DIAG(COMPILE, "compileModelPlan: model has no graph");
       return nullptr;
     }
 
@@ -352,16 +353,16 @@ sd::Pointer compileModelPlan(
         handle->model.graph, handle->model.variables, outputs);
 
     if (!plan) {
-      sd_printf("compileModelPlan: failed to compile plan\n", "");
+      DSP_DIAG(COMPILE, "compileModelPlan: failed to compile plan");
       return nullptr;
     }
 
-    sd_printf("compileModelPlan: compiled %d slots, %d outputs\n",
-              plan->getNumSlots(), plan->getNumRequestedOutputs());
+    DSP_DIAG(COMPILE, "compiled model plan: %d slots, %d outputs",
+             plan->getNumSlots(), plan->getNumRequestedOutputs());
 
     return reinterpret_cast<sd::Pointer>(plan);
   } catch (const std::exception& e) {
-    sd_printf("compileModelPlan: exception: %s\n", e.what());
+    DSP_DIAG(COMPILE, "compileModelPlan: exception: %s", e.what());
     return nullptr;
   }
 }
@@ -448,8 +449,8 @@ void setPlanGraphExecutionMode(sd::Pointer planHandle, int mode) {
       default: break;
     }
 
-    sd_printf("NativeDSP::setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)\n",
-              mode, requestedName, static_cast<int>(gem), appliedName);
+    DSP_DIAG(BACKEND, "setPlanGraphExecutionMode: requested=%d(%s) applied=%d(%s)",
+             mode, requestedName, static_cast<int>(gem), appliedName);
   }
 }
 
@@ -609,7 +610,7 @@ bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPa
   // Export each captured segment's graph as a combined trace
   std::ofstream file(outputPath);
   if (!file.is_open()) {
-    sd_printf("exportPlanCudaGraphChromeTrace: failed to open file: %s\n", outputPath);
+    DSP_DIAG(COMPILE, "exportPlanCudaGraphChromeTrace: failed to open file: %s", outputPath);
     return false;
   }
 
@@ -638,7 +639,7 @@ bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPa
 
   file << "  ]\n}\n";
   file.close();
-  sd_printf("exportPlanCudaGraphChromeTrace: exported to %s\n", outputPath);
+  DSP_DIAG(SEGMENT, "exportPlanCudaGraphChromeTrace: exported to %s", outputPath);
   return true;
 }
 
@@ -673,7 +674,7 @@ bool debugDumpPlanCudaGraph(sd::Pointer planHandle, const char* outputPath) {
   }
 
   if (!success) {
-    sd_printf("debugDumpPlanCudaGraph: no captured graphs to dump\n", "");
+    DSP_DIAG(SEGMENT, "debugDumpPlanCudaGraph: no captured graphs to dump");
   }
   return success;
 }
@@ -739,7 +740,7 @@ static ncclDataType_t toNcclDataType(int dt) {
         case 16: return ncclBfloat16;  // BFLOAT16
 #endif
         default:
-            sd_printf("NCCL: unsupported data type %d, falling back to float\n", dt);
+            DSP_DIAG(FALLBACK, "NCCL: unsupported data type %d, falling back to float", dt);
             return ncclFloat32;
     }
 }
@@ -767,7 +768,7 @@ sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
     // and all ranks use it. In this simple case, we generate + init all at once.
     ncclResult_t res = ncclCommInitAll(&comm, 1, &deviceId);
     if (res != ncclSuccess) {
-        sd_printf("NCCL ncclCommInitAll failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL ncclCommInitAll failed: %s", ncclGetErrorString(res));
         return nullptr;
     }
 
@@ -776,7 +777,7 @@ sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
     auto* commPtr = new ncclComm_t(comm);
     return reinterpret_cast<sd::Pointer>(commPtr);
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return nullptr;
 #endif
 }
@@ -784,7 +785,7 @@ sd::Pointer ncclCommInit(int numRanks, int rankId, int deviceId) {
 sd::Pointer ncclCommInitWithId(int numRanks, int rankId, sd::Pointer uniqueId) {
 #ifdef HAVE_NCCL
     if (uniqueId == nullptr) {
-        sd_printf("NCCL ncclCommInitWithId: uniqueId is null\n", "");
+        DSP_DIAG(BACKEND, "NCCL ncclCommInitWithId: uniqueId is null");
         return nullptr;
     }
 
@@ -792,14 +793,14 @@ sd::Pointer ncclCommInitWithId(int numRanks, int rankId, sd::Pointer uniqueId) {
     ncclUniqueId* id = reinterpret_cast<ncclUniqueId*>(uniqueId);
     ncclResult_t res = ncclCommInitRank(&comm, numRanks, *id, rankId);
     if (res != ncclSuccess) {
-        sd_printf("NCCL ncclCommInitRank failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL ncclCommInitRank failed: %s", ncclGetErrorString(res));
         return nullptr;
     }
 
     auto* commPtr = new ncclComm_t(comm);
     return reinterpret_cast<sd::Pointer>(commPtr);
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return nullptr;
 #endif
 }
@@ -809,13 +810,13 @@ sd::Pointer ncclGetUniqueId() {
     auto* id = new ncclUniqueId();
     ncclResult_t res = ncclGetUniqueId(id);
     if (res != ncclSuccess) {
-        sd_printf("NCCL ncclGetUniqueId failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL ncclGetUniqueId failed: %s", ncclGetErrorString(res));
         delete id;
         return nullptr;
     }
     return reinterpret_cast<sd::Pointer>(id);
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return nullptr;
 #endif
 }
@@ -848,12 +849,12 @@ int ncclDoAllReduce(sd::Pointer commHandle,
     );
 
     if (res != ncclSuccess) {
-        sd_printf("NCCL AllReduce failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL AllReduce failed: %s", ncclGetErrorString(res));
         return -1;
     }
     return 0;
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return -1;
 #endif
 }
@@ -877,12 +878,12 @@ int ncclDoAllGather(sd::Pointer commHandle,
     );
 
     if (res != ncclSuccess) {
-        sd_printf("NCCL AllGather failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL AllGather failed: %s", ncclGetErrorString(res));
         return -1;
     }
     return 0;
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return -1;
 #endif
 }
@@ -906,12 +907,12 @@ int ncclDoReduceScatter(sd::Pointer commHandle,
     );
 
     if (res != ncclSuccess) {
-        sd_printf("NCCL ReduceScatter failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL ReduceScatter failed: %s", ncclGetErrorString(res));
         return -1;
     }
     return 0;
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return -1;
 #endif
 }
@@ -934,12 +935,12 @@ int ncclDoSend(sd::Pointer commHandle,
     );
 
     if (res != ncclSuccess) {
-        sd_printf("NCCL Send failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL Send failed: %s", ncclGetErrorString(res));
         return -1;
     }
     return 0;
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return -1;
 #endif
 }
@@ -962,12 +963,12 @@ int ncclDoRecv(sd::Pointer commHandle,
     );
 
     if (res != ncclSuccess) {
-        sd_printf("NCCL Recv failed: %s\n", ncclGetErrorString(res));
+        DSP_DIAG(BACKEND, "NCCL Recv failed: %s", ncclGetErrorString(res));
         return -1;
     }
     return 0;
 #else
-    sd_printf("NCCL not available. Build with -DHELPERS_nccl=ON\n", "");
+    DSP_DIAG(BACKEND, "NCCL not available. Build with -DHELPERS_nccl=ON");
     return -1;
 #endif
 }

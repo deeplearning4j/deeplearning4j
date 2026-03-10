@@ -24,7 +24,7 @@
 //
 #include <array/NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
-#include <graph/GraphExecutioner.h>
+#include <sys/stat.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/LoopsCoordsHelper.h>
@@ -719,6 +719,14 @@ NDArray * NDArrayFactory::string(std::vector<LongType>& shape, const std::vector
   return new NDArray(shape, string, dtype, context);
 }
 #endif
+
+namespace {
+long getFileSize(const char *filename) {
+  struct stat stat_buf;
+  int rc = stat(filename, &stat_buf);
+  return rc == 0 ? stat_buf.st_size : -1;
+}
+}
 
 NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
   auto size = getFileSize(fileName);

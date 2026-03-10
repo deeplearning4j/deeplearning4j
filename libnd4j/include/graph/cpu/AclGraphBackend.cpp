@@ -21,6 +21,7 @@
 #if HAVE_ARMCOMPUTE
 
 #include <graph/cpu/AclGraphBackend.h>
+#include <graph/DspDiagnostics.h>
 #include <ops/declarable/platform/armcompute/ArmComputeVersionProvider.h>
 #include <ops/declarable/platform/armcompute/armcomputeUtils.h>
 
@@ -323,12 +324,12 @@ AclGraphBackend::AclFunctionGroup AclGraphBackend::buildFunctions(
 
     result.valid = (functionsBuilt >= 2);
     if (result.valid) {
-      sd_printf("AclGraphBackend: built %d functions for segment [%d-%d]\n",
+      DSP_DIAG(COMPILE, "AclGraphBackend: built %d functions for segment [%d-%d]",
                 functionsBuilt, startSlot, endSlot);
     }
 
   } catch (const std::exception& e) {
-    sd_printf("AclGraphBackend: build failed: %s\n", e.what());
+    DSP_DIAG(COMPILE, "AclGraphBackend: build failed: %s", e.what());
   }
 
   return result;

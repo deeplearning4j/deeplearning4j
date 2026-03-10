@@ -21,6 +21,7 @@
 
 #include <graph/GraphBackend.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/gpu/JitGraphBackendCommon.h>
 
 #ifdef SD_CUDA
 
@@ -73,48 +74,15 @@ class PtxGraphBackend : public GraphBackend {
   static PtxGraphBackend& getInstance();
 
  private:
-  struct CompiledKernel {
-    void* gpuModule;
-    void* kernelFunction;
-
-    struct ArgMapping {
-      int slotIndex;
-      bool isOutput;
-    };
-    std::vector<ArgMapping> argMap;
-    std::vector<CompilationAuditEntry> audit;
-
-    CompiledKernel() : gpuModule(nullptr), kernelFunction(nullptr) {}
-  };
-
-  struct SegmentCacheKey {
-    int startSlot;
-    int endSlot;
-    LongType shapeKey;
-    bool operator==(const SegmentCacheKey& o) const {
-      return startSlot == o.startSlot && endSlot == o.endSlot && shapeKey == o.shapeKey;
-    }
-  };
-  struct SegmentCacheHash {
-    size_t operator()(const SegmentCacheKey& k) const {
-      size_t h = std::hash<int>()(k.startSlot);
-      h ^= std::hash<int>()(k.endSlot) << 1;
-      h ^= std::hash<LongType>()(k.shapeKey) << 2;
-      return h;
-    }
-  };
-
-  std::unordered_map<SegmentCacheKey, CompiledKernel, SegmentCacheHash> cache_;
+  std::unordered_map<JitSegmentCacheKey, JitCompiledKernel, JitSegmentCacheHash> cache_;
   std::mutex cacheMtx_;
   std::vector<CompilationAuditEntry> lastCompilationAudit_;
-
-  static constexpr int MIN_FUSIBLE_OPS = 2;
 
   // Generate PTX text for a fused chain
   std::string generatePtx(NativeSlot* slots, int startSlot, int endSlot,
                            NDArray** externalInputs, int numExternalInputs,
                            NDArray** outputSlots, int totalOutputSlots,
-                           CompiledKernel& result);
+                           JitCompiledKernel& result);
 
   // Get SM version for PTX target directive
   static int getSmVersion();

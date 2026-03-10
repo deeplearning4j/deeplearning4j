@@ -25,16 +25,12 @@
 #include <windows.h>
 #endif
 
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/TransferMetrics.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
 
-#ifdef SD_CUDA
-#include <cuda_runtime_api.h>
-#endif
+#include <legacy/cuda/NativeOpsHelpers_DataBuffers_cuda.h>
 
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
@@ -45,7 +41,6 @@
 
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
-#include <graph/GraphExecutioner.h>
 
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -91,7 +86,6 @@ extern std::mutex g_tadPackMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 
@@ -606,22 +600,18 @@ void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
 int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
-#ifdef SD_CUDA
   // Verify actual device of the GPU pointer. The DataBuffer._deviceId metadata can
   // get out of sync with the real pointer location during cross-device execution
   // (e.g., Java-side DeviceMemoryManager routing allocates on a different device than
   // expected, or allocateFailover moves data across GPUs). Using _deviceId alone causes
   // DSP to skip necessary input migrations, leading to illegal memory access on non-P2P GPUs.
   auto db = dataBuffer->dataBuffer();
-  if (db != nullptr && db->special() != nullptr) {
-    cudaPointerAttributes ptrAttrs;
-    auto res = cudaPointerGetAttributes(&ptrAttrs, db->special());
-    if (res == cudaSuccess && ptrAttrs.type == cudaMemoryTypeDevice) {
-      return ptrAttrs.device;
+  if (db != nullptr) {
+    int actualDevice = -1;
+    if (dbDeviceId_cudaQuery(db->special(), actualDevice)) {
+      return actualDevice;
     }
-    cudaGetLastError(); // clear any error from the query
   }
-#endif
   return dataBuffer->deviceId();
 }
 

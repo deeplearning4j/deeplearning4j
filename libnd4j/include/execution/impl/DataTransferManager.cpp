@@ -27,10 +27,6 @@
 #include <cstring>
 #include <algorithm>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
-
 namespace sd {
 namespace modelparallel {
 
@@ -44,39 +40,25 @@ RingBuffer::RingBuffer(size_t capacity, int numParticipants)
     _deviceIds.resize(numParticipants, -1);
 }
 
+#ifndef SD_CUDA
 RingBuffer::~RingBuffer() {
     for (int i = 0; i < _numParticipants; ++i) {
         if (_buffers[i] != nullptr) {
-#ifdef SD_CUDA
-            if (_deviceIds[i] >= 0) {
-                cudaSetDevice(_deviceIds[i]);
-                cudaFree(_buffers[i]);
-            } else {
-                free(_buffers[i]);
-            }
-#else
             free(_buffers[i]);
-#endif
         }
     }
 }
+
+void RingBuffer::synchronize() {
+    // No-op on CPU
+}
+#endif
 
 void* RingBuffer::getBuffer(int rank) {
     if (rank < 0 || rank >= _numParticipants) {
         return nullptr;
     }
     return _buffers[rank];
-}
-
-void RingBuffer::synchronize() {
-#ifdef SD_CUDA
-    for (int i = 0; i < _numParticipants; ++i) {
-        if (_deviceIds[i] >= 0) {
-            cudaSetDevice(_deviceIds[i]);
-            cudaDeviceSynchronize();
-        }
-    }
-#endif
 }
 
 // DataTransferManager implementation
@@ -92,6 +74,7 @@ DataTransferManager::~DataTransferManager() {
     shutdown();
 }
 
+#ifndef SD_CUDA
 bool DataTransferManager::initialize(const ModelParallelConfig& config) {
     std::lock_guard<std::mutex> lock(_queueMutex);
 
@@ -110,11 +93,7 @@ bool DataTransferManager::initialize(const ModelParallelConfig& config) {
     // Allocate staging buffers
     for (int i = 0; i < _maxConcurrentTransfers; ++i) {
         void* buffer = nullptr;
-#ifdef SD_CUDA
-        cudaMallocHost(&buffer, _stagingBufferSize);
-#else
         buffer = malloc(_stagingBufferSize);
-#endif
         if (buffer) {
             _stagingBuffers.push_back({buffer, _stagingBufferSize});
             _stagingInUse.push_back(false);
@@ -136,11 +115,7 @@ void DataTransferManager::shutdown() {
     // Free staging buffers
     for (auto& [buffer, size] : _stagingBuffers) {
         if (buffer) {
-#ifdef SD_CUDA
-            cudaFreeHost(buffer);
-#else
             free(buffer);
-#endif
         }
     }
     _stagingBuffers.clear();
@@ -150,23 +125,107 @@ void DataTransferManager::shutdown() {
 }
 
 void DataTransferManager::initializeP2PConnections() {
-#ifdef SD_CUDA
-    auto& dm = DeviceManager::getInstance();
-    int gpuCount = dm.getCudaGpuCount();
-
-    for (int i = 0; i < gpuCount; ++i) {
-        for (int j = i + 1; j < gpuCount; ++j) {
-            if (dm.supportsP2P(i, j)) {
-                if (dm.enableP2P(i, j)) {
-                    std::lock_guard<std::mutex> lock(_p2pMutex);
-                    _p2pEnabled[{i, j}] = true;
-                    _p2pEnabled[{j, i}] = true;
-                }
-            }
-        }
-    }
-#endif
+    // No-op on CPU
 }
+
+TransferResult DataTransferManager::doSyncTransfer(TransferRequest& request) {
+    TransferResult result;
+    result.transferId = request.transferId;
+
+    auto startTime = std::chrono::high_resolution_clock::now();
+
+    // CPU-only path
+    std::memcpy(request.dstPtr, request.srcPtr, request.bytes);
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+    result.durationMs = std::chrono::duration<double, std::milli>(endTime - startTime).count();
+    result.bandwidthGBps = (request.bytes / 1e9) / (result.durationMs / 1000.0);
+    result.success = true;
+
+    // Update stats
+    updateStats(request, TransferStatus::COMPLETED);
+
+    return result;
+}
+
+TransferResult DataTransferManager::copyToHost(
+    const NDArray* src,
+    NDArray* dst,
+    bool async
+) {
+    auto srcNonConst = const_cast<NDArray*>(src);
+    int srcDevice = 0;  // Would need device tracking in NDArray
+    return transfer(
+        srcNonConst->buffer(),
+        dst->buffer(),
+        srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
+        srcDevice,
+        -1,  // Host
+        async
+    );
+}
+
+TransferResult DataTransferManager::p2pTransfer(
+    void* srcPtr,
+    void* dstPtr,
+    size_t bytes,
+    int srcDevice,
+    int dstDevice,
+    bool async
+) {
+    TransferResult result;
+    result.transferId = _nextTransferId.fetch_add(1);
+
+    if (!isP2PAvailable(srcDevice, dstDevice)) {
+        result.success = false;
+        result.errorMessage = "P2P not available between devices";
+        return result;
+    }
+
+    result.success = false;
+    result.errorMessage = "P2P requires CUDA";
+
+    return result;
+}
+
+void DataTransferManager::waitAll() {
+    // No-op on CPU
+}
+
+void DataTransferManager::synchronizeDevice(int deviceId) {
+    // No-op on CPU
+}
+
+void DataTransferManager::barrier(const std::vector<int>& devices) {
+    // No-op on CPU
+}
+
+void* DataTransferManager::allocatePinnedMemory(size_t bytes) {
+    void* ptr = nullptr;
+    ptr = malloc(bytes);
+    return ptr;
+}
+
+void DataTransferManager::freePinnedMemory(void* ptr) {
+    if (ptr) {
+        free(ptr);
+    }
+}
+
+void* DataTransferManager::allocateDeviceMemory(int deviceId, size_t bytes) {
+    void* ptr = nullptr;
+    // No-op on CPU
+    return ptr;
+}
+
+void DataTransferManager::freeDeviceMemory(int deviceId, void* ptr) {
+    // No-op on CPU
+}
+
+float DataTransferManager::benchmarkBandwidth(int srcDevice, int dstDevice, size_t bytes) {
+    return 0.0f;
+}
+#endif  // !SD_CUDA
 
 TransferResult DataTransferManager::transfer(
     void* srcPtr,
@@ -199,100 +258,6 @@ TransferResult DataTransferManager::transfer(
     return doSyncTransfer(request);
 }
 
-TransferResult DataTransferManager::doSyncTransfer(TransferRequest& request) {
-    TransferResult result;
-    result.transferId = request.transferId;
-
-    auto startTime = std::chrono::high_resolution_clock::now();
-
-#ifdef SD_CUDA
-    cudaError_t err = cudaSuccess;
-
-    switch (request.direction) {
-        case TransferDirection::HOST_TO_DEVICE:
-            cudaSetDevice(request.dstDevice);
-            if (request.async) {
-                err = cudaMemcpyAsync(request.dstPtr, request.srcPtr, request.bytes,
-                                      cudaMemcpyHostToDevice);
-            } else {
-                err = cudaMemcpy(request.dstPtr, request.srcPtr, request.bytes,
-                                 cudaMemcpyHostToDevice);
-            }
-            break;
-
-        case TransferDirection::DEVICE_TO_HOST:
-            cudaSetDevice(request.srcDevice);
-            if (request.async) {
-                err = cudaMemcpyAsync(request.dstPtr, request.srcPtr, request.bytes,
-                                      cudaMemcpyDeviceToHost);
-            } else {
-                err = cudaMemcpy(request.dstPtr, request.srcPtr, request.bytes,
-                                 cudaMemcpyDeviceToHost);
-            }
-            break;
-
-        case TransferDirection::DEVICE_TO_DEVICE:
-            if (isP2PAvailable(request.srcDevice, request.dstDevice)) {
-                // Use P2P transfer
-                cudaSetDevice(request.srcDevice);
-                if (request.async) {
-                    err = cudaMemcpyPeerAsync(request.dstPtr, request.dstDevice,
-                                              request.srcPtr, request.srcDevice,
-                                              request.bytes);
-                } else {
-                    err = cudaMemcpyPeer(request.dstPtr, request.dstDevice,
-                                         request.srcPtr, request.srcDevice,
-                                         request.bytes);
-                }
-            } else {
-                // Fall back to staging through host
-                void* staging = getStagingBuffer(request.bytes);
-                if (staging) {
-                    cudaSetDevice(request.srcDevice);
-                    err = cudaMemcpy(staging, request.srcPtr, request.bytes, cudaMemcpyDeviceToHost);
-                    if (err == cudaSuccess) {
-                        cudaSetDevice(request.dstDevice);
-                        err = cudaMemcpy(request.dstPtr, staging, request.bytes, cudaMemcpyHostToDevice);
-                    }
-                    releaseStagingBuffer(staging);
-                } else {
-                    result.success = false;
-                    result.errorMessage = "Failed to get staging buffer for D2D transfer";
-                    return result;
-                }
-            }
-            break;
-
-        case TransferDirection::HOST_TO_HOST:
-            std::memcpy(request.dstPtr, request.srcPtr, request.bytes);
-            break;
-    }
-
-    if (err != cudaSuccess) {
-        result.success = false;
-        result.errorMessage = cudaGetErrorString(err);
-        return result;
-    }
-
-    if (!request.async) {
-        cudaDeviceSynchronize();
-    }
-#else
-    // CPU-only path
-    std::memcpy(request.dstPtr, request.srcPtr, request.bytes);
-#endif
-
-    auto endTime = std::chrono::high_resolution_clock::now();
-    result.durationMs = std::chrono::duration<double, std::milli>(endTime - startTime).count();
-    result.bandwidthGBps = (request.bytes / 1e9) / (result.durationMs / 1000.0);
-    result.success = true;
-
-    // Update stats
-    updateStats(request, TransferStatus::COMPLETED);
-
-    return result;
-}
-
 TransferResult DataTransferManager::copyToDevice(
     const NDArray* src,
     NDArray* dst,
@@ -306,30 +271,6 @@ TransferResult DataTransferManager::copyToDevice(
         srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
         -1,  // Host
         targetDevice,
-        async
-    );
-}
-
-TransferResult DataTransferManager::copyToHost(
-    const NDArray* src,
-    NDArray* dst,
-    bool async
-) {
-    auto srcNonConst = const_cast<NDArray*>(src);
-    int srcDevice = 0;  // Would need device tracking in NDArray
-#ifdef SD_CUDA
-    // Get device from CUDA pointer
-    cudaPointerAttributes attrs;
-    if (cudaPointerGetAttributes(&attrs, srcNonConst->buffer()) == cudaSuccess) {
-        srcDevice = attrs.device;
-    }
-#endif
-    return transfer(
-        srcNonConst->buffer(),
-        dst->buffer(),
-        srcNonConst->lengthOf() * DataTypeUtils::sizeOf(srcNonConst->dataType()),
-        srcDevice,
-        -1,  // Host
         async
     );
 }
@@ -349,55 +290,6 @@ TransferResult DataTransferManager::copyFromHost(
         targetDevice,
         async
     );
-}
-
-TransferResult DataTransferManager::p2pTransfer(
-    void* srcPtr,
-    void* dstPtr,
-    size_t bytes,
-    int srcDevice,
-    int dstDevice,
-    bool async
-) {
-    TransferResult result;
-    result.transferId = _nextTransferId.fetch_add(1);
-
-    if (!isP2PAvailable(srcDevice, dstDevice)) {
-        result.success = false;
-        result.errorMessage = "P2P not available between devices";
-        return result;
-    }
-
-#ifdef SD_CUDA
-    auto startTime = std::chrono::high_resolution_clock::now();
-
-    cudaError_t err;
-    if (async) {
-        err = cudaMemcpyPeerAsync(dstPtr, dstDevice, srcPtr, srcDevice, bytes);
-    } else {
-        err = cudaMemcpyPeer(dstPtr, dstDevice, srcPtr, srcDevice, bytes);
-    }
-
-    if (err != cudaSuccess) {
-        result.success = false;
-        result.errorMessage = cudaGetErrorString(err);
-        return result;
-    }
-
-    if (!async) {
-        cudaDeviceSynchronize();
-    }
-
-    auto endTime = std::chrono::high_resolution_clock::now();
-    result.durationMs = std::chrono::duration<double, std::milli>(endTime - startTime).count();
-    result.bandwidthGBps = (bytes / 1e9) / (result.durationMs / 1000.0);
-    result.success = true;
-#else
-    result.success = false;
-    result.errorMessage = "P2P requires CUDA";
-#endif
-
-    return result;
 }
 
 TransferResult DataTransferManager::p2pCopy(
@@ -445,73 +337,8 @@ float DataTransferManager::getP2PBandwidth(int device1, int device2) const {
     return 0.0f;
 }
 
-void DataTransferManager::waitAll() {
-#ifdef SD_CUDA
-    auto& dm = DeviceManager::getInstance();
-    int gpuCount = dm.getCudaGpuCount();
-    for (int i = 0; i < gpuCount; ++i) {
-        cudaSetDevice(i);
-        cudaDeviceSynchronize();
-    }
-#endif
-}
-
-void DataTransferManager::synchronizeDevice(int deviceId) {
-#ifdef SD_CUDA
-    cudaSetDevice(deviceId);
-    cudaDeviceSynchronize();
-#endif
-}
-
 void DataTransferManager::synchronizeAll() {
     waitAll();
-}
-
-void DataTransferManager::barrier(const std::vector<int>& devices) {
-#ifdef SD_CUDA
-    for (int device : devices) {
-        cudaSetDevice(device);
-        cudaDeviceSynchronize();
-    }
-#endif
-}
-
-void* DataTransferManager::allocatePinnedMemory(size_t bytes) {
-    void* ptr = nullptr;
-#ifdef SD_CUDA
-    cudaMallocHost(&ptr, bytes);
-#else
-    ptr = malloc(bytes);
-#endif
-    return ptr;
-}
-
-void DataTransferManager::freePinnedMemory(void* ptr) {
-    if (ptr) {
-#ifdef SD_CUDA
-        cudaFreeHost(ptr);
-#else
-        free(ptr);
-#endif
-    }
-}
-
-void* DataTransferManager::allocateDeviceMemory(int deviceId, size_t bytes) {
-    void* ptr = nullptr;
-#ifdef SD_CUDA
-    cudaSetDevice(deviceId);
-    cudaMalloc(&ptr, bytes);
-#endif
-    return ptr;
-}
-
-void DataTransferManager::freeDeviceMemory(int deviceId, void* ptr) {
-#ifdef SD_CUDA
-    if (ptr) {
-        cudaSetDevice(deviceId);
-        cudaFree(ptr);
-    }
-#endif
 }
 
 void* DataTransferManager::getStagingBuffer(size_t minBytes, int deviceId) {
@@ -601,66 +428,6 @@ double DataTransferManager::estimateTransferTime(size_t bytes, int srcDevice, in
     }
 
     return (bytes / 1e9) / bandwidthGBps * 1000.0;  // Return milliseconds
-}
-
-float DataTransferManager::benchmarkBandwidth(int srcDevice, int dstDevice, size_t bytes) {
-    // Allocate test buffers
-    void* srcPtr = nullptr;
-    void* dstPtr = nullptr;
-
-#ifdef SD_CUDA
-    if (srcDevice >= 0) {
-        cudaSetDevice(srcDevice);
-        cudaMalloc(&srcPtr, bytes);
-    } else {
-        cudaMallocHost(&srcPtr, bytes);
-    }
-
-    if (dstDevice >= 0) {
-        cudaSetDevice(dstDevice);
-        cudaMalloc(&dstPtr, bytes);
-    } else {
-        cudaMallocHost(&dstPtr, bytes);
-    }
-
-    if (!srcPtr || !dstPtr) {
-        if (srcPtr) srcDevice >= 0 ? cudaFree(srcPtr) : cudaFreeHost(srcPtr);
-        if (dstPtr) dstDevice >= 0 ? cudaFree(dstPtr) : cudaFreeHost(dstPtr);
-        return 0.0f;
-    }
-
-    // Warm up
-    transfer(srcPtr, dstPtr, bytes, srcDevice, dstDevice, false);
-
-    // Benchmark
-    const int numIterations = 10;
-    auto startTime = std::chrono::high_resolution_clock::now();
-
-    for (int i = 0; i < numIterations; ++i) {
-        transfer(srcPtr, dstPtr, bytes, srcDevice, dstDevice, false);
-    }
-
-    auto endTime = std::chrono::high_resolution_clock::now();
-    double totalMs = std::chrono::duration<double, std::milli>(endTime - startTime).count();
-
-    // Cleanup
-    if (srcDevice >= 0) cudaFree(srcPtr); else cudaFreeHost(srcPtr);
-    if (dstDevice >= 0) cudaFree(dstPtr); else cudaFreeHost(dstPtr);
-
-    // Calculate bandwidth
-    float bandwidth = static_cast<float>((bytes * numIterations) / 1e9) /
-                      static_cast<float>(totalMs / 1000.0);
-
-    // Cache the result
-    {
-        std::lock_guard<std::mutex> lock(_p2pMutex);
-        _p2pBandwidth[{srcDevice, dstDevice}] = bandwidth;
-    }
-
-    return bandwidth;
-#else
-    return 0.0f;
-#endif
 }
 
 void DataTransferManager::setMaxConcurrentTransfers(int count) {

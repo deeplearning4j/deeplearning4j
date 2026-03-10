@@ -25,8 +25,6 @@
 #include <windows.h>
 #endif
 
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -37,7 +35,6 @@
 
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
-#include <graph/GraphExecutioner.h>
 
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -77,7 +74,6 @@ extern std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 
@@ -369,21 +365,6 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
 }
 void munmapFile(sd::Pointer *extraPointers, sd::LongType  *ptrMap, sd::LongType  length) {}
 
-ResultWrapper *executeFlatGraph(sd::Pointer *extraPointers, sd::Pointer flatBufferPointer) {
-#ifdef __cpp_exceptions
-  try {
-    return sd::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return nullptr;
-  }
-#else
-  return sd::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
-#endif
-}
-
-sd::LongType  getResultWrapperSize(ResultWrapper *ptr) { return ptr->size(); }
-sd::Pointer getResultWrapperPointer(ResultWrapper *ptr) { return ptr->pointer(); }
 
 const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().getAllCustomOperations(); }
 

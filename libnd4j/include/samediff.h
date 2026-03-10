@@ -33,7 +33,6 @@
 
 // basic Graph-related includes
 #include <graph/Graph.h>
-#include <graph/GraphExecutioner.h>
 
 // ML ops includes
 #include <ops/declarable/CustomOperations.h>

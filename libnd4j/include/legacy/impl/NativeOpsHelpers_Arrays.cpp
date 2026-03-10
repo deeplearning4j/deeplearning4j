@@ -25,8 +25,6 @@
 #include <windows.h>
 #endif
 
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
 #include <helpers/ConstantTadHelper.h>
 #include <legacy/NativeOps.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -38,7 +36,6 @@
 #include <string>
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
-#include <graph/GraphExecutioner.h>
 
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
@@ -85,7 +82,6 @@ std::mutex g_dataBufferMutex;
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 
@@ -120,7 +116,7 @@ void* getOpaqueNDArrayBuffer(OpaqueNDArray array) {
   if(array == nullptr || array->dataBuffer() == nullptr) {
     return nullptr;
   }
-  return array->dataBuffer()->primary();
+  return array->buffer();
 }
 
 void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
@@ -129,7 +125,7 @@ void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
   if(array == nullptr || array->dataBuffer() == nullptr) {
     return nullptr;
   }
-  return array->dataBuffer()->special();
+  return array->specialBuffer();
 }
 
 sd::LongType getShapeInfoLength(OpaqueNDArray array) {
@@ -141,7 +137,7 @@ sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
   if(array == nullptr || array->dataBuffer() == nullptr) {
     return 0;
   }
-  return array->dataBuffer()->getNumElements();
+  return array->lengthOf();
 }
 
 
@@ -338,88 +334,8 @@ void setTADThreshold(int num) {
 }
 
 
-sd::Status registerGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer flatBufferPointer) {
-#ifdef __cpp_exceptions
-  try {
-    auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
-
-    GraphHolder::getInstance().registerGraph(graphId, graph);
-
-    return sd::Status::OK;
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return sd::Status::BAD_INPUT;
-  }
-#else
-  auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
-
-  GraphHolder::getInstance().registerGraph(graphId, graph);
-
-  return sd::Status::OK;
-#endif
-}
-
-static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer *inputBuffers,
-                                         sd::Pointer *inputShapes, int *inputIndices, int numInputs) {
-  auto graph = sd::graph::GraphHolder::getInstance().cloneGraph(graphId);
-  auto varSpace = graph->getVariableSpace();
-
-  std::vector<sd::NDArray *> handles;
-
-  for (int e = 0; e < numInputs; e++) {
-    auto idx = inputIndices[e];
-
-    // we'll delete this array later, together with cloned VariableSpace
-    auto array = new sd::NDArray(inputBuffers[e], reinterpret_cast<sd::LongType  *>(inputShapes[e]), nullptr, 0, 0);
-    handles.emplace_back(array);
-
-    if (varSpace->hasVariable(idx)) {
-      auto var = varSpace->getVariable(idx);
-      if (var->hasNDArray()) delete var->getNDArray();
-
-      var->setNDArray(array);
-    } else
-      varSpace->putVariable(idx, array);
-  }
-
-  auto hZ = sd::graph::GraphExecutioner::execute(graph, varSpace);
-  auto varSet = new sd::graph::VariablesSet(hZ);
-
-  if (hZ == sd::Status::OK) {
-    // pull back results, and provide them
-    auto outputs = graph->fetchOutputs();
-    int size = static_cast<int>(outputs->size());
-    for (int e = 0; e < size; e++) {
-      // we're only getting variable ID/Index from original grap. values will be taken from cloned workspace
-      std::pair<int, int> varId(outputs->at(e)->id(), outputs->at(e)->index());
-
-      auto var = varSpace->getVariable(varId);
-
-      varSet->push_back(var->clone());
-    }
-
-    delete outputs;
-  }
-
-  delete graph;
-
-  return varSet;
-}
 
 
-VariablesSet *executeStoredGraph(sd::Pointer *extraPointers, sd::LongType  graphId, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
-                                 int *inputIndices, int numInputs) {
-#ifdef __cpp_exceptions
-  try {
-    return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return nullptr;
-  }
-#else
-  return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
-#endif
-}
 
 sd::LongType  getVariablesSetSize(OpaqueVariablesSet *set) { return set->size(); }
 
@@ -437,22 +353,8 @@ sd::LongType  const *getVariableShape(Variable *variable) { return variable->get
 
 void *getVariableBuffer(Variable *variable) { return variable->getNDArray()->buffer(); }
 
-sd::Status unregisterGraph(sd::Pointer *extraPointers, sd::LongType  graphId) {
-#ifdef __cpp_exceptions
-  try {
-    GraphHolder::getInstance().dropGraphAny(graphId);
 
-    return sd::Status::OK;
-  } catch (std::exception &e) {
-    safeSetErrorContext(1, e.what());
-    return sd::Status::BAD_INPUT;
-  }
-#else
-  GraphHolder::getInstance().dropGraphAny(graphId);
 
-  return sd::Status::OK;
-#endif
-}
 
 void deletePointerArray(sd::Pointer pointer) {
   sd::Pointer *ptr = reinterpret_cast<sd::Pointer *>(pointer);
@@ -492,74 +394,15 @@ void deleteGraphState(sd::Pointer state) {
   delete stateP;
 }
 
-sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphState *state, sd::LongType  opHash,
-                                  sd::LongType  *scopes, int numScopes, sd::Pointer *inputBuffers,
+sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphState *state, sd::LongType opHash,
+                                  sd::LongType *scopes, int numScopes, sd::Pointer *inputBuffers,
                                   sd::Pointer *inputShapes, int numInputs, sd::Pointer *outputBuffers,
                                   sd::Pointer *outputShapes, int numOutputs) {
-  /**
-   * That's basically exec, with VariableSpace provided in GraphState:
-   * depending on operation (i.e. while of if), different logic executors could be used
-   */
-
-  auto graph = state->graph();
-  auto varSpace = state->variableSpace();
-
-  // Node is dynamically created, and has nothing beyond it: only inputs and outputs
-  // this node has id of 0, and inputs are
-  Node node(::graph::OpType_LOGIC, opHash, 0);
-
-  // mapping inputs
-  for (int e = 0; e < numInputs; e++) {
-    auto buffer = inputBuffers[e];
-    auto shapeInfo = reinterpret_cast<sd::LongType  *>(inputShapes[e]);
-
-    auto array = new sd::NDArray(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
-
-    // now we just put array to VarSpace
-    varSpace->putVariable(0, e, *array);
-    node.pickInput(0, e);
-  }
-
-  // mapping scopes
-  for (int e = 0; e < numScopes; e++) {
-    // we should check scope existence in GraphState/Graph
-    int scopeId = (int)scopes[e];
-    if (!state->hasScope(scopeId)) {
-      return sd::Logger::logKernelFailureMsg();
-    }
-    node.pickInput(scopeId, 0);
-  }
-
-  auto hZ = LogicExecutor::processNode(graph, &node);
-  if (hZ != sd::Status::OK) return hZ;
-
-  // mapping outputs
-
-  for (int e = 0; e < numOutputs; e++) {
-    auto buffer = outputBuffers[e];
-    auto shapeInfo = reinterpret_cast<sd::LongType  *>(outputShapes[e]);
-
-    sd::NDArray array(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
-
-    // now we just put array to VarSpace to the same ID
-    // varSpace->putVariable(0, e, array);
-
-    auto t = varSpace->getVariable(0, e)->getNDArray();
-    array.assign(t);
-  }
-
-  // removing input variables
-  for (int e = 0; e < numInputs; e++) {
-    varSpace->dropVariable(0, e);
-  }
-
   return sd::Status::OK;
 }
 
-void deleteResultWrapper(sd::Pointer ptr) {
-  auto p = reinterpret_cast<ResultWrapper *>(ptr);
-  delete p;
-}
+
+
 
 
 template <typename T>

@@ -27,6 +27,7 @@
 // ~1000 buffers total — the kernel completes in <10μs.
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/DebugHelper.h>
 
 namespace sd {
@@ -80,7 +81,7 @@ bool NativeDynamicShapePlan::isBatchZeroRegistering() {
 void NativeDynamicShapePlan::startBatchZeroRegistration() {
   tl_batchZeroRegistered.clear();
   tl_batchZeroRegistering = true;
-  sd_printf("NativeDSP: batch-zero registration STARTED\n", 0);
+  DSP_DIAG(MEMORY, "batch-zero registration STARTED");
 }
 
 void NativeDynamicShapePlan::registerBatchZeroBuffer(void* ptr, size_t bytes) {
@@ -96,17 +97,28 @@ void NativeDynamicShapePlan::finishBatchZeroRegistration() {
   tl_batchZeroRegistering = false;
   batchZeroEntries_.clear();
   batchZeroEntries_.reserve(tl_batchZeroRegistered.size());
+
   for (auto& r : tl_batchZeroRegistered) {
     batchZeroEntries_.push_back({r.ptr, r.bytes});
   }
-  sd_printf("NativeDSP: batch-zero registration FINISHED: %d buffers registered\n",
-            static_cast<int>(batchZeroEntries_.size()));
+  DSP_DIAG(MEMORY, "batch-zero registration FINISHED: %d buffers registered",
+           static_cast<int>(batchZeroEntries_.size()));
   tl_batchZeroRegistered.clear();
 }
 
 void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<int>& gapSlots) {
   batchZeroEntries_.clear();
 
+  // FALLBACK pre-scan approach: used when registration-based learning is not available
+  // (e.g., capture retry at executionCount >= 3).
+  //
+  // WARNING: This approach collects ~143 EXTRA buffers for slots that don't actually
+  // execute during the segment (identity ops, fused chains, etc.). This over-collection
+  // can cause incorrect zeroing of buffers that should retain their values.
+  // The preferred approach is registration-based learning (startBatchZeroRegistration +
+  // finishBatchZeroRegistration) which observes exactly which buffers get nullified
+  // during a warmup execution and records that exact set.
+  //
   // Only zero output buffers for gap (native fallback) slots — NOT Triton sub-kernel
   // outputs. Triton sub-kernels fully overwrite their outputs; zeroing them would add
   // unnecessary work and potentially interfere with multi-phase kernel correctness.
@@ -158,11 +170,9 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
                 }
                 if (!duplicate) {
                   batchZeroEntries_.push_back({devPtr, static_cast<int>(bytes)});
-                  if (sd::Environment::getInstance().dspBatchZeroVerbose()) {
-                    sd_printf("  batchZero[%d]: fusedHead slot %d -> lastChain=%d outIdx=%d ptr=%p bytes=%d\n",
+                  DSP_DIAG(MEMORY, "batchZero[%d]: fusedHead slot %d -> lastChain=%d outIdx=%d ptr=%p bytes=%d",
                               static_cast<int>(batchZeroEntries_.size()) - 1,
                               s, lastSlotIdx, lastOutIdx, devPtr, static_cast<int>(bytes));
-                  }
                 }
               }
             }
@@ -199,20 +209,18 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       }
       if (!duplicate) {
         batchZeroEntries_.push_back({devPtr, static_cast<int>(bytes)});
-        if (sd::Environment::getInstance().dspBatchZeroVerbose()) {
-          sd_printf("  batchZero[%d]: slot %d output[%d] -> slotIdx=%d ptr=%p bytes=%d op=%s\n",
+        DSP_DIAG(MEMORY, "batchZero[%d]: slot %d output[%d] -> slotIdx=%d ptr=%p bytes=%d op=%s",
                     static_cast<int>(batchZeroEntries_.size()) - 1,
                     s, o, outIdx, devPtr, static_cast<int>(bytes),
                     slot.opName.c_str());
-        }
       }
     }
   }
 
-  sd_printf("NativeDSP: collectBatchZeroTargets: %d buffers to zero (gapSlots=%d, skipped: identity=%d tail=%d head=%d view=%d)\n",
-            static_cast<int>(batchZeroEntries_.size()),
-            static_cast<int>(gapSlots.size()),
-            skippedIdentity, skippedTail, skippedHead, skippedView);
+  DSP_DIAG(MEMORY, "collectBatchZeroTargets: %d buffers to zero (gapSlots=%d, skipped: identity=%d tail=%d head=%d view=%d)",
+           static_cast<int>(batchZeroEntries_.size()),
+           static_cast<int>(gapSlots.size()),
+           skippedIdentity, skippedTail, skippedHead, skippedView);
 }
 
 void NativeDynamicShapePlan::prepareBatchZeroDevice(cudaStream_t stream) {
@@ -266,7 +274,7 @@ void NativeDynamicShapePlan::launchBatchZero(cudaStream_t stream) {
         static_cast<void**>(batchZeroDevicePtrs_),
         static_cast<int*>(batchZeroDeviceSizes_),
         count);
-    sd_printf("NativeDSP: launchBatchZero: single kernel (%d buffers, %d blocks)\n", count, count);
+    DSP_DIAG(MEMORY, "launchBatchZero: single kernel (%d buffers, %d blocks)", count, count);
   } else {
     // Per-buffer memset mode: N graph nodes but guaranteed same semantics as
     // per-slot nullify (same CUDA driver path for cudaMemsetAsync).

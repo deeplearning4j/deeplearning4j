@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 
 #include <graph/cpu/CpuIRBuilder.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -300,8 +301,8 @@ SegmentAnalysis CpuIRBuilder::analyzeSegment(NativeSlot* slots, int startSlot, i
     }
   }
 
-  sd_printf("CpuIRBuilder::analyzeSegment [%d-%d]: %d ops, canCompile=%s, "
-            "elem=%d matmul=%d reduce=%d norm=%d shape=%d data=%d const=%d\n",
+  DSP_DIAG(COMPILE, "CpuIRBuilder::analyzeSegment [%d-%d]: %d ops, canCompile=%s, "
+            "elem=%d matmul=%d reduce=%d norm=%d shape=%d data=%d const=%d",
             startSlot, endSlot, profile.totalOps,
             analysis.canCompile ? "true" : "false",
             analysis.numElementwise, analysis.numMatmul, analysis.numReduction,
@@ -378,7 +379,7 @@ mlir::Value CpuIRBuilder::emitBinaryElementwise(mlir::OpBuilder& builder, mlir::
     return builder.create<mlir::arith::MulFOp>(loc, xSig, rhs);
   }
 
-  sd_printf("CpuIRBuilder: unhandled binary op '%s', falling back to add\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "CpuIRBuilder: unhandled binary op '%s', falling back to add", opName.c_str());
   return builder.create<mlir::arith::AddFOp>(loc, lhs, rhs);
 }
 
@@ -566,7 +567,7 @@ mlir::Value CpuIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir::L
   // Cast (f32→f32 is identity for now)
   if (lower == "cast") return input;
 
-  sd_printf("CpuIRBuilder: unhandled unary op '%s', returning input\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "CpuIRBuilder: unhandled unary op '%s', returning input", opName.c_str());
   return input;
 }
 
@@ -1459,7 +1460,7 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
   }
 
   if (bufferArgs.empty()) {
-    sd_printf("CpuIRBuilder::buildModule: no buffer args for segment [%d-%d]\n",
+    DSP_DIAG(COMPILE, "CpuIRBuilder::buildModule: no buffer args for segment [%d-%d]",
               startSlot, endSlot);
     return mlir::OwningOpRef<mlir::ModuleOp>();
   }
@@ -1844,8 +1845,8 @@ mlir::OwningOpRef<mlir::ModuleOp> CpuIRBuilder::buildModule(
 
   builder.create<mlir::func::ReturnOp>(loc);
 
-  sd_printf("CpuIRBuilder::buildModule: built module for segment [%d-%d] with %d buffer args "
-            "and %d fused ops\n",
+  DSP_DIAG(COMPILE, "CpuIRBuilder::buildModule: built module for segment [%d-%d] with %d buffer args "
+            "and %d fused ops",
             startSlot, endSlot, static_cast<int>(bufferArgs.size()), segSize);
 
   return module;

@@ -17,21 +17,86 @@
  ******************************************************************************/
 
 #include <graph/SdzReader.h>
+#include <graph/DspDiagnostics.h>
 
-// We use a simple ZIP reading approach.
-// For a production implementation, miniz would be vendored here.
-// For now, we implement basic ZIP central directory parsing.
-
+#include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <limits>
+#include <string>
+#include <vector>
+
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
+
+namespace {
+
+bool endsWithIgnoreCase(const std::string& value, const char* suffix) {
+  const size_t suffixLen = std::strlen(suffix);
+  if (value.size() < suffixLen) return false;
+
+  const size_t start = value.size() - suffixLen;
+  for (size_t i = 0; i < suffixLen; i++) {
+    const unsigned char lhs = static_cast<unsigned char>(value[start + i]);
+    const unsigned char rhs = static_cast<unsigned char>(suffix[i]);
+    if (std::tolower(lhs) != std::tolower(rhs)) return false;
+  }
+  return true;
+}
+
+template <typename T>
+bool readPod(const std::vector<uint8_t>& data, size_t offset, T* out) {
+  if (offset + sizeof(T) > data.size()) return false;
+  std::memcpy(out, data.data() + offset, sizeof(T));
+  return true;
+}
+
+#ifdef HAVE_ZLIB
+bool inflateDeflateRaw(const uint8_t* src, size_t srcSize, size_t expectedSize,
+                       std::vector<uint8_t>* out, std::string* errorOut) {
+  if (src == nullptr || out == nullptr) {
+    if (errorOut) *errorOut = "inflateDeflateRaw: null argument";
+    return false;
+  }
+
+  if (srcSize > static_cast<size_t>(std::numeric_limits<uInt>::max()) ||
+      expectedSize > static_cast<size_t>(std::numeric_limits<uInt>::max())) {
+    if (errorOut) *errorOut = "inflateDeflateRaw: ZIP entry exceeds zlib single-call limits";
+    return false;
+  }
+
+  out->assign(expectedSize, 0);
+
+  z_stream stream{};
+  stream.next_in = const_cast<Bytef*>(reinterpret_cast<const Bytef*>(src));
+  stream.avail_in = static_cast<uInt>(srcSize);
+  stream.next_out = reinterpret_cast<Bytef*>(out->data());
+  stream.avail_out = static_cast<uInt>(expectedSize);
+
+  int rc = inflateInit2(&stream, -MAX_WBITS);  // Raw DEFLATE stream in ZIP entries.
+  if (rc != Z_OK) {
+    if (errorOut) *errorOut = "inflateInit2 failed";
+    return false;
+  }
+
+  rc = inflate(&stream, Z_FINISH);
+  const bool ok = (rc == Z_STREAM_END && stream.total_out == expectedSize);
+  if (!ok && errorOut) {
+    *errorOut = "inflate failed with code " + std::to_string(rc);
+  }
+
+  inflateEnd(&stream);
+  return ok;
+}
+#endif
+
+}  // namespace
 
 namespace sd {
 namespace graph {
-
-// ─── Minimal ZIP parsing ────────────────────────────────────────────────────
-// ZIP files store a central directory at the end. We parse just enough to
-// extract entries. A full implementation would use miniz.
 
 #pragma pack(push, 1)
 struct ZipEndOfCentralDir {
@@ -85,79 +150,127 @@ SdzReader::~SdzReader() = default;
 SdzReader* SdzReader::openFile(const char* zipPath) {
   std::ifstream file(zipPath, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
-    sd_printf("SdzReader: cannot open %s\n", zipPath);
+    DSP_DIAG(COMPILE, "SdzReader: cannot open %s", zipPath);
     return nullptr;
   }
 
-  auto fileSize = static_cast<size_t>(file.tellg());
+  const auto fileSize = static_cast<size_t>(file.tellg());
   file.seekg(0, std::ios::beg);
+
+  if (fileSize < sizeof(ZipEndOfCentralDir)) {
+    DSP_DIAG(COMPILE, "SdzReader: file too small for ZIP footer: %s", zipPath);
+    return nullptr;
+  }
 
   std::vector<uint8_t> fileData(fileSize);
   file.read(reinterpret_cast<char*>(fileData.data()), fileSize);
   file.close();
 
-  // Find End of Central Directory (search backwards for signature 0x06054b50)
-  const ZipEndOfCentralDir* eocd = nullptr;
-  for (size_t i = fileSize - sizeof(ZipEndOfCentralDir); i > 0; i--) {
-    uint32_t sig;
-    std::memcpy(&sig, fileData.data() + i, 4);
+  // ZIP comment can be up to 65535 bytes; EOCD must be within that trailing window.
+  const size_t maxCommentLen = 0xFFFF;
+  const size_t searchStart =
+      (fileSize > sizeof(ZipEndOfCentralDir) + maxCommentLen)
+          ? fileSize - (sizeof(ZipEndOfCentralDir) + maxCommentLen)
+          : 0;
+
+  size_t eocdOffset = std::numeric_limits<size_t>::max();
+  for (size_t i = fileSize - sizeof(ZipEndOfCentralDir) + 1; i > searchStart;) {
+    --i;
+    uint32_t sig = 0;
+    std::memcpy(&sig, fileData.data() + i, sizeof(sig));
     if (sig == 0x06054b50) {
-      eocd = reinterpret_cast<const ZipEndOfCentralDir*>(fileData.data() + i);
+      eocdOffset = i;
       break;
     }
   }
 
-  if (!eocd) {
-    sd_printf("SdzReader: not a valid ZIP file: %s\n", zipPath);
+  if (eocdOffset == std::numeric_limits<size_t>::max()) {
+    DSP_DIAG(COMPILE, "SdzReader: not a valid ZIP file: %s", zipPath);
+    return nullptr;
+  }
+
+  ZipEndOfCentralDir eocd{};
+  if (!readPod(fileData, eocdOffset, &eocd)) {
+    DSP_DIAG(COMPILE, "SdzReader: failed to read ZIP footer: %s", zipPath);
+    return nullptr;
+  }
+
+  if (eocd.centralDirOffset + eocd.centralDirSize > fileSize) {
+    DSP_DIAG(COMPILE, "SdzReader: invalid central directory bounds in %s", zipPath);
     return nullptr;
   }
 
   auto* reader = new SdzReader();
 
-  // Parse central directory entries
-  size_t cdOffset = eocd->centralDirOffset;
-  for (int i = 0; i < eocd->numEntriesTotal; i++) {
-    if (cdOffset + sizeof(ZipCentralDirEntry) > fileSize) break;
+  size_t cdOffset = eocd.centralDirOffset;
+  for (int i = 0; i < eocd.numEntriesTotal; i++) {
+    ZipCentralDirEntry entry{};
+    if (!readPod(fileData, cdOffset, &entry)) break;
+    if (entry.signature != 0x02014b50) break;
 
-    const auto* entry = reinterpret_cast<const ZipCentralDirEntry*>(fileData.data() + cdOffset);
-    if (entry->signature != 0x02014b50) break;
+    const size_t filenameOffset = cdOffset + sizeof(ZipCentralDirEntry);
+    const size_t filenameEnd = filenameOffset + entry.filenameLen;
+    if (filenameEnd > fileSize) break;
 
-    // Get filename
-    std::string filename(reinterpret_cast<const char*>(fileData.data() + cdOffset + sizeof(ZipCentralDirEntry)),
-                         entry->filenameLen);
+    std::string filename(reinterpret_cast<const char*>(fileData.data() + filenameOffset),
+                         entry.filenameLen);
 
-    // Only process .sdnb files and stored (uncompressed) entries
-    bool isSdnb = filename.size() > 5 &&
-                  filename.substr(filename.size() - 5) == ".sdnb";
+    if (endsWithIgnoreCase(filename, ".sdnb")) {
+      if ((entry.flags & 0x1) != 0) {
+        DSP_DIAG(COMPILE, "SdzReader: encrypted entry '%s' is not supported", filename.c_str());
+      } else {
+        const size_t localOffset = entry.localHeaderOffset;
+        ZipLocalFileHeader local{};
 
-    if (isSdnb && entry->compression == 0) {
-      // Read from local file header
-      size_t localOffset = entry->localHeaderOffset;
-      if (localOffset + sizeof(ZipLocalFileHeader) < fileSize) {
-        const auto* local = reinterpret_cast<const ZipLocalFileHeader*>(
-            fileData.data() + localOffset);
-        if (local->signature == 0x04034b50) {
-          size_t dataOffset = localOffset + sizeof(ZipLocalFileHeader) +
-                              local->filenameLen + local->extraLen;
-          size_t dataSize = entry->uncompressedSize;
-          if (dataOffset + dataSize <= fileSize) {
-            std::vector<uint8_t> entryData(fileData.data() + dataOffset,
-                                           fileData.data() + dataOffset + dataSize);
-            reader->sdnbEntries_.emplace_back(filename, std::move(entryData));
+        if (readPod(fileData, localOffset, &local) && local.signature == 0x04034b50) {
+          const size_t dataOffset =
+              localOffset + sizeof(ZipLocalFileHeader) + local.filenameLen + local.extraLen;
+          const size_t compressedSize = entry.compressedSize;
+          const size_t uncompressedSize = entry.uncompressedSize;
+
+          if (dataOffset <= fileSize && compressedSize <= (fileSize - dataOffset)) {
+            std::vector<uint8_t> entryData;
+            bool extracted = false;
+
+            if (entry.compression == 0) {
+              // STORED (no compression)
+              entryData.assign(fileData.data() + dataOffset,
+                               fileData.data() + dataOffset + compressedSize);
+              extracted = true;
+            } else if (entry.compression == 8) {
+#ifdef HAVE_ZLIB
+              std::string inflateError;
+              extracted = inflateDeflateRaw(fileData.data() + dataOffset, compressedSize,
+                                            uncompressedSize, &entryData, &inflateError);
+              if (!extracted) {
+                DSP_DIAG(COMPILE, "SdzReader: failed to inflate '%s': %s", filename.c_str(),
+                         inflateError.c_str());
+              }
+#else
+              DSP_DIAG(COMPILE, "SdzReader: deflated entry '%s' requires zlib support (HAVE_ZLIB)",
+                       filename.c_str());
+#endif
+            } else {
+              DSP_DIAG(COMPILE, "SdzReader: unsupported ZIP compression method %u for '%s'",
+                       static_cast<unsigned>(entry.compression), filename.c_str());
+            }
+
+            if (extracted) {
+              reader->sdnbEntries_.emplace_back(filename, std::move(entryData));
+            }
           }
         }
       }
-    } else if (isSdnb && entry->compression != 0) {
-      sd_printf("SdzReader: compressed entry '%s' not supported (use STORED compression)\n",
-                filename.c_str());
     }
 
-    cdOffset += sizeof(ZipCentralDirEntry) + entry->filenameLen +
-                entry->extraLen + entry->commentLen;
+    const size_t nextOffset = cdOffset + sizeof(ZipCentralDirEntry) + entry.filenameLen +
+                              entry.extraLen + entry.commentLen;
+    if (nextOffset <= cdOffset || nextOffset > fileSize) break;
+    cdOffset = nextOffset;
   }
 
   if (reader->sdnbEntries_.empty()) {
-    sd_printf("SdzReader: no .sdnb entries found in %s\n", zipPath);
+    DSP_DIAG(COMPILE, "SdzReader: no .sdnb entries found in %s", zipPath);
     delete reader;
     return nullptr;
   }
@@ -171,7 +284,7 @@ SdnbReader::LoadedModel SdzReader::load() const {
   for (auto& entry : sdnbEntries_) {
     auto* sdnb = SdnbReader::open(entry.second.data(), entry.second.size());
     if (!sdnb) {
-      sd_printf("SdzReader: failed to parse SDNB entry '%s'\n", entry.first.c_str());
+      DSP_DIAG(COMPILE, "SdzReader: failed to parse SDNB entry '%s'", entry.first.c_str());
       continue;
     }
 

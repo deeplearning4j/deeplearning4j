@@ -33,6 +33,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <graph/GraphReplayHandle.h>
+
 #ifdef SD_CUDA
 #include <execution/cuda/CudaGraphScheduler.h>
 #endif
@@ -274,66 +276,25 @@ struct GraphSegment {
   static constexpr int MAX_OOM_RETRIES = 3;
   static constexpr int RETRY_INTERVAL = 4;  // Retry every N executions
 
-#ifdef SD_CUDA
-  // Cached CUDA graph for replay
-  std::shared_ptr<sd::cuda::CudaGraphHandle> cachedGraph;
-  LongType cachedShapeKey;
-
-  // ── Capture buffers ──────────────────────────────────────────────────
-  // CUDA graphs record exact GPU memory addresses during capture.
-  // External inputs (position_ids, attention_mask) get recreated each
-  // decoder step with new GPU addresses. Instead of checking/invalidating
-  // on address change, we allocate fixed-address "capture buffers" and
-  // copy external input data into them before each graph replay.
-  // The graph always references these stable addresses.
-  struct CaptureBuffer {
-    NDArray* buffer;           // Fixed-address GPU buffer (owned unless directReference)
-    int externalInputIndex;    // Which external input this maps to (-1 = cross-segment)
-    int crossSegmentSlotIdx;   // Which output slot this maps to (for cross-segment inputs)
-    size_t capturedSize;       // Size in bytes at capture time
-    const void* lastSourcePtr; // Last source GPU address — skip copy if unchanged (static weights)
-    bool initialCopyDone;      // True after first successful copy
-
-    bool neverSkipCopy;    // When true, always copy even if pointer unchanged (KV cache buffers)
-
-    // Direct reference: buffer points to the external input directly (NOT owned).
-    // Used for static KV cache buffers whose GPU address never changes.
-    // Skips D2D copy on replay — graph reads from the external buffer directly.
-    bool directReference;
-
-    CaptureBuffer() : buffer(nullptr), externalInputIndex(-1),
-                      crossSegmentSlotIdx(-1), capturedSize(0),
-                      lastSourcePtr(nullptr), initialCopyDone(false),
-                      neverSkipCopy(false), directReference(false) {}
-  };
-  std::vector<CaptureBuffer> captureBuffers;
+  // ── Platform-agnostic graph replay handle ─────────────────────────────
+  // Wraps the capture/instantiate/replay lifecycle for any platform.
+  // CUDA: CudaGraphReplayHandle (wraps cudaGraph_t/cudaGraphExec_t)
+  // CPU: FunctionalReplayHandle (cached op dispatch, skip shape inference)
+  // nullptr until first capture attempt.
+  std::unique_ptr<GraphReplayHandle> replayHandle;
+  LongType cachedShapeKey = 0;
 
   // Legacy address key (kept for fallback diagnostics)
-  LongType capturedInputAddrKey;
+  LongType capturedInputAddrKey = 0;
 
-  // Per-external-input device buffer addresses captured at graph capture time.
-  // On replay, each external input's specialBuffer() is compared against this
-  // snapshot. Any mismatch invalidates the graph (the CUDA graph has the old
-  // address baked into native-op kernel arguments; replaying with a different
-  // address reads stale data). This replaces the hash-based capturedInputAddrKey
-  // check which can miss changes due to CUDA pool address reuse collisions.
-  std::vector<void*> capturedExternalAddrs;
+  // Hash of input DATA values for 'create' (ConstantOfShape) ops in this segment.
+  // Create ops produce value-dependent shapes: output shape = input tensor values.
+  // If these values change between capture and replay, the baked-in memset produces
+  // wrong-sized output.  Checked before replay; mismatch triggers re-capture.
+  LongType capturedCreateValueKey = 0;
 
-  // Capture workspace: pre-allocated GPU buffer for PointersManager temporaries.
-  // Eliminates cudaMallocAsync/cudaFreeAsync graph nodes during capture.
-  // Persists for graph lifetime — kernel params reference these addresses.
-  void* captureWorkspacePtr = nullptr;
-  size_t captureWorkspaceBytes = 0;
-
-  // Pinned host pointers accumulated during graph capture.
-  // PointersManager::replicatePointer allocates pinned memory for H2D copies
-  // during capture — the graph's memcpy nodes reference these addresses on replay.
-  // MUST persist for graph lifetime; freed when graph is destroyed/invalidated.
-  std::vector<void*> capturedHostPtrs;
-
-  // ── NVRTC JIT kernel ────────────────────────────────────────────────────
-  // When JIT mode is enabled, element-wise segments are compiled into a
-  // single fused CUDA kernel via NVRTC instead of using CUDA graph capture.
+  // ── NVRTC JIT kernel (CUDA-only, separate from graph replay) ──────────
+#ifdef SD_CUDA
   NvrtcKernelHandle* jitKernel = nullptr;
   LongType jitShapeKey = 0;
   bool jitCompileFailed = false;   // Permanent failure flag (non-fusible segment)
@@ -356,14 +317,31 @@ struct GraphSegment {
   static constexpr int INSTABILITY_THRESHOLD = 2;
   static constexpr int MIN_SPLIT_SIZE = 5;
 
+  // Pointer to NativeDynamicShapePlan::slotArrayCache_ — allows GPU backends
+  // (e.g. TritonGraphBackend::executeSingleKernel) to update the slot cache
+  // when pre-allocating output arrays, preventing memory leaks when the
+  // release schedule later nullifies outputSlots.
+  NDArray** slotArrayCache = nullptr;
+
+  // Symbolic shape ranges: when enabled, dynamic dimensions are hashed by
+  // rank/dtype only (not exact value) to avoid recompilation.
+  bool symbolicShapeEnabled = false;
+  int symbolicWarmupRemaining = 0;
+  void* symbolicRangeData = nullptr;  // opaque ptr to SegmentShapeProfile
+
+  // ── Backend tracking and override ──────────────────────────────────────
+  // Name of the backend that compiled this segment ("Triton", "oneDNN", "CUDA", "slot-by-slot", etc.)
+  std::string compiledByBackend;
+  // User-forced backend override (empty = automatic selection via priority chain)
+  std::string backendOverride;
+
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
         executionCount(0), captureFailed(false),
         captureOomRetries(0), captureRetryAfterExec(0),
-        consecutiveShapeChanges(0), needsSplit(false)
-#ifdef SD_CUDA
-        , cachedShapeKey(0), capturedInputAddrKey(0)
-#endif
+        consecutiveShapeChanges(0), needsSplit(false),
+        symbolicShapeEnabled(false), symbolicWarmupRemaining(0),
+        symbolicRangeData(nullptr)
   {}
 };
 
@@ -519,6 +497,21 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    * Get total number of CUDA graph replays across all segments.
    */
   int getTotalGraphReplays() const;
+
+  /**
+   * Get compilation audit for a specific segment (JSON string).
+   */
+  std::string getSegmentCompilationAudit(int segIdx) const;
+
+  /**
+   * Set backend priority order for segment compilation.
+   */
+  void setBackendPriority(const std::vector<std::string>& priority);
+
+  /**
+   * Get the current backend priority order.
+   */
+  const std::vector<std::string>& getBackendPriority() const { return backendPriority_; }
 
   /**
    * Enable/disable GPU graph capture for this plan.
@@ -816,6 +809,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // ── CUDA graph capture/replay (NativeDynamicShapePlan_cudagraph.cu) ──
 #ifdef SD_CUDA
   LongType computeSegmentInputAddrKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
+  LongType computeCreateOpValueKey(GraphSegment& seg, NDArray** externalInputs, int numExt);
   void snapshotExternalAddrs(GraphSegment& seg, NDArray** externalInputs, int numExt);
   bool externalAddrsMatch(const GraphSegment& seg, NDArray** externalInputs, int numExt) const;
   Status executeSegmentWithGraph(GraphSegment& seg, NDArray** externalArrays,
@@ -876,6 +870,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   GraphBackend* gpuGraphBackend_;
   bool gpuGraphBackendChecked_;
 
+  // Backend priority order (user-configurable)
+  std::vector<std::string> backendPriority_;
+
 #ifdef SD_CUDA
   // Pre-allocated cuBLAS workspace for GPU graph capture.
   void* cublasWorkspaceBuffer_ = nullptr;
@@ -919,6 +916,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // collected ~143 extra buffers for slots that don't actually execute.
   void startBatchZeroRegistration();
   void finishBatchZeroRegistration();
+
+  // Capture buffer pool sharing: routes capture workspace allocation
+  // through CudaMemoryPool for cross-segment reuse.
+  void* captureBufferRegistry_ = nullptr;  // opaque ptr to CaptureBufferRegistry
 #else
   void freeBatchZeroResources() {}
 #endif

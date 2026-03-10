@@ -53,7 +53,7 @@ ExtraArguments::~ExtraArguments() {
 #ifdef SD_CUDA
     cudaFree(p);
 #else  // CPU branch
-    delete reinterpret_cast<int8_t *>(p);
+    delete[] reinterpret_cast<int8_t *>(p);
 #endif
   }
 }

@@ -39,6 +39,32 @@ namespace helpers {
 SD_LIB_HIDDEN void kvScatter(NDArray* present, NDArray* output,
                               LongType cachePos, LaunchContext* context);
 
+/**
+ * Descriptor for one KV scatter entry in the batched kernel.
+ */
+struct KvScatterEntry {
+    const void* srcPtr;   // present's specialBuffer
+    void* dstPtr;         // static buffer's specialBuffer
+    LongType heads;
+    LongType srcSeqLen;
+    LongType dstSeqLen;
+    LongType dim;
+    LongType lastPos;     // srcSeqLen - 1
+    LongType cachePos;
+};
+
+/**
+ * Batch multiple KV scatter operations into a single kernel launch.
+ * Eliminates per-mapping kernel launch overhead (60 launches → 1).
+ *
+ * @param entries    array of scatter descriptors
+ * @param numEntries number of entries
+ * @param dtype      data type of all entries (must be uniform)
+ * @param context    launch context
+ */
+SD_LIB_HIDDEN void kvScatterBatched(const KvScatterEntry* entries, int numEntries,
+                                      DataType dtype, LaunchContext* context);
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

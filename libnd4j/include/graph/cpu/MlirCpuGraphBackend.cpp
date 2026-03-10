@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 
 #include <graph/cpu/MlirCpuGraphBackend.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -82,7 +83,7 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                                 outputSlots, totalOutputSlots);
 
   if (!analysis.canCompile) {
-    sd_printf("MlirCpuGraphBackend: cannot compile segment [%d-%d]: %s\n",
+    DSP_DIAG(COMPILE, "MlirCpuGraphBackend: cannot compile segment [%d-%d]: %s",
               startSlot, endSlot, analysis.failureReason.c_str());
     return false;
   }
@@ -90,7 +91,7 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Build MLIR module
   auto& engine = sd::mlir_runtime::MLIREngine::getInstance();
   if (!engine.isInitialized() && !engine.initialize()) {
-    sd_printf("MlirCpuGraphBackend: failed to initialize MLIREngine\n", "");
+    DSP_DIAG(BACKEND, "MlirCpuGraphBackend: failed to initialize MLIREngine");
     return false;
   }
 
@@ -98,7 +99,7 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                        totalSlots, externalInputs, numExternalInputs,
                                        outputSlots, totalOutputSlots);
   if (!module) {
-    sd_printf("MlirCpuGraphBackend: failed to build MLIR module for segment [%d-%d]\n",
+    DSP_DIAG(COMPILE, "MlirCpuGraphBackend: failed to build MLIR module for segment [%d-%d]",
               startSlot, endSlot);
     return false;
   }
@@ -106,7 +107,7 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Compile through MLIREngine's CPU pipeline
   auto kernel = engine.compileModule(std::move(module), "fused_kernel");
   if (!kernel || !kernel->isValid()) {
-    sd_printf("MlirCpuGraphBackend: failed to JIT-compile segment [%d-%d]\n",
+    DSP_DIAG(JIT, "MlirCpuGraphBackend: failed to JIT-compile segment [%d-%d]",
               startSlot, endSlot);
     return false;
   }
@@ -117,76 +118,12 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.shapeKey = shapeKey;
   compiled.valid = true;
 
-  // Reconstruct the same arg ordering as buildModule():
-  // 1. Input args: external and pre-segment sources
-  // 2. Output args: externally visible outputs
-  std::unordered_set<int> internalOutputs;
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalOutputs.insert(slots[i].outputSlotIndices[o]);
-    }
-  }
-
-  std::unordered_set<int> seenSrc;
-  // Input args
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
-      if (seenSrc.count(srcIdx)) continue;
-
-      bool isExternal = (srcIdx < 0);
-      bool isPreSegment = (!isExternal && !internalOutputs.count(srcIdx));
-
-      if (isExternal || isPreSegment) {
-        // Verify the source array exists
-        NDArray* arr = nullptr;
-        if (isExternal) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExternalInputs && externalInputs) arr = externalInputs[extIdx];
-        } else {
-          if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
-        }
-        if (!arr) continue;
-
-        seenSrc.insert(srcIdx);
-        compiled.argMappings.push_back({srcIdx, false});
-      }
-    }
-  }
-
-  // Output args (externally visible)
-  auto externalOutputSet = CpuIRBuilder::computeExternallyVisibleOutputs(
-      slots, startSlot, endSlot, totalSlots);
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
-      if (!externalOutputSet.count(outIdx)) continue;
-      if (seenSrc.count(outIdx)) continue;
-      seenSrc.insert(outIdx);
-
-      NDArray* arr = nullptr;
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) arr = outputSlots[outIdx];
-      if (!arr) continue;
-
-      compiled.argMappings.push_back({outIdx, true});
-    }
-  }
-
-  // Internal intermediate outputs (needed by non-element-wise ops as full memrefs)
-  // This must match the third phase of CpuIRBuilder::buildModule()
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
-      if (seenSrc.count(outIdx)) continue;
-
-      NDArray* arr = nullptr;
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) arr = outputSlots[outIdx];
-      if (!arr) continue;
-
-      seenSrc.insert(outIdx);
-      compiled.argMappings.push_back({outIdx, true});
-    }
-  }
+  // Reconstruct arg ordering via shared buildArgMappings() (GraphBackendCommon.h)
+  compiled.argMappings = buildArgMappings(
+      slots, startSlot, endSlot,
+      externalInputs, numExternalInputs,
+      outputSlots, totalOutputSlots, totalSlots,
+      CpuIRBuilder::computeExternallyVisibleOutputs);
 
   // Build compilation audit
   for (int i = startSlot; i <= endSlot; i++) {
@@ -202,7 +139,7 @@ bool MlirCpuGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   lastCompilationAudit_ = compiled.compilationAudit;
 
-  sd_printf("MlirCpuGraphBackend: compiled segment [%d-%d] with %d buffer args (%d ops fused)\n",
+  DSP_DIAG(COMPILE, "MlirCpuGraphBackend: compiled segment [%d-%d] with %d buffer args (%d ops fused)",
             startSlot, endSlot, static_cast<int>(compiled.argMappings.size()),
             endSlot - startSlot + 1);
 
@@ -253,7 +190,7 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     if (!arr) {
-      sd_printf("MlirCpuGraphBackend: null array for arg sourceIndex=%d in segment [%d-%d]\n",
+      DSP_DIAG(EXECUTE, "MlirCpuGraphBackend: null array for arg sourceIndex=%d in segment [%d-%d]",
                 mapping.sourceIndex, startSlot, endSlot);
       return Status::KERNEL_FAILURE;
     }
@@ -268,7 +205,7 @@ Status MlirCpuGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   // Execute the JIT kernel
   bool ok = compiled->kernel->execute(inputArrays, outputArrays);
   if (!ok) {
-    sd_printf("MlirCpuGraphBackend: JIT execution failed for segment [%d-%d]\n",
+    DSP_DIAG(EXECUTE, "MlirCpuGraphBackend: JIT execution failed for segment [%d-%d]",
               startSlot, endSlot);
     return Status::KERNEL_FAILURE;
   }

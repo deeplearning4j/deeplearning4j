@@ -215,6 +215,8 @@ struct TritonIRModule {
  */
 class TritonIRBuilder {
  public:
+  // ── Core (TritonIRBuilder.cpp) ──
+
   TritonIRBuilder();
   ~TritonIRBuilder();
 
@@ -234,14 +236,16 @@ class TritonIRBuilder {
   static TritonOpCategory getOpCategory(const std::string& opName);
 
   /**
-   * Classify a segment's dominant kernel pattern based on its op mix.
-   */
-  static SegmentKernelPattern classifySegment(NativeSlot* slots, int startSlot, int endSlot);
-
-  /**
    * Check if an op category is element-wise compatible (can be fused into 1D kernel).
    */
   static bool isElementwiseCompatible(TritonOpCategory cat);
+
+  // ── Analysis (TritonIRBuilder_analysis.cpp) ──
+
+  /**
+   * Classify a segment's dominant kernel pattern based on its op mix.
+   */
+  static SegmentKernelPattern classifySegment(NativeSlot* slots, int startSlot, int endSlot);
 
   /**
    * Pass 1: Profile a segment — build dataflow graph and category counts.
@@ -302,6 +306,8 @@ class TritonIRBuilder {
    * @param totalOutputSlots  Total output slots
    * @return TritonIRModule with MLIR handle and kernel metadata
    */
+  // ── Module builders (TritonIRBuilder_module.cpp) ──
+
   TritonIRModule buildModule(NativeSlot* slots, int startSlot, int endSlot,
                              int totalSlots,
                              NDArray** externalInputs, int numExternalInputs,
@@ -342,23 +348,33 @@ class TritonIRBuilder {
                                     int numRequestedOutputs = 0);
 
  private:
+  // ── Type system (TritonIRBuilder_types.cpp) ──
+
   // Create a splat constant float tensor: splat(val) -> tensor<BLOCKxf32>
   static mlir::Value splatConstantF32(mlir::OpBuilder& builder, mlir::Location loc,
                                       mlir::RankedTensorType tensorType, float val);
   static mlir::Value splatConstantI32(mlir::OpBuilder& builder, mlir::Location loc,
                                       mlir::RankedTensorType tensorType, int val);
+
+  // Map an nd4j DataType to an MLIR element type
+  static mlir::Type getMLIRType(mlir::OpBuilder& builder, DataType dtype);
+
+  // ── Core (TritonIRBuilder.cpp) ──
+
   // Op mapping table (populated in constructor)
   static const std::unordered_map<std::string, TritonOpMapping>& getOpTable();
+
+  // Generate a unique kernel name from the segment's op sequence
+  std::string generateKernelName(NativeSlot* slots, int startSlot, int endSlot);
+
+  // ── Analysis (TritonIRBuilder_analysis.cpp) ──
 
   // Determine optimal tile sizes based on op categories in the segment
   void selectTileConfig(const std::vector<TritonOpCategory>& categories,
                         const std::vector<std::vector<LongType>>& shapes,
                         int& blockSize, int& numWarps, int& numStages);
 
-  // Generate a unique kernel name from the segment's op sequence
-  std::string generateKernelName(NativeSlot* slots, int startSlot, int endSlot);
-
-  // ── MLIR emission helpers ──
+  // ── Op emitters (TritonIRBuilder_emitters.cpp) ──
 
   // Emit a binary element-wise op (add, sub, mul, div, min, max)
   static mlir::Value emitBinaryElementwise(mlir::OpBuilder& builder, mlir::Location loc,
@@ -397,7 +413,13 @@ class TritonIRBuilder {
   static mlir::Value emitNormalizationOp(mlir::OpBuilder& builder, mlir::Location loc,
                                          const std::string& opName,
                                          mlir::Value input, int axis,
-                                         mlir::RankedTensorType outputType);
+                                         mlir::RankedTensorType outputType,
+                                         mlir::Value scaleInput,
+                                         mlir::Value biasInput,
+                                         mlir::Value meanInput,
+                                         mlir::Value varianceInput);
+
+  // ── Kernel patterns (TritonIRBuilder_kernels.cpp) ──
 
   // Emit a matmul kernel pattern using tt.dot
   static void emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location loc,
@@ -419,11 +441,8 @@ class TritonIRBuilder {
                                         mlir::Value biasPtr,
                                         const std::vector<LongType>& biasShape);
 
-  // Map an nd4j DataType to an MLIR element type
-  static mlir::Type getMLIRType(mlir::OpBuilder& builder, DataType dtype);
-
  public:
-  // ── Sectioned kernel helpers (public for TritonGraphBackend access) ──
+  // ── Section emitters (TritonIRBuilder_sections.cpp) ──
 
   // Identify sections within a slot range: groups contiguous element-wise ops,
   // creates separate sections for matmul, attention, data movement, etc.
@@ -465,7 +484,7 @@ class TritonIRBuilder {
                                 mlir::Value outputPtr, int axis,
                                 const std::vector<LongType>& dataShape,
                                 const std::vector<LongType>& indicesShape,
-                                int nElements);
+                                int nElements, bool gatherNd = false);
 
   // Concat: cascading select over N inputs based on position ranges
   static void emitConcatSection(mlir::OpBuilder& builder, mlir::Location loc,

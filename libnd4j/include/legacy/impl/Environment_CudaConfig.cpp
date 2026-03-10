@@ -23,27 +23,14 @@
 
 #include <system/Environment.h>
 #include <helpers/logger.h>
-
-#ifdef SD_CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#endif
+#include <legacy/cuda/Environment_CudaConfig_cuda.h>
 
 namespace sd {
 
 void Environment::setCudaCurrentDevice(int device) {
-#ifdef SD_CUDA
-  if (device >= 0 && device < _cudaDeviceCount.load()) {
-    cudaError_t err = cudaSetDevice(device);
-    if (err == cudaSuccess) {
-      _cudaCurrentDevice.store(device);
-    } else {
-      sd_printf("Warning: Failed to set CUDA device to %d, error: %s\n", device, cudaGetErrorString(err));
-    }
-  } else {
-    sd_printf("Warning: Attempted to set invalid CUDA device %d (valid range: 0-%d)\n", device, _cudaDeviceCount.load() - 1);
+  if (Environment_setCudaCurrentDevice_cuda(device, _cudaDeviceCount.load())) {
+    _cudaCurrentDevice.store(device);
   }
-#endif
 }
 
 void Environment::setCudaMemoryPinned(bool pinned) {
@@ -130,19 +117,10 @@ void Environment::setCudaTensorCoreEnabled(bool enabled) {
 #ifdef SD_CUDA
   _cudaTensorCoreEnabled.store(enabled);
 
-  if (_cudaCurrentDevice.load() >= 0 && _cudaCurrentDevice.load() < _cudaDeviceCount.load()) {
-    int deviceId = _cudaCurrentDevice.load();
-    if (_capabilities[deviceId].first() >= 7) {
-      cudaError_t err;
-      if (enabled) {
-        err = cudaDeviceSetSharedMemConfig(cudaSharedMemBankSizeEightByte);
-        if (err != cudaSuccess) {
-          sd_printf("Warning: Failed to set shared memory config for tensor cores, error: %s\n",
-                    cudaGetErrorString(err));
-        }
-      }
-    }
-  }
+  int deviceId = _cudaCurrentDevice.load();
+  int deviceCount = _cudaDeviceCount.load();
+  int computeMajor = (deviceId >= 0 && deviceId < deviceCount) ? _capabilities[deviceId].first() : 0;
+  Environment_setCudaTensorCoreEnabled_cuda(enabled, deviceId, deviceCount, computeMajor);
 #endif
 }
 
@@ -150,7 +128,7 @@ void Environment::setCudaBlockingSync(int mode) {
 #ifdef SD_CUDA
   if (mode >= 0 && mode <= 1) {
     _cudaBlockingSync.store(mode);
-    cudaSetDeviceFlags(mode == 1 ? cudaDeviceBlockingSync : cudaDeviceScheduleSpin);
+    Environment_setCudaBlockingSync_cuda(mode);
   }
 #endif
 }
@@ -159,25 +137,7 @@ void Environment::setCudaDeviceSchedule(int schedule) {
 #ifdef SD_CUDA
   if (schedule >= 0 && schedule <= 3) {
     _cudaDeviceSchedule.store(schedule);
-
-    unsigned int flag;
-    switch (schedule) {
-      case 1:
-        flag = cudaDeviceScheduleSpin;
-        break;
-      case 2:
-        flag = cudaDeviceScheduleYield;
-        break;
-      case 3:
-        flag = cudaDeviceScheduleBlockingSync;
-        break;
-      case 0:
-      default:
-        flag = cudaDeviceScheduleAuto;
-        break;
-    }
-
-    cudaSetDeviceFlags(flag);
+    Environment_setCudaDeviceSchedule_cuda(schedule);
   }
 #endif
 }

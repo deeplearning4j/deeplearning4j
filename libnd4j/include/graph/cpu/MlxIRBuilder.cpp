@@ -21,6 +21,7 @@
 #if HAVE_MLX
 
 #include <graph/cpu/MlxIRBuilder.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
@@ -348,7 +349,7 @@ std::shared_ptr<void> MlxIRBuilder::emitBinaryElementwise(const std::string& opN
     return wrap(mx::add(pos, neg));
   }
 
-  sd_printf("MlxIRBuilder: unsupported binary op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported binary op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -485,7 +486,7 @@ std::shared_ptr<void> MlxIRBuilder::emitUnaryElementwise(const std::string& opNa
     return wrap(mx::where(mx::greater(x, mx::array(theta)), x, mx::array(0.0f)));
   }
 
-  sd_printf("MlxIRBuilder: unsupported unary op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported unary op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -503,7 +504,7 @@ std::shared_ptr<void> MlxIRBuilder::emitComparisonOp(const std::string& opName,
   if (op == "equals" || op == "equal") return wrap(mx::equal(a, b));
   if (op == "notequals" || op == "notequal") return wrap(mx::not_equal(a, b));
 
-  sd_printf("MlxIRBuilder: unsupported comparison op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported comparison op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -528,7 +529,7 @@ std::shared_ptr<void> MlxIRBuilder::emitLogicalOp(const std::string& opName,
     return wrap(mx::logical_and(orResult, mx::logical_not(andResult)));
   }
 
-  sd_printf("MlxIRBuilder: unsupported logical op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported logical op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -672,7 +673,7 @@ std::shared_ptr<void> MlxIRBuilder::emitReductionOp(const std::string& opName,
     return wrap(mx::mean(sq, lastAxis, keepDims));
   }
 
-  sd_printf("MlxIRBuilder: unsupported reduction op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported reduction op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -687,7 +688,7 @@ std::shared_ptr<void> MlxIRBuilder::emitMatmulOp(const std::string& opName,
   std::string op = normalizeOp(opName);
 
   if (inputs.size() < 2) {
-    sd_printf("MlxIRBuilder: matmul needs >= 2 inputs, got %d\n", static_cast<int>(inputs.size()));
+    DSP_DIAG(COMPILE, "MlxIRBuilder: matmul needs >= 2 inputs, got %d", static_cast<int>(inputs.size()));
     return nullptr;
   }
 
@@ -750,7 +751,7 @@ std::shared_ptr<void> MlxIRBuilder::emitMatmulOp(const std::string& opName,
     return wrap(mx::matmul(aT, bT));
   }
 
-  sd_printf("MlxIRBuilder: unsupported matmul op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported matmul op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -848,7 +849,7 @@ std::shared_ptr<void> MlxIRBuilder::emitNormalizationOp(const std::string& opNam
     return wrap(mx::array(x));  // Pass-through for now
   }
 
-  sd_printf("MlxIRBuilder: unsupported normalization op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported normalization op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -934,7 +935,7 @@ std::shared_ptr<void> MlxIRBuilder::emitShapeManipOp(const std::string& opName,
     return wrap(mx::tril(x, k));
   }
 
-  sd_printf("MlxIRBuilder: unsupported shape manipulation op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported shape manipulation op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -1045,7 +1046,7 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
     // iArgs layout: [begin0, begin1, ..., end0, end1, ..., strides0, strides1, ...]
     int rank = static_cast<int>(data.ndim());
     if (numIArgs < rank * 3) {
-      sd_printf("MlxIRBuilder: strided_slice needs 3*rank iArgs, got %d for rank %d\n",
+      DSP_DIAG(SHAPE, "MlxIRBuilder: strided_slice needs 3*rank iArgs, got %d for rank %d",
                 numIArgs, rank);
       return nullptr;
     }
@@ -1176,7 +1177,7 @@ std::shared_ptr<void> MlxIRBuilder::emitDataMovementOp(const std::string& opName
     return nullptr;
   }
 
-  sd_printf("MlxIRBuilder: unsupported data movement op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported data movement op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -1192,7 +1193,7 @@ std::shared_ptr<void> MlxIRBuilder::emitConstantGenOp(const std::string& opName,
   std::string op = normalizeOp(opName);
 
   if (!outputArr) {
-    sd_printf("MlxIRBuilder: constant gen op '%s' needs output array for shape\n", opName.c_str());
+    DSP_DIAG(COMPILE, "MlxIRBuilder: constant gen op '%s' needs output array for shape", opName.c_str());
     return nullptr;
   }
 
@@ -1282,7 +1283,7 @@ std::shared_ptr<void> MlxIRBuilder::emitConstantGenOp(const std::string& opName,
     return nullptr;
   }
 
-  sd_printf("MlxIRBuilder: unsupported constant gen op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported constant gen op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -1370,7 +1371,7 @@ std::shared_ptr<void> MlxIRBuilder::emitConvolutionOp(const std::string& opName,
 
   // conv3d: not yet optimized in MLX — decompose to 2D slices or fall back
   if (op == "conv3d") {
-    sd_printf("MlxIRBuilder: conv3d not yet implemented in MLX backend\n", "");
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: conv3d not yet implemented in MLX backend");
     return nullptr;
   }
 
@@ -1405,19 +1406,19 @@ std::shared_ptr<void> MlxIRBuilder::emitConvolutionOp(const std::string& opName,
     // Fill identity: filter[c*kH*kW + kh*kW + kw, kh, kw, c] = 1.0
     // This is complex to set up dynamically — use the conv2d approach directly
     // For now, fall back to letting the op execute natively
-    sd_printf("MlxIRBuilder: im2col using native fallback\n", "");
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: im2col using native fallback");
     return nullptr;
   }
 
   // col2im: inverse of im2col — fold columns back into image
   if (op == "col2im") {
-    sd_printf("MlxIRBuilder: col2im using native fallback\n", "");
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: col2im using native fallback");
     return nullptr;
   }
 
   // Backprop variants: always fall back to native execution
   if (op == "im2colbp" || op == "col2imbp") {
-    sd_printf("MlxIRBuilder: %s using native fallback\n", op.c_str());
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: %s using native fallback", op.c_str());
     return nullptr;
   }
 
@@ -1437,11 +1438,11 @@ std::shared_ptr<void> MlxIRBuilder::emitConvolutionOp(const std::string& opName,
   // Pooling ops: fall back to native for now
   // TODO: implement via custom Metal kernel or sliding window
   if (op == "maxpool2d" || op == "avgpool2d" || op == "maxpool3d" || op == "avgpool3d") {
-    sd_printf("MlxIRBuilder: %s using native fallback\n", op.c_str());
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: %s using native fallback", op.c_str());
     return nullptr;
   }
 
-  sd_printf("MlxIRBuilder: unsupported convolution op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported convolution op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -1461,7 +1462,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
   if (op == "multiheadattention" || op == "onnxmultiheadattention" || op == "dotproductattentionv2") {
 
     if (inputs.size() < 3) {
-      sd_printf("MlxIRBuilder: attention needs >= 3 inputs (Q, K, V), got %d\n",
+      DSP_DIAG(COMPILE, "MlxIRBuilder: attention needs >= 3 inputs (Q, K, V), got %d",
                 static_cast<int>(inputs.size()));
       return nullptr;
     }
@@ -1618,11 +1619,11 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedAttentionOp(const std::string& opNa
     // This op takes attention scores and adds linear position bias
     // For integration with SDPA, we'd need to compute the bias mask
     // Fall back to native for now — ALiBi is less common in Apple Silicon models
-    sd_printf("MlxIRBuilder: apply_alibi using native fallback\n", "");
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: apply_alibi using native fallback");
     return nullptr;
   }
 
-  sd_printf("MlxIRBuilder: unsupported attention op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported attention op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -1670,7 +1671,7 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedLlmOp(const std::string& opName,
   // fused_rms_norm_swiglu: silu(rms_norm(input) @ W_gate) * (rms_norm(input) @ W_up)
   if (op == "fusedrmsnormswiglu") {
     if (inputs.size() < 4) {
-      sd_printf("MlxIRBuilder: fused_rms_norm_swiglu needs 4 inputs, got %d\n",
+      DSP_DIAG(COMPILE, "MlxIRBuilder: fused_rms_norm_swiglu needs 4 inputs, got %d",
                 static_cast<int>(inputs.size()));
       return nullptr;
     }
@@ -1726,11 +1727,11 @@ std::shared_ptr<void> MlxIRBuilder::emitFusedLlmOp(const std::string& opName,
     if (inputs.empty()) return nullptr;
     // The chain is specified via iArgs op codes
     // For now, fall through to native — the chain semantics are complex
-    sd_printf("MlxIRBuilder: fused_elementwise_chain using native fallback\n", "");
+    DSP_DIAG(FALLBACK, "MlxIRBuilder: fused_elementwise_chain using native fallback");
     return nullptr;
   }
 
-  sd_printf("MlxIRBuilder: unsupported fused LLM op '%s'\n", opName.c_str());
+  DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported fused LLM op '%s'", opName.c_str());
   return nullptr;
 }
 
@@ -1774,7 +1775,7 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
       }
 
       if (!mlxInput) {
-        sd_printf("MlxIRBuilder: null input %d for slot %d (op=%s)\n",
+        DSP_DIAG(COMPILE, "MlxIRBuilder: null input %d for slot %d (op=%s)",
                   inp, si, slot.opName);
         graph.valid = false;
         return graph;
@@ -1906,13 +1907,13 @@ MlxIRBuilder::MlxGraph MlxIRBuilder::buildGraph(
         break;
 
       default:
-        sd_printf("MlxIRBuilder: unsupported category for op '%s'\n", slot.opName);
+        DSP_DIAG(FALLBACK, "MlxIRBuilder: unsupported category for op '%s'", slot.opName);
         graph.valid = false;
         return graph;
     }
 
     if (!result) {
-      sd_printf("MlxIRBuilder: emit failed for slot %d (op=%s)\n", si, slot.opName);
+      DSP_DIAG(COMPILE, "MlxIRBuilder: emit failed for slot %d (op=%s)", si, slot.opName);
       graph.valid = false;
       return graph;
     }

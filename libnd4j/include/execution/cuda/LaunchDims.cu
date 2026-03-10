@@ -174,7 +174,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"dynamic_partition_tad", {dim3(GRID_SIZE_DYNAMIC_PARTITION_TAD, BLOCK_SIZE_DYNAMIC_PARTITION_TAD, SHARED_MEM_SIZE_DYNAMIC_PARTITION_TAD)}},
     {"solve", {dim3(GRID_SIZE_SOLVE, BLOCK_SIZE_SOLVE, SHARED_MEM_SIZE_SOLVE)}},
     {"softmax", {dim3(GRID_SIZE_SOFTMAX, BLOCK_SIZE_SOFTMAX, SHARED_MEM_SIZE_SOFTMAX)}},
-
+    {"kv_scatter", {dim3(GRID_SIZE_KV_SCATTER, BLOCK_SIZE_KV_SCATTER, SHARED_MEM_SIZE_KV_SCATTER)}},
 
 };
 
@@ -348,7 +348,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"lup", {"GRID_SIZE_LUP", "BLOCK_SIZE_LUP", "SHARED_MEM_SIZE_LUP"}},
     {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
     {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
-
+    {"kv_scatter", {"GRID_SIZE_KV_SCATTER", "BLOCK_SIZE_KV_SCATTER", "SHARED_MEM_SIZE_KV_SCATTER"}},
 
 };
 

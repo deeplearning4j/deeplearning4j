@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 
 #include <graph/cpu/ArmHybridGraphBackend.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
@@ -40,9 +41,9 @@ ArmHybridGraphBackend::ArmHybridGraphBackend() {
   // Probe for Vulkan availability at construction time
   vulkanAvailable_ = probeVulkanDevice();
   if (vulkanAvailable_) {
-    sd_printf("ArmHybridGraphBackend: Vulkan compute available\n", "");
+    DSP_DIAG(BACKEND, "ArmHybridGraphBackend: Vulkan compute available");
   } else {
-    sd_printf("ArmHybridGraphBackend: Vulkan not available, CPU-only mode\n", "");
+    DSP_DIAG(BACKEND, "ArmHybridGraphBackend: Vulkan not available, CPU-only mode");
   }
 }
 
@@ -176,7 +177,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                                 outputSlots, totalOutputSlots);
 
   if (!analysis.canCompile) {
-    sd_printf("ArmHybridGraphBackend: cannot compile segment [%d-%d]: %s\n",
+    DSP_DIAG(COMPILE, "ArmHybridGraphBackend: cannot compile segment [%d-%d]: %s",
               startSlot, endSlot, analysis.failureReason.c_str());
     return false;
   }
@@ -184,7 +185,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   // Build MLIR module
   auto& engine = sd::mlir_runtime::MLIREngine::getInstance();
   if (!engine.isInitialized() && !engine.initialize()) {
-    sd_printf("ArmHybridGraphBackend: failed to initialize MLIREngine\n", "");
+    DSP_DIAG(BACKEND, "ArmHybridGraphBackend: failed to initialize MLIREngine");
     return false;
   }
 
@@ -192,7 +193,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                        totalSlots, externalInputs, numExternalInputs,
                                        outputSlots, totalOutputSlots);
   if (!module) {
-    sd_printf("ArmHybridGraphBackend: failed to build MLIR module for segment [%d-%d]\n",
+    DSP_DIAG(COMPILE, "ArmHybridGraphBackend: failed to build MLIR module for segment [%d-%d]",
               startSlot, endSlot);
     return false;
   }
@@ -209,7 +210,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
     if (!kernel || !kernel->isValid()) {
       // Fall back to CPU path on Vulkan compile failure
-      sd_printf("ArmHybridGraphBackend: Vulkan compile failed for segment [%d-%d], falling back to CPU\n",
+      DSP_DIAG(FALLBACK, "ArmHybridGraphBackend: Vulkan compile failed for segment [%d-%d], falling back to CPU",
                 startSlot, endSlot);
       execPath = ExecPath::ARM_CPU;
 
@@ -228,7 +229,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   }
 
   if (!kernel || !kernel->isValid()) {
-    sd_printf("ArmHybridGraphBackend: failed to compile segment [%d-%d]\n",
+    DSP_DIAG(COMPILE, "ArmHybridGraphBackend: failed to compile segment [%d-%d]",
               startSlot, endSlot);
     return false;
   }
@@ -240,76 +241,12 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.valid = true;
   compiled.execPath = execPath;
 
-  // Reconstruct arg ordering matching buildModule():
-  // 1. Input args (external + pre-segment)
-  // 2. Output args (externally visible)
-  // 3. Internal intermediate outputs
-  std::unordered_set<int> internalOutputs;
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalOutputs.insert(slots[i].outputSlotIndices[o]);
-    }
-  }
-
-  std::unordered_set<int> seenSrc;
-
-  // Phase 1: Input args
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
-      if (seenSrc.count(srcIdx)) continue;
-
-      bool isExternal = (srcIdx < 0);
-      bool isPreSegment = (!isExternal && !internalOutputs.count(srcIdx));
-
-      if (isExternal || isPreSegment) {
-        NDArray* arr = nullptr;
-        if (isExternal) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExternalInputs && externalInputs) arr = externalInputs[extIdx];
-        } else {
-          if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
-        }
-        if (!arr) continue;
-
-        seenSrc.insert(srcIdx);
-        compiled.argMappings.push_back({srcIdx, false});
-      }
-    }
-  }
-
-  // Phase 2: Output args (externally visible)
-  auto externalOutputSet = CpuIRBuilder::computeExternallyVisibleOutputs(
-      slots, startSlot, endSlot, totalSlots);
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
-      if (!externalOutputSet.count(outIdx)) continue;
-      if (seenSrc.count(outIdx)) continue;
-      seenSrc.insert(outIdx);
-
-      NDArray* arr = nullptr;
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) arr = outputSlots[outIdx];
-      if (!arr) continue;
-
-      compiled.argMappings.push_back({outIdx, true});
-    }
-  }
-
-  // Phase 3: Internal intermediate outputs
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
-      if (seenSrc.count(outIdx)) continue;
-
-      NDArray* arr = nullptr;
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) arr = outputSlots[outIdx];
-      if (!arr) continue;
-
-      seenSrc.insert(outIdx);
-      compiled.argMappings.push_back({outIdx, true});
-    }
-  }
+  // Reconstruct arg ordering via shared buildArgMappings() (GraphBackendCommon.h)
+  compiled.argMappings = buildArgMappings(
+      slots, startSlot, endSlot,
+      externalInputs, numExternalInputs,
+      outputSlots, totalOutputSlots, totalSlots,
+      CpuIRBuilder::computeExternallyVisibleOutputs);
 
   // Build compilation audit
   for (int i = startSlot; i <= endSlot; i++) {
@@ -326,7 +263,7 @@ bool ArmHybridGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   lastCompilationAudit_ = compiled.compilationAudit;
 
   const char* pathName = (execPath == ExecPath::VULKAN_GPU) ? "Vulkan GPU" : "ARM CPU";
-  sd_printf("ArmHybridGraphBackend: compiled segment [%d-%d] via %s with %d buffer args (%d ops fused)\n",
+  DSP_DIAG(COMPILE, "ArmHybridGraphBackend: compiled segment [%d-%d] via %s with %d buffer args (%d ops fused)",
             startSlot, endSlot, pathName,
             static_cast<int>(compiled.argMappings.size()),
             endSlot - startSlot + 1);
@@ -378,7 +315,7 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
     }
 
     if (!arr) {
-      sd_printf("ArmHybridGraphBackend: null array for arg sourceIndex=%d in segment [%d-%d]\n",
+      DSP_DIAG(EXECUTE, "ArmHybridGraphBackend: null array for arg sourceIndex=%d in segment [%d-%d]",
                 mapping.sourceIndex, startSlot, endSlot);
       return Status::KERNEL_FAILURE;
     }
@@ -393,7 +330,7 @@ Status ArmHybridGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slot
   // Execute the kernel
   bool ok = compiled->kernel->execute(inputArrays, outputArrays);
   if (!ok) {
-    sd_printf("ArmHybridGraphBackend: execution failed for segment [%d-%d] (path=%s)\n",
+    DSP_DIAG(EXECUTE, "ArmHybridGraphBackend: execution failed for segment [%d-%d] (path=%s)",
               startSlot, endSlot,
               compiled->execPath == ExecPath::VULKAN_GPU ? "Vulkan" : "ARM CPU");
     return Status::KERNEL_FAILURE;

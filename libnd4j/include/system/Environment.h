@@ -203,6 +203,11 @@ class SD_LIB_EXPORT Environment {
   // Triton debugging flags
   std::atomic<bool> _tritonSkipKernels{false};       // skip Triton kernels, run native fallback instead
   std::atomic<bool> _tritonVerifyKernels{false};     // run both Triton and native, compare outputs
+  std::atomic<bool> _tritonVerifyKeepNative{false};  // keep native outputs during verify (test error accumulation)
+  std::atomic<int>  _tritonMaxSubKernelIndex{-1};    // max sub-kernel index to run via Triton (-1 = unlimited)
+  std::atomic<bool> _tritonVerifyFullSnapshot{false}; // save/restore ALL outputSlots during verify (detect corruption)
+  std::atomic<bool> _tritonForceRecapture{false};    // force CUDA graph re-capture every step (diagnostic)
+  std::atomic<int>  _tritonCaptureMinExec{2};        // minimum execution count before graph capture
 
   // DSP optimization flags
   std::atomic<bool> _dspCastElimination{true};      // eliminate redundant cast pairs in FusionPass
@@ -587,6 +592,16 @@ class SD_LIB_EXPORT Environment {
   void setTritonSkipKernels(bool skip);
   bool tritonVerifyKernels() { return _tritonVerifyKernels.load(); }
   void setTritonVerifyKernels(bool verify);
+  bool tritonVerifyKeepNative() { return _tritonVerifyKeepNative.load(); }
+  void setTritonVerifyKeepNative(bool v);
+  int tritonMaxSubKernelIndex() { return _tritonMaxSubKernelIndex.load(); }
+  void setTritonMaxSubKernelIndex(int idx);
+  bool tritonVerifyFullSnapshot() { return _tritonVerifyFullSnapshot.load(); }
+  void setTritonVerifyFullSnapshot(bool v);
+  bool tritonForceRecapture() { return _tritonForceRecapture.load(); }
+  void setTritonForceRecapture(bool v);
+  int tritonCaptureMinExec() { return _tritonCaptureMinExec.load(); }
+  void setTritonCaptureMinExec(int v);
 
   // DSP optimization flags
   bool dspCastElimination() { return _dspCastElimination.load(); }

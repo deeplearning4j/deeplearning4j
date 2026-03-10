@@ -36,9 +36,7 @@
 #include <unistd.h>
 #endif
 #include <graph/GraphState.h>
-#include <graph/ResultWrapper.h>
 #include <graph/VariablesSet.h>
-#include <graph/execution/LogicExecutor.h>
 #include <helpers/ConstantHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugInfo.h>
@@ -58,7 +56,6 @@ typedef sd::NDArray* OpaqueNDArray;
 typedef sd::NDArray** OpaqueNDArrayArr;
 typedef sd::LaunchContext* OpaqueLaunchContext;
 typedef RandomGenerator OpaqueRandomGenerator;
-typedef sd::graph::ResultWrapper OpaqueResultWrapper;
 typedef sd::graph::VariablesSet OpaqueVariablesSet;
 typedef sd::graph::Variable OpaqueVariable;
 typedef sd::TadPack OpaqueTadPack;
@@ -130,13 +127,8 @@ SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer  *data, con
 SD_LIB_EXPORT void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
                                 sd::LongType *specialShapeInfo, sd::Pointer debugInfo);
 
-SD_LIB_EXPORT OpaqueResultWrapper* executeFlatGraph(sd::Pointer* extraPointers, sd::Pointer flatBufferPointer);
 
-SD_LIB_EXPORT OpaqueVariablesSet *executeStoredGraph(sd::Pointer *extraPointers,
-                                                     sd::LongType graphId,
-                                                     sd::Pointer *inputBuffers,
-                                                     sd::Pointer *inputShapes,
-                                                     int *inputIndices, int numInputs);
+
 SD_LIB_EXPORT sd::LongType const *getPrimaryShapeInfo(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getPrimaryOffsets(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getSpecialShapeInfo(OpaqueTadPack *pack);
@@ -383,11 +375,8 @@ SD_LIB_EXPORT void sortTadByValue(sd::Pointer *extraPointers,
 SD_LIB_EXPORT void munmapFile(sd::Pointer *extraPointers, sd::LongType *ptrMap, sd::LongType length) ;
 SD_LIB_EXPORT sd::LongType* mmapFile(sd::Pointer* extraPointers, const char* fileName, sd::LongType length);
 
-SD_LIB_EXPORT sd::LongType getResultWrapperSize(OpaqueResultWrapper *ptr) ;
-SD_LIB_EXPORT sd::Pointer getResultWrapperPointer(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list) ;
 SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *opContext) ;
-SD_LIB_EXPORT sd::Status registerGraph(sd::Pointer *extraPointers, sd::LongType graphId, sd::Pointer flatBufferPointer) ;
 SD_LIB_EXPORT sd::LongType getVariablesSetSize(OpaqueVariablesSet *set) ;
 SD_LIB_EXPORT sd::Status getVariablesSetStatus(OpaqueVariablesSet *set) ;
 SD_LIB_EXPORT sd::LongType const *getVariableShape(OpaqueVariable *variable) ;
@@ -396,7 +385,6 @@ SD_LIB_EXPORT int getVariableId(OpaqueVariable *variable) ;
 SD_LIB_EXPORT int getVariableIndex(OpaqueVariable *variable) ;
 SD_LIB_EXPORT void* getVariableBuffer(OpaqueVariable *variable) ;
 SD_LIB_EXPORT const char*  getVariableName(OpaqueVariable *variable) ;
-SD_LIB_EXPORT sd::Status unregisterGraph(sd::Pointer *extraPointers, sd::LongType graphId) ;
 SD_LIB_EXPORT void deletePointerArray(sd::Pointer pointer) ;
 SD_LIB_EXPORT void deleteCharArray(sd::Pointer pointer) ;
 SD_LIB_EXPORT void deleteIntArray(sd::Pointer pointer) ;
@@ -405,7 +393,6 @@ SD_LIB_EXPORT void deleteVariablesSet(OpaqueVariablesSet *pointer) ;
 SD_LIB_EXPORT void deleteShapeList(sd::Pointer shapeList) ;
 SD_LIB_EXPORT sd::Pointer getGraphState(sd::LongType id) ;
 SD_LIB_EXPORT void deleteGraphState(sd::Pointer state) ;
-SD_LIB_EXPORT void deleteResultWrapper(sd::Pointer ptr) ;
 SD_LIB_EXPORT void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType N, int dstType, sd::Pointer dZ) ;
 SD_LIB_EXPORT sd::Pointer createUtf8String(sd::Pointer *extraPointers, const char *string, int length) ;
 SD_LIB_EXPORT sd::LongType getUtf8StringLength(sd::Pointer *extraPointers, sd::Pointer ptr) ;

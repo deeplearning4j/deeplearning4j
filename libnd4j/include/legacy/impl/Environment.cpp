@@ -44,12 +44,7 @@
 #include <omp.h>
 #endif
 
-#ifdef SD_CUDA
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <system/BlasVersionHelper.h>
-
-#endif
+#include <legacy/cuda/Environment_cuda.h>
 
 namespace sd {
 
@@ -336,81 +331,15 @@ Environment::Environment() {
 #endif
 
 #ifdef SD_CUDA
-  // SAFETY: Initialize CUDA with extensive error checking
-  // This is the first CUDA operation - any heap corruption will manifest here
-  int devCnt = 0;
-  cudaError_t err = cudaGetDeviceCount(&devCnt);
-  
-  if (err != cudaSuccess) {
-    sd_printf("Environment::Environment: ERROR - cudaGetDeviceCount failed: %s\n", cudaGetErrorString(err));
-    devCnt = 0;
-  }
-  
-  // SAFETY: Validate device count before using it
-  if (devCnt < 0 || devCnt > 128) {
-    sd_printf("Environment::Environment: ERROR - Invalid device count %d, limiting to 0\n", devCnt);
-    devCnt = 0;
-  }
-  
-  _cudaDeviceCount.store(devCnt);
-  sd_printf("During environment initialization we found [%i] CUDA devices\n", devCnt);
-  
-  // SAFETY: Only proceed if we have valid devices
-  if (devCnt > 0) {
-    // SAFETY: Use try-catch around device property allocation
-    cudaDeviceProp* devProperties = nullptr;
-    try {
-      devProperties = new cudaDeviceProp[devCnt];
-    } catch (...) {
-      sd_printf("Environment::Environment: ERROR - Failed to allocate device properties array\n");
-      devCnt = 0;
-    }
-    
-    if (devProperties != nullptr) {
-      // SAFETY: Validate each device before accessing
-      for (int i = 0; i < devCnt; i++) {
-        err = cudaSetDevice(i);
-        if (err != cudaSuccess) {
-          sd_printf("Environment::Environment: WARNING - cudaSetDevice(%d) failed: %s\n", i, cudaGetErrorString(err));
-          continue;
-        }
-        
-        err = cudaGetDeviceProperties(&devProperties[i], i);
-        if (err != cudaSuccess) {
-          sd_printf("Environment::Environment: WARNING - cudaGetDeviceProperties(%d) failed: %s\n", i, cudaGetErrorString(err));
-          continue;
-        }
-
-        // SAFETY: Validate compute capability before creating Pair
-        if (devProperties[i].major >= 0 && devProperties[i].minor >= 0) {
-          try {
-            Pair p(devProperties[i].major, devProperties[i].minor);
-            _capabilities.emplace_back(p);
-          } catch (...) {
-            sd_printf("Environment::Environment: WARNING - Failed to add capability for device %d\n", i);
-          }
-        }
-      }
-
-      delete[] devProperties;
-    }
+  // Delegate all CUDA runtime calls to Environment_cuda.cu
+  {
+    int devCnt = 0;
+    Environment_initCuda(devCnt, _capabilities,
+                         _blasMajorVersion, _blasMinorVersion, _blasPatchVersion);
+    _cudaDeviceCount.store(devCnt);
   }
 
-  // SAFETY: Wrap BlasVersionHelper construction in try-catch
-  try {
-    BlasVersionHelper ver;
-    _blasMajorVersion = ver._blasMajorVersion;
-    _blasMinorVersion = ver._blasMinorVersion;
-    _blasPatchVersion = ver._blasPatchVersion;
-  } catch (...) {
-    sd_printf("Environment::Environment: WARNING - BlasVersionHelper initialization failed\n");
-    _blasMajorVersion = 0;
-    _blasMinorVersion = 0;
-    _blasPatchVersion = 0;
-  }
-
-  // Initialize CUDA environment settings
-  // SAFETY: These functions should handle their own errors
+  // Initialize CUDA environment settings (env-var parsing + device limits)
   try {
     initCudaEnvironment();
     initCudaDeviceLimits();
@@ -418,11 +347,6 @@ Environment::Environment() {
     sd_printf("Environment::Environment: WARNING - CUDA environment initialization failed\n");
   }
 
-  // Set initial device to 0
-  err = cudaSetDevice(0);
-  if (err != cudaSuccess) {
-    sd_printf("Environment::Environment: WARNING - cudaSetDevice(0) failed: %s\n", cudaGetErrorString(err));
-  }
   _cudaCurrentDevice.store(0);
 #else
  // No CUDA environment to initialize
@@ -431,49 +355,7 @@ Environment::Environment() {
 
 bool Environment::setCudaDeviceLimit(int limitType, size_t value) {
 #ifdef SD_CUDA
- CudaLimitType limitType2 = static_cast<CudaLimitType>(limitType);
-
- cudaLimit cudaLimitValue;
-
- // Map our enum to CUDA's enum
- switch (limitType2) {
-   case CUDA_LIMIT_STACK_SIZE:
-     cudaLimitValue = cudaLimitStackSize;
-     break;
-   case CUDA_LIMIT_MALLOC_HEAP_SIZE:
-     cudaLimitValue = cudaLimitMallocHeapSize;
-     break;
-   case CUDA_LIMIT_PRINTF_FIFO_SIZE:
-     cudaLimitValue = cudaLimitPrintfFifoSize;
-     break;
-   case CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH:
-     cudaLimitValue = cudaLimitDevRuntimeSyncDepth;
-     break;
-   case CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT:
-     cudaLimitValue = cudaLimitDevRuntimePendingLaunchCount;
-     break;
-   case CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY:
-     cudaLimitValue = cudaLimitMaxL2FetchGranularity;
-     break;
-   case CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE:
-#if CUDART_VERSION >= 10000
-     cudaLimitValue = cudaLimitPersistingL2CacheSize;
-#else
-     sd_printf("Warning: CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE requires CUDA 10.0 or newer\n", "");
-     return false;
-#endif
-     break;
-   default:
-     sd_printf("Warning: Unknown CUDA limit type: %d\n", limitType);
-     return false;
- }
-
- cudaError_t err = cudaDeviceSetLimit(cudaLimitValue, value);
- if (err != cudaSuccess) {
-   sd_printf("Warning: Failed to set CUDA device limit, error: %s\n", cudaGetErrorString(err));
-   return false;
- }
- return true;
+ return Environment_setCudaDeviceLimit_cuda(limitType, value);
 #else
  return false;
 #endif
@@ -540,38 +422,21 @@ void Environment::setCudaPersistingL2CacheSize(size_t size) {
 void Environment::initCudaDeviceLimits() {
  // Get the current values for all device limits to initialize our variables
 #ifdef SD_CUDA
- size_t value;
- if (cudaDeviceGetLimit(&value, cudaLimitStackSize) == cudaSuccess) {
-   _cudaStackSize.store(value);
+ {
+   size_t stackSize = 0, mallocHeapSize = 0, printfFifoSize = 0;
+   size_t devRuntimeSyncDepth = 0, devRuntimePendingLaunchCount = 0;
+   size_t maxL2FetchGranularity = 0, persistingL2CacheSize = 0;
+   Environment_queryCudaDeviceLimits(stackSize, mallocHeapSize, printfFifoSize,
+                                     devRuntimeSyncDepth, devRuntimePendingLaunchCount,
+                                     maxL2FetchGranularity, persistingL2CacheSize);
+   _cudaStackSize.store(stackSize);
+   _cudaMallocHeapSize.store(mallocHeapSize);
+   _cudaPrintfFifoSize.store(printfFifoSize);
+   _cudaDevRuntimeSyncDepth.store(devRuntimeSyncDepth);
+   _cudaDevRuntimePendingLaunchCount.store(devRuntimePendingLaunchCount);
+   _cudaMaxL2FetchGranularity.store(maxL2FetchGranularity);
+   _cudaPersistingL2CacheSize.store(persistingL2CacheSize);
  }
-
-
- if (cudaDeviceGetLimit(&value, cudaLimitMallocHeapSize) == cudaSuccess) {
-   _cudaMallocHeapSize.store(value);
-
- }
-
- if (cudaDeviceGetLimit(&value, cudaLimitPrintfFifoSize) == cudaSuccess) {
-   _cudaPrintfFifoSize.store(value);
- }
-
- if (cudaDeviceGetLimit(&value, cudaLimitDevRuntimeSyncDepth) == cudaSuccess) {
-   _cudaDevRuntimeSyncDepth.store(value);
- }
-
- if (cudaDeviceGetLimit(&value, cudaLimitDevRuntimePendingLaunchCount) == cudaSuccess) {
-   _cudaDevRuntimePendingLaunchCount.store(value);
- }
-
- if (cudaDeviceGetLimit(&value, cudaLimitMaxL2FetchGranularity) == cudaSuccess) {
-   _cudaMaxL2FetchGranularity.store(value);
- }
-
-#if CUDART_VERSION >= 10000
- if (cudaDeviceGetLimit(&value, cudaLimitPersistingL2CacheSize) == cudaSuccess) {
-   _cudaPersistingL2CacheSize.store(value);
- }
-#endif
 
  // Load custom limits from environment variables
  const char* stackSizeVar = std::getenv("SD_CUDA_STACK_SIZE");
@@ -711,7 +576,7 @@ void Environment::initCudaEnvironment() {
      int device = std::stoi(devStr);
      if (device >= 0 && device < _cudaDeviceCount.load()) {
        _cudaCurrentDevice.store(device);
-       cudaSetDevice(device);
+       Environment_cudaSetDeviceForInit(device);
      }
    } catch (std::exception &e) {
      // Do nothing on error
@@ -721,7 +586,7 @@ void Environment::initCudaEnvironment() {
    int device = std::stoi(devStr);
    if (device >= 0 && device < _cudaDeviceCount.load()) {
      _cudaCurrentDevice.store(device);
-     cudaSetDevice(device);
+     Environment_cudaSetDeviceForInit(device);
    }
 #endif
 #endif
@@ -1368,6 +1233,34 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
    setTritonVerifyKernels(val == "1" || val == "true" || val == "TRUE" || val == "ON");
  }
 
+ const char* tritonVerifyKeepNativeVar = std::getenv("ND4J_TRITON_VERIFY_KEEP_NATIVE");
+ if (tritonVerifyKeepNativeVar != nullptr) {
+   std::string val(tritonVerifyKeepNativeVar);
+   setTritonVerifyKeepNative(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ const char* tritonMaxSubKernelIndexVar = std::getenv("ND4J_TRITON_MAX_SUB_KERNEL_INDEX");
+ if (tritonMaxSubKernelIndexVar != nullptr) {
+   setTritonMaxSubKernelIndex(std::atoi(tritonMaxSubKernelIndexVar));
+ }
+
+ const char* tritonVerifyFullSnapshotVar = std::getenv("ND4J_TRITON_VERIFY_FULL_SNAPSHOT");
+ if (tritonVerifyFullSnapshotVar != nullptr) {
+   std::string val(tritonVerifyFullSnapshotVar);
+   setTritonVerifyFullSnapshot(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ const char* tritonForceRecaptureVar = std::getenv("ND4J_TRITON_FORCE_RECAPTURE");
+ if (tritonForceRecaptureVar != nullptr) {
+   std::string val(tritonForceRecaptureVar);
+   setTritonForceRecapture(val == "1" || val == "true" || val == "TRUE" || val == "ON");
+ }
+
+ const char* tritonCaptureMinExecVar = std::getenv("ND4J_TRITON_CAPTURE_MIN_EXEC");
+ if (tritonCaptureMinExecVar != nullptr) {
+   setTritonCaptureMinExec(std::atoi(tritonCaptureMinExecVar));
+ }
+
  const char* dspCastEliminationVar = std::getenv("ND4J_DSP_CAST_ELIMINATION");
  if (dspCastEliminationVar != nullptr) {
    std::string val(dspCastEliminationVar);
@@ -1826,6 +1719,26 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setTritonVerifyKernels(bool verify) {
     _tritonVerifyKernels.store(verify);
+  }
+
+  void Environment::setTritonVerifyKeepNative(bool v) {
+    _tritonVerifyKeepNative.store(v);
+  }
+
+  void Environment::setTritonMaxSubKernelIndex(int idx) {
+    _tritonMaxSubKernelIndex.store(idx);
+  }
+
+  void Environment::setTritonVerifyFullSnapshot(bool v) {
+    _tritonVerifyFullSnapshot.store(v);
+  }
+
+  void Environment::setTritonForceRecapture(bool v) {
+    _tritonForceRecapture.store(v);
+  }
+
+  void Environment::setTritonCaptureMinExec(int v) {
+    _tritonCaptureMinExec.store(v);
   }
 
   bool Environment::isTritonExcludedOp(const std::string& opName) const {

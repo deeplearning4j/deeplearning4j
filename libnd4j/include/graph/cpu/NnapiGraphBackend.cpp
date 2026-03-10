@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#if defined(HAVE_NNAPI)
+#if HAVE_NNAPI
 
 #include <graph/cpu/NnapiGraphBackend.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/gpu/OpCategoryTable.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
@@ -253,9 +254,9 @@ NnapiGraphBackend::NnapiGraphBackend() {
   apiLevel_ = getAndroidApiLevel();
   nnapiAvailable_ = (apiLevel_ >= 27);
   if (nnapiAvailable_) {
-    sd_printf("NnapiGraphBackend: NNAPI available (API level %d)\n", apiLevel_);
+    DSP_DIAG(BACKEND, "NnapiGraphBackend: NNAPI available (API level %d)", apiLevel_);
   } else {
-    sd_printf("NnapiGraphBackend: NNAPI not available (API level %d, need 27+)\n", apiLevel_);
+    DSP_DIAG(BACKEND, "NnapiGraphBackend: NNAPI not available (API level %d, need 27+)", apiLevel_);
   }
 }
 
@@ -950,7 +951,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
           if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
         }
         if (!arr) {
-          sd_printf("NnapiGraphBackend: null input array for source %d at slot %d\n", srcIdx, i);
+          DSP_DIAG(COMPILE, "NnapiGraphBackend: null input array for source %d at slot %d", srcIdx, i);
           return false;
         }
 
@@ -965,7 +966,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   for (int i = startSlot; i <= endSlot; i++) {
     int nnapiOp = getNnapiOpCode(slots[i].opName);
     if (nnapiOp < 0) {
-      sd_printf("NnapiGraphBackend: unmappable op '%s' at slot %d\n",
+      DSP_DIAG(FALLBACK, "NnapiGraphBackend: unmappable op '%s' at slot %d",
                 slots[i].opName.c_str(), i);
       return false;
     }
@@ -976,7 +977,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       int srcIdx = slots[i].inputSourceIndices[inp];
       auto it = sourceToOperand.find(srcIdx);
       if (it == sourceToOperand.end()) {
-        sd_printf("NnapiGraphBackend: missing operand for source %d at slot %d input %d\n",
+        DSP_DIAG(COMPILE, "NnapiGraphBackend: missing operand for source %d at slot %d input %d",
                   srcIdx, i, inp);
         return false;
       }
@@ -986,7 +987,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
     // Add implicit parameters (padding, stride, axis, activation codes, etc.)
     if (!addImplicitParams(model, slots[i], nnapiOp, inputOperands, nextOperand,
                            outputSlots, totalOutputSlots, vectorStorage)) {
-      sd_printf("NnapiGraphBackend: failed to add implicit params for '%s' at slot %d\n",
+      DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add implicit params for '%s' at slot %d",
                 slots[i].opName.c_str(), i);
       return false;
     }
@@ -1000,7 +1001,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         arr = outputSlots[outIdx];
       }
       if (!arr) {
-        sd_printf("NnapiGraphBackend: null output array at slot %d output %d (outIdx=%d)\n",
+        DSP_DIAG(COMPILE, "NnapiGraphBackend: null output array at slot %d output %d (outIdx=%d)",
                   i, o, outIdx);
         return false;
       }
@@ -1021,7 +1022,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
         static_cast<uint32_t>(outputOperands.size()), outputOperands.data());
 
     if (result != ANEURALNETWORKS_NO_ERROR) {
-      sd_printf("NnapiGraphBackend: failed to add op '%s' (NNAPI code %d) at slot %d, error=%d\n",
+      DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to add op '%s' (NNAPI code %d) at slot %d, error=%d",
                 slots[i].opName.c_str(), nnapiOp, i, result);
       return false;
     }
@@ -1039,7 +1040,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
   }
 
   if (modelOutputs.empty()) {
-    sd_printf("NnapiGraphBackend: no external outputs found for segment [%d-%d]\n",
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: no external outputs found for segment [%d-%d]",
               startSlot, endSlot);
     return false;
   }
@@ -1050,7 +1051,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
       static_cast<uint32_t>(modelOutputs.size()), modelOutputs.data());
 
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    sd_printf("NnapiGraphBackend: identifyInputsAndOutputs failed: %d\n", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: identifyInputsAndOutputs failed: %d", result);
     return false;
   }
 
@@ -1061,7 +1062,7 @@ bool NnapiGraphBackend::buildModel(ANeuralNetworksModel* model, CompiledModel& c
 
   result = ANeuralNetworksModel_finish(model);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    sd_printf("NnapiGraphBackend: model finish failed: %d\n", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: model finish failed: %d", result);
     return false;
   }
 
@@ -1095,7 +1096,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksModel* model = nullptr;
   int result = ANeuralNetworksModel_create(&model);
   if (result != ANEURALNETWORKS_NO_ERROR || !model) {
-    sd_printf("NnapiGraphBackend: failed to create model: %d\n", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to create model: %d", result);
     return false;
   }
 
@@ -1116,7 +1117,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksCompilation* compilation = nullptr;
   result = ANeuralNetworksCompilation_create(model, &compilation);
   if (result != ANEURALNETWORKS_NO_ERROR || !compilation) {
-    sd_printf("NnapiGraphBackend: failed to create compilation: %d\n", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: failed to create compilation: %d", result);
     ANeuralNetworksModel_free(model);
     return false;
   }
@@ -1125,7 +1126,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   result = ANeuralNetworksCompilation_finish(compilation);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    sd_printf("NnapiGraphBackend: compilation finish failed: %d\n", result);
+    DSP_DIAG(COMPILE, "NnapiGraphBackend: compilation finish failed: %d", result);
     ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksModel_free(model);
     return false;
@@ -1154,7 +1155,7 @@ bool NnapiGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   lastCompilationAudit_ = compiled.compilationAudit;
 
-  sd_printf("NnapiGraphBackend: compiled segment [%d-%d] with %d inputs, %d outputs (%d ops) on API %d\n",
+  DSP_DIAG(COMPILE, "NnapiGraphBackend: compiled segment [%d-%d] with %d inputs, %d outputs (%d ops) on API %d",
             startSlot, endSlot,
             static_cast<int>(compiled.inputMappings.size()),
             static_cast<int>(compiled.outputMappings.size()),
@@ -1198,7 +1199,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksExecution* execution = nullptr;
   int result = ANeuralNetworksExecution_create(compiled->compilation, &execution);
   if (result != ANEURALNETWORKS_NO_ERROR || !execution) {
-    sd_printf("NnapiGraphBackend: failed to create execution: %d\n", result);
+    DSP_DIAG(EXECUTE, "NnapiGraphBackend: failed to create execution: %d", result);
     return Status::KERNEL_FAILURE;
   }
 
@@ -1219,7 +1220,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     if (!arr) {
-      sd_printf("NnapiGraphBackend: null input array for source %d\n", mapping.sourceIndex);
+      DSP_DIAG(EXECUTE, "NnapiGraphBackend: null input array for source %d", mapping.sourceIndex);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
@@ -1247,7 +1248,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     result = ANeuralNetworksExecution_setInput(
         execution, idx, nullptr, buffer, bufferSize);
     if (result != ANEURALNETWORKS_NO_ERROR) {
-      sd_printf("NnapiGraphBackend: setInput failed for idx %d: %d\n", idx, result);
+      DSP_DIAG(EXECUTE, "NnapiGraphBackend: setInput failed for idx %d: %d", idx, result);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
@@ -1263,14 +1264,14 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     }
 
     if (!arr) {
-      sd_printf("NnapiGraphBackend: null output array for source %d\n", mapping.sourceIndex);
+      DSP_DIAG(EXECUTE, "NnapiGraphBackend: null output array for source %d", mapping.sourceIndex);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
 
     // Output must be contiguous for NNAPI to write into
     if (!arr->isContiguous()) {
-      sd_printf("NnapiGraphBackend: output array at source %d is not contiguous\n",
+      DSP_DIAG(EXECUTE, "NnapiGraphBackend: output array at source %d is not contiguous",
                 mapping.sourceIndex);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
@@ -1282,7 +1283,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     result = ANeuralNetworksExecution_setOutput(
         execution, idx, nullptr, buffer, bufferSize);
     if (result != ANEURALNETWORKS_NO_ERROR) {
-      sd_printf("NnapiGraphBackend: setOutput failed for idx %d: %d\n", idx, result);
+      DSP_DIAG(EXECUTE, "NnapiGraphBackend: setOutput failed for idx %d: %d", idx, result);
       ANeuralNetworksExecution_free(execution);
       return Status::KERNEL_FAILURE;
     }
@@ -1292,7 +1293,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksEvent* event = nullptr;
   result = ANeuralNetworksExecution_startCompute(execution, &event);
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    sd_printf("NnapiGraphBackend: startCompute failed: %d\n", result);
+    DSP_DIAG(EXECUTE, "NnapiGraphBackend: startCompute failed: %d", result);
     ANeuralNetworksExecution_free(execution);
     return Status::KERNEL_FAILURE;
   }
@@ -1302,7 +1303,7 @@ Status NnapiGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
   ANeuralNetworksExecution_free(execution);
 
   if (result != ANEURALNETWORKS_NO_ERROR) {
-    sd_printf("NnapiGraphBackend: execution failed for segment [%d-%d]: %d\n",
+    DSP_DIAG(EXECUTE, "NnapiGraphBackend: execution failed for segment [%d-%d]: %d",
               startSlot, endSlot, result);
     return Status::KERNEL_FAILURE;
   }

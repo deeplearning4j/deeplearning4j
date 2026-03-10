@@ -21,6 +21,7 @@
 
 #include <graph/FusionPass.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspDiagnostics.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <system/Environment.h>
@@ -309,7 +310,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             }
         }
         if (castsEliminated > 0) {
-            sd_printf("FusionPass: cast elimination removed %d redundant cast ops\n", castsEliminated);
+            DSP_DIAG(FUSION, "cast elimination removed %d redundant cast ops", castsEliminated);
         }
     }
 
@@ -358,7 +359,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
             }
         }
         if (castsSunk > 0) {
-            sd_printf("FusionPass: cast sink through matmul eliminated %d cast ops\n", castsSunk);
+            DSP_DIAG(FUSION, "cast sink through matmul eliminated %d cast ops", castsSunk);
         }
     }
 
@@ -673,7 +674,7 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
         candidates.push_back(candidate);
         for (int idx : chain) fused[idx] = true;
 
-        sd_printf("FusionPass: detected softmax compound pattern, slots %d-%d\n",
+        DSP_DIAG(FUSION, "detected softmax compound pattern, slots %d-%d",
                   chain.front(), chain.back());
     }
 
@@ -812,14 +813,14 @@ int FusionPass::applyFusions(
                                 slots[fusion.slotIndices[ci]].isFusedChainTail = true;
                             }
 
-                            sd_printf("FusionPass: fused kernel dispatch enabled for chain slots %d-%d (%d ops)\n",
+                            DSP_DIAG(FUSION, "fused kernel dispatch enabled for chain slots %d-%d (%d ops)",
                                       headIdx, fusion.slotIndices.back(), chainLen);
                         }
                     }
                 }
 
                 applied++;
-                sd_printf("FusionPass: applied ELEMENTWISE_CHAIN fusion, slots %d-%d (%d ops)\n",
+                DSP_DIAG(FUSION, "applied ELEMENTWISE_CHAIN fusion, slots %d-%d (%d ops)",
                           fusion.startSlot, fusion.endSlot, fusion.chainLength);
                 break;
             }
@@ -850,7 +851,7 @@ int FusionPass::applyFusions(
                     actSlot.inPlaceFused = true;
                     actSlot.inPlaceFusedInputIdx = fusedInputIdx;
                     applied++;
-                    sd_printf("FusionPass: applied BIAS_ACTIVATION fusion, slots %d-%d\n",
+                    DSP_DIAG(FUSION, "applied BIAS_ACTIVATION fusion, slots %d-%d",
                               fusion.startSlot, fusion.endSlot);
                 }
                 break;
@@ -885,7 +886,7 @@ int FusionPass::applyFusions(
                 }
 
                 applied++;
-                sd_printf("FusionPass: applied MATMUL_BIAS_ACTIVATION fusion, slots %d-%d\n",
+                DSP_DIAG(FUSION, "applied MATMUL_BIAS_ACTIVATION fusion, slots %d-%d",
                           fusion.startSlot, fusion.endSlot);
                 break;
             }

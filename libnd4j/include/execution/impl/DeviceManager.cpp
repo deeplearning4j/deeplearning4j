@@ -29,10 +29,6 @@
 #include <sstream>
 #include <iostream>
 
-#ifdef SD_CUDA
-#include <cuda_runtime.h>
-#endif
-
 namespace sd {
 namespace modelparallel {
 
@@ -134,58 +130,12 @@ void DeviceManager::discoverCpuDevices() {
     _devicesByType[DeviceType::CPU].push_back(cpuInfo.globalIndex);
 }
 
+// CUDA implementation in execution/cuda/DeviceManager_cuda.cu
+#ifndef SD_CUDA
 void DeviceManager::discoverCudaDevices() {
-#ifdef SD_CUDA
-    int deviceCount = 0;
-    cudaError_t err = cudaGetDeviceCount(&deviceCount);
-
-    if (err != cudaSuccess || deviceCount == 0) {
-        return;
-    }
-
-    for (int i = 0; i < deviceCount; ++i) {
-        cudaDeviceProp props;
-        err = cudaGetDeviceProperties(&props, i);
-        if (err != cudaSuccess) {
-            continue;
-        }
-
-        DeviceInfo gpuInfo;
-        gpuInfo.type = DeviceType::CUDA_GPU;
-        gpuInfo.deviceIndex = i;
-        gpuInfo.globalIndex = static_cast<int>(_devices.size());
-        gpuInfo.name = props.name;
-
-        gpuInfo.totalMemory = props.totalGlobalMem;
-
-        // Get free memory
-        size_t freeMem, totalMem;
-        cudaSetDevice(i);
-        cudaMemGetInfo(&freeMem, &totalMem);
-        gpuInfo.freeMemory = freeMem;
-        gpuInfo.availableMemory = freeMem;
-
-        gpuInfo.computeCapabilityMajor = props.major;
-        gpuInfo.computeCapabilityMinor = props.minor;
-        gpuInfo.numSMs = props.multiProcessorCount;
-        gpuInfo.clockSpeedGHz = props.clockRate / 1e6f;
-
-        // Check unified memory support (Pascal and later)
-        gpuInfo.supportsUnifiedMemory = (props.major >= 6);
-        gpuInfo.supportsAsyncCopy = true;
-        gpuInfo.available = true;
-        gpuInfo.engine = samediff::ENGINE_CUDA;
-
-        _devices.push_back(gpuInfo);
-        _devicesByType[DeviceType::CUDA_GPU].push_back(gpuInfo.globalIndex);
-    }
-
-    // Reset to device 0
-    if (deviceCount > 0) {
-        cudaSetDevice(0);
-    }
-#endif
+    // No CUDA devices to discover in CPU build
 }
+#endif
 
 void DeviceManager::discoverMetalDevices() {
 #ifdef SD_APPLE_MPS
@@ -204,56 +154,17 @@ void DeviceManager::discoverOpenClDevices() {
     // For now, this is a placeholder
 }
 
+#ifndef SD_CUDA
 void DeviceManager::initializeP2PConnections() {
-#ifdef SD_CUDA
-    auto& cudaDevices = _devicesByType[DeviceType::CUDA_GPU];
-
-    for (size_t i = 0; i < cudaDevices.size(); ++i) {
-        for (size_t j = i + 1; j < cudaDevices.size(); ++j) {
-            int dev1 = _devices[cudaDevices[i]].deviceIndex;
-            int dev2 = _devices[cudaDevices[j]].deviceIndex;
-
-            probeP2PCapabilities(dev1, dev2);
-        }
-    }
-#endif
+    // No P2P connections in CPU build
 }
+#endif
 
+#ifndef SD_CUDA
 void DeviceManager::probeP2PCapabilities(int device1, int device2) {
-#ifdef SD_CUDA
-    int canAccessPeer12 = 0, canAccessPeer21 = 0;
-
-    cudaDeviceCanAccessPeer(&canAccessPeer12, device1, device2);
-    cudaDeviceCanAccessPeer(&canAccessPeer21, device2, device1);
-
-    if (canAccessPeer12 || canAccessPeer21) {
-        P2PConnection conn;
-        conn.sourceDevice = device1;
-        conn.targetDevice = device2;
-        conn.directAccess = (canAccessPeer12 && canAccessPeer21);
-        conn.bidirectional = (canAccessPeer12 && canAccessPeer21);
-
-        // Check NVLink (if supported)
-        // This is a simplified check - actual NVLink detection is more complex
-        conn.nvlinkConnected = false;
-
-        _p2pConnections.push_back(conn);
-
-        // Update device info
-        int globalIdx1 = getGlobalIndex(samediff::ENGINE_CUDA, device1);
-        int globalIdx2 = getGlobalIndex(samediff::ENGINE_CUDA, device2);
-
-        if (globalIdx1 >= 0) {
-            _devices[globalIdx1].supportsP2P = true;
-            _devices[globalIdx1].p2pConnectedDevices.push_back(globalIdx2);
-        }
-        if (globalIdx2 >= 0) {
-            _devices[globalIdx2].supportsP2P = true;
-            _devices[globalIdx2].p2pConnectedDevices.push_back(globalIdx1);
-        }
-    }
-#endif
+    // No P2P probing in CPU build
 }
+#endif
 
 int DeviceManager::getTotalDeviceCount() const {
     std::lock_guard<std::mutex> lock(_mutex);
@@ -423,39 +334,18 @@ std::vector<P2PConnection> DeviceManager::getAllP2PConnections() const {
     return _p2pConnections;
 }
 
+// CUDA implementation in execution/cuda/DeviceManager_cuda.cu
+#ifndef SD_CUDA
 bool DeviceManager::enableP2P(int device1, int device2) {
-#ifdef SD_CUDA
-    cudaError_t err1 = cudaSetDevice(device1);
-    if (err1 != cudaSuccess) return false;
-
-    cudaError_t err2 = cudaDeviceEnablePeerAccess(device2, 0);
-    if (err2 != cudaSuccess && err2 != cudaErrorPeerAccessAlreadyEnabled) {
-        return false;
-    }
-
-    err1 = cudaSetDevice(device2);
-    if (err1 != cudaSuccess) return false;
-
-    err2 = cudaDeviceEnablePeerAccess(device1, 0);
-    if (err2 != cudaSuccess && err2 != cudaErrorPeerAccessAlreadyEnabled) {
-        return false;
-    }
-
-    return true;
-#else
     return false;
-#endif
 }
+#endif
 
+#ifndef SD_CUDA
 void DeviceManager::disableP2P(int device1, int device2) {
-#ifdef SD_CUDA
-    cudaSetDevice(device1);
-    cudaDeviceDisablePeerAccess(device2);
-
-    cudaSetDevice(device2);
-    cudaDeviceDisablePeerAccess(device1);
-#endif
+    // No P2P in CPU build
 }
+#endif
 
 void DeviceManager::enableAllP2P() {
     for (const auto& conn : _p2pConnections) {
@@ -600,23 +490,11 @@ size_t DeviceManager::getDeviceFreeMemory(int globalIndex) const {
     return 0;
 }
 
+#ifndef SD_CUDA
 void DeviceManager::updateMemoryStats(int globalIndex) {
-#ifdef SD_CUDA
-    if (auto* device = findDevice(globalIndex)) {
-        if (device->type == DeviceType::CUDA_GPU) {
-            size_t freeMem, totalMem;
-            cudaSetDevice(device->deviceIndex);
-            cudaMemGetInfo(&freeMem, &totalMem);
-            device->freeMemory = freeMem;
-            device->totalMemory = totalMem;
-
-            auto it = _reservedMemory.find(globalIndex);
-            size_t reserved = (it != _reservedMemory.end()) ? it->second : 0;
-            device->availableMemory = (freeMem > reserved) ? (freeMem - reserved) : 0;
-        }
-    }
-#endif
+    // CPU build: no GPU memory stats to update
 }
+#endif
 
 void DeviceManager::updateAllMemoryStats() {
     for (size_t i = 0; i < _devices.size(); ++i) {
@@ -777,15 +655,15 @@ void DeviceManager::setCurrentDevice(int globalIndex) {
     }
 
     const auto& device = _devices[globalIndex];
-
-#ifdef SD_CUDA
-    if (device.type == DeviceType::CUDA_GPU) {
-        cudaSetDevice(device.deviceIndex);
-    }
-#endif
-
+    setCurrentDeviceCuda(device);
     currentDeviceRef() = globalIndex;
 }
+
+#ifndef SD_CUDA
+void DeviceManager::setCurrentDeviceCuda(const DeviceInfo& device) {
+    // No CUDA device switching in CPU build
+}
+#endif
 
 int DeviceManager::getCurrentDevice() const {
     return currentDeviceRef();
@@ -820,27 +698,15 @@ int DeviceManager::getGlobalIndex(samediff::Engine engine, int localIndex) const
     return findGlobalIndex(type, localIndex);
 }
 
+#ifndef SD_CUDA
 void DeviceManager::synchronizeAll() {
-#ifdef SD_CUDA
-    for (const auto& device : _devices) {
-        if (device.type == DeviceType::CUDA_GPU) {
-            cudaSetDevice(device.deviceIndex);
-            cudaDeviceSynchronize();
-        }
-    }
-#endif
+    // No GPU synchronization in CPU build
 }
 
 void DeviceManager::synchronize(int globalIndex) {
-#ifdef SD_CUDA
-    if (const auto* device = findDevice(globalIndex)) {
-        if (device->type == DeviceType::CUDA_GPU) {
-            cudaSetDevice(device->deviceIndex);
-            cudaDeviceSynchronize();
-        }
-    }
-#endif
+    // No GPU synchronization in CPU build
 }
+#endif
 
 std::string DeviceManager::deviceToString(const DeviceInfo& device) const {
     std::ostringstream ss;

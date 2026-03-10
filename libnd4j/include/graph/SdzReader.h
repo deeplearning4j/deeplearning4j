@@ -35,7 +35,8 @@ namespace graph {
  * This reader extracts the SDNB entries and delegates to SdnbReader
  * for the actual model loading.
  *
- * Uses miniz for ZIP extraction (vendored single-header library).
+ * Supports STORED entries and, when built with zlib, DEFLATE entries used by
+ * SameDiff's SDZ serializer.
  */
 class SD_LIB_EXPORT SdzReader {
  public:

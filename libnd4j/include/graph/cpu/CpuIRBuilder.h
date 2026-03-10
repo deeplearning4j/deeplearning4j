@@ -19,7 +19,7 @@
 #ifndef LIBND4J_CPU_IR_BUILDER_H
 #define LIBND4J_CPU_IR_BUILDER_H
 
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 
 #include <array/NDArray.h>
 #include <graph/NativeDynamicShapePlan.h>

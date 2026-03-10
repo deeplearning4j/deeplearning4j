@@ -21,6 +21,7 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/TritonTargetDispatch.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 #include <system/common.h>
@@ -243,7 +244,7 @@ class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation
         const std::string passName = currentPassName_;
         const auto passStart = currentPassStart_;
         lock.unlock();
-        sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld HEARTBEAT %s elapsedMs=%lld\n",
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: %s pass#%lld HEARTBEAT %s elapsedMs=%lld",
                   compileId_, pipelineTag_, passCounter, passName.c_str(),
                   elapsedMsSince(passStart));
         lock.lock();
@@ -275,7 +276,7 @@ class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation
       passCounter = passCounter_;
       passName = currentPassName_;
     }
-    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld START %s\n",
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: %s pass#%lld START %s",
               compileId_, pipelineTag_, passCounter, passName.c_str());
   }
 
@@ -292,7 +293,7 @@ class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation
       passRunning_ = false;
     }
     heartbeatCv_.notify_all();
-    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld DONE %s elapsedMs=%lld\n",
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: %s pass#%lld DONE %s elapsedMs=%lld",
               compileId_, pipelineTag_, passCounter, passName.c_str(),
               elapsedMsSince(passStart));
   }
@@ -310,7 +311,7 @@ class TritonPassProgressInstrumentation final : public mlir::PassInstrumentation
       passRunning_ = false;
     }
     heartbeatCv_.notify_all();
-    sd_printf("TritonTargetDispatch::compile[%lld]: %s pass#%lld FAILED %s elapsedMs=%lld\n",
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: %s pass#%lld FAILED %s elapsedMs=%lld",
               compileId_, pipelineTag_, passCounter, passName.c_str(),
               elapsedMsSince(passStart));
   }
@@ -428,7 +429,7 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
       if (!archName.empty() && archName.find("gfx") != std::string::npos) {
         cachedArch_ = archName;
         cachedTarget_ = TritonGpuTarget::AMD;
-        sd_printf("TritonTargetDispatch: detected AMD GPU '%s' via HIP, arch=%s\n",
+        DSP_DIAG(BACKEND, "TritonTargetDispatch: detected AMD GPU '%s' via HIP, arch=%s",
                   props.name, cachedArch_.c_str());
         return cachedTarget_;
       }
@@ -468,7 +469,7 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
               cachedArch_ = "pvc";  // Data Center Max
             }
             cachedTarget_ = TritonGpuTarget::INTEL;
-            sd_printf("TritonTargetDispatch: detected Intel GPU '%s' via Level Zero, arch=%s\n",
+            DSP_DIAG(BACKEND, "TritonTargetDispatch: detected Intel GPU '%s' via Level Zero, arch=%s",
                       deviceProps.name, cachedArch_.c_str());
             return cachedTarget_;
           }
@@ -499,7 +500,7 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
         // Best-effort arch from compute capability (imprecise)
         cachedArch_ = "gfx" + std::to_string(props.major * 100 + props.minor * 10);
         cachedTarget_ = TritonGpuTarget::AMD;
-        sd_printf("TritonTargetDispatch: detected AMD GPU '%s' via CUDA (ZLUDA fallback), arch=%s\n",
+        DSP_DIAG(BACKEND, "TritonTargetDispatch: detected AMD GPU '%s' via CUDA (ZLUDA fallback), arch=%s",
                   props.name, cachedArch_.c_str());
         return cachedTarget_;
       }
@@ -511,7 +512,7 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
         if (deviceName.find("Arc") != std::string::npos) cachedArch_ = "xehpg";
         if (deviceName.find("Max") != std::string::npos) cachedArch_ = "pvc";
         cachedTarget_ = TritonGpuTarget::INTEL;
-        sd_printf("TritonTargetDispatch: detected Intel GPU '%s' via CUDA (ZLUDA fallback), arch=%s\n",
+        DSP_DIAG(BACKEND, "TritonTargetDispatch: detected Intel GPU '%s' via CUDA (ZLUDA fallback), arch=%s",
                   props.name, cachedArch_.c_str());
         return cachedTarget_;
       }
@@ -520,14 +521,14 @@ TritonGpuTarget TritonTargetDispatch::detectTarget() {
       // Native NVIDIA GPU
       cachedArch_ = "sm_" + std::to_string(props.major * 10 + props.minor);
       cachedTarget_ = TritonGpuTarget::NVIDIA;
-      sd_printf("TritonTargetDispatch: detected NVIDIA GPU '%s', arch=%s\n",
+      DSP_DIAG(BACKEND, "TritonTargetDispatch: detected NVIDIA GPU '%s', arch=%s",
                 props.name, cachedArch_.c_str());
       return cachedTarget_;
     }
   }
 #endif
 
-  sd_printf("TritonTargetDispatch: no supported GPU target detected\n", "");
+  DSP_DIAG(BACKEND, "TritonTargetDispatch: no supported GPU target detected");
   cachedTarget_ = TritonGpuTarget::UNKNOWN;
   return cachedTarget_;
 }
@@ -548,7 +549,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   auto target = detectTarget();
   if (target == TritonGpuTarget::UNKNOWN) {
-    sd_printf("TritonTargetDispatch::compile[%lld]: no GPU target available\n", compileId);
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: no GPU target available", compileId);
     return result;
   }
 
@@ -556,7 +557,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::string targetArch = cachedArch_;
   if (!archOverride.empty()) {
     targetArch = archOverride;
-    sd_printf("TritonTargetDispatch::compile: using architecture override '%s'\n",
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: using architecture override '%s'",
               targetArch.c_str());
   }
   if (target == TritonGpuTarget::AMD) {
@@ -566,8 +567,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   int numCTAs = std::max(1, env.tritonNumCTAs());
   int maxNreg = std::max(0, env.tritonMaxNreg());
 
-  sd_printf("TritonTargetDispatch::compile[%lld]: START target=%s arch=%s "
-            "warps=%d stages=%d numCTAs=%d maxNreg=%d verbose=%d\n",
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: START target=%s arch=%s "
+            "warps=%d stages=%d numCTAs=%d maxNreg=%d verbose=%d",
             compileId, tritonTargetName(target), targetArch.c_str(),
             numWarps, numStages, numCTAs, maxNreg, tritonVerbose ? 1 : 0);
 
@@ -577,7 +578,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   auto moduleOp = static_cast<mlir::ModuleOp*>(mlirModule);
   if (!moduleOp || !*moduleOp) {
-    sd_printf("TritonTargetDispatch::compile: null MLIR module\n", "");
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: null MLIR module");
     return result;
   }
   if (maxNreg > 0) {
@@ -619,14 +620,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         computeCapability = std::stoi(digits);
       }
       if (computeCapability <= 0) {
-        sd_printf("TritonTargetDispatch::compile: failed to derive NVIDIA compute capability "
-                  "from targetArch='%s'\n",
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: failed to derive NVIDIA compute capability "
+                  "from targetArch='%s'",
                   targetArch.c_str());
         return result;
       }
       if (numCTAs > 1 && computeCapability < 90) {
-        sd_printf("TritonTargetDispatch::compile: numCTAs=%d requested on sm_%d; "
-                  "clamping to 1 (multi-CTA requires SM90+)\n",
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: numCTAs=%d requested on sm_%d; "
+                  "clamping to 1 (multi-CTA requires SM90+)",
                   numCTAs, computeCapability);
         numCTAs = 1;
       }
@@ -677,8 +678,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 #ifdef SD_CUDA
     cudaGetLastError();
 #endif
-    sd_printf("TritonTargetDispatch::compile[%lld]: compilation hit assertion failure "
-              "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s\n",
+    DSP_DIAG(FALLBACK, "TritonTargetDispatch::compile[%lld]: compilation hit assertion failure "
+              "(recovered via SIGABRT handler). TTIR before passes:\n%.2000s",
               compileId, preDump.c_str());
     return result;
   }
@@ -697,7 +698,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
           scalarType.print(scalarOS);
           elemType.print(elemOS);
           op->print(opOS);
-          sd_printf("SPLAT TYPE MISMATCH: scalar=%s, tensor_elem=%s\n  op: %s\n",
+          DSP_DIAG(COMPILE, "SPLAT TYPE MISMATCH: scalar=%s, tensor_elem=%s  op: %s",
                     scalarStr.c_str(), elemStr.c_str(), opStr.c_str());
           // Also dump to file for full diagnostics
           FILE* f = fopen("/tmp/triton_splat_mismatch.txt", "a");
@@ -717,14 +718,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         fprintf(diagFile, "%s", preDump.c_str());
         fclose(diagFile);
       }
-      sd_printf("TritonTargetDispatch::compile[%lld]: SplatOp type mismatch detected! "
-                "Full TTIR dumped to /tmp/triton_ttir_splat_error.txt\n", compileId);
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: SplatOp type mismatch detected! "
+                "Full TTIR dumped to /tmp/triton_ttir_splat_error.txt", compileId);
     }
   }
 
   // Phase 1-2: TTIR -> TTGIR
   const auto phase12Start = std::chrono::steady_clock::now();
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR START\n", compileId);
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR START", compileId);
   {
     mlir::PassManager pm(moduleOp->getContext());
     if (tritonVerbose) {
@@ -792,20 +793,20 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         fprintf(diagFile, "%s", preDump.c_str());
         fclose(diagFile);
       }
-      sd_printf("TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
-                "TTIR dumped to /tmp/triton_ttir_dump.txt (%d bytes)\n",
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: TTIR->TTGIR pass pipeline failed. "
+                "TTIR dumped to /tmp/triton_ttir_dump.txt (%d bytes)",
                 static_cast<int>(preDump.size()));
       return result;
     }
 
   }
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR DONE elapsedMs=%lld\n",
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTIR_TO_TTGIR DONE elapsedMs=%lld",
             compileId, elapsedMsSince(phase12Start));
 
   // Phase 4: TTGIR -> LLVM MLIR dialect
   // Pass order matches Triton 3.6.0 NVIDIA backend (compiler.py make_llir)
   const auto phase4Start = std::chrono::steady_clock::now();
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START\n", compileId);
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT START", compileId);
   {
     // Register LLVM dialect inliner interface (required by GluonInline pass in 3.6.0)
     mlir::DialectRegistry phase4Registry;
@@ -869,8 +870,8 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         pm.addPass(mlir::createConvertNVVMToLLVMPass());
         hasBackendLowering = true;
 #else
-        sd_printf("TritonTargetDispatch::compile: NVIDIA backend passes not available "
-                  "(TritonNVIDIAGPUToLLVM not found at build time)\n", "");
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: NVIDIA backend passes not available "
+                  "(TritonNVIDIAGPUToLLVM not found at build time)");
 #endif
         break;
       }
@@ -896,14 +897,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
         pm.addPass(mlir::createReconcileUnrealizedCastsPass());
         hasBackendLowering = true;
 #else
-        sd_printf("TritonTargetDispatch::compile: AMD backend TTGIR->LLVM lowering "
-                  "not available (TritonAMDGPUToLLVM headers not found)\n", "");
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: AMD backend TTGIR->LLVM lowering "
+                  "not available (TritonAMDGPUToLLVM headers not found)");
 #endif
         break;
       }
       case TritonGpuTarget::INTEL:
-        sd_printf("TritonTargetDispatch::compile: Intel backend TTGIR->LLVM lowering "
-                  "not yet integrated (requires TritonIntelGPUToLLVM)\n", "");
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: Intel backend TTGIR->LLVM lowering "
+                  "not yet integrated (requires TritonIntelGPUToLLVM)");
         break;
       default:
         break;
@@ -914,7 +915,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 #ifdef SD_CUDA
       cudaGetLastError();
 #endif
-      sd_printf("TritonTargetDispatch::compile: no backend lowering passes available for target\n", "");
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: no backend lowering passes available for target");
       return result;
     }
 
@@ -936,7 +937,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       return result;
     }
   }
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT DONE elapsedMs=%lld\n",
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=TTGIR_TO_LLVM_DIALECT DONE elapsedMs=%lld",
             compileId, elapsedMsSince(phase4Start));
 
   // Triton's AllocateSharedMemory pass stores kernel shared memory usage
@@ -952,7 +953,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 #ifdef SD_CUDA
     cudaGetLastError();
 #endif
-    sd_printf("TritonTargetDispatch::compile: MLIR module verification failed after lowering\n", "");
+    DSP_DIAG(COMPILE, "TritonTargetDispatch::compile: MLIR module verification failed after lowering");
     return result;
   }
 
@@ -965,7 +966,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::unique_ptr<llvm::Module> llvmModule;
 
   const auto phase5Start = std::chrono::steady_clock::now();
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR START\n", compileId);
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR START", compileId);
   llvmModule = mlir::translateModuleToLLVMIR(*moduleOp, llvmCtx);
   tritonInProtectedRegion = false;
   if (!llvmModule) {
@@ -985,7 +986,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
             "Post-lowering module dumped to /tmp/triton_mlir_dump.txt\n");
     return result;
   }
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR DONE elapsedMs=%lld\n",
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: phase=MLIR_TO_LLVM_IR DONE elapsedMs=%lld",
             compileId, elapsedMsSince(phase5Start));
 
   // Phase 5b: Link libdevice for NVIDIA math intrinsics (__nv_sqrtf, __nv_expf, etc.)
@@ -1029,18 +1030,18 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
       if (llvm::Linker::linkModules(*llvmModule, std::move(*libdeviceModOrErr),
                                      llvm::Linker::Flags::LinkOnlyNeeded)) {
-        sd_printf("TritonTargetDispatch::compile: failed to link libdevice from %s\n", path.c_str());
+        DSP_DIAG(JIT, "TritonTargetDispatch::compile: failed to link libdevice from %s", path.c_str());
         continue;
       }
 
-      sd_printf("TritonTargetDispatch::compile: linked libdevice from %s\n", path.c_str());
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: linked libdevice from %s", path.c_str());
       linked = true;
       break;
     }
 
     if (!linked) {
-      sd_printf("TritonTargetDispatch::compile: WARNING — libdevice.10.bc not found, "
-                "math intrinsics (__nv_sqrtf etc.) will be unresolved\n", "");
+      DSP_DIAG(JIT, "TritonTargetDispatch::compile: WARNING — libdevice.10.bc not found, "
+                "math intrinsics (__nv_sqrtf etc.) will be unresolved");
     }
   }
 
@@ -1048,14 +1049,14 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::string verifyErr;
   llvm::raw_string_ostream verifyOS(verifyErr);
   if (llvm::verifyModule(*llvmModule, &verifyOS)) {
-    sd_printf("TritonTargetDispatch::compile: LLVM module verification failed: %s\n", verifyErr.c_str());
+    DSP_DIAG(JIT, "TritonTargetDispatch::compile: LLVM module verification failed: %s", verifyErr.c_str());
     return result;
   }
 
   // Phase 6: LLVM IR -> target ISA
   // Initialize LLVM targets
   const auto phase6Start = std::chrono::steady_clock::now();
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM START\n", compileId);
+  DSP_DIAG(JIT, "TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM START", compileId);
   llvm::InitializeAllTargets();
   llvm::InitializeAllTargetMCs();
   llvm::InitializeAllAsmPrinters();
@@ -1086,7 +1087,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::string lookupError;
   auto* llvmTarget = llvm::TargetRegistry::lookupTarget(triple, lookupError);
   if (!llvmTarget) {
-    sd_printf("TritonTargetDispatch::compile: LLVM target lookup failed for '%s': %s\n",
+    DSP_DIAG(JIT, "TritonTargetDispatch::compile: LLVM target lookup failed for '%s': %s",
               triple.c_str(), lookupError.c_str());
     return result;
   }
@@ -1098,7 +1099,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
       llvmTarget->createTargetMachine(triple, proc, features,
                                        targetOptions, llvm::Reloc::PIC_));
   if (!targetMachine) {
-    sd_printf("TritonTargetDispatch::compile: failed to create TargetMachine for %s/%s\n",
+    DSP_DIAG(JIT, "TritonTargetDispatch::compile: failed to create TargetMachine for %s/%s",
               triple.c_str(), proc.c_str());
     return result;
   }
@@ -1112,7 +1113,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
 
   if (targetMachine->addPassesToEmitFile(codegenPM, asmStream, nullptr,
                                           llvm::CodeGenFileType::AssemblyFile)) {
-    sd_printf("TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s\n",
+    DSP_DIAG(JIT, "TritonTargetDispatch::compile: TargetMachine can't emit assembly for %s",
               triple.c_str());
     return result;
   }
@@ -1121,7 +1122,7 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::string asmOutput(asmBuffer.begin(), asmBuffer.end());
 
   if (asmOutput.empty()) {
-    sd_printf("TritonTargetDispatch::compile: empty output for %s\n", result.targetArch.c_str());
+    DSP_DIAG(JIT, "TritonTargetDispatch::compile: empty output for %s", result.targetArch.c_str());
     return result;
   }
 
@@ -1130,11 +1131,11 @@ TritonCompiledBinary TritonTargetDispatch::compile(void* mlirModule, int numWarp
   std::memcpy(result.data, asmOutput.data(), result.size);
   static_cast<char*>(result.data)[result.size] = '\0';
 
-  sd_printf("TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM DONE elapsedMs=%lld\n",
+  DSP_DIAG(JIT, "TritonTargetDispatch::compile[%lld]: phase=LLVM_IR_TO_ASM DONE elapsedMs=%lld",
             compileId, elapsedMsSince(phase6Start));
-  sd_printf("TritonTargetDispatch::compile: generated %zu bytes for %s (%s)\n",
+  DSP_DIAG(JIT, "TritonTargetDispatch::compile: generated %zu bytes for %s (%s)",
             result.size, result.targetArch.c_str(), triple.c_str());
-  sd_printf("TritonTargetDispatch::compile[%lld]: DONE totalElapsedMs=%lld\n",
+  DSP_DIAG(COMPILE, "TritonTargetDispatch::compile[%lld]: DONE totalElapsedMs=%lld",
             compileId, elapsedMsSince(compileStart));
 
   return result;
@@ -1161,8 +1162,8 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
       int currentDevice = 0;
       cudaError_t getDeviceErr = cudaGetDevice(&currentDevice);
       if (getDeviceErr != cudaSuccess) {
-        sd_printf("TritonTargetDispatch::loadModule: cudaGetDevice failed before "
-                  "cuModuleLoadDataEx: %s\n",
+        DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: cudaGetDevice failed before "
+                  "cuModuleLoadDataEx: %s",
                   cudaGetErrorString(getDeviceErr));
         cudaGetLastError();
         return nullptr;
@@ -1230,7 +1231,7 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
       if (didPushCtx) { CUcontext dummy; cuCtxPopCurrent(&dummy); }
       return static_cast<void*>(module);
 #else
-      sd_printf("TritonTargetDispatch::loadModule: NVIDIA target requires SD_CUDA\n", "");
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: NVIDIA target requires SD_CUDA");
       return nullptr;
 #endif
     }
@@ -1251,7 +1252,7 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
       }
       return static_cast<void*>(module);
 #else
-      sd_printf("TritonTargetDispatch::loadModule: AMD target requires HIP (HAVE_MIOPEN/SD_HIP/ZLUDA_TARGET_AMD)\n", "");
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: AMD target requires HIP (HAVE_MIOPEN/SD_HIP/ZLUDA_TARGET_AMD)");
       return nullptr;
 #endif
     }
@@ -1301,13 +1302,13 @@ void* TritonTargetDispatch::loadModule(const TritonCompiledBinary& binary) {
       if (buildLog) zeModuleBuildLogDestroy(buildLog);
       return static_cast<void*>(module);
 #else
-      sd_printf("TritonTargetDispatch::loadModule: Intel target requires Level Zero (SD_LEVEL_ZERO/ZLUDA_TARGET_INTEL)\n", "");
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: Intel target requires Level Zero (SD_LEVEL_ZERO/ZLUDA_TARGET_INTEL)");
       return nullptr;
 #endif
     }
 
     default:
-      sd_printf("TritonTargetDispatch::loadModule: unsupported target %d\n",
+      DSP_DIAG(COMPILE, "TritonTargetDispatch::loadModule: unsupported target %d",
                 static_cast<int>(binary.target));
       return nullptr;
   }
@@ -1328,7 +1329,7 @@ void* TritonTargetDispatch::getKernelFunction(void* gpuModule, const std::string
       if (res != CUDA_SUCCESS) {
         const char* errStr = nullptr;
         cuGetErrorString(res, &errStr);
-        sd_printf("TritonTargetDispatch::getKernelFunction: cuModuleGetFunction failed: %s\n",
+        DSP_DIAG(EXECUTE, "TritonTargetDispatch::getKernelFunction: cuModuleGetFunction failed: %s",
                   errStr ? errStr : "unknown");
         return nullptr;
       }
@@ -1343,7 +1344,7 @@ void* TritonTargetDispatch::getKernelFunction(void* gpuModule, const std::string
       hipFunction_t func = nullptr;
       hipError_t res = hipModuleGetFunction(&func, static_cast<hipModule_t>(gpuModule), kernelName.c_str());
       if (res != hipSuccess) {
-        sd_printf("TritonTargetDispatch::getKernelFunction: hipModuleGetFunction failed: %s\n",
+        DSP_DIAG(EXECUTE, "TritonTargetDispatch::getKernelFunction: hipModuleGetFunction failed: %s",
                   hipGetErrorString(res));
         return nullptr;
       }
@@ -1362,7 +1363,7 @@ void* TritonTargetDispatch::getKernelFunction(void* gpuModule, const std::string
       ze_kernel_handle_t kernel = nullptr;
       ze_result_t res = zeKernelCreate(static_cast<ze_module_handle_t>(gpuModule), &kernelDesc, &kernel);
       if (res != ZE_RESULT_SUCCESS) {
-        sd_printf("TritonTargetDispatch::getKernelFunction: zeKernelCreate failed for '%s'\n",
+        DSP_DIAG(EXECUTE, "TritonTargetDispatch::getKernelFunction: zeKernelCreate failed for '%s'",
                   kernelName.c_str());
         return nullptr;
       }
@@ -1471,7 +1472,7 @@ bool TritonTargetDispatch::launchKernel(void* kernelFunc,
     }
 
     default:
-      sd_printf("TritonTargetDispatch::launchKernel: unsupported target %d\n",
+      DSP_DIAG(EXECUTE, "TritonTargetDispatch::launchKernel: unsupported target %d",
                 static_cast<int>(target));
       return false;
   }
@@ -1528,13 +1529,13 @@ bool TritonTargetDispatch::launchCooperativeKernel(void* kernelFunc,
     case TritonGpuTarget::INTEL:
       // Cooperative launch not supported on AMD/Intel via this path.
       // Fall back to standard launch (no grid sync barriers).
-      sd_printf("TritonTargetDispatch::launchCooperativeKernel: cooperative launch not supported on "
-                "target %d, falling back to standard launch\n", static_cast<int>(target));
+      DSP_DIAG(FALLBACK, "TritonTargetDispatch::launchCooperativeKernel: cooperative launch not supported on "
+                "target %d, falling back to standard launch", static_cast<int>(target));
       return launchKernel(kernelFunc, gridX, gridY, gridZ, blockX, blockY, blockZ,
                           sharedMemBytes, stream, args, numArgs);
 
     default:
-      sd_printf("TritonTargetDispatch::launchCooperativeKernel: unsupported target %d\n",
+      DSP_DIAG(EXECUTE, "TritonTargetDispatch::launchCooperativeKernel: unsupported target %d",
                 static_cast<int>(target));
       return false;
   }

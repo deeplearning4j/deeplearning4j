@@ -62,6 +62,11 @@ SD_TLS_EXPORT thread_local size_t tl_captureWorkspaceOffset = 0;
 SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr = nullptr;
 SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
 
+// Suppress memory frees during capture even when tl_graphExecutionActive=false.
+// Set by capture orchestrator to decouple "don't free external memory" from
+// "use capture workspace + suppress D2H".
+SD_TLS_EXPORT thread_local bool tl_captureSkipFrees = false;
+
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
@@ -718,12 +723,34 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // - Skip cudaPointerGetAttributes (synchronous query breaks capture)
   // - Use the captured stream instead of stream 0 (default stream syncs with captured stream)
   // - Skip cudaStreamSynchronize (explicit sync breaks capture)
-  // This is essential for ops like shape_of that produce host-side data needing H2D transfer.
+  //
+  // CRITICAL: Allocate a PINNED HOST COPY of the data and use it as the H2D source.
+  // The original _primaryBuffer may be freed after capture (e.g., for temporary axis/dimension
+  // parameter arrays in gap op Contexts). The CUDA graph's H2D memcpy node bakes the source
+  // address — if that address points to freed memory, graph replay reads garbage data.
+  // The pinned copy is added to tl_capturedHostPtrs and persists for the graph's lifetime.
   if (tl_graphExecutionActive) {
     allocateSpecial();
     if (_specialBuffer == nullptr) return;
+
+    // Allocate pinned host copy so the data persists for graph replay
+    void* pinnedCopy = nullptr;
+    auto pinErr = cudaMallocHost(&pinnedCopy, getLenInBytes());
+    if (pinErr != cudaSuccess) {
+      // Fallback: use _primaryBuffer directly (risk of stale data on replay)
+      cudaGetLastError();
+      pinnedCopy = nullptr;
+    }
+
+    void* h2dSource = _primaryBuffer;
+    if (pinnedCopy != nullptr) {
+      std::memcpy(pinnedCopy, _primaryBuffer, getLenInBytes());
+      tl_capturedHostPtrs.push_back(pinnedCopy);
+      h2dSource = pinnedCopy;
+    }
+
     cudaStream_t capturedStream = captureSafeStreamOrDefault();
-    auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(),
+    auto res = cudaMemcpyAsync(_specialBuffer, h2dSource, getLenInBytes(),
                                cudaMemcpyHostToDevice, capturedStream);
     if (res != cudaSuccess) {
       cudaGetLastError();  // Clear error
@@ -843,7 +870,7 @@ void DataBuffer::deleteSpecial() {
     // The memory stays allocated; it will be freed when the NDArray is deleted
     // AFTER capture completes (via flushPendingClose or normal destruction).
     // Workspace-allocated memory is managed by the workspace lifecycle, not freed individually.
-    if (tl_graphExecutionActive && _workspace == nullptr) {
+    if ((tl_graphExecutionActive || tl_captureSkipFrees) && _workspace == nullptr) {
       // Check if this buffer is within the capture workspace (bump-allocated during capture)
       bool inWorkspace = false;
       if (tl_captureWorkspace != nullptr) {

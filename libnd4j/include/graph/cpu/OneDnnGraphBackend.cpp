@@ -21,6 +21,7 @@
 #if HAVE_ONEDNN
 
 #include <graph/cpu/OneDnnGraphBackend.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/shape.h>
 #include <ops/declarable/platform/mkldnn/OnednnVersionProvider.h>
 
@@ -370,7 +371,7 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
     auto partitions = g.get_partitions();
     if (partitions.empty()) {
-      sd_printf("OneDnnGraphBackend: no partitions found for segment [%d-%d]\n",
+      DSP_DIAG(COMPILE, "OneDnnGraphBackend: no partitions found for segment [%d-%d]",
                 startSlot, endSlot);
       return result;
     }
@@ -405,20 +406,20 @@ OneDnnGraphBackend::CompiledSegment OneDnnGraphBackend::buildGraph(
 
         result.partitions.push_back(std::move(entry));
       } catch (const std::exception& e) {
-        sd_printf("OneDnnGraphBackend: partition compile failed: %s\n", e.what());
+        DSP_DIAG(COMPILE, "OneDnnGraphBackend: partition compile failed: %s", e.what());
         return result;
       }
     }
 
     result.valid = !result.partitions.empty();
     if (result.valid) {
-      sd_printf("OneDnnGraphBackend: compiled segment [%d-%d] into %d partitions (%d ops)\n",
+      DSP_DIAG(COMPILE, "OneDnnGraphBackend: compiled segment [%d-%d] into %d partitions (%d ops)",
                 startSlot, endSlot,
                 static_cast<int>(result.partitions.size()), opsAdded);
     }
 
   } catch (const std::exception& e) {
-    sd_printf("OneDnnGraphBackend: graph build failed: %s\n", e.what());
+    DSP_DIAG(COMPILE, "OneDnnGraphBackend: graph build failed: %s", e.what());
   }
 
   return result;
@@ -495,7 +496,7 @@ Status OneDnnGraphBackend::executeSegment(
     for (size_t tid : part.inputTensorIds) {
       auto slotIt = compiled->tensorIdToSlotMap.find(tid);
       if (slotIt == compiled->tensorIdToSlotMap.end()) {
-        sd_printf("OneDnnGraphBackend: unknown tensor ID %zu\n", tid);
+        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: unknown tensor ID %zu", tid);
         return Status::KERNEL_FAILURE;
       }
 
@@ -511,7 +512,7 @@ Status OneDnnGraphBackend::executeSegment(
       }
 
       if (arr == nullptr) {
-        sd_printf("OneDnnGraphBackend: null array for tensor %zu (slot %d)\n", tid, slotIdx);
+        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: null array for tensor %zu (slot %d)", tid, slotIdx);
         return Status::KERNEL_FAILURE;
       }
 
@@ -532,7 +533,7 @@ Status OneDnnGraphBackend::executeSegment(
     for (size_t tid : part.outputTensorIds) {
       auto slotIt = compiled->tensorIdToSlotMap.find(tid);
       if (slotIt == compiled->tensorIdToSlotMap.end()) {
-        sd_printf("OneDnnGraphBackend: unknown output tensor ID %zu\n", tid);
+        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: unknown output tensor ID %zu", tid);
         return Status::KERNEL_FAILURE;
       }
 
@@ -543,7 +544,7 @@ Status OneDnnGraphBackend::executeSegment(
       }
 
       if (arr == nullptr) {
-        sd_printf("OneDnnGraphBackend: null output array for tensor %zu (slot %d)\n", tid, slotIdx);
+        DSP_DIAG(EXECUTE, "OneDnnGraphBackend: null output array for tensor %zu (slot %d)", tid, slotIdx);
         return Status::KERNEL_FAILURE;
       }
 
@@ -562,7 +563,7 @@ Status OneDnnGraphBackend::executeSegment(
     try {
       part.compiledPartition.execute(strm, inputTensors, outputTensors);
     } catch (const std::exception& e) {
-      sd_printf("OneDnnGraphBackend: partition execute failed: %s\n", e.what());
+      DSP_DIAG(EXECUTE, "OneDnnGraphBackend: partition execute failed: %s", e.what());
       return Status::KERNEL_FAILURE;
     }
   }

@@ -21,6 +21,7 @@
 #if HAVE_MLX
 
 #include <graph/cpu/MlxGraphBackend.h>
+#include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
 #include <system/Environment.h>
 
@@ -57,15 +58,15 @@ bool MlxGraphBackend::isAvailable() const {
     // Verify result
     auto* data = c.data<float>();
     if (data[0] != 5.0f || data[1] != 7.0f || data[2] != 9.0f) {
-      sd_printf("MlxGraphBackend: Metal compute verification failed\n", "");
+      DSP_DIAG(BACKEND, "MlxGraphBackend: Metal compute verification failed");
       available_ = false;
       return false;
     }
 
-    sd_printf("MlxGraphBackend: Metal compute verified OK\n", "");
+    DSP_DIAG(BACKEND, "MlxGraphBackend: Metal compute verified OK");
     available_ = true;
   } catch (...) {
-    sd_printf("MlxGraphBackend: Metal not available (exception during verification)\n", "");
+    DSP_DIAG(BACKEND, "MlxGraphBackend: Metal not available (exception during verification)");
     available_ = false;
   }
 
@@ -113,7 +114,7 @@ bool MlxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                                 outputSlots, totalOutputSlots);
 
   if (!analysis.canCompile) {
-    sd_printf("MlxGraphBackend: cannot compile segment [%d-%d]: %s\n",
+    DSP_DIAG(COMPILE, "MlxGraphBackend: cannot compile segment [%d-%d]: %s",
               startSlot, endSlot, analysis.failureReason.c_str());
     return false;
   }
@@ -124,7 +125,7 @@ bool MlxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
                                          outputSlots, totalOutputSlots);
 
   if (!mlxGraph.valid) {
-    sd_printf("MlxGraphBackend: failed to build MLX graph for segment [%d-%d]\n",
+    DSP_DIAG(COMPILE, "MlxGraphBackend: failed to build MLX graph for segment [%d-%d]",
               startSlot, endSlot);
     return false;
   }
@@ -135,72 +136,12 @@ bool MlxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   compiled.shapeKey = shapeKey;
   compiled.valid = true;
 
-  // Reconstruct arg ordering: inputs then outputs
-  std::unordered_set<int> internalOutputs;
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      internalOutputs.insert(slots[i].outputSlotIndices[o]);
-    }
-  }
-
-  std::unordered_set<int> seenSrc;
-  // Input args
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int inp = 0; inp < slots[i].numInputs; inp++) {
-      int srcIdx = slots[i].inputSourceIndices[inp];
-      if (seenSrc.count(srcIdx)) continue;
-
-      bool isExternal = (srcIdx < 0);
-      bool isPreSegment = (!isExternal && !internalOutputs.count(srcIdx));
-
-      if (isExternal || isPreSegment) {
-        NDArray* arr = nullptr;
-        if (isExternal) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExternalInputs && externalInputs) arr = externalInputs[extIdx];
-        } else {
-          if (srcIdx < totalOutputSlots && outputSlots) arr = outputSlots[srcIdx];
-        }
-        if (!arr) continue;
-
-        seenSrc.insert(srcIdx);
-        compiled.argMappings.push_back({srcIdx, false});
-      }
-    }
-  }
-
-  // Output args (externally visible)
-  auto externalOutputSet = MlxIRBuilder::computeExternallyVisibleOutputs(
-      slots, startSlot, endSlot, totalSlots);
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
-      if (!externalOutputSet.count(outIdx)) continue;
-      if (seenSrc.count(outIdx)) continue;
-      seenSrc.insert(outIdx);
-
-      NDArray* arr = nullptr;
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) arr = outputSlots[outIdx];
-      if (!arr) continue;
-
-      compiled.argMappings.push_back({outIdx, true});
-    }
-  }
-
-  // Internal intermediate outputs
-  for (int i = startSlot; i <= endSlot; i++) {
-    for (int o = 0; o < slots[i].numOutputs; o++) {
-      int outIdx = slots[i].outputSlotIndices[o];
-      if (seenSrc.count(outIdx)) continue;
-
-      NDArray* arr = nullptr;
-      if (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots) arr = outputSlots[outIdx];
-      if (!arr) continue;
-
-      seenSrc.insert(outIdx);
-      compiled.argMappings.push_back({outIdx, true});
-    }
-  }
+  // Reconstruct arg ordering via shared buildArgMappings() (GraphBackendCommon.h)
+  compiled.argMappings = buildArgMappings(
+      slots, startSlot, endSlot,
+      externalInputs, numExternalInputs,
+      outputSlots, totalOutputSlots, totalSlots,
+      MlxIRBuilder::computeExternallyVisibleOutputs);
 
   // Build compilation audit
   for (int i = startSlot; i <= endSlot; i++) {
@@ -216,7 +157,7 @@ bool MlxGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
 
   lastCompilationAudit_ = compiled.compilationAudit;
 
-  sd_printf("MlxGraphBackend: compiled segment [%d-%d] with %d buffer args (%d ops fused)\n",
+  DSP_DIAG(COMPILE, "MlxGraphBackend: compiled segment [%d-%d] with %d buffer args (%d ops fused)",
             startSlot, endSlot, static_cast<int>(compiled.argMappings.size()),
             endSlot - startSlot + 1);
 
@@ -259,7 +200,7 @@ Status MlxGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       }
     }
   } catch (const std::exception& e) {
-    sd_printf("MlxGraphBackend: execution failed for segment [%d-%d]: %s\n",
+    DSP_DIAG(EXECUTE, "MlxGraphBackend: execution failed for segment [%d-%d]: %s",
               startSlot, endSlot, e.what());
     return Status::KERNEL_FAILURE;
   }

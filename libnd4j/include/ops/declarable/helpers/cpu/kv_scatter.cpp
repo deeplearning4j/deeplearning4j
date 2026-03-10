@@ -68,6 +68,54 @@ void kvScatter(NDArray* present, NDArray* output,
   BUILD_SINGLE_SELECTOR(present->dataType(), kvScatter_, (present, output, cachePos, context), SD_FLOAT_TYPES);
 }
 
+template <typename T>
+static void kvScatterBatched_(const KvScatterEntry* entries, int numEntries) {
+  // Compute total slices across all entries for a single parallel_for
+  int totalSlices = 0;
+  std::vector<int> sliceOffsets(numEntries + 1);
+  sliceOffsets[0] = 0;
+  for (int i = 0; i < numEntries; i++) {
+    sliceOffsets[i + 1] = sliceOffsets[i] + static_cast<int>(entries[i].heads);
+  }
+  totalSlices = sliceOffsets[numEntries];
+
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto globalSlice = start; globalSlice < stop; globalSlice++) {
+      // Binary search for the entry this slice belongs to
+      int lo = 0, hi = numEntries - 1;
+      while (lo < hi) {
+        int mid = (lo + hi) / 2;
+        if (sliceOffsets[mid + 1] <= globalSlice) {
+          lo = mid + 1;
+        } else {
+          hi = mid;
+        }
+      }
+      const KvScatterEntry& e = entries[lo];
+      auto h = static_cast<LongType>(globalSlice - sliceOffsets[lo]);
+
+      auto srcOffset = h * e.srcSeqLen * e.dim + e.lastPos * e.dim;
+      auto dstOffset = h * e.dstSeqLen * e.dim + e.cachePos * e.dim;
+
+      const T* __restrict src = reinterpret_cast<const T*>(e.srcPtr) + srcOffset;
+      T* __restrict dst = reinterpret_cast<T*>(e.dstPtr) + dstOffset;
+
+      PRAGMA_OMP_SIMD
+      for (LongType d = 0; d < e.dim; d++) {
+        dst[d] = src[d];
+      }
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, totalSlices);
+}
+
+void kvScatterBatched(const KvScatterEntry* entries, int numEntries,
+                       DataType dtype, LaunchContext* context) {
+  if (numEntries == 0) return;
+  BUILD_SINGLE_SELECTOR(dtype, kvScatterBatched_, (entries, numEntries), SD_FLOAT_TYPES);
+}
+
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

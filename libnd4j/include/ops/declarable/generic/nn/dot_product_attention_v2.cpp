@@ -147,9 +147,10 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     scale = 1.0 / std::sqrt(static_cast<double>(dim));
   }
 
-  // B_ARG order: useCausalMask, training
+  // B_ARG order: useCausalMask, training, useFlashAttention
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto training = block.numB() > 1 ? B_ARG(1) : false;
+  auto useFlashAttention = block.numB() > 2 ? B_ARG(2) : true;
 
   // Get output variables
   auto applyScoresOut = OUTPUT_VARIABLE(0);
@@ -190,15 +191,21 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     attentionBias = attentionBiasCastOwner.get();
   }
 
-  // Fast flash path: no masks, no dropout
+  // Fast flash path: explicitly enabled + no masks + no dropout
   // The fused CUDA kernel now handles attention bias internally
-  bool canUseFlashFast = !hasInputMasks && dropout == 0.0;
+  bool canUseFlashFast = useFlashAttention && !hasInputMasks && dropout == 0.0;
 
   if (canUseFlashFast) {
     // Pass nullptr for scores/logits to enable the fastest fused CUDA kernel path.
     // The fused kernel handles attention bias internally - no fallback needed.
     FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
                                   nullptr, nullptr, nullptr,
+                                  block.launchContext(), attentionBias);
+  } else if (!hasInputMasks && dropout == 0.0) {
+    // Non-flash or debug path: still use helper implementation so additive attention bias
+    // remains supported, and materialize scores/logits outputs for diagnostics.
+    FlashAttentionHelper::forward(queries, keys, values, applyScoresOut, config,
+                                  nullptr, attentionScores, attentionLogits,
                                   block.launchContext(), attentionBias);
   } else {
     REQUIRE_TRUE(!hasAttentionBias, 0,
@@ -399,7 +406,7 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
   auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
 
-  // B_ARG order: useCausalMask, training (same as forward pass)
+  // B_ARG order: useCausalMask, training, useFlashAttention (third arg is forward-only)
   auto useCausalMask = block.numB() > 0 ? B_ARG(0) : false;
   auto training = block.numB() > 1 ? B_ARG(1) : false;
 

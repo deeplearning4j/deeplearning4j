@@ -34,8 +34,6 @@
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <array/DataTypeUtils.h>
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
 
@@ -73,7 +71,6 @@
 
 #include <execution/Threads.h>
 #include <graph/Context.h>
-#include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/DebugHelper.h>

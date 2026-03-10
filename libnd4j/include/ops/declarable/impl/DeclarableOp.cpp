@@ -22,6 +22,8 @@
 #include <array/NDArrayFactory.h>
 #include <exceptions/datatype_exception.h>
 #include <exceptions/graph_exception.h>
+#include <graph/profiling/GraphProfile.h>
+#include <graph/profiling/NodeProfile.h>
 #include <graph/profiling/OpTimingTracker.h>
 #include <helpers/KernelSelectionEnvironment.h>
 #include <helpers/ShapeUtils.h>
@@ -306,13 +308,6 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
   bool canUseFastPath = true;
 
   auto fp = ctx.isFastPath();
-
-  if (Environment::getInstance().isProfiling()) {
-    if (ctx.getVariableSpace() != nullptr && ctx.getVariableSpace()->flowPath() != nullptr) {
-      prof = ctx.getVariableSpace()->flowPath()->profile();
-      node = prof->nodeById(ctx.nodeId());
-    }
-  }
 
   if (ctx.isInplace()) {
     if (Environment::getInstance().isProfiling() && node != nullptr) {
@@ -1139,19 +1134,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
   }
 
   if (Environment::getInstance().isProfiling() && block->getVariableSpace() != nullptr) {
-    auto fp = block->getVariableSpace()->flowPath();
-    if (fp != nullptr) {
-      auto p = fp->profile();
-      if (p != nullptr) {
-        sd::LongType memoryAfter = block->workspace() == nullptr
-                                   ? 0L
-                                   : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
-        sd::LongType memoryUsed = memoryAfter - memoryBefore;
-        p->nodeById(block->nodeId())->setPreparationTime(prepTime);
-        p->nodeById(block->nodeId())->setExecutionTime(outerTime);
-        p->nodeById(block->nodeId())->setTotalSize(memoryUsed);
-      }
-    }
   }
 
   // now we print out all outputs for this node
@@ -1463,8 +1445,6 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
                                           const std::vector<sd::LongType> &iArgs, const std::vector<bool> &bArgs,
                                           const std::vector<sd::DataType> &dArgs, bool isInplace, sd::DataType type) {
   VariableSpace variableSpace;
-  FlowPath fp;
-  variableSpace.setFlowPath(&fp);
 
   int cnt = -1;
   std::vector<int> in;
@@ -1626,9 +1606,6 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
                                      const std::vector<sd::LongType> &iArgs, const std::vector<bool> &bArgs,
                                      const std::vector<sd::DataType> &dArgs, bool isInplace) {
   VariableSpace variableSpace;
-  // ResultSet arrayList;
-  FlowPath fp;
-  variableSpace.setFlowPath(&fp);
 
   int cnt = -1;
   std::vector<int> in;

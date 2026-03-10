@@ -76,10 +76,20 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
 
   // Check constant flag FIRST (public field, safe to access)
   // Constant buffers should never be freed
+  if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+    auto tid = std::hash<std::thread::id>{}(std::this_thread::get_id());
+    sd_printf("dbClose: called on buffer at %p, isConstant=%d, cachedLen=%lld, cachedPrimary=%p, cachedSpecial=%p, threadId=%llu\n",
+              dataBuffer, dataBuffer->isConstant.load() ? 1 : 0, (long long)dataBuffer->_cachedLenInBytes,
+              dataBuffer->_cachedPrimaryPtr, dataBuffer->_cachedSpecialPtr,
+              (unsigned long long)tid);
+    fflush(stdout);
+  }
+
   if(dataBuffer->isConstant.load(std::memory_order_acquire)) {
     g_dbClose_constant.fetch_add(1, std::memory_order_relaxed);
-    if(sd::Environment::getInstance().isVerbose()) {
+    if(sd::Environment::getInstance().isVerbose() || sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
       sd_printf("dbClose: skipping constant buffer at %p\n", dataBuffer);
+      fflush(stdout);
     }
     return;
   }
@@ -87,8 +97,9 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   if(!dataBuffer->tryClose()) {
     g_dbClose_alreadyClosed.fetch_add(1, std::memory_order_relaxed);
     // Another thread already closed this buffer - do nothing
-    if(sd::Environment::getInstance().isVerbose()) {
+    if(sd::Environment::getInstance().isVerbose() || sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
       sd_printf("dbClose: buffer at %p already closed by another thread\n", dataBuffer);
+      fflush(stdout);
     }
     return;
   }
@@ -185,7 +196,17 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
   if(db != nullptr) {
     g_dbClose_deleted.fetch_add(1, std::memory_order_relaxed);
     g_dbClose_freedBytes.fetch_add(bytes, std::memory_order_relaxed);
+    if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+      sd_printf("dbClose: about to delete DataBuffer %p (primary=%p, special=%p, lenInBytes=%lld, isConstant=%d) for InteropDataBuffer %p\n",
+                db, db->primary(), db->special(), (long long)db->getLenInBytes(),
+                db->isConstant ? 1 : 0, dataBuffer);
+      fflush(stdout);
+    }
     delete db;
+    if(sd::Environment::getInstance().isLogNativeNDArrayCreation()) {
+      sd_printf("dbClose: successfully deleted DataBuffer for InteropDataBuffer %p\n", dataBuffer);
+      fflush(stdout);
+    }
   }
 
   // Restore original device context if we switched devices

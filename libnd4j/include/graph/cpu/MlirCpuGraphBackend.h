@@ -20,9 +20,10 @@
 #define LIBND4J_MLIR_CPU_GRAPH_BACKEND_H
 
 #include <graph/GraphBackend.h>
+#include <graph/GraphBackendCommon.h>
 #include <graph/NativeDynamicShapePlan.h>
 
-#ifdef HAVE_MLIR
+#if HAVE_MLIR
 
 #include <graph/cpu/CpuIRBuilder.h>
 #include <mlir/runtime/MLIREngine.h>
@@ -88,13 +89,7 @@ class MlirCpuGraphBackend : public GraphBackend {
     LongType shapeKey;
     bool valid;
 
-    // Argument mapping: ordered list of source indices for the kernel's buffer args.
-    // <0: external input (-(idx+1))
-    // >=0: outputSlot index
-    struct ArgMapping {
-      int sourceIndex;
-      bool isOutput;
-    };
+    // ArgMapping from GraphBackendCommon.h
     std::vector<ArgMapping> argMappings;
 
     // Per-slot compilation audit
@@ -103,24 +98,7 @@ class MlirCpuGraphBackend : public GraphBackend {
     CompiledSegment() : shapeKey(0), valid(false) {}
   };
 
-  // Cache key
-  struct SegmentCacheKey {
-    int startSlot;
-    int endSlot;
-    LongType shapeKey;
-    bool operator==(const SegmentCacheKey& o) const {
-      return startSlot == o.startSlot && endSlot == o.endSlot && shapeKey == o.shapeKey;
-    }
-  };
-  struct SegmentCacheHash {
-    size_t operator()(const SegmentCacheKey& k) const {
-      size_t h = std::hash<int>()(k.startSlot);
-      h ^= std::hash<int>()(k.endSlot) << 1;
-      h ^= std::hash<LongType>()(k.shapeKey) << 2;
-      return h;
-    }
-  };
-
+  // Segment cache (SegmentCacheKey/Hash from GraphBackendCommon.h)
   std::unordered_map<SegmentCacheKey, CompiledSegment, SegmentCacheHash> cache_;
   std::mutex cacheMtx_;
 

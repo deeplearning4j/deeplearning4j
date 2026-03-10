@@ -22,6 +22,7 @@
 // __half definitions are compatible.
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/DspDiagnostics.h>
 #include <cublas_v2.h>
 #include <helpers/cublasHelper.h>
 
@@ -49,37 +50,63 @@ void NativeDynamicShapePlan::ensureCublasWorkspace(size_t minBytes) {
   // Allocate workspace on the current device
   auto err = cudaMalloc(&cublasWorkspaceBuffer_, minBytes);
   if (err != cudaSuccess) {
-    sd_printf("NativeDynamicShapePlan: failed to allocate cuBLAS workspace (%zu bytes): %s\n",
-              minBytes, cudaGetErrorString(err));
+    DSP_DIAG(MEMORY, "failed to allocate cuBLAS workspace (%zu bytes): %s",
+             minBytes, cudaGetErrorString(err));
     cudaGetLastError();  // Clear sticky error
     return;
   }
   cublasWorkspaceSize_ = minBytes;
-  sd_printf("NativeDynamicShapePlan: allocated cuBLAS workspace: %zu MB\n",
-            minBytes / (1024 * 1024));
+  DSP_DIAG(MEMORY, "allocated cuBLAS workspace: %zu MB",
+           minBytes / (1024 * 1024));
 }
 
 void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
-  if (cublasWorkspaceBuffer_ == nullptr) return;
-
   // Get the cuBLAS handle for the current device.
   // CublasHelper::handle() returns void* which is cublasHandle_t* (pointer to the handle).
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
   if (handlePtr == nullptr) return;
 
   // Set the cuBLAS handle to use the capture stream so GEMM ops are recorded
-  // into the graph on the correct stream
+  // into the graph on the correct stream.
   cublasSetStream_v2(*handlePtr, stream != nullptr
       ? *static_cast<cudaStream_t*>(stream) : nullptr);
 
-  // Set explicit workspace so cuBLAS doesn't do internal cudaMalloc during capture.
-  auto status = cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
-  if (status != CUBLAS_STATUS_SUCCESS) {
-    sd_printf("NativeDynamicShapePlan: cublasSetWorkspace failed: %d\n", static_cast<int>(status));
-  }
+  // NOTE: We intentionally do NOT set an explicit cuBLAS workspace here.
+  // A 256MB workspace causes cuBLAS to select different GEMM algorithms (e.g.,
+  // split-K) than it uses without workspace, producing different floating-point
+  // rounding that compounds across ~3840 ops and corrupts VLM output.
+  // Instead, we rely on CUDA 12's relaxed capture mode to handle cuBLAS's
+  // internal workspace allocations. cuBLAS may create MemAlloc/MemFree graph
+  // nodes during capture, which CUDA 12.x supports natively.
+  // If this causes SIGSEGV on replay, set ND4J_CUBLAS_CAPTURE_WORKSPACE=1
+  // to re-enable explicit workspace (at the cost of accuracy).
+  static bool useCublasWorkspace = []() {
+    const char* v = std::getenv("ND4J_CUBLAS_CAPTURE_WORKSPACE");
+    return v != nullptr && std::string(v) == "1";
+  }();
 
-  // Store in thread-locals so MmulHelper can re-apply after cublasSetStream
-  // (cublasSetStream resets the user-provided workspace per cuBLAS docs).
+  if (useCublasWorkspace) {
+    ensureCublasWorkspace(256 * 1024 * 1024);
+    cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
+    tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
+    tl_cublasWorkspaceSize = cublasWorkspaceSize_;
+  } else {
+    // Clear any previously set workspace so cuBLAS uses its own internal allocator
+    tl_cublasWorkspacePtr = nullptr;
+    tl_cublasWorkspaceSize = 0;
+  }
+}
+
+void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
+  // Set the SAME explicit workspace during warmup as during capture.
+  // This ensures cuBLAS selects identical GEMM algorithms in both paths,
+  // preventing floating-point divergence from different algorithm choices.
+  auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
+  if (handlePtr == nullptr) return;
+
+  ensureCublasWorkspace(256 * 1024 * 1024);
+  cublasSetWorkspace(*handlePtr, cublasWorkspaceBuffer_, cublasWorkspaceSize_);
+
   tl_cublasWorkspacePtr = cublasWorkspaceBuffer_;
   tl_cublasWorkspaceSize = cublasWorkspaceSize_;
 }

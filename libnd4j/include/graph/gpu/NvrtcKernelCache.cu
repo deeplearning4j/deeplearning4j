@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifdef SD_CUDA
 
 #include <graph/gpu/NvrtcKernelCache.h>
+#include <graph/DspDiagnostics.h>
 #include <array/NDArray.h>
 #include <system/common.h>
 #include <helpers/logger.h>
@@ -91,7 +91,7 @@ NvrtcKernelHandle* compileKernel(const JitKernelSource& source, int deviceId) {
       0, nullptr, nullptr);
 
   if (nvrtcRes != NVRTC_SUCCESS) {
-    sd_printf("NVRTC: nvrtcCreateProgram failed: %s\n", nvrtcGetErrorString(nvrtcRes));
+    DSP_DIAG(COMPILE, "NVRTC: nvrtcCreateProgram failed: %s", nvrtcGetErrorString(nvrtcRes));
     delete handle;
     return nullptr;
   }
@@ -107,10 +107,10 @@ NvrtcKernelHandle* compileKernel(const JitKernelSource& source, int deviceId) {
     if (logSize > 1) {
       std::string log(logSize, '\0');
       nvrtcGetProgramLog(prog, &log[0]);
-      sd_printf("NVRTC compilation failed for %s:\n%s\n",
-                source.kernelName.c_str(), log.c_str());
+      DSP_DIAG(COMPILE, "NVRTC compilation failed for %s:\n%s",
+               source.kernelName.c_str(), log.c_str());
     }
-    sd_printf("NVRTC: nvrtcCompileProgram failed: %s\n", nvrtcGetErrorString(nvrtcRes));
+    DSP_DIAG(COMPILE, "NVRTC: nvrtcCompileProgram failed: %s", nvrtcGetErrorString(nvrtcRes));
     nvrtcDestroyProgram(&prog);
     delete handle;
     return nullptr;
@@ -126,7 +126,7 @@ NvrtcKernelHandle* compileKernel(const JitKernelSource& source, int deviceId) {
   // Ensure CUDA driver API is initialized
   CUresult cuRes = cuInit(0);
   if (cuRes != CUDA_SUCCESS) {
-    sd_printf("NVRTC: cuInit failed: %d\n", static_cast<int>(cuRes));
+    DSP_DIAG(COMPILE, "NVRTC: cuInit failed: %d", static_cast<int>(cuRes));
     delete handle;
     return nullptr;
   }
@@ -136,8 +136,8 @@ NvrtcKernelHandle* compileKernel(const JitKernelSource& source, int deviceId) {
   if (cuRes != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(cuRes, &errStr);
-    sd_printf("NVRTC: cuModuleLoadDataEx failed: %d (%s)\n",
-              static_cast<int>(cuRes), errStr ? errStr : "unknown");
+    DSP_DIAG(COMPILE, "NVRTC: cuModuleLoadDataEx failed: %d (%s)",
+             static_cast<int>(cuRes), errStr ? errStr : "unknown");
     delete handle;
     return nullptr;
   }
@@ -147,16 +147,16 @@ NvrtcKernelHandle* compileKernel(const JitKernelSource& source, int deviceId) {
   if (cuRes != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(cuRes, &errStr);
-    sd_printf("NVRTC: cuModuleGetFunction failed for '%s': %d (%s)\n",
-              source.kernelName.c_str(), static_cast<int>(cuRes),
-              errStr ? errStr : "unknown");
+    DSP_DIAG(COMPILE, "NVRTC: cuModuleGetFunction failed for '%s': %d (%s)",
+             source.kernelName.c_str(), static_cast<int>(cuRes),
+             errStr ? errStr : "unknown");
     delete handle;
     return nullptr;
   }
 
   handle->valid = true;
-  sd_printf("NVRTC: compiled kernel '%s' (arch=sm_%d%d, PTX=%zu bytes)\n",
-            source.kernelName.c_str(), major, minor, ptxSize);
+  DSP_DIAG(COMPILE, "NVRTC: compiled kernel '%s' (arch=sm_%d%d, PTX=%zu bytes)",
+           source.kernelName.c_str(), major, minor, ptxSize);
   return handle;
 }
 
@@ -193,7 +193,7 @@ Status launchKernel(NvrtcKernelHandle* handle,
       case JitParamBinding::INPUT_PTR: {
         int extIdx = binding.externalInputIdx;
         if (extIdx < 0 || extIdx >= numExternalInputs || externalInputs[extIdx] == nullptr) {
-          sd_printf("NVRTC launch: invalid external input index %d\n", extIdx);
+          DSP_DIAG(EXECUTE, "NVRTC launch: invalid external input index %d", extIdx);
           return Status::KERNEL_FAILURE;
         }
         ptrValues[i] = externalInputs[extIdx]->specialBuffer();
@@ -204,7 +204,7 @@ Status launchKernel(NvrtcKernelHandle* handle,
       case JitParamBinding::CROSS_SEG_PTR: {
         int slotIdx = binding.slotIdx;
         if (slotIdx < 0 || slotIdx >= totalOutputSlots || outputSlots[slotIdx] == nullptr) {
-          sd_printf("NVRTC launch: invalid cross-segment slot index %d\n", slotIdx);
+          DSP_DIAG(EXECUTE, "NVRTC launch: invalid cross-segment slot index %d", slotIdx);
           return Status::KERNEL_FAILURE;
         }
         ptrValues[i] = outputSlots[slotIdx]->specialBuffer();
@@ -215,7 +215,7 @@ Status launchKernel(NvrtcKernelHandle* handle,
       case JitParamBinding::OUTPUT_PTR: {
         int slotIdx = binding.slotIdx;
         if (slotIdx < 0 || slotIdx >= totalOutputSlots || outputSlots[slotIdx] == nullptr) {
-          sd_printf("NVRTC launch: invalid output slot index %d\n", slotIdx);
+          DSP_DIAG(EXECUTE, "NVRTC launch: invalid output slot index %d", slotIdx);
           return Status::KERNEL_FAILURE;
         }
         ptrValues[i] = outputSlots[slotIdx]->specialBuffer();
@@ -248,9 +248,9 @@ Status launchKernel(NvrtcKernelHandle* handle,
   if (cuRes != CUDA_SUCCESS) {
     const char* errStr = nullptr;
     cuGetErrorString(cuRes, &errStr);
-    sd_printf("NVRTC: cuLaunchKernel failed for '%s': %d (%s)\n",
-              handle->kernelName.c_str(), static_cast<int>(cuRes),
-              errStr ? errStr : "unknown");
+    DSP_DIAG(EXECUTE, "NVRTC: cuLaunchKernel failed for '%s': %d (%s)",
+             handle->kernelName.c_str(), static_cast<int>(cuRes),
+             errStr ? errStr : "unknown");
     return Status::KERNEL_FAILURE;
   }
 
@@ -260,4 +260,3 @@ Status launchKernel(NvrtcKernelHandle* handle,
 }  // namespace graph
 }  // namespace sd
 
-#endif  // SD_CUDA

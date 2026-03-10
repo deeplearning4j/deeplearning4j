@@ -384,10 +384,6 @@ void VariableSpace::dropVariable(std::pair<int, int>& pair) { dropVariable(pair.
 
 void VariableSpace::dropVariable(int id, int idx) {}
 
-void VariableSpace::setFlowPath(FlowPath* flow) { _flow = flow; }
-
-FlowPath* VariableSpace::flowPath() { return _flow; }
-
 VariableSpace::VariableSpace() { _handles = new std::vector<Variable*>; }
 }  // namespace graph
 }  // namespace sd

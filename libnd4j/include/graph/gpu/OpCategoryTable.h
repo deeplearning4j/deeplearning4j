@@ -26,6 +26,7 @@
 #include <string>
 #include <unordered_map>
 #include <system/common.h>
+#include <graph/DspDiagnostics.h>
 
 namespace sd {
 namespace graph {
@@ -267,10 +268,11 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"norm1",             TritonOpCategory::REDUCTION},
     {"norm2",             TritonOpCategory::REDUCTION},
     {"normmax",           TritonOpCategory::REDUCTION},
-    {"argmax",            TritonOpCategory::REDUCTION},
-    {"Argmax",            TritonOpCategory::REDUCTION},
-    {"argmin",            TritonOpCategory::REDUCTION},
-    {"Argmin",            TritonOpCategory::REDUCTION},
+    // argmax/argmin require index-aware reduction — no Triton emitter, fall back to native
+    {"argmax",            TritonOpCategory::UNSUPPORTED},
+    {"Argmax",            TritonOpCategory::UNSUPPORTED},
+    {"argmin",            TritonOpCategory::UNSUPPORTED},
+    {"Argmin",            TritonOpCategory::UNSUPPORTED},
 
     // ── Normalization ──
     {"softmax",           TritonOpCategory::NORMALIZATION},
@@ -283,8 +285,9 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"BatchNorm",         TritonOpCategory::NORMALIZATION},
     {"rms_norm",          TritonOpCategory::NORMALIZATION},
     {"RmsNorm",           TritonOpCategory::NORMALIZATION},
-    {"normalize_moments", TritonOpCategory::NORMALIZATION},
-    {"NormalizeMoments",  TritonOpCategory::NORMALIZATION},
+    // normalize_moments has two outputs — unsupported in single-output Triton emission
+    {"normalize_moments", TritonOpCategory::UNSUPPORTED},
+    {"NormalizeMoments",  TritonOpCategory::UNSUPPORTED},
 
     // ── Fused attention ──
     {"onnx_multi_head_attention",  TritonOpCategory::FUSED_ATTENTION},
@@ -384,26 +387,27 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"deconv2d",          TritonOpCategory::CONVOLUTION},
     {"deconv3d",          TritonOpCategory::CONVOLUTION},
 
-    // ── Loss ops (reduction category) ──
-    {"softmax_cross_entropy_loss_with_logits", TritonOpCategory::REDUCTION},
-    {"sparse_softmax_cross_entropy_loss_with_logits", TritonOpCategory::REDUCTION},
-    {"sigm_cross_entropy_loss",               TritonOpCategory::REDUCTION},
-    {"mean_sqerr_loss",                       TritonOpCategory::REDUCTION},
-    {"mean_pairwssqerr_loss",                 TritonOpCategory::REDUCTION},
-    {"huber_loss",                            TritonOpCategory::REDUCTION},
-    {"hinge_loss",                            TritonOpCategory::REDUCTION},
-    {"log_loss",                              TritonOpCategory::REDUCTION},
-    {"cosine_distance_loss",                  TritonOpCategory::REDUCTION},
-    {"ctc_loss",                              TritonOpCategory::REDUCTION},
+    // ── Loss ops — no Triton emitter, fall back to native ──
+    {"softmax_cross_entropy_loss_with_logits", TritonOpCategory::UNSUPPORTED},
+    {"sparse_softmax_cross_entropy_loss_with_logits", TritonOpCategory::UNSUPPORTED},
+    {"sigm_cross_entropy_loss",               TritonOpCategory::UNSUPPORTED},
+    {"mean_sqerr_loss",                       TritonOpCategory::UNSUPPORTED},
+    {"mean_pairwssqerr_loss",                 TritonOpCategory::UNSUPPORTED},
+    {"huber_loss",                            TritonOpCategory::UNSUPPORTED},
+    {"hinge_loss",                            TritonOpCategory::UNSUPPORTED},
+    {"log_loss",                              TritonOpCategory::UNSUPPORTED},
+    {"cosine_distance_loss",                  TritonOpCategory::UNSUPPORTED},
+    {"ctc_loss",                              TritonOpCategory::UNSUPPORTED},
 
-    // ── Embedding / segment ops (data movement category) ──
+    // ── Embedding / segment ops ──
     {"embedding_lookup",  TritonOpCategory::DATA_MOVEMENT},
     {"EmbeddingLookup",   TritonOpCategory::DATA_MOVEMENT},
-    {"segment_sum",       TritonOpCategory::REDUCTION},
-    {"segment_mean",      TritonOpCategory::REDUCTION},
-    {"segment_max",       TritonOpCategory::REDUCTION},
-    {"segment_min",       TritonOpCategory::REDUCTION},
-    {"unsorted_segment_sum", TritonOpCategory::REDUCTION},
+    // Segment ops have no Triton emitter — fall back to native
+    {"segment_sum",       TritonOpCategory::UNSUPPORTED},
+    {"segment_mean",      TritonOpCategory::UNSUPPORTED},
+    {"segment_max",       TritonOpCategory::UNSUPPORTED},
+    {"segment_min",       TritonOpCategory::UNSUPPORTED},
+    {"unsorted_segment_sum", TritonOpCategory::UNSUPPORTED},
     {"unique",            TritonOpCategory::DATA_MOVEMENT},
     {"top_k",             TritonOpCategory::DATA_MOVEMENT},
     {"in_top_k",          TritonOpCategory::DATA_MOVEMENT},
@@ -423,24 +427,25 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"BatchNorm",         TritonOpCategory::NORMALIZATION},
     {"layer_normalization", TritonOpCategory::NORMALIZATION},
 
-    // ── RNN ops (matmul category - decomposed into matmul chains) ──
-    {"lstmLayer",         TritonOpCategory::MATMUL},
-    {"gruCell",           TritonOpCategory::MATMUL},
-    {"gru",               TritonOpCategory::MATMUL},
-    {"simple_rnn",        TritonOpCategory::MATMUL},
-    {"lstmCell",          TritonOpCategory::MATMUL},
+    // ── RNN ops — multi-step decomposed, not simple matmul. Fall back to native. ──
+    {"lstmLayer",         TritonOpCategory::UNSUPPORTED},
+    {"gruCell",           TritonOpCategory::UNSUPPORTED},
+    {"gru",               TritonOpCategory::UNSUPPORTED},
+    {"simple_rnn",        TritonOpCategory::UNSUPPORTED},
+    {"lstmCell",          TritonOpCategory::UNSUPPORTED},
 
     // ── Image ops (data movement category) ──
     {"resize_bilinear",        TritonOpCategory::DATA_MOVEMENT},
     {"resize_nearest_neighbor", TritonOpCategory::DATA_MOVEMENT},
     {"resize_bicubic",         TritonOpCategory::DATA_MOVEMENT},
     {"crop_and_resize",        TritonOpCategory::DATA_MOVEMENT},
-    {"rgb_to_hsv",             TritonOpCategory::UNARY_ELEMENTWISE},
-    {"hsv_to_rgb",             TritonOpCategory::UNARY_ELEMENTWISE},
-    {"rgb_to_grs",             TritonOpCategory::UNARY_ELEMENTWISE},
-    {"adjust_contrast",        TritonOpCategory::UNARY_ELEMENTWISE},
-    {"adjust_hue",             TritonOpCategory::UNARY_ELEMENTWISE},
-    {"adjust_saturation",      TritonOpCategory::UNARY_ELEMENTWISE},
+    // Color space conversions operate across channels, not per-element — NOT elementwise
+    {"rgb_to_hsv",             TritonOpCategory::DATA_MOVEMENT},
+    {"hsv_to_rgb",             TritonOpCategory::DATA_MOVEMENT},
+    {"rgb_to_grs",             TritonOpCategory::DATA_MOVEMENT},
+    {"adjust_contrast",        TritonOpCategory::DATA_MOVEMENT},
+    {"adjust_hue",             TritonOpCategory::DATA_MOVEMENT},
+    {"adjust_saturation",      TritonOpCategory::DATA_MOVEMENT},
     {"image_resize",           TritonOpCategory::DATA_MOVEMENT},
 
     // ── Extended activations (unary elementwise) ──
@@ -497,54 +502,118 @@ inline const std::unordered_map<std::string, TritonOpCategory>& getOpCategoryTab
     {"quantized_matmul",  TritonOpCategory::MATMUL},
     {"QuantizedMatmul",   TritonOpCategory::MATMUL},
 
-    // ── LLM: Mean square (RMS norm building block) ──
-    {"mean_square",       TritonOpCategory::REDUCTION},
-    {"MeanSquare",        TritonOpCategory::REDUCTION},
+    // ── LLM: Mean square (RMS norm building block) — no standalone Triton emitter ──
+    {"mean_square",       TritonOpCategory::UNSUPPORTED},
+    {"MeanSquare",        TritonOpCategory::UNSUPPORTED},
 
     // ── Additional data movement ops ──
     {"repeat",            TritonOpCategory::DATA_MOVEMENT},
     {"Repeat",            TritonOpCategory::DATA_MOVEMENT},
     {"pad",               TritonOpCategory::DATA_MOVEMENT},
     {"Pad",               TritonOpCategory::DATA_MOVEMENT},
+    {"mirror_pad",        TritonOpCategory::DATA_MOVEMENT},
+    {"MirrorPad",         TritonOpCategory::DATA_MOVEMENT},
     {"slice",             TritonOpCategory::DATA_MOVEMENT},
     {"Slice",             TritonOpCategory::DATA_MOVEMENT},
 
     // ── Additional shape manipulation ──
     {"transpose",         TritonOpCategory::SHAPE_MANIPULATION},
     {"Transpose",         TritonOpCategory::SHAPE_MANIPULATION},
+    {"reshape_no_copy",   TritonOpCategory::SHAPE_MANIPULATION},
+    {"ReshapeNoCopy",     TritonOpCategory::SHAPE_MANIPULATION},
     {"triu",              TritonOpCategory::SHAPE_MANIPULATION},
     {"Triu",              TritonOpCategory::SHAPE_MANIPULATION},
     {"tril",              TritonOpCategory::SHAPE_MANIPULATION},
     {"Tril",              TritonOpCategory::SHAPE_MANIPULATION},
 
-    // ── Additional reductions ──
-    {"cumsum",            TritonOpCategory::REDUCTION},
-    {"Cumsum",            TritonOpCategory::REDUCTION},
-    {"cumprod",           TritonOpCategory::REDUCTION},
-    {"Cumprod",           TritonOpCategory::REDUCTION},
+    // ── Prefix-sum ops — not tree reductions, no Triton emitter ──
+    {"cumsum",            TritonOpCategory::UNSUPPORTED},
+    {"Cumsum",            TritonOpCategory::UNSUPPORTED},
+    {"cumprod",           TritonOpCategory::UNSUPPORTED},
+    {"Cumprod",           TritonOpCategory::UNSUPPORTED},
 
     // ── Additional constant generation ──
     {"eye",               TritonOpCategory::CONSTANT_GENERATION},
     {"Eye",               TritonOpCategory::CONSTANT_GENERATION},
     {"linspace",          TritonOpCategory::CONSTANT_GENERATION},
     {"Linspace",          TritonOpCategory::CONSTANT_GENERATION},
+    {"lin_space",         TritonOpCategory::CONSTANT_GENERATION},
+    {"LinSpace",          TritonOpCategory::CONSTANT_GENERATION},
     {"fill",              TritonOpCategory::CONSTANT_GENERATION},
     {"Fill",              TritonOpCategory::CONSTANT_GENERATION},
+
+    // ── Ops commonly needed by transformer/VLM models ──
+    // Shape/indexing
+    {"size_at",           TritonOpCategory::CONSTANT_GENERATION},
+    {"SizeAt",            TritonOpCategory::CONSTANT_GENERATION},
+    {"size",              TritonOpCategory::CONSTANT_GENERATION},
+    {"Size",              TritonOpCategory::CONSTANT_GENERATION},
+    {"rank",              TritonOpCategory::CONSTANT_GENERATION},
+    {"Rank",              TritonOpCategory::CONSTANT_GENERATION},
+    {"broadcast_to",      TritonOpCategory::SHAPE_MANIPULATION},
+    {"BroadcastTo",       TritonOpCategory::SHAPE_MANIPULATION},
+
+    // Ternary
+    {"where_np",          TritonOpCategory::TERNARY},
+    {"WhereNp",           TritonOpCategory::TERNARY},
+
+    // Binary elementwise
+    {"biasadd",           TritonOpCategory::BINARY_ELEMENTWISE},
+    {"BiasAdd",           TritonOpCategory::BINARY_ELEMENTWISE},
+
+    // Bitwise ops
+    {"bitwise_and",       TritonOpCategory::BINARY_ELEMENTWISE},
+    {"BitwiseAnd",        TritonOpCategory::BINARY_ELEMENTWISE},
+    {"bitwise_or",        TritonOpCategory::BINARY_ELEMENTWISE},
+    {"BitwiseOr",         TritonOpCategory::BINARY_ELEMENTWISE},
+    {"bitwise_xor",       TritonOpCategory::BINARY_ELEMENTWISE},
+    {"BitwiseXor",        TritonOpCategory::BINARY_ELEMENTWISE},
+    {"shift_bits",        TritonOpCategory::BINARY_ELEMENTWISE},
+    {"ShiftBits",         TritonOpCategory::BINARY_ELEMENTWISE},
+    {"rshift_bits",       TritonOpCategory::BINARY_ELEMENTWISE},
+    {"RShiftBits",        TritonOpCategory::BINARY_ELEMENTWISE},
+    {"toggle_bits",       TritonOpCategory::UNARY_ELEMENTWISE},
+    {"ToggleBits",        TritonOpCategory::UNARY_ELEMENTWISE},
+
+    // Inference/sampling
+    {"token_sample",      TritonOpCategory::DATA_MOVEMENT},
+    {"TokenSample",       TritonOpCategory::DATA_MOVEMENT},
+
+    // Additional data movement
+    {"unstack",           TritonOpCategory::DATA_MOVEMENT},
+    {"Unstack",           TritonOpCategory::DATA_MOVEMENT},
+    {"reverse",           TritonOpCategory::DATA_MOVEMENT},
+    {"Reverse",           TritonOpCategory::DATA_MOVEMENT},
+    {"reverse_v2",        TritonOpCategory::DATA_MOVEMENT},
+    {"ReverseV2",         TritonOpCategory::DATA_MOVEMENT},
+    {"sequence_mask",     TritonOpCategory::CONSTANT_GENERATION},
+    {"SequenceMask",      TritonOpCategory::CONSTANT_GENERATION},
+
+    // Additional shape manipulation
+    {"reshapeas",         TritonOpCategory::SHAPE_MANIPULATION},
+    {"ReshapeAs",         TritonOpCategory::SHAPE_MANIPULATION},
+
+    // Fused LLM ops
+    {"fused_gelu",        TritonOpCategory::UNARY_ELEMENTWISE},
+    {"FusedGelu",         TritonOpCategory::UNARY_ELEMENTWISE},
   };
   return table;
 }
 
 /**
  * Look up the op category for a libnd4j op name.
- * Throws if the op is not in the table — every op must be manually categorized.
+ * Returns UNSUPPORTED for ops not in the table — they will fall back to native execution.
+ * Logs a warning so missing ops can be detected and added to the table.
  */
 inline TritonOpCategory getOpCategoryFromName(const std::string& opName) {
   const auto& table = getOpCategoryTable();
   auto it = table.find(opName);
   if (it != table.end()) return it->second;
-  std::string msg = "getOpCategoryFromName: op '" + opName + "' is missing from OpCategoryTable. "
-                    "Every op MUST be manually categorized. Add it now.";
-  THROW_EXCEPTION(msg.c_str());
+  // Return UNSUPPORTED instead of throwing — allows graceful fallback to native execution.
+  // The op will be executed via the standard native path rather than crashing.
+  DSP_DIAG(FALLBACK, "getOpCategoryFromName: op '%s' is missing from OpCategoryTable. "
+            "Falling back to native execution. Add it to OpCategoryTable.h for proper categorization.",
+            opName.c_str());
   return TritonOpCategory::UNSUPPORTED;
 }
 

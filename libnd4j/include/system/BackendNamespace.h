@@ -146,7 +146,7 @@
  * Backend type identification macros
  * These are set by CMake to indicate which backend is being built
  */
-#if defined(SD_BACKEND_TYPE_CUDA)
+#if defined(SD_CUDA)
     #define SD_IS_CUDA_BACKEND 1
     #define SD_IS_CPU_BACKEND 0
     #define SD_IS_TPU_BACKEND 0

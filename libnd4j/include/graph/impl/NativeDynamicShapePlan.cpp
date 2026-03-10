@@ -18,6 +18,12 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/NativePlanCompiler.h>
+#include <sstream>
+#include <graph/gpu/SymbolicShapeRanges.h>
+#ifdef SD_CUDA
+#include <graph/gpu/CaptureBufferRegistry.h>
+#endif
+#include <graph/DspDiagnostics.h>
 #include <graph/FusionPass.h>
 #include <ops/declarable/helpers/fusedElementwiseChain.h>
 #include <graph/GraphBackend.h>
@@ -32,6 +38,7 @@
 #include <ops/declarable/LegacyTransformBoolOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
+#include <ops/declarable/helpers/kv_scatter.h>
 
 #include <algorithm>
 #include <cctype>
@@ -44,13 +51,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <system/Environment.h>
-#ifdef SD_CUDA
-#include <memory/cuda/CudaMemoryPool.h>
-#include <helpers/AttentionWorkspace.h>
-#include <ops/declarable/helpers/kv_scatter.h>
-#include <graph/gpu/NvrtcKernelBuilder.h>
-#include <graph/gpu/NvrtcKernelCache.h>
-#endif
 
 // Include CPU graph backends conditionally
 #include <config.h>
@@ -72,24 +72,11 @@
 #if HAVE_MLX
 #include <graph/cpu/MlxGraphBackend.h>
 #endif
-// Include GPU graph backends conditionally
-#if HAVE_TRITON
-#include <graph/gpu/TritonGraphBackend.h>
-#endif
-#ifdef SD_CUDA
-#include <graph/gpu/NvrtcGraphBackend.h>
-#include <graph/gpu/PtxGraphBackend.h>
-#endif
+// GPU graph backends are included only in the files that use them
+// (_gpubackend.cpp, platform dispatch files). This file is platform-neutral.
 
 namespace sd {
 namespace graph {
-
-// Non-CUDA fallback: batch-zero is never active on CPU
-#ifndef SD_CUDA
-bool NativeDynamicShapePlan::isBatchZeroActive() { return false; }
-bool NativeDynamicShapePlan::isBatchZeroRegistering() { return false; }
-void NativeDynamicShapePlan::registerBatchZeroBuffer(void*, size_t) {}
-#endif
 
 namespace {
 std::string normalizeOpName(const std::string& opName) {
@@ -98,98 +85,6 @@ std::string normalizeOpName(const std::string& opName) {
                  [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   return normalized;
 }
-
-const char* statusName(Status status) {
-  switch (status) {
-    case Status::OK: return "OK";
-    case Status::BAD_INPUT: return "BAD_INPUT";
-    case Status::BAD_SHAPE: return "BAD_SHAPE";
-    case Status::BAD_RANK: return "BAD_RANK";
-    case Status::BAD_PARAMS: return "BAD_PARAMS";
-    case Status::BAD_OUTPUT: return "BAD_OUTPUT";
-    case Status::BAD_RNG: return "BAD_RNG";
-    case Status::BAD_EPSILON: return "BAD_EPSILON";
-    case Status::BAD_GRADIENTS: return "BAD_GRADIENTS";
-    case Status::BAD_BIAS: return "BAD_BIAS";
-    case Status::VALIDATION: return "VALIDATION";
-    case Status::BAD_GRAPH: return "BAD_GRAPH";
-    case Status::BAD_LENGTH: return "BAD_LENGTH";
-    case Status::BAD_DIMENSIONS: return "BAD_DIMENSIONS";
-    case Status::BAD_ORDER: return "BAD_ORDER";
-    case Status::BAD_ARGUMENTS: return "BAD_ARGUMENTS";
-    case Status::DOUBLE_WRITE: return "DOUBLE_WRITE";
-    case Status::DOUBLE_READ: return "DOUBLE_READ";
-    case Status::KERNEL_FAILURE: return "KERNEL_FAILURE";
-    case Status::EQ_TRUE: return "EQ_TRUE";
-    case Status::EQ_FALSE: return "EQ_FALSE";
-    case Status::MAYBE: return "MAYBE";
-    default: return "UNKNOWN";
-  }
-}
-
-bool isStrictNoFallbackMode(GraphExecutionMode mode) {
-  // Strict mode is currently tied to explicit TRITON execution:
-  // fail fast instead of silently degrading to CUDA graphs/slot-by-slot.
-  return mode == GraphExecutionMode::GEM_TRITON;
-}
-
-#ifdef SD_CUDA
-bool bindSegmentCudaDevice(const GraphSegment& segment,
-                           NativeSlot* slots,
-                           int numSlots,
-                           bool traceEnabled,
-                           int executeCount,
-                           const char* phase) {
-  int targetDevice = -1;
-  if (segment.startSlot >= 0 && segment.startSlot < numSlots) {
-    targetDevice = slots[segment.startSlot].targetDeviceId;
-  }
-  if (targetDevice < 0) return true;
-
-  int deviceCount = 0;
-  cudaError_t countErr = cudaGetDeviceCount(&deviceCount);
-  if (countErr != cudaSuccess || deviceCount <= 0) {
-    sd_printf("NativeDSP::execute: %s seg[%d-%d] targetDeviceId=%d but CUDA device query failed: %s\n",
-              phase, segment.startSlot, segment.endSlot, targetDevice,
-              cudaGetErrorString(countErr));
-    cudaGetLastError();
-    return false;
-  }
-  if (targetDevice >= deviceCount) {
-    sd_printf("NativeDSP::execute: %s seg[%d-%d] invalid targetDeviceId=%d (deviceCount=%d)\n",
-              phase, segment.startSlot, segment.endSlot, targetDevice, deviceCount);
-    return false;
-  }
-
-  int currentDevice = -1;
-  cudaError_t getErr = cudaGetDevice(&currentDevice);
-  if (getErr != cudaSuccess) {
-    sd_printf("NativeDSP::execute: %s seg[%d-%d] failed to query current CUDA device: %s\n",
-              phase, segment.startSlot, segment.endSlot, cudaGetErrorString(getErr));
-    cudaGetLastError();
-    return false;
-  }
-
-  if (currentDevice != targetDevice) {
-    cudaError_t setErr = cudaSetDevice(targetDevice);
-    if (setErr != cudaSuccess) {
-      sd_printf("NativeDSP::execute: %s seg[%d-%d] failed to switch CUDA device %d->%d: %s\n",
-                phase, segment.startSlot, segment.endSlot,
-                currentDevice, targetDevice, cudaGetErrorString(setErr));
-      cudaGetLastError();
-      return false;
-    }
-    if (traceEnabled) {
-      sd_printf("NativeDSP::execute: %s seg[%d-%d] switched CUDA device %d->%d\n",
-                phase, segment.startSlot, segment.endSlot, currentDevice, targetDevice);
-    }
-  } else if (traceEnabled && executeCount <= 2) {
-    sd_printf("NativeDSP::execute: %s seg[%d-%d] using CUDA device %d\n",
-              phase, segment.startSlot, segment.endSlot, currentDevice);
-  }
-  return true;
-}
-#endif
 }  // namespace
 
 // ─── NativeSlot move operations ───────────────────────────────────────────────
@@ -297,20 +192,27 @@ NativeDynamicShapePlan::NativeDynamicShapePlan()
       outputSlots_(nullptr), slotArrayCache_(nullptr), slotIsViewProducer_(nullptr),
       slotViewOutputs_(nullptr),
       contextPool_(nullptr), viewProducerDetectionDone_(false), frozenConstantDetectionDone_(false),
-      pendingCloseBytes_(0), cudaGraphsEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
+      pendingCloseBytes_(0), gpuGraphCaptureEnabled_(false), totalGraphReplays_(0), jitMode_(JitMode::GRAPH_ONLY), graphExecutionMode_(GraphExecutionMode::GEM_AUTO),
       shapesFrozen_(false), executeCount_(0), executionTimingEnabled_(false), traceEnabled_(false),
       cpuGraphBackend_(nullptr), cpuGraphBackendChecked_(false),
       gpuGraphBackend_(nullptr), gpuGraphBackendChecked_(false),
       untrackedOutputCache_(nullptr), untrackedOutputCacheSize_(0),
       kvCacheRetentionEnabled_(false), kvCachePosition_(0), kvCacheMaxLen_(0),
       kvCacheNumMappings_(0), kvCacheMappings_(nullptr),
-      maxKvCacheLen_(0)
-#ifdef SD_CUDA
-      , cublasWorkspaceBuffer_(nullptr), cublasWorkspaceSize_(0)
-#endif
+      maxKvCacheLen_(0),
+      hasControlFlow_(false), loopRegions_(nullptr), numLoopRegions_(0),
+      slotIsDead_(nullptr), slotIsDeadSize_(0)
       {}
 
 NativeDynamicShapePlan::~NativeDynamicShapePlan() {
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: START plan=%p numSlots=%d totalOutputSlots=%d",
+           this, numSlots_, totalOutputSlots_);
+
+  // Finalize diagnostics report
+  DspDiagnostics::getInstance().endPlanExecution();
+  DspDiagnostics::getInstance().printPlanReport();
+  DspDiagnostics::getInstance().flushJsonReport();
+
   // Free slots
   if (slots_) {
     delete[] slots_;
@@ -328,11 +230,24 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Free requested output mapping
   delete[] requestedOutputSlotIndices_;
 
+  // Unified dedup set across slotArrayCache_, slotViewOutputs_, and pendingClose_
+  // to prevent double-free. Arrays can end up in multiple collections when:
+  //   - executeSingleKernel pre-allocates into both outputSlots_ and slotArrayCache_
+  //   - release schedule later adds the same array to pendingClose_
+  //   - flushPendingClose deletes it but slotArrayCache_ retains dangling pointer
+  std::unordered_set<NDArray*> deleted;
+
   // Free cached output slot arrays
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing slotArrayCache_ (%d slots)", totalOutputSlots_);
   if (slotArrayCache_) {
+    int cacheCount = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
-      delete slotArrayCache_[i];
+      if (slotArrayCache_[i] != nullptr && deleted.insert(slotArrayCache_[i]).second) {
+        cacheCount++;
+        delete slotArrayCache_[i];
+      }
     }
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: deleted %d unique arrays from slotArrayCache_", cacheCount);
     delete[] slotArrayCache_;
   }
 
@@ -342,11 +257,17 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Free view producer flags
   delete[] slotIsViewProducer_;
 
-  // Free zero-copy view outputs
+  // Free zero-copy view outputs (cross-dedup with slotArrayCache_)
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing slotViewOutputs_");
   if (slotViewOutputs_) {
+    int viewCount = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
-      delete slotViewOutputs_[i];
+      if (slotViewOutputs_[i] != nullptr && deleted.insert(slotViewOutputs_[i]).second) {
+        viewCount++;
+        delete slotViewOutputs_[i];
+      }
     }
+    DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: deleted %d unique arrays from slotViewOutputs_", viewCount);
     delete[] slotViewOutputs_;
   }
 
@@ -358,9 +279,13 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
     delete[] contextPool_;
   }
 
-  // Flush any remaining pending close (evicted NDArrays)
+  // Flush any remaining pending close (cross-dedup with slotArrayCache_ and views)
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing pendingClose_ (%d items)",
+           static_cast<int>(pendingClose_.size()));
   for (auto* arr : pendingClose_) {
-    delete arr;
+    if (arr != nullptr && deleted.insert(arr).second) {
+      delete arr;
+    }
   }
 
   // Free owned legacy ops (created during deserialization for ops
@@ -380,44 +305,29 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
   // Free KV cache mappings
   delete[] kvCacheMappings_;
 
-#ifdef SD_CUDA
-  // Free capture buffers, workspace, and JIT kernels from all segments
+  // Free control flow structures
+  delete[] loopRegions_;
+  delete[] slotIsDead_;
+
+  // Free symbolic shape range profiles from all segments
   for (auto& seg : segments_) {
-    for (auto& cb : seg.captureBuffers) {
-      if (!cb.directReference) delete cb.buffer;
+    if (seg.symbolicRangeData != nullptr) {
+      freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.symbolicRangeData));
+      seg.symbolicRangeData = nullptr;
     }
-    seg.captureBuffers.clear();
-    if (seg.captureWorkspacePtr != nullptr) {
-      cudaFree(seg.captureWorkspacePtr);
-      seg.captureWorkspacePtr = nullptr;
-      seg.captureWorkspaceBytes = 0;
-    }
-    // Free pinned host pointers from graph capture (PointersManager H2D sources)
-    for (auto* ptr : seg.capturedHostPtrs) {
-      cudaFreeHost(ptr);
-    }
-    seg.capturedHostPtrs.clear();
-    // Free JIT kernel handle
-    delete seg.jitKernel;
-    seg.jitKernel = nullptr;
   }
 
-  // Free pre-allocated cuBLAS workspace
-  if (cublasWorkspaceBuffer_ != nullptr) {
-    cudaFree(cublasWorkspaceBuffer_);
-    cublasWorkspaceBuffer_ = nullptr;
-    cublasWorkspaceSize_ = 0;
-  }
-
-  // Free batch-zero resources
-  freeBatchZeroResources();
-#endif
+  // Free platform-specific GPU resources (capture buffers, workspace, JIT kernels,
+  // math library workspace, batch-zero). No-op on CPU builds.
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: freeing platform GPU resources");
+  platformFreePlanResources();
+  DSP_DIAG(MEMORY, "~NativeDynamicShapePlan: DONE plan=%p", this);
 }
 
 // ─── Deserialization from binary plan ─────────────────────────────────────────
 
 static const uint32_t DSP_MAGIC = 0x44535031;  // "DSP1"
-static const int32_t DSP_VERSION_MAX = 2;  // Max supported version
+static const int32_t DSP_VERSION_MAX = 3;  // Max supported version
 
 /**
  * Helper to read typed values from a byte stream.
@@ -473,13 +383,13 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   // Read header
   uint32_t magic = reader.read<uint32_t>();
   if (magic != DSP_MAGIC) {
-    sd_printf("NativeDynamicShapePlan: invalid magic 0x%08x (expected 0x%08x)\n", magic, DSP_MAGIC);
+    DSP_DIAG(COMPILE, "NativeDynamicShapePlan: invalid magic 0x%08x (expected 0x%08x)", magic, DSP_MAGIC);
     return nullptr;
   }
 
   int32_t version = reader.read<int32_t>();
-  if (version != 1 && version != 2) {
-    sd_printf("NativeDynamicShapePlan: unsupported version %d (expected 1 or 2)\n", version);
+  if (version < 1 || version > 4) {
+    DSP_DIAG(COMPILE, "NativeDynamicShapePlan: unsupported version %d (expected 1-4)", version);
     return nullptr;
   }
 
@@ -557,6 +467,16 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       slot.legacyOpNum = reader.read<int32_t>();
     }
 
+    // V3: control flow metadata
+    slot.controlFlowType = CF_NONE;
+    slot.loopBackTarget = -1;
+    slot.loopRegionIndex = -1;
+    if (version >= 3) {
+      slot.controlFlowType = static_cast<ControlFlowType>(reader.read<uint8_t>());
+      slot.loopBackTarget = reader.read<int32_t>();
+      slot.loopRegionIndex = reader.read<int32_t>();
+    }
+
     // Resolve op by name (Java and C++ use different hash functions,
     // so we look up by name string and compute the C++ hash from it)
     slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.opName);
@@ -584,7 +504,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
           legacyOp = new sd::ops::LegacyPairwiseTransformOp(slot.legacyOpNum);
           break;
         default:
-          sd_printf("NativeDynamicShapePlan: unknown legacy op type %d for '%s'\n",
+          DSP_DIAG(COMPILE, "unknown legacy op type %d for '%s'",
                     slot.legacyOpType, slot.opName.c_str());
           break;
       }
@@ -595,12 +515,18 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
                  slot.legacyOpType, slot.legacyOpNum, slot.opName.c_str());
       }
     }
-    if (!slot.op) {
-      sd_printf("NativeDynamicShapePlan: op not found for name '%s' (serialized hash: %lld, legacyType: %d, legacyNum: %d)\n",
+    if (!slot.op && slot.controlFlowType != CF_NONE) {
+      // Control flow ops dont need a DeclarableOp — dispatched by CF engine
+      sd_debug("NativeDynamicShapePlan: CF op '%s' (type=%d) — no DeclarableOp needed\n",
+               slot.opName.c_str(), static_cast<int>(slot.controlFlowType));
+    } else if (!slot.op) {
+      DSP_DIAG(COMPILE, "NativeDynamicShapePlan: op not found for name '%s' (serialized hash: %lld, legacyType: %d, legacyNum: %d)",
                 slot.opName.c_str(), slot.opHash, slot.legacyOpType, slot.legacyOpNum);
       delete plan;
       return nullptr;
     }
+
+
     // Use the C++ hash for internal computations (shape key, etc.)
     slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
     // Classify identity ops for fast-path skipping
@@ -638,9 +564,70 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     }
   }
 
+  // V3: Read loop regions
+  plan->loopRegions_ = nullptr;
+  plan->numLoopRegions_ = 0;
+  plan->hasControlFlow_ = false;
+  if (version >= 3) {
+    plan->numLoopRegions_ = reader.read<int32_t>();
+    if (plan->numLoopRegions_ > 0) {
+      plan->loopRegions_ = new LoopRegion[plan->numLoopRegions_];
+      for (int i = 0; i < plan->numLoopRegions_; i++) {
+        plan->loopRegions_[i].mergeSlot = reader.read<int32_t>();
+        plan->loopRegions_[i].switchSlot = reader.read<int32_t>();
+        plan->loopRegions_[i].nextIterSlot = reader.read<int32_t>();
+        plan->loopRegions_[i].exitSlot = reader.read<int32_t>();
+        plan->loopRegions_[i].bodyStartSlot = reader.read<int32_t>();
+        plan->loopRegions_[i].bodyEndSlot = reader.read<int32_t>();
+      }
+    }
+    // Check if any slot has control flow
+    for (int s = 0; s < plan->numSlots_; s++) {
+      if (plan->slots_[s].controlFlowType != CF_NONE) {
+        plan->hasControlFlow_ = true;
+        break;
+      }
+    }
+    if (plan->hasControlFlow_) {
+      DSP_DIAG(COMPILE, "control flow detected (%d loop regions)",
+               plan->numLoopRegions_);
+    }
+  }
+
+  // Allocate dead-slot tracking for control flow
+  plan->slotIsDeadSize_ = plan->totalOutputSlots_;
+  plan->slotIsDead_ = new bool[plan->slotIsDeadSize_];
+  std::memset(plan->slotIsDead_, 0, sizeof(bool) * plan->slotIsDeadSize_);
+
   // Read requested output slot indices
   plan->requestedOutputSlotIndices_ = new int[plan->numRequestedOutputs_];
   reader.readArray(plan->requestedOutputSlotIndices_, plan->numRequestedOutputs_);
+
+  // Read external input names (v4+)
+  if (version >= 4) {
+    plan->externalInputNames_.resize(plan->numExternalInputs_);
+    for (int i = 0; i < plan->numExternalInputs_; i++) {
+      plan->externalInputNames_[i] = reader.readString();
+    }
+  }
+
+  // Build externalInputIsVariable_ by scanning slot input source types.
+  // VARIABLE/PLACEHOLDER external inputs need forced H2D sync before CUDA graph replay
+  // because Java may update host buffers between steps without clearing device actuality.
+  plan->externalInputIsVariable_.resize(plan->numExternalInputs_, false);
+  for (int s = 0; s < plan->numSlots_; s++) {
+    auto& slot = plan->slots_[s];
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < plan->numExternalInputs_ &&
+            (slot.inputSourceTypes[i] == SOURCE_VARIABLE || slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER)) {
+          plan->externalInputIsVariable_[extIdx] = true;
+        }
+      }
+    }
+  }
 
   // Allocate execution state
   plan->outputSlots_ = new NDArray*[plan->totalOutputSlots_];
@@ -657,7 +644,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
 
   // Allocate untracked output cache (for outputs with outputSlotIndices[i] < 0).
   // These are temporary buffers needed by ops but not referenced downstream.
-  // Cached here so they can be reused during CUDA graph capture (where allocs fail).
+  // Cached here so they can be reused during GPU graph capture (where allocs fail).
   plan->untrackedOutputCacheSize_ = plan->numSlots_ * MAX_OUTPUTS_PER_SLOT;
   plan->untrackedOutputCache_ = new NDArray*[plan->untrackedOutputCacheSize_];
   std::memset(plan->untrackedOutputCache_, 0, sizeof(NDArray*) * plan->untrackedOutputCacheSize_);
@@ -722,8 +709,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       else dynamicCount++;
     }
 
-    sd_printf("NativeDynamicShapePlan: shape analysis: %d static, %d dynamic out of %d slots\n",
-              staticCount, dynamicCount, plan->numSlots_);
+    DSP_DIAG(SHAPE, "shape analysis: %d static, %d dynamic out of %d slots",
+             staticCount, dynamicCount, plan->numSlots_);
 
     // Count identity ops for diagnostics
     int identityCount = 0;
@@ -731,29 +718,35 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       if (plan->slots_[i].isIdentityOp) identityCount++;
     }
     if (identityCount > 0) {
-      sd_printf("NativeDynamicShapePlan: %d identity ops (will use fast-path)\n", identityCount);
+      DSP_DIAG(SHAPE, "%d identity ops (will use fast-path)", identityCount);
     }
   }
 
-  // Build graph segments for CUDA Graphs
+  // Build graph segments for GPU graph capture
   plan->buildSegments();
 
   // Detect and apply fusion candidates
   if (plan->numSlots_ > 1) {
     auto fusions = FusionPass::detectFusions(plan->slots_, plan->numSlots_);
     if (!fusions.empty()) {
-      sd_printf("NativeDynamicShapePlan: detected %d fusion candidates\n",
-                static_cast<int>(fusions.size()));
+      DSP_DIAG(FUSION, "detected %d fusion candidates",
+               static_cast<int>(fusions.size()));
       for (auto& f : fusions) {
-        sd_printf("  fusion: slots %d-%d, type=%d, chain=%d\n",
-                  f.startSlot, f.endSlot, static_cast<int>(f.type), f.chainLength);
+        DSP_DIAG_SLOT(FUSION, f.startSlot, "fusion: slots %d-%d, type=%d, chain=%d",
+                      f.startSlot, f.endSlot, static_cast<int>(f.type), f.chainLength);
       }
 
       int applied = FusionPass::applyFusions(plan->slots_, plan->numSlots_, fusions);
-      sd_printf("NativeDynamicShapePlan: applied %d of %d fusion candidates (in-place execution)\n",
-                applied, static_cast<int>(fusions.size()));
+      DSP_DIAG(FUSION, "applied %d of %d fusion candidates (in-place execution)",
+               applied, static_cast<int>(fusions.size()));
     }
   }
+
+  // Notify diagnostics that a plan was compiled
+  DspDiagnostics::getInstance().beginPlanExecution(
+      plan->numSlots_, static_cast<int>(plan->segments_.size()));
+  DSP_DIAG(COMPILE, "plan compiled: %d slots, %d segments",
+           plan->numSlots_, static_cast<int>(plan->segments_.size()));
 
   return plan;
 }
@@ -766,253 +759,85 @@ Status NativeDynamicShapePlan::execute(
     void* stream) {
 
   if (numExternalInputs != numExternalInputs_) {
-    sd_printf("NativeDynamicShapePlan::execute: expected %d external inputs, got %d\n",
+    DSP_DIAG(EXECUTE, "NativeDynamicShapePlan::execute: expected %d external inputs, got %d",
               numExternalInputs_, numExternalInputs);
     return Status::BAD_ARGUMENTS;
   }
 
   if (numRequestedOutputs != numRequestedOutputs_) {
-    sd_printf("NativeDynamicShapePlan::execute: expected %d requested outputs, got %d\n",
+    DSP_DIAG(EXECUTE, "NativeDynamicShapePlan::execute: expected %d requested outputs, got %d",
               numRequestedOutputs_, numRequestedOutputs);
     return Status::BAD_ARGUMENTS;
   }
 
-  if (traceEnabled_) {
-    sd_printf("NativeDSP::execute: executeCount=%d shapesFrozen=%d numSegments=%d cudaGraphs=%d numExt=%d\n",
-              executeCount_, static_cast<int>(shapesFrozen_), static_cast<int>(segments_.size()),
-              static_cast<int>(cudaGraphsEnabled_), numExternalInputs);
-  }
+  DspDiagnostics::getInstance().beginStep(executeCount_);
 
+  DSP_DIAG(EXECUTE, "step %d: frozen=%d segs=%d graphCapture=%d ext=%d",
+           executeCount_, static_cast<int>(shapesFrozen_),
+           static_cast<int>(segments_.size()),
+           static_cast<int>(gpuGraphCaptureEnabled_), numExternalInputs);
+
+  // Debug: dump external input at index 1331 (slot -1332) — useful for diagnosing
+  // forced-H2D-sync issues where device-authoritative buffers get overwritten
+  if (sd::Environment::getInstance().isDebug() && numExternalInputs > 1331) {
+    NDArray* ext1331 = externalInputs[1331];
+    if (ext1331 != nullptr) {
+      DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=1331 dtype=%d shape=[%lld] len=%lld "
+               "specialBuf=%p primaryBuf=%p dbPtr=%p pAct=%d sAct=%d",
+               executeCount_, (int)ext1331->dataType(),
+               (long long)(ext1331->rankOf() > 0 ? ext1331->sizeAt(0) : 0),
+               (long long)ext1331->lengthOf(),
+               ext1331->specialBuffer(), ext1331->buffer(),
+               static_cast<void*>(ext1331->dataBuffer()),
+               ext1331->dataBuffer() ? (ext1331->dataBuffer()->isPrimaryActual() ? 1 : 0) : -1,
+               ext1331->dataBuffer() ? (ext1331->dataBuffer()->isSpecialActual() ? 1 : 0) : -1);
 #ifdef SD_CUDA
-  // ═══════════════════════════════════════════════════════════════════════════
-  // FROZEN GRAPH FAST PATH: "1 slot, 1 graph"
-  // When shapes are frozen, we have 1 segment with 1 captured CUDA graph,
-  // and the graph has been successfully replayed at least once, skip ALL
-  // per-slot and per-segment abstractions. The entire decoder becomes a
-  // single atomic operation: copy inputs → launch graph → return outputs.
-  // ═══════════════════════════════════════════════════════════════════════════
-  bool allowFrozenGraphFastPath =
-      (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO ||
-       graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS);
-  bool frozenFastPathInputStable = true;
-  if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1) {
-    auto& seg0 = segments_[0];
-    // For Triton-captured graphs (no capture buffers), require stable input addresses.
-    // Standard CUDA-graph segments use capture buffers and are address-agnostic.
-    if (seg0.captureBuffers.empty() && seg0.capturedInputAddrKey != 0) {
-      frozenFastPathInputStable =
-          (computeSegmentInputAddrKey(seg0, externalInputs, numExternalInputs) == seg0.capturedInputAddrKey);
-    }
-  }
-  if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1 &&
-      frozenFastPathInputStable && segments_[0].cachedGraph != nullptr &&
-      segments_[0].cachedGraph->getState() == cuda::GraphState::INSTANTIATED) {
-    using Clock = std::chrono::high_resolution_clock;
-    auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-
-    // Clear stale CUDA errors
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-    cudaGetLastError();
-
-    GraphSegment& seg = segments_[0];
-    if (!bindSegmentCudaDevice(seg, slots_, numSlots_, traceEnabled_, executeCount_, "frozenFastPath")) {
-      return Status::KERNEL_FAILURE;
-    }
-    cudaStream_t cudaStr = (stream != nullptr)
-        ? *static_cast<cudaStream_t*>(stream) : nullptr;
-
-    // Copy external inputs into fixed-address capture buffers.
-    // Skip inputs whose GPU address hasn't changed since last copy (static model weights).
-    bool ok = true;
-    int copiedCount = 0;
-    int skippedCount = 0;
-    for (auto& cb : seg.captureBuffers) {
-      // Direct reference: graph captured the external buffer's address directly.
-      // No copy needed — KV scatter writes to the same buffer the graph reads from.
-      if (cb.directReference) {
-        skippedCount++;
-        continue;
-      }
-
-      NDArray* src = nullptr;
-      if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExternalInputs) {
-        src = externalInputs[cb.externalInputIndex];
-      } else if (cb.crossSegmentSlotIdx >= 0 && cb.crossSegmentSlotIdx < totalOutputSlots_) {
-        src = slotArrayCache_[cb.crossSegmentSlotIdx];
-      }
-      if (src == nullptr || cb.buffer == nullptr) { ok = false; break; }
-
-      size_t srcBytes = src->lengthOf() * src->sizeOfT();
-      if (srcBytes != cb.capturedSize) { ok = false; break; }
-
-      if (srcBytes > 0) {
-        // Skip copy if source GPU pointer hasn't changed (static weight — same buffer every step)
-        const void* currentPtr = src->specialBuffer();
-        if (cb.initialCopyDone && currentPtr == cb.lastSourcePtr && !cb.neverSkipCopy) {
-          skippedCount++;
-          continue;
+      if (ext1331->specialBuffer() != nullptr && ext1331->lengthOf() > 0
+          && ext1331->dataType() == FLOAT32) {
+        int dumpCount = std::min((int)ext1331->lengthOf(), 8);
+        std::vector<float> hostBuf(dumpCount);
+        cudaDeviceSynchronize();
+        cudaMemcpy(hostBuf.data(), ext1331->specialBuffer(), dumpCount * 4, cudaMemcpyDeviceToHost);
+        std::string valStr;
+        for (int v = 0; v < dumpCount; v++) {
+          if (v > 0) valStr += ",";
+          char buf[32]; snprintf(buf, sizeof(buf), "%.6f", hostBuf[v]); valStr += buf;
         }
-
-        auto dt = src->dataType();
-        bool hostMirror = (dt == INT32 || dt == INT64 || dt == BOOL)
-                          && src->lengthOf() > 0 && src->lengthOf() <= 32;
-        if (hostMirror) {
-          src->syncToHost();
-          std::memcpy(cb.buffer->buffer(), src->buffer(), srcBytes);
-          cb.buffer->tickWriteHost();
-          cb.buffer->syncToDevice();
-        } else {
-          src->syncToDevice();
-          auto copyErr = cudaMemcpyAsync(cb.buffer->specialBuffer(), src->specialBuffer(),
-                                         srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-          if (copyErr != cudaSuccess) { cudaGetLastError(); ok = false; break; }
-        }
-        cb.lastSourcePtr = currentPtr;
-        cb.initialCopyDone = true;
-        copiedCount++;
-      }
-    }
-    if (traceEnabled_ && executeCount_ <= 5) {
-      sd_printf("NativeDSP::frozenFastPath: copied=%d skipped=%d total=%d\n",
-                copiedCount, skippedCount, copiedCount + skippedCount);
-    }
-
-    if (ok) {
-      auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-
-      // For Triton-captured graphs (no capture buffers), refresh the indirect
-      // arg table pinned host buffers with current NDArray specialBuffer() addresses.
-      // The graph's H2D memcpy nodes read from these pinned buffers on each replay,
-      // so they must contain current device pointers (not capture-time addresses).
-#if HAVE_TRITON
-      if (seg.captureBuffers.empty()) {
-        auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
-        if (tritonBackend != nullptr) {
-          tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
-                                                   outputSlots_, totalOutputSlots_);
-        }
+        DSP_DIAG(VERIFY, "EXT_INPUT_START: exec=%d extIdx=1331 GPU values: %s",
+                 executeCount_, valStr.c_str());
       }
 #endif
-
-      // No sync needed before graph launch — capture buffer copies are on the
-      // same stream (cudaStr), so they are ordered before the graph launch.
-      if (seg.cachedGraph->launchAsync(cudaStr)) {
-        auto tLaunchDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-        // Return outputs directly from slotArrayCache_ — no slot iteration needed
-        for (int i = 0; i < numRequestedOutputs_; i++) {
-          int slotIdx = requestedOutputSlotIndices_[i];
-          if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-            requestedOutputs[i] = slotArrayCache_[slotIdx];
-          } else {
-            requestedOutputs[i] = nullptr;
-          }
+    }
+    // Check if externalInputs[1331] shares a buffer with any output slot in the cache
+    if (ext1331 != nullptr && ext1331->specialBuffer() != nullptr && slotArrayCache_ != nullptr) {
+      void* extAddr = ext1331->specialBuffer();
+      int aliasCount = 0;
+      for (int si = 0; si < totalOutputSlots_; si++) {
+        if (slotArrayCache_[si] != nullptr && slotArrayCache_[si]->specialBuffer() == extAddr) {
+          DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=1331 addr=%p == slotArrayCache[%d] (len=%lld)",
+                   extAddr, si, (long long)slotArrayCache_[si]->lengthOf());
+          aliasCount++;
         }
-        totalGraphReplays_++;
-        seg.executionCount++;
-        executeCount_++;
-
-        // C++ KV scatter using direct kvScatter CUDA kernel (no operator() allocations)
-        // KV scatter now runs on the SAME execution stream as the graph, so no
-        // cross-stream sync is needed — CUDA stream ordering guarantees correctness.
-        if (kvCacheRetentionEnabled_) {
-          // No sync needed — scatter runs on same stream as graph (ordered)
-          scatterKvEntries(externalInputs, numExternalInputs, stream);
-          kvCachePosition_++;
-        }
-        auto tScatterDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-        // Single sync: wait for graph + scatter to complete so Java can read outputs
-        if (cudaStr != nullptr) cudaStreamSynchronize(cudaStr);
-        auto tSyncDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
-
-        // Periodic flush (every 10 steps) and trim
-        if (executeCount_ % 10 == 0) {
-          flushPendingClose(stream);
-        }
-
-        if (executionTimingEnabled_) {
-          auto copyUs = std::chrono::duration_cast<std::chrono::microseconds>(tCopyDone - t0).count();
-          auto launchUs = std::chrono::duration_cast<std::chrono::microseconds>(tLaunchDone - tCopyDone).count();
-          auto scatterUs = std::chrono::duration_cast<std::chrono::microseconds>(tScatterDone - tLaunchDone).count();
-          auto syncUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncDone - tScatterDone).count();
-          auto totalUs = std::chrono::duration_cast<std::chrono::microseconds>(tSyncDone - t0).count();
-          sd_printf("DSP timing: copy=%lldus launch=%lldus scatter=%lldus sync=%lldus total=%lldus "
-                    "(copied=%d skipped=%d)\n",
-                    copyUs, launchUs, scatterUs, syncUs, totalUs, copiedCount, skippedCount);
-        }
-        return Status::OK;
+      }
+      if (aliasCount == 0) {
+        DSP_DIAG(VERIFY, "EXT_INPUT_ALIAS: extIdx=1331 addr=%p NO alias found in %d output slots",
+                 extAddr, totalOutputSlots_);
       }
     }
-    // Fast path failed — fall through to full execution path
-    if (traceEnabled_) {
-      sd_printf("NativeDSP::execute: frozen fast path failed (ok=%d), falling back to full path\n",
-                static_cast<int>(ok));
-    }
   }
-#endif
 
-  // Step 0: Clear stale CUDA errors and error references from prior execution.
-  // Async GPU errors from the previous execute() call may not surface until the
-  // next CUDA API call, causing false failures. Clear them proactively.
-  // Also clear the custom error reference so failed graph captures from prior
-  // executions don't cause false positives at stream sync time.
+  // Frozen graph fast path: if shapes are frozen and a single captured GPU graph
+  // covers the entire plan, skip all per-slot/per-segment abstractions.
+  // Returns OK if fast path handled execution, MAYBE to fall through.
+  auto fastPathResult = platformTryFrozenFastPath(
+      externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
+  if (fastPathResult != Status::MAYBE) return fastPathResult;
+
+  // Pre-execute setup: clear stale errors, manage attention workspace,
+  // flush pending close, invalidate stale cached graphs.
   sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
   sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-#ifdef SD_CUDA
-  cudaGetLastError();
-
-  // Clear attention workspace when no graphs are cached yet.
-  // This ensures fresh workspace allocations for new shapes (e.g., prefill → decode transition).
-  // When graphs ARE cached, preserve the workspace — captured CUDA graphs recorded the
-  // workspace buffer pointers (stable virtual addresses via Pool Memory Model), and
-  // clearing would corrupt graph replay. The per-segment clear() calls inside
-  // executeSegmentWithGraph() were removed to prevent:
-  //   1. Premature freeing of async GPU buffers from other segments (causes KERNEL_FAILURE at step 1)
-  //   2. Corruption of already-captured segment graphs when capturing subsequent segments
-  {
-    bool anyGraphCached = false;
-    for (const auto& seg : segments_) {
-      if (seg.cachedGraph != nullptr) { anyGraphCached = true; break; }
-    }
-    if (!anyGraphCached) {
-      AttentionWorkspace::getInstance()->clear();
-    }
-  }
-
-  // Pre-execution flush: free arrays evicted during the previous call's warmup.
-  // Without this, 2-3 calls' worth of evicted arrays accumulate before the next
-  // mid-execution flush (every 100 steps), causing OOM on shape buffer allocation.
-  flushPendingClose(stream);
-
-  // Clear any CUDA errors from workspace clear or flush operations.
-  // NDArray destructors (from AttentionWorkspace::clear() and flushPendingClose)
-  // call cudaFreeAsync which may post transient stream-ordering errors. These
-  // are benign — the exec stream was synced by Java's commit() before this call,
-  // so all GPU work on those buffers is complete. Clear errors here so the
-  // per-segment checks only catch real errors from segment execution.
-  cudaGetLastError();
-
-  // Free captured graphs for segments whose shapes have changed (detectable from
-  // external inputs only — cross-segment inputs aren't available yet since
-  // outputSlots_ hasn't been populated). This reclaims graph memory before segment
-  // execution begins, preventing OOM when many segments have stale cached graphs.
-  // Skip pre-check when shapes are frozen — shapes can't change, so cached graphs
-  // remain valid. Without this skip, the pre-check incorrectly invalidates graphs
-  // because outputSlots_ at this point contains stale entries from the PREVIOUS
-  // execution (some cross-segment slots were released by releaseAtStep_ processing).
-  // The shape key computed here differs from the capture-time key, causing spurious
-  // invalidation and re-capture every step (~5s overhead per step).
-  if (!shapesFrozen_ || executeCount_ == 0) {
-    for (auto& segment : segments_) {
-      if (segment.cachedGraph) {
-        LongType segShapeKey = computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
-        if (segment.cachedShapeKey != segShapeKey) {
-          segment.cachedGraph.reset();
-        }
-      }
-    }
-  }
-#endif
+  platformPreExecuteSetup(externalInputs, numExternalInputs, stream);
 
   // Step 1: Initialize output slots
   // When shapes are frozen (after warmup), pre-populate from slotArrayCache_ so
@@ -1026,14 +851,9 @@ Status NativeDynamicShapePlan::execute(
   // segment-local caches each execute; capturable graph-replay segments keep caches.
   if (!shapesFrozen_ || executeCount_ == 0) {
     for (auto& segment : segments_) {
-#ifdef SD_CUDA
-      // Keep caches for segments with an instantiated graph that can replay.
-      // For all others (uncaptured, uncapturable, or capture-failed), force
-      // re-shape each execute to avoid stale decode-step shape reuse.
-      if (segment.cachedGraph != nullptr && !segment.captureFailed) continue;
-#else
-      if (segment.isCapturable && !segment.captureFailed) continue;
-#endif
+      // Keep caches for segments that can replay (GPU: instantiated graph,
+      // CPU: capturable and not failed). Platform dispatch handles the check.
+      if (platformShouldKeepSegmentCache(segment)) continue;
       for (int stepIdx = segment.startSlot; stepIdx <= segment.endSlot; stepIdx++) {
         auto& slot = slots_[stepIdx];
         if (slot.shapeStatic) continue;
@@ -1057,255 +877,32 @@ Status NativeDynamicShapePlan::execute(
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
   // Step 1b: Parallel precompilation of all GPU-compilable segments.
-  // On executeCount_ == 1 (after warmup), every segment will need compilation.
-  // Instead of compiling lazily in the sequential execution loop, fire all
-  // compilations in parallel so they're cached by the time execution reaches them.
-#ifdef SD_CUDA
-  if (executeCount_ == 1 && graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-    auto* gpuBackend = getGpuGraphBackend();
-    if (gpuBackend != nullptr) {
-      // Collect segments eligible for parallel precompilation.
-      // Each task records the target GPU device so async threads can call
-      // cudaSetDevice() before touching any CUDA state — new threads have
-      // no device context and default to device 0, which is wrong on
-      // multi-GPU systems where segments target different GPUs.
-      struct PrecompileTask {
-        int segIdx;
-        LongType shapeKey;
-        int targetDevice;  // GPU device this segment's slots live on
-      };
-      std::vector<PrecompileTask> tasks;
-      for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
-        auto& seg = segments_[si];
-        if (seg.captureFailed) continue;
-        bool tryCapture = seg.isCapturable || (shapesFrozen_ && executeCount_ > 0);
-        if (!tryCapture) continue;
-        if (!gpuBackend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) continue;
-        LongType segShapeKey = computeSegmentShapeKey(seg, externalInputs, numExternalInputs);
-        int segTargetDevice = 0;
-        if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
-          segTargetDevice = slots_[seg.startSlot].targetDeviceId;
-          if (segTargetDevice < 0) segTargetDevice = 0;
-        }
-        tasks.push_back({si, segShapeKey, segTargetDevice});
-      }
-
-      if (tasks.size() > 1) {
-        const int maxPrecompileThreads = std::min(
-            static_cast<int>(tasks.size()),
-            std::max(1, sd::Environment::getInstance().tritonBuildThreads()));
-        sd_printf("NativeDSP::execute: parallel precompilation of %d segments "
-                  "using %d threads (executeCount=%d)\n",
-                  static_cast<int>(tasks.size()), maxPrecompileThreads, executeCount_);
-        auto precompileStart = Clock::now();
-
-        std::vector<std::future<bool>> futures;
-        futures.reserve(tasks.size());
-        for (const auto& task : tasks) {
-          futures.emplace_back(std::async(std::launch::async,
-              [this, gpuBackend, externalInputs, numExternalInputs, task]() -> bool {
-                // CRITICAL: set CUDA device before any CUDA call on this thread.
-                // std::async threads inherit NO device context — without this,
-                // cudaGetDevice() returns 0 and all allocations/module loads go
-                // to the wrong GPU on multi-GPU systems.
-                cudaError_t setDevErr = cudaSetDevice(task.targetDevice);
-                if (setDevErr != cudaSuccess) {
-                  sd_printf("NativeDSP::precompile: cudaSetDevice(%d) failed for segment %d: %s\n",
-                            task.targetDevice, task.segIdx, cudaGetErrorString(setDevErr));
-                  cudaGetLastError();
-                  return false;
-                }
-                auto& seg = segments_[task.segIdx];
-                return gpuBackend->compileSegment(seg, slots_, externalInputs, numExternalInputs,
-                                                  outputSlots_, totalOutputSlots_, task.shapeKey,
-                                                  numSlots_);
-              }));
-        }
-
-        int precompileOk = 0, precompileFail = 0;
-        for (size_t i = 0; i < futures.size(); i++) {
-          bool ok = futures[i].get();
-          if (ok) {
-            segments_[tasks[i].segIdx].shapeKey = tasks[i].shapeKey;
-            precompileOk++;
-          } else {
-            precompileFail++;
-          }
-        }
-
-        auto precompileMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-            Clock::now() - precompileStart).count();
-        sd_printf("NativeDSP::execute: parallel precompilation done in %lld ms "
-                  "(ok=%d, failed=%d)\n",
-                  static_cast<long long>(precompileMs), precompileOk, precompileFail);
-      }
-    }
-  }
-#endif
+  // On GPU: fires async compilation threads for all eligible segments.
+  // On CPU: no-op.
+  platformPrecompileSegments(externalInputs, numExternalInputs);
 
   // Step 2: Execute segments
   int segmentIdx = 0;
   long long graphReplayUs = 0, slotBySlotUs = 0;
   int graphReplaySegs = 0, slotBySlotSegs = 0, graphReplaySlots = 0, slotBySlotSlots = 0;
   for (auto& segment : segments_) {
-#ifdef SD_CUDA
-    if (!bindSegmentCudaDevice(segment, slots_, numSlots_, traceEnabled_, executeCount_, "segmentExec")) {
+    if (!platformBindSegmentDevice(segment)) {
       return Status::KERNEL_FAILURE;
     }
-#endif
-    // Set graph execution flag for ALL graph backends (CUDA Graphs, oneDNN Graph, ACL).
-    // This tells DataBuffer::syncToPrimary to skip D2H transfers during graph execution,
-    // preventing stream conflicts (CUDA) and unnecessary data movement (CPU graphs).
-    bool useGraph = false;
 
-#ifdef SD_CUDA
-    // For CUDA builds (including ZLUDA): try graph execution if either
-    // CUDA Graphs are enabled OR Triton GPU backend is available.
-    // Under ZLUDA+AMD: CUDA Graphs may not work, but Triton compiles
-    // natively for AMD via HIP and can still fuse ops.
-    //
-    // When shapes are frozen (static KV cache, fixed seq_len), ALL segments become
-    // safe to capture regardless of their isCapturable flag. "Value-dependent shape
-    // ops" (gather, where, tile, reshape) were marked non-capturable because their
-    // output SHAPES can depend on input VALUES. With frozen shapes those values are
-    // constant — output shapes never change — so these ops are safe to capture.
-    // The capture-buffer mechanism correctly refreshes external input data each replay.
-    // If any segment fails capture it falls back permanently to slot-by-slot.
-    //
-    // Only enable all-segment capture after at least one full frozen execution
-    // (executeCount_ > 0). Step 1 (executeCount_==0) is the warm-up pass where
-    // outputSlots_ starts zeroed; passing non-capturable segments through
-    // executeSegmentWithGraph with null cross-segment inputs causes spurious CUDA errors.
-    // SLOT_BY_SLOT mode: never use any graph/JIT backend
-    if (graphExecutionMode_ != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
-      bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
-                        && !segment.captureFailed;
-      if (tryCapture && (cudaGraphsEnabled_ || getGpuGraphBackend() != nullptr
-                         || jitMode_ != JitMode::GRAPH_ONLY)) {
-        useGraph = true;
-      }
-    }
-#else
-    if (segment.isCapturable && !segment.captureFailed &&
-        (getCpuGraphBackend() != nullptr || getGpuGraphBackend() != nullptr)) {
-      useGraph = true;
-    }
-#endif
+    bool useGraph = platformShouldUseGraph(segment);
 
-    // NOTE: tl_graphExecutionActive is NOT set here. It is set only inside
-    // executeSegmentWithGraph() when actual CUDA graph capture begins (not during
-    // warmup). Setting it during warmup would cause sync guards to skip essential
-    // H2D transfers, leaving data un-synced for subsequent capture.
-
-#ifdef SD_CUDA
     auto tSegStart = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
     bool segUsedGraph = false;
     int segSlots = segment.endSlot - segment.startSlot + 1;
 
-    if (traceEnabled_) {
-      sd_printf("NativeDSP::execute: seg[%d-%d] useGraph=%d isCapturable=%d captureFailed=%d hasGraph=%d\n",
-                segment.startSlot, segment.endSlot, static_cast<int>(useGraph),
-                static_cast<int>(segment.isCapturable), static_cast<int>(segment.captureFailed),
-                static_cast<int>(segment.cachedGraph != nullptr));
-    }
-
     if (useGraph) {
-      // Try the selected GPU compiler backend (TRITON / NVRTC / PTX).
-      auto* gpuBackend = getGpuGraphBackend();
-      bool gpuBackendHandled = false;
-      if (gpuBackend) {
-        const char* backendName = gpuBackend->name();
-        // NOTE: tl_graphExecutionActive is NOT set here. executeSegmentWithGpuGraph
-        // may run a warmup pass (slot-by-slot) on the first execution. Setting
-        // tl_graphExecutionActive would block syncToPrimary D2H transfers, causing
-        // ops like 'create' that read input values from host to get stale zeros.
-        // tl_graphExecutionActive is only set inside the actual Triton kernel
-        // execution path (executeSegment at executionCount > 0), not during warmup.
-        auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-        if (status == Status::OK) {
-          gpuBackendHandled = true;
-          segUsedGraph = true;
-        } else {
-          if (traceEnabled_ || executeCount_ < 5) {
-            sd_printf("NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d(%s) executionCount=%d captureFailed=%d\n",
-                    executeCount_, segment.startSlot, segment.endSlot, backendName,
-                    static_cast<int>(status), statusName(status), segment.executionCount,
-                    static_cast<int>(segment.captureFailed));
-          }
-          if (isStrictNoFallbackMode(graphExecutionMode_)) {
-            sd_printf("NativeDSP::execute: forced backend mode active; aborting on %s failure for seg[%d-%d] status=%d(%s)\n",
-                      backendName, segment.startSlot, segment.endSlot, static_cast<int>(status), statusName(status));
-            return status;
-          }
-        }
-      }
-
-      // Try NVRTC JIT (CUDA only, element-wise segments)
-      // Skip JIT when forced to CUDA_GRAPHS or SLOT_BY_SLOT mode
-      bool jitHandled = false;
-      if (!gpuBackendHandled && jitMode_ != JitMode::GRAPH_ONLY && !segment.jitCompileFailed
-          && graphExecutionMode_ != GraphExecutionMode::GEM_CUDA_GRAPHS) {
-        auto status = executeSegmentWithJit(segment, externalInputs, numExternalInputs, stream);
-        if (status == Status::OK) {
-          jitHandled = true;
-          segUsedGraph = true;
-        }
-      }
-
-      if (!gpuBackendHandled && !jitHandled) {
-        if (cudaGraphsEnabled_) {
-          // Fall back to CUDA Graphs (captured replay).
-          // tl_graphExecutionActive is managed inside executeSegmentWithGraph()
-          // — only set to true during the actual capture phase, not warmup.
-          auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
-          if (status != Status::OK) {
-            // Graph path failed — degrade this segment permanently to slot-by-slot.
-            // This makes graph failures non-fatal: other segments can still use graphs.
-            if (traceEnabled_) {
-              sd_printf("NativeDSP::execute: graph path failed for seg[%d-%d] status=%d, "
-                        "falling back to slot-by-slot\n",
-                        segment.startSlot, segment.endSlot, static_cast<int>(status));
-            }
-            segment.captureFailed = true;
-            // Clear sticky CUDA errors from the failed graph attempt
-            cudaGetLastError();
-            // Clear the errorReference so stale error messages don't persist
-            // and cause subsequent standalone ops to fail spuriously
-            LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-            LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-            // Clear outputSlots AND slotArrayCache for this segment's range.
-            // View-capable ops during failed capture may have cached views whose
-            // DataBuffers point into freed capture buffers.
-            for (int s = segment.startSlot; s <= segment.endSlot; s++) {
-              for (int o = 0; o < slots_[s].numOutputs; o++) {
-                int si = slots_[s].outputSlotIndices[o];
-                if (si >= 0 && si < totalOutputSlots_) {
-                  outputSlots_[si] = nullptr;
-                  slotArrayCache_[si] = nullptr;
-                }
-              }
-            }
-            // Invalidate shape caches for this segment so slot-by-slot recomputes them
-            for (int s = segment.startSlot; s <= segment.endSlot; s++) {
-              auto& slot = slots_[s];
-              slot.shapeCacheValid = false;
-              slot.cachedShapeKey = 0;
-              slot.cachedOutputShapes.clear();
-              slot.frozenContextReady = false;
-              slot.frozenConstantSlot = false;
-            }
-            status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-            if (status != Status::OK) return status;
-          } else {
-            // Check if this segment actually replayed a graph (cachedGraph exists and didn't fail)
-            segUsedGraph = (segment.cachedGraph != nullptr && !segment.captureFailed);
-          }
-        } else {
-          // No graph backends handled this segment — slot-by-slot fallback
-          auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-          if (status != Status::OK) return status;
-        }
-      }
+      // Platform dispatch handles the full backend cascade:
+      // GPU: compiler backend → JIT → graph capture/replay → slot-by-slot
+      // CPU: GPU backend → CPU graph → slot-by-slot
+      auto status = platformExecuteSegmentWithBackends(
+          segment, externalInputs, numExternalInputs, stream, segUsedGraph);
+      if (status != Status::OK) return status;
     } else {
       auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
       if (status != Status::OK) return status;
@@ -1324,48 +921,11 @@ Status NativeDynamicShapePlan::execute(
       }
     }
 
-    // Check for sticky CUDA errors via cudaGetLastError (non-blocking).
-    // Avoid per-segment cudaStreamSynchronize — with many segments (e.g., 89),
-    // 89 syncs add ~240ms of overhead. Errors are caught at execute() exit.
-    {
-      auto lastErr = cudaGetLastError();
-      if (lastErr != cudaSuccess) {
-        char buf[512];
-        snprintf(buf, sizeof(buf), "CUDA error after segment [%d-%d] (execCount=%d shapesFrozen=%d): %d (%s)",
-                 segment.startSlot, segment.endSlot,
-                 executeCount_, static_cast<int>(shapesFrozen_),
-                 static_cast<int>(lastErr), cudaGetErrorString(lastErr));
-        sd_printf("NativeDynamicShapePlan: %s\n", buf);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(lastErr));
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-        return Status::KERNEL_FAILURE;
-      }
-    }
-#else
-    if (useGraph) {
-      // Try Triton GPU compiler first (for native HIP/Level Zero GPU builds)
-      auto* gpuBackend = getGpuGraphBackend();
-      bool tritonHandled = false;
-      if (gpuBackend) {
-        // NOTE: tl_graphExecutionActive is NOT set here — same as the CUDA path.
-        // executeSegmentWithGpuGraph manages it internally around actual kernel execution.
-        auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-        if (status == Status::OK) tritonHandled = true;
-      }
-      if (!tritonHandled) {
-        // Fall back to CPU graph backend (oneDNN/ACL)
-        auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
-        if (status != Status::OK) {
-          // Fall back to slot-by-slot if CPU graph execution also fails
-          status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-          if (status != Status::OK) return status;
-        }
-      }
-    } else {
-      auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-      if (status != Status::OK) return status;
-    }
-#endif
+    // Post-segment check: on GPU, detects sticky errors from async execution.
+    // On CPU, always returns OK.
+    auto postStatus = platformCheckPostSegment(segment);
+    if (postStatus != Status::OK) return postStatus;
+
     segmentIdx++;
   }
 
@@ -1378,6 +938,38 @@ Status NativeDynamicShapePlan::execute(
       requestedOutputs[i] = outputSlots_[slotIdx];
     } else {
       requestedOutputs[i] = nullptr;
+    }
+  }
+
+  // Diagnostic: dump requested output slot info and argmax for logits comparison
+  if (DSP_DIAG_ENABLED(VERIFY) && executeCount_ <= 4) {
+    for (int i = 0; i < numRequestedOutputs_; i++) {
+      int slotIdx = requestedOutputSlotIndices_[i];
+      if (requestedOutputs[i] != nullptr) {
+        auto* arr = requestedOutputs[i];
+        DSP_DIAG_SLOT(VERIFY, slotIdx,
+            "reqOut[%d] len=%lld dt=%d rank=%d",
+            i, (long long)arr->lengthOf(), (int)arr->dataType(), arr->rankOf());
+#ifdef SD_CUDA
+        // For logits-sized outputs, find argmax on GPU side
+        void* sbuf = arr->specialBuffer();
+        if (sbuf && arr->dataType() == FLOAT32 && arr->lengthOf() >= 49280) {
+          auto len = arr->lengthOf();
+          std::vector<float> fullBuf(len);
+          cudaMemcpy(fullBuf.data(), sbuf, len * sizeof(float), cudaMemcpyDeviceToHost);
+          float maxVal = -1e30f;
+          int maxIdx = -1;
+          for (int j = 0; j < (int)len; j++) {
+            if (fullBuf[j] > maxVal) { maxVal = fullBuf[j]; maxIdx = j; }
+          }
+          DSP_DIAG_SLOT(VERIFY, slotIdx,
+              "logits maxIdx=%d maxVal=%.4f v@44=%.4f v@15539=%.4f",
+              maxIdx, maxVal, fullBuf[44], fullBuf[15539]);
+        }
+#endif
+      } else {
+        DSP_DIAG_SLOT(VERIFY, slotIdx, "reqOut[%d] nullptr", i);
+      }
     }
   }
 
@@ -1397,99 +989,12 @@ Status NativeDynamicShapePlan::execute(
   // Track execution count for shapes-frozen optimization
   if (shapesFrozen_) executeCount_++;
 
-  // ── Frozen constant detection ────────────────────────────────────────────
-  // After the warmup execution (executeCount_ just went from 0 to 1), identify
-  // slots whose output never changes between decode steps. These slots are
-  // skipped entirely during subsequent executions (including graph capture),
-  // removing their kernels, memsets, and memcpys from the captured graph.
-  // A slot is frozen constant if ALL its inputs come from non-external sources
-  // (constants/variables or other frozen constant slots).
-  // Additionally, "value-independent" ops produce the same output every step
-  // regardless of input values when shapes are frozen (e.g., shape_of returns
-  // the shape which is frozen, zeros_like/ones_like fill based on shape only).
-  // These ops break the external dependency chain — their outputs are constant
-  // even though their inputs may change.
-  if (shapesFrozen_ && executeCount_ == 1 && !frozenConstantDetectionDone_) {
-    frozenConstantDetectionDone_ = true;
+  // Frozen constant detection (extracted to NativeDynamicShapePlan_slotexec.cpp)
+  detectFrozenConstants();
 
-    // Ops whose output depends ONLY on input shapes, not input values.
-    // When shapes are frozen, these produce identical output every step.
-    // Include all synonyms since op names come from ONNX import and may vary.
-    static const std::unordered_set<std::string> VALUE_INDEPENDENT_OPS = {
-        "shape_of", "size_at", "rank",
-        "zeros_like", "zeros_as", "zeroslike",
-        "ones_like", "ones_as", "oneslike",
-        "create",
-    };
-
-    std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
-    std::vector<bool> isValueIndependentSlot(numSlots_, false);
-
-    // Propagate external dependency through the graph (topological order).
-    // Value-independent ops do NOT propagate dependency — their outputs
-    // are constant when shapes are frozen.
-    for (int s = 0; s < numSlots_; s++) {
-      auto& sl = slots_[s];
-
-      // Check if this op is value-independent
-      auto normalized = normalizeOpName(sl.opName);
-      if (VALUE_INDEPENDENT_OPS.count(normalized) > 0) {
-        isValueIndependentSlot[s] = true;
-        // Do NOT propagate external dependency through this op
-        continue;
-      }
-
-      bool anyInputDependsOnExternal = false;
-      for (int i = 0; i < sl.numInputs; i++) {
-        int srcIdx = sl.inputSourceIndices[i];
-        if (srcIdx < 0) {
-          // External/placeholder input — changes each step
-          anyInputDependsOnExternal = true;
-          break;
-        }
-        if (srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx]) {
-          anyInputDependsOnExternal = true;
-          break;
-        }
-      }
-      if (anyInputDependsOnExternal) {
-        for (int o = 0; o < sl.numOutputs; o++) {
-          int si = sl.outputSlotIndices[o];
-          if (si >= 0 && si < totalOutputSlots_) {
-            dependsOnExternal[si] = true;
-          }
-        }
-      }
-    }
-
-    int frozenConstCount = 0;
-    int valueIndepCount = 0;
-    for (int s = 0; s < numSlots_; s++) {
-      auto& sl = slots_[s];
-      bool allOutputsConstant = true;
-      for (int o = 0; o < sl.numOutputs; o++) {
-        int si = sl.outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_ && dependsOnExternal[si]) {
-          allOutputsConstant = false;
-          break;
-        }
-      }
-      if (allOutputsConstant && !sl.isDataDependent) {
-        sl.frozenConstantSlot = true;
-        frozenConstCount++;
-        if (isValueIndependentSlot[s]) valueIndepCount++;
-      }
-    }
-    sd_printf("NativeDSP: frozen constant detection: %d/%d slots are frozen constants (%d value-independent)\n",
-              frozenConstCount, numSlots_, valueIndepCount);
-  }
-
-  // Adaptive segment splitting: if a segment's shape key changes for
-  // INSTABILITY_THRESHOLD consecutive executions, split it at the midpoint.
-  // Stable halves capture; unstable halves split further until MIN_SPLIT_SIZE.
-#ifdef SD_CUDA
-  if (cudaGraphsEnabled_ && !shapesFrozen_) maybeSplitUnstableSegments();
-#endif
+  // Adaptive segment splitting (GPU only): if a segment's shape key
+  // changes for consecutive executions, split it at the midpoint.
+  platformMaybeSplitIfEnabled();
 
   // Print timing breakdown
   if (executionTimingEnabled_) {
@@ -1497,2468 +1002,76 @@ Status NativeDynamicShapePlan::execute(
     auto outMs = std::chrono::duration_cast<std::chrono::microseconds>(tOutputsDone - tSegsDone).count();
     auto flushMs = std::chrono::duration_cast<std::chrono::microseconds>(tFlushDone - tOutputsDone).count();
     auto totalMs = std::chrono::duration_cast<std::chrono::microseconds>(tFlushDone - t0).count();
-    sd_printf("DSP timing: segments=%lldus outputs=%lldus flush=%lldus total=%lldus (%d segs, %d slots) | graph=%lldus(%d segs/%d slots) sbs=%lldus(%d segs/%d slots)\n",
-              segMs, outMs, flushMs, totalMs,
-              static_cast<int>(segments_.size()), numSlots_,
-              graphReplayUs, graphReplaySegs, graphReplaySlots,
-              slotBySlotUs, slotBySlotSegs, slotBySlotSlots);
+    DSP_DIAG(TIMING, "segments=%lldus outputs=%lldus flush=%lldus total=%lldus (%d segs, %d slots) | graph=%lldus(%d segs/%d slots) sbs=%lldus(%d segs/%d slots)",
+             segMs, outMs, flushMs, totalMs,
+             static_cast<int>(segments_.size()), numSlots_,
+             graphReplayUs, graphReplaySegs, graphReplaySlots,
+             slotBySlotUs, slotBySlotSegs, slotBySlotSlots);
   }
+
+  DspDiagnostics::getInstance().endStep(executeCount_);
 
   return Status::OK;
 }
-
-// ─── Segment execution: slot-by-slot ─────────────────────────────────────────
-
-Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
-    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-  // Detect if we're running inside a CUDA graph capture. During capture, we must NOT:
-  // - Call cudaStreamSynchronize (breaks capture)
-  // - Call flushPendingClose (records cudaFreeAsync for external memory → invalid graph)
-  // - Call cudaMemPoolTrimTo (driver API, breaks capture)
-  // - Delete/free any non-workspace GPU memory (MemFree nodes for external allocs crash on launch)
-  bool streamIsCapturing = false;
-#ifdef SD_CUDA
-  if (stream != nullptr) {
-    cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
-    cudaStreamIsCapturing(*static_cast<cudaStream_t*>(stream), &capStat);
-    streamIsCapturing = (capStat != cudaStreamCaptureStatusNone);
-  }
-#endif
-
-  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-    Status status;
-    bool retriedAfterTrim = false;
-executeSlot_retry:
-    try {
-      status = executeSlot(stepIdx, externalArrays, numExt, stream);
-    } catch (const std::exception& e) {
-      std::string msg = e.what();
-      // OOM retry: if allocation failed, sync + trim pool and retry once.
-      // After Triton compilation loads many cubin modules, the pool may have
-      // fragmented reserved memory. Trimming releases unused reserved blocks.
-      // SKIP during CUDA graph capture — sync/free/trim all break capture.
-#ifdef SD_CUDA
-      if (!streamIsCapturing &&
-          !retriedAfterTrim && (msg.find("cannot allocate") != std::string::npos ||
-                                 msg.find("out of memory") != std::string::npos ||
-                                 msg.find("Error code: [2]") != std::string::npos)) {
-        retriedAfterTrim = true;
-        sd_printf("NativeDynamicShapePlan: slot %d (%s) OOM, flushing pending frees and retrying...\n",
-                  stepIdx, slots_[stepIdx].opName.c_str());
-        cudaGetLastError();  // Clear non-sticky CUDA error
-        // Flush deferred closes (triggers cudaFreeAsync on stream 0),
-        // then sync both execution stream and stream 0 so freed memory
-        // returns to the pool before we retry the allocation.
-        if (stream) {
-          cudaStream_t execStr = *static_cast<cudaStream_t*>(stream);
-          cudaStreamSynchronize(execStr);
-        }
-        flushPendingClose(stream);
-        // Frees land on stream 0 — sync it so pool reclaims the memory
-        cudaStreamSynchronize(static_cast<cudaStream_t>(nullptr));
-        // Trim the memory pool — release reserved-but-unused blocks back to
-        // the driver. Critical after Triton compilation loads cubin modules
-        // that consume GPU memory outside the pool.
-        {
-          cudaMemPool_t pool = nullptr;
-          int dev = 0;
-          cudaGetDevice(&dev);
-          if (cudaDeviceGetMemPool(&pool, dev) == cudaSuccess && pool != nullptr) {
-            cudaMemPoolTrimTo(pool, 0);
-            sd_printf("NativeDynamicShapePlan: trimmed memory pool on device %d\n", dev);
-          }
-        }
-        goto executeSlot_retry;
-      }
-#endif
-      char buf[512];
-      snprintf(buf, sizeof(buf), "slot %d (%s) threw exception: %s",
-               stepIdx, slots_[stepIdx].opName.c_str(), e.what());
-      sd_printf("NativeDynamicShapePlan: %s\n", buf);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-      status = Status::KERNEL_FAILURE;
-    } catch (...) {
-      char buf[512];
-      snprintf(buf, sizeof(buf), "slot %d (%s) threw unknown exception",
-               stepIdx, slots_[stepIdx].opName.c_str());
-      sd_printf("NativeDynamicShapePlan: %s\n", buf);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-      status = Status::KERNEL_FAILURE;
-    }
-    if (status != Status::OK) {
-      char buf[512];
-      snprintf(buf, sizeof(buf), "slot %d (%s) failed with status %d",
-               stepIdx, slots_[stepIdx].opName.c_str(), static_cast<int>(status));
-      sd_printf("NativeDynamicShapePlan: %s\n", buf);
-
-      auto& failedSlot = slots_[stepIdx];
-      for (int i = 0; i < failedSlot.numInputs; i++) {
-        int srcIdx = failedSlot.inputSourceIndices[i];
-        if (srcIdx >= 0) {
-          NDArray* inp = (srcIdx < totalOutputSlots_ ? outputSlots_[srcIdx] : nullptr);
-          if (inp != nullptr) {
-            sd_printf("NativeDynamicShapePlan:   input[%d] from outputSlot[%d]: rank=%lld\n",
-                      i, srcIdx, (long long)inp->rankOf());
-          } else {
-            sd_printf("NativeDynamicShapePlan:   input[%d] from outputSlot[%d]: null\n", i, srcIdx);
-          }
-        } else {
-          sd_printf("NativeDynamicShapePlan:   input[%d] from external[%d]\n", i, -(srcIdx + 1));
-        }
-      }
-
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(static_cast<int>(status));
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(buf);
-
-      // Clear CUDA error queue so non-sticky errors don't cascade to caller.
-      // Sticky errors (e.g., error 700) persist regardless, but clearing here
-      // prevents non-sticky errors from propagating as false positives.
-#ifdef SD_CUDA
-      cudaGetLastError();
-#endif
-      return status;
-    }
-
-    // Release dead slots per releaseAtStep
-    int releaseCount = releaseAtStepCounts_[stepIdx];
-    if (releaseCount > 0) {
-      for (int r = 0; r < releaseCount; r++) {
-        int slotIdx = releaseAtStep_[stepIdx][r];
-        outputSlots_[slotIdx] = nullptr;
-      }
-    }
-
-    // Mid-execution flush of evicted arrays.
-    // SKIP during CUDA graph capture — flushPendingClose calls delete which triggers
-    // cudaFreeAsync for graph-external memory, creating invalid MemFree graph nodes
-    // that cause SIGSEGV on cudaGraphLaunch. Deferred to after capture completes.
-    if (!streamIsCapturing &&
-        ((stepIdx % 100 == 99) || pendingCloseBytes_ > 256ULL * 1024 * 1024)) {
-      flushPendingClose(stream);
-    }
-
-  }
-
-  // After the first complete slot-by-slot pass, view producer detection is done.
-  // Subsequent executions skip the fastpath_out() comparison in executeSlot() Step 5.
-  if (!viewProducerDetectionDone_) {
-    viewProducerDetectionDone_ = true;
-    int viewCount = 0;
-    for (int i = 0; i < totalOutputSlots_; i++) {
-      if (slotIsViewProducer_[i]) viewCount++;
-    }
-    sd_printf("NativeDSP: view producer detection done: %d/%d output slots are view producers\n",
-              viewCount, totalOutputSlots_);
-  }
-
-  seg.executionCount++;
-  return Status::OK;
-}
-
-// ─── Segment execution: NVRTC JIT compilation ────────────────────────────────
-
-#ifdef SD_CUDA
-
-Status NativeDynamicShapePlan::executeSegmentWithJit(
-    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-
-  // Compute shape key for cache invalidation
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-
-  // ── 1. If cached JIT kernel exists and shape matches, launch directly ──
-  if (seg.jitKernel != nullptr && seg.jitKernel->valid && seg.jitShapeKey == segShapeKey) {
-    // Restore output slots from slotArrayCache_ (same as graph replay)
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      for (int o = 0; o < slots_[s].numOutputs; o++) {
-        int si = slots_[s].outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_ && slotArrayCache_[si] != nullptr) {
-          outputSlots_[si] = slotArrayCache_[si];
-        }
-      }
-    }
-
-    // Determine element count from the last active slot's output
-    int64_t elementCount = 0;
-    for (int s = seg.endSlot; s >= seg.startSlot; s--) {
-      if (slots_[s].frozenConstantSlot || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
-      for (int o = 0; o < slots_[s].numOutputs; o++) {
-        int si = slots_[s].outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
-          elementCount = outputSlots_[si]->lengthOf();
-          break;
-        }
-      }
-      if (elementCount > 0) break;
-    }
-
-    if (elementCount <= 0) {
-      sd_printf("NVRTC JIT: zero element count for seg[%d-%d]\n", seg.startSlot, seg.endSlot);
-      return Status::KERNEL_FAILURE;
-    }
-
-    auto status = launchKernel(seg.jitKernel, elementCount,
-                               externalArrays, numExt,
-                               outputSlots_, totalOutputSlots_,
-                               stream);
-    if (status == Status::OK) {
-      seg.executionCount++;
-      return Status::OK;
-    }
-    // Launch failed — delete kernel and fall through
-    delete seg.jitKernel;
-    seg.jitKernel = nullptr;
-    seg.jitCompileFailed = true;
-    return Status::KERNEL_FAILURE;
-  }
-
-  // ── 2. Warmup pass (executionCount == 0): slot-by-slot ──
-  if (seg.executionCount == 0) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // ── 3. Compile pass (executionCount >= 1): check fusibility, compile kernel ──
-
-  // If shape changed, invalidate old kernel
-  if (seg.jitKernel != nullptr && seg.jitShapeKey != segShapeKey) {
-    delete seg.jitKernel;
-    seg.jitKernel = nullptr;
-  }
-
-  // Check if segment is fusible
-  if (!canJitSegment(slots_, seg.startSlot, seg.endSlot)) {
-    seg.jitCompileFailed = true;
-    if (traceEnabled_) {
-      sd_printf("NVRTC JIT: seg[%d-%d] not fusible, falling back\n",
-                seg.startSlot, seg.endSlot);
-    }
-    return Status::KERNEL_FAILURE;  // Fall through to CUDA graphs
-  }
-
-  // Restore output slots from slotArrayCache_ first (needed for buildKernelSource)
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    for (int o = 0; o < slots_[s].numOutputs; o++) {
-      int si = slots_[s].outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_ && slotArrayCache_[si] != nullptr) {
-        outputSlots_[si] = slotArrayCache_[si];
-      }
-    }
-  }
-
-  // Build kernel source
-  int segIdx = 0;
-  for (size_t i = 0; i < segments_.size(); i++) {
-    if (&segments_[i] == &seg) { segIdx = static_cast<int>(i); break; }
-  }
-
-  auto source = buildKernelSource(slots_, seg.startSlot, seg.endSlot,
-                                  outputSlots_, totalOutputSlots_, segIdx);
-  if (!source.valid) {
-    seg.jitCompileFailed = true;
-    sd_printf("NVRTC JIT: source generation failed for seg[%d-%d]\n",
-              seg.startSlot, seg.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  if (traceEnabled_) {
-    sd_printf("NVRTC JIT: compiling kernel '%s' for seg[%d-%d] (%zu bytes source)\n",
-              source.kernelName.c_str(), seg.startSlot, seg.endSlot,
-              source.sourceCode.size());
-  }
-
-  // Compile kernel
-  int deviceId = 0;
-  cudaGetDevice(&deviceId);
-  seg.jitKernel = compileKernel(source, deviceId);
-  if (seg.jitKernel == nullptr || !seg.jitKernel->valid) {
-    seg.jitCompileFailed = true;
-    delete seg.jitKernel;
-    seg.jitKernel = nullptr;
-    sd_printf("NVRTC JIT: compilation failed for seg[%d-%d]\n",
-              seg.startSlot, seg.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  seg.jitShapeKey = segShapeKey;
-
-  // Determine element count
-  int64_t elementCount = 0;
-  for (int s = seg.endSlot; s >= seg.startSlot; s--) {
-    if (slots_[s].frozenConstantSlot || slots_[s].isIdentityOp || slots_[s].isFusedChainTail) continue;
-    for (int o = 0; o < slots_[s].numOutputs; o++) {
-      int si = slots_[s].outputSlotIndices[o];
-      if (si >= 0 && si < totalOutputSlots_ && outputSlots_[si] != nullptr) {
-        elementCount = outputSlots_[si]->lengthOf();
-        break;
-      }
-    }
-    if (elementCount > 0) break;
-  }
-
-  if (elementCount <= 0) {
-    sd_printf("NVRTC JIT: zero element count for seg[%d-%d]\n", seg.startSlot, seg.endSlot);
-    return Status::KERNEL_FAILURE;
-  }
-
-  // Launch the compiled kernel
-  auto status = launchKernel(seg.jitKernel, elementCount,
-                             externalArrays, numExt,
-                             outputSlots_, totalOutputSlots_,
-                             stream);
-  if (status == Status::OK) {
-    seg.executionCount++;
-    sd_printf("NVRTC JIT: launched kernel '%s' for seg[%d-%d] (%lld elements)\n",
-              seg.jitKernel->kernelName.c_str(), seg.startSlot, seg.endSlot,
-              static_cast<long long>(elementCount));
-    return Status::OK;
-  }
-
-  // Launch failed
-  delete seg.jitKernel;
-  seg.jitKernel = nullptr;
-  seg.jitCompileFailed = true;
-  return Status::KERNEL_FAILURE;
-}
-
-#endif  // SD_CUDA
-
-// ─── Segment execution: CUDA Graph capture/replay ────────────────────────────
-
-#ifdef SD_CUDA
-
-// cuBLAS workspace functions (ensureCublasWorkspace, setCublasWorkspaceForCapture,
-// restoreCublasWorkspaceAfterCapture) are in NativeDynamicShapePlan_cublas.cu
-// because cublas_v2.h includes cuda_fp16.h which conflicts with our float16.h
-// when compiled by g++.
-
-Status NativeDynamicShapePlan::executeSegmentWithGraph(
-    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-
-  // Compute shape key for this segment's inputs
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-
-  if (traceEnabled_) {
-    bool hasGraph = (seg.cachedGraph != nullptr);
-    bool shapeMatch = hasGraph && (seg.cachedShapeKey == segShapeKey);
-    sd_printf("NativeDSP::executeSegmentWithGraph: seg[%d-%d] execCount=%d hasGraph=%d "
-              "shapeMatch=%d captureFailed=%d\n",
-              seg.startSlot, seg.endSlot, executeCount_,
-              static_cast<int>(hasGraph), static_cast<int>(shapeMatch),
-              static_cast<int>(seg.captureFailed));
-  }
-
-  auto needsHostMirror = [](NDArray* arr) -> bool {
-    if (arr == nullptr) return false;
-    auto dt = arr->dataType();
-    return (dt == INT32 || dt == INT64 || dt == BOOL) && arr->lengthOf() > 0 && arr->lengthOf() <= 32;
-  };
-
-  auto mirrorHostAndDevice = [&](NDArray* src, NDArray* dst, size_t bytes) -> bool {
-    if (src == nullptr || dst == nullptr || bytes == 0) return true;
-    src->syncToHost();
-    void* srcHost = src->buffer();
-    void* dstHost = dst->buffer();
-    if (srcHost == nullptr || dstHost == nullptr) return false;
-    std::memcpy(dstHost, srcHost, bytes);
-    dst->tickWriteHost();
-    dst->syncToDevice();
-    return true;
-  };
-
-  auto invalidateSegmentShapeState = [&](GraphSegment& segRef) {
-    for (int stepIdx = segRef.startSlot; stepIdx <= segRef.endSlot; stepIdx++) {
-      auto& slot = slots_[stepIdx];
-      slot.shapeCacheValid = false;
-      slot.cachedShapeKey = 0;
-      slot.cachedOutputShapes.clear();
-      slot.frozenContextReady = false;
-      slot.frozenConstantSlot = false;
-    }
-  };
-
-  auto clearGraphStreamError = [&](cudaStream_t cudaStrm) {
-    // Clear sticky CUDA errors from failed replay/capture so post-segment
-    // cudaGetLastError() checks don't surface false KERNEL_FAILUREs.
-    cudaGetLastError();
-    if (cudaStrm != nullptr) {
-      cudaStreamSynchronize(cudaStrm);
-      cudaGetLastError();
-    }
-  };
-
-  // ── REPLAY: cached graph with matching shapes ──
-  // CUDA graphs record exact GPU memory addresses during capture. External inputs
-  // (position_ids, attention_mask) are recreated each decoder step with new addresses.
-  // Instead of invalidating on address change, we use fixed-address "capture buffers":
-  // copy new input data into them before each replay, keeping addresses stable.
-  if (seg.cachedGraph && seg.cachedShapeKey == segShapeKey &&
-      seg.cachedGraph->getState() == cuda::GraphState::INSTANTIATED) {
-
-    cudaStream_t cudaStr = (stream != nullptr)
-        ? *static_cast<cudaStream_t*>(stream) : nullptr;
-
-  // Update capture buffers: copy current external input data into fixed-address buffers.
-  // The graph references these stable addresses, so replay reads correct data.
-  bool captureBuffersOk = true;
-  for (auto& cb : seg.captureBuffers) {
-    // Direct reference: graph uses external buffer directly — no copy needed
-    if (cb.directReference) continue;
-
-    NDArray* src = nullptr;
-      if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExt) {
-        src = externalArrays[cb.externalInputIndex];
-      } else if (cb.crossSegmentSlotIdx >= 0 && cb.crossSegmentSlotIdx < totalOutputSlots_) {
-        src = outputSlots_[cb.crossSegmentSlotIdx];
-      }
-
-      if (src == nullptr || cb.buffer == nullptr) {
-        captureBuffersOk = false;
-        break;
-      }
-
-      // Check shape compatibility — if shapes changed, need re-capture
-      size_t srcBytes = src->lengthOf() * src->sizeOfT();
-      if (srcBytes != cb.capturedSize) {
-        captureBuffersOk = false;
-        break;
-      }
-
-      // Ensure latest host-updated shape/data tensors are visible on device before
-      // D2D copy (important for small INT64 shape arrays used by reshape ops).
-      if (srcBytes > 0) {
-        if (needsHostMirror(src)) {
-          if (!mirrorHostAndDevice(src, cb.buffer, srcBytes)) {
-            captureBuffersOk = false;
-            break;
-          }
-        } else {
-          src->syncToDevice();
-          void* srcPtr = src->specialBuffer();
-          void* dstPtr = cb.buffer->specialBuffer();
-          if (srcPtr == nullptr || dstPtr == nullptr) {
-            captureBuffersOk = false;
-            break;
-          }
-
-          cudaError_t copyErr = cudaMemcpyAsync(dstPtr, srcPtr,
-                                                srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-          if (copyErr != cudaSuccess) {
-            captureBuffersOk = false;
-            sd_printf("NativeDynamicShapePlan: capture buffer replay copy failed for segment [%d-%d] "
-                      "(ext=%d cross=%d): %d (%s)\n",
-                      seg.startSlot, seg.endSlot,
-                      cb.externalInputIndex, cb.crossSegmentSlotIdx,
-                      static_cast<int>(copyErr), cudaGetErrorString(copyErr));
-            // Clear sticky error so fallback path can continue cleanly.
-            cudaGetLastError();
-            break;
-          }
-        }
-      }
-    }
-
-    // No sync needed before graph launch: capture buffer copies use cudaMemcpyAsync
-    // on cudaStr, and cudaGraphLaunch also runs on cudaStr. Same-stream operations
-    // are ordered by the CUDA runtime — the copies complete before graph launch begins.
-    // (The frozen fast path at line ~719 already skips this sync successfully.)
-    if (captureBuffersOk && seg.cachedGraph->launchAsync(cudaStr)) {
-      // Restore outputSlots_ from slot cache — during replay, executeSlot() is not
-      // called, but the graph writes to the same GPU buffers the cached arrays point to.
-      for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-        NativeSlot& slot = slots_[stepIdx];
-        for (int i = 0; i < slot.numOutputs; i++) {
-          int slotIdx = slot.outputSlotIndices[i];
-          if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && slotArrayCache_[slotIdx] != nullptr) {
-            outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
-          }
-        }
-      }
-      totalGraphReplays_++;
-      seg.executionCount++;
-      return Status::OK;
-    }
-
-    if (!captureBuffersOk) {
-      // Shape change detected — invalidate and re-capture with new shapes
-      sd_printf("NativeDynamicShapePlan: capture buffer shape mismatch for segment [%d-%d], "
-                "invalidating for re-capture\n", seg.startSlot, seg.endSlot);
-      clearGraphStreamError(cudaStr);
-      // Free old capture buffers
-      for (auto& cb : seg.captureBuffers) {
-        if (!cb.directReference) delete cb.buffer;
-      }
-      seg.captureBuffers.clear();
-      seg.cachedGraph.reset();
-      // Fall through to warmup + re-capture
-    } else {
-      // Launch failed — invalidate and fall through
-      sd_printf("NativeDynamicShapePlan: graph replay failed for segment [%d-%d], "
-                "falling back to slot-by-slot\n", seg.startSlot, seg.endSlot);
-      clearGraphStreamError(cudaStr);
-      seg.cachedGraph.reset();
-      // Free capture workspace — kernel params from the old graph are invalid
-      if (seg.captureWorkspacePtr != nullptr) {
-        cudaFree(seg.captureWorkspacePtr);
-        seg.captureWorkspacePtr = nullptr;
-        seg.captureWorkspaceBytes = 0;
-      }
-      // Free pinned host ptrs from graph capture (H2D memcpy sources)
-      for (auto* ptr : seg.capturedHostPtrs) {
-        cudaFreeHost(ptr);
-      }
-      seg.capturedHostPtrs.clear();
-    }
-  }
-
-  // ── WARM-UP: first execution or shape change populates slot cache ──
-  // When shapes change (autoregressive seq_len grows, different batch size, etc.),
-  // the slot cache has arrays from the OLD shapes. Capture requires shape inference
-  // which may call syncToHost (e.g., gather reads indices). syncToHost is forbidden
-  // during CUDA graph capture → error 901. So we must do a warmup pass WITHOUT capture
-  // to populate the slot cache with the new shapes before attempting capture.
-  bool shapeChanged = (seg.cachedShapeKey != segShapeKey);
-
-  // Track consecutive shape changes to detect unstable segments.
-  // Segments whose shapes change every step (e.g. KV-growing attention concat) will
-  // never capture cleanly. After INSTABILITY_THRESHOLD consecutive shape changes,
-  // mark the segment for splitting. maybeSplitUnstableSegments() will split it at
-  // the midpoint after this execute() call; stable halves capture, unstable halves
-  // split recursively until they reach MIN_SPLIT_SIZE (permanent slot-by-slot).
-  if (seg.executionCount > 0 && shapeChanged) {
-    seg.consecutiveShapeChanges++;
-    if (seg.consecutiveShapeChanges >= GraphSegment::INSTABILITY_THRESHOLD) {
-      int segSize = seg.endSlot - seg.startSlot + 1;
-      if (segSize <= GraphSegment::MIN_SPLIT_SIZE) {
-        // Too small to split further — mark permanently slot-by-slot
-        seg.captureFailed = true;
-      } else {
-        seg.needsSplit = true;
-      }
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    }
-  } else if (!shapeChanged) {
-    seg.consecutiveShapeChanges = 0;
-  }
-
-  if (seg.executionCount == 0 || (shapeChanged && !seg.captureFailed)) {
-    // Invalidate the old graph if shapes changed
-    if (shapeChanged && seg.cachedGraph) {
-      seg.cachedGraph.reset();
-    }
-    seg.cachedShapeKey = segShapeKey;
-
-    // Note: AttentionWorkspace::clear() is NOT called here during warmup.
-    // Clearing during warmup would free GPU memory from OTHER segments' async
-    // kernels that are still running, causing KERNEL_FAILURE (status 50).
-    // Instead, we clear ONCE at the beginning of execute() when no graphs are
-    // cached — that path is safe because the Java side calls commit() between
-    // steps, ensuring all previous GPU work is complete before the next execute().
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // ── CAPTURE: slot cache is warm, attempt to capture CUDA graph ──
-  // Shape key changed → invalidate old graph (defensive, already handled above)
-  if (seg.cachedGraph && seg.cachedShapeKey != segShapeKey) {
-    seg.cachedGraph.reset();
-  }
-
-  // OOM retry cooldown: if this segment previously failed capture due to OOM,
-  // wait until enough executions have passed before retrying.
-  if (seg.captureOomRetries > 0 && seg.executionCount < seg.captureRetryAfterExec) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Value-dependent shape ops (reshape/slice/gather with INT/LONG params) read
-  // small host-side tensors during shape inference. During CUDA graph capture,
-  // host sync is intentionally suppressed to keep capture valid, so those reads
-  // can observe stale host buffers from a previous execution.
-  //
-  // Run one slot-by-slot warmup in the CURRENT execution before capture to
-  // refresh slot caches and host-side shape tensors with current inputs.
-  // Capture then re-executes deterministically with the same inputs.
-  bool hasValueDependentShapeOps = false;
-  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-    if (slots_[stepIdx].outputShapeDependsOnInputValues) {
-      hasValueDependentShapeOps = true;
-      break;
-    }
-  }
-  if (hasValueDependentShapeOps) {
-    // Warmup executes the segment once and applies releaseAtStep_, which can
-    // null cross-segment producer slots needed as inputs for the capture pass.
-    // Snapshot and restore outputSlots_ so capture sees the same cross-segment
-    // inputs this execution started with.
-    std::vector<NDArray*> preWarmupOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
-
-    auto warmStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    if (warmStatus != Status::OK) {
-      seg.captureFailed = true;
-      return warmStatus;
-    }
-
-    std::memcpy(outputSlots_, preWarmupOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-
-    // Warmup is internal to this capture attempt; don't double-count segment
-    // executions (capture/replay path increments executionCount itself).
-    if (seg.executionCount > 0) {
-      seg.executionCount--;
-    }
-
-    // Warmup may refresh per-slot shape caches for this execution.
-    // Recompute segment key from current inputs before attempting capture.
-    segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-    seg.cachedShapeKey = segShapeKey;
-  }
-
-  cudaStream_t cudaStr = (stream != nullptr)
-      ? *static_cast<cudaStream_t*>(stream) : nullptr;
-
-  // Use CudaGraphScheduler for capture management
-  auto& scheduler = cuda::CudaGraphScheduler::getInstance();
-
-  int currentDevice = 0;
-  cudaError_t currentDeviceErr = cudaGetDevice(&currentDevice);
-  if (currentDeviceErr != cudaSuccess) {
-    sd_printf("NativeDynamicShapePlan: cudaGetDevice failed during graph capture setup "
-              "for segment [%d-%d]: %s\n",
-              seg.startSlot, seg.endSlot, cudaGetErrorString(currentDeviceErr));
-    cudaGetLastError();
-    seg.captureFailed = true;
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-  if (!scheduler.deviceSupportsGraphs(currentDevice)) {
-    // Device doesn't support graphs — permanent fallback
-    seg.captureFailed = true;
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Pool priming removed — caused 2x cudaStreamSynchronize overhead per capture
-  // attempt with no measurable improvement in capture success rate.
-
-  // ── PRE-CAPTURE MEMORY CHECK ──
-  // During graph capture, cudaFreeAsync calls are recorded but NOT executed.
-  // All intermediate allocations accumulate simultaneously. Estimate the total
-  // capture memory from the slot cache (populated during warmup) and compare
-  // to free GPU memory. If insufficient, skip capture to avoid OOM/GPU faults.
-  // SKIP this check for OOM retries — we want retries to actually attempt capture
-  // and rely on the exception handler for graceful fallback.
-  bool isOomRetry = (seg.captureOomRetries > 0);
-  if (!isOomRetry) {
-    size_t estimatedCaptureBytes = 0;
-    for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-      NativeSlot& slot = slots_[stepIdx];
-      for (int i = 0; i < slot.numOutputs; i++) {
-        int slotIdx = slot.outputSlotIndices[i];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && slotArrayCache_[slotIdx] != nullptr) {
-          estimatedCaptureBytes += slotArrayCache_[slotIdx]->lengthOf() *
-                                   slotArrayCache_[slotIdx]->sizeOfT();
-        }
-      }
-    }
-
-    size_t gpuFree = 0, gpuTotal = 0;
-    cudaMemGetInfo(&gpuFree, &gpuTotal);
-
-    // Use 2x safety factor (reduced from 4x). Output arrays are reused from
-    // slotArrayCache_ during capture (no new allocation for those). The main
-    // concern is workspace/temporary allocations on non-captured streams.
-    // If the estimate is wrong, the exception handler catches it gracefully
-    // and falls back to slot-by-slot with OOM retry.
-    size_t requiredFree = estimatedCaptureBytes * 2;
-    if (requiredFree > gpuFree) {
-      sd_printf("NativeDynamicShapePlan: skipping graph capture for segment [%d-%d] (%d ops): "
-                "estimated %zu MB (2x %zu MB) > free %zu MB (total %zu MB)\n",
-                seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
-                requiredFree / (1024 * 1024),
-                estimatedCaptureBytes / (1024 * 1024),
-                gpuFree / (1024 * 1024),
-                gpuTotal / (1024 * 1024));
-      // Don't set captureFailed — shapes may change to smaller ones later
-      // where capture would succeed
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    }
-  }  // end pre-capture memory check
-
-  auto handle = std::make_shared<cuda::CudaGraphHandle>(currentDevice);
-
-  // Clear sticky CUDA errors and sync stream before capture
-  cudaGetLastError();
-  if (cudaStr != nullptr) {
-    auto syncErr = cudaStreamSynchronize(cudaStr);
-    if (syncErr != cudaSuccess) {
-      cudaGetLastError();
-      seg.captureFailed = true;
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    }
-  }
-
-  // Note: AttentionWorkspace::clear() is NOT called here before capture.
-  // The workspace was already cleared at the start of execute() (when no graphs were
-  // cached). The pre-warmup (if hasValueDependentShapeOps) already populated the
-  // workspace with fresh buffers for the current shapes. Clearing here would:
-  //   1. Corrupt workspace pointers in previously-captured segment graphs (same execute() call)
-  //   2. Force unnecessary reallocation (the existing buffers are already correctly shaped)
-  // The CUDA Pool Memory Model guarantees stable virtual addresses across replays,
-  // so captured buffer pointers remain valid as long as the workspace is not cleared.
-
-  // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
-  // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
-  // graph capture on a named stream, this cross-stream allocation breaks capture.
-  // By providing an explicit workspace, cuBLAS uses our buffer instead.
-  // 32MB covers workspace needs for most GEMM sizes on modern GPUs.
-  static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;  // 256 MB
-  ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
-  setCublasWorkspaceForCapture(stream);
-
-  // Reset MmulHelper cast cache indices so capture reuses pre-allocated HALF buffers
-  // in the same order as the warmup execution (avoids capture workspace temporaries)
-  MmulHelper::resetCastCacheIndices();
-
-  // ── CAPTURE BUFFER CREATION ──
-  // Allocate fixed-address GPU buffers for all external and cross-segment inputs
-  // used by this segment. During capture, ops read from these stable addresses.
-  // Before each replay, we copy fresh input data into these buffers via cudaMemcpyAsync.
-  // This decouples graph replay from external input buffer lifetimes.
-
-  // Free old capture buffers if any (from previous capture attempt)
-  for (auto& cb : seg.captureBuffers) {
-    delete cb.buffer;
-  }
-  seg.captureBuffers.clear();
-
-  // Build set of output slot indices produced by this segment (intra-segment)
-  std::unordered_set<int> segOutputSlots;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      segOutputSlots.insert(slot.outputSlotIndices[i]);
-    }
-  }
-
-  // Track which external/cross-segment inputs we've already created buffers for
-  std::unordered_map<int, int> extInputToCaptureIdx;    // extIdx -> captureBuffers index
-  std::unordered_map<int, int> crossSlotToCaptureIdx;   // slotIdx -> captureBuffers index
-  bool captureBufferInitFailed = false;
-
-  for (int s = seg.startSlot; s <= seg.endSlot && !captureBufferInitFailed; s++) {
-    NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs && !captureBufferInitFailed; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
-      if (srcIdx < 0) {
-        // External input
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt && externalArrays[extIdx] != nullptr &&
-            extInputToCaptureIdx.find(extIdx) == extInputToCaptureIdx.end()) {
-          NDArray* src = externalArrays[extIdx];
-          size_t srcBytes = src->lengthOf() * src->sizeOfT();
-
-          // Check if this external input is a KV cache buffer with stable GPU address.
-          // If so, use it directly (no capture buffer allocation, no per-step D2D copy).
-          // The graph captures the KV buffer's actual GPU address, and since the buffer
-          // is pre-allocated at max size, the address never changes.
-          bool isKvCacheInput = false;
-          if (kvCacheRetentionEnabled_) {
-            for (int km = 0; km < kvCacheNumMappings_; km++) {
-              if (kvCacheMappings_[km].pastInputExternalIdx == extIdx) {
-                isKvCacheInput = true;
-                break;
-              }
-            }
-          }
-
-          if (isKvCacheInput) {
-            // Direct reference: graph captures the external buffer's GPU address.
-            // KV scatter writes to this buffer, graph reads from it — zero D2D copy.
-            src->syncToDevice();
-            GraphSegment::CaptureBuffer cb;
-            cb.buffer = src;  // NOT owned — don't delete
-            cb.externalInputIndex = extIdx;
-            cb.crossSegmentSlotIdx = -1;
-            cb.capturedSize = srcBytes;
-            cb.directReference = true;
-            cb.initialCopyDone = true;
-            cb.lastSourcePtr = src->specialBuffer();
-            extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
-            seg.captureBuffers.push_back(std::move(cb));
-          } else {
-            // Allocate a capture buffer matching the source shape and type
-            auto srcShapeVec = *src->getShapeAsVector();
-            auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
-                                       sd::LaunchContext::defaultContext());
-            if (srcBytes > 0) {
-              if (needsHostMirror(src)) {
-                if (!mirrorHostAndDevice(src, capBuf, srcBytes)) {
-                  sd_printf("NativeDynamicShapePlan: capture buffer init host mirror failed for segment [%d-%d] "
-                            "(ext input %d)\n", seg.startSlot, seg.endSlot, extIdx);
-                  delete capBuf;
-                  captureBufferInitFailed = true;
-                  break;
-                }
-              } else {
-                src->syncToDevice();
-                void* srcPtr = src->specialBuffer();
-                void* dstPtr = capBuf->specialBuffer();
-                if (srcPtr == nullptr || dstPtr == nullptr) {
-                  sd_printf("NativeDynamicShapePlan: capture buffer init got null ptr for segment [%d-%d] "
-                            "(ext input %d)\n", seg.startSlot, seg.endSlot, extIdx);
-                  delete capBuf;
-                  captureBufferInitFailed = true;
-                  break;
-                }
-
-                cudaError_t copyErr = cudaMemcpyAsync(dstPtr, srcPtr,
-                                                      srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-                if (copyErr != cudaSuccess) {
-                  sd_printf("NativeDynamicShapePlan: capture buffer init copy failed for segment [%d-%d] "
-                            "(ext input %d): %d (%s)\n",
-                            seg.startSlot, seg.endSlot, extIdx,
-                            static_cast<int>(copyErr), cudaGetErrorString(copyErr));
-                  delete capBuf;
-                  captureBufferInitFailed = true;
-                  break;
-                }
-              }
-            }
-
-            GraphSegment::CaptureBuffer cb;
-            cb.buffer = capBuf;
-            cb.externalInputIndex = extIdx;
-            cb.crossSegmentSlotIdx = -1;
-            cb.capturedSize = srcBytes;
-
-            // Placeholders (attention_mask, position_ids) are modified in-place each step
-            // — same GPU pointer, different data. Must always copy into capture buffer.
-            auto srcType = static_cast<NativeSourceType>(slot.inputSourceTypes[i]);
-            if (srcType == SOURCE_PLACEHOLDER) {
-              cb.neverSkipCopy = true;
-            }
-
-            // KV cache inputs: data changes each step via kvScatter even though the
-            // GPU pointer stays the same.  configureKvScatter() sets neverSkipCopy
-            // on the segments that exist at configuration time, but those segments
-            // are destroyed and rebuilt when shapes freeze.  Re-apply the flag here
-            // so that capture buffers created AFTER segment rebuild still copy KV data.
-            if (kvCacheRetentionEnabled_) {
-              for (int km = 0; km < kvCacheNumMappings_; km++) {
-                if (extIdx == kvCacheMappings_[km].pastInputExternalIdx) {
-                  cb.neverSkipCopy = true;
-                  break;
-                }
-              }
-            }
-
-            extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
-            seg.captureBuffers.push_back(std::move(cb));
-          }
-        }
-      } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
-        // Cross-segment input
-        if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr &&
-            crossSlotToCaptureIdx.find(srcIdx) == crossSlotToCaptureIdx.end()) {
-          NDArray* src = outputSlots_[srcIdx];
-          auto crossShapeVec = *src->getShapeAsVector();
-          auto* capBuf = new NDArray(src->ordering(), crossShapeVec, src->dataType(),
-                                     sd::LaunchContext::defaultContext());
-          size_t srcBytes = src->lengthOf() * src->sizeOfT();
-          if (srcBytes > 0) {
-            if (needsHostMirror(src)) {
-              if (!mirrorHostAndDevice(src, capBuf, srcBytes)) {
-                sd_printf("NativeDynamicShapePlan: capture buffer init host mirror failed for segment [%d-%d] "
-                          "(cross slot %d)\n", seg.startSlot, seg.endSlot, srcIdx);
-                delete capBuf;
-                captureBufferInitFailed = true;
-                break;
-              }
-            } else {
-              src->syncToDevice();
-              void* srcPtr = src->specialBuffer();
-              void* dstPtr = capBuf->specialBuffer();
-              if (srcPtr == nullptr || dstPtr == nullptr) {
-                sd_printf("NativeDynamicShapePlan: capture buffer init got null ptr for segment [%d-%d] "
-                          "(cross slot %d)\n", seg.startSlot, seg.endSlot, srcIdx);
-                delete capBuf;
-                captureBufferInitFailed = true;
-                break;
-              }
-
-              cudaError_t copyErr = cudaMemcpyAsync(dstPtr, srcPtr,
-                                                    srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-              if (copyErr != cudaSuccess) {
-                sd_printf("NativeDynamicShapePlan: capture buffer init copy failed for segment [%d-%d] "
-                          "(cross slot %d): %d (%s)\n",
-                          seg.startSlot, seg.endSlot, srcIdx,
-                          static_cast<int>(copyErr), cudaGetErrorString(copyErr));
-                delete capBuf;
-                captureBufferInitFailed = true;
-                break;
-              }
-            }
-          }
-
-          GraphSegment::CaptureBuffer cb;
-          cb.buffer = capBuf;
-          cb.externalInputIndex = -1;
-          cb.crossSegmentSlotIdx = srcIdx;
-          cb.capturedSize = srcBytes;
-
-          crossSlotToCaptureIdx[srcIdx] = static_cast<int>(seg.captureBuffers.size());
-          seg.captureBuffers.push_back(std::move(cb));
-        }
-      }
-    }
-  }
-
-  if (captureBufferInitFailed) {
-    for (auto& cb : seg.captureBuffers) {
-      if (!cb.directReference) delete cb.buffer;
-    }
-    seg.captureBuffers.clear();
-    // Reset stream/error state so slot-by-slot fallback can run cleanly.
-    cudaGetLastError();
-    if (cudaStr != nullptr) {
-      cudaStreamSynchronize(cudaStr);
-      cudaGetLastError();
-    }
-    seg.captureFailed = true;
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Wire external/cross-segment inputs to capture buffers for the capture phase.
-  // Save original pointers so we can restore them after capture.
-  std::vector<std::pair<int, NDArray*>> savedExternalInputs;  // (extIdx, originalPtr)
-  std::vector<std::pair<int, NDArray*>> savedOutputSlots;     // (slotIdx, originalPtr)
-  // Snapshot outputSlots_ BEFORE swapping in capture buffers.
-  // This is used on capture failure fallback to recover the original cross-segment
-  // inputs plus any non-swapped slots that may be nulled by releaseAtStep_.
-  std::vector<NDArray*> preCapOutputSlots(outputSlots_, outputSlots_ + totalOutputSlots_);
-  // Save pendingClose_ size so we can discard entries added during capture on failure.
-  // View-capable ops during capture push step-0 arrays into pendingClose_, but those
-  // arrays are still referenced by preCapOutputSlots — deleting them causes dangling ptrs.
-  size_t pendingClosePreCapSize = pendingClose_.size();
-
-  // Disable frozen fast path during capture. Capture replaces external inputs with
-  // capture buffers and upstream slots produce different output arrays (new views, etc.).
-  // The frozen context has stale input/output pointers from the prior non-capture execution.
-  // Using the full (non-frozen) path during capture is a one-time cost — all context
-  // pointers are properly reconfigured with capture-time arrays.
-  // Save and restore frozenContextReady after capture so replay uses frozen fast path.
-  std::vector<bool> savedFrozenContextReady(seg.endSlot - seg.startSlot + 1);
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    savedFrozenContextReady[s - seg.startSlot] = slots_[s].frozenContextReady;
-    slots_[s].frozenContextReady = false;
-  }
-
-  for (auto& [extIdx, cbIdx] : extInputToCaptureIdx) {
-    savedExternalInputs.push_back({extIdx, externalArrays[extIdx]});
-    externalArrays[extIdx] = seg.captureBuffers[cbIdx].buffer;
-  }
-  for (auto& [slotIdx, cbIdx] : crossSlotToCaptureIdx) {
-    savedOutputSlots.push_back({slotIdx, outputSlots_[slotIdx]});
-    outputSlots_[slotIdx] = seg.captureBuffers[cbIdx].buffer;
-  }
-
-  // Sync the copy operations before starting capture
-  if (cudaStr != nullptr) {
-    cudaStreamSynchronize(cudaStr);
-  }
-
-  // RELAXED mode allows CUDA operations on non-captured streams (e.g., memory allocations
-  // on stream 0 for broadcast temporaries). Our tl_graphExecutionActive guards prevent
-  // capture-breaking sync operations (cudaStreamSynchronize, cudaMemcpy) on the captured stream.
-  //
-  // Set tl_graphExecutionActive BEFORE beginCapture so all sync guards are active
-  // during the entire capture phase. Reset on any exit path (success, failure, exception).
-  const cudaStream_t prevCaptureStream = tl_graphCaptureStream;
-  cudaStream_t resolvedCaptureStream = cudaStr;
-  if (resolvedCaptureStream == nullptr) {
-    auto* defaultStreamPtr = LaunchContext::defaultContext()->getCudaStream();
-    if (defaultStreamPtr != nullptr) {
-      resolvedCaptureStream = *defaultStreamPtr;
-    }
-  }
-  tl_graphCaptureStream = resolvedCaptureStream;
-
-  // Allocate capture workspace BEFORE beginCapture (cudaMalloc must be outside capture).
-  // This eliminates cudaMallocAsync/cudaFreeAsync graph nodes from PointersManager temporaries.
-  // With 3781 slots and ~1939 temporary allocations, we need enough workspace to hold
-  // all temporaries simultaneously. Default 512MB; configurable via ND4J_DSP_CAPTURE_WORKSPACE_MB.
-  static size_t CAPTURE_WORKSPACE_SIZE = []() -> size_t {
-    const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
-    size_t mb = 512;  // default
-    if (envVal != nullptr) {
-      int parsed = std::atoi(envVal);
-      if (parsed > 0 && parsed <= 4096) {
-        mb = static_cast<size_t>(parsed);
-      }
-    }
-    return mb * 1024ULL * 1024ULL;
-  }();
-  sd_printf("NativeDSP: capture workspace check for segment [%d-%d]: ptr=%p bytes=%zu\n",
-            seg.startSlot, seg.endSlot, seg.captureWorkspacePtr, seg.captureWorkspaceBytes);
-  if (seg.captureWorkspacePtr == nullptr) {
-    cudaError_t wsErr = cudaMalloc(&seg.captureWorkspacePtr, CAPTURE_WORKSPACE_SIZE);
-    if (wsErr == cudaSuccess) {
-      seg.captureWorkspaceBytes = CAPTURE_WORKSPACE_SIZE;
-      sd_printf("NativeDSP: allocated %zuMB capture workspace for segment [%d-%d]\n",
-                CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
-    } else {
-      cudaGetLastError();
-      seg.captureWorkspacePtr = nullptr;
-      seg.captureWorkspaceBytes = 0;
-      sd_printf("NativeDSP: WARNING - capture workspace allocation failed (%s), "
-                "graph will contain cudaMallocAsync nodes\n", cudaGetErrorString(wsErr));
-    }
-  }
-  // Set thread-local workspace for CudaMemoryPool to use during capture
-  tl_captureWorkspace = seg.captureWorkspacePtr;
-  tl_captureWorkspaceSize = seg.captureWorkspaceBytes;
-  tl_captureWorkspaceOffset = 0;
-  sd_printf("NativeDSP: tl_captureWorkspace=%p size=%zu for capture\n",
-            tl_captureWorkspace, tl_captureWorkspaceSize);
-
-  tl_graphExecutionActive = true;
-  tl_capturedHostPtrs.clear();  // Reset pinned host ptr accumulator for this capture
-  tl_captureReplicateCache.clear();  // Reset H2D content dedup cache
-
-  if (!handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed)) {
-    sd_printf("NativeDynamicShapePlan: graph capture begin failed for segment [%d-%d]\n",
-              seg.startSlot, seg.endSlot);
-    tl_graphExecutionActive = false;
-    tl_graphCaptureStream = prevCaptureStream;
-    tl_captureWorkspace = nullptr;
-    tl_captureWorkspaceSize = 0;
-    tl_captureWorkspaceOffset = 0;
-    restoreCublasWorkspaceAfterCapture(stream);
-    clearGraphStreamError(cudaStr);
-    seg.captureFailed = true;
-    // Restore original pointers before fallback execution.
-    for (auto& [extIdx, origPtr] : savedExternalInputs) {
-      externalArrays[extIdx] = origPtr;
-    }
-    for (auto& [slotIdx, origPtr] : savedOutputSlots) {
-      outputSlots_[slotIdx] = origPtr;
-    }
-    // Capture may have partially mutated slot shape caches before beginCapture failed.
-    invalidateSegmentShapeState(seg);
-    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    // Restore frozen context state so slot-by-slot fallback uses frozen fast path
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
-    }
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  bool captureOk = true;
-  bool captureOomFailure = false;  // Track if failure was OOM (retryable)
-  int lastCaptureSlot = seg.startSlot;  // Track for exception diagnostics
-  lastCaptureAudit_.clear();
-
-  try {
-    for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-      lastCaptureSlot = stepIdx;
-      // Check capture status before executing slot
-      {
-        cudaStreamCaptureStatus capStatus;
-        cudaError_t capErr = cudaStreamGetCaptureInfo(cudaStr, &capStatus, nullptr);
-        if (capErr != cudaSuccess || capStatus != cudaStreamCaptureStatusActive) {
-          sd_printf("NativeDynamicShapePlan: CAPTURE BROKEN before slot %d (%s): "
-                    "capErr=%d capStatus=%d\n",
-                    stepIdx, slots_[stepIdx].opName.c_str(),
-                    static_cast<int>(capErr), static_cast<int>(capStatus));
-          captureOk = false;
-          break;
-        }
-      }
-
-      // Track node count before this op for capture audit
-      size_t nodesBefore = handle->getNumNodesDuringCapture(cudaStr);
-
-      auto status = executeSlot(stepIdx, externalArrays, numExt, stream);
-      if (status != Status::OK) {
-        sd_printf("NativeDynamicShapePlan: op execution during capture failed at slot %d\n", stepIdx);
-        captureOk = false;
-        captureOomFailure = true;  // Op failure during capture is usually OOM
-        break;
-      }
-
-      // Check capture status AFTER executing slot to detect which op broke it
-      {
-        cudaStreamCaptureStatus capStatus;
-        cudaError_t capErr = cudaStreamGetCaptureInfo(cudaStr, &capStatus, nullptr);
-        if (capErr != cudaSuccess || capStatus != cudaStreamCaptureStatusActive) {
-          sd_printf("NativeDynamicShapePlan: CAPTURE INVALIDATED by slot %d (%s)! "
-                    "capErr=%d capStatus=%d\n",
-                    stepIdx, slots_[stepIdx].opName.c_str(),
-                    static_cast<int>(capErr), static_cast<int>(capStatus));
-          captureOk = false;
-          // Capture invalidation is permanent (op does host sync or cross-stream work)
-          break;
-        }
-      }
-
-      // Track node count after this op for capture audit
-      size_t nodesAfter = handle->getNumNodesDuringCapture(cudaStr);
-      {
-        cuda::CaptureAuditEntry entry;
-        entry.slotIndex = stepIdx;
-        entry.opName = slots_[stepIdx].opName;
-        entry.nodesBefore = nodesBefore;
-        entry.nodesAfter = nodesAfter;
-        entry.nodesContributed = (nodesAfter > nodesBefore) ? (nodesAfter - nodesBefore) : 0;
-        lastCaptureAudit_.push_back(std::move(entry));
-      }
-
-      // Release dead slots during capture
-      int releaseCount = releaseAtStepCounts_[stepIdx];
-      if (releaseCount > 0) {
-        for (int r = 0; r < releaseCount; r++) {
-          int slotIdx = releaseAtStep_[stepIdx][r];
-          outputSlots_[slotIdx] = nullptr;
-        }
-      }
-    }
-  } catch (const std::exception& e) {
-    sd_printf("NativeDynamicShapePlan: exception during graph capture at slot %d (%s): %s\n",
-              lastCaptureSlot, slots_[lastCaptureSlot].opName.c_str(), e.what());
-    captureOk = false;
-    // Detect OOM exceptions: "[DEVICE] allocation failed" from DataBuffer.cu
-    std::string msg(e.what());
-    if (msg.find("allocation failed") != std::string::npos) {
-      captureOomFailure = true;
-    }
-  } catch (...) {
-    sd_printf("NativeDynamicShapePlan: unknown exception during graph capture\n", "");
-    captureOk = false;
-    captureOomFailure = true;  // Unknown exceptions treated as OOM (retryable)
-  }
-
-  // Capture phase complete — reset the flag before any exit path
-  size_t captureWorkspaceUsed = tl_captureWorkspaceOffset;  // Save before clearing
-  tl_graphExecutionActive = false;
-  tl_graphCaptureStream = prevCaptureStream;
-  tl_captureWorkspace = nullptr;
-  tl_captureWorkspaceSize = 0;
-  tl_captureWorkspaceOffset = 0;
-  restoreCublasWorkspaceAfterCapture(stream);
-
-  // Restore original external/cross-segment input pointers.
-  // During capture, we pointed these at capture buffers. Now restore them
-  // so that slot-by-slot fallback (if capture failed) uses the real inputs.
-  for (auto& [extIdx, origPtr] : savedExternalInputs) {
-    externalArrays[extIdx] = origPtr;
-  }
-  for (auto& [slotIdx, origPtr] : savedOutputSlots) {
-    outputSlots_[slotIdx] = origPtr;
-  }
-
-  if (!captureOk) {
-    // Abort capture — stream is in an inconsistent state
-    // endCapture will clean up by calling cudaStreamEndCapture
-    handle->endCapture(cudaStr);
-
-    // Free pinned host buffers accumulated during failed capture
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-
-    // Clear any sticky CUDA errors left from the failed capture
-    cudaGetLastError();
-
-    // Synchronize the capture stream to ensure it returns to a clean state
-    if (cudaStr != nullptr) {
-      cudaStreamSynchronize(cudaStr);
-      cudaGetLastError();  // Clear any sync error too
-    }
-
-    if (captureOomFailure && seg.captureOomRetries < GraphSegment::MAX_OOM_RETRIES) {
-      // OOM failure — schedule retry instead of permanent disable.
-      // Memory pressure may decrease as other segments get captured and replayed
-      // (graph replay is more memory-efficient than slot-by-slot).
-      seg.captureOomRetries++;
-      seg.captureRetryAfterExec = seg.executionCount + GraphSegment::RETRY_INTERVAL;
-      sd_printf("NativeDynamicShapePlan: graph capture OOM for segment [%d-%d], "
-                "retry %d/%d scheduled after exec %d\n",
-                seg.startSlot, seg.endSlot,
-                seg.captureOomRetries, GraphSegment::MAX_OOM_RETRIES,
-                seg.captureRetryAfterExec);
-    } else {
-      seg.captureFailed = true;
-      sd_printf("NativeDynamicShapePlan: graph capture permanently failed for segment [%d-%d] "
-                "(oom=%s, retries=%d)\n",
-                seg.startSlot, seg.endSlot,
-                captureOomFailure ? "true" : "false",
-                seg.captureOomRetries);
-    }
-
-    // Discard pendingClose_ entries added during capture. These reference step-0
-    // arrays that preCapOutputSlots still points to — deleting them would create
-    // dangling pointers after outputSlots_ restore. Delete capture-phase arrays
-    // that are NOT in preCapOutputSlots (they were allocated during capture).
-    {
-      // Delete capture-phase NDArrays that don't appear in preCapOutputSlots
-      std::unordered_set<NDArray*> preCapSet(preCapOutputSlots.begin(), preCapOutputSlots.end());
-      for (size_t pi = pendingClosePreCapSize; pi < pendingClose_.size(); pi++) {
-        if (preCapSet.find(pendingClose_[pi]) == preCapSet.end()) {
-          delete pendingClose_[pi];  // Capture-only array, safe to delete
-        }
-      }
-      pendingClose_.resize(pendingClosePreCapSize);
-    }
-
-    // Clear slotArrayCache_ for this segment BEFORE freeing capture buffers.
-    // During capture, view-capable ops (reshape/expand_dims/squeeze) create views
-    // sharing DataBuffers from capture buffer inputs. Freeing capture buffers
-    // invalidates those views. Clear the cache so slot-by-slot fallback
-    // allocates fresh arrays instead of reusing dangling views.
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      for (int o = 0; o < slots_[s].numOutputs; o++) {
-        int si = slots_[s].outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_) {
-          slotArrayCache_[si] = nullptr;
-        }
-      }
-    }
-
-    // Free capture buffers on failure — they won't be needed
-    for (auto& cb : seg.captureBuffers) {
-      if (!cb.directReference) delete cb.buffer;
-    }
-    seg.captureBuffers.clear();
-
-    // Clear error reference so the capture failure doesn't propagate to the caller
-    // when the slot-by-slot fallback succeeds.
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
-    // Restore outputSlots_ — capture loop releases may have cleared cross-segment inputs
-    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    // Restore frozen context state so slot-by-slot fallback uses frozen fast path
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
-    }
-    invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Helper lambda to clean up capture buffers on failure.
-  // Must also clear slotArrayCache_ and rollback pendingClose_ because view-capable
-  // ops during capture created views sharing DataBuffers with capture buffer inputs.
-  auto cleanupCaptureBuffersOnFailure = [&seg, &preCapOutputSlots, &pendingClosePreCapSize, &savedFrozenContextReady, this]() {
-    // Rollback pendingClose_ — same logic as main failure path
-    std::unordered_set<NDArray*> preCapSet(preCapOutputSlots.begin(), preCapOutputSlots.end());
-    for (size_t pi = pendingClosePreCapSize; pi < pendingClose_.size(); pi++) {
-      if (preCapSet.find(pendingClose_[pi]) == preCapSet.end()) {
-        delete pendingClose_[pi];
-      }
-    }
-    pendingClose_.resize(pendingClosePreCapSize);
-    // Clear slot array cache
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      for (int o = 0; o < slots_[s].numOutputs; o++) {
-        int si = slots_[s].outputSlotIndices[o];
-        if (si >= 0 && si < totalOutputSlots_) {
-          slotArrayCache_[si] = nullptr;
-        }
-      }
-    }
-    for (auto& cb : seg.captureBuffers) {
-      if (!cb.directReference) delete cb.buffer;
-    }
-    seg.captureBuffers.clear();
-    // Restore frozen context state so slot-by-slot fallback uses frozen fast path
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
-    }
-  };
-
-  // End capture and instantiate
-  if (!handle->endCapture(cudaStr)) {
-    cudaGetLastError();
-    sd_printf("NativeDynamicShapePlan: graph capture end failed for segment [%d-%d]\n",
-              seg.startSlot, seg.endSlot);
-    // Free pinned host buffers from failed capture
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-    // Clear sticky CUDA errors and reset stream
-    cudaGetLastError();
-    cudaStreamSynchronize(cudaStr);
-    cudaGetLastError();
-    seg.captureFailed = true;
-    cleanupCaptureBuffersOnFailure();
-    // Restore outputSlots_ — capture loop releases may have cleared cross-segment inputs
-    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  if (!handle->instantiate()) {
-    cudaGetLastError();
-    sd_printf("NativeDynamicShapePlan: graph instantiate failed for segment [%d-%d]\n",
-              seg.startSlot, seg.endSlot);
-    // Free pinned host buffers from failed capture
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-    clearGraphStreamError(cudaStr);
-    seg.captureFailed = true;
-    cleanupCaptureBuffersOnFailure();
-    // Restore outputSlots_ — capture loop releases may have cleared cross-segment inputs
-    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Clear any sticky error that might have been left by updateStatistics or instantiate
-  cudaGetLastError();
-
-  // Log graph statistics after capture + instantiation
-  {
-    auto stats = handle->getStatistics();
-    sd_printf("NativeDynamicShapePlan: graph captured for segment [%d-%d]: "
-              "%zu nodes, %zu edges, %d kernels, %d memcpys, %d memsets, "
-              "%d memAllocs, %d memFrees, %d hostCallbacks, %d events, %d empty\n",
-              seg.startSlot, seg.endSlot,
-              handle->getNumNodes(), handle->getNumEdges(),
-              stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
-              stats.numMemAllocs, stats.numMemFrees,
-              stats.numHostCallbacks, stats.numEvents, stats.numEmpty);
-    if (stats.numMemAllocs != stats.numMemFrees) {
-      sd_printf("  WARNING: Unbalanced memory nodes: %d allocs vs %d frees. "
-                "This WILL cause graph launch failure.\n",
-                stats.numMemAllocs, stats.numMemFrees);
-    }
-  }
-
-  // Launch the captured graph (actual execution)
-  if (!handle->launchAsync(cudaStr)) {
-    cudaGetLastError();
-    sd_printf("NativeDynamicShapePlan: graph launch failed for segment [%d-%d]\n",
-              seg.startSlot, seg.endSlot);
-    // Free pinned host buffers from failed capture
-    for (auto* ptr : tl_capturedHostPtrs) {
-      if (ptr != nullptr) cudaFreeHost(ptr);
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-    clearGraphStreamError(cudaStr);
-    seg.captureFailed = true;
-    cleanupCaptureBuffersOnFailure();
-    // Restore outputSlots_ — capture loop releases may have cleared cross-segment inputs
-    std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
-    invalidateSegmentShapeState(seg);
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Transfer pinned host buffers to the graph handle for lifetime management.
-  // These persist for graph replay (H2D memcpy nodes reference them).
-  for (auto* ptr : tl_capturedHostPtrs) {
-    handle->addCapturedHostPtr(ptr);
-  }
-  tl_capturedHostPtrs.clear();
-  tl_captureReplicateCache.clear();
-
-  // Cache the graph for future replays
-  seg.cachedGraph = handle;
-  seg.cachedShapeKey = segShapeKey;
-  seg.executionCount++;
-  totalGraphReplays_++;
-
-  // Populate outputSlots_ from slotArrayCache_ so downstream segments can read
-  // this segment's outputs. The warmup+capture path fills slotArrayCache_ but
-  // restores outputSlots_ to its pre-warmup state; without this step, any
-  // subsequent slot-by-slot segment that reads a cross-segment output from this
-  // captured segment will see a null pointer.  (Mirrors the replay path at the
-  // top of executeSegmentWithCudaGraph.)
-  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-    NativeSlot& slot = slots_[stepIdx];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      int slotIdx = slot.outputSlotIndices[i];
-      if (slotIdx >= 0 && slotIdx < totalOutputSlots_ && slotArrayCache_[slotIdx] != nullptr) {
-        outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
-      }
-    }
-  }
-
-  // Reset OOM retry state on success (capture may have succeeded on a retry)
-  if (seg.captureOomRetries > 0) {
-    sd_printf("NativeDynamicShapePlan: graph capture SUCCEEDED on OOM retry %d for segment [%d-%d]\n",
-              seg.captureOomRetries, seg.startSlot, seg.endSlot);
-    seg.captureOomRetries = 0;
-    seg.captureRetryAfterExec = 0;
-  }
-
-  // Restore frozen context state after successful capture.
-  // The frozen fast path was disabled during capture (stale pointers) but the captured
-  // graph now has correct addresses. Subsequent replay executions use the frozen path.
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
-  }
-
-  if (executionTimingEnabled_) {
-    auto stats = handle->getStatistics();
-    double wsUtilPct = seg.captureWorkspaceBytes > 0
-        ? (100.0 * captureWorkspaceUsed / seg.captureWorkspaceBytes) : 0.0;
-    sd_printf("NativeDynamicShapePlan: captured CUDA graph for segment [%d-%d] "
-              "(%zu nodes, %zu edges) [%d kern, %d memcpy, %d memset, %d alloc, %d free] "
-              "workspace=%zuKB/%zuKB (%.1f%%)\n",
-              seg.startSlot, seg.endSlot,
-              handle->getNumNodes(), handle->getNumEdges(),
-              stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
-              stats.numMemAllocs, stats.numMemFrees,
-              seg.captureWorkspacePtr ? (captureWorkspaceUsed / 1024) : 0,
-              seg.captureWorkspaceBytes / 1024, wsUtilPct);
-
-    // Print top-10 ops by node count for optimization targeting
-    if (!lastCaptureAudit_.empty()) {
-      printCaptureAudit();
-    }
-  }
-
-  return Status::OK;
-}
-
-#endif  // SD_CUDA
-
-Status NativeDynamicShapePlan::executeSlot(
-    int stepIdx, NDArray** externalArrays, int numExt, void* stream) {
-  NativeSlot& slot = slots_[stepIdx];
-
-  // ── Fast path: identity ops ──────────────────────────────────────────────
-  // Identity ops just pass input through. Skip shape inference, allocation,
-  // op execution — just wire the output slot to point at the input.
-  if (slot.isIdentityOp && slot.numInputs == 1 && slot.numOutputs >= 1) {
-    int srcIdx = slot.inputSourceIndices[0];
-    NDArray* input = nullptr;
-    if (srcIdx >= 0) {
-      input = outputSlots_[srcIdx];
-    } else {
-      int extIdx = -(srcIdx + 1);
-      if (extIdx < numExt) input = externalArrays[extIdx];
-    }
-    if (input != nullptr) {
-      for (int i = 0; i < slot.numOutputs; i++) {
-        int si = slot.outputSlotIndices[i];
-        if (si >= 0 && si < totalOutputSlots_) {
-          outputSlots_[si] = input;
-        }
-      }
-      return Status::OK;
-    }
-    // Fall through to normal path if input is null
-  }
-
-  // ── Frozen constant optimization ──────────────────────────────────────────
-  // Some ops produce identical output every step with frozen shapes.
-  // Skip both nullify and execution — output retains its value from warmup.
-  // During graph CAPTURE, this means the op's kernel and memset are NOT recorded,
-  // reducing graph node count. During REPLAY, the output buffer is untouched
-  // by the graph (stable address, no graph node writes to it).
-  // This check is BEFORE frozenContextReady so it fires during capture too
-  // (capture disables frozenContextReady).
-  if (slot.frozenConstantSlot) {
-    return Status::OK;
-  }
-
-  // ── Fused chain tail skip ─────────────────────────────────────────────────
-  // Tail slots in a fused elementwise chain are already computed by the head.
-  // During CUDA graph capture, this means no kernel/memset nodes for tails.
-  // During slot-by-slot warmup, tails are skipped because head already wrote result.
-  if (slot.isFusedChainTail) {
-    return Status::OK;
-  }
-
-  // ── Fused chain head dispatch ─────────────────────────────────────────────
-  // Head slot dispatches a single fused kernel for the entire elementwise chain.
-  // This replaces N separate kernel launches + N-1 intermediate memsets with
-  // 1 kernel launch + 0 memsets.
-  if (slot.isFusedChainHead && slot.fusedChainLength >= 2) {
-    // 1. Gather primary input (head slot's first input)
-    NDArray* primaryInput = nullptr;
-    int primarySrcIdx = slot.inputSourceIndices[0];
-    if (primarySrcIdx >= 0) {
-      primaryInput = outputSlots_[primarySrcIdx];
-      // Cross-segment recovery from slotArrayCache_
-      if (primaryInput == nullptr && primarySrcIdx < totalOutputSlots_ && slotArrayCache_[primarySrcIdx] != nullptr) {
-        primaryInput = slotArrayCache_[primarySrcIdx];
-        outputSlots_[primarySrcIdx] = slotArrayCache_[primarySrcIdx];
-      }
-    } else {
-      int extIdx = -(primarySrcIdx + 1);
-      if (extIdx < numExt) primaryInput = externalArrays[extIdx];
-    }
-    if (primaryInput == nullptr) {
-      sd_printf("NativeDynamicShapePlan: NULL fused head input for slot %d (%s), primarySrcIdx=%d\n",
-                stepIdx, slot.opName.c_str(), primarySrcIdx);
-      return Status::BAD_INPUT;
-    }
-
-    // For binary head ops, the secondary input source tells us which input is secondary.
-    // The primary (chain) input is the OTHER one.
-    bool headIsBinary = (slot.fusedChainSecondaryInputSources[0] != INT32_MIN);
-    if (headIsBinary && slot.numInputs == 2) {
-      int secSrc = slot.fusedChainSecondaryInputSources[0];
-      // Find which of the two inputs matches the secondary source
-      // The chain input is the other one
-      for (int k = 0; k < slot.numInputs; k++) {
-        if (slot.inputSourceIndices[k] != secSrc) {
-          // This is the chain input
-          int chainSrcIdx = slot.inputSourceIndices[k];
-          if (chainSrcIdx >= 0) {
-            primaryInput = outputSlots_[chainSrcIdx];
-          } else {
-            int extIdx = -(chainSrcIdx + 1);
-            if (extIdx < numExt) primaryInput = externalArrays[extIdx];
-          }
-          break;
-        }
-      }
-    }
-
-    // 2. Gather secondary inputs first (needed for broadcast shape computation)
-    sd::ops::helpers::FusedElemOp fusedOps[8];
-    NDArray* secondaryInputs[8] = {};
-
-    for (int ci = 0; ci < slot.fusedChainLength; ci++) {
-      fusedOps[ci] = static_cast<sd::ops::helpers::FusedElemOp>(slot.fusedChainOpCodes[ci]);
-
-      int secSrc = slot.fusedChainSecondaryInputSources[ci];
-      if (secSrc != INT32_MIN) {
-        // Resolve secondary input
-        if (secSrc >= 0) {
-          secondaryInputs[ci] = outputSlots_[secSrc];
-          // Cross-segment recovery from slotArrayCache_
-          if (secondaryInputs[ci] == nullptr && secSrc < totalOutputSlots_ && slotArrayCache_[secSrc] != nullptr) {
-            secondaryInputs[ci] = slotArrayCache_[secSrc];
-            outputSlots_[secSrc] = slotArrayCache_[secSrc];
-          }
-        } else {
-          int extIdx = -(secSrc + 1);
-          if (extIdx < numExt) secondaryInputs[ci] = externalArrays[extIdx];
-        }
-      }
-      // Safety: head binary op with both inputs from same source (e.g., mul(y,y))
-      // If secondary is still null but this is a binary op, use primaryInput
-      if (ci == 0 && secondaryInputs[ci] == nullptr &&
-          sd::ops::helpers::isBinaryFusedOp(fusedOps[ci]) &&
-          slot.numInputs == 2 &&
-          slot.inputSourceIndices[0] == slot.inputSourceIndices[1]) {
-        secondaryInputs[ci] = primaryInput;
-      }
-    }
-
-    // 3. Determine output shape considering broadcasting with secondary inputs.
-    // The fused chain applies ops sequentially. If a binary op has a secondary
-    // input with a different shape, broadcasting may expand the running shape.
-    // We simulate the shape evolution through the chain to get the correct
-    // final output shape.
-    const LongType* outputShapeInfo = primaryInput->shapeInfo();
-    bool needsBroadcast = false;
-    for (int ci = 0; ci < slot.fusedChainLength; ci++) {
-      if (secondaryInputs[ci] != nullptr && sd::ops::helpers::isBinaryFusedOp(fusedOps[ci])) {
-        const LongType* secShape = secondaryInputs[ci]->shapeInfo();
-        if (!shape::equalsSoft(outputShapeInfo, secShape)) {
-          needsBroadcast = true;
-          break;
-        }
-      }
-    }
-
-    // If broadcasting would change the output shape, fall back to non-fused
-    // execution. The fused kernel handles per-element broadcasting but the
-    // output buffer must already have the correct broadcast shape, which is
-    // complex to compute here. Falling back ensures correctness.
-    if (needsBroadcast) {
-      // Un-mark this slot as fused chain head so we don't re-enter this path
-      // on subsequent calls. The tail slots also need to be un-marked so they
-      // actually execute.
-      slot.isFusedChainHead = false;
-      for (int ci = 0; ci < slot.fusedChainLength; ci++) {
-        int chainSlotIdx = slot.fusedChainSlots[ci];
-        if (chainSlotIdx >= 0 && chainSlotIdx < numSlots_) {
-          slots_[chainSlotIdx].isFusedChainTail = false;
-        }
-      }
-      slot.fusedChainLength = 0;
-      // Fall through to normal execution for this slot
-      goto normalExecution;
-    }
-
-    // 4. Allocate/reuse output for the LAST chain slot
-    int lastSlotIdx = slot.fusedChainSlots[slot.fusedChainLength - 1];
-    int lastOutputSlotIdx = slots_[lastSlotIdx].outputSlotIndices[0];
-
-    NDArray* output = nullptr;
-    if (lastOutputSlotIdx >= 0 && lastOutputSlotIdx < totalOutputSlots_) {
-      output = slotArrayCache_[lastOutputSlotIdx];
-      if (output != nullptr) {
-        // Verify shape matches
-        if (!shape::equalsSoft(output->shapeInfo(), outputShapeInfo)) {
-          output = nullptr;  // Shape mismatch, reallocate
-        }
-      }
-      if (output == nullptr) {
-        output = new NDArray(const_cast<LongType*>(outputShapeInfo), true, LaunchContext::defaultContext());
-        slotArrayCache_[lastOutputSlotIdx] = output;
-      }
-      if (!isBatchZeroActive()) {
-        // Register buffer for batch-zero learning during warmup
-        if (isBatchZeroRegistering() && output->specialBuffer() != nullptr) {
-          registerBatchZeroBuffer(output->specialBuffer(),
-                                  output->dataBuffer()->getLenInBytes());
-        }
-        output->nullify();  // Zero output before fused kernel writes to it
-      }
-    } else {
-      sd_printf("NativeDSP::executeSlot: invalid output slot index for fused chain tail slot %d\n", lastSlotIdx);
-      return Status::BAD_INPUT;
-    }
-
-    // 5. Call fused kernel
-    LaunchContext* lc = LaunchContext::defaultContext();
-    sd::ops::helpers::fusedElementwiseChain(
-        primaryInput, output, fusedOps, slot.fusedChainLength,
-        secondaryInputs, nullptr, nullptr, lc);
-
-    output->tickWriteDevice();
-
-    // 6. Register result at all chain slots' output indices
-    // The last slot's output gets the actual result.
-    // Intermediate slots also need their output registered so downstream
-    // ops (and frozen context path) can find them. Since the chain is
-    // purely in-place through one buffer, all intermediates = same buffer.
-    outputSlots_[lastOutputSlotIdx] = output;
-    for (int ci = 0; ci < slot.fusedChainLength - 1; ci++) {
-      int chainSlotIdx = slot.fusedChainSlots[ci];
-      int chainOutputSlotIdx = slots_[chainSlotIdx].outputSlotIndices[0];
-      if (chainOutputSlotIdx >= 0 && chainOutputSlotIdx < totalOutputSlots_) {
-        outputSlots_[chainOutputSlotIdx] = output;
-      }
-    }
-
-    return Status::OK;
-  }
-
-  // ── Fast path: frozen context ────────────────────────────────────────────
-  // When shapes are frozen and this slot's context was already configured on a
-  // prior execution, skip input gathering, shape inference, output allocation,
-  // and context setup. Just execute the op and handle view producers.
-  // outputSlots_ was pre-populated from slotArrayCache_ in execute(), so
-  // downstream ops already have the right array pointers.
-  if (slot.frozenContextReady) {
-
-    // ── View-capable fast path (reshape/expand_dims/squeeze) ────────────
-    // These ops are no-ops when output shares input 0's DataBuffer (set in Step 3).
-    // Skip execution entirely — the output already points to input's data.
-    // This eliminates copy kernels during CUDA graph capture/replay.
-    if (slot.isViewCapableOp && slot.numInputs >= 1 && slot.numOutputs >= 1) {
-      int si = slot.outputSlotIndices[0];
-      if (si >= 0 && si < totalOutputSlots_) {
-        // Get current input 0 (may have been updated by upstream slot this step)
-        int srcIdx = slot.inputSourceIndices[0];
-        NDArray* input0 = nullptr;
-        if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
-          input0 = outputSlots_[srcIdx];
-        } else if (srcIdx < 0) {
-          int extIdx = -(srcIdx + 1);
-          if (extIdx < numExt) input0 = externalArrays[extIdx];
-        }
-
-        if (input0 != nullptr && input0->dataBuffer() != nullptr &&
-            input0->ews() == 1 && input0->ordering() == 'c') {
-          NDArray* currentOut = outputSlots_[si];
-          if (currentOut != nullptr && currentOut->dataBuffer() == input0->dataBuffer()) {
-            // Buffer matches — output already views input's data. Skip execution.
-            return Status::OK;
-          }
-          // Buffer mismatch (external input changed) — recreate view
-          if (slot.shapeCacheValid && !slot.cachedOutputShapes.empty()) {
-            const LongType* outShapeInfo = slot.cachedOutputShapes[0];
-            LongType outLen = shape::length(outShapeInfo);
-            LongType inLen = input0->lengthOf();
-            if (outLen > 0 && outLen <= inLen) {
-              NDArray* newView = new NDArray(input0->dataBuffer(),
-                                             const_cast<LongType*>(outShapeInfo));
-              outputSlots_[si] = newView;
-              slotIsViewProducer_[si] = true;
-              auto& ctx2 = *contextPool_[stepIdx];
-              ctx2.setOutputArray(0, newView);
-              ctx2.setInputArray(0, input0);
-              // Clean up old view
-              NDArray* old = slotArrayCache_[si];
-              if (old != nullptr && old != newView) {
-                pendingClose_.push_back(old);
-              }
-              slotArrayCache_[si] = newView;
-              return Status::OK;
-            }
-          }
-        }
-      }
-      // Fall through to normal frozen execution if view not possible
-    }
-
-    auto& ctx = *contextPool_[stepIdx];
-
-    // Refresh inputs that change each decode step:
-    //   1. External (placeholder) inputs: always recreated each step (position_ids, etc.)
-    //   2. Inputs from view-producer slots: their views point into the external inputs,
-    //      so the view NDArray changes each step as the input is recreated.
-    //
-    // Execution is in ascending slot order, so view-producer slot X always runs before
-    // slot Y that reads X's output. By the time Y runs, outputSlots_[si_X] holds the
-    // fresh view created by X's fast-path execution this step.
-    //
-    // NOTE: During CUDA graph capture, frozenContextReady is temporarily disabled
-    // (set to false before capture begins), so this code path is NOT reached during
-    // capture. All slots go through the full (non-frozen) path during capture, which
-    // properly configures context with capture-time arrays.
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
-      if (srcIdx < 0) {
-        // External/placeholder input — always refresh
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt && externalArrays[extIdx] != nullptr) {
-          ctx.setInputArray(i, externalArrays[extIdx]);
-        }
-      } else if (srcIdx < totalOutputSlots_ && slotIsViewProducer_[srcIdx]) {
-        // Input from view-producer slot — refresh from outputSlots_ (already updated
-        // this step by the view producer's own fast-path execution above us)
-        if (outputSlots_[srcIdx] != nullptr) {
-          ctx.setInputArray(i, outputSlots_[srcIdx]);
-        }
-      }
-    }
-
-    // Nullify output arrays before re-execution to prevent stale data accumulation.
-    // EXCEPTION 1: Skip in-place fused ops — their output IS the input (same NDArray).
-    // EXCEPTION 2: Skip view producer outputs — they're views into input data.
-    // EXCEPTION 3: When batch-zero is active, all gap-slot outputs were pre-zeroed
-    //   by a single kernel at graph start — skip individual nullify to save ~800 graph nodes.
-    if (!slot.inPlaceFused) {
-      if (isBatchZeroActive()) {
-        // Batch-zero already zeroed these buffers — skip individual nullify
-        if (Environment::getInstance().dspBatchZeroVerbose()) {
-          auto& ctxOuts = ctx.fastpath_out();
-          int skipped = 0;
-          for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
-            if (ctxOuts[i] != nullptr) skipped++;
-          }
-          sd_printf("  batchZero-skip: slot %d (%s) skipped %d nullifies\n",
-                    stepIdx, slot.opName.c_str(), skipped);
-        }
-      } else {
-        auto& ctxOuts = ctx.fastpath_out();
-        for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
-          if (ctxOuts[i] == nullptr) continue;
-          int si = (i < slot.numOutputs) ? slot.outputSlotIndices[i] : -1;
-          if (si >= 0 && si < totalOutputSlots_ && slotIsViewProducer_[si]) continue;
-          // Register buffer for batch-zero learning during warmup
-          if (isBatchZeroRegistering() && ctxOuts[i]->specialBuffer() != nullptr) {
-            registerBatchZeroBuffer(ctxOuts[i]->specialBuffer(),
-                                    ctxOuts[i]->dataBuffer()->getLenInBytes());
-          }
-          ctxOuts[i]->nullify();
-        }
-      }
-    }
-
-    // Execute the op with pre-configured context
-    auto status = slot.op->execute(&ctx);
-
-    // Update outputSlots_ and mark device-current.
-    // This handles view producers (op returns a different array than pre-allocated),
-    // in-place fused ops (output = input, not in slotArrayCache_), and normal ops.
-    auto& ctxOuts = ctx.fastpath_out();
-    for (int i = 0; i < slot.numOutputs && i < static_cast<int>(ctxOuts.size()); i++) {
-      if (ctxOuts[i] != nullptr) {
-        ctxOuts[i]->tickWriteDevice();
-        int si = slot.outputSlotIndices[i];
-        if (si >= 0 && si < totalOutputSlots_) {
-          outputSlots_[si] = ctxOuts[i];
-        }
-      }
-    }
-
-    return status;
-  }
-
-  normalExecution:
-  // ── Step 1: Gather inputs ────────────────────────────────────────────────
-  // Use thread-local vector to avoid 4441 heap allocations per execute() call
-  static thread_local std::vector<NDArray*> inputs;
-  inputs.resize(slot.numInputs);
-  for (int i = 0; i < slot.numInputs; i++) {
-    int srcIdx = slot.inputSourceIndices[i];
-    if (srcIdx >= 0) {
-      // From a prior slot output
-      inputs[i] = outputSlots_[srcIdx];
-      // Cross-segment recovery: if outputSlots_ was cleared (e.g., by releaseAtStep_
-      // in a previous segment or CUDA graph capture cleanup) but the array is still
-      // alive in slotArrayCache_, restore it. This happens when a segment boundary
-      // falls between a producer and its consumer.
-      if (inputs[i] == nullptr && srcIdx < totalOutputSlots_ && slotArrayCache_[srcIdx] != nullptr) {
-        inputs[i] = slotArrayCache_[srcIdx];
-        outputSlots_[srcIdx] = slotArrayCache_[srcIdx];  // Restore for downstream use
-      }
-    } else {
-      // From external inputs
-      int extIdx = -(srcIdx + 1);
-      if (extIdx < numExt) {
-        inputs[i] = externalArrays[extIdx];
-      } else {
-        inputs[i] = nullptr;
-      }
-    }
-
-    if (inputs[i] == nullptr) {
-      sd_printf("NativeDynamicShapePlan: NULL input for slot %d (%s) input %d, srcIdx=%d\n",
-                stepIdx, slot.opName.c_str(), i, slot.inputSourceIndices[i]);
-      return Status::BAD_INPUT;
-    }
-  }
-
-  // ── Step 2: Shape inference ──────────────────────────────────────────────
-  // When shapes are frozen and this slot's cache is populated from a prior execution,
-  // skip shape key computation entirely. This saves ~5-10μs per slot × 4441 slots = ~22-44ms.
-  LongType shapeKey = 0;
-  bool cacheHit;
-  if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid) {
-    cacheHit = true;  // Trust cached shapes — frozen mode guarantees no shape changes
-  } else {
-    shapeKey = computeShapeKey(slot, inputs.data(), slot.numInputs);
-    cacheHit = slot.shapeCacheValid && (slot.cachedShapeKey == shapeKey);
-  }
-
-  std::vector<const LongType*> outputShapes;
-  if (cacheHit) {
-    outputShapes = slot.cachedOutputShapes;
-  } else {
-    // Run shape inference
-    auto& ctx = *contextPool_[stepIdx];
-
-    // Set inputs on context for shape inference
-    for (int i = 0; i < slot.numInputs; i++) {
-      ctx.setInputArray(i, inputs[i]);
-    }
-
-    // Set arguments
-    if (slot.numIArgs > 0) ctx.setIArguments(slot.iArgs, slot.numIArgs);
-    if (slot.numTArgs > 0) ctx.setTArguments(slot.tArgs, slot.numTArgs);
-    if (slot.numBArgs > 0) ctx.setBArguments(slot.bArgs, slot.numBArgs);
-    if (slot.numDArgs > 0) ctx.setDArguments(slot.dArgs, slot.numDArgs);
-
-    // Build input ShapeList for calculateOutputShape
-    ShapeList inputShapes;
-    for (int i = 0; i < slot.numInputs; i++) {
-      if (inputs[i] != nullptr) {
-        inputShapes.push_back(inputs[i]->shapeInfo());
-      }
-    }
-
-    ShapeList* shapeList = nullptr;
-    try {
-      shapeList = slot.op->calculateOutputShape(&inputShapes, ctx);
-    } catch (const std::exception& e) {
-      sd_printf("NativeDynamicShapePlan: shape inference EXCEPTION at slot %d (%s): %s\n",
-                stepIdx, slot.opName.c_str(), e.what());
-      return Status::KERNEL_FAILURE;
-    }
-    if (shapeList == nullptr || shapeList->size() == 0) {
-      sd_printf("NativeDynamicShapePlan: shape inference returned null for slot %d (%s)\n",
-                stepIdx, slot.opName.c_str());
-      return Status::KERNEL_FAILURE;
-    }
-
-    outputShapes.resize(shapeList->size());
-    for (int i = 0; i < static_cast<int>(shapeList->size()); i++) {
-      // Cache via ConstantShapeHelper for persistent shape pointers.
-      // createFromExisting internally calls replicatePointer which can throw
-      // if both pool allocation and pinned host fallback fail (e.g., sticky CUDA error).
-      try {
-        auto cached = ConstantShapeHelper::getInstance().createFromExisting(
-            const_cast<LongType*>(shapeList->at(i)));
-        outputShapes[i] = cached;
-      } catch (const std::exception& e) {
-        sd_printf("NativeDynamicShapePlan: createFromExisting EXCEPTION at slot %d (%s) output[%d]: %s\n",
-                  stepIdx, slot.opName.c_str(), i, e.what());
-        delete shapeList;
-        return Status::KERNEL_FAILURE;
-      }
-    }
-
-    // Update cache
-    slot.cachedShapeKey = shapeKey;
-    slot.cachedOutputShapes = outputShapes;
-    slot.shapeCacheValid = true;
-
-    delete shapeList;
-  }
-
-  // ── Step 3: Allocate/reuse outputs ───────────────────────────────────────
-  int numActualOutputs = std::min(slot.numOutputs, static_cast<int>(outputShapes.size()));
-  static thread_local std::vector<NDArray*> outputs;
-  outputs.resize(numActualOutputs);
-
-  // ── In-place fusion: reuse input buffer as output ──
-  // When FusionPass marks a slot for in-place execution (e.g., element-wise chain),
-  // the first output reuses the specified input buffer instead of allocating new memory.
-  // This eliminates intermediate buffer allocations in fused chains.
-  if (slot.inPlaceFused && slot.inPlaceFusedInputIdx >= 0 &&
-      slot.inPlaceFusedInputIdx < slot.numInputs && numActualOutputs >= 1) {
-    NDArray* inPlaceBuffer = inputs[slot.inPlaceFusedInputIdx];
-    if (inPlaceBuffer != nullptr) {
-      // Verify the in-place buffer has compatible shape with expected output
-      const LongType* expectedShape = outputShapes[0];
-      if (shape::equalsSoft(inPlaceBuffer->shapeInfo(), expectedShape) &&
-          ArrayOptions::dataType(inPlaceBuffer->shapeInfo()) == ArrayOptions::dataType(expectedShape)) {
-        outputs[0] = inPlaceBuffer;
-        int slotIdx = slot.outputSlotIndices[0];
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          outputSlots_[slotIdx] = inPlaceBuffer;
-          // Don't cache in-place outputs — they share buffers with upstream ops
-        }
-
-        // Allocate remaining outputs (if any) normally
-        for (int i = 1; i < numActualOutputs; i++) {
-          int si = slot.outputSlotIndices[i];
-          if (si < 0) {
-            // Untracked output — try reuse from cache
-            int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
-            if (cacheIdx < untrackedOutputCacheSize_) {
-              NDArray* cached = untrackedOutputCache_[cacheIdx];
-              if (cached != nullptr && shape::equalsSoft(cached->shapeInfo(), outputShapes[i]) &&
-                  ArrayOptions::dataType(cached->shapeInfo()) == ArrayOptions::dataType(outputShapes[i])) {
-                outputs[i] = cached;
-                continue;
-              }
-              delete cached;
-              untrackedOutputCache_[cacheIdx] = nullptr;
-            }
-            outputs[i] = new NDArray(const_cast<LongType*>(outputShapes[i]), true);
-            if (cacheIdx < untrackedOutputCacheSize_) {
-              untrackedOutputCache_[cacheIdx] = outputs[i];
-            }
-            continue;
-          }
-          const LongType* shapeInfo = outputShapes[i];
-          auto dt = ArrayOptions::dataType(shapeInfo);
-          auto order = shape::order(shapeInfo);
-          LongType rank = shape::rank(shapeInfo);
-          std::vector<LongType> shape(rank);
-          for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
-          outputs[i] = new NDArray(order, shape, dt);
-          outputSlots_[si] = outputs[i];
-          slotArrayCache_[si] = outputs[i];
-        }
-
-        goto step4_execute;  // Skip normal allocation path
-      }
-      // Shape mismatch — fall through to normal allocation
-    }
-  }
-
-  // ── View-capable ops: share input 0's DataBuffer for output 0 ──────────
-  // For reshape/expand_dims/squeeze, create output that wraps input 0's buffer.
-  // The op sees x->dataBuffer() == z->dataBuffer() → returns OK → no copy kernel.
-  // Safety: only when input is C-contiguous (ews==1), so standard output strides are correct.
-  if (slot.isViewCapableOp && slot.numInputs >= 1 && numActualOutputs >= 1) {
-    NDArray* input0 = inputs[0];
-    if (input0 != nullptr && input0->dataBuffer() != nullptr &&
-        input0->ews() == 1 && input0->ordering() == 'c') {
-      const LongType* outShapeInfo = outputShapes[0];
-      LongType outLen = shape::length(outShapeInfo);
-      LongType inLen = input0->lengthOf();
-      if (outLen > 0 && outLen <= inLen) {
-        int slotIdx = slot.outputSlotIndices[0];
-        NDArray* view = new NDArray(input0->dataBuffer(),
-                                     const_cast<LongType*>(outShapeInfo));
-        outputs[0] = view;
-        if (slotIdx >= 0 && slotIdx < totalOutputSlots_) {
-          NDArray* old = slotArrayCache_[slotIdx];
-          if (old != nullptr && old != view) {
-            pendingClose_.push_back(old);
-          }
-          outputSlots_[slotIdx] = view;
-          slotArrayCache_[slotIdx] = view;
-          slotIsViewProducer_[slotIdx] = true;
-        }
-
-        // Allocate remaining outputs normally (rare for these ops)
-        for (int i = 1; i < numActualOutputs; i++) {
-          int si = slot.outputSlotIndices[i];
-          const LongType* shapeInfo = outputShapes[i];
-          auto dt = ArrayOptions::dataType(shapeInfo);
-          auto order = shape::order(shapeInfo);
-          LongType rank = shape::rank(shapeInfo);
-          std::vector<LongType> shape(rank);
-          for (int d = 0; d < rank; d++) shape[d] = shapeInfo[d + 1];
-          outputs[i] = new NDArray(order, shape, dt);
-          if (si >= 0 && si < totalOutputSlots_) {
-            outputSlots_[si] = outputs[i];
-            slotArrayCache_[si] = outputs[i];
-          }
-        }
-        goto step4_execute;
-      }
-    }
-  }
-
-  for (int i = 0; i < numActualOutputs; i++) {
-    int slotIdx = slot.outputSlotIndices[i];
-    if (slotIdx < 0) {
-      // Untracked output — try reuse from cache (critical for CUDA graph capture
-      // where cudaMallocAsync on the captured stream is deferred and may fail).
-      int cacheIdx = stepIdx * MAX_OUTPUTS_PER_SLOT + i;
-      if (cacheIdx < untrackedOutputCacheSize_) {
-        NDArray* cached = untrackedOutputCache_[cacheIdx];
-        if (cached != nullptr) {
-          const LongType* cachedShape = cached->shapeInfo();
-          if (shape::equalsSoft(cachedShape, outputShapes[i]) &&
-              ArrayOptions::dataType(cachedShape) == ArrayOptions::dataType(outputShapes[i])) {
-            outputs[i] = cached;
-            continue;
-          }
-          // Shape mismatch — evict old cached array
-          delete cached;
-          untrackedOutputCache_[cacheIdx] = nullptr;
-        }
-      }
-      // Allocate new and cache
-      outputs[i] = new NDArray(const_cast<LongType*>(outputShapes[i]), true);
-      if (cacheIdx < untrackedOutputCacheSize_) {
-        untrackedOutputCache_[cacheIdx] = outputs[i];
-      }
-      continue;
-    }
-
-    const LongType* shapeInfo = outputShapes[i];
-    auto dt = ArrayOptions::dataType(shapeInfo);
-    auto order = shape::order(shapeInfo);
-    LongType rank = shape::rank(shapeInfo);
-
-    // Try to reuse cached array from prior execution
-    NDArray* cached = slotArrayCache_[slotIdx];
-    if (cached != nullptr) {
-      const LongType* cachedShape = cached->shapeInfo();
-      if (shape::equalsSoft(cachedShape, shapeInfo) &&
-          ArrayOptions::dataType(cachedShape) == dt) {
-        // Shape matches — reuse cached buffer.
-        // ALWAYS nullify reused arrays. Some ops don't fully overwrite their output,
-        // causing stale data accumulation across decode steps.
-        // When batch-zero is active (during graph capture), all output buffers
-        // have already been zeroed by a single batch kernel — skip individual nullify
-        // to avoid recording ~1000 extra memset graph nodes.
-        if (!isBatchZeroActive()) {
-          // Register buffer for batch-zero learning during warmup
-          if (isBatchZeroRegistering() && cached->specialBuffer() != nullptr) {
-            registerBatchZeroBuffer(cached->specialBuffer(),
-                                    cached->dataBuffer()->getLenInBytes());
-          }
-          cached->nullify();
-        }
-        outputs[i] = cached;
-        outputSlots_[slotIdx] = cached;
-        continue;
-      } else {
-        // Shape doesn't match — evict cached array to pending close
-        pendingCloseBytes_ += cached->lengthOf() * cached->sizeOfT();
-        pendingClose_.push_back(cached);
-        slotArrayCache_[slotIdx] = nullptr;
-      }
-    }
-
-    // Allocate new output
-    std::vector<LongType> shape(rank);
-    for (int d = 0; d < rank; d++) {
-      shape[d] = shapeInfo[d + 1];
-    }
-    
-    // Check if this slot has a max-allocation size configured
-    auto maxIt = outputSlotMaxSizes_.find(slotIdx);
-    if (maxIt != outputSlotMaxSizes_.end() && maxIt->second > 0) {
-      // Max-allocation mode: check if we already allocated at max size
-      if (maxAllocatedSlots_.find(slotIdx) == maxAllocatedSlots_.end()) {
-        // First time: allocate at max size
-        LongType maxElements = maxIt->second;
-        std::vector<LongType> maxShape = shape;
-        
-        // Calculate which dimension to scale based on shape rank and maxKvCacheLen_
-        // For KV cache [batch, numHeads, seqLen, headDim], we scale seqLen (dim 2)
-        if (rank == 4 && maxKvCacheLen_ > 0 && shape[2] > 0 && shape[2] < maxKvCacheLen_) {
-          // This looks like a KV cache shape - scale seq dimension
-          maxShape[2] = maxKvCacheLen_;
-        } else if (rank == 4 && maxKvCacheLen_ > 0 && shape[1] > 0 && shape[1] < maxKvCacheLen_) {
-          // Alternative KV cache format [batch, seqLen, numHeads, headDim] - scale dim 1
-          maxShape[1] = maxKvCacheLen_;
-        } else {
-          // Default: scale last dimension to reach max elements
-          LongType currentElements = 1;
-          for (int d = 0; d < rank; d++) currentElements *= shape[d];
-          if (currentElements > 0 && maxElements > currentElements) {
-            LongType scale = maxElements / currentElements;
-            if (scale > 1) {
-              maxShape[rank - 1] *= scale;
-            }
-          }
-        }
-        
-        sd_printf("NativeDynamicShapePlan: max-allocating slot %d, current shape=[%lld,%lld,%lld,%lld], max shape=[%lld,%lld,%lld,%lld]\n",
-                  slotIdx, shape[0], rank>1?shape[1]:0, rank>2?shape[2]:0, rank>3?shape[3]:0,
-                  maxShape[0], maxShape.size()>1?maxShape[1]:0, maxShape.size()>2?maxShape[2]:0, maxShape.size()>3?maxShape[3]:0);
-        
-        NDArray* maxOut = nullptr;
-        try {
-          maxOut = new NDArray(order, maxShape, dt);
-          if (!isBatchZeroActive()) {
-            if (isBatchZeroRegistering() && maxOut->specialBuffer() != nullptr) {
-              registerBatchZeroBuffer(maxOut->specialBuffer(),
-                                      maxOut->dataBuffer()->getLenInBytes());
-            }
-            maxOut->nullify();  // Zero the entire buffer
-          }
-        } catch (const std::exception& e) {
-          sd_printf("NativeDynamicShapePlan: max-allocation FAILED at slot %d (%s): %s\n",
-                    stepIdx, slot.opName.c_str(), e.what());
-          // Fall back to regular allocation
-          maxOut = new NDArray(order, shape, dt);
-          if (slot.needsZeroedOutput && !isBatchZeroActive()) {
-            if (isBatchZeroRegistering() && maxOut->specialBuffer() != nullptr) {
-              registerBatchZeroBuffer(maxOut->specialBuffer(),
-                                      maxOut->dataBuffer()->getLenInBytes());
-            }
-            maxOut->nullify();
-          }
-        }
-        
-        outputs[i] = maxOut;
-        outputSlots_[slotIdx] = maxOut;
-        slotArrayCache_[slotIdx] = maxOut;
-        maxAllocatedSlots_.insert(slotIdx);
-        continue;
-      }
-      // Already max-allocated: reuse the cached buffer (it's at max size)
-      NDArray* cached = slotArrayCache_[slotIdx];
-      if (cached != nullptr) {
-        // The cached buffer is at max size
-        outputs[i] = cached;
-        outputSlots_[slotIdx] = cached;
-        continue;
-      }
-    }
-    
-    NDArray* out = nullptr;
-    try {
-      out = new NDArray(order, shape, dt);
-      if (slot.needsZeroedOutput && !isBatchZeroActive()) {
-        if (isBatchZeroRegistering() && out->specialBuffer() != nullptr) {
-          registerBatchZeroBuffer(out->specialBuffer(),
-                                  out->dataBuffer()->getLenInBytes());
-        }
-        out->nullify();
-      }
-    } catch (const std::exception& e) {
-      sd_printf("NativeDynamicShapePlan: output ALLOC EXCEPTION at slot %d (%s) output[%d]: %s\n",
-                stepIdx, slot.opName.c_str(), i, e.what());
-      return Status::KERNEL_FAILURE;
-    }
-
-    outputs[i] = out;
-    outputSlots_[slotIdx] = out;
-    slotArrayCache_[slotIdx] = out;
-  }
-
-  step4_execute:
-
-  // ── Step 4: Configure context and execute ────────────────────────────────
-  auto& ctx = *contextPool_[stepIdx];
-
-  // Set inputs
-  for (int i = 0; i < slot.numInputs; i++) {
-    ctx.setInputArray(i, inputs[i]);
-  }
-
-  // Set outputs
-  for (int i = 0; i < numActualOutputs; i++) {
-    ctx.setOutputArray(i, outputs[i]);
-  }
-
-  // Set arguments
-  if (slot.numIArgs > 0) ctx.setIArguments(slot.iArgs, slot.numIArgs);
-  if (slot.numTArgs > 0) ctx.setTArguments(slot.tArgs, slot.numTArgs);
-  if (slot.numBArgs > 0) ctx.setBArguments(slot.bArgs, slot.numBArgs);
-  if (slot.numDArgs > 0) ctx.setDArguments(slot.dArgs, slot.numDArgs);
-
-  // Skip redundant shape inference inside op->execute() -> prepareOutputs().
-  // We've already computed and validated shapes in Step 2 and allocated matching outputs.
-  // During CUDA graph capture, calculateOutputShape() can trigger ConstantShapeHelper
-  // operations that use synchronous CUDA APIs (cudaMemcpy), breaking the capture.
-  ctx.setShapeFunctionOverride(true);
-
-  // Execute
-  auto status = slot.op->execute(&ctx);
-
-  // Mark all outputs as device-current after execution.
-  // Legacy transform ops (LegacyTransformFloatOp, LegacyTransformSameOp,
-  // LegacyTransformStrictOp) call prepareSpecialUse before GPU kernel execution
-  // but never call registerSpecialUse after. Without this, the output's device
-  // write counter is not incremented, and the next op's prepareSpecialUse sees
-  // stale device data and syncs HOST→DEVICE, overwriting correct GPU values with zeros.
-  for (int i = 0; i < numActualOutputs; i++) {
-    if (outputs[i] != nullptr) {
-      outputs[i]->tickWriteDevice();
-    }
-  }
-
-  // ── Step 5: View producer handling ────────────────────────────────────────
-  // Some ops (Reshape, Transpose, etc.) ignore their pre-allocated output and
-  // return a VIEW of one of their inputs.  We must detect this and update
-  // outputSlots_ to point to the actual view, not the pre-allocated buffer.
-  //
-  // On the first execution we discover which slots are view producers.
-  // On ALL subsequent executions we must STILL update outputSlots_ for known
-  // view producers, because the view changes each execution (different input).
-  {
-    auto& ctxOutputs = ctx.fastpath_out();
-    for (int i = 0; i < numActualOutputs && i < static_cast<int>(ctxOutputs.size()); i++) {
-      int si = slot.outputSlotIndices[i];
-      if (si < 0) continue;
-
-      if (!viewProducerDetectionDone_) {
-        // First pass: detect view producers
-        if (ctxOutputs[i] != outputs[i]) {
-          slotIsViewProducer_[si] = true;
-          outputSlots_[si] = ctxOutputs[i];
-        }
-      } else if (slotIsViewProducer_[si]) {
-        // Subsequent passes: always update outputSlots_ for known view producers
-        // because the view points to a NEW input buffer each execution
-        outputSlots_[si] = ctxOutputs[i];
-      }
-    }
-  }
-
-  // Mark slot as frozen-context-ready for subsequent shapes-frozen executions.
-  // The context is now fully configured with inputs, outputs, and arguments.
-  // In-place fused and view-producer slots also get the fast path — their
-  // context outputs point to the correct arrays after this execution.
-  if (shapesFrozen_ && executeCount_ > 0 && status == Status::OK) {
-    slot.frozenContextReady = true;
-  }
-
-  return status;
-}
-
-// ─── Shape key computation ──────────────────────────────────────────────────
-
-LongType NativeDynamicShapePlan::computeShapeKey(
-    NativeSlot& slot, NDArray** inputs, int numInputs) {
-  // FNV-1a style hash
-  LongType key = 0xcbf29ce484222325ULL;
-  auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
-  };
-
-  // Mix op identity
-  mix(slot.opHash);
-
-  // Mix input shapes and dtypes
-  for (int i = 0; i < numInputs; i++) {
-    if (inputs[i] == nullptr) continue;
-    const LongType* si = inputs[i]->shapeInfo();
-    LongType rank = shape::rank(si);
-    mix(rank);
-    for (int d = 0; d < rank; d++) {
-      mix(si[d + 1]);
-    }
-    mix(static_cast<LongType>(inputs[i]->dataType()));
-  }
-
-  // Also mix literal values for tiny integer/bool inputs.
-  // These arrays are commonly shape/control tensors; their shape often stays
-  // constant while values change across decode steps (e.g., KV length growth).
-  for (int i = 0; i < numInputs; i++) {
-    if (inputs[i] == nullptr) continue;
-    auto dt = inputs[i]->dataType();
-    auto len = inputs[i]->lengthOf();
-    if ((dt == INT32 || dt == INT64 || dt == BOOL) && len > 0 && len <= 32) {
-      inputs[i]->syncToHost();
-      for (LongType j = 0; j < len; j++) {
-        if (dt == BOOL) {
-          mix(static_cast<LongType>(inputs[i]->e<bool>(j)));
-        } else {
-          mix(inputs[i]->e<LongType>(j));
-        }
-      }
-    }
-  }
-
-  return key;
-}
-
-// ─── Segment shape key computation ──────────────────────────────────────────
-
-LongType NativeDynamicShapePlan::computeSegmentShapeKey(
-    GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  // Hash the shapes of all inputs referenced by slots in this segment.
-  // This includes BOTH external inputs AND cross-segment inputs (outputs from
-  // prior segments). Cross-segment inputs are critical because data-dependent
-  // ops like Where produce different output shapes on each call — if we only
-  // hash external inputs, we'd miss shape changes from prior segments and
-  // incorrectly skip warmup before capture.
-  LongType key = 0xcbf29ce484222325ULL;
-  auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
-  };
-
-  // Mix shape and dtype only — NOT small-int values.
-  //
-  // With strict capturability (all outputShapeDependsOnInputValues ops are non-capturable),
-  // capturable segments never contain ops whose output SHAPE depends on input VALUES.
-  // Value changes in small INT/BOOL tensors (e.g., position_ids changing each step) do NOT
-  // affect the CUDA graph's validity — the capture buffer mechanism handles these via
-  // device-to-device copy before each replay. Mixing values here would cause the shape key
-  // to change every step for any segment consuming position_ids or similar tensors, triggering
-  // spurious instability detection → binary splits → captureFailed for stable segments.
-  //
-  // Stability is correctly tracked by the capture buffer byte-size check (line ~1049):
-  // if an external/cross-segment input grows (e.g., KV cache), its byte count changes →
-  // captureBuffersOk=false → re-capture. If it stays the same size but changes values,
-  // the D2D copy in the replay path updates the capture buffer with fresh values → correct.
-  auto mixArraySignature = [&](NDArray* arr) {
-    if (arr == nullptr) return;
-
-    const LongType* si = arr->shapeInfo();
-    LongType rank = shape::rank(si);
-    mix(rank);
-    for (int d = 0; d < rank; d++) {
-      mix(si[d + 1]);
-    }
-    // Mix total byte length so that shape changes (not just rank changes) are detected.
-    // E.g., [1,4,N,64] → [1,4,N+1,64] has the same rank and strides but different length.
-    mix(static_cast<LongType>(arr->lengthOf()));
-    mix(static_cast<LongType>(arr->dataType()));
-  };
-
-  // Mix segment identity
-  mix(seg.startSlot);
-  mix(seg.endSlot);
-
-  // Build set of output slot indices produced by this segment, so we can
-  // distinguish cross-segment inputs (from prior segments) from intra-segment
-  // inputs (produced within this segment). Only cross-segment inputs need
-  // hashing since intra-segment shapes are determined by this segment's execution.
-  std::unordered_set<int> segOutputSlots;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      segOutputSlots.insert(slot.outputSlotIndices[i]);
-    }
-  }
-
-  // Mix shapes of external and cross-segment inputs used by this segment
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
-      if (srcIdx < 0) {
-        // External input
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
-          mixArraySignature(externalInputs[extIdx]);
-        }
-      } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
-        // Cross-segment input — produced by a prior segment, available in outputSlots_
-        if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
-          mixArraySignature(outputSlots_[srcIdx]);
-        }
-      }
-    }
-  }
-
-  return key;
-}
-
-// ─── Segment input address key computation ──────────────────────────────────
-
-#ifdef SD_CUDA
-LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
-    GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  // Hash the GPU buffer addresses (specialBuffer) of ALL inputs referenced by
-  // this segment. CUDA graphs record exact memory addresses during capture.
-  // If any input buffer is reallocated between executions (e.g., position_ids
-  // recreated each decoder step), the captured graph would read from stale/freed
-  // addresses → CUDA error 700. Compare this key before replay to detect changes.
-  LongType key = 0xcbf29ce484222325ULL;
-  auto mix = [&key](LongType val) {
-    key ^= val;
-    key *= 0x100000001b3ULL;
-  };
-
-  // Build set of output slot indices produced by this segment
-  std::unordered_set<int> segOutputSlots;
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numOutputs; i++) {
-      segOutputSlots.insert(slot.outputSlotIndices[i]);
-    }
-  }
-
-  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-    NativeSlot& slot = slots_[s];
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
-      if (srcIdx < 0) {
-        // External input — hash its GPU buffer address
-        int extIdx = -(srcIdx + 1);
-        if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
-          mix(reinterpret_cast<LongType>(externalInputs[extIdx]->specialBuffer()));
-        }
-      } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
-        // Cross-segment input — hash its GPU buffer address
-        if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
-          mix(reinterpret_cast<LongType>(outputSlots_[srcIdx]->specialBuffer()));
-        }
-      }
-      // Intra-segment inputs use cached buffers (same addresses) — skip
-    }
-  }
-
-  return key;
-}
-#endif
 
 // ─── Statistics ─────────────────────────────────────────────────────────────
 
 int NativeDynamicShapePlan::getNumCapturedGraphSegments() const {
-  int count = 0;
-#ifdef SD_CUDA
-  for (const auto& seg : segments_) {
-    if (seg.cachedGraph) count++;
-  }
-#endif
-  return count;
+  return platformCountCapturedGraphSegments();
 }
 
 int NativeDynamicShapePlan::getTotalGraphReplays() const {
   return totalGraphReplays_;
 }
 
+std::string NativeDynamicShapePlan::getSegmentCompilationAudit(int segIdx) const {
+  if (segIdx < 0 || segIdx >= static_cast<int>(segments_.size())) return "{}";
+  auto& seg = segments_[segIdx];
+  std::ostringstream ss;
+  ss << "{\"segmentIdx\":" << segIdx
+     << ",\"startSlot\":" << seg.startSlot
+     << ",\"endSlot\":" << seg.endSlot
+     << ",\"compiledByBackend\":\"" << seg.compiledByBackend << "\""
+     << ",\"capturable\":" << (seg.isCapturable ? "true" : "false")
+     << ",\"captureFailed\":" << (seg.captureFailed ? "true" : "false")
+     << ",\"executionCount\":" << seg.executionCount
+     << "}";
+  return ss.str();
+}
+
+void NativeDynamicShapePlan::setBackendPriority(const std::vector<std::string>& priority) {
+  backendPriority_ = priority;
+  // Reset cached backends so new priority takes effect
+  gpuGraphBackendChecked_ = false;
+  gpuGraphBackend_ = nullptr;
+  cpuGraphBackendChecked_ = false;
+  cpuGraphBackend_ = nullptr;
+}
+
 // ─── Memory management ─────────────────────────────────────────────────────
 
 void NativeDynamicShapePlan::flushPendingClose(void* stream) {
   // Delete evicted NDArrays (shape mismatch during slot cache reuse).
-  // NDArray destructor handles GPU memory deallocation via DataBuffer::deleteSpecial()
-  // which calls cudaFreeAsync through CudaMemoryPool.
+  // NDArray destructor handles GPU memory deallocation via DataBuffer::deleteSpecial().
+  // Deduplicate: the same NDArray pointer can be pushed multiple times when
+  // identity ops share pointers across slots and both slots get evicted.
+  // Without dedup, the second delete corrupts glibc heap metadata → SIGABRT.
+  std::unordered_set<NDArray*> seen;
   for (auto* arr : pendingClose_) {
+    if (arr != nullptr) seen.insert(arr);
+  }
+  // Nullify slotArrayCache_ entries pointing to arrays about to be freed.
+  // Without this, memcpy(outputSlots_, slotArrayCache_) at the start of the
+  // next step copies freed pointers into outputSlots_, and the destructor
+  // double-frees them.
+  if (slotArrayCache_ && !seen.empty()) {
+    for (int si = 0; si < totalOutputSlots_; si++) {
+      if (slotArrayCache_[si] != nullptr && seen.count(slotArrayCache_[si])) {
+        slotArrayCache_[si] = nullptr;
+      }
+    }
+  }
+  for (auto* arr : seen) {
     delete arr;
   }
   pendingClose_.clear();
@@ -4011,23 +1124,13 @@ void NativeDynamicShapePlan::configureKvCacheRetention(
     }
     kvCacheRetentionEnabled_ = true;
 
-#ifdef SD_CUDA
     // Mark capture buffers for KV inputs as "always copy" — their data changes
-    // each step via kvScatter even though the GPU pointer stays the same
-    for (auto& seg : segments_) {
-      for (auto& cb : seg.captureBuffers) {
-        for (int i = 0; i < numMappings; i++) {
-          if (cb.externalInputIndex == kvCacheMappings_[i].pastInputExternalIdx) {
-            cb.neverSkipCopy = true;
-            break;
-          }
-        }
-      }
-    }
-#endif
+    // each step via kvScatter even though the GPU pointer stays the same.
+    // No-op on CPU builds (no capture buffers).
+    platformMarkKvCaptureBuffersNeverSkip();
 
-    sd_printf("NativeDynamicShapePlan: KV cache retention configured: %d mappings, maxLen=%d, initialPos=%d\n",
-              numMappings, maxKvLen, initialPos);
+    DSP_DIAG(KV_CACHE, "KV cache retention configured: %d mappings, maxLen=%d, initialPos=%d",
+             numMappings, maxKvLen, initialPos);
   } else {
     kvCacheMappings_ = nullptr;
     kvCacheRetentionEnabled_ = false;
@@ -4066,28 +1169,39 @@ void NativeDynamicShapePlan::setMaxKvCacheLength(int maxLen) {
 void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numExt, void* stream) {
   if (!kvCacheRetentionEnabled_ || kvCacheNumMappings_ == 0) return;
 
-  // Scatter present KV outputs into external input (static) buffers using
-  // the kvScatter CUDA kernel. No operator() calls, no heap allocations.
-  // The external buffers are then copied into capture buffers by the next step's
-  // frozen fast path (neverSkipCopy=true for KV inputs ensures the copy happens).
-  // Use the execution stream (if provided) so scatter runs on the same stream as
-  // the graph — avoids cross-stream synchronization overhead.
-  auto* lc = LaunchContext::defaultContext();
-#ifdef SD_CUDA
-  cudaStream_t* savedStream = nullptr;
-  if (stream != nullptr) {
-    savedStream = lc->getCudaStream();
-    lc->setCudaStream(static_cast<cudaStream_t*>(stream));
-  }
-#endif
+  // Scatter present KV outputs into external input (static) buffers.
+  // GPU: uses kvScatter kernel + stream management.
+  // CPU: uses operator() + assign() fallback.
+  void* savedState = platformBeginKvScatter(stream);
 
-  int scattered = 0, skipped = 0;
+  auto resolveLiveArray = [](NDArray* arr) -> NDArray* {
+    if (arr == nullptr) return nullptr;
+    if (arr->isEmpty()) return arr;
+    auto* db = arr->dataBuffer();
+    return (db != nullptr && db->isValid()) ? arr : nullptr;
+  };
+
+  // Collect valid scatter entries for batched dispatch
+  std::vector<sd::ops::helpers::KvScatterEntry> batchEntries;
+  batchEntries.reserve(kvCacheNumMappings_);
+  // Track arrays for prepareSpecialUse/registerSpecialUse
+  std::vector<std::pair<NDArray*, NDArray*>> scatterPairs;
+  DataType batchDtype = DataType::HALF;  // default; set from first valid entry
+
+  int skipped = 0;
   for (int m = 0; m < kvCacheNumMappings_; m++) {
     KvCacheMapping& mapping = kvCacheMappings_[m];
 
     int presentSlotIdx = mapping.presentOutputSlotIdx;
     if (presentSlotIdx < 0 || presentSlotIdx >= totalOutputSlots_) { skipped++; continue; }
-    NDArray* presentKv = slotArrayCache_[presentSlotIdx];
+
+    NDArray* presentKv = resolveLiveArray(outputSlots_[presentSlotIdx]);
+    if (presentKv == nullptr) {
+      presentKv = resolveLiveArray(slotArrayCache_[presentSlotIdx]);
+    } else if (slotArrayCache_[presentSlotIdx] != presentKv) {
+      slotArrayCache_[presentSlotIdx] = presentKv;
+    }
+
     if (presentKv == nullptr) { skipped++; continue; }
 
     int extIdx = mapping.pastInputExternalIdx;
@@ -4097,46 +1211,41 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 
     if (presentKv->rankOf() != 4 || staticBuf->rankOf() != 4) { skipped++; continue; }
 
-#ifdef SD_CUDA
-    // Direct CUDA kernel — no heap allocations, no operator()
-    ops::helpers::kvScatter(presentKv, staticBuf, kvCachePosition_, lc);
-#else
-    // CPU fallback: operator() + assign()
-    int seqDim = mapping.seqDim;
-    int rank = presentKv->rankOf();
-    LongType lastPos = presentKv->sizeAt(seqDim) - 1;
-    std::vector<LongType> srcIdx(rank * 2), dstIdx(rank * 2);
-    for (int d = 0; d < rank; d++) {
-      if (d == seqDim) {
-        srcIdx[d*2] = lastPos; srcIdx[d*2+1] = lastPos + 1;
-        dstIdx[d*2] = kvCachePosition_; dstIdx[d*2+1] = kvCachePosition_ + 1;
-      } else {
-        srcIdx[d*2] = 0; srcIdx[d*2+1] = 0;
-        dstIdx[d*2] = 0; dstIdx[d*2+1] = 0;
-      }
+    NDArray::prepareSpecialUse({staticBuf}, {presentKv});
+
+    sd::ops::helpers::KvScatterEntry entry;
+    entry.srcPtr = presentKv->specialBuffer();
+    entry.dstPtr = staticBuf->specialBuffer();
+    entry.heads = presentKv->sizeAt(1);
+    entry.srcSeqLen = presentKv->sizeAt(2);
+    entry.dstSeqLen = staticBuf->sizeAt(2);
+    entry.dim = presentKv->sizeAt(3);
+    entry.lastPos = entry.srcSeqLen - 1;
+    entry.cachePos = kvCachePosition_;
+    batchEntries.push_back(entry);
+    if (scatterPairs.empty()) {
+      batchDtype = presentKv->dataType();
     }
-    NDArray* srcSlice = (*presentKv)(srcIdx, true);
-    NDArray* dstSlice = (*staticBuf)(dstIdx, true);
-    dstSlice->assign(srcSlice);
-    delete srcSlice;
-    delete dstSlice;
-#endif
-    scattered++;
+    scatterPairs.push_back({presentKv, staticBuf});
   }
 
-#ifdef SD_CUDA
-  // Restore original stream on the default context
-  if (savedStream != nullptr) {
-    lc->setCudaStream(savedStream);
+  int scattered = static_cast<int>(batchEntries.size());
+  if (scattered > 0) {
+    auto* lc = LaunchContext::defaultContext();
+    sd::ops::helpers::kvScatterBatched(batchEntries.data(), scattered, batchDtype, lc);
   }
-#endif
 
-  if (traceEnabled_ && (skipped > 0 || executeCount_ <= 3)) {
-    sd_printf("KV scatter: %d scattered, %d skipped, pos=%d\n", scattered, skipped, kvCachePosition_);
+  // Register special use for all pairs
+  for (auto& pair : scatterPairs) {
+    NDArray::registerSpecialUse({pair.second}, {pair.first});
   }
+
+  platformEndKvScatter(savedState);
+
+  DSP_DIAG(KV_CACHE, "KV scatter (batched): %d scattered, %d skipped, pos=%d", scattered, skipped, kvCachePosition_);
 }
 
-// ─── Graph segmentation for CUDA Graphs ─────────────────────────────────────
+// ─── Graph segmentation for GPU graph capture ───────────────────────────────
 
 void NativeDynamicShapePlan::buildSegments() {
   if (numSlots_ == 0) return;
@@ -4165,11 +1274,13 @@ void NativeDynamicShapePlan::buildSegments() {
   // via maybeSplitUnstableSegments() → no value-dep ops found → captureFailed.
 
   auto isSlotCapturable = [](const NativeSlot& slot) -> bool {
+    // Control flow ops are never capturable — execution path is data-dependent
+    if (slot.controlFlowType != CF_NONE) return false;
     if (slot.isDataDependent) return false;
     // Value-dep-shape ops must always run slot-by-slot, regardless of input source.
     // Their output shapes depend on runtime VALUES (not just shapes), so the segment
     // shape key (which hashes input shapes) can't detect when their output shapes change.
-    // A CUDA graph replay with stale output shapes produces wrong results.
+    // A graph replay with stale output shapes produces wrong results.
     // The adaptive splitting will detect KV-growing segments (no value-dep ops,
     // shapes change every step) and permanently mark them slot-by-slot via captureFailed.
     if (slot.outputShapeDependsOnInputValues) return false;
@@ -4189,7 +1300,7 @@ void NativeDynamicShapePlan::buildSegments() {
     if (capturabilityChanged || deviceChange) {
       // End current segment
       current.endSlot = i - 1;
-      segments_.push_back(current);
+      segments_.push_back(std::move(current));
 
       // Start new segment
       current = GraphSegment();
@@ -4200,7 +1311,7 @@ void NativeDynamicShapePlan::buildSegments() {
 
   // Finalize last segment
   current.endSlot = numSlots_ - 1;
-  segments_.push_back(current);
+  segments_.push_back(std::move(current));
 
   // Log segment structure
   int capturableCount = 0, totalCapturable = 0;
@@ -4218,10 +1329,10 @@ void NativeDynamicShapePlan::buildSegments() {
       else dynamicCapturableCount++;
     }
   }
-  sd_printf("NativeDynamicShapePlan: %d segments (%d capturable: %d static, %d dynamic; covering %d/%d slots)\n",
-            (int)segments_.size(), capturableCount,
-            staticCapturableCount, dynamicCapturableCount,
-            totalCapturable, numSlots_);
+  DSP_DIAG(SEGMENT, "%d segments (%d capturable: %d static, %d dynamic; covering %d/%d slots)",
+           (int)segments_.size(), capturableCount,
+           staticCapturableCount, dynamicCapturableCount,
+           totalCapturable, numSlots_);
 
   int maxLoggedSegments = 8;
   int logged = std::min(static_cast<int>(segments_.size()), maxLoggedSegments);
@@ -4231,13 +1342,38 @@ void NativeDynamicShapePlan::buildSegments() {
     if (seg.startSlot >= 0 && seg.startSlot < numSlots_) {
       targetDevice = slots_[seg.startSlot].targetDeviceId;
     }
-    sd_printf("NativeDynamicShapePlan: segment[%d] [%d-%d] capturable=%d targetDeviceId=%d\n",
-              i, seg.startSlot, seg.endSlot, static_cast<int>(seg.isCapturable), targetDevice);
+    DSP_DIAG_SEG(SEGMENT, i, "segment[%d] [%d-%d] capturable=%d targetDeviceId=%d",
+                 i, seg.startSlot, seg.endSlot, static_cast<int>(seg.isCapturable), targetDevice);
   }
   if ((int)segments_.size() > maxLoggedSegments) {
-    sd_printf("NativeDynamicShapePlan: ... %d additional segments not shown in device map\n",
-              static_cast<int>(segments_.size()) - maxLoggedSegments);
+    DSP_DIAG(SEGMENT, "... %d additional segments not shown in device map",
+             static_cast<int>(segments_.size()) - maxLoggedSegments);
   }
+
+  // Propagate slotArrayCache_ to all segments so GPU backends can update
+  // the cache when pre-allocating output arrays (prevents memory leaks).
+  for (auto& seg : segments_) {
+    seg.slotArrayCache = slotArrayCache_;
+  }
+
+  // Initialize symbolic shape ranges if enabled
+  if (Environment::getInstance().dspSymbolicShapes()) {
+    int warmup = Environment::getInstance().dspSymbolicShapeWarmup();
+    for (auto& seg : segments_) {
+      seg.symbolicShapeEnabled = true;
+      seg.symbolicWarmupRemaining = warmup;
+      seg.symbolicRangeData = createSegmentShapeProfile(warmup);
+    }
+  }
+
+#ifdef SD_CUDA
+  // Initialize capture buffer pool registry if enabled
+  if (Environment::getInstance().dspCapturePoolEnabled() && captureBufferRegistry_ == nullptr) {
+    captureBufferRegistry_ = new CaptureBufferRegistry();
+    DSP_DIAG(MEMORY, "CaptureBufferRegistry: initialized for plan with %d segments",
+             static_cast<int>(segments_.size()));
+  }
+#endif
 }
 
 // ─── Rebuild segments for frozen shapes ───────────────────────────────────────
@@ -4254,19 +1390,7 @@ void NativeDynamicShapePlan::buildSegments() {
 void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // Destroy existing cached graphs (they reference old segment boundaries)
   for (auto& seg : segments_) {
-#ifdef SD_CUDA
-    seg.cachedGraph.reset();
-    seg.captureBuffers.clear();
-    if (seg.captureWorkspacePtr != nullptr) {
-      cudaFree(seg.captureWorkspacePtr);
-      seg.captureWorkspacePtr = nullptr;
-      seg.captureWorkspaceBytes = 0;
-    }
-    for (auto* ptr : seg.capturedHostPtrs) {
-      cudaFreeHost(ptr);
-    }
-    seg.capturedHostPtrs.clear();
-#endif
+    platformCleanupSegmentForRebuild(seg);
   }
 
   int oldSegCount = (int)segments_.size();
@@ -4287,16 +1411,19 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // MAX_FROZEN_SEGMENT_SIZE caps graph size. Set to INT_MAX to allow single
   // mega-graph capture of the entire decoder (3781+ slots).
   // With frozen shapes, all value-dependent ops are safe to capture.
+  // NOTE: create (ConstantOfShape) ops are captured but their input values are
+  // hashed and validated before replay (see computeCreateOpValueKey).
+  // If values change → graph is invalidated and re-captured.
   static constexpr int MAX_FROZEN_SEGMENT_SIZE = INT_MAX;
 
   auto isSlotCapturableFrozen = [this](int idx) -> bool {
-    return !slots_[idx].isDataDependent;
+    return !slots_[idx].isDataDependent && slots_[idx].controlFlowType == CF_NONE;
   };
 
   // Matmul segmentation: when enabled, break segments at matmul/attention ops.
   // This creates separate segments for element-wise chains between matmuls,
   // allowing Triton to fuse each chain into a single kernel (like pytorch.compile).
-  // Matmul ops themselves run via cuBLAS fallback within their own tiny segments.
+  // Matmul ops themselves run via GPU BLAS fallback within their own tiny segments.
   const bool matmulSegmentation = Environment::getInstance().dspMatmulSegmentation();
 
   auto isMatmulOrAttention = [this](int idx) -> bool {
@@ -4319,7 +1446,7 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     bool sizeLimit = (current.isCapturable && currentSize >= MAX_FROZEN_SEGMENT_SIZE);
 
     // When matmul segmentation is enabled, break before and after matmul/attention ops.
-    // This isolates element-wise chains for Triton fusion while matmuls run via cuBLAS.
+    // This isolates element-wise chains for Triton fusion while matmuls run via GPU BLAS.
     bool matmulBreak = false;
     if (matmulSegmentation) {
       bool thisIsMatmul = isMatmulOrAttention(i);
@@ -4330,14 +1457,14 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
 
     if (thisCapturable != current.isCapturable || deviceChange || sizeLimit || matmulBreak) {
       current.endSlot = i - 1;
-      segments_.push_back(current);
+      segments_.push_back(std::move(current));
       current = GraphSegment();
       current.startSlot = i;
       current.isCapturable = thisCapturable;
     }
   }
   current.endSlot = numSlots_ - 1;
-  segments_.push_back(current);
+  segments_.push_back(std::move(current));
 
   // Reset frozen context for all slots since segment boundaries changed
   for (int i = 0; i < numSlots_; i++) {
@@ -4355,1231 +1482,109 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     if (slots_[i].isDataDependent) {
       dataDepCount++;
       if (dataDepCount <= 10) {
-        sd_printf("NativeDSP::rebuildSegments: slot %d op='%s' is data-dependent\n",
-                  i, slots_[i].opName.c_str());
+        DSP_DIAG_SLOT(SEGMENT, i, "slot %d op='%s' is data-dependent",
+                      i, slots_[i].opName.c_str());
       }
     }
   }
   if (dataDepCount > 10) {
-    sd_printf("NativeDSP::rebuildSegments: ... and %d more data-dependent slots\n",
-              dataDepCount - 10);
+    DSP_DIAG(SEGMENT, "... and %d more data-dependent slots",
+             dataDepCount - 10);
   }
-  sd_printf("NativeDSP::rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep, matmulSeg=%d)\n",
-            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
-            static_cast<int>(matmulSegmentation));
-}
+  DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep, matmulSeg=%d)",
+           oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
+           static_cast<int>(matmulSegmentation));
 
-// ─── Adaptive segment splitting ───────────────────────────────────────────────
-//
-// When a capturable segment's shape key changes for INSTABILITY_THRESHOLD
-// consecutive executions, it contains mixed stable+unstable ops (e.g., KV-growing
-// attention mixed with stable FFN/projection ops). We binary-split the segment
-// at its midpoint. One half contains the unstable ops (keeps splitting until
-// small enough to be permanently slot-by-slot); the other half is stable and
-// captures cleanly.
-//
-// Convergence: O(log2(seg_size) * INSTABILITY_THRESHOLD) decode steps.
-// For a 150-op segment with THRESHOLD=2: ~14 warmup steps before convergence.
-// All transformer layers have the same structure so they converge in parallel,
-// not sequentially.
-//
-// Split semantics:
-//   - Sub-segments start fresh (executionCount=0, consecutiveShapeChanges=0)
-//   - Stable sub-segments capture on their 2nd execution
-//   - Sub-segments that remain unstable and reach MIN_SPLIT_SIZE → captureFailed
-
-void NativeDynamicShapePlan::maybeSplitUnstableSegments() {
-  // Quick check: any segment needing a split?
-  bool anySplit = false;
+  // Propagate slotArrayCache_ to all rebuilt segments so GPU backends can update
+  // the cache when pre-allocating output arrays (prevents memory leaks).
   for (auto& seg : segments_) {
-    if (seg.needsSplit) { anySplit = true; break; }
+    seg.slotArrayCache = slotArrayCache_;
   }
-  if (!anySplit) return;
 
-  std::vector<GraphSegment> result;
-  result.reserve(segments_.size() + 4);  // some extra for splits
+  // PRE-WARMUP: Disable in-place fusion for ops that consume frozen constant outputs.
+  // This MUST happen before the warmup execution. In-place fusion allows downstream ops
+  // to overwrite their input buffer with their output. If the input is a frozen constant
+  // (e.g., reduce_mean of shape_of), the cached frozen value gets corrupted during warmup.
+  // detectFrozenConstants() runs AFTER the warmup (executeCount_==1), but by then the
+  // cached values are already wrong. Fix: pre-identify frozen candidates using the same
+  // graph analysis (VALUE_INDEPENDENT_OPS + transitive consumer analysis) and disable
+  // in-place fusion for their consumers before the warmup runs.
+  static const std::unordered_set<std::string> VALUE_INDEPENDENT_OPS = {
+      "shape_of", "size_at", "rank",
+      "zeros_like", "zeros_as", "zeroslike",
+      "ones_like", "ones_as", "oneslike",
+      "create",
+  };
 
-  for (auto& seg : segments_) {
-    if (!seg.needsSplit) {
-      result.push_back(std::move(seg));
-      continue;
+  auto normalizeOp = [](const std::string& opName) -> std::string {
+    std::string n = opName;
+    std::transform(n.begin(), n.end(), n.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    return n;
+  };
+
+  // Propagate external dependency through the graph (same logic as detectFrozenConstants).
+  std::vector<bool> dependsOnExternal(totalOutputSlots_, false);
+  for (int s = 0; s < numSlots_; s++) {
+    auto& sl = slots_[s];
+    auto normalized = normalizeOp(sl.opName);
+    if (VALUE_INDEPENDENT_OPS.count(normalized) > 0) continue; // doesn't propagate dependency
+
+    bool anyExternal = false;
+    for (int i = 0; i < sl.numInputs; i++) {
+      int srcIdx = sl.inputSourceIndices[i];
+      if (srcIdx < 0 || (srcIdx < totalOutputSlots_ && dependsOnExternal[srcIdx])) {
+        anyExternal = true;
+        break;
+      }
     }
-
-    int segSize = seg.endSlot - seg.startSlot + 1;
-    if (segSize <= GraphSegment::MIN_SPLIT_SIZE) {
-      // Too small to split — make permanently slot-by-slot
-      seg.needsSplit = false;
-      seg.captureFailed = true;
-      seg.consecutiveShapeChanges = 0;
-      result.push_back(std::move(seg));
-      continue;
-    }
-
-    // Binary midpoint split: bisect the unstable segment.
-    // One half contains the growing-input ops (stays unstable → keeps splitting),
-    // the other half is stable (captures cleanly on its next execution).
-    // Convergence: O(log2(N) * INSTABILITY_THRESHOLD) decode steps.
-    // All 36 transformer layers have the same structure so they converge in parallel
-    // (not sequentially), giving ~log2(seg_size) * 2 total warmup steps total.
-    {
-      int mid = seg.startSlot + segSize / 2;
-
-      auto makeSubSeg = [&](int start, int end) {
-        if (start > end) return;
-        GraphSegment sub;
-        sub.startSlot = start;
-        sub.endSlot = end;
-        sub.isCapturable = seg.isCapturable;
-        sub.executionCount = 0;
-        sub.consecutiveShapeChanges = 0;
-        sub.needsSplit = false;
-#ifdef SD_CUDA
-        sub.cachedShapeKey = 0;
-#endif
-        // Invalidate slot shape caches so sub-segments re-warm correctly
-        for (int s = start; s <= end; s++) {
-          slots_[s].shapeCacheValid = false;
-          slots_[s].cachedShapeKey = 0;
-          slots_[s].cachedOutputShapes.clear();
-          slots_[s].frozenContextReady = false;
-          slots_[s].frozenConstantSlot = false;
-        }
-        result.push_back(std::move(sub));
-      };
-
-      makeSubSeg(seg.startSlot, mid - 1);
-      makeSubSeg(mid, seg.endSlot);
-
-      sd_printf("NativeDynamicShapePlan: binary-splitting unstable segment [%d-%d] (%d ops) "
-                "at midpoint %d into 2 sub-segments\n",
-                seg.startSlot, seg.endSlot, segSize, mid);
+    if (anyExternal) {
+      for (int o = 0; o < sl.numOutputs; o++) {
+        int si = sl.outputSlotIndices[o];
+        if (si >= 0 && si < totalOutputSlots_) dependsOnExternal[si] = true;
+      }
     }
   }
 
-  segments_ = std::move(result);
+  // Collect output slot indices of frozen candidate slots
+  std::unordered_set<int> frozenOutputSlots;
+  for (int s = 0; s < numSlots_; s++) {
+    auto& sl = slots_[s];
+    bool allConstant = true;
+    for (int o = 0; o < sl.numOutputs; o++) {
+      int si = sl.outputSlotIndices[o];
+      if (si >= 0 && si < totalOutputSlots_ && dependsOnExternal[si]) {
+        allConstant = false;
+        break;
+      }
+    }
+    if (allConstant && !sl.isDataDependent) {
+      for (int o = 0; o < sl.numOutputs; o++) {
+        int si = sl.outputSlotIndices[o];
+        if (si >= 0) frozenOutputSlots.insert(si);
+      }
+    }
+  }
+
+  // Disable in-place fusion for any op whose in-place input comes from a frozen output
+  int disabledInPlace = 0;
+  for (int s = 0; s < numSlots_; s++) {
+    auto& sl = slots_[s];
+    if (sl.inPlaceFused && sl.inPlaceFusedInputIdx >= 0 &&
+        sl.inPlaceFusedInputIdx < sl.numInputs) {
+      int srcSlot = sl.inputSourceIndices[sl.inPlaceFusedInputIdx];
+      if (srcSlot >= 0 && frozenOutputSlots.count(srcSlot)) {
+        sl.inPlaceFused = false;
+        sl.inPlaceFusedInputIdx = -1;
+        disabledInPlace++;
+      }
+    }
+  }
+  if (disabledInPlace > 0) {
+    DSP_DIAG(SEGMENT, "rebuildSegments: disabled %d in-place fusions that would corrupt %zu frozen outputs",
+             disabledInPlace, frozenOutputSlots.size());
+  }
 }
-
-// ─── CPU Graph backend integration ──────────────────────────────────────────
-GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
-  if (cpuGraphBackendChecked_) return cpuGraphBackend_;
-  cpuGraphBackendChecked_ = true;
-  const auto mode = graphExecutionMode_;
-
-  // Respect explicit backend selection modes:
-  // - SLOT_BY_SLOT: disable all graph backends
-  // - TRITON/NVRTC/PTX: don't route into CPU graph backends
-  //
-  // GEM_CUDA_GRAPHS is treated as "graph replay mode" on non-CUDA builds
-  // and intentionally maps to CPU graph backends (oneDNN/ACL).
-  if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
-      mode == GraphExecutionMode::GEM_TRITON ||
-      mode == GraphExecutionMode::GEM_NVRTC_JIT ||
-      mode == GraphExecutionMode::GEM_PTX_JIT) {
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-
-  const bool autoLikeMode = (mode == GraphExecutionMode::GEM_AUTO ||
-                             mode == GraphExecutionMode::GEM_CUDA_GRAPHS);
-
-  // MLX is highest priority CPU backend on macOS/Apple Silicon
-  // When GEM_MLX is explicitly selected, force MLX and skip other backends.
-#if HAVE_MLX
-  if (mode == GraphExecutionMode::GEM_MLX || autoLikeMode) {
-    auto& mlx = MlxGraphBackend::getInstance();
-    if (mlx.isAvailable()) {
-      cpuGraphBackend_ = &mlx;
-      if (mode == GraphExecutionMode::GEM_MLX) {
-        sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend (forced)\n", "");
-      } else {
-        sd_printf("NativeDynamicShapePlan: using MLX Apple Silicon backend\n", "");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_MLX) {
-      sd_printf("NativeDynamicShapePlan: GEM_MLX requested but MLX not available\n", "");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_MLX) {
-    sd_printf("NativeDynamicShapePlan: GEM_MLX requested but HAVE_MLX=0\n", "");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#if HAVE_ONEDNN
-  if (autoLikeMode) {
-    auto& onednn = OneDnnGraphBackend::getInstance();
-    if (onednn.isAvailable()) {
-      cpuGraphBackend_ = &onednn;
-      sd_printf("NativeDynamicShapePlan: using oneDNN Graph backend\n", "");
-      return cpuGraphBackend_;
-    }
-  }
-#endif
-
-#if HAVE_ARMCOMPUTE
-  if (autoLikeMode) {
-    auto& acl = AclGraphBackend::getInstance();
-    if (acl.isAvailable()) {
-      cpuGraphBackend_ = &acl;
-      sd_printf("NativeDynamicShapePlan: using ARM ACL backend\n", "");
-      return cpuGraphBackend_;
-    }
-  }
-#endif
-
-#if HAVE_NNAPI
-  if (mode == GraphExecutionMode::GEM_NNAPI || autoLikeMode) {
-    auto& nnapi = NnapiGraphBackend::getInstance();
-    if (nnapi.isAvailable()) {
-      cpuGraphBackend_ = &nnapi;
-      if (mode == GraphExecutionMode::GEM_NNAPI) {
-        sd_printf("NativeDynamicShapePlan: using Android NNAPI backend (forced)\n", "");
-      } else {
-        sd_printf("NativeDynamicShapePlan: using Android NNAPI backend\n", "");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_NNAPI) {
-      sd_printf("NativeDynamicShapePlan: GEM_NNAPI requested but NNAPI not available\n", "");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_NNAPI) {
-    sd_printf("NativeDynamicShapePlan: GEM_NNAPI requested but HAVE_NNAPI=0\n", "");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-#if HAVE_MLIR
-#if defined(__ANDROID__) || (defined(__linux__) && defined(__aarch64__))
-  if (mode == GraphExecutionMode::GEM_ARM_HYBRID || autoLikeMode) {
-    auto& armHybrid = ArmHybridGraphBackend::getInstance();
-    if (armHybrid.isAvailable()) {
-      cpuGraphBackend_ = &armHybrid;
-      if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-        sd_printf("NativeDynamicShapePlan: using ARM Hybrid (MLIR CPU + Vulkan) backend (forced)\n", "");
-      } else {
-        sd_printf("NativeDynamicShapePlan: using ARM Hybrid (MLIR CPU + Vulkan) backend\n", "");
-      }
-      return cpuGraphBackend_;
-    }
-    if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-      sd_printf("NativeDynamicShapePlan: GEM_ARM_HYBRID requested but backend not available\n", "");
-      cpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-    sd_printf("NativeDynamicShapePlan: GEM_ARM_HYBRID requested but this platform is not ARM Android/Linux\n", "");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-  if (autoLikeMode) {
-    auto& mlirBackend = MlirCpuGraphBackend::getInstance();
-    if (mlirBackend.isAvailable()) {
-      cpuGraphBackend_ = &mlirBackend;
-      sd_printf("NativeDynamicShapePlan: using MLIR CPU JIT backend\n", "");
-      return cpuGraphBackend_;
-    }
-  }
-#else
-  if (mode == GraphExecutionMode::GEM_ARM_HYBRID) {
-    sd_printf("NativeDynamicShapePlan: GEM_ARM_HYBRID requested but HAVE_MLIR=0\n", "");
-    cpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-#endif
-
-  cpuGraphBackend_ = nullptr;
-  return nullptr;
-}
-
-Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
-    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-
-  auto* backend = getCpuGraphBackend();
-  if (backend == nullptr) return Status::KERNEL_FAILURE;
-  const char* backendName = backend->name();
-
-  // If compilation previously failed validation, never try again
-  if (seg.captureFailed) {
-    return Status::KERNEL_FAILURE;
-  }
-
-  // Check if this segment can be compiled by the backend
-  if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
-    if (traceEnabled_) {
-      sd_printf("NativeDSP::executeSegmentWithCpuGraph: backend=%s cannot fuse seg[%d-%d]\n",
-                backendName, seg.startSlot, seg.endSlot);
-    }
-    return Status::KERNEL_FAILURE;  // Caller will fall back to slot-by-slot
-  }
-
-  // First execution: warmup slot-by-slot so backend wiring has concrete arrays.
-  if (seg.executionCount == 0) {
-    return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-  }
-
-  // Compute shape key for cache lookup
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-
-  // Compile once per stable shape; skip cache probe on steady-state replay.
-  bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
-  if (needsCompile) {
-    if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                                 outputSlots_, totalOutputSlots_, segShapeKey,
-                                 numSlots_)) {
-      if (traceEnabled_) {
-        sd_printf("NativeDSP::executeSegmentWithCpuGraph: backend=%s compile failed for seg[%d-%d]\n",
-                  backendName, seg.startSlot, seg.endSlot);
-      }
-      return Status::KERNEL_FAILURE;
-    }
-  }
-
-  // On first backend compilation, validate full coverage.
-  if (seg.executionCount == 1) {
-    auto audit = backend->getLastCompilationAudit();
-    lastCompilationAudit_ = audit;
-    bool allCompiled = true;
-    for (const auto& entry : audit) {
-      if (!entry.wasCompiled) {
-        allCompiled = false;
-        sd_printf("%s VALIDATION: slot %d (%s) was NOT compiled: %s\n",
-                  backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
-      }
-    }
-    if (!allCompiled) {
-      sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
-                "Falling back to slot-by-slot.\n",
-                backendName, seg.startSlot, seg.endSlot);
-      seg.captureFailed = true;
-      return Status::KERNEL_FAILURE;
-    }
-  }
-
-  // Execute via backend
-  seg.shapeKey = segShapeKey;
-  tl_graphExecutionActive = true;
-  auto status = backend->executeSegment(seg, slots_, externalArrays, numExt,
-                                         outputSlots_, totalOutputSlots_, stream);
-  tl_graphExecutionActive = false;
-
-  if (traceEnabled_) {
-    sd_printf("NativeDSP::executeSegmentWithCpuGraph: exec%d seg[%d-%d]: backend=%s status=%d(%s)\n",
-              seg.executionCount, seg.startSlot, seg.endSlot, backendName,
-              static_cast<int>(status), statusName(status));
-  }
-
-  if (status == Status::OK) {
-    seg.executionCount++;
-    totalGraphReplays_++;
-  }
-
-  return status;
-}
-
-// ─── GPU Graph backend integration (Triton) ─────────────────────────────────
-
-GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
-  if (gpuGraphBackendChecked_) return gpuGraphBackend_;
-  gpuGraphBackendChecked_ = true;
-
-  // If a specific backend is forced via setGraphExecutionMode(), use only that one.
-  // SLOT_BY_SLOT and CUDA_GRAPHS don't use a GPU graph backend.
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS) {
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-
-#if HAVE_TRITON
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    auto& triton = TritonGraphBackend::getInstance();
-    if (triton.isAvailable()) {
-      gpuGraphBackend_ = &triton;
-      sd_printf("NativeDynamicShapePlan: using Triton GPU compiler backend\n", "");
-      return gpuGraphBackend_;
-    }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
-      sd_printf("NativeDynamicShapePlan: Triton backend requested but not available\n", "");
-      gpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-    sd_printf("NativeDynamicShapePlan: Triton unavailable in AUTO mode, trying NVRTC/PTX backends\n", "");
-  }
-#else
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_TRITON) {
-    sd_printf("NativeDynamicShapePlan: Triton backend requested but not compiled (HAVE_TRITON=0)\n", "");
-    gpuGraphBackend_ = nullptr;
-    return nullptr;
-  }
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    sd_printf("NativeDynamicShapePlan: Triton not compiled (HAVE_TRITON=0); AUTO mode will try NVRTC/PTX/CUDA graphs\n", "");
-  }
-#endif
-
-#ifdef SD_CUDA
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    auto& nvrtc = NvrtcGraphBackend::getInstance();
-    if (nvrtc.isAvailable()) {
-      gpuGraphBackend_ = &nvrtc;
-      sd_printf("NativeDynamicShapePlan: using NVRTC GPU compiler backend\n", "");
-      return gpuGraphBackend_;
-    }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_NVRTC_JIT) {
-      sd_printf("NativeDynamicShapePlan: NVRTC backend requested but not available\n", "");
-      gpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-
-  if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
-    auto& ptx = PtxGraphBackend::getInstance();
-    if (ptx.isAvailable()) {
-      gpuGraphBackend_ = &ptx;
-      sd_printf("NativeDynamicShapePlan: using PTX template GPU compiler backend\n", "");
-      return gpuGraphBackend_;
-    }
-    if (graphExecutionMode_ == GraphExecutionMode::GEM_PTX_JIT) {
-      sd_printf("NativeDynamicShapePlan: PTX backend requested but not available\n", "");
-      gpuGraphBackend_ = nullptr;
-      return nullptr;
-    }
-  }
-#endif
-
-  gpuGraphBackend_ = nullptr;
-  return nullptr;
-}
-
-Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
-    GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
-
-  auto* backend = getGpuGraphBackend();
-  if (backend == nullptr) {
-    if (traceEnabled_) {
-      sd_printf("NativeDSP::executeSegmentWithGpuGraph: no GPU backend selected for seg[%d-%d]\n",
-                seg.startSlot, seg.endSlot);
-    }
-    return Status::KERNEL_FAILURE;
-  }
-  const char* backendName = backend->name();
-
-  // If compilation previously failed validation, never try again
-  if (seg.captureFailed) {
-    return Status::KERNEL_FAILURE;
-  }
-
-  // Check if this segment can be compiled by the selected GPU backend
-  if (!backend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) {
-    if (traceEnabled_) {
-      sd_printf("NativeDSP::executeSegmentWithGpuGraph: backend=%s cannot fuse seg[%d-%d]\n",
-                backendName, seg.startSlot, seg.endSlot);
-    }
-    return Status::KERNEL_FAILURE;  // Caller will fall back to CUDA Graphs
-  }
-
-  // First execution: run slot-by-slot warmup BEFORE compilation.
-  if (seg.executionCount == 0) {
-    auto warmupStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    if (warmupStatus == Status::OK) {
-      seg.executionCount++;
-    }
-    return warmupStatus;
-  }
-
-  // Compute shape key for cache lookup
-  LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
-
-  // Diagnostic: scan all slotArrayCache_ entries for freed DataBuffers.
-  // Java may have closed DSP output arrays between steps (e.g., prefill KV outputs via
-  // setCloseable(true)+close()), deleting the C++ NDArray and leaving dangling pointers.
-  // Run on EVERY execution — stale entries can appear between any two steps.
-  {
-    int invalidCount = 0;
-    for (int si = seg.startSlot; si <= seg.endSlot && si < totalOutputSlots_; si++) {
-      NDArray* cached = slotArrayCache_[si];
-      if (cached != nullptr && !cached->isEmpty()) {
-        auto* db = cached->dataBuffer();
-        if (db == nullptr || !db->isValid()) {
-          sd_printf("NativeDSP::executeSegmentWithGpuGraph: STALE slotArrayCache_[%d] detected "
-                    "(arr=%p, db=%p, dbValid=%d, frozenConst=%d). Invalidating.\n",
-                    si, (void*)cached, (void*)db, db ? (db->isValid() ? 1 : 0) : -1,
-                    slots_[si].frozenConstantSlot ? 1 : 0);
-          slotArrayCache_[si] = nullptr;
-          if (outputSlots_[si] == cached) outputSlots_[si] = nullptr;
-          // If this was a frozenConstantSlot (e.g. shape_of, zeros_like), its
-          // executeSlot() returns OK immediately without re-computing.  With its
-          // cached array gone the output stays nullptr, breaking downstream ops.
-          // Clear the flag so the op re-executes and re-populates the cache.
-          if (si < numSlots_ && slots_[si].frozenConstantSlot) {
-            slots_[si].frozenConstantSlot = false;
-          }
-          invalidCount++;
-        }
-      }
-    }
-    // Also scan external inputs (skip empty arrays — they legitimately have no DataBuffer)
-    for (int ei = 0; ei < numExt; ei++) {
-      NDArray* ext = externalArrays[ei];
-      if (ext != nullptr && !ext->isEmpty()) {
-        auto* db = ext->dataBuffer();
-        if (db == nullptr || !db->isValid()) {
-          sd_printf("NativeDSP::executeSegmentWithGpuGraph: STALE externalInput[%d] detected "
-                    "(arr=%p, db=%p, dbValid=%d)\n",
-                    ei, (void*)ext, (void*)db, db ? (db->isValid() ? 1 : 0) : -1);
-          invalidCount++;
-        }
-      }
-    }
-    if (invalidCount > 0) {
-      sd_printf("NativeDSP::executeSegmentWithGpuGraph: found %d stale entries in slot/external arrays\n",
-                invalidCount);
-      // Stale external inputs have null DataBuffers — proceeding would SIGSEGV
-      // when the GPU kernel tries to read from a freed buffer. Invalidate the
-      // cached graph so it gets re-captured with fresh pointers on the next call.
-#ifdef SD_CUDA
-      seg.cachedGraph.reset();
-      seg.cachedShapeKey = 0;
-      for (auto* ptr : seg.capturedHostPtrs) {
-        cudaFreeHost(ptr);
-      }
-      seg.capturedHostPtrs.clear();
-#endif
-      seg.captureFailed = false;
-      sd_printf("NativeDSP::executeSegmentWithGpuGraph: invalidated graph for seg[%d-%d] "
-                "due to %d stale entries — executing slot-by-slot this step\n",
-                seg.startSlot, seg.endSlot, invalidCount);
-      // Execute slot-by-slot as a one-time fallback instead of returning
-      // KERNEL_FAILURE (which aborts in forced-backend modes like TRITON).
-      return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
-    }
-  }
-
-  // Compile once per stable shape; skip cache probe on steady-state replay.
-  // This keeps the hot path focused on dispatch instead of repeated compile checks.
-  bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
-  if (needsCompile) {
-    if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
-                                 outputSlots_, totalOutputSlots_, segShapeKey,
-                                 numSlots_)) {
-      sd_printf("NativeDSP::executeSegmentWithGpuGraph: backend=%s compile failed for seg[%d-%d]\n",
-                backendName, seg.startSlot, seg.endSlot);
-      return Status::KERNEL_FAILURE;
-    }
-  }
-
-  // On first compilation, validate coverage
-  if (seg.executionCount == 1) {
-    auto audit = backend->getLastCompilationAudit();
-    lastCompilationAudit_ = audit;
-    int compiledCount = 0;
-    int failedCount = 0;
-    for (const auto& entry : audit) {
-      if (entry.wasCompiled) {
-        compiledCount++;
-      } else {
-        failedCount++;
-        sd_printf("%s VALIDATION: slot %d (%s) was NOT compiled: %s\n",
-                  backendName, entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
-      }
-    }
-    if (compiledCount == 0 && failedCount > 0) {
-      // All ops FAILED compilation — real failure.
-      if (isStrictNoFallbackMode(graphExecutionMode_)) {
-        sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has zero compiled ops "
-                  "(failed=%d). Forced backend mode prohibits fallback.\n",
-                  backendName, seg.startSlot, seg.endSlot, failedCount);
-      } else {
-        sd_printf("%s VALIDATION FAILURE: segment [%d-%d] has zero compiled ops "
-                  "(failed=%d). Falling back to CUDA Graphs.\n",
-                  backendName, seg.startSlot, seg.endSlot, failedCount);
-      }
-      seg.captureFailed = true;
-      return Status::KERNEL_FAILURE;
-    }
-    if (compiledCount == 0 && failedCount == 0) {
-      // All sections are intentional fallback (e.g., all non-elementwise).
-      // The compiled segment has 0 sub-kernels; executeSegment will run
-      // everything via fallbackRangeExecutor_.
-      sd_printf("%s: segment [%d-%d] has only fallback sections (no compilation needed). "
-                "Will run entirely via slot-by-slot fallback.\n",
-                backendName, seg.startSlot, seg.endSlot);
-    }
-    if (failedCount > 0) {
-      if (isStrictNoFallbackMode(graphExecutionMode_)) {
-        sd_printf("%s VALIDATION FAILURE: segment [%d-%d] partial compile detected "
-                  "(compiled=%d failed=%d). Forced backend mode prohibits fallback.\n",
-                  backendName, seg.startSlot, seg.endSlot, compiledCount, failedCount);
-        seg.captureFailed = true;
-        return Status::KERNEL_FAILURE;
-      }
-      sd_printf("%s VALIDATION: segment [%d-%d] partial compile accepted "
-                "(compiled=%d failed=%d); failed ranges will run slot-by-slot.\n",
-                backendName, seg.startSlot, seg.endSlot, compiledCount, failedCount);
-    }
-  }
-
-  // Pre-execution: ensure all output slots in the segment have live arrays.
-  // The Triton kernel's arg mapping references outputSlots_ for both inputs
-  // (from prior ops) and outputs (to write results). Slot-by-slot warmup may
-  // have released intermediate arrays via releaseAtStep_, leaving entries null.
-  // First restore from slotArrayCache_, then allocate any remaining nulls
-  // using cached shape info from warmup.
-  //
-  // IMPORTANT: Java may close() output arrays between execution steps (e.g.,
-  // prefill KV outputs via setCloseable(true)+close()). This frees the underlying
-  // DataBuffer while slotArrayCache_ still holds the NDArray*. Validate the
-  // DataBuffer before reusing — invalidate entries pointing to freed buffers.
-  for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
-    NativeSlot& slot = slots_[stepIdx];
-    // Restore input slot entries that may have been released
-    for (int i = 0; i < slot.numInputs; i++) {
-      int srcIdx = slot.inputSourceIndices[i];
-      if (srcIdx >= 0 && srcIdx < totalOutputSlots_ &&
-          outputSlots_[srcIdx] == nullptr && slotArrayCache_[srcIdx] != nullptr &&
-          !slotArrayCache_[srcIdx]->isEmpty()) {
-        // Validate DataBuffer before restoring — Java close() may have freed it
-        auto* db = slotArrayCache_[srcIdx]->dataBuffer();
-        if (db == nullptr || !db->isValid()) {
-          slotArrayCache_[srcIdx] = nullptr;
-          // Clear frozenConstantSlot on the SOURCE slot so its op re-executes
-          if (srcIdx < numSlots_ && slots_[srcIdx].frozenConstantSlot) {
-            slots_[srcIdx].frozenConstantSlot = false;
-          }
-        } else {
-          outputSlots_[srcIdx] = slotArrayCache_[srcIdx];
-        }
-      }
-    }
-    // Restore or allocate output slot entries
-    for (int i = 0; i < slot.numOutputs; i++) {
-      int slotIdx = slot.outputSlotIndices[i];
-      if (slotIdx < 0 || slotIdx >= totalOutputSlots_) continue;
-      if (slotArrayCache_[slotIdx] != nullptr && !slotArrayCache_[slotIdx]->isEmpty()) {
-        // Validate DataBuffer before restoring — Java close() may have freed it
-        auto* db = slotArrayCache_[slotIdx]->dataBuffer();
-        if (db == nullptr || !db->isValid()) {
-          slotArrayCache_[slotIdx] = nullptr;
-          // Clear frozenConstantSlot so the op re-executes instead of
-          // returning OK with a null/stale output
-          if (stepIdx < numSlots_ && slots_[stepIdx].frozenConstantSlot) {
-            slots_[stepIdx].frozenConstantSlot = false;
-          }
-        } else {
-          outputSlots_[slotIdx] = slotArrayCache_[slotIdx];
-        }
-      } else if (outputSlots_[slotIdx] == nullptr) {
-        // Allocate from cached shape info (populated during warmup)
-        const LongType* shapeInfo = nullptr;
-        if (i < static_cast<int>(slot.cachedOutputShapes.size()) && slot.cachedOutputShapes[i]) {
-          shapeInfo = slot.cachedOutputShapes[i];
-        }
-        // Fallback: for identity/view-like ops that don't cache output shapes,
-        // derive the shape from the first input source's existing array
-        if (!shapeInfo && slot.numInputs > 0) {
-          int srcIdx = slot.inputSourceIndices[0];
-          NDArray* srcArr = nullptr;
-          if (srcIdx < 0) {
-            int extIdx = -(srcIdx + 1);
-            if (extIdx < numExt) srcArr = externalArrays[extIdx];
-          } else if (srcIdx < totalOutputSlots_) {
-            srcArr = outputSlots_[srcIdx];
-            if (!srcArr && slotArrayCache_[srcIdx] != nullptr) {
-              auto* db = slotArrayCache_[srcIdx]->dataBuffer();
-              if (db != nullptr && db->isValid()) {
-                srcArr = slotArrayCache_[srcIdx];
-              } else {
-                slotArrayCache_[srcIdx] = nullptr;
-              }
-            }
-          }
-          if (srcArr) shapeInfo = srcArr->shapeInfo();
-        }
-        if (shapeInfo) {
-          auto dt = ArrayOptions::dataType(shapeInfo);
-          auto order = shape::order(shapeInfo);
-          LongType rank = shape::rank(shapeInfo);
-          std::vector<LongType> shapeVec(rank);
-          for (int d = 0; d < rank; d++) shapeVec[d] = shapeInfo[d + 1];
-          auto* arr = new NDArray(order, shapeVec, dt);
-          outputSlots_[slotIdx] = arr;
-          slotArrayCache_[slotIdx] = arr;
-        }
-      }
-    }
-  }
-
-  // Execute via selected GPU backend
-  seg.shapeKey = segShapeKey;
-
-#ifdef SD_CUDA
-  cudaStream_t cudaStr = (stream != nullptr)
-      ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  bool allowTritonCudaGraphReplay = Environment::getInstance().tritonGraphCapture() &&
-                                    shapesFrozen_ && (segments_.size() == 1);
-  LongType segInputAddrKey = computeSegmentInputAddrKey(seg, externalArrays, numExt);
-
-  // Triton-captured graphs use direct external buffer addresses (no capture buffers),
-  // so replay is valid only when both shape key and input-address key match.
-  if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
-      seg.cachedGraph != nullptr &&
-      (seg.cachedGraph->getState() == cuda::GraphState::INSTANTIATED ||
-       seg.cachedGraph->getState() == cuda::GraphState::COMPLETED) &&
-      seg.cachedShapeKey == segShapeKey &&
-      seg.capturedInputAddrKey == segInputAddrKey) {
-    // Refresh Triton arg table pinned buffers before replay
-#if HAVE_TRITON
-    {
-      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
-      if (tritonBackend != nullptr) {
-        tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
-                                                 outputSlots_, totalOutputSlots_);
-      }
-    }
-#endif
-    // Ensure all prior async work on this stream completes before replay.
-    cudaStreamSynchronize(cudaStr);
-    cudaGetLastError();  // Clear any sticky errors
-
-    // Replay strategy: configurable via ND4J_TRITON_GRAPH_REINSTANTIATE.
-    // Default (OFF): direct replay of existing graphExec.
-    // ON: destroy and re-instantiate graphExec from graph template before each replay.
-    {
-      bool replayOk = false;
-      if (Environment::getInstance().tritonGraphReinstantiate()) {
-        if (!seg.cachedGraph->reInstantiate()) {
-          sd_printf("NativeDSP: Triton graph reInstantiate FAILED for seg[%d-%d]\n",
-                    seg.startSlot, seg.endSlot);
-        } else {
-          replayOk = seg.cachedGraph->launchAsync(cudaStr);
-        }
-      } else {
-        replayOk = seg.cachedGraph->launchAsync(cudaStr);
-      }
-      if (replayOk) {
-        seg.executionCount++;
-        totalGraphReplays_++;
-        return Status::OK;
-      }
-      // Launch failed — clear stale graph and fall through to direct Triton execution.
-      sd_printf("NativeDSP: Triton graph replay FAILED for seg[%d-%d], "
-                "falling back to direct execution\n", seg.startSlot, seg.endSlot);
-      seg.cachedGraph.reset();
-      seg.capturedInputAddrKey = 0;
-      seg.captureFailed = true;
-      for (auto* ptr : seg.capturedHostPtrs) {
-        cudaFreeHost(ptr);
-      }
-      seg.capturedHostPtrs.clear();
-      cudaGetLastError();
-    }
-  }
-
-  if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
-      seg.cachedGraph != nullptr &&
-      seg.cachedShapeKey == segShapeKey &&
-      seg.capturedInputAddrKey != 0 &&
-      seg.capturedInputAddrKey != segInputAddrKey) {
-    seg.cachedGraph.reset();
-    seg.capturedInputAddrKey = 0;
-    for (auto* ptr : seg.capturedHostPtrs) { cudaFreeHost(ptr); }
-    seg.capturedHostPtrs.clear();
-  }
-
-  if (allowTritonCudaGraphReplay && seg.captureBuffers.empty() &&
-      seg.cachedGraph != nullptr &&
-      seg.cachedShapeKey != segShapeKey) {
-    seg.cachedGraph.reset();
-    seg.capturedInputAddrKey = 0;
-    for (auto* ptr : seg.capturedHostPtrs) { cudaFreeHost(ptr); }
-    seg.capturedHostPtrs.clear();
-  }
-#endif
-
-#if HAVE_TRITON
-  struct TritonFallbackGuard {
-    bool active = false;
-    ~TritonFallbackGuard() {
-      if (active) TritonGraphBackend::clearFallbackRangeExecutor();
-    }
-  } tritonFallbackGuard;
-
-  auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
-  if (tritonBackend != nullptr) {
-    TritonGraphBackend::setFallbackRangeExecutor(
-        [this, &seg, externalArrays, numExt, stream](int startSlot, int endSlot) -> Status {
-          if (startSlot > endSlot) return Status::OK;
-
-          GraphSegment gapSeg;
-          gapSeg.startSlot = startSlot;
-          gapSeg.endSlot = endSlot;
-          gapSeg.executionCount = seg.executionCount;
-          gapSeg.captureFailed = seg.captureFailed;
-
-          // Check if the stream is currently being captured (CUDA graph recording).
-          // During capture: keep tl_graphExecutionActive=true so fallback ops use the
-          // pre-allocated capture workspace for any allocations. The workspace must be
-          // set up before beginCapture (see shouldCaptureTritonGraph block below).
-          // Outside capture: set tl_graphExecutionActive=false so fallback ops use
-          // normal allocation paths (cudaMallocAsync) and sync guards work normally.
-          bool streamIsCapturing = false;
-#ifdef SD_CUDA
-          if (stream != nullptr) {
-            cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
-            cudaStreamIsCapturing(*static_cast<cudaStream_t*>(stream), &capStat);
-            streamIsCapturing = (capStat != cudaStreamCaptureStatusNone);
-          }
-#endif
-          bool savedGraphActive = tl_graphExecutionActive;
-          if (!streamIsCapturing) {
-            tl_graphExecutionActive = false;
-          }
-          // When capturing, tl_graphExecutionActive stays true — ops allocate from
-          // capture workspace and cuBLAS/cuDNN calls get recorded into the graph.
-          auto gapStatus = executeSegmentSlotBySlot(gapSeg, externalArrays, numExt, stream);
-          tl_graphExecutionActive = savedGraphActive;
-          return gapStatus;
-        });
-    tritonFallbackGuard.active = true;
-  }
-#endif
-
-  Status status = Status::KERNEL_FAILURE;
-  bool usedTritonGraphCapture = false;
-
-#ifdef SD_CUDA
-  // Try capturing the fused Triton launch sequence starting from the SECOND
-  // Triton execution (executionCount >= 2). executionCount=1 is the first
-  // Triton execution after slot-by-slot warmup — it serves as a Triton warmup
-  // that validates arg resolution and triggers any lazy device allocations
-  // (e.g., indirect arg tables) OUTSIDE stream capture. Attempting capture on
-  // the very first Triton execution causes cudaMallocAsync to fail with
-  // "operation not permitted when stream is capturing" if any allocation
-  // was not fully pre-allocated during compileSegment().
-  bool shouldCaptureTritonGraph = allowTritonCudaGraphReplay &&
-                                  seg.captureBuffers.empty() &&
-                                  seg.cachedGraph == nullptr &&
-                                  !seg.captureFailed &&
-                                  seg.executionCount >= 2 &&
-                                  seg.executionCount <= 4 &&
-                                  cudaStr != nullptr;
-  if (shouldCaptureTritonGraph) {
-    // Set up capture workspace BEFORE beginCapture — cudaMalloc must be outside capture.
-    // Fallback ops (matmul, attention, concat) need temporary buffers during execution.
-    // With tl_graphExecutionActive=true, CudaMemoryPool allocates from this workspace
-    // instead of calling cudaMallocAsync (which fails during capture).
-    static size_t TRITON_CAPTURE_WORKSPACE_SIZE = []() -> size_t {
-      const char* envVal = std::getenv("ND4J_DSP_CAPTURE_WORKSPACE_MB");
-      size_t mb = 512;  // default
-      if (envVal != nullptr) {
-        int parsed = std::atoi(envVal);
-        if (parsed > 0 && parsed <= 4096) mb = static_cast<size_t>(parsed);
-      }
-      return mb * 1024ULL * 1024ULL;
-    }();
-
-    if (seg.captureWorkspacePtr == nullptr) {
-      cudaError_t wsErr = cudaMalloc(&seg.captureWorkspacePtr, TRITON_CAPTURE_WORKSPACE_SIZE);
-      if (wsErr == cudaSuccess) {
-        seg.captureWorkspaceBytes = TRITON_CAPTURE_WORKSPACE_SIZE;
-        sd_printf("NativeDSP: allocated %zuMB Triton capture workspace for seg[%d-%d]\n",
-                  TRITON_CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
-      } else {
-        cudaGetLastError();
-        seg.captureWorkspacePtr = nullptr;
-        seg.captureWorkspaceBytes = 0;
-        sd_printf("NativeDSP: WARNING - Triton capture workspace allocation failed (%s)\n",
-                  cudaGetErrorString(wsErr));
-      }
-    }
-
-    // Set thread-local workspace for CudaMemoryPool during capture
-    tl_captureWorkspace = seg.captureWorkspacePtr;
-    tl_captureWorkspaceSize = seg.captureWorkspaceBytes;
-    tl_captureWorkspaceOffset = 0;
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-    // Set capture stream so captureSafeStreamOrDefault() routes ops to the correct stream
-    cudaStream_t prevCaptureStream = tl_graphCaptureStream;
-    tl_graphCaptureStream = cudaStr;
-
-    // Pre-allocate cuBLAS workspace to prevent internal cudaMalloc during capture.
-    // cuBLAS internally allocates workspace on stream 0 for GEMM operations. During
-    // graph capture on a named stream, this cross-stream allocation breaks capture,
-    // producing invalid graph nodes that SIGSEGV on cudaGraphLaunch.
-    static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;  // 256 MB
-    ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
-    setCublasWorkspaceForCapture(stream);
-
-    // Reset MmulHelper cast cache indices so capture reuses pre-allocated HALF buffers
-    // in the same order as the warmup execution (avoids capture workspace temporaries)
-    MmulHelper::resetCastCacheIndices();
-
-    // ── Batch-zero preparation (OUTSIDE capture) ─────────────────────────
-    // Collect output buffers that need zeroing. Only gap (native fallback) slot
-    // outputs are zeroed — Triton sub-kernels fully overwrite their outputs.
-    if (Environment::getInstance().dspBatchZero()) {
-      std::unordered_set<int> gapSlots;
-      if (Environment::getInstance().dspBatchZeroGapOnly()) {
-#if HAVE_TRITON
-        auto* tritonBE = dynamic_cast<TritonGraphBackend*>(backend);
-        if (tritonBE != nullptr) {
-          gapSlots = tritonBE->getGapSlots(seg, slots_);
-        } else
-#endif
-        {
-          for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
-        }
-      } else {
-        for (int s = seg.startSlot; s <= seg.endSlot; s++) gapSlots.insert(s);
-      }
-      collectBatchZeroTargets(gapSlots);
-      prepareBatchZeroDevice(cudaStr);
-    }
-
-    // Synchronize before capture to ensure all prior async work is complete
-    cudaStreamSynchronize(cudaStr);
-    // Clear any sticky CUDA error before capture — stale errors from prior operations
-    // (e.g., cudaFuncGetName on driver-API functions) contaminate capture and launch.
-    cudaGetLastError();
-
-    // Configurable: push primary CUDA context during capture.
-    // Default OFF — the non-Triton path works without it. Pushing and then popping
-    // after capture may cause SIGSEGV on replay (null pointer inside libcuda.so).
-    // Enable via ND4J_TRITON_GRAPH_CTX_PUSH=1 for debugging.
-    int tritonCaptureDevice = 0;
-    cudaGetDevice(&tritonCaptureDevice);
-    CUcontext primaryCtx = nullptr;
-    CUcontext prevCtx = nullptr;
-    bool didPushCtx = false;
-    if (Environment::getInstance().tritonGraphCtxPush()) {
-      CUdevice cuDev;
-      cuDeviceGet(&cuDev, tritonCaptureDevice);
-      cuDevicePrimaryCtxRetain(&primaryCtx, cuDev);
-      cuCtxGetCurrent(&prevCtx);
-      if (prevCtx != primaryCtx) {
-        cuCtxPushCurrent(primaryCtx);
-        didPushCtx = true;
-        sd_printf("NativeDSP: Triton capture pushed primary ctx %p (was %p) for device %d\n",
-                  (void*)primaryCtx, (void*)prevCtx, tritonCaptureDevice);
-      }
-    }
-
-    auto handle = std::make_shared<sd::cuda::CudaGraphHandle>();
-    bool captureOk = handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed);
-    if (captureOk) {
-      sd_printf("NativeDSP: Triton graph capture started for seg[%d-%d] execCount=%d\n",
-                seg.startSlot, seg.endSlot, seg.executionCount);
-      tl_graphExecutionActive = true;
-
-      // Launch batch-zero kernel INSIDE capture — this becomes a single graph node
-      // that replaces ~1000 individual memset nodes. The kernel zeros all output
-      // buffers for native fallback ops (matmul, cast, shape_manip, etc.).
-      // Controlled by ND4J_DSP_BATCH_ZERO env var (default: disabled)
-      if (Environment::getInstance().dspBatchZero() && batchZeroDeviceCount_ > 0) {
-        launchBatchZero(cudaStr);
-        setBatchZeroActive(true);
-        sd_printf("NativeDSP: batch-zero ENABLED (%d buffers)\n", batchZeroDeviceCount_);
-      } else {
-        sd_printf("NativeDSP: batch-zero DISABLED (dspBatchZero=%d, buffers=%d)\n",
-                  (int)Environment::getInstance().dspBatchZero(), batchZeroDeviceCount_);
-      }
-
-      // Query node count mid-capture to verify operations are being recorded
-      size_t midCaptureNodes = handle->getNumNodesDuringCapture(cudaStr);
-      sd_printf("NativeDSP: Triton capture mid-check: %zu nodes recorded before executeSegment (batchZero=%d buffers)\n",
-                midCaptureNodes, batchZeroDeviceCount_);
-
-      auto captureStatus = backend->executeSegment(seg, slots_, externalArrays, numExt,
-                                                   outputSlots_, totalOutputSlots_, stream);
-      setBatchZeroActive(false);
-      tl_graphExecutionActive = false;
-
-      // Check for CUDA errors generated during capture — these become invalid graph nodes.
-      // Don't use cudaGetLastError (which clears) — peek first for diagnostics.
-      {
-        cudaError_t capPhaseErr = cudaPeekAtLastError();
-        if (capPhaseErr != cudaSuccess) {
-          sd_printf("NativeDSP: WARNING - CUDA error during Triton capture phase: %s (%d)\n",
-                    cudaGetErrorString(capPhaseErr), (int)capPhaseErr);
-          // Clear it so endCapture can proceed (the graph may still be partially valid)
-          cudaGetLastError();
-        }
-      }
-
-      // Query node count after execution to see how many ops were captured
-      size_t postExecNodes = 0;
-      {
-        cudaStreamCaptureStatus capStat = cudaStreamCaptureStatusNone;
-        cudaGraph_t capGraph = nullptr;
-        unsigned long long capId = 0;
-        auto capErr = cudaStreamGetCaptureInfo_v2(cudaStr, &capStat, &capId, &capGraph, nullptr, nullptr);
-        if (capErr == cudaSuccess && capGraph != nullptr) {
-          cudaGraphGetNodes(capGraph, nullptr, &postExecNodes);
-        }
-      }
-      sd_printf("NativeDSP: Triton capture post-exec: %zu nodes, captureStatus=%d\n",
-                postExecNodes, static_cast<int>(captureStatus));
-      fflush(stdout); fflush(stderr);
-
-      bool endOk = false;
-      if (captureStatus == Status::OK) {
-        endOk = handle->endCapture(cudaStr);
-      } else {
-        sd_printf("NativeDSP: Triton capture execution FAILED status=%d for seg[%d-%d]\n",
-                  static_cast<int>(captureStatus), seg.startSlot, seg.endSlot);
-        fflush(stdout); fflush(stderr);
-        if (handle->isCapturing()) {
-          handle->endCapture(cudaStr);
-        }
-      }
-
-      if (endOk) {
-        size_t numGraphNodes = handle->getNumNodes();
-        sd_printf("NativeDSP: Triton capture endOk: graph has %zu nodes\n", numGraphNodes);
-        fflush(stdout); fflush(stderr);
-      }
-
-      if (endOk) {
-        auto stats = handle->getStatistics();
-        sd_printf("NativeDSP: Triton graph stats: %d kernels, %d memcpys, %d memsets, "
-                  "%d memAllocs, %d memFrees, %d hostCallbacks, %d events, %d empty\n",
-                  stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
-                  stats.numMemAllocs, stats.numMemFrees,
-                  stats.numHostCallbacks, stats.numEvents, stats.numEmpty);
-        fflush(stdout); fflush(stderr);
-        if (stats.numMemAllocs > 0 || stats.numMemFrees > 0) {
-          sd_printf("NativeDSP: Triton graph has %d MemAlloc + %d MemFree nodes "
-                    "(paired alloc/free from cuBLAS internal workspace — CUDA 12+ handles these on replay).\n",
-                    stats.numMemAllocs, stats.numMemFrees);
-        }
-        if (stats.numHostCallbacks > 0) {
-          sd_printf("NativeDSP: WARNING - Graph has %d host callback nodes!\n",
-                    stats.numHostCallbacks);
-        }
-      }
-
-      // Skip DOT dump by default for Triton graphs — cudaGraphDebugDotPrint with verbose
-      // flags may also call cudaGraphKernelNodeGetParams internally, causing the same
-      // cudaErrorInvalidDeviceFunction poisoning as getDetailedNodeInfo().
-      if (endOk && Environment::getInstance().tritonDumpGraphDot()) {
-        cudaGraphDebugDotPrint(handle->getGraph(), "/tmp/triton_graph_debug.dot", 0);
-        sd_printf("NativeDSP: Triton graph dumped to /tmp/triton_graph_debug.dot\n");
-        fflush(stdout); fflush(stderr);
-      }
-
-      // Skip getDetailedNodeInfo() for Triton graphs — it calls cudaFuncGetName on each
-      // kernel node, which returns cudaErrorInvalidDeviceFunction (error 98) for Triton
-      // kernels loaded via cuModuleLoadDataEx (driver API). The 658+ consecutive errors
-      // poison the CUDA error state and cause cudaGraphLaunch to SIGSEGV.
-      // Use getNumNodes() for basic stats instead (no per-node introspection).
-      bool allKernelsValid = true;
-      if (endOk) {
-#ifdef SD_CUDA
-        size_t totalNodes = handle->getNumNodes();
-        sd_printf("NativeDSP: Triton graph has %zu nodes (skipping per-node inspection to avoid error-98 poisoning)\n",
-                  totalNodes);
-        fflush(stdout); fflush(stderr);
-        // Ensure no sticky errors before instantiation
-        cudaGetLastError();
-#endif
-      }
-
-      bool instantiateOk = endOk && allKernelsValid && handle->instantiate();
-      if (instantiateOk) {
-        sd_printf("NativeDSP: Triton graph instantiated OK (graphExec=%p), about to launch...\n",
-                  handle->getGraphExec());
-        fflush(stdout); fflush(stderr);
-      }
-
-      // Try launch with pre/post sync to catch async errors
-      bool launchOk = false;
-      if (instantiateOk) {
-        // Sync before launch to ensure no pending errors
-        cudaStreamSynchronize(cudaStr);
-        auto preErr = cudaGetLastError();
-        if (preErr != cudaSuccess) {
-          sd_printf("NativeDSP: WARNING - pre-launch CUDA error: %s\n",
-                    cudaGetErrorString(preErr));
-        }
-
-        // Refresh Triton arg table pinned buffers before first launch.
-        // During capture, the arg tables were populated from outputSlots_.
-        // Between endCapture and launch, async frees on other streams may
-        // have invalidated some device pointers. Re-resolve all pointers
-        // from the current outputSlots_ (slotArrayCache_) to ensure the
-        // graph's H2D memcpy nodes transfer valid addresses.
-#if HAVE_TRITON
-        {
-          // Temporarily store shape key so refreshArgTablesForReplay can find
-          // the compiled segment. seg hasn't been stored yet, so use local.
-          LongType savedShapeKey = seg.shapeKey;
-          seg.shapeKey = segShapeKey;
-          auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
-          if (tritonBackend != nullptr) {
-            tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
-                                                     outputSlots_, totalOutputSlots_);
-          }
-          seg.shapeKey = savedShapeKey;
-        }
-#endif
-
-        // Launch on the capture stream.
-        sd_printf("NativeDSP: Triton graph launching on capture stream %p (device=%d)\n",
-                  (void*)cudaStr, tritonCaptureDevice);
-        launchOk = handle->launchAsync(cudaStr);
-      }
-
-      if (launchOk) {
-        seg.cachedGraph = handle;
-        seg.cachedShapeKey = segShapeKey;
-        seg.capturedInputAddrKey = segInputAddrKey;
-
-        // Export graph stats and DOT file for diagnostics
-        auto stats = handle->getStatistics();
-        sd_printf("NativeDSP: Triton graph CAPTURED and launched for seg[%d-%d]: "
-                  "%d kernels, %d memcpy, %d memset, %d memAlloc, %d memFree "
-                  "(workspace=%zuMB, offset=%zu)\n",
-                  seg.startSlot, seg.endSlot,
-                  stats.numKernels, stats.numMemcpyH2D + stats.numMemcpyD2H + stats.numMemcpyD2D,
-                  stats.numMemsets, stats.numMemAllocs, stats.numMemFrees,
-                  seg.captureWorkspaceBytes / (1024*1024), tl_captureWorkspaceOffset);
-        // Write DOT file for offline analysis.
-        // Default: non-verbose (flag 0). Verbose queries kernel node params via
-        // cudaFuncGetName, which returns cudaErrorInvalidDeviceFunction for
-        // Triton CUfunction handles and may poison driver state.
-        // Enable via ND4J_TRITON_GRAPH_DOT_VERBOSE=1 for debugging.
-        {
-          std::string dotPath = "/tmp/triton_graph_captured.dot";
-          unsigned int dotFlags = Environment::getInstance().tritonGraphDotVerbose()
-              ? cudaGraphDebugDotFlagsVerbose : 0;
-          auto dotErr = cudaGraphDebugDotPrint(handle->getGraph(), dotPath.c_str(), dotFlags);
-          if (dotErr == cudaSuccess) {
-            sd_printf("NativeDSP: Exported Triton graph DOT to %s (verbose=%d)\n",
-                      dotPath.c_str(), dotFlags != 0);
-          }
-          cudaGetLastError(); // Clear any error from dot print
-        }
-        // Write stats to a file the test can read
-        {
-          FILE* f = fopen("/tmp/triton_graph_stats.txt", "w");
-          if (f) {
-            fprintf(f, "segment=%d-%d\n", seg.startSlot, seg.endSlot);
-            fprintf(f, "kernels=%d\n", stats.numKernels);
-            fprintf(f, "memcpyH2D=%d\n", stats.numMemcpyH2D);
-            fprintf(f, "memcpyD2H=%d\n", stats.numMemcpyD2H);
-            fprintf(f, "memcpyD2D=%d\n", stats.numMemcpyD2D);
-            fprintf(f, "memsets=%d\n", stats.numMemsets);
-            fprintf(f, "memAllocs=%d\n", stats.numMemAllocs);
-            fprintf(f, "memFrees=%d\n", stats.numMemFrees);
-            fprintf(f, "hostCallbacks=%d\n", stats.numHostCallbacks);
-            fprintf(f, "events=%d\n", stats.numEvents);
-            fprintf(f, "childGraphs=%d\n", stats.numChildGraphs);
-            fprintf(f, "totalNodes=%zu\n", handle->getNumNodes());
-            fclose(f);
-          }
-        }
-        status = Status::OK;
-        usedTritonGraphCapture = true;
-      } else {
-        sd_printf("NativeDSP: Triton graph capture/instantiate/launch FAILED for seg[%d-%d] "
-                  "(endOk=%d instantiateOk=%d launchOk=%d)\n",
-                  seg.startSlot, seg.endSlot,
-                  static_cast<int>(endOk), static_cast<int>(instantiateOk),
-                  static_cast<int>(launchOk));
-        cudaGetLastError();
-      }
-    } else {
-      sd_printf("NativeDSP: Triton graph capture beginCapture FAILED for seg[%d-%d]\n",
-                seg.startSlot, seg.endSlot);
-      cudaGetLastError();
-    }
-
-    // Restore primary CUDA context if we pushed it
-    if (didPushCtx) {
-      CUcontext dummy;
-      cuCtxPopCurrent(&dummy);
-      CUdevice cuDev;
-      cuDeviceGet(&cuDev, tritonCaptureDevice);
-      cuDevicePrimaryCtxRelease(cuDev);
-    }
-
-    // Restore cuBLAS workspace to default (undo setCublasWorkspaceForCapture)
-    restoreCublasWorkspaceAfterCapture(stream);
-
-    // Reset thread-local state after capture attempt
-    tl_captureWorkspace = nullptr;
-    tl_captureWorkspaceSize = 0;
-    tl_captureWorkspaceOffset = 0;
-    tl_graphCaptureStream = prevCaptureStream;
-    // Pinned host ptrs: graph's H2D memcpy nodes reference these on replay.
-    // On success: move to segment so they persist for graph lifetime.
-    // On failure: free immediately (no graph to replay).
-    if (usedTritonGraphCapture) {
-      seg.capturedHostPtrs = std::move(tl_capturedHostPtrs);
-      sd_printf("NativeDSP: preserved %zu pinned host ptrs for Triton graph replay\n",
-                seg.capturedHostPtrs.size());
-    } else {
-      for (auto* ptr : tl_capturedHostPtrs) {
-        cudaFreeHost(ptr);
-      }
-    }
-    tl_capturedHostPtrs.clear();
-    tl_captureReplicateCache.clear();
-
-    // Flush arrays that accumulated in pendingClose_ during capture.
-    // flushPendingClose was skipped inside capture to avoid recording
-    // cudaFreeAsync MemFree graph nodes for external memory. Safe to free now.
-    if (!pendingClose_.empty()) {
-      flushPendingClose(stream);
-    }
-  }
-#endif
-
-  if (!usedTritonGraphCapture) {
-    tl_graphExecutionActive = true;
-    try {
-      status = backend->executeSegment(seg, slots_, externalArrays, numExt,
-                                       outputSlots_, totalOutputSlots_, stream);
-    } catch (...) {
-      tl_graphExecutionActive = false;
-      throw;  // Re-throw after cleanup
-    }
-    tl_graphExecutionActive = false;
-  }
-
-  sd_printf("NativeDSP::executeSegmentWithGpuGraph: exec%d seg[%d-%d]: backend=%s %s status=%d(%s) "
-            "executionCount=%d captureFailed=%d usedCapture=%d\n",
-            seg.executionCount, seg.startSlot, seg.endSlot,
-            backendName, status == Status::OK ? "OK" : "FAILED",
-            static_cast<int>(status), statusName(status),
-            seg.executionCount,
-            seg.captureFailed ? 1 : 0, usedTritonGraphCapture ? 1 : 0);
-
-  if (status == Status::OK) {
-    seg.executionCount++;
-    totalGraphReplays_++;
-  }
-
-  return status;
-}
-
 // ─── fromFlatGraph (delegates to NativePlanCompiler) ─────────────────────────
 
 NativeDynamicShapePlan* NativeDynamicShapePlan::fromFlatGraph(
@@ -5589,106 +1594,22 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromFlatGraph(
   return NativePlanCompiler::compile(graph, variables, requestedOutputs);
 }
 
-// ─── CUDA Graph capture audit and validation ────────────────────────────────
-
-#ifdef SD_CUDA
-
-std::vector<cuda::CaptureAuditEntry> NativeDynamicShapePlan::getHostOnlyOps() const {
-  std::vector<cuda::CaptureAuditEntry> result;
-  for (const auto& entry : lastCaptureAudit_) {
-    if (entry.isHostOnly()) {
-      result.push_back(entry);
-    }
-  }
-  return result;
-}
-
-void NativeDynamicShapePlan::printCaptureAudit() const {
-  if (lastCaptureAudit_.empty()) {
-    sd_print("NativeDynamicShapePlan: No capture audit data (no capture has occurred)\n");
-    return;
-  }
-
-  sd_print("╔══════════════════════════════════════════════════════════════════════════╗\n");
-  sd_print("║           CUDA GRAPH CAPTURE AUDIT (per-op node count)                 ║\n");
-  sd_print("╠══════════════════════════════════════════════════════════════════════════╣\n");
-  sd_printf("║ Total ops in segment: %zu\n", lastCaptureAudit_.size());
-  sd_print("╠══════════════════════════════════════════════════════════════════════════╣\n");
-
-  int hostOnlyCount = 0;
-  size_t totalNodes = 0;
-
-  for (const auto& entry : lastCaptureAudit_) {
-    totalNodes += entry.nodesContributed;
-    if (entry.isHostOnly()) {
-      hostOnlyCount++;
-    }
-  }
-
-  // Print top-10 ops by node contribution (highest first)
-  sd_print("║ TOP-10 OPS BY NODE COUNT:\n");
-  std::vector<size_t> indices(lastCaptureAudit_.size());
-  std::iota(indices.begin(), indices.end(), 0);
-  std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
-    return lastCaptureAudit_[a].nodesContributed > lastCaptureAudit_[b].nodesContributed;
-  });
-  int topN = std::min(static_cast<int>(indices.size()), 10);
-  for (int i = 0; i < topN; i++) {
-    const auto& entry = lastCaptureAudit_[indices[i]];
-    sd_printf("║  #%2d [slot %3d] %-25s  nodes: %3zu%s\n",
-              i + 1, entry.slotIndex, entry.opName.c_str(), entry.nodesContributed,
-              entry.isHostOnly() ? "  *** HOST-ONLY ***" : "");
-  }
-
-  sd_print("╠══════════════════════════════════════════════════════════════════════════╣\n");
-  sd_printf("║ Total CUDA graph nodes: %zu from %zu ops\n",
-            totalNodes, lastCaptureAudit_.size());
-  sd_printf("║ Host-only ops: %d, Node-contributing ops: %zu\n",
-            hostOnlyCount, lastCaptureAudit_.size() - hostOnlyCount);
-  if (hostOnlyCount > 0) {
-    sd_printf("║ *** WARNING: %d HOST-ONLY ops detected! ***\n", hostOnlyCount);
-    sd_print("║ Host-only ops do work during capture but NOT during replay.\n");
-    sd_print("║ Their outputs will be STALE on the 2nd+ graph execution.\n");
-  } else {
-    sd_print("║ All ops contributed CUDA graph nodes. Graph is complete.\n");
-  }
-  sd_print("╚══════════════════════════════════════════════════════════════════════════╝\n");
-}
-
-bool NativeDynamicShapePlan::validateCapturedGraph(int segmentIndex) const {
-  if (lastCaptureAudit_.empty()) return true;  // No audit data = no validation
-
-  bool allOpsHaveNodes = true;
-
-  for (const auto& entry : lastCaptureAudit_) {
-    if (entry.isHostOnly()) {
-      allOpsHaveNodes = false;
-      sd_printf("CUDA GRAPH VALIDATION FAILURE: slot %d (%s) contributed 0 CUDA graph nodes. "
-                "This op does host-only work that will NOT be replayed.\n",
-                entry.slotIndex, entry.opName.c_str());
-    }
-  }
-
-  return allOpsHaveNodes;
-}
-
-#endif  // SD_CUDA
+// ─── GPU graph capture audit and validation ─────────────────────────────────
+// Moved to platform dispatch (getHostOnlyOps, printCaptureAudit,
+// validateCapturedGraph). These methods are GPU-only and defined in the .cu file.
 
 // ─── CPU Graph compilation audit and validation ─────────────────────────────
 
 void NativeDynamicShapePlan::printCompilationAudit() const {
   if (lastCompilationAudit_.empty()) {
-    sd_print("NativeDynamicShapePlan: No compilation audit data\n");
+    DSP_DIAG(BACKEND, "no compilation audit data");
     return;
   }
 
   const char* backendName = cpuGraphBackend_ ? cpuGraphBackend_->name() : "unknown";
 
-  sd_print("╔══════════════════════════════════════════════════════════════════╗\n");
-  sd_printf("║        CPU GRAPH COMPILATION AUDIT (%s backend)\n", backendName);
-  sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
-  sd_printf("║ Total ops in segment: %zu\n", lastCompilationAudit_.size());
-  sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
+  DSP_DIAG(BACKEND, "CPU GRAPH COMPILATION AUDIT (%s backend), %zu total ops",
+           backendName, lastCompilationAudit_.size());
 
   int skippedCount = 0;
   int compiledCount = 0;
@@ -5697,32 +1618,25 @@ void NativeDynamicShapePlan::printCompilationAudit() const {
     if (entry.wasCompiled) {
       compiledCount++;
       if (entry.reason.empty()) {
-        sd_printf("║  [slot %3d] %-30s  COMPILED\n",
-                  entry.slotIndex, entry.opName.c_str());
+        DSP_DIAG_SLOT(BACKEND, entry.slotIndex, "[slot %3d] %s COMPILED",
+                      entry.slotIndex, entry.opName.c_str());
       } else {
-        sd_printf("║  [slot %3d] %-30s  COMPILED (%s)\n",
-                  entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
+        DSP_DIAG_SLOT(BACKEND, entry.slotIndex, "[slot %3d] %s COMPILED (%s)",
+                      entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
       }
     } else {
       skippedCount++;
-      sd_printf("║  [slot %3d] %-30s  *** SKIPPED *** (%s)\n",
-                entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
+      DSP_DIAG_SLOT(BACKEND, entry.slotIndex, "[slot %3d] %s *** SKIPPED *** (%s)",
+                     entry.slotIndex, entry.opName.c_str(), entry.reason.c_str());
     }
   }
 
-  sd_print("╠══════════════════════════════════════════════════════════════════╣\n");
-  sd_printf("║ Compiled: %d, Skipped: %d out of %zu total ops\n",
-            compiledCount, skippedCount, lastCompilationAudit_.size());
+  DSP_DIAG(COMPILE, "compilation audit: %d compiled, %d skipped of %zu total (%s backend)",
+           compiledCount, skippedCount, lastCompilationAudit_.size(), backendName);
   if (skippedCount > 0) {
-    sd_printf("║ *** WARNING: %d ops were SKIPPED by %s backend! ***\n",
-              skippedCount, backendName);
-    sd_print("║ Skipped ops execute during warm-up but NOT during graph replay.\n");
-    sd_print("║ Their outputs will be STALE on the 2nd+ graph execution.\n");
-    sd_print("║ Segment will fall back to slot-by-slot execution.\n");
-  } else {
-    sd_print("║ All ops compiled successfully. Graph is complete.\n");
+    DSP_DIAG(FALLBACK, "%d ops skipped by %s backend - segment will fallback to slot-by-slot",
+             skippedCount, backendName);
   }
-  sd_print("╚══════════════════════════════════════════════════════════════════╝\n");
 }
 
 bool NativeDynamicShapePlan::validateCompiledCpuGraph(int segmentIndex) const {
@@ -5734,7 +1648,7 @@ bool NativeDynamicShapePlan::validateCompiledCpuGraph(int segmentIndex) const {
     if (!entry.wasCompiled) {
       allOpsCompiled = false;
       const char* backendName = cpuGraphBackend_ ? cpuGraphBackend_->name() : "unknown";
-      sd_printf("CPU GRAPH VALIDATION FAILURE: slot %d (%s) was NOT compiled by %s backend: %s\n",
+      DSP_DIAG(COMPILE, "CPU GRAPH VALIDATION FAILURE: slot %d (%s) was NOT compiled by %s backend: %s",
                 entry.slotIndex, entry.opName.c_str(), backendName, entry.reason.c_str());
     }
   }

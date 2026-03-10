@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include <graph/SdnbReader.h>
+#include <graph/DspDiagnostics.h>
 
 #include <cstdio>
 #include <cstring>
@@ -86,7 +87,7 @@ SdnbReader* SdnbReader::open(const void* data, size_t size) {
     }
   }
 
-  sd_printf("SdnbReader::open: could not find valid FlatGraph in data\n", "");
+  DSP_DIAG(COMPILE, "SdnbReader::open: could not find valid FlatGraph in data");
   delete reader;
   return nullptr;
 }
@@ -94,7 +95,7 @@ SdnbReader* SdnbReader::open(const void* data, size_t size) {
 SdnbReader* SdnbReader::openFile(const char* path) {
   std::ifstream file(path, std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
-    sd_printf("SdnbReader::openFile: cannot open %s\n", path);
+    DSP_DIAG(COMPILE, "SdnbReader::openFile: cannot open %s", path);
     return nullptr;
   }
 

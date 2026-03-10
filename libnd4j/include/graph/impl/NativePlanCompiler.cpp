@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include <graph/NativePlanCompiler.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/generated/graph_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/declarable/OpRegistrator.h>
@@ -95,6 +96,11 @@ bool NativePlanCompiler::isValueDependentShapeOp(const std::string& opName) {
       "tile", "repeat", "pad", "fill",
       "range", "linspace",
       "shape_of", "size_at", "rank",
+      // ConstantOfShape (ONNX) → SameDiff "create": output shape is determined
+      // by input DATA values, not input shapes.  Must NOT be captured into a
+      // CUDA graph because the baked-in memset size becomes stale when the
+      // shape input changes between steps (e.g. position-dependent tensors).
+      "create",
   };
   return VALUE_DEPENDENT_OPS.count(normalizeOpName(opName)) > 0;
 }
@@ -208,6 +214,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   plan->numSlots_ = numSteps;
   plan->totalOutputSlots_ = totalOutputSlots;
   plan->numExternalInputs_ = static_cast<int>(externalInputKeys.size());
+  plan->externalInputNames_ = externalInputKeys;
   plan->slots_ = new NativeSlot[numSteps];
 
   std::vector<int> slotLastConsumerStep(totalOutputSlots, -1);
@@ -236,7 +243,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       slot.op = sd::ops::OpRegistrator::getInstance().getOperation(serializedOpHash);
     }
     if (!slot.op) {
-      sd_printf("NativePlanCompiler: cannot resolve op hash=%lld name=%s\n",
+      DSP_DIAG(COMPILE, "NativePlanCompiler: cannot resolve op hash=%lld name=%s",
                 serializedOpHash, slot.opName.c_str());
       delete plan;
       return nullptr;
@@ -422,6 +429,26 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     }
   }
 
+  // Build externalInputIsVariable_ by scanning all slot input source types.
+  // Only PLACEHOLDER inputs need forced H2D before graph replay — these are the
+  // dynamic inputs (attention_mask, position_ids, input_ids, inputs_embeds) that
+  // Java updates each decode step. SOURCE_VARIABLE (model weights) should NOT be
+  // force-synced — their device buffers are authoritative after initial model load.
+  plan->externalInputIsVariable_.resize(plan->numExternalInputs_, false);
+  for (int s = 0; s < numSteps; s++) {
+    auto& slot = plan->slots_[s];
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < plan->numExternalInputs_ &&
+            slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
+          plan->externalInputIsVariable_[extIdx] = true;
+        }
+      }
+    }
+  }
+
   plan->releaseAtStep_ = new int*[numSteps];
   plan->releaseAtStepCounts_ = new int[numSteps];
 
@@ -502,7 +529,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       else dynamicCount++;
     }
 
-    sd_printf("NativePlanCompiler: shape analysis: %d static, %d dynamic out of %d slots\n",
+    DSP_DIAG(SHAPE, "shape analysis: %d static, %d dynamic out of %d slots",
               staticCount, dynamicCount, numSteps);
   }
 
@@ -516,7 +543,7 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       if (plan->slots_[i].needsZeroedOutput) needsZero++;
       else skipZero++;
     }
-    sd_printf("NativePlanCompiler: %d/%d slots need zeroed output (%d can skip nullify)\n",
+    DSP_DIAG(SHAPE, "%d/%d slots need zeroed output (%d can skip nullify)",
               needsZero, plan->numSlots_, skipZero);
   }
 

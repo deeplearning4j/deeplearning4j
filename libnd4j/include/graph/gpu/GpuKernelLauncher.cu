@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#ifdef SD_CUDA
 
 #include <graph/gpu/GpuKernelLauncher.h>
 #include <system/common.h>
@@ -128,4 +127,3 @@ void unloadModule(void* module) {
 }  // namespace graph
 }  // namespace sd
 
-#endif  // SD_CUDA

@@ -32,12 +32,17 @@
 #include <graph/NativePlanCompiler.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/MmulHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
 #include <helpers/AttentionWorkspace.h>
 #include <graph/gpu/NvrtcKernelBuilder.h>
 #include <graph/gpu/NvrtcKernelCache.h>
+#include <graph/gpu/CaptureBufferRegistry.h>
+#if HAVE_TRITON
+#include <graph/gpu/TritonGraphBackend.h>
+#endif
 
 #include <algorithm>
 #include <cstdlib>
@@ -86,26 +91,77 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
   return key;
 }
 
+// ─── Create (ConstantOfShape) op value key ──────────────────────────────────
+// Hashes the input DATA values of all 'create' ops in a segment.
+// Create ops have value-dependent output shapes: their single input is a shape
+// tensor whose *values* determine the output dimensions.  If these values change
+// between capture and replay, the baked-in CUDA memset produces wrong-sized output.
+// Returns 0 if the segment has no create ops.
+
+LongType NativeDynamicShapePlan::computeCreateOpValueKey(
+    GraphSegment& seg, NDArray** externalInputs, int numExt) {
+  LongType key = 0;
+  auto mix = [&key](LongType val) {
+    if (key == 0) key = 0xcbf29ce484222325ULL;
+    key ^= val;
+    key *= 0x100000001b3ULL;
+  };
+
+  for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+    NativeSlot& slot = slots_[s];
+    if (slot.opName != "create" && slot.opName != "Create") continue;
+
+    // Create op has 1 input: the shape tensor (INT64, small)
+    for (int i = 0; i < slot.numInputs; i++) {
+      int srcIdx = slot.inputSourceIndices[i];
+      NDArray* inputArr = nullptr;
+      if (srcIdx < 0) {
+        int extIdx = -(srcIdx + 1);
+        if (extIdx < numExt) inputArr = externalInputs[extIdx];
+      } else if (srcIdx >= 0 && srcIdx < totalOutputSlots_) {
+        inputArr = outputSlots_[srcIdx];
+      }
+      if (inputArr == nullptr || inputArr->lengthOf() == 0) continue;
+
+      // Read values from device (shape tensors are small, typically 4-5 elements)
+      int n = (int)inputArr->lengthOf();
+      if (n > 16) n = 16;  // Cap for safety
+      int elemSize = DataTypeUtils::sizeOf(inputArr->dataType());
+      std::vector<uint8_t> buf(n * elemSize);
+      if (inputArr->specialBuffer()) {
+        cudaMemcpy(buf.data(), inputArr->specialBuffer(), n * elemSize, cudaMemcpyDeviceToHost);
+      } else if (inputArr->buffer()) {
+        std::memcpy(buf.data(), inputArr->buffer(), n * elemSize);
+      }
+      // Hash each element as LongType
+      for (int j = 0; j < n; j++) {
+        LongType val = 0;
+        if (elemSize == 8) {
+          std::memcpy(&val, buf.data() + j * 8, 8);
+        } else if (elemSize == 4) {
+          int32_t v32; std::memcpy(&v32, buf.data() + j * 4, 4);
+          val = (LongType)v32;
+        }
+        mix(val);
+      }
+    }
+  }
+  return key;
+}
+
 // ─── External address snapshot/compare ─────────────────────────────────────
 
 void NativeDynamicShapePlan::snapshotExternalAddrs(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
-  seg.capturedExternalAddrs.resize(numExt);
-  for (int i = 0; i < numExt; i++) {
-    seg.capturedExternalAddrs[i] =
-        (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
+  if (seg.replayHandle) {
+    seg.replayHandle->snapshotExternalAddresses(externalInputs, numExt);
   }
 }
 
 bool NativeDynamicShapePlan::externalAddrsMatch(
     const GraphSegment& seg, NDArray** externalInputs, int numExt) const {
-  if (seg.capturedExternalAddrs.empty()) return false;  // no snapshot taken
-  if (numExt != static_cast<int>(seg.capturedExternalAddrs.size())) return false;
-  for (int i = 0; i < numExt; i++) {
-    void* current = (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
-    if (current != seg.capturedExternalAddrs[i]) return false;
-  }
-  return true;
+  if (!seg.replayHandle) return false;
+  return seg.replayHandle->externalAddressesMatch(externalInputs, numExt);
 }
 
 // ─── Segment execution: NVRTC JIT compilation ────────────────────────────────
@@ -272,7 +328,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
   {
-    bool hasGraph = (seg.cachedGraph != nullptr);
+    bool hasGraph = (seg.replayHandle != nullptr);
     bool shapeMatch = hasGraph && (seg.cachedShapeKey == segShapeKey);
     DSP_DIAG_SEG(EXECUTE, segIdx, "seg[%d-%d] execCount=%d hasGraph=%d shapeMatch=%d captureFailed=%d",
                  seg.startSlot, seg.endSlot, executeCount_,
@@ -318,15 +374,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   };
 
   // ── REPLAY: cached graph with matching shapes ──
-  if (seg.cachedGraph && seg.cachedShapeKey == segShapeKey &&
-      seg.cachedGraph->getState() == cuda::GraphState::INSTANTIATED) {
+  if (seg.replayHandle && seg.cachedShapeKey == segShapeKey &&
+      seg.replayHandle->isReady()) {
 
     cudaStream_t cudaStr = (stream != nullptr)
         ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
   // Update capture buffers
   bool captureBuffersOk = true;
-  for (auto& cb : seg.captureBuffers) {
+  for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
     if (cb.directReference) continue;
 
     NDArray* src = nullptr;
@@ -392,7 +448,55 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
 
-    if (captureBuffersOk && seg.cachedGraph->launchAsync(cudaStr)) {
+    // Refresh Triton sub-kernel arg tables before replay so that external input
+    // buffer pointers (attention_mask, position_ids, etc.) reflect the current
+    // step's values, not the stale values baked during graph capture.
+#if HAVE_TRITON
+    if (captureBuffersOk) {
+      auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
+      if (tritonBackend != nullptr) {
+        tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
+                                                 outputSlots_, totalOutputSlots_,
+                                                 stream);
+      }
+    }
+#endif
+
+    // ── DIAGNOSTIC: dump capture buffers and final output to verify replay correctness ──
+    {
+      int cbDumpCount = 0;
+      for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+        if (cb.directReference || cb.buffer == nullptr || cbDumpCount >= 3) continue;
+        if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExt) {
+          NDArray* orig = externalArrays[cb.externalInputIndex];
+          if (orig != nullptr && orig->lengthOf() > 0 && orig->lengthOf() <= 2048) {
+            printf("CAPTURE_BUF ext=%d execCount=%d capBuf: ", cb.externalInputIndex, seg.executionCount);
+            fflush(stdout);
+            cb.buffer->printIndexedBuffer("capBuf");
+            fflush(stdout);
+            printf("CAPTURE_BUF ext=%d execCount=%d orig:   ", cb.externalInputIndex, seg.executionCount);
+            fflush(stdout);
+            orig->printIndexedBuffer("orig");
+            fflush(stdout);
+            cbDumpCount++;
+          }
+        }
+      }
+    }
+
+    if (captureBuffersOk && seg.replayHandle->replay(stream)) {
+      {
+        int finalSlot = seg.endSlot;
+        if (finalSlot >= 0 && finalSlot < totalOutputSlots_ && slotArrayCache_[finalSlot] != nullptr) {
+          NDArray* finalOut = slotArrayCache_[finalSlot];
+          printf("REPLAY_OUTPUT seg[%d-%d] slot=%d execCount=%d: ",
+                  seg.startSlot, seg.endSlot, finalSlot, seg.executionCount);
+          fflush(stdout);
+          finalOut->printIndexedBuffer("logits", 10);
+          fflush(stdout);
+        }
+      }
+
       for (int stepIdx = seg.startSlot; stepIdx <= seg.endSlot; stepIdx++) {
         NativeSlot& slot = slots_[stepIdx];
         for (int i = 0; i < slot.numOutputs; i++) {
@@ -411,27 +515,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       DSP_DIAG(FALLBACK, "capture buffer shape mismatch for seg[%d-%d], "
                "invalidating for re-capture", seg.startSlot, seg.endSlot);
       clearGraphStreamError(cudaStr);
-      for (auto& cb : seg.captureBuffers) {
+      for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
         if (!cb.directReference) delete cb.buffer;
       }
-      seg.captureBuffers.clear();
-      seg.cachedGraph.reset();
-      seg.capturedExternalAddrs.clear();
+      seg.replayHandle->getCaptureBuffers().clear();
+      seg.replayHandle.reset();
     } else {
       DSP_DIAG(FALLBACK, "graph replay failed for seg[%d-%d], "
                "falling back to slot-by-slot", seg.startSlot, seg.endSlot);
       clearGraphStreamError(cudaStr);
-      seg.cachedGraph.reset();
-      seg.capturedExternalAddrs.clear();
-      if (seg.captureWorkspacePtr != nullptr) {
-        cudaFree(seg.captureWorkspacePtr);
-        seg.captureWorkspacePtr = nullptr;
-        seg.captureWorkspaceBytes = 0;
+      if (seg.replayHandle) {
+        seg.replayHandle->releaseWorkspace(
+            (Environment::getInstance().dspCapturePoolEnabled() && captureBufferRegistry_ != nullptr)
+                ? captureBufferRegistry_ : nullptr,
+            seg.startSlot);
+        seg.replayHandle->freeHostPointers();
       }
-      for (auto* ptr : seg.capturedHostPtrs) {
-        cudaFreeHost(ptr);
-      }
-      seg.capturedHostPtrs.clear();
+      seg.replayHandle.reset();
     }
   }
 
@@ -454,18 +554,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   }
 
   if (seg.executionCount == 0 || (shapeChanged && !seg.captureFailed)) {
-    if (shapeChanged && seg.cachedGraph) {
-      seg.cachedGraph.reset();
-      seg.capturedExternalAddrs.clear();
+    if (shapeChanged && seg.replayHandle) {
+      seg.replayHandle.reset();
     }
     seg.cachedShapeKey = segShapeKey;
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   // ── CAPTURE ──
-  if (seg.cachedGraph && seg.cachedShapeKey != segShapeKey) {
-    seg.cachedGraph.reset();
-    seg.capturedExternalAddrs.clear();
+  if (seg.replayHandle && seg.cachedShapeKey != segShapeKey) {
+    seg.replayHandle.reset();
   }
 
   if (seg.captureOomRetries > 0 && seg.executionCount < seg.captureRetryAfterExec) {
@@ -549,7 +647,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     }
   }
 
-  auto handle = std::make_shared<cuda::CudaGraphHandle>(currentDevice);
+  seg.replayHandle = GraphReplayFactory::create(currentDevice);
+  auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.replayHandle.get());
+  auto handle = cudaReplay->getNativeHandle();
 
   cudaGetLastError();
   if (cudaStr != nullptr) {
@@ -568,10 +668,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   MmulHelper::resetCastCacheIndices();
 
   // ── CAPTURE BUFFER CREATION ──
-  for (auto& cb : seg.captureBuffers) {
-    delete cb.buffer;
+  for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+    if (!cb.directReference) delete cb.buffer;
   }
-  seg.captureBuffers.clear();
+  seg.replayHandle->getCaptureBuffers().clear();
 
   std::unordered_set<int> segOutputSlots;
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
@@ -608,7 +708,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
           if (isKvCacheInput) {
             src->syncToDevice();
-            GraphSegment::CaptureBuffer cb;
+            ReplayCaptureBuffer cb;
             cb.buffer = src;
             cb.externalInputIndex = extIdx;
             cb.crossSegmentSlotIdx = -1;
@@ -616,8 +716,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             cb.directReference = true;
             cb.initialCopyDone = true;
             cb.lastSourcePtr = src->specialBuffer();
-            extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
-            seg.captureBuffers.push_back(std::move(cb));
+            extInputToCaptureIdx[extIdx] = static_cast<int>(seg.replayHandle->getCaptureBuffers().size());
+            seg.replayHandle->addCaptureBuffer(std::move(cb));
           } else {
             auto srcShapeVec = *src->getShapeAsVector();
             auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
@@ -657,7 +757,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               }
             }
 
-            GraphSegment::CaptureBuffer cb;
+            ReplayCaptureBuffer cb;
             cb.buffer = capBuf;
             cb.externalInputIndex = extIdx;
             cb.crossSegmentSlotIdx = -1;
@@ -677,8 +777,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
               }
             }
 
-            extInputToCaptureIdx[extIdx] = static_cast<int>(seg.captureBuffers.size());
-            seg.captureBuffers.push_back(std::move(cb));
+            extInputToCaptureIdx[extIdx] = static_cast<int>(seg.replayHandle->getCaptureBuffers().size());
+            seg.replayHandle->addCaptureBuffer(std::move(cb));
           }
         }
       } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
@@ -724,24 +824,25 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
             }
           }
 
-          GraphSegment::CaptureBuffer cb;
+          ReplayCaptureBuffer cb;
           cb.buffer = capBuf;
           cb.externalInputIndex = -1;
           cb.crossSegmentSlotIdx = srcIdx;
           cb.capturedSize = srcBytes;
 
-          crossSlotToCaptureIdx[srcIdx] = static_cast<int>(seg.captureBuffers.size());
-          seg.captureBuffers.push_back(std::move(cb));
+          crossSlotToCaptureIdx[srcIdx] = static_cast<int>(seg.replayHandle->getCaptureBuffers().size());
+          seg.replayHandle->addCaptureBuffer(std::move(cb));
         }
       }
     }
   }
 
   if (captureBufferInitFailed) {
-    for (auto& cb : seg.captureBuffers) {
+    for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
       if (!cb.directReference) delete cb.buffer;
     }
-    seg.captureBuffers.clear();
+    seg.replayHandle->getCaptureBuffers().clear();
+    seg.replayHandle.reset();
     cudaGetLastError();
     if (cudaStr != nullptr) {
       cudaStreamSynchronize(cudaStr);
@@ -765,11 +866,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   for (auto& [extIdx, cbIdx] : extInputToCaptureIdx) {
     savedExternalInputs.push_back({extIdx, externalArrays[extIdx]});
-    externalArrays[extIdx] = seg.captureBuffers[cbIdx].buffer;
+    externalArrays[extIdx] = seg.replayHandle->getCaptureBuffers()[cbIdx].buffer;
   }
   for (auto& [slotIdx, cbIdx] : crossSlotToCaptureIdx) {
     savedOutputSlots.push_back({slotIdx, outputSlots_[slotIdx]});
-    outputSlots_[slotIdx] = seg.captureBuffers[cbIdx].buffer;
+    outputSlots_[slotIdx] = seg.replayHandle->getCaptureBuffers()[cbIdx].buffer;
   }
 
   if (cudaStr != nullptr) {
@@ -799,23 +900,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     return mb * 1024ULL * 1024ULL;
   }();
   DSP_DIAG_SEG(MEMORY, segIdx, "capture workspace check seg[%d-%d]: ptr=%p bytes=%zu",
-               seg.startSlot, seg.endSlot, seg.captureWorkspacePtr, seg.captureWorkspaceBytes);
-  if (seg.captureWorkspacePtr == nullptr) {
-    cudaError_t wsErr = cudaMalloc(&seg.captureWorkspacePtr, CAPTURE_WORKSPACE_SIZE);
-    if (wsErr == cudaSuccess) {
-      seg.captureWorkspaceBytes = CAPTURE_WORKSPACE_SIZE;
-      DSP_DIAG_SEG(MEMORY, segIdx, "allocated %zuMB capture workspace for seg[%d-%d]",
-                   CAPTURE_WORKSPACE_SIZE / (1024*1024), seg.startSlot, seg.endSlot);
-    } else {
-      cudaGetLastError();
-      seg.captureWorkspacePtr = nullptr;
-      seg.captureWorkspaceBytes = 0;
-      DSP_DIAG_SEG(FALLBACK, segIdx, "capture workspace alloc failed (%s), graph will contain cudaMallocAsync nodes",
-                   cudaGetErrorString(wsErr));
+               seg.startSlot, seg.endSlot, seg.replayHandle->getWorkspacePtr(), seg.replayHandle->getWorkspaceBytes());
+  if (seg.replayHandle->getWorkspacePtr() == nullptr) {
+    int deviceId = 0;
+    cudaGetDevice(&deviceId);
+    void* registryPtr = (Environment::getInstance().dspCapturePoolEnabled() && captureBufferRegistry_ != nullptr)
+                        ? captureBufferRegistry_ : nullptr;
+    if (!seg.replayHandle->allocateWorkspace(CAPTURE_WORKSPACE_SIZE, deviceId, registryPtr, seg.startSlot)) {
+      DSP_DIAG_SEG(FALLBACK, segIdx, "capture workspace alloc failed for seg[%d-%d], graph will contain cudaMallocAsync nodes",
+                   seg.startSlot, seg.endSlot);
     }
   }
-  tl_captureWorkspace = seg.captureWorkspacePtr;
-  tl_captureWorkspaceSize = seg.captureWorkspaceBytes;
+  tl_captureWorkspace = seg.replayHandle->getWorkspacePtr();
+  tl_captureWorkspaceSize = seg.replayHandle->getWorkspaceBytes();
   tl_captureWorkspaceOffset = 0;
   DSP_DIAG_SEG(MEMORY, segIdx, "tl_captureWorkspace=%p size=%zu for capture",
                tl_captureWorkspace, tl_captureWorkspaceSize);
@@ -835,6 +932,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     restoreCublasWorkspaceAfterCapture(stream);
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
+    seg.replayHandle.reset();
     for (auto& [extIdx, origPtr] : savedExternalInputs) {
       externalArrays[extIdx] = origPtr;
     }
@@ -992,10 +1090,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
       }
     }
 
-    for (auto& cb : seg.captureBuffers) {
+    for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
       if (!cb.directReference) delete cb.buffer;
     }
-    seg.captureBuffers.clear();
+    seg.replayHandle->getCaptureBuffers().clear();
+    seg.replayHandle.reset();
 
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(0);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("");
@@ -1024,10 +1123,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
         }
       }
     }
-    for (auto& cb : seg.captureBuffers) {
+    for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
       if (!cb.directReference) delete cb.buffer;
     }
-    seg.captureBuffers.clear();
+    seg.replayHandle->getCaptureBuffers().clear();
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       slots_[s].frozenContextReady = savedFrozenContextReady[s - seg.startSlot];
     }
@@ -1047,6 +1146,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     cudaGetLastError();
     seg.captureFailed = true;
     cleanupCaptureBuffersOnFailure();
+    seg.replayHandle.reset();
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
@@ -1064,6 +1164,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
     cleanupCaptureBuffersOnFailure();
+    seg.replayHandle.reset();
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
@@ -1100,18 +1201,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
     cleanupCaptureBuffersOnFailure();
+    seg.replayHandle.reset();
     std::memcpy(outputSlots_, preCapOutputSlots.data(), sizeof(NDArray*) * totalOutputSlots_);
     invalidateSegmentShapeState(seg);
     return executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
   }
 
   for (auto* ptr : tl_capturedHostPtrs) {
-    handle->addCapturedHostPtr(ptr);
+    seg.replayHandle->addCapturedHostPtr(ptr);
   }
   tl_capturedHostPtrs.clear();
   tl_captureReplicateCache.clear();
 
-  seg.cachedGraph = handle;
+  // replayHandle is already set (created before capture began)
   seg.cachedShapeKey = segShapeKey;
   seg.executionCount++;
   totalGraphReplays_++;
@@ -1139,16 +1241,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 
   if (executionTimingEnabled_) {
     auto stats = handle->getStatistics();
-    double wsUtilPct = seg.captureWorkspaceBytes > 0
-        ? (100.0 * captureWorkspaceUsed / seg.captureWorkspaceBytes) : 0.0;
+    double wsUtilPct = seg.replayHandle->getWorkspaceBytes() > 0
+        ? (100.0 * captureWorkspaceUsed / seg.replayHandle->getWorkspaceBytes()) : 0.0;
     DSP_DIAG_SEG(TIMING, segIdx, "captured CUDA graph seg[%d-%d] (%zu nodes, %zu edges) "
                  "[%d kern, %d memcpy, %d memset, %d alloc, %d free] ws=%zuKB/%zuKB (%.1f%%)",
                  seg.startSlot, seg.endSlot,
                  handle->getNumNodes(), handle->getNumEdges(),
                  stats.numKernels, stats.numMemcpyH2D, stats.numMemsets,
                  stats.numMemAllocs, stats.numMemFrees,
-                 seg.captureWorkspacePtr ? (captureWorkspaceUsed / 1024) : 0,
-                 seg.captureWorkspaceBytes / 1024, wsUtilPct);
+                 seg.replayHandle->getWorkspacePtr() ? (captureWorkspaceUsed / 1024) : 0,
+                 seg.replayHandle->getWorkspaceBytes() / 1024, wsUtilPct);
 
     if (!lastCaptureAudit_.empty()) {
       printCaptureAudit();
@@ -1165,6 +1267,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
 void NativeDynamicShapePlan::performReplayVerify(
     GraphSegment& seg, NDArray** externalArrays, int numExt,
     void* stream, const char* pathLabel) {
+  DSP_DIAG(VERIFY, "performReplayVerify ENTERED path=%s execCount=%d",
+           pathLabel, seg.executionCount);
+  fflush(stderr);
+
+  // Ensure VERIFY diagnostics are enabled (may have been set after DspDiagnostics construction)
+  DspDiagnostics::getInstance().enableCategories(DSP_DIAG_VERIFY);
+  DspDiagnostics::getInstance().setLevel(DSP_LEVEL_FULL);
 
   cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : nullptr;
 
@@ -1259,6 +1368,32 @@ void NativeDynamicShapePlan::performReplayVerify(
   // Dump VARIABLE externals before fresh re-execution
   dspDumpVariableExternals(externalArrays, numExt, externalInputIsVariable_,
                            externalInputNames_, "before-fresh");
+
+  // DIAGNOSTIC: Dump small VARIABLE externals with both host AND device values
+  {
+    cudaDeviceSynchronize();
+    for (int ei = 0; ei < numExt; ei++) {
+      if (ei < (int)externalInputIsVariable_.size() && externalInputIsVariable_[ei] &&
+          externalArrays[ei] != nullptr && externalArrays[ei]->lengthOf() <= 8) {
+        auto* arr = externalArrays[ei];
+        auto* db = arr->dataBuffer();
+        int n = std::min((int)arr->lengthOf(), 8);
+        int elemSize = DataTypeUtils::sizeOf(arr->dataType());
+        std::vector<uint8_t> hostBytes(n * elemSize), devBytes(n * elemSize);
+        if (db && db->primary()) std::memcpy(hostBytes.data(), static_cast<char*>(arr->buffer()), n * elemSize);
+        if (arr->specialBuffer()) cudaMemcpy(devBytes.data(), arr->specialBuffer(), n * elemSize, cudaMemcpyDeviceToHost);
+        float hv[8]={0}, dv[8]={0};
+        dspBytesToFloat(hostBytes.data(), arr->dataType(), hv, n);
+        dspBytesToFloat(devBytes.data(), arr->dataType(), dv, n);
+        std::string name = (ei < (int)externalInputNames_.size()) ? externalInputNames_[ei] : "?";
+        DSP_DIAG(VERIFY, "PRE_FRESH ext#%d:\"%s\" len=%d pAct=%d sAct=%d host=[%.0f,%.0f,%.0f,%.0f] dev=[%.0f,%.0f,%.0f,%.0f]",
+                  ei, name.c_str(), n,
+                  db ? (db->isPrimaryActual()?1:0) : -1,
+                  db ? (db->isSpecialActual()?1:0) : -1,
+                  hv[0],hv[1],hv[2],hv[3], dv[0],dv[1],dv[2],dv[3]);
+      }
+    }
+  }
 
   auto freshStatus = executeSegmentSlotBySlot(seg, externalArrays, numExt, stream);
 

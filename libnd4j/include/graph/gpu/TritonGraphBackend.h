@@ -313,7 +313,8 @@ class TritonGraphBackend : public GraphBackend {
   Status executeSingleKernel(CompiledKernel& compiled, NativeSlot* slots,
                              NDArray** externalInputs, int numExternalInputs,
                              NDArray** outputSlots, int totalOutputSlots,
-                             void* stream, bool argTablePreCopied = false);
+                             void* stream, bool argTablePreCopied = false,
+                             NDArray** slotArrayCache = nullptr);
 };
 
 }  // namespace graph
