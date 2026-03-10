@@ -427,6 +427,14 @@ public class TestSmolDoclingOptimizedPipeline {
             log.info("Filtered to {} configs via vlm.test.configs: {}", configs.size(), keep);
         }
 
+        // Override maxTokens for all configs if vlm.test.maxTokens is set
+        String maxTokensOverride = System.getProperty("vlm.test.maxTokens");
+        if (maxTokensOverride != null && !maxTokensOverride.isEmpty()) {
+            int mt = Integer.parseInt(maxTokensOverride);
+            configs.forEach(c -> c.maxTokens(mt));
+            log.info("Override maxTokens={} for all {} configs", mt, configs.size());
+        }
+
         List<SameDiff> models = List.of(ctx.decoder, ctx.embedTokens);
 
         // Compile function: delegates to BenchmarkConfigApplier
