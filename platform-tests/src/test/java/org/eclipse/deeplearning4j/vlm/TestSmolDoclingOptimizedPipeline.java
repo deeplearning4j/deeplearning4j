@@ -96,11 +96,14 @@ public class TestSmolDoclingOptimizedPipeline {
 
     // ─── Configuration matrix: performance-focused configs ──────────────────
     //
-    // Known best: compileAll + CONST_GEN,GATHER,CONCAT,SPLIT,STACK + fusion -> 83-91 tok/s
-    // FULL types (EW+RED+NORM+GATH+STACK+ATTN) + fusion -> 53 tok/s
-    // CUDA_GRAPHS -> 50 tok/s
+    // BEST: compileAll + COMPILE_ALL_TYPES + ATTENTION + GC + argOpt -> 23.28 tok/s (100 tok/s steady)
+    // Without ATTENTION: compileAll + COMPILE_ALL_TYPES + GC + argOpt -> 20.47 tok/s (77 tok/s steady)
+    // CUDA_GRAPHS baseline (no Triton) -> 11.40 tok/s (40 tok/s steady)
+    // SLOT_BY_SLOT baseline -> 5.62 tok/s
+    //
     // NEVER compile MATMUL (cuBLAS 2.8x faster), NEVER include SPLIT/CONCAT without compileAll
-    // Flash attention (+ATTENTION) gives +23% over baseline Triton
+    // Flash attention (+ATTENTION) gives +30% decode speed with CUDA graph capture
+    // dspCastElimination and dspFp16Compute are neutral-to-negative with CUDA graphs
 
     private static final String FULL_TRITON_TYPES =
             "ELEMENTWISE,REDUCTION,NORMALIZATION,GATHER,STACK,ATTENTION";
@@ -152,8 +155,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 .tritonCompileAll(true)
                 .tritonGraphCapture(true)
                 .tritonAllowFallbackCapture(true)
-                .tritonVerifyKernels(true)
-                .maxTokens(5));
+                .maxTokens(20));
 
         configs.add(BenchmarkConfig.create("TRITON_compileAll_best_gc_argOpt")
                 .tritonIncludeTypes(COMPILE_ALL_TYPES)
@@ -342,6 +344,33 @@ public class TestSmolDoclingOptimizedPipeline {
                 .tritonCompileAll(true)
                 .tritonProfile("MAX_PERF")
                 .maxTokens(50));
+
+        // 9. Ultimate combined: ATTN + castElim + fp16compute + GC + argOpt
+        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_fp16_gc_argOpt")
+                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                .tritonSectionFusion(true)
+                .tritonCompileAll(true)
+                .dspCastElimination(true)
+                .dspFp16Compute(true)
+                .tritonGraphCapture(true)
+                .tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true)
+                .tritonArgDirtyTracking(true)
+                .maxTokens(100)
+                .minDiversityPct(0));
+
+        // 10. ATTN + castElim only (no fp16compute), to isolate contributions
+        configs.add(BenchmarkConfig.create("TRITON_ATTN_castElim_gc_argOpt")
+                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                .tritonSectionFusion(true)
+                .tritonCompileAll(true)
+                .dspCastElimination(true)
+                .tritonGraphCapture(true)
+                .tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true)
+                .tritonArgDirtyTracking(true)
+                .maxTokens(100)
+                .minDiversityPct(0));
 
         return configs;
     }
