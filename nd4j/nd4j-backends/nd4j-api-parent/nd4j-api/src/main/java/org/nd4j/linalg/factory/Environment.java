@@ -1087,6 +1087,53 @@ public interface Environment {
     default void setTritonVerifyKernels(boolean verify) {}
 
     /**
+     * When true and tritonVerifyKernels is also true, keep native outputs for
+     * continued execution instead of Triton outputs. Tests error accumulation.
+     */
+    default boolean tritonVerifyKeepNative() {
+        return false;
+    }
+
+    default void setTritonVerifyKeepNative(boolean v) {}
+
+    /**
+     * Max sub-kernel index to run via Triton (-1 = unlimited).
+     * Sub-kernels with index > max run native fallback instead.
+     * Used for binary search to find which sub-kernel causes corruption.
+     */
+    default int tritonMaxSubKernelIndex() {
+        return -1;
+    }
+
+    default void setTritonMaxSubKernelIndex(int idx) {}
+
+    /**
+     * When true and tritonVerifyKernels is also true, save/restore ALL outputSlots
+     * (not just the sub-kernel's outputs) to detect memory corruption by Triton kernels.
+     * Also diffs all slots after each sub-kernel to identify exactly which slot was corrupted.
+     */
+    default boolean tritonVerifyFullSnapshot() {
+        return false;
+    }
+
+    default void setTritonVerifyFullSnapshot(boolean v) {}
+
+    /**
+     * Force CUDA graph re-capture every step (diagnostic).
+     * When enabled, invalidate the cached graph after each replay/capture
+     * so every step does a fresh capture instead of replaying.
+     */
+    default boolean tritonForceRecapture() { return false; }
+    default void setTritonForceRecapture(boolean v) {}
+
+    /**
+     * Minimum execution count before CUDA graph capture begins.
+     * Default=2 (capture on 3rd Triton execution). Set to 9999 to effectively disable capture.
+     */
+    default int tritonCaptureMinExec() { return 2; }
+    default void setTritonCaptureMinExec(int v) {}
+
+    /**
      * Whether Triton compiles ALL section types (not just elementwise).
      * When true, ops not in the exclusion list are compiled through Triton IR.
      * When false (default), only ELEMENTWISE/IDENTITY sections are compiled.
@@ -1120,6 +1167,50 @@ public interface Environment {
     }
 
     default void setTritonIncludeTypes(String types) {}
+
+    // ============== DSP Batch-Zero Flags ==============
+
+    /**
+     * Replace per-slot memsets with a single batch-zero kernel during CUDA graph capture.
+     * Reduces graph node count by ~800. Controlled by ND4J_DSP_BATCH_ZERO env var.
+     * @return true if batch-zero is enabled (default: false)
+     */
+    default boolean dspBatchZero() { return false; }
+    default void setDspBatchZero(boolean v) {}
+
+    /**
+     * Log every buffer collected for batch-zero (very verbose).
+     * Controlled by ND4J_DSP_BATCH_ZERO_VERBOSE env var.
+     */
+    default boolean dspBatchZeroVerbose() { return false; }
+    default void setDspBatchZeroVerbose(boolean v) {}
+
+    /**
+     * When true (default), only zero gap (native fallback) slot outputs.
+     * When false, zero ALL slot outputs including Triton sub-kernel outputs.
+     * Controlled by ND4J_DSP_BATCH_ZERO_GAP_ONLY env var.
+     */
+    default boolean dspBatchZeroGapOnly() { return true; }
+    default void setDspBatchZeroGapOnly(boolean v) {}
+
+    /**
+     * When true, use a single CUDA kernel to zero all buffers instead of N cudaMemsetAsync calls.
+     * Reduces graph nodes by ~797 but may have memory ordering differences.
+     * Controlled by ND4J_DSP_BATCH_ZERO_KERNEL env var.
+     */
+    default boolean dspBatchZeroKernel() { return false; }
+    default void setDspBatchZeroKernel(boolean v) {}
+
+    // ============== DSP Batched GEMM ==============
+
+    /**
+     * Group consecutive same-shape matmul slots into single cublasGemmBatchedEx calls.
+     * Reduces CUDA graph node count by ~96 nodes for typical transformer models.
+     * Controlled by ND4J_DSP_BATCHED_GEMM env var.
+     * @return true if batched GEMM grouping is enabled (default: false)
+     */
+    default boolean dspBatchedGemm() { return false; }
+    default void setDspBatchedGemm(boolean v) {}
 
     // ============== DSP Optimization Flags ==============
 
@@ -1156,4 +1247,89 @@ public interface Environment {
     }
 
     default void setDspFp16Compute(boolean enabled) {}
+
+    /**
+     * Whether TF32 math mode is enabled for cuBLAS on sm_80+ (Ampere+).
+     * Uses tensor cores with 10-bit mantissa for FP32 GEMMs.
+     * @return true if TF32 is enabled (default: false)
+     */
+    default boolean cublasTf32Enabled() { return false; }
+    default void setCublasTf32Enabled(boolean enabled) {}
+
+    /**
+     * Whether cast sinking through matmul is enabled in FusionPass.
+     * Marks FP16→FP32 casts as identity ops when their only consumer is a matmul,
+     * since MmulHelper already handles mixed-precision internally.
+     * @return true if cast sink is enabled (default: false)
+     */
+    default boolean dspCastSinkMatmul() { return false; }
+    default void setDspCastSinkMatmul(boolean enabled) {}
+
+    /**
+     * Whether consolidated arg table is enabled for Triton sub-kernels.
+     * Replaces per-kernel arg table H2D copies with a single consolidated copy.
+     * @return true if enabled (default: false)
+     */
+    default boolean tritonConsolidatedArgTable() { return false; }
+    default void setTritonConsolidatedArgTable(boolean enabled) {}
+
+    /**
+     * Whether dirty tracking is enabled for Triton arg table refresh.
+     * Skips refreshing arg tables for sub-kernels with only static (constant weight) args.
+     * @return true if enabled (default: false)
+     */
+    default boolean tritonArgDirtyTracking() { return false; }
+    default void setTritonArgDirtyTracking(boolean enabled) {}
+
+    /**
+     * Whether section fusion is enabled for Triton mega-kernel merging.
+     * When enabled, non-elementwise section types (GATHER, CONCAT, CONST_GEN, SPLIT, STACK)
+     * can merge with adjacent sections into mega-kernels via buildSectionedModule() DAG analysis.
+     * @return true if section fusion is enabled (default: false)
+     */
+    default boolean tritonSectionFusion() { return false; }
+    default void setTritonSectionFusion(boolean enabled) {}
+
+    /**
+     * Whether cost-model fusion scoring is enabled for Triton section merging.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonFusionScoring() { return true; }
+    default void setTritonFusionScoring(boolean enabled) {}
+
+    /**
+     * Minimum fusion score required to merge two adjacent sections.
+     * @return the minimum score (default: 1.0)
+     */
+    default float tritonFusionMinScore() { return 1.0f; }
+    default void setTritonFusionMinScore(float score) {}
+
+    /**
+     * Whether symbolic shape ranges are enabled for DSP segment caching.
+     * Dynamic dimensions use rank/dtype-only hashing to avoid recompilation.
+     * @return true if enabled (default: true)
+     */
+    default boolean dspSymbolicShapes() { return true; }
+    default void setDspSymbolicShapes(boolean enabled) {}
+
+    /**
+     * Number of observation steps before classifying dimensions as static or dynamic.
+     * @return warmup step count (default: 2)
+     */
+    default int dspSymbolicShapeWarmup() { return 2; }
+    default void setDspSymbolicShapeWarmup(int steps) {}
+
+    /**
+     * Whether capture buffer allocations are routed through CudaMemoryPool for cross-segment reuse.
+     * @return true if enabled (default: true)
+     */
+    default boolean dspCapturePoolEnabled() { return true; }
+    default void setDspCapturePoolEnabled(boolean enabled) {}
+
+    /**
+     * Maximum bytes for capture buffer pool allocations.
+     * @return max bytes (default: 1GB)
+     */
+    default long dspCapturePoolMaxBytes() { return 1073741824L; }
+    default void setDspCapturePoolMaxBytes(long bytes) {}
 }

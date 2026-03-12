@@ -372,6 +372,39 @@ public class TestSmolDoclingOptimizedPipeline {
                 .maxTokens(100)
                 .minDiversityPct(0));
 
+        // 11. Batch-zero + batched GEMM node reduction configs
+        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchZero")
+                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                .dspBatchZero(true).dspBatchZeroKernel(true)
+                .maxTokens(100).minDiversityPct(0));
+
+        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchOps")
+                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                .dspBatchZero(true).dspBatchZeroKernel(true)
+                .dspBatchedGemm(true)
+                .maxTokens(100).minDiversityPct(0));
+
+        configs.add(BenchmarkConfig.create("CUDA_GRAPHS_batchOps")
+                .executionMode(GraphExecutionMode.CUDA_GRAPHS)
+                .dspBatchZero(true).dspBatchZeroKernel(true)
+                .dspBatchedGemm(true)
+                .maxTokens(50));
+
+        // Isolation config: batched GEMM only (no batch-zero) to isolate correctness
+        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchGemmOnly")
+                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                .tritonSectionFusion(true).tritonCompileAll(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                .dspBatchedGemm(true)
+                .maxTokens(100).minDiversityPct(0));
+
         return configs;
     }
 

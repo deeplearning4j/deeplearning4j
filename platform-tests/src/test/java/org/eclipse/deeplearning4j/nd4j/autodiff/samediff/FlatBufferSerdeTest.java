@@ -33,6 +33,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
@@ -44,12 +45,14 @@ import org.nd4j.graph.IntPair;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -68,6 +71,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -426,6 +430,55 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void einsumDupRetainsStringArguments(Nd4jBackend backend) throws Exception {
+        SameDiff sd = createEinsumRoundTripGraph();
+
+        INDArray left = Nd4j.linspace(1, 6, 6, DataType.FLOAT).reshape(2, 3);
+        INDArray right = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(4, 3);
+        INDArray expected = left.mmul(right.transpose());
+
+        SameDiff duplicated = sd.dup();
+        assertEinsumRoundTrip(duplicated, left, right, expected);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void einsumSdzRoundTripRetainsStringArguments(Nd4jBackend backend) throws Exception {
+        SameDiff sd = createEinsumRoundTripGraph();
+
+        INDArray left = Nd4j.linspace(1, 6, 6, DataType.FLOAT).reshape(2, 3);
+        INDArray right = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(4, 3);
+        INDArray expected = left.mmul(right.transpose());
+
+        File tempFile = File.createTempFile("einsum-roundtrip", ".sdz");
+        tempFile.deleteOnExit();
+
+        SDZSerializer.save(sd, tempFile, false, Collections.emptyMap());
+        SameDiff loaded = SDZSerializer.load(tempFile, false);
+        assertEinsumRoundTrip(loaded, left, right, expected);
+    }
+
+    private SameDiff createEinsumRoundTripGraph() {
+        SameDiff sd = SameDiff.create();
+        SDVariable left = sd.placeHolder("left", DataType.FLOAT, 2, 3);
+        SDVariable right = sd.placeHolder("right", DataType.FLOAT, 4, 3);
+        sd.linalg().einsum("scores", new SDVariable[]{left, right}, "ik,jk->ij");
+        return sd;
+    }
+
+    private void assertEinsumRoundTrip(SameDiff sameDiff, INDArray left, INDArray right, INDArray expected) {
+        DifferentialFunction op = sameDiff.getVariableOutputOp("scores");
+        assertInstanceOf(Einsum.class, op);
+        assertArrayEquals(new String[]{"ik,jk->ij"}, ((CustomOp) op).sArgs());
+
+        Map<String, INDArray> outputs = sameDiff.output(Map.of("left", left, "right", right), "scores");
+        assertTrue(expected.equalsWithEps(outputs.get("scores"), 1e-5),
+                "Round-tripped einsum output differed from the expected matrix product");
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void pooling3DSerialization(Nd4jBackend backend) {
         SameDiff sd = SameDiff.create();
 
@@ -443,6 +496,24 @@ public class FlatBufferSerdeTest extends BaseNd4jTestWithBackends {
         assertEquals(
                 sd.getVariableOutputOp("pool").getClass(),
                 deserialized.getVariableOutputOp("pool").getClass());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void logSumExpSerialization(Nd4jBackend backend) throws IOException {
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.DOUBLE, 2, 3);
+        sd.math().logSumExp("loss", x);
+
+        SameDiff deserialized = SameDiff.fromFlatBuffers(sd.asFlatBuffers(true));
+        assertEquals("reduce_logsumexp", deserialized.getVariableOutputOp("loss").opName());
+
+        INDArray input = Nd4j.linspace(0.1, 0.6, 6, DataType.DOUBLE).reshape('c', 2, 3);
+        INDArray expected = Nd4j.scalar(Math.log(Transforms.exp(input.dup(), false).sumNumber().doubleValue()));
+        INDArray actual = deserialized.output(Collections.singletonMap("x", input), "loss").get("loss");
+        assertTrue(expected.equalsWithEps(actual, 1e-12),
+                "Round-tripped logsumexp output differed from the original graph");
     }
 
     @ParameterizedTest

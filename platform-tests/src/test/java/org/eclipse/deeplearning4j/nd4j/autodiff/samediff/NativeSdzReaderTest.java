@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -73,6 +74,49 @@ public class NativeSdzReaderTest extends BaseNd4jTestWithBackends {
         Map<String, INDArray> restored = loaded.output(Map.of("x", x, "y", y), "z");
         NativeExecutorTestUtils.assertArrayEquals(original.get("z"), restored.get("z"), 1e-5,
                 "Save/load roundtrip");
+    }
+
+    @Test
+    public void testSameDiffLoadSupportsSdzFile() throws Exception {
+        SameDiff sd = NativeExecutorTestUtils.createAddGraph();
+
+        File file = tempDir.resolve("simple.sdz").toFile();
+        sd.saveSharded(file, true);
+        assertTrue(file.exists());
+        assertTrue(file.length() > 0);
+
+        SameDiff loaded = SameDiff.load(file, true);
+        assertNotNull(loaded);
+
+        INDArray x = Nd4j.ones(DataType.FLOAT, 2, 3);
+        INDArray y = Nd4j.ones(DataType.FLOAT, 2, 3).mul(2);
+        Map<String, INDArray> original = sd.output(Map.of("x", x, "y", y), "z");
+        Map<String, INDArray> restored = loaded.output(Map.of("x", x, "y", y), "z");
+        NativeExecutorTestUtils.assertArrayEquals(original.get("z"), restored.get("z"), 1e-5,
+                "SDZ file load via SameDiff.load(File,...)");
+    }
+
+    @Test
+    public void testSameDiffLoadSupportsSdzInputStream() throws Exception {
+        SameDiff sd = NativeExecutorTestUtils.createAddGraph();
+
+        File file = tempDir.resolve("stream.sdz").toFile();
+        sd.saveSharded(file, true);
+        assertTrue(file.exists());
+        assertTrue(file.length() > 0);
+
+        SameDiff loaded;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            loaded = SameDiff.load(fis, true);
+        }
+        assertNotNull(loaded);
+
+        INDArray x = Nd4j.ones(DataType.FLOAT, 2, 3);
+        INDArray y = Nd4j.ones(DataType.FLOAT, 2, 3).mul(2);
+        Map<String, INDArray> original = sd.output(Map.of("x", x, "y", y), "z");
+        Map<String, INDArray> restored = loaded.output(Map.of("x", x, "y", y), "z");
+        NativeExecutorTestUtils.assertArrayEquals(original.get("z"), restored.get("z"), 1e-5,
+                "SDZ stream load via SameDiff.load(InputStream,...)");
     }
 
     @Test

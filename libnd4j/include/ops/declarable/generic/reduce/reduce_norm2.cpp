@@ -142,10 +142,12 @@ CUSTOM_OP_IMPL(reduce_norm2_bp, -1, 1, false, 0, 0) {
     std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
         gradOShapeKeepDims);
     auto* reshaped = gradO->reshape(gradO->ordering(), shape);
-    *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
-    delete reshaped;
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshaped, gradI);
+    if (reshaped != nullptr && !reshaped->isView()) {
+      delete reshaped;
+    }
   } else
-    *gradI *= (*gradO);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
 
   return sd::Status::OK;
 }

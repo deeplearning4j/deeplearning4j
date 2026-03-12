@@ -26,8 +26,8 @@ package org.nd4j.autodiff.samediff.execution;
  *
  * <p>Backends are tried in priority order when AUTO is selected.</p>
  * <p>CUDA builds: Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot.</p>
- * <p>Non-CUDA builds: Triton (if HIP/Level Zero available) → oneDNN/ACL CPU graph backends
- * → slot-by-slot.</p>
+ * <p>Non-CUDA builds: Triton (if compiled) → MLX (Apple Silicon) → oneDNN → ACL → NNAPI
+ * → ARM_HYBRID → MLIR CPU JIT → slot-by-slot.</p>
  * <p>Forcing a specific mode skips the others.</p>
  */
 public enum GraphExecutionMode {
@@ -36,7 +36,7 @@ public enum GraphExecutionMode {
      * Automatic backend selection (default). Tries GPU JIT backends first
      * (Triton → NVRTC → PTX), then CUDA graph capture/replay.
      * On non-CUDA builds, AUTO tries Triton first (if available), then CPU graph
-     * backends (oneDNN/ACL), then slot-by-slot.
+     * backends (MLX/oneDNN/ACL/NNAPI/ARM_HYBRID/MLIR), then slot-by-slot.
      */
     AUTO(0),
 

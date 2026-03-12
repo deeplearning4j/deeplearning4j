@@ -107,11 +107,10 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() == 1) {
-    auto* assign = input->reduceNumber(sd::reduce::Prod);
-    gradI->assign(assign);
-    // FIXED: Check if view before deletion
-    if (assign != nullptr && !assign->isView()) {
-      delete assign;
+    auto* prodResult = input->reduceNumber(sd::reduce::Prod);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), prodResult, gradI);
+    if (prodResult != nullptr && !prodResult->isView()) {
+      delete prodResult;
     }
     *gradI /= *input;
     *gradI *= gradO->e(0);
@@ -156,13 +155,12 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
       auto* reshaped = gradO->reshape(gradO->ordering(), shape);
-      *gradI *= (*reshaped);  // for example could be something like [a,b] -> [1,a,1,b]
-      // FIXED: reshape() may return view - check before deletion
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), reshaped, gradI);
       if (reshaped != nullptr && !reshaped->isView()) {
         delete reshaped;
       }
     } else
-      *gradI *= (*gradO);
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
   }
 
   return sd::Status::OK;

@@ -23,13 +23,10 @@ package org.eclipse.deeplearning4j.vlm.data;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.model.download.ModelDownloader;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 /**
  * Utility class for downloading VLM models from HuggingFace and other sources.
@@ -242,243 +239,35 @@ public class VLMModelDownloader {
      * @throws IOException if download fails
      */
     public static DownloadResult download(VLMModel model, File cacheDir) throws IOException {
-        File modelFile = new File(cacheDir, model.getFileName());
-
-        boolean downloadedNow = false;
-        if (!modelFile.exists()) {
-            log.info("Downloading {} from {}", model.getName(), model.getUrl());
-            downloadFile(model.getUrl(), modelFile);
-            downloadedNow = true;
-            log.info("Downloaded {} to {}", model.getName(), modelFile.getAbsolutePath());
-        } else {
-            log.info("Using cached model: {}", modelFile.getAbsolutePath());
-        }
+        ModelDownloader.DownloadResult result = ModelDownloader.download(
+                model.getUrl(), model.getFileName(), cacheDir);
 
         return DownloadResult.builder()
-                .modelFile(modelFile)
+                .modelFile(result.getModelFile())
                 .model(model)
-                .downloadedNow(downloadedNow)
-                .fileSizeBytes(modelFile.length())
+                .downloadedNow(result.isDownloadedNow())
+                .fileSizeBytes(result.getFileSizeBytes())
                 .build();
     }
 
-    /**
-     * Download a model from a custom URL.
-     *
-     * @param url the URL to download from
-     * @param fileName the file name to save as
-     * @param format the model format
-     * @return the downloaded file
-     * @throws IOException if download fails
-     */
     public static File downloadCustom(String url, String fileName, ModelFormat format) throws IOException {
-        File cacheDir = getCacheDir();
-        File modelFile = new File(cacheDir, fileName);
-
-        if (!modelFile.exists()) {
-            log.info("Downloading from {}", url);
-            downloadFile(url, modelFile);
-            log.info("Downloaded to {}", modelFile.getAbsolutePath());
-        } else {
-            log.info("Using cached file: {}", modelFile.getAbsolutePath());
-        }
-
-        return modelFile;
+        ModelDownloader.DownloadResult result = ModelDownloader.download(url, fileName, getCacheDir());
+        return result.getModelFile();
     }
 
-    /**
-     * Check if a model is already cached.
-     *
-     * @param model the model to check
-     * @return true if cached
-     */
     public static boolean isCached(VLMModel model) {
-        File modelFile = new File(getCacheDir(), model.getFileName());
-        return modelFile.exists();
+        return ModelDownloader.isCached(model.getFileName(), getCacheDir());
     }
 
-    /**
-     * Get the cache directory.
-     *
-     * @return the cache directory
-     */
     public static File getCacheDir() {
-        String cacheDir = System.getProperty(CACHE_DIR_PROPERTY, DEFAULT_CACHE_DIR);
-        File dir = new File(cacheDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
-        return dir;
+        return ModelDownloader.getCacheDir(CACHE_DIR_PROPERTY, DEFAULT_CACHE_DIR);
     }
 
-    /**
-     * Clear all cached models.
-     *
-     * @throws IOException if deletion fails
-     */
     public static void clearCache() throws IOException {
-        File cacheDir = getCacheDir();
-        if (cacheDir.exists()) {
-            for (File file : cacheDir.listFiles()) {
-                if (file.isFile()) {
-                    Files.delete(file.toPath());
-                    log.info("Deleted cached model: {}", file.getName());
-                }
-            }
-        }
+        ModelDownloader.clearCache(getCacheDir());
     }
 
-    /**
-     * List all cached models.
-     *
-     * @return array of cached model files
-     */
     public static File[] listCachedModels() {
-        File cacheDir = getCacheDir();
-        if (cacheDir.exists()) {
-            return cacheDir.listFiles((dir, name) ->
-                    name.endsWith(".onnx") || name.endsWith(".gguf") || name.endsWith(".ggml") || name.endsWith(".json"));
-        }
-        return new File[0];
-    }
-
-    // ==================== Internal Methods ====================
-
-    private static void downloadFile(String urlString, File outputFile) throws IOException {
-        // Ensure parent directory exists
-        outputFile.getParentFile().mkdirs();
-
-        URL url = new URL(urlString);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-        connection.setConnectTimeout(30000);
-        connection.setReadTimeout(60000);
-        connection.setRequestProperty("User-Agent", "DL4J-VLM-ModelDownloader/1.0");
-
-        // Handle redirects
-        int responseCode = connection.getResponseCode();
-        if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
-                responseCode == HttpURLConnection.HTTP_SEE_OTHER ||
-                responseCode == 307 || responseCode == 308) {
-            String newUrl = connection.getHeaderField("Location");
-            log.debug("Redirecting to: {}", newUrl);
-            connection.disconnect();
-            downloadFile(newUrl, outputFile);
-            return;
-        }
-
-        if (responseCode != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Failed to download: HTTP " + responseCode + " from " + urlString);
-        }
-
-        long contentLength = connection.getContentLengthLong();
-        String sizeStr = contentLength > 0 ? formatBytes(contentLength) : "unknown size";
-        log.info("Downloading {} ...", sizeStr);
-
-        // Download to temp file first, then move
-        Path tempFile = Files.createTempFile("dl4j-download-", ".tmp");
-        try (InputStream in = new BufferedInputStream(connection.getInputStream());
-             OutputStream out = new BufferedOutputStream(Files.newOutputStream(tempFile))) {
-
-            byte[] buffer = new byte[8192];
-            long totalRead = 0;
-            int bytesRead;
-            long lastUpdateTime = System.currentTimeMillis();
-            int lastPercent = -1;
-
-            while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-                totalRead += bytesRead;
-
-                // Update progress bar
-                long now = System.currentTimeMillis();
-                if (now - lastUpdateTime > 100) { // Update every 100ms max
-                    int percent = contentLength > 0 ? (int) ((totalRead * 100) / contentLength) : -1;
-                    if (percent != lastPercent) {
-                        printProgressBar(totalRead, contentLength, outputFile.getName());
-                        lastPercent = percent;
-                    }
-                    lastUpdateTime = now;
-                }
-            }
-
-            // Final progress update
-            printProgressBar(totalRead, contentLength, outputFile.getName());
-            System.out.println(); // New line after progress bar
-        }
-
-        // Move temp file to final location
-        Files.move(tempFile, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        connection.disconnect();
-        log.info("Download complete: {}", outputFile.getName());
-    }
-
-    /**
-     * Print a progress bar to the console.
-     */
-    private static void printProgressBar(long current, long total, String fileName) {
-        int barWidth = 40;
-        String downloadedStr = formatBytes(current);
-
-        if (total > 0) {
-            int percent = (int) ((current * 100) / total);
-            int filled = (int) ((current * barWidth) / total);
-            int empty = barWidth - filled;
-
-            StringBuilder bar = new StringBuilder();
-            bar.append("\r");
-            bar.append(String.format("%-30s ", truncateFileName(fileName, 30)));
-            bar.append("[");
-            for (int i = 0; i < filled; i++) bar.append("=");
-            if (filled < barWidth) bar.append(">");
-            for (int i = 0; i < empty - 1; i++) bar.append(" ");
-            bar.append("] ");
-            bar.append(String.format("%3d%% ", percent));
-            bar.append(String.format("%s / %s", downloadedStr, formatBytes(total)));
-
-            System.out.print(bar);
-            System.out.flush();
-        } else {
-            // Unknown total size - show spinner
-            char[] spinner = {'|', '/', '-', '\\'};
-            int spinIdx = (int) ((current / 10000) % 4);
-
-            StringBuilder bar = new StringBuilder();
-            bar.append("\r");
-            bar.append(String.format("%-30s ", truncateFileName(fileName, 30)));
-            bar.append("[");
-            bar.append(spinner[spinIdx]);
-            bar.append("] ");
-            bar.append(downloadedStr);
-
-            System.out.print(bar);
-            System.out.flush();
-        }
-    }
-
-    /**
-     * Format bytes into human-readable string.
-     */
-    private static String formatBytes(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " B";
-        } else if (bytes < 1024 * 1024) {
-            return String.format("%.1f KB", bytes / 1024.0);
-        } else if (bytes < 1024 * 1024 * 1024) {
-            return String.format("%.1f MB", bytes / (1024.0 * 1024));
-        } else {
-            return String.format("%.2f GB", bytes / (1024.0 * 1024 * 1024));
-        }
-    }
-
-    /**
-     * Truncate file name to fit in display width.
-     */
-    private static String truncateFileName(String fileName, int maxLen) {
-        if (fileName.length() <= maxLen) {
-            return fileName;
-        }
-        return "..." + fileName.substring(fileName.length() - maxLen + 3);
+        return ModelDownloader.listCachedFiles(getCacheDir(), "onnx", "gguf", "ggml", "json");
     }
 }

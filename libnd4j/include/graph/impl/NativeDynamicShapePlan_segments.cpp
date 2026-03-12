@@ -24,7 +24,9 @@
  */
 
 #include <graph/NativeDynamicShapePlan.h>
+#include <graph/gpu/SymbolicShapeRanges.h>
 #include <graph/DspDiagnostics.h>
+#include <graph/cpu/FunctionalReplayHandle.h>
 #include <helpers/MmulHelper.h>
 #include <system/Environment.h>
 
@@ -79,6 +81,63 @@ const char* statusName_seg(Status status) {
 
 LongType NativeDynamicShapePlan::computeSegmentShapeKey(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
+
+  // ── Symbolic shape range path ──────────────────────────────────────────
+  // When enabled, collect cross-segment inputs, feed them to the shape
+  // profiler, and (after warmup) use range-based hashing that ignores
+  // dynamic dimensions.
+  if (seg.symbolicShapeEnabled && seg.symbolicRangeData != nullptr) {
+    auto* profile = static_cast<SegmentShapeProfile*>(seg.symbolicRangeData);
+
+    // Collect cross-segment input arrays (same logic as standard path below)
+    std::unordered_set<int> segOutputSlots;
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      NativeSlot& slot = slots_[s];
+      for (int i = 0; i < slot.numOutputs; i++) {
+        segOutputSlots.insert(slot.outputSlotIndices[i]);
+      }
+    }
+
+    std::vector<NDArray*> crossInputs;
+    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
+      NativeSlot& slot = slots_[s];
+      for (int i = 0; i < slot.numInputs; i++) {
+        int srcIdx = slot.inputSourceIndices[i];
+        if (srcIdx < 0) {
+          int extIdx = -(srcIdx + 1);
+          if (extIdx < numExt && externalInputs[extIdx] != nullptr) {
+            crossInputs.push_back(externalInputs[extIdx]);
+          }
+        } else if (srcIdx >= 0 && segOutputSlots.find(srcIdx) == segOutputSlots.end()) {
+          if (srcIdx < totalOutputSlots_ && outputSlots_[srcIdx] != nullptr) {
+            crossInputs.push_back(outputSlots_[srcIdx]);
+          }
+        }
+      }
+    }
+
+    // Record observations during warmup
+    if (!isWarmupComplete(profile)) {
+      recordObservedShapes(profile, crossInputs.data(),
+                           static_cast<int>(crossInputs.size()));
+      DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] observation %d/%d",
+               seg.startSlot, seg.endSlot,
+               getObservationCount(profile), getWarmupSteps(profile));
+    }
+
+    // After warmup, use range-based key
+    if (isWarmupComplete(profile)) {
+      LongType rangeKey = computeRangeBasedShapeKey(
+          profile, crossInputs.data(), static_cast<int>(crossInputs.size()),
+          seg.startSlot, seg.endSlot);
+      DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld",
+               seg.startSlot, seg.endSlot, rangeKey);
+      return rangeKey;
+    }
+    // Fall through to standard path during warmup
+  }
+
+  // ── Standard FNV-1a path ───────────────────────────────────────────────
   LongType key = 0xcbf29ce484222325ULL;
   auto mix = [&key](LongType val) {
     key ^= val;
@@ -652,6 +711,54 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
       }
     }
 
+    // ── Batched GEMM dispatch ─────────────────────────────────────────
+    // Strategy: the FIRST member in each group is the trigger.
+    // When reached, it executes the entire batch and populates outputs for
+    // ALL members. Non-first members are skipped (output already computed).
+    // This ensures downstream ops between members see valid outputs.
+#ifdef SD_CUDA
+    if (!batchedGemmGroups_.empty() && stepIdx < (int)slotToBatchedGemmGroup_.size()) {
+      int bgIdx = slotToBatchedGemmGroup_[stepIdx];
+      if (bgIdx >= 0 && bgIdx < (int)batchedGemmGroups_.size()) {
+        auto& bgGroup = batchedGemmGroups_[bgIdx];
+        if (stepIdx == bgGroup.triggerSlot) {
+          // This is the trigger (FIRST slot in group) — execute entire batch.
+          // All members' inputs are guaranteed available (checked at detection time).
+          cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+          Status batchStatus = executeBatchedGemmGroup(bgIdx, externalArrays, numExt, execStream);
+
+          if (batchStatus == Status::OK) {
+            // Process release schedule for the trigger slot
+            int releaseCount = releaseAtStepCounts_[stepIdx];
+            if (releaseCount > 0) {
+              for (int r = 0; r < releaseCount; r++) {
+                int slotIdx2 = releaseAtStep_[stepIdx][r];
+                outputSlots_[slotIdx2] = nullptr;
+              }
+            }
+            stepIdx++;
+            continue;
+          }
+          // On failure, fall through to individual execution of this slot
+          DSP_DIAG(FALLBACK, "batched GEMM group %d failed (status=%d), falling back to individual execution",
+                    bgIdx, (int)batchStatus);
+        } else {
+          // Non-first member: output already computed by the trigger's batch call.
+          // Skip execution but still process the release schedule.
+          int releaseCount = releaseAtStepCounts_[stepIdx];
+          if (releaseCount > 0) {
+            for (int r = 0; r < releaseCount; r++) {
+              int slotIdx2 = releaseAtStep_[stepIdx][r];
+              outputSlots_[slotIdx2] = nullptr;
+            }
+          }
+          stepIdx++;
+          continue;
+        }
+      }
+    }
+#endif
+
     // ── Normal op execution ──────────────────────────────────────────
     Status status;
     bool retriedAfterTrim = false;
@@ -732,6 +839,12 @@ executeSlot_retry:
       cudaGetLastError();
 #endif
       return status;
+    }
+
+    // Record op for FunctionalReplayHandle capture
+    if (seg.replayHandle && seg.replayHandle->getState() == ReplayState::CAPTURING) {
+      auto* funcHandle = dynamic_cast<FunctionalReplayHandle*>(seg.replayHandle.get());
+      if (funcHandle) funcHandle->recordOp(slot.op, stepIdx);
     }
 
     int releaseCount = releaseAtStepCounts_[stepIdx];

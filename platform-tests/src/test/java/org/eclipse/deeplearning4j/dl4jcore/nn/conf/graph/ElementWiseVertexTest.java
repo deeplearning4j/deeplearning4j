@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.conf.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -42,6 +43,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -130,13 +132,13 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         int featuresz = 17;
         int midsz = 13;
         int outputsz = 11;
-        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).biasInit(0.0).updater(new Sgd()).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input1", "input2", "input3").addLayer("dense1", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input1").addLayer("dense2", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input2").addLayer("dense3", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input3").addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2", "dense3").addLayer("output", new OutputLayer.Builder().nIn(midsz).nOut(outputsz).activation(new ActivationSigmoid()).lossFunction(LossFunction.MSE).build(), "elementwiseAdd").setOutputs("output").build();
+        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).biasInit(0.0).updater(new NoOp()).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input1", "input2", "input3").addLayer("dense1", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input1").addLayer("dense2", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input2").addLayer("dense3", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input3").addVertex("elementwiseAdd", new ElementWiseVertex(ElementWiseVertex.Op.Add), "dense1", "dense2", "dense3").addLayer("output", new OutputLayer.Builder().nIn(midsz).nOut(outputsz).activation(new ActivationSigmoid()).lossFunction(LossFunction.MSE).build(), "elementwiseAdd").setOutputs("output").build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
-        INDArray input1 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray input2 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray input3 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray target = nullsafe(Nd4j.rand(new int[] { batchsz, outputsz }, new UniformDistribution(0, 1)));
+        INDArray input1 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray input2 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray input3 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray target = nullsafe(Nd4j.rand(new int[] { batchsz, outputsz }, new UniformDistribution(0, 1)).castTo(DataType.DOUBLE));
         cg.setInputs(input1, input2, input3);
         cg.setLabels(target);
         cg.computeGradientAndScore();
@@ -157,9 +159,9 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         INDArray n = (Transforms.tanh(nh));
         INDArray oh = input3.mmul(dense3_W).addi(dense3_b.repmat(batchsz, 1));
         INDArray o = (Transforms.tanh(oh));
-        INDArray middle = Nd4j.zeros(batchsz, midsz);
+        INDArray middle = Nd4j.zeros(DataType.DOUBLE, batchsz, midsz);
         middle.addi(m).addi(n).addi(o);
-        INDArray expect = Nd4j.zeros(batchsz, outputsz);
+        INDArray expect = Nd4j.zeros(DataType.DOUBLE, batchsz, outputsz);
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
         INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
         Assertions.assertEquals(0.0, mse(output, expect), this.epsilon);
@@ -167,89 +169,7 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         double score = pgd.getSecond();
         Assertions.assertEquals(score, mse(output, target), this.epsilon);
         Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
-        /*
-         * So. Let's say we have inputs a, b, c
-         * mh = a W1 + b1
-         * m = tanh(mh)
-         *
-         * nh = b W2 + b2
-         * n = tanh(nh)
-         *
-         * oh = c W3 + b3
-         * o = tanh(oh)
-         *
-         * s = m+n+o
-         *
-         * yh = s W4 + b4
-         * y = sigmoid(yh)
-         *
-         * E = (y-t)^2
-         * dE/dy = 2 (y-t)
-         *
-         * dy/dyh = y * (1-y)
-         * dE/dyh = 2 * y * (1-y) * (y-t)
-         *
-         * dyh/dW4 = s.transpose()
-         * dyh/db4 = Nd4j.ones(1, batchsz)
-         * dyh/ds = W4.tranpose()
-         *
-         * ds/dm = Nd4j.ones(1, midsz)
-         *
-         * dm/dmh = 1-(m^2)
-         *
-         * dmh/dW1 = a.transpose()
-         * dmh/db1 = Nd4j.ones(1, batchsz)
-         *
-         */
-        INDArray y = output;
-        INDArray s = middle;
-        INDArray W4 = output_W;
-        INDArray dEdy = Nd4j.zeros(target.shape());
-        // This should be of size batchsz x outputsz
-        dEdy.addi(y).subi(target).muli(2);
-        // Why? Because the LossFunction divides by the _element size_ of the output.
-        dEdy.divi(target.shape()[1]);
-        // This is of size batchsz x outputsz
-        INDArray dydyh = y.mul(y.mul(-1).add(1));
-        INDArray dEdyh = dydyh.mul(dEdy);
-        INDArray dyhdW4 = s.transpose();
-        INDArray dEdW4 = nullsafe(dyhdW4.mmul(dEdyh));
-        INDArray dyhdb4 = Nd4j.ones(1, batchsz);
-        INDArray dEdb4 = nullsafe(dyhdb4.mmul(dEdyh));
-        INDArray dyhds = W4.transpose();
-        INDArray dEds = dEdyh.mmul(dyhds);
-        INDArray dsdm = Nd4j.ones(batchsz, midsz);
-        INDArray dEdm = dsdm.mul(dEds);
-        INDArray dmdmh = (m.mul(m)).mul(-1).add(1);
-        INDArray dEdmh = dmdmh.mul(dEdm);
-        INDArray dmhdW1 = input1.transpose();
-        INDArray dEdW1 = nullsafe(dmhdW1.mmul(dEdmh));
-        INDArray dmhdb1 = Nd4j.ones(1, batchsz);
-        INDArray dEdb1 = nullsafe(dmhdb1.mmul(dEdmh));
-        INDArray dsdn = Nd4j.ones(batchsz, midsz);
-        INDArray dEdn = dsdn.mul(dEds);
-        INDArray dndnh = (n.mul(n)).mul(-1).add(1);
-        INDArray dEdnh = dndnh.mul(dEdn);
-        INDArray dnhdW2 = input2.transpose();
-        INDArray dEdW2 = nullsafe(dnhdW2.mmul(dEdnh));
-        INDArray dnhdb2 = Nd4j.ones(1, batchsz);
-        INDArray dEdb2 = nullsafe(dnhdb2.mmul(dEdnh));
-        INDArray dsdo = Nd4j.ones(batchsz, midsz);
-        INDArray dEdo = dsdo.mul(dEds);
-        INDArray dodoh = (o.mul(o)).mul(-1).add(1);
-        INDArray dEdoh = dodoh.mul(dEdo);
-        INDArray dohdW3 = input3.transpose();
-        INDArray dEdW3 = nullsafe(dohdW3.mmul(dEdoh));
-        INDArray dohdb3 = Nd4j.ones(1, batchsz);
-        INDArray dEdb3 = nullsafe(dohdb3.mmul(dEdoh));
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("output_W")), dEdW4), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("output_b")), dEdb4), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense1_W")), dEdW1), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense1_b")), dEdb1), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense2_W")), dEdW2), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense2_b")), dEdb2), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense3_W")), dEdW3), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense3_b")), dEdb3), this.epsilon);
+        assertGradientCheckPasses(cg, new INDArray[] { input1, input2, input3 }, target);
     }
 
     @Test
@@ -259,13 +179,13 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         int featuresz = 17;
         int midsz = 13;
         int outputsz = 11;
-        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).biasInit(0.0).updater(new Sgd()).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input1", "input2", "input3").addLayer("dense1", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input1").addLayer("dense2", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input2").addLayer("dense3", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input3").addVertex("elementwiseProduct", new ElementWiseVertex(ElementWiseVertex.Op.Product), "dense1", "dense2", "dense3").addLayer("output", new OutputLayer.Builder().nIn(midsz).nOut(outputsz).activation(new ActivationSigmoid()).lossFunction(LossFunction.MSE).build(), "elementwiseProduct").setOutputs("output").build();
+        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).biasInit(0.0).updater(new NoOp()).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input1", "input2", "input3").addLayer("dense1", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input1").addLayer("dense2", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input2").addLayer("dense3", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input3").addVertex("elementwiseProduct", new ElementWiseVertex(ElementWiseVertex.Op.Product), "dense1", "dense2", "dense3").addLayer("output", new OutputLayer.Builder().nIn(midsz).nOut(outputsz).activation(new ActivationSigmoid()).lossFunction(LossFunction.MSE).build(), "elementwiseProduct").setOutputs("output").build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
-        INDArray input1 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray input2 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray input3 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray target = nullsafe(Nd4j.rand(new int[] { batchsz, outputsz }, new UniformDistribution(0, 1)));
+        INDArray input1 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray input2 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray input3 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray target = nullsafe(Nd4j.rand(new int[] { batchsz, outputsz }, new UniformDistribution(0, 1)).castTo(DataType.DOUBLE));
         cg.setInputs(input1, input2, input3);
         cg.setLabels(target);
         cg.computeGradientAndScore();
@@ -286,9 +206,9 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         INDArray n = (Transforms.tanh(nh));
         INDArray oh = input3.mmul(dense3_W).addi(dense3_b.repmat(batchsz, 1));
         INDArray o = (Transforms.tanh(oh));
-        INDArray middle = Nd4j.ones(batchsz, midsz);
+        INDArray middle = Nd4j.ones(DataType.DOUBLE, batchsz, midsz);
         middle.muli(m).muli(n).muli(o);
-        INDArray expect = Nd4j.zeros(batchsz, outputsz);
+        INDArray expect = Nd4j.zeros(DataType.DOUBLE, batchsz, outputsz);
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
         INDArray output = nullsafe(cg.output(input1, input2, input3)[0]);
         Assertions.assertEquals(0.0, mse(output, expect), this.epsilon);
@@ -296,89 +216,7 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         double score = pgd.getSecond();
         Assertions.assertEquals(score, mse(output, target), this.epsilon);
         Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
-        /*
-         * So. Let's say we have inputs a, b, c
-         * mh = a W1 + b1
-         * m = tanh(mh)
-         *
-         * nh = b W2 + b2
-         * n = tanh(nh)
-         *
-         * oh = c W3 + b3
-         * o = tanh(oh)
-         *
-         * s = m*n*o
-         *
-         * yh = s W4 + b4
-         * y = sigmoid(yh)
-         *
-         * E = (y-t)^2
-         * dE/dy = 2 (y-t)
-         *
-         * dy/dyh = y * (1-y)
-         * dE/dyh = 2 * y * (1-y) * (y-t)
-         *
-         * dyh/dW4 = s.transpose()
-         * dyh/db4 = Nd4j.ones(1, batchsz)
-         * dyh/ds = W4.tranpose()
-         *
-         * ds/dm = Nd4j.ones(1, midsz).mul(o).mul(n) // Basically the _rest_ of the middle layers
-         *
-         * dm/dmh = 1-(m^2)
-         *
-         * dmh/dW1 = a.transpose()
-         * dmh/db1 = Nd4j.ones(1, batchsz)
-         *
-         */
-        INDArray y = output;
-        INDArray s = middle;
-        INDArray W4 = output_W;
-        INDArray dEdy = Nd4j.zeros(target.shape());
-        // This should be of size batchsz x outputsz
-        dEdy.addi(y).subi(target).muli(2);
-        // Why? Because the LossFunction divides by the _element size_ of the output.
-        dEdy.divi(target.shape()[1]);
-        // This is of size batchsz x outputsz
-        INDArray dydyh = y.mul(y.mul(-1).add(1));
-        INDArray dEdyh = dydyh.mul(dEdy);
-        INDArray dyhdW4 = s.transpose();
-        INDArray dEdW4 = nullsafe(dyhdW4.mmul(dEdyh));
-        INDArray dyhdb4 = Nd4j.ones(1, batchsz);
-        INDArray dEdb4 = nullsafe(dyhdb4.mmul(dEdyh));
-        INDArray dyhds = W4.transpose();
-        INDArray dEds = dEdyh.mmul(dyhds);
-        INDArray dsdm = Nd4j.ones(batchsz, midsz).muli(n).muli(o);
-        INDArray dEdm = dsdm.mul(dEds);
-        INDArray dmdmh = (m.mul(m)).mul(-1).add(1);
-        INDArray dEdmh = dmdmh.mul(dEdm);
-        INDArray dmhdW1 = input1.transpose();
-        INDArray dEdW1 = nullsafe(dmhdW1.mmul(dEdmh));
-        INDArray dmhdb1 = Nd4j.ones(1, batchsz);
-        INDArray dEdb1 = nullsafe(dmhdb1.mmul(dEdmh));
-        INDArray dsdn = Nd4j.ones(batchsz, midsz).muli(m).muli(o);
-        INDArray dEdn = dsdn.mul(dEds);
-        INDArray dndnh = (n.mul(n)).mul(-1).add(1);
-        INDArray dEdnh = dndnh.mul(dEdn);
-        INDArray dnhdW2 = input2.transpose();
-        INDArray dEdW2 = nullsafe(dnhdW2.mmul(dEdnh));
-        INDArray dnhdb2 = Nd4j.ones(1, batchsz);
-        INDArray dEdb2 = nullsafe(dnhdb2.mmul(dEdnh));
-        INDArray dsdo = Nd4j.ones(batchsz, midsz).muli(m).muli(n);
-        INDArray dEdo = dsdo.mul(dEds);
-        INDArray dodoh = (o.mul(o)).mul(-1).add(1);
-        INDArray dEdoh = dodoh.mul(dEdo);
-        INDArray dohdW3 = input3.transpose();
-        INDArray dEdW3 = nullsafe(dohdW3.mmul(dEdoh));
-        INDArray dohdb3 = Nd4j.ones(1, batchsz);
-        INDArray dEdb3 = nullsafe(dohdb3.mmul(dEdoh));
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("output_W")), dEdW4), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("output_b")), dEdb4), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense1_W")), dEdW1), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense1_b")), dEdb1), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense2_W")), dEdW2), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense2_b")), dEdb2), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense3_W")), dEdW3), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense3_b")), dEdb3), this.epsilon);
+        assertGradientCheckPasses(cg, new INDArray[] { input1, input2, input3 }, target);
     }
 
     @Test
@@ -388,12 +226,12 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         int featuresz = 17;
         int midsz = 13;
         int outputsz = 11;
-        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).biasInit(0.0).updater(new Sgd()).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input1", "input2").addLayer("dense1", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input1").addLayer("dense2", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input2").addVertex("elementwiseSubtract", new ElementWiseVertex(ElementWiseVertex.Op.Subtract), "dense1", "dense2").addLayer("output", new OutputLayer.Builder().nIn(midsz).nOut(outputsz).activation(new ActivationSigmoid()).lossFunction(LossFunction.MSE).build(), "elementwiseSubtract").setOutputs("output").build();
+        ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).biasInit(0.0).updater(new NoOp()).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input1", "input2").addLayer("dense1", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input1").addLayer("dense2", new DenseLayer.Builder().nIn(featuresz).nOut(midsz).activation(new ActivationTanH()).build(), "input2").addVertex("elementwiseSubtract", new ElementWiseVertex(ElementWiseVertex.Op.Subtract), "dense1", "dense2").addLayer("output", new OutputLayer.Builder().nIn(midsz).nOut(outputsz).activation(new ActivationSigmoid()).lossFunction(LossFunction.MSE).build(), "elementwiseSubtract").setOutputs("output").build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
-        INDArray input1 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray input2 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1));
-        INDArray target = nullsafe(Nd4j.rand(new int[] { batchsz, outputsz }, new UniformDistribution(0, 1)));
+        INDArray input1 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray input2 = Nd4j.rand(new int[] { batchsz, featuresz }, new UniformDistribution(-1, 1)).castTo(DataType.DOUBLE);
+        INDArray target = nullsafe(Nd4j.rand(new int[] { batchsz, outputsz }, new UniformDistribution(0, 1)).castTo(DataType.DOUBLE));
         cg.setInputs(input1, input2);
         cg.setLabels(target);
         cg.computeGradientAndScore();
@@ -410,9 +248,9 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         INDArray m = (Transforms.tanh(mh));
         INDArray nh = input2.mmul(dense2_W).addi(dense2_b.repmat(batchsz, 1));
         INDArray n = (Transforms.tanh(nh));
-        INDArray middle = Nd4j.zeros(batchsz, midsz);
+        INDArray middle = Nd4j.zeros(DataType.DOUBLE, batchsz, midsz);
         middle.addi(m).subi(n);
-        INDArray expect = Nd4j.zeros(batchsz, outputsz);
+        INDArray expect = Nd4j.zeros(DataType.DOUBLE, batchsz, outputsz);
         expect.addi(Transforms.sigmoid(middle.mmul(output_W).addi(output_b.repmat(batchsz, 1))));
         INDArray output = nullsafe(cg.output(input1, input2)[0]);
         Assertions.assertEquals(0.0, mse(output, expect), this.epsilon);
@@ -420,77 +258,13 @@ class ElementWiseVertexTest extends BaseDL4JTest {
         double score = pgd.getSecond();
         Assertions.assertEquals(score, mse(output, target), this.epsilon);
         Map<String, INDArray> gradients = pgd.getFirst().gradientForVariable();
-        /*
-         * So. Let's say we have inputs a, b, c
-         * mh = a W1 + b1
-         * m = tanh(mh)
-         *
-         * nh = b W2 + b2
-         * n = tanh(nh)
-         *
-         * s = m-n
-         *
-         * yh = s W4 + b4
-         * y = sigmoid(yh)
-         *
-         * E = (y-t)^2
-         * dE/dy = 2 (y-t)
-         *
-         * dy/dyh = y * (1-y)
-         * dE/dyh = 2 * y * (1-y) * (y-t)
-         *
-         * dyh/dW4 = s.transpose()
-         * dyh/db4 = Nd4j.ones(1, batchsz)
-         * dyh/ds = W4.tranpose()
-         *
-         * ds/dm = Nd4j.ones(1, midsz)
-         * ds/dn = Nd4j.ones(1, midsz).muli(-1)
-         *
-         * dm/dmh = 1-(m^2)
-         *
-         * dmh/dW1 = a.transpose()
-         * dmh/db1 = Nd4j.ones(1, batchsz)
-         *
-         */
-        INDArray y = output;
-        INDArray s = middle;
-        INDArray W4 = output_W;
-        INDArray dEdy = Nd4j.zeros(target.shape());
-        // This should be of size batchsz x outputsz
-        dEdy.addi(y).subi(target).muli(2);
-        // Why? Because the LossFunction divides by the _element size_ of the output.
-        dEdy.divi(target.shape()[1]);
-        // This is of size batchsz x outputsz
-        INDArray dydyh = y.mul(y.mul(-1).add(1));
-        INDArray dEdyh = dydyh.mul(dEdy);
-        INDArray dyhdW4 = s.transpose();
-        INDArray dEdW4 = nullsafe(dyhdW4.mmul(dEdyh));
-        INDArray dyhdb4 = Nd4j.ones(1, batchsz);
-        INDArray dEdb4 = nullsafe(dyhdb4.mmul(dEdyh));
-        INDArray dyhds = W4.transpose();
-        INDArray dEds = dEdyh.mmul(dyhds);
-        INDArray dsdm = Nd4j.ones(batchsz, midsz);
-        INDArray dEdm = dsdm.mul(dEds);
-        INDArray dmdmh = (m.mul(m)).mul(-1).add(1);
-        INDArray dEdmh = dmdmh.mul(dEdm);
-        INDArray dmhdW1 = input1.transpose();
-        INDArray dEdW1 = nullsafe(dmhdW1.mmul(dEdmh));
-        INDArray dmhdb1 = Nd4j.ones(1, batchsz);
-        INDArray dEdb1 = nullsafe(dmhdb1.mmul(dEdmh));
-        INDArray dsdn = Nd4j.ones(batchsz, midsz).muli(-1);
-        INDArray dEdn = dsdn.mul(dEds);
-        INDArray dndnh = (n.mul(n)).mul(-1).add(1);
-        INDArray dEdnh = dndnh.mul(dEdn);
-        INDArray dnhdW2 = input2.transpose();
-        INDArray dEdW2 = nullsafe(dnhdW2.mmul(dEdnh));
-        INDArray dnhdb2 = Nd4j.ones(1, batchsz);
-        INDArray dEdb2 = nullsafe(dnhdb2.mmul(dEdnh));
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("output_W")), dEdW4), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("output_b")), dEdb4), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense1_W")), dEdW1), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense1_b")), dEdb1), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense2_W")), dEdW2), this.epsilon);
-        Assertions.assertEquals(0, mse(nullsafe(gradients.get("dense2_b")), dEdb2), this.epsilon);
+        assertGradientCheckPasses(cg, new INDArray[] { input1, input2 }, target);
+    }
+
+    private void assertGradientCheckPasses(ComputationGraph cg, INDArray[] inputs, INDArray target) {
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(inputs)
+                        .labels(new INDArray[] { target }).subset(true).maxPerParam(100));
+        Assertions.assertTrue(gradOK);
     }
 
     private static double mse(INDArray output, INDArray target) {

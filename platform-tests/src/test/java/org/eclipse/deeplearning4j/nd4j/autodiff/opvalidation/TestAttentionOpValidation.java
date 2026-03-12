@@ -86,11 +86,6 @@ public class TestAttentionOpValidation extends BaseOpValidation {
         SDVariable key = sd.var("key", keyArr);
         SDVariable value = sd.var("value", valueArr);
 
-        // Flatten to 2D for mmul: [batch*seqLen, dim]
-        SDVariable qFlat = query.reshape(batch * seqLen, dim);
-        SDVariable kFlat = key.reshape(batch * seqLen, dim);
-        SDVariable vFlat = value.reshape(batch * seqLen, dim);
-
         // Compute attention scores using einsum for batch matmul
         // scores = Q @ K^T * scale
         SDVariable scores = sd.linalg().einsum(new SDVariable[]{query, key}, "bqd,bkd->bqk").mul(scale);
@@ -640,6 +635,55 @@ public class TestAttentionOpValidation extends BaseOpValidation {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    @DisplayName("DotProductAttentionV2 - useFlashAttention=false materializes scores")
+    public void testDotProductAttentionV2UseFlashDisabledProducesScores(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        int batch = 2;
+        int seqLen = 8;
+        int dim = 16;
+        double scale = 1.0 / Math.sqrt(dim);
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, dim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, dim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, dim).muli(0.1f);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key)
+                .addFloatingPointArguments(scale, 0.0)      // T_ARG: scale, dropout
+                .addBooleanArguments(false, false, false)   // B_ARG: useCausalMask, training, useFlashAttention
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+        INDArray attnOutput = outputs[0];
+        INDArray attnScores = outputs[1];
+        INDArray attnLogits = outputs[2];
+
+        assertNotNull(attnOutput);
+        assertNotNull(attnScores);
+        assertNotNull(attnLogits);
+        assertArrayEquals(new long[]{batch, seqLen, dim}, attnOutput.shape());
+        assertArrayEquals(new long[]{batch, seqLen, seqLen}, attnScores.shape());
+        assertArrayEquals(new long[]{batch, seqLen, seqLen}, attnLogits.shape());
+
+        // Scores should be a proper softmax distribution along the last dimension.
+        INDArray rowSums = attnScores.sum(true, 2);
+        double maxRowSumErr = Nd4j.math().abs(rowSums.sub(1.0)).maxNumber().doubleValue();
+        double minScore = attnScores.minNumber().doubleValue();
+        double maxScore = attnScores.maxNumber().doubleValue();
+
+        assertTrue(maxRowSumErr < 1e-3,
+                "Attention score rows should sum to 1 when flash is disabled. maxErr=" + maxRowSumErr);
+        assertTrue(minScore >= -1e-6, "Attention scores should be non-negative. min=" + minScore);
+        assertTrue(maxScore <= 1.0 + 1e-6, "Attention scores should be <= 1. max=" + maxScore);
+
+        // Logits should be materialized (not all zeros/uninitialized).
+        double logitsAbsMean = Nd4j.math().abs(attnLogits).meanNumber().doubleValue();
+        assertTrue(logitsAbsMean > 1e-7, "Attention logits should be materialized when flash is disabled");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     @DisplayName("ONNX MHA - With Attention Bias Uses Fused Kernel")
     public void testOnnxMhaWithBiasUsesFusedKernel(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
@@ -733,17 +777,20 @@ public class TestAttentionOpValidation extends BaseOpValidation {
         int headDim = 64;
         double scale = 1.0 / Math.sqrt(headDim);
 
-        INDArray query = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, headDim);
-        INDArray key = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, headDim);
-        INDArray value = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, headDim);
-        
-        // Simulated relative position bias
+        // dot_product_attention_v2 4D format: [batch, seq, numHeads, headDim] (BSHD)
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, numHeads, headDim);
+
+        // Simulated relative position bias: [batch, numHeads, seqQ, seqKV]
         INDArray bias = Nd4j.randn(DataType.FLOAT, batch, numHeads, seqLen, seqLen).muli(0.1f);
 
-        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention")
-                .addInputs(query, key, value, bias)
-                .addIntegerArguments(1, 0, 1)  // normalize=true, useMask=false, useBias=true
-                .addFloatingPointArguments(scale)
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)
+                .addBooleanArguments(false, false, true)  // useCausalMask, training, useFlashAttention
                 .build();
 
         long startTime = System.currentTimeMillis();
@@ -751,7 +798,7 @@ public class TestAttentionOpValidation extends BaseOpValidation {
         long endTime = System.currentTimeMillis();
 
         assertNotNull(outputs[0]);
-        assertArrayEquals(new long[]{batch, numHeads, seqLen, headDim}, outputs[0].shape());
+        assertArrayEquals(new long[]{batch, seqLen, numHeads, headDim}, outputs[0].shape());
 
         log.info("Large sequence attention with bias completed in {} ms", endTime - startTime);
     }
@@ -762,26 +809,31 @@ public class TestAttentionOpValidation extends BaseOpValidation {
     public void testFusedAttentionFP16WithBias(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
-        int batchHeads = 4;
+        int batch = 4;
         int seqLen = 8;
         int headDim = 16;
+        double scale = 1.0 / Math.sqrt(headDim);
 
-        INDArray query = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, headDim);
-        INDArray key = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, headDim);
-        INDArray value = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, headDim);
-        INDArray bias = Nd4j.randn(DataType.FLOAT16, batchHeads, seqLen, seqLen);
+        // 3D format: [batch, seq, dim]
+        INDArray query = Nd4j.randn(DataType.FLOAT16, batch, seqLen, headDim);
+        INDArray key = Nd4j.randn(DataType.FLOAT16, batch, seqLen, headDim);
+        INDArray value = Nd4j.randn(DataType.FLOAT16, batch, seqLen, headDim);
+        INDArray bias = Nd4j.randn(DataType.FLOAT16, batch, seqLen, seqLen);
 
-        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention")
-                .addInputs(query, key, value, bias)
-                .addIntegerArguments(1, 0, 1)  // normalize=true, useMask=false, useBias=true
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT16);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)
+                .addBooleanArguments(false, false, true)  // useCausalMask, training, useFlashAttention
                 .build();
 
         INDArray[] outputs = Nd4j.exec(op);
 
         assertNotNull(outputs[0]);
-        assertEquals(DataType.FLOAT16, outputs[0].dataType(), 
+        assertEquals(DataType.FLOAT16, outputs[0].dataType(),
                 "Output should preserve FP16 data type");
-        assertArrayEquals(new long[]{batchHeads, seqLen, headDim}, outputs[0].shape());
+        assertArrayEquals(new long[]{batch, seqLen, headDim}, outputs[0].shape());
     }
 
     @ParameterizedTest
@@ -790,23 +842,26 @@ public class TestAttentionOpValidation extends BaseOpValidation {
     public void testFusedCrossAttentionWithBias(Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
-        int batchHeads = 4;
+        int batch = 4;
         int seqQ = 4;    // Query sequence length
         int seqKV = 12;  // Key/Value sequence length (different!)
         int headDim = 16;
         double scale = 1.0 / Math.sqrt(headDim);
 
-        INDArray query = Nd4j.randn(DataType.FLOAT, batchHeads, seqQ, headDim).muli(0.1f);
-        INDArray key = Nd4j.randn(DataType.FLOAT, batchHeads, seqKV, headDim).muli(0.1f);
-        INDArray value = Nd4j.randn(DataType.FLOAT, batchHeads, seqKV, headDim).muli(0.1f);
-        
-        // Cross-attention bias: [batchHeads, seqQ, seqKV]
-        INDArray bias = Nd4j.randn(DataType.FLOAT, batchHeads, seqQ, seqKV).muli(0.5f);
+        // 3D format: [batch, seq, dim]
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqQ, headDim).muli(0.1f);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqKV, headDim).muli(0.1f);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqKV, headDim).muli(0.1f);
 
-        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention")
-                .addInputs(query, key, value, bias)
-                .addIntegerArguments(1, 0, 1)  // normalize=true, useMask=false, useBias=true
-                .addFloatingPointArguments(scale)
+        // Cross-attention bias: [batch, seqQ, seqKV]
+        INDArray bias = Nd4j.randn(DataType.FLOAT, batch, seqQ, seqKV).muli(0.5f);
+
+        INDArray emptyMask = Nd4j.empty(DataType.FLOAT);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("dot_product_attention_v2")
+                .addInputs(query, value, key, emptyMask, emptyMask, bias)
+                .addFloatingPointArguments(scale, 0.0)
+                .addBooleanArguments(false, false, true)  // useCausalMask, training, useFlashAttention
                 .build();
 
         INDArray[] outputs = Nd4j.exec(op);
@@ -814,7 +869,7 @@ public class TestAttentionOpValidation extends BaseOpValidation {
 
         assertNotNull(attnOutput);
         // Output should have query's sequence length
-        assertArrayEquals(new long[]{batchHeads, seqQ, headDim}, attnOutput.shape(),
+        assertArrayEquals(new long[]{batch, seqQ, headDim}, attnOutput.shape(),
                 "Cross attention output should have query's sequence length");
     }
 

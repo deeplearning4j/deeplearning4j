@@ -159,7 +159,7 @@ public class NativeExecutorTestUtils {
         int magic = buf.getInt();
         assertEquals(0x44535031, magic, "Wrong magic");
         int version = buf.getInt();
-        assertEquals(1, version, "Wrong version");
+        assertEquals(5, version, "Wrong version");
         int numSlots = buf.getInt();
         assertEquals(plan.getSlots().length, numSlots, "Slot count mismatch");
         int totalOutputSlots = buf.getInt();

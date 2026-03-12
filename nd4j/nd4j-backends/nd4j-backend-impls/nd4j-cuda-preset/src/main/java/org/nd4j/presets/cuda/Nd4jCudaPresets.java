@@ -72,7 +72,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/RandomGenerator.h",
                 "graph/Variable.h",
                 "graph/VariablesSet.h",
-                "graph/FlowPath.h",
                 "graph/Intervals.h",
                 "graph/Stash.h",
                 "graph/VariableSpace.h",
@@ -81,7 +80,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/profiling/NodeProfile.h",
                 "graph/Context.h",
                 "graph/ContextPrototype.h",
-                "graph/ResultWrapper.h",
                 "helpers/shape.h",
                 "array/ShapeList.h",
                 "system/op_boilerplate.h",
@@ -222,7 +220,6 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("createOpaqueNDArray").javaNames("create"))
 
                 .put(new Info("OpaqueTadPack").pointerTypes("org.nd4j.nativeblas.OpaqueTadPack"))
-                .put(new Info("OpaqueResultWrapper").pointerTypes("org.nd4j.nativeblas.OpaqueResultWrapper"))
                 .put(new Info("OpaqueShapeList").pointerTypes("org.nd4j.nativeblas.OpaqueShapeList"))
                 .put(new Info("OpaqueVariablesSet").pointerTypes("org.nd4j.nativeblas.OpaqueVariablesSet"))
                 .put(new Info("OpaqueVariable").pointerTypes("org.nd4j.nativeblas.OpaqueVariable"))
@@ -319,7 +316,6 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("Graph").pointerTypes("Pointer"))
-                .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("sd::IndicesList").purify())
                 .put(new Info("shape::cuMalloc").skip())
                 .put(new Info("ErrorResult").skip())

@@ -92,11 +92,20 @@ LongType NativeDynamicShapePlan::computeSegmentInputAddrKey(
 }
 
 // ─── Create (ConstantOfShape) op value key ──────────────────────────────────
-// Hashes the input DATA values of all 'create' ops in a segment.
+// Hashes the input DATA values of all 'create' ops in a segment, PLUS the data
+// values of all VARIABLE external inputs (those marked isVariable).
+//
 // Create ops have value-dependent output shapes: their single input is a shape
 // tensor whose *values* determine the output dimensions.  If these values change
 // between capture and replay, the baked-in CUDA memset produces wrong-sized output.
-// Returns 0 if the segment has no create ops.
+//
+// Variable external inputs (e.g., ConstantOfShape outputs computed by Java SameDiff)
+// may also contain data that changes between steps.  Gap ops within the captured
+// graph read from these external addresses — if the data changes but the graph
+// isn't re-captured, replay produces stale results.  Hashing their data values
+// detects these changes and forces re-capture.
+//
+// Returns 0 only if the segment has no create ops AND no variable external inputs.
 
 LongType NativeDynamicShapePlan::computeCreateOpValueKey(
     GraphSegment& seg, NDArray** externalInputs, int numExt) {
@@ -107,6 +116,7 @@ LongType NativeDynamicShapePlan::computeCreateOpValueKey(
     key *= 0x100000001b3ULL;
   };
 
+  // Part 1: Hash create op inputs (original logic)
   for (int s = seg.startSlot; s <= seg.endSlot; s++) {
     NativeSlot& slot = slots_[s];
     if (slot.opName != "create" && slot.opName != "Create") continue;
@@ -146,6 +156,12 @@ LongType NativeDynamicShapePlan::computeCreateOpValueKey(
       }
     }
   }
+
+  // Part 2: Placeholder external inputs (position_ids, attention_mask, etc.)
+  // are handled via capture buffers + D2D copy before replay, so we do NOT
+  // hash them here. This allows graph replay when only placeholder data changes.
+  // The create op hash (Part 1) still catches ConstantOfShape shape changes.
+
   return key;
 }
 

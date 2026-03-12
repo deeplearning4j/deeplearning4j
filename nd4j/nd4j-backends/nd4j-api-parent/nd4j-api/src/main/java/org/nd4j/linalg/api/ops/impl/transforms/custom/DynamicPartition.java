@@ -70,7 +70,10 @@ public class DynamicPartition extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return new DynamicPartitionBp(sameDiff, arg(0), arg(1), i_v.toArray(new SDVariable[i_v.size()]), numPartitions).outputs();
+        SDVariable inputGrad = new DynamicPartitionBp(sameDiff, arg(0), arg(1), i_v.toArray(new SDVariable[0]), numPartitions)
+                .outputVariables()[0];
+        SDVariable partitionsGrad = sameDiff.zerosLike(arg(1));
+        return Arrays.asList(inputGrad, partitionsGrad);
     }
 
     protected void addArgs() {

@@ -231,7 +231,7 @@ public class DeviceMemoryManager {
             if (preferred == null) {
                 preferred = registeredDevices.values().stream()
                         .filter(device -> device.getDeviceType().isGpu())
-                        .min(Comparator.comparingInt(DeviceDescriptor::getDeviceIndex))
+                        .max(Comparator.comparingLong(DeviceDescriptor::getTotalMemory))
                         .orElse(null);
             }
             if (preferred != null) {
@@ -308,10 +308,12 @@ public class DeviceMemoryManager {
     private int getDefaultPriority(DeviceDescriptor device) {
         switch (device.getDeviceType()) {
             case CUDA_GPU:
-                return 100 - device.getDeviceIndex(); // GPU 0 = 100, GPU 1 = 99, etc.
+                // Prefer GPUs with more total memory (1 priority point per GB)
+                // so a 24GB GPU gets ~124 while an 8GB GPU gets ~108
+                return 100 + (int) (device.getTotalMemory() / (1024L * 1024L * 1024L));
             case ROCM_GPU:
             case METAL_GPU:
-                return 80 - device.getDeviceIndex();
+                return 80 + (int) (device.getTotalMemory() / (1024L * 1024L * 1024L));
             case TPU:
                 return 110; // TPU highest priority
             case CPU:

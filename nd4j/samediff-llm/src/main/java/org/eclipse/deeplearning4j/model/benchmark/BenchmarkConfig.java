@@ -71,6 +71,9 @@ public class BenchmarkConfig {
     // DSP flags
     boolean dspCastElimination;
     boolean dspFp16Compute;
+    boolean dspBatchZero;
+    boolean dspBatchZeroKernel;
+    boolean dspBatchedGemm;
 
     // Generation
     int captureMinExec = 1;
@@ -121,6 +124,9 @@ public class BenchmarkConfig {
     public BenchmarkConfig expectStructuralTags(boolean b) { this.expectStructuralTags = b; return this; }
     public BenchmarkConfig dspCastElimination(boolean b) { this.dspCastElimination = b; return this; }
     public BenchmarkConfig dspFp16Compute(boolean b) { this.dspFp16Compute = b; return this; }
+    public BenchmarkConfig dspBatchZero(boolean b) { this.dspBatchZero = b; return this; }
+    public BenchmarkConfig dspBatchZeroKernel(boolean b) { this.dspBatchZeroKernel = b; return this; }
+    public BenchmarkConfig dspBatchedGemm(boolean b) { this.dspBatchedGemm = b; return this; }
 
     // Getters
     public String getName() { return name; }
@@ -157,6 +163,9 @@ public class BenchmarkConfig {
     public boolean isExpectStructuralTags() { return expectStructuralTags; }
     public boolean isDspCastElimination() { return dspCastElimination; }
     public boolean isDspFp16Compute() { return dspFp16Compute; }
+    public boolean isDspBatchZero() { return dspBatchZero; }
+    public boolean isDspBatchZeroKernel() { return dspBatchZeroKernel; }
+    public boolean isDspBatchedGemm() { return dspBatchedGemm; }
 
     public boolean isTriton() {
         return !tritonIncludeTypes.isEmpty();
@@ -183,6 +192,9 @@ public class BenchmarkConfig {
         if (tritonAllowFallbackCapture) sb.append(" fallbackCapture");
         if (dspCastElimination) sb.append(" castElim");
         if (dspFp16Compute) sb.append(" fp16compute");
+        if (dspBatchZero) sb.append(" batchZero");
+        if (dspBatchZeroKernel) sb.append(" batchZeroKernel");
+        if (dspBatchedGemm) sb.append(" batchedGemm");
         sb.append(" tokens=").append(maxTokens);
         return sb.toString();
     }

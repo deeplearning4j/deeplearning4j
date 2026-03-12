@@ -520,6 +520,22 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOutputAllSetsArrayOutputsForGetArr(Nd4jBackend backend) {
+        INDArray inArr = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape('c', 3, 4);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable square = in.mul("square", in);
+        SDVariable slice = sd.stridedSlice(in, new long[]{1, 2}, new long[]{3, 4}, new long[]{1, 1});
+
+        Map<String, INDArray> outputs = sd.outputAll(null);
+
+        assertEquals(outputs.get(square.name()), square.getArr());
+        assertEquals(outputs.get(slice.name()), slice.getArr());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEvalAdd(Nd4jBackend backend) {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.linspace(1, 4, 4);
@@ -1456,7 +1472,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
             assertEquals(out, arr.std(biasCorrected, Integer.MAX_VALUE));
 
             Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
-            INDArray dLdIn = sd.grad("in").getArr();
+            INDArray dLdIn = g.get("in");
 
             //If L = stdev(in)
             //then dL/dIn = (in-mean) / (s*(N-1))
@@ -1517,7 +1533,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(out, arr.min(Integer.MAX_VALUE));
 
         Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
-        INDArray dLdIn = sd.grad("in").getArr();
+        INDArray dLdIn = g.get("in");
 
         //If L = min(in)
         //then dL/dIn = 1 if in_i == min(in) or 0 otherwise
@@ -1542,8 +1558,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         INDArray out = min.eval();
         assertEquals(out, arr.max(Integer.MAX_VALUE));
 
-        sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
-        INDArray dLdIn = sd.grad("in").getArr();
+        Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
+        INDArray dLdIn = g.get("in");
 
         //If L = max(in)
         //then dL/dIn = 1 if in_i == max(in) or 0 otherwise
@@ -1569,7 +1585,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         assertEquals(out, arr.prod(Integer.MAX_VALUE));
 
         Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
-        INDArray dLdIn = sd.grad("in").getArr();
+        INDArray dLdIn = g.get("in");
 
         //If L = prod(in)
         //then dL/dIn = prod(in) / in       i.e., product of input *excluding* in_i as (d/dx(xyzabc) = yzabc
@@ -5497,8 +5513,6 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testPReLU(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         SameDiff sd = SameDiff.create();
 
         SDVariable input = sd.constant(Nd4j.createFromArray(
@@ -5519,6 +5533,31 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         String err = OpValidation.validate(tc);
         assertNull(err);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testPReLUDirect(Nd4jBackend backend) {
+        // Isolation test: call prelu directly via Nd4j.exec to bypass SameDiff
+        INDArray input = Nd4j.createFromArray(new int[][][]{{
+                {-10, 10, 10, -10},
+                {10, 10, -10, -10}
+        }}).castTo(DataType.DOUBLE);
+
+        INDArray alpha = Nd4j.createFromArray(0.01, 0.1).castTo(DataType.DOUBLE);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("prelu")
+                .addInputs(input, alpha)
+                .addIntegerArguments(2)
+                .build();
+        INDArray[] result = Nd4j.exec(op);
+
+        INDArray expected = Nd4j.createFromArray(new double[][][]{{
+                {-0.1, 10, 10, -0.1},
+                {10, 10, -1, -1}
+        }}).castTo(DataType.DOUBLE);
+
+        assertEquals(expected, result[0]);
     }
 
     @ParameterizedTest

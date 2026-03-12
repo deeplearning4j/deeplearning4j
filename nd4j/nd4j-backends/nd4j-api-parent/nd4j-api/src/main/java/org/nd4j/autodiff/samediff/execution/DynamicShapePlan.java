@@ -94,8 +94,33 @@ public class DynamicShapePlan implements Closeable {
      */
     private final Map<String, Integer> outputNameToSlotIndex;
 
-    /** Whether any slot has control flow ops (plan is invalid if true — should not be created). */
+    /** Whether this plan contains control flow ops (Switch/Merge/Enter/Exit/NextIteration/LoopCond). */
     private final boolean hasControlFlowOps;
+
+    /**
+     * Loop regions detected during compilation. Each region describes a while-loop
+     * with Merge/LoopCond/Switch/NextIteration/Exit slot indices.
+     */
+    @Getter private final LoopRegion[] loopRegions;
+
+    /**
+     * Describes a while-loop region in the DSP plan.
+     */
+    @Data
+    public static class LoopRegion {
+        /** Step index of the Merge op (loop entry / back-edge target). */
+        public final int mergeSlot;
+        /** Step index of the Switch op (loop gate). */
+        public final int switchSlot;
+        /** Step index of the NextIteration op (triggers jump-back). */
+        public final int nextIterSlot;
+        /** Step index of the Exit op (output when loop ends). */
+        public final int exitSlot;
+        /** First body slot after Switch. */
+        public final int bodyStartSlot;
+        /** Last body slot (= nextIterSlot). */
+        public final int bodyEndSlot;
+    }
 
     // --- Dependency graph for async parallel execution ---
 
@@ -118,12 +143,12 @@ public class DynamicShapePlan implements Closeable {
     @Getter private int numDistinctDevices = 0;
 
     /**
-     * Full constructor with dependency graph.
+     * Full constructor with dependency graph and loop regions.
      */
     public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
                             OpContext[] opContextPool, String[] externalInputKeys,
                             Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
-                            boolean hasControlFlowOps,
+                            boolean hasControlFlowOps, LoopRegion[] loopRegions,
                             int[] predecessorCounts, int[][] predecessors, int[][] successors,
                             int[] consumerCounts, int[] rootSlots) {
         this.slots = slots;
@@ -134,6 +159,7 @@ public class DynamicShapePlan implements Closeable {
         this.requestedOutputs = requestedOutputs;
         this.outputNameToSlotIndex = outputNameToSlotIndex;
         this.hasControlFlowOps = hasControlFlowOps;
+        this.loopRegions = loopRegions;
         this.predecessorCounts = predecessorCounts;
         this.predecessors = predecessors;
         this.successors = successors;
@@ -149,7 +175,7 @@ public class DynamicShapePlan implements Closeable {
                             Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
                             boolean hasControlFlowOps) {
         this(slots, totalOutputSlots, releaseAtStep, opContextPool, externalInputKeys,
-                requestedOutputs, outputNameToSlotIndex, hasControlFlowOps,
+                requestedOutputs, outputNameToSlotIndex, hasControlFlowOps, null,
                 null, null, null, null, null);
     }
 
@@ -437,8 +463,8 @@ public class DynamicShapePlan implements Closeable {
 
     /** Magic bytes identifying a serialized DSP plan. */
     private static final int DSP_MAGIC = 0x44535031;  // "DSP1" in big-endian
-    /** Serialization format version. V2 adds legacyOpType + legacyOpNum per slot. */
-    private static final int DSP_VERSION = 2;
+    /** Serialization format version. V2 adds legacyOpType + legacyOpNum. V3 adds control flow. V4 adds external input names. V5 adds string args. */
+    private static final int DSP_VERSION = 5;
 
     /**
      * Serialize this plan into a compact binary format for the native C++ executor.
@@ -455,6 +481,7 @@ public class DynamicShapePlan implements Closeable {
      *             numTArgs(int32), tArgs[](double),
      *             numBArgs(int32), bArgs[](byte),
      *             numDArgs(int32), dArgs[](int32),
+     *             numSArgs(int32), sArgs[](int32 len + UTF-8),
      *             flags: needsZeroedOutput(byte), isDataDependent(byte),
      *                    outputShapeDependsOnInputValues(byte), needsIntLongSync(byte),
      *                    isCustomOp(byte), targetDeviceId(int32)
@@ -486,20 +513,41 @@ public class DynamicShapePlan implements Closeable {
             size += slot.getInputSourceIndices().length * 4;  // inputSourceIndices
             size += slot.getInputSourceTypes().length;          // inputSourceTypes (bytes)
             size += slot.getOutputSlotIndices().length * 4;     // outputSlotIndices
-            size += 16; // 4 arg counts (int each)
+            size += 20; // 5 arg counts (int each)
             size += (slot.getIArgs() != null ? slot.getIArgs().length : 0) * 8;  // iArgs (long)
             size += (slot.getTArgs() != null ? slot.getTArgs().length : 0) * 8;  // tArgs (double)
             size += (slot.getBArgs() != null ? slot.getBArgs().length : 0);       // bArgs (byte)
             size += (slot.getDArgs() != null ? slot.getDArgs().length : 0) * 4;  // dArgs (int toInt/C++ enum)
+            String[] sArgs = slot.getSArgs();
+            size += 4;
+            if (sArgs != null) {
+                for (String sArg : sArgs) {
+                    byte[] sArgBytes = sArg != null ? sArg.getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
+                    size += 4 + sArgBytes.length;
+                }
+            }
             size += 5 + 4; // 5 flag bytes + targetDeviceId int
             size += 8; // legacyOpType (int32) + legacyOpNum (int32)
+            size += 1 + 4 + 4; // controlFlowType (byte) + loopBackTarget (int32) + loopRegionIndex (int32)
         }
         // Release schedule
         for (int[] releases : releaseAtStep) {
             size += 4 + releases.length * 4; // count + indices
         }
+        // Loop regions: count + 6 ints per region
+        int numLoopRegions = (loopRegions != null) ? loopRegions.length : 0;
+        size += 4 + numLoopRegions * 24; // count(int32) + 6 ints per region
+
         // Requested outputs
         size += outputNameToSlotIndex.size() * 4;
+
+        // External input names (v4+): count + per-name (int32 len + UTF-8 bytes)
+        byte[][] extNameBytes = new byte[externalInputKeys.length][];
+        for (int i = 0; i < externalInputKeys.length; i++) {
+            extNameBytes[i] = externalInputKeys[i] != null
+                ? externalInputKeys[i].getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
+            size += 4 + extNameBytes[i].length;
+        }
 
         ByteBuffer buf = ByteBuffer.allocate(size);
         buf.order(ByteOrder.LITTLE_ENDIAN);
@@ -530,9 +578,9 @@ public class DynamicShapePlan implements Closeable {
             double[] tArgs = slot.getTArgs();
             boolean[] bArgs = slot.getBArgs();
             DataType[] dArgs = slot.getDArgs();
+            String[] sArgs = slot.getSArgs();
 
-            // Write args interleaved: count then data for each arg type
-            // C++ reader expects: numIArgs, iArgs[], numTArgs, tArgs[], numBArgs, bArgs[], numDArgs, dArgs[]
+            // Write args interleaved: count then data for each arg type.
             buf.putInt(iArgs != null ? iArgs.length : 0);
             if (iArgs != null) for (long a : iArgs) buf.putLong(a);
 
@@ -545,6 +593,15 @@ public class DynamicShapePlan implements Closeable {
             buf.putInt(dArgs != null ? dArgs.length : 0);
             if (dArgs != null) for (DataType a : dArgs) buf.putInt(a.toInt());
 
+            buf.putInt(sArgs != null ? sArgs.length : 0);
+            if (sArgs != null) {
+                for (String sArg : sArgs) {
+                    byte[] sArgBytes = sArg != null ? sArg.getBytes(java.nio.charset.StandardCharsets.UTF_8) : new byte[0];
+                    buf.putInt(sArgBytes.length);
+                    buf.put(sArgBytes);
+                }
+            }
+
             buf.put(slot.isNeedsZeroedOutput() ? (byte) 1 : (byte) 0);
             buf.put(slot.isDataDependent() ? (byte) 1 : (byte) 0);
             buf.put(slot.isOutputShapeDependsOnInputValues() ? (byte) 1 : (byte) 0);
@@ -553,6 +610,11 @@ public class DynamicShapePlan implements Closeable {
             buf.putInt(slot.getTargetDeviceId());
             buf.putInt(slot.getLegacyOpType());
             buf.putInt(slot.getLegacyOpNum());
+
+            // V3: control flow metadata
+            buf.put(slot.getControlFlowType());
+            buf.putInt(slot.getLoopBackTarget());
+            buf.putInt(slot.getLoopRegionIndex());
         }
 
         // Release schedule
@@ -561,11 +623,30 @@ public class DynamicShapePlan implements Closeable {
             for (int idx : releases) buf.putInt(idx);
         }
 
+        // Loop regions
+        buf.putInt(numLoopRegions);
+        if (loopRegions != null) {
+            for (LoopRegion lr : loopRegions) {
+                buf.putInt(lr.mergeSlot);
+                buf.putInt(lr.switchSlot);
+                buf.putInt(lr.nextIterSlot);
+                buf.putInt(lr.exitSlot);
+                buf.putInt(lr.bodyStartSlot);
+                buf.putInt(lr.bodyEndSlot);
+            }
+        }
+
         // Requested output slot indices — MUST match the order of requestedOutputs iteration,
         // because Java executeNative() maps results using new ArrayList<>(getRequestedOutputs()).
         for (String outputName : requestedOutputs) {
             Integer slotIdx = outputNameToSlotIndex.get(outputName);
             buf.putInt(slotIdx != null ? slotIdx : -1);
+        }
+
+        // External input names (v4+)
+        for (byte[] nameBytes : extNameBytes) {
+            buf.putInt(nameBytes.length);
+            buf.put(nameBytes);
         }
 
         buf.flip();
@@ -586,7 +667,52 @@ public class DynamicShapePlan implements Closeable {
         ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
         int magic = buf.getInt();
         int version = buf.getInt();
-        return magic == DSP_MAGIC && (version == 1 || version == 2);
+        return magic == DSP_MAGIC && (version >= 1 && version <= 5);
+    }
+
+    /**
+     * Get a detailed multi-line summary of this plan including per-slot info,
+     * segment boundaries, op histogram, device placement, and memory timeline.
+     */
+    public String getDetailedSummary() {
+        return PlanIntrospection.formatPlan(this);
+    }
+
+    /**
+     * Export this plan as a DOT format string for Graphviz visualization.
+     */
+    public String toDot() {
+        return PlanIntrospection.toDot(this);
+    }
+
+    /**
+     * Compute segment boundaries from slot data.
+     */
+    public List<PlanIntrospection.SegmentInfo> getSegments() {
+        return PlanIntrospection.getSegments(this);
+    }
+
+    /**
+     * Find groups of slots that share the same predecessor set and could execute concurrently.
+     */
+    public List<List<Integer>> getParallelGroups() {
+        return PlanIntrospection.getParallelGroups(this);
+    }
+
+    /**
+     * Get segments with full replay state (requires native plan handle).
+     */
+    public List<PlanIntrospection.SegmentInfo> getSegmentsWithReplayState(org.bytedeco.javacpp.Pointer nativePlanHandle) {
+        if (nativePlanHandle == null) return PlanIntrospection.getSegments(this);
+        return PlanIntrospection.getSegmentsWithReplayState(this, nativePlanHandle);
+    }
+
+    /**
+     * Get compact replay summary string for logging.
+     */
+    public String getReplaySummary(org.bytedeco.javacpp.Pointer nativePlanHandle) {
+        if (nativePlanHandle == null) return "No native plan handle";
+        return PlanIntrospection.formatReplaySummary(nativePlanHandle);
     }
 
     @Override

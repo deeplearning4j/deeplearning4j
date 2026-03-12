@@ -151,33 +151,24 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     auto listOfTensors = input->allTensorsAlongDimension(*restDims);
     auto listOfOutTensors = output->allTensorsAlongDimension(*restDims);
     delete restDims;
-    int numOfClasses = output->sizeAt(0);  // number of classes
-    std::vector<std::pair<NDArray*, sd::LongType>> outputs(numOfClasses);
-    auto meanT = listOfOutTensors.at(idx);
+    auto outputT = listOfOutTensors.at(idx);
     int count = 1;
-    auto meanV = meanT->dup();
-    meanV->assign(listOfTensors.at(0));
+    outputT->assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<sd::LongType>(i) == idx) {
-        auto func = PRAGMA_THREADS_FOR {
-          for (auto e = start; e < stop; e++) {
-            meanV->p<T>(e, meanV->e<T>(e) + listOfTensors.at(i)->e<T>(e));
-          }
-        };
-        samediff::Threads::parallel_for(func, 0, meanT->lengthOf());
-
+        auto current = listOfTensors.at(i);
+        *outputT += *current;
         count++;
       } else {
-        meanV->applyScalar(scalar::Divide, count, meanT);
+        *outputT /= double(count);
         idx = indices->e<sd::LongType>(i);
-        meanT = listOfOutTensors.at(idx);
-        meanV->assign(listOfTensors.at(i));
+        outputT = listOfOutTensors.at(idx);
+        outputT->assign(listOfTensors.at(i));
         count = 1;
       }
-      meanV->applyScalar(scalar::Divide, count, meanT);
     }
-    delete meanV;  // Clean up duped array
+    *outputT /= double(count);
   }
 }
 

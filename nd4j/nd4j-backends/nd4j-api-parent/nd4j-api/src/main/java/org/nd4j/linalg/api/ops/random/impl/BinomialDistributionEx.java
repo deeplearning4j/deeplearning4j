@@ -66,9 +66,6 @@ public class BinomialDistributionEx extends BaseRandomOp {
         if (z.length() != probabilities.length())
             throw new IllegalStateException("Length of probabilities array should match length of target array");
 
-        if (probabilities.elementWiseStride() < 1)
-            throw new IllegalStateException("Probabilities array shouldn't have negative elementWiseStride");
-
         Preconditions.checkArgument(probabilities.dataType() == z.dataType(), "Probabilities and Z operand should have same data type");
 
         this.trials = trials;

@@ -20,12 +20,59 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
 //
 #include <helpers/Loops.h>
+#include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/transforms.h>
 #if NOT_EXCLUDED(OP_scatter_update)
 namespace sd {
 namespace ops {
 namespace helpers {
+
+template <typename T>
+static void scatterSimpleCopy(NDArray& input, NDArray& updates, NDArray& indices,
+                              const std::vector<LongType>& tadDimensions) {
+  if (tadDimensions.empty()) {
+    THROW_EXCEPTION("helpers::scatterSimple: TAD dimensions must not be empty for copy operation");
+  }
+
+  auto tadPack =
+      ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), const_cast<LongType*>(tadDimensions.data()),
+                                                        tadDimensions.size());
+  auto* tadShapeInfo = tadPack->primaryShapeInfo();
+  auto* tadOffsets = tadPack->primaryOffsets();
+  const auto numTads = tadPack->numberOfTads();
+  const auto tadLen = shape::length(tadShapeInfo);
+  const auto tadRank = shape::rank(tadShapeInfo);
+  const auto* tadShape = shape::shapeOf(tadShapeInfo);
+  const auto* tadStride = shape::stride(tadShapeInfo);
+
+  if (indices.lengthOf() != updates.lengthOf()) {
+    THROW_EXCEPTION("helpers::scatterSimple: indices and updates must have the same length");
+  }
+  if (indices.lengthOf() != numTads) {
+    THROW_EXCEPTION("helpers::scatterSimple: number of indices/updates must match number of TADs");
+  }
+
+  auto* inputBuffer = input.bufferAsT<T>();
+
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto t = start; t < stop; t++) {
+      const auto localIndex = indices.t<sd::LongType>(t);
+      if (localIndex < 0 || localIndex >= tadLen) {
+        THROW_EXCEPTION("helpers::scatterSimple: local index is out of bounds for TAD length");
+      }
+
+      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType localOffset = 0;
+      INDEX2COORDS(localIndex, tadRank, tadShape, coords);
+      COORDS2INDEX(tadRank, tadStride, coords, localOffset);
+
+      inputBuffer[tadOffsets[t] + localOffset] = updates.e<T>(t);
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, numTads);
+}
 
 //////////////////////////////////////////////////////////////////////////
 void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<LongType>* intArgs) {
@@ -92,20 +139,9 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
 //////////////////////////////////////////////////////////////////////////
 void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, NDArray& updates,
                    NDArray& indices, const std::vector<LongType>& dimensions) {
-  // updates and indices have same length
-  const sd::LongType len = indices.lengthOf();
-
   switch (opId) {
     case 6: {  // copy
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++) {
-          auto inSubArr = input(i, dimensions);
-          auto curr = indices.e(i);
-          inSubArr->p(indices.t<sd::LongType>(i), &curr);
-        }
-      };
-
-      samediff::Threads::parallel_for(func, 0, len);
+      BUILD_SINGLE_SELECTOR(input.dataType(), scatterSimpleCopy, (input, updates, indices, dimensions), SD_COMMON_TYPES);
     } break;
 
     default:

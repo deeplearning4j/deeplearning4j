@@ -362,6 +362,7 @@ public class ExecutionPlanCompiler {
                 ctx.setTArguments(dynOp.tArgs());
                 ctx.setDArguments(dynOp.dArgs());
                 ctx.setBArguments(dynOp.bArgs());
+                ctx.setSArguments(dynOp.sArgs());
             }
 
             return fn.calculateOutputShape(ctx);

@@ -150,13 +150,23 @@ if(EXISTS "${INSTALL_DIR}/include/TritonNVIDIAGPUToLLVM")
         message(STATUS "Triton: created nvidia/include/ copies for relative includes (Windows)")
     else()
         # Unix: use symlinks for efficiency
+        # Remove any pre-existing directory/symlink to avoid CREATE_LINK failure
+        if(EXISTS "${INSTALL_DIR}/include/nvidia/include/TritonNVIDIAGPUToLLVM")
+            file(REMOVE_RECURSE "${INSTALL_DIR}/include/nvidia/include/TritonNVIDIAGPUToLLVM")
+        endif()
         file(CREATE_LINK "../../TritonNVIDIAGPUToLLVM"
              "${INSTALL_DIR}/include/nvidia/include/TritonNVIDIAGPUToLLVM" SYMBOLIC)
         if(EXISTS "${INSTALL_DIR}/include/NVGPUToLLVM")
+            if(EXISTS "${INSTALL_DIR}/include/nvidia/include/NVGPUToLLVM")
+                file(REMOVE_RECURSE "${INSTALL_DIR}/include/nvidia/include/NVGPUToLLVM")
+            endif()
             file(CREATE_LINK "../../NVGPUToLLVM"
                  "${INSTALL_DIR}/include/nvidia/include/NVGPUToLLVM" SYMBOLIC)
         endif()
         if(EXISTS "${INSTALL_DIR}/include/Dialect")
+            if(EXISTS "${INSTALL_DIR}/include/nvidia/include/Dialect")
+                file(REMOVE_RECURSE "${INSTALL_DIR}/include/nvidia/include/Dialect")
+            endif()
             file(CREATE_LINK "../../Dialect"
                  "${INSTALL_DIR}/include/nvidia/include/Dialect" SYMBOLIC)
         endif()

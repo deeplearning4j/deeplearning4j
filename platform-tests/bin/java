@@ -236,7 +236,8 @@ java_call="${java_call} -Xlog:gc*:file=${gc_log_file}:time,uptime,level,tags"
 
 # print the final command
 echo "$TEST_RUNNER_PREFIX $java_call $@"
-$TEST_RUNNER_PREFIX $java_call "$@" && java_exit_code=0 || java_exit_code=$?
+stderr_log="${gc_log_dir}/stderr.log"
+$TEST_RUNNER_PREFIX $java_call "$@" 2> >(tee "$stderr_log" >&2) && java_exit_code=0 || java_exit_code=$?
 
 # if valgrind was used, remove the dynamic suppression file
 if [[ -n $VALGRIND_DYNAMIC_SUPP && -f $VALGRIND_DYNAMIC_SUPP ]]; then

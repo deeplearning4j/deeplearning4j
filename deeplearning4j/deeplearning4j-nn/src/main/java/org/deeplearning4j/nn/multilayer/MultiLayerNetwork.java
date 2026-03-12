@@ -129,6 +129,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Getter
     protected transient Map<String,Pointer> helperWorkspaces = new HashMap<>();
 
+    private static INDArray asRowVectorView(INDArray flatArray) {
+        if (flatArray.rank() == 2 && flatArray.isRowVector()) {
+            return flatArray;
+        }
+
+        long length = flatArray.length();
+        return Nd4j.create(flatArray.data(), new long[]{1, length}, new long[]{length, 1},
+                flatArray.offset(), 'c', true);
+    }
+
+    private static INDArray flatBufferView(INDArray flatArray, long from, long to) {
+        INDArray rowVector = asRowVectorView(flatArray);
+        long innerStride = rowVector.stride(1);
+        return Nd4j.create(rowVector.data(), new long[]{to - from}, new long[]{innerStride},
+                rowVector.offset() + from * innerStride, 'c', true);
+    }
+
 
     /**
      * Workspace for working memory for a single layer: forward pass and backward pass
@@ -696,9 +713,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 initializeParams = false;
             }
 
-            INDArray flattenedParamsReshape = null;
             if(flattenedParams != null) {
-                flattenedParamsReshape = flattenedParams.reshape(flattenedParams.length());
+                flattenedParams = asRowVectorView(flattenedParams);
             }
 
             //Set RNG seed, for repeatability between initializations when set
@@ -711,8 +727,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             for (int i = 0; i < nLayers; i++) {
                 INDArray paramsView;
                 if (nParamsPerLayer[i] > 0) {
-                    paramsView = flattenedParamsReshape.get(
-                            NDArrayIndex.interval(paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]));
+                    paramsView = flatBufferView(flattenedParams, paramCountSoFar, paramCountSoFar + nParamsPerLayer[i]);
                 } else {
                     paramsView = null;
                 }
@@ -791,13 +806,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 return;
             }
 
-            INDArray flattenedGradientsReshape = flattenedGradients.reshape(flattenedGradients.length());
             long paramsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {
                 if (nParamsPerLayer[i] == 0)
                     continue; //This layer doesn't have any parameters...
-                INDArray thisLayerGradView = flattenedGradientsReshape.get(
-                        NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParamsPerLayer[i]));
+                INDArray thisLayerGradView = flatBufferView(flattenedGradients, paramsSoFar,
+                        paramsSoFar + nParamsPerLayer[i]);
                 layers[i].setBackpropGradientsViewArray(thisLayerGradView);
                 paramsSoFar += nParamsPerLayer[i];
             }
@@ -1579,24 +1593,28 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return; //No op
         }
 
-        INDArray paramsReshape = params.reshape(params.length());
+        INDArray paramsSource;
         if (flattenedParams != null && params.length() == flattenedParams.length()) {
             if (params != flattenedParams) {
                 flattenedParams.assign(params);
             }
+            paramsSource = flattenedParams;
         } else {
             if (flattenedParams == null)
                 flattenedParams = params.dup();
-            int idx = 0;
-            for (int i = 0; i < getLayers().length; i++) {
-                Layer layer = getLayer(i);
-                long range = layer.numParams();
-                if (range <= 0)
-                    continue; //Some layers: no parameters (subsampling, etc)
-                INDArray get = paramsReshape.get(NDArrayIndex.interval(idx, range + idx));
-                layer.setParams(get);
-                idx += range;
-            }
+            paramsSource = flattenedParams;
+        }
+
+        int idx = 0;
+        for (int i = 0; i < getLayers().length; i++) {
+            Layer layer = getLayer(i);
+            long range = layer.numParams();
+            if (range <= 0)
+                continue; //Some layers: no parameters (subsampling, etc)
+            INDArray get = flatBufferView(paramsSource, idx, range + idx);
+            layer.setParamsViewArray(get);
+            layer.setParamTable(layer.conf().getLayer().initializer().init(layer.conf(), get, false));
+            idx += range;
         }
     }
 
@@ -1613,12 +1631,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         int paramsSoFar = 0;
-        INDArray gradientsReshape = gradients.reshape(gradients.length());
         for (Layer layer : layers) {
             if (layer.numParams() == 0)
                 continue;
-            layer.setBackpropGradientsViewArray(gradientsReshape.get(
-                    NDArrayIndex.interval(paramsSoFar, paramsSoFar + layer.numParams())));
+            layer.setBackpropGradientsViewArray(flatBufferView(gradients, paramsSoFar, paramsSoFar + layer.numParams()));
             paramsSoFar += layer.numParams();
         }
     }

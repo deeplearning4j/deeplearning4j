@@ -282,7 +282,7 @@ if(CCACHE_PROGRAM AND SD_CUDA AND CMAKE_CUDA_COMPILER AND NOT CCACHE_SKIP_REASON
     endif()
 
     # Configure ccache settings for optimal CUDA caching (both platforms)
-    execute_process(COMMAND ${CCACHE_PROGRAM} --max-size=10G ERROR_QUIET)
+    execute_process(COMMAND ${CCACHE_PROGRAM} --max-size=30G ERROR_QUIET)
     execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compression=true ERROR_QUIET)
     execute_process(COMMAND ${CCACHE_PROGRAM} --set-config=compression_level=6 ERROR_QUIET)
 

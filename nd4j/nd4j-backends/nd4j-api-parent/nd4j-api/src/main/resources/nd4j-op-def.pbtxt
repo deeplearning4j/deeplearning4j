@@ -20772,7 +20772,7 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
-    name: "numOfClasses"
+    name: "numSegments"
     argType: INT64
   }
   argDescriptor {
@@ -20946,7 +20946,7 @@ opList {
     argType: DATA_TYPE
   }
   argDescriptor {
-    name: "numOfClasses"
+    name: "numSegments"
     argType: INT64
   }
   argDescriptor {

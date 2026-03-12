@@ -274,6 +274,14 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     }
 
     @Override
+    public void setSArguments(String... arguments) {
+        super.setSArguments(arguments);
+        for (int i = 0; i < arguments.length; i++) {
+            nativeOps.setGraphContextSArgument(context, arguments[i], i);
+        }
+    }
+
+    @Override
     public void setRngStates(long rootState, long nodeState) {
         nativeOps.setRandomGeneratorStates(nativeOps.getGraphContextRandomGenerator(context), rootState, nodeState);
     }

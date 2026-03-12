@@ -92,6 +92,9 @@ public class DynamicShapeSlot {
     /** Frozen datatype arguments. */
     private final DataType[] dArgs;
 
+    /** Frozen string arguments. */
+    private final String[] sArgs;
+
     /** Per-slot cached shape key for fast comparison. 0 = not yet computed. */
     private long cachedShapeKey;
 
@@ -160,6 +163,37 @@ public class DynamicShapeSlot {
     public static final int LEGACY_TRANSFORM_BOOL = 4;
     public static final int LEGACY_SCALAR = 5;
     public static final int LEGACY_PAIRWISE_TRANSFORM = 6;
+    public static final int LEGACY_SCALAR_BOOL = 7;
+
+    /** Control flow type constants. */
+    public static final byte CF_NONE = 0;
+    public static final byte CF_SWITCH = 1;
+    public static final byte CF_MERGE = 2;
+    public static final byte CF_ENTER = 3;
+    public static final byte CF_EXIT = 4;
+    public static final byte CF_NEXT_ITERATION = 5;
+    public static final byte CF_LOOP_COND = 6;
+
+    /**
+     * Control flow type for this slot. CF_NONE for regular ops.
+     * Set for Switch/Merge/Enter/Exit/NextIteration/LoopCond ops.
+     */
+    @Builder.Default
+    private byte controlFlowType = CF_NONE;
+
+    /**
+     * For NextIteration ops: the slot index to jump back to (the Merge slot).
+     * -1 if not a NextIteration op.
+     */
+    @Builder.Default
+    private int loopBackTarget = -1;
+
+    /**
+     * For loop-scoped slots: the loop region index this slot belongs to.
+     * -1 if not inside a loop body.
+     */
+    @Builder.Default
+    private int loopRegionIndex = -1;
 
     /** Index of this slot in the plan (for diagnostics). */
     private final int stepIndex;
@@ -209,5 +243,44 @@ public class DynamicShapeSlot {
     public void clearShapeCache() {
         this.cachedShapeKey = 0;
         this.cachedOutputShapes = null;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Slot#").append(stepIndex).append(" [").append(opName).append("] inputs:[");
+        if (inputSourceIndices != null) {
+            for (int i = 0; i < inputSourceIndices.length; i++) {
+                if (i > 0) sb.append(", ");
+                int idx = inputSourceIndices[i];
+                if (idx >= 0) {
+                    sb.append("slot#").append(idx).append("(OP)");
+                } else {
+                    int extIdx = -(idx + 1);
+                    String typeName;
+                    byte type = (inputSourceTypes != null && i < inputSourceTypes.length) ? inputSourceTypes[i] : -1;
+                    switch (type) {
+                        case SOURCE_CONSTANT: typeName = "CONST"; break;
+                        case SOURCE_VARIABLE: typeName = "VAR"; break;
+                        case SOURCE_PLACEHOLDER: typeName = "PH"; break;
+                        default: typeName = "EXT"; break;
+                    }
+                    String name = (inputVarNames != null && i < inputVarNames.length) ? inputVarNames[i] : "";
+                    sb.append("ext#").append(extIdx).append(":\"").append(name).append("\"(").append(typeName).append(")");
+                }
+            }
+        }
+        sb.append("] → outputs:[");
+        if (outputSlotIndices != null) {
+            for (int i = 0; i < outputSlotIndices.length; i++) {
+                if (i > 0) sb.append(", ");
+                sb.append("slot#").append(outputSlotIndices[i]);
+            }
+        }
+        sb.append("]");
+        if (targetDeviceId >= 0) {
+            sb.append(" device:").append(targetDeviceId);
+        }
+        return sb.toString();
     }
 }

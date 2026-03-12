@@ -39,6 +39,7 @@ import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
 import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -276,7 +277,7 @@ public class VisionLanguageModel implements AutoCloseable {
         checkNotClosed();
 
         Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("pixel_values", image);
+        inputs.put("pixel_values", normalizeVisionInputShape(image));
 
         Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
         return outputs.get("image_embeds");
@@ -574,6 +575,77 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 
     /**
+     * Generate per-page outputs for a multi-page document.
+     *
+     * <p>This is a semantic wrapper around {@link #generateBatch(List, String, int, boolean, double)}
+     * that treats each image as a page in one document.</p>
+     *
+     * @param pageImages preprocessed page tensors (one image per page)
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @return one generation result per page, in input order
+     */
+    public GenerationResult[] generatePages(List<INDArray> pageImages, String prompt, int maxNewTokens) {
+        return generatePages(pageImages, prompt, maxNewTokens, false, 0.0);
+    }
+
+    /**
+     * Generate per-page outputs for a multi-page document with sampling control.
+     *
+     * @param pageImages preprocessed page tensors (one image per page)
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @param doSample whether to sample (false = greedy)
+     * @param temperature sampling temperature (used when doSample=true)
+     * @return one generation result per page, in input order
+     */
+    public GenerationResult[] generatePages(List<INDArray> pageImages, String prompt, int maxNewTokens,
+                                            boolean doSample, double temperature) {
+        return generateBatch(pageImages, prompt, maxNewTokens, doSample, temperature);
+    }
+
+    /**
+     * Generate one combined document string from multiple page images.
+     *
+     * <p>Each page is generated independently, then concatenated using a page delimiter.</p>
+     *
+     * @param pageImages preprocessed page tensors (one image per page)
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @return combined document text
+     */
+    public String generateDocument(List<INDArray> pageImages, String prompt, int maxNewTokens) {
+        return generateDocument(pageImages, prompt, maxNewTokens, false, 0.0, "\n\n<page_break/>\n\n");
+    }
+
+    /**
+     * Generate one combined document string from multiple page images with full controls.
+     *
+     * @param pageImages preprocessed page tensors (one image per page)
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @param doSample whether to sample (false = greedy)
+     * @param temperature sampling temperature (used when doSample=true)
+     * @param pageDelimiter delimiter inserted between page outputs
+     * @return combined document text
+     */
+    public String generateDocument(List<INDArray> pageImages, String prompt, int maxNewTokens,
+                                   boolean doSample, double temperature, String pageDelimiter) {
+        GenerationResult[] pageResults = generatePages(pageImages, prompt, maxNewTokens, doSample, temperature);
+        String delimiter = pageDelimiter == null ? "" : pageDelimiter;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < pageResults.length; i++) {
+            if (i > 0) {
+                sb.append(delimiter);
+            }
+            if (pageResults[i] != null && pageResults[i].getText() != null) {
+                sb.append(pageResults[i].getText());
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
      * Generate text from multiple images in parallel with sampling control.
      *
      * @param images list of preprocessed image tensors
@@ -610,7 +682,7 @@ public class VisionLanguageModel implements AutoCloseable {
         }
 
         // Stack image embeddings: [batchSize, imageSeqLen, hidden]
-        INDArray batchedImageEmbeddings = Nd4j.vstack(imageEmbeddingsList.toArray(new INDArray[0]));
+        INDArray batchedImageEmbeddings = Nd4j.concat(0, imageEmbeddingsList.toArray(new INDArray[0]));
 
         // Get text embeddings and replicate for batch
         INDArray singleTextEmbeddings = embedText(promptIds); // [1, textSeqLen, hidden]
@@ -977,7 +1049,11 @@ public class VisionLanguageModel implements AutoCloseable {
 
         if (sameShape && firstShape[0] == 1) {
             // All images have same shape - stack and process together
-            INDArray batched = Nd4j.vstack(images.toArray(new INDArray[0]));
+            List<INDArray> normalized = new ArrayList<>(images.size());
+            for (INDArray img : images) {
+                normalized.add(normalizeVisionInputShape(img));
+            }
+            INDArray batched = Nd4j.concat(0, normalized.toArray(new INDArray[0]));
             Map<String, INDArray> inputs = new HashMap<>();
             inputs.put("pixel_values", batched);
             Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
@@ -988,7 +1064,7 @@ public class VisionLanguageModel implements AutoCloseable {
             for (INDArray img : images) {
                 embeddings.add(encodeImage(img));
             }
-            return Nd4j.vstack(embeddings.toArray(new INDArray[0]));
+            return Nd4j.concat(0, embeddings.toArray(new INDArray[0]));
         }
     }
 
@@ -1012,9 +1088,10 @@ public class VisionLanguageModel implements AutoCloseable {
         for (int f = 0; f < numFrames; f++) {
             java.awt.image.BufferedImage frame = splitResult.frames.get(f);
             INDArray frameTensor = imagePreprocessor.preprocess(frame);
+            INDArray visionFrameInput = frameTensor.reshape(1, 1, frameTensor.size(1), frameTensor.size(2), frameTensor.size(3));
 
             Map<String, INDArray> inputs = new HashMap<>();
-            inputs.put("pixel_values", frameTensor);
+            inputs.put("pixel_values", visionFrameInput);
 
             // Create pixel attention mask for this frame
             ImageTiler.ContentRegion region = splitResult.contentRegions.get(f);
@@ -1052,6 +1129,14 @@ public class VisionLanguageModel implements AutoCloseable {
                     java.util.Arrays.toString(embedding.shape()),
                     embedding.minNumber(), embedding.maxNumber());
 
+            for (var entry : outputs.entrySet()) {
+                INDArray arr = entry.getValue();
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+
             SameDiffMemoryUtils.safeClose(frameTensor);
             SameDiffMemoryUtils.safeClose(pixelMask);
         }
@@ -1071,6 +1156,141 @@ public class VisionLanguageModel implements AutoCloseable {
         log.info("Encoded {} frames -> vision embeddings shape={}",
                 numFrames, java.util.Arrays.toString(result.shape()));
         return result;
+    }
+
+    /**
+     * Generate per-page outputs from tiled multi-page inputs.
+     *
+     * <p>Each page is encoded with per-frame pixel attention masks, then decoded independently
+     * using Docling-style image prompt construction.</p>
+     *
+     * @param pageSplitResults tiled pages (one split result per page)
+     * @param userPrompt prompt appended after image tokens
+     * @param maxNewTokens max tokens per page
+     * @param doSample whether to sample (false = greedy)
+     * @param temperature sampling temperature
+     * @param targetSize tile size used for mask generation (e.g. 512)
+     * @return one generation result per page, in input order
+     */
+    public GenerationResult[] generatePagesTiled(List<ImageTiler.SplitImageResult> pageSplitResults,
+                                                 String userPrompt,
+                                                 int maxNewTokens,
+                                                 boolean doSample,
+                                                 double temperature,
+                                                 int targetSize) {
+        checkNotClosed();
+        if (pageSplitResults == null || pageSplitResults.isEmpty()) {
+            return new GenerationResult[0];
+        }
+
+        SamplingConfig samplingConfig = SamplingConfig.builder()
+                .maxNewTokens(maxNewTokens)
+                .doSample(doSample)
+                .temperature(temperature)
+                .build();
+
+        GenerationResult[] results = new GenerationResult[pageSplitResults.size()];
+        for (int i = 0; i < pageSplitResults.size(); i++) {
+            ImageTiler.SplitImageResult splitResult = pageSplitResults.get(i);
+            if (splitResult == null || splitResult.getTotalFrames() <= 0) {
+                results[i] = GenerationResult.builder()
+                        .text("")
+                        .tokenIds(new int[0])
+                        .generatedTokenCount(0)
+                        .promptTokenCount(0)
+                        .totalTokenCount(0)
+                        .finishReason(GenerationResult.FinishReason.MAX_TOKENS)
+                        .firstTokenLatencyMs(0)
+                        .generationTimeMs(0)
+                        .tokensPerSecond(0.0)
+                        .build();
+                continue;
+            }
+
+            INDArray visionEmbeddings = encodeImageTiled(splitResult, targetSize);
+            try {
+                int totalFrames = splitResult.getTotalFrames();
+                int imageSeqLenPerFrame = (int) (visionEmbeddings.size(1) / Math.max(totalFrames, 1));
+                results[i] = generateFromEmbeddings(
+                        visionEmbeddings,
+                        userPrompt,
+                        samplingConfig,
+                        splitResult.numRows,
+                        splitResult.numCols,
+                        imageSeqLenPerFrame);
+            } finally {
+                SameDiffMemoryUtils.safeClose(visionEmbeddings);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Generate per-page outputs from tiled multi-page inputs (greedy defaults).
+     *
+     * @param pageSplitResults tiled pages (one split result per page)
+     * @param userPrompt prompt appended after image tokens
+     * @param maxNewTokens max tokens per page
+     * @param targetSize tile size used for mask generation (e.g. 512)
+     * @return one generation result per page, in input order
+     */
+    public GenerationResult[] generatePagesTiled(List<ImageTiler.SplitImageResult> pageSplitResults,
+                                                 String userPrompt,
+                                                 int maxNewTokens,
+                                                 int targetSize) {
+        return generatePagesTiled(pageSplitResults, userPrompt, maxNewTokens, false, 0.0, targetSize);
+    }
+
+    /**
+     * Generate one combined document output from tiled multi-page inputs.
+     *
+     * @param pageSplitResults tiled pages (one split result per page)
+     * @param userPrompt prompt appended after image tokens
+     * @param maxNewTokens max tokens per page
+     * @param doSample whether to sample (false = greedy)
+     * @param temperature sampling temperature
+     * @param targetSize tile size used for mask generation (e.g. 512)
+     * @param pageDelimiter delimiter inserted between page outputs
+     * @return combined document text
+     */
+    public String generateDocumentTiled(List<ImageTiler.SplitImageResult> pageSplitResults,
+                                        String userPrompt,
+                                        int maxNewTokens,
+                                        boolean doSample,
+                                        double temperature,
+                                        int targetSize,
+                                        String pageDelimiter) {
+        GenerationResult[] pageResults = generatePagesTiled(
+                pageSplitResults, userPrompt, maxNewTokens, doSample, temperature, targetSize);
+        String delimiter = pageDelimiter == null ? "" : pageDelimiter;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < pageResults.length; i++) {
+            if (i > 0) {
+                sb.append(delimiter);
+            }
+            if (pageResults[i] != null && pageResults[i].getText() != null) {
+                sb.append(pageResults[i].getText());
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Generate one combined document output from tiled multi-page inputs (greedy defaults).
+     *
+     * @param pageSplitResults tiled pages (one split result per page)
+     * @param userPrompt prompt appended after image tokens
+     * @param maxNewTokens max tokens per page
+     * @param targetSize tile size used for mask generation (e.g. 512)
+     * @return combined document text
+     */
+    public String generateDocumentTiled(List<ImageTiler.SplitImageResult> pageSplitResults,
+                                        String userPrompt,
+                                        int maxNewTokens,
+                                        int targetSize) {
+        return generateDocumentTiled(
+                pageSplitResults, userPrompt, maxNewTokens, false, 0.0, targetSize, "\n\n<page_break/>\n\n");
     }
 
     /**
@@ -1326,11 +1546,12 @@ public class VisionLanguageModel implements AutoCloseable {
     public INDArray encodeImageOnDevice(INDArray image, DeviceDescriptor device) {
         checkNotClosed();
 
+        INDArray normalized = normalizeVisionInputShape(image);
         // Ensure image is on target device
-        ensureOnDevice(image, device);
+        ensureOnDevice(normalized, device);
 
         Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("pixel_values", image);
+        inputs.put("pixel_values", normalized);
 
         Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
         INDArray result = outputs.get("image_embeds");
@@ -1338,6 +1559,30 @@ public class VisionLanguageModel implements AutoCloseable {
         // Ensure output is on target device
         ensureOnDevice(result, device);
         return result;
+    }
+
+    private INDArray normalizeVisionInputShape(INDArray image) {
+        if (image == null) {
+            throw new IllegalArgumentException("image must not be null");
+        }
+        if (image.rank() == 4 && visionEncoderExpectsFramedInput()) {
+            if (image.size(0) == 1) {
+                // [1, C, H, W] -> [1, 1, C, H, W]
+                return image.reshape(1, 1, image.size(1), image.size(2), image.size(3));
+            }
+            // [frames, C, H, W] -> [1, frames, C, H, W]
+            return image.reshape(1, image.size(0), image.size(1), image.size(2), image.size(3));
+        }
+        return image;
+    }
+
+    private boolean visionEncoderExpectsFramedInput() {
+        SDVariable pixelValues = visionEncoder.getVariable("pixel_values");
+        if (pixelValues == null) {
+            return false;
+        }
+        long[] shape = pixelValues.getShape();
+        return shape != null && shape.length == 5;
     }
 
     /**
@@ -1630,4 +1875,3 @@ public class VisionLanguageModel implements AutoCloseable {
         }
     }
 }
-

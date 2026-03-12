@@ -37,6 +37,7 @@ import org.nd4j.autodiff.samediff.config.SDValueType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAG;
 import org.nd4j.autodiff.samediff.execution.ForwardExecutionDAGBuilder;
+import org.nd4j.autodiff.samediff.execution.ReplayProfileManager;
 import org.nd4j.autodiff.samediff.training.LossScaler;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -74,6 +75,10 @@ public class TrainingSession extends InferenceSession {
     private static final boolean DSP_TRAINING_ENABLED = Boolean.parseBoolean(
             System.getProperty(ND4JSystemProperties.DSP_TRAINING_ENABLED, "true"));
     private Map<String, long[]> previousPlaceholderShapes;
+
+    // Replay profile collection (persists across shape changes within training run)
+    private ReplayProfileManager.ReplayProfileCollection replayProfiles_;
+    private int dspStepCount;
 
 
     public TrainingSession(SameDiff sameDiff) {
@@ -512,6 +517,18 @@ public class TrainingSession extends InferenceSession {
         // If shapes match previous and already frozen: nothing to do (graph replay)
 
         previousPlaceholderShapes = currentShapes;
+        dspStepCount++;
+
+        // Replay profile management for warm restarts
+        if (replayProfiles_ != null && executor.isShapesFrozen()) {
+            org.bytedeco.javacpp.Pointer planHandle = executor.getNativePlanHandle();
+            if (planHandle != null && dspStepCount > 3) {
+                // Wait for capture to stabilize before snapshotting profile
+                ReplayProfileManager.ReplayProfile profile =
+                    ReplayProfileManager.captureProfile(planHandle, currentShapes);
+                replayProfiles_.put(profile);
+            }
+        }
     }
 
     private static boolean shapesMatch(Map<String, long[]> a, Map<String, long[]> b) {
@@ -523,6 +540,64 @@ public class TrainingSession extends InferenceSession {
             }
         }
         return true;
+    }
+
+    /**
+     * Enable replay profile tracking for warm restarts.
+     */
+    public void setReplayProfilesEnabled(boolean enabled) {
+        if (enabled && replayProfiles_ == null) {
+            replayProfiles_ = new ReplayProfileManager.ReplayProfileCollection();
+        } else if (!enabled) {
+            replayProfiles_ = null;
+        }
+    }
+
+    /**
+     * Get replay profiles (for checkpoint saving).
+     */
+    public ReplayProfileManager.ReplayProfileCollection getReplayProfiles() {
+        return replayProfiles_;
+    }
+
+    /**
+     * Load replay profiles (for warm restart from checkpoint).
+     */
+    public void loadReplayProfiles(ReplayProfileManager.ReplayProfileCollection profiles) {
+        this.replayProfiles_ = profiles;
+        DynamicShapePlanExecutor executor = dynamicShapePlanExecutorTl.get();
+        if (executor != null && profiles != null) {
+            org.bytedeco.javacpp.Pointer planHandle = executor.getNativePlanHandle();
+            if (planHandle != null && previousPlaceholderShapes != null) {
+                ReplayProfileManager.ReplayProfile match =
+                    ReplayProfileManager.findMatchingProfile(profiles, previousPlaceholderShapes);
+                if (match != null) {
+                    ReplayProfileManager.loadProfile(planHandle, match);
+                    log.info("DSP training: loaded replay profile for shape hash {}",
+                             match.getShapeHash());
+                }
+            }
+        }
+    }
+
+    /**
+     * Save replay profiles to disk alongside model checkpoint.
+     */
+    public void saveReplayProfilesToCheckpoint(String checkpointDir) {
+        if (replayProfiles_ != null) {
+            replayProfiles_.saveToDisk(checkpointDir);
+        }
+    }
+
+    /**
+     * Load replay profiles from checkpoint directory.
+     */
+    public void loadReplayProfilesFromCheckpoint(String checkpointDir) {
+        ReplayProfileManager.ReplayProfileCollection loaded =
+            ReplayProfileManager.ReplayProfileCollection.loadFromDisk(checkpointDir);
+        if (loaded != null) {
+            loadReplayProfiles(loaded);
+        }
     }
 
     @Override

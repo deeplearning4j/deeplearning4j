@@ -85,9 +85,6 @@ public class BinomialDistribution extends BaseRandomOp {
         if (trials > probabilities.length())
             throw new IllegalStateException("Number of trials is > then amount of probabilities provided");
 
-        if (probabilities.elementWiseStride() < 1)
-            throw new IllegalStateException("Probabilities array shouldn't have negative elementWiseStride");
-
         Preconditions.checkArgument(probabilities.dataType() == z.dataType(), "Probabilities and Z operand should have same data type");
 
         this.trials = trials;

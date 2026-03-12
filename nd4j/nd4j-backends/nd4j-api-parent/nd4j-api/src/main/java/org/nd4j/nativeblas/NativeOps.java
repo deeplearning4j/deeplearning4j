@@ -86,13 +86,6 @@ public interface NativeOps {
               String mode);
 
 
- OpaqueResultWrapper executeFlatGraph(PointerPointer extraPointers, Pointer flatBufferPointer);
-
- OpaqueVariablesSet executeStoredGraph(PointerPointer extraPointers,
-                                        long graphId,
-                                        PointerPointer inputBuffers,
-                                        PointerPointer inputShapes,
-                                       IntPointer inputIndices, int numInputs);
  LongPointer getShape(OpaqueShapeList list, long i);
  boolean checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements);
  OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, OpaqueContext context);
@@ -414,16 +407,12 @@ public interface NativeOps {
  void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
  void munmapFile(PointerPointer extraPointers, LongBuffer ptrMap, long length);
  void munmapFile(PointerPointer extraPointers, long[] ptrMap, long length);
- long getResultWrapperSize(OpaqueResultWrapper ptr);
- Pointer getResultWrapperPointer(OpaqueResultWrapper ptr);
  long getShapeListSize(OpaqueShapeList list);
  int execCustomOp2(PointerPointer extraPointers, long hash, OpaqueContext opContext);
- int registerGraph(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
  long getVariablesSetSize(OpaqueVariablesSet set);
  int getVariablesSetStatus(OpaqueVariablesSet set);
  int getVariableId(OpaqueVariable variable);
  int getVariableIndex(OpaqueVariable variable);
- int unregisterGraph(PointerPointer extraPointers, long graphId);
  void deletePointerArray(Pointer pointer);
  void deleteCharArray(Pointer pointer);
  void deleteIntArray(Pointer pointer);
@@ -432,7 +421,6 @@ public interface NativeOps {
  void deleteShapeList(Pointer shapeList);
  Pointer getGraphState(long id);
  void deleteGraphState(Pointer state);
- void deleteResultWrapper(Pointer ptr);
  void convertTypes(PointerPointer extras, int srcType, Pointer dX, long N, int dstType, Pointer dZ);
  Pointer createUtf8String(PointerPointer extraPointers, String string, int length);
  Pointer createUtf8String(PointerPointer extraPointers, BytePointer string, int length);
@@ -490,6 +478,7 @@ public interface NativeOps {
  void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext ptr, IntPointer arguments, int numberOfArguments);
  void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext ptr, IntBuffer arguments, int numberOfArguments);
  void setGraphContextDArguments(org.nd4j.nativeblas.OpaqueContext ptr, int[] arguments, int numberOfArguments);
+ void setGraphContextSArgument(org.nd4j.nativeblas.OpaqueContext ptr, String argument, int index);
  void deleteGraphContext(org.nd4j.nativeblas.OpaqueContext ptr);
  long getRandomGeneratorRootState(OpaqueRandomGenerator ptr);
  long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
@@ -1461,6 +1450,31 @@ public interface NativeOps {
  default void invalidateTritonCache() {}
 
  /**
+  * Export the Triton kernel disk cache to a shareable .tkcache bundle (STORED ZIP).
+  * @param outputPath path to write the bundle file
+  * @return number of kernels exported, or negative on error
+  */
+ default int exportTritonCacheBundle(String outputPath) { return -1; }
+
+ /**
+  * Import a .tkcache bundle into the Triton override directory.
+  * Kernels from bundles take priority over on-disk cache.
+  * @param bundlePath path to the bundle file
+  * @param validateArch if true, reject bundles for incompatible GPU architectures
+  * @return number of kernels imported, -1 on error, -2 on arch mismatch
+  */
+ default int importTritonCacheBundle(String bundlePath, boolean validateArch) { return -1; }
+
+ /**
+  * Read and return the manifest JSON from a .tkcache bundle without importing.
+  * @param bundlePath path to the bundle file
+  * @return JSON string with bundle manifest, or error JSON
+  */
+ default String inspectTritonCacheBundle(String bundlePath) {
+     return "{\"error\": \"not implemented\"}";
+ }
+
+ /**
   * Configure KV cache retention for a compiled plan.
   * @param planHandle handle from compileDynamicShapePlan()
   * @param mappings flat int array of (presentOutputSlotIdx, pastInputExternalIdx, seqDim) triples
@@ -1616,7 +1630,8 @@ public interface NativeOps {
    * Set the graph execution mode for DSP execution.
    * Controls which backend is used for segment execution.
    * @param planHandle handle from compileDynamicShapePlan()
-   * @param mode 0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON
+   * @param mode 0=AUTO, 1=SLOT_BY_SLOT, 2=CUDA_GRAPHS, 3=NVRTC_JIT, 4=PTX_JIT, 5=TRITON,
+   *             6=MLX, 7=ARM_HYBRID, 8=NNAPI
    */
   default void setPlanGraphExecutionMode(Pointer planHandle, int mode) {
       // No-op on backends that don't support graph execution mode
@@ -1748,6 +1763,57 @@ public interface NativeOps {
   default String getPlanCaptureStats(Pointer planHandle) {
       return "";
   }
+
+  // =============================================================================
+  // Per-Segment Replay State
+  // =============================================================================
+
+  default int getPlanSegmentReplayState(Pointer planHandle, int segmentIdx) { return -1; }
+  default int getPlanSegmentReplayCount(Pointer planHandle, int segmentIdx) { return 0; }
+  default String getPlanSegmentBackendName(Pointer planHandle, int segmentIdx) { return ""; }
+  default String getPlanSegmentStatisticsJson(Pointer planHandle, int segmentIdx) { return ""; }
+  default int getPlanSegmentExecutionCount(Pointer planHandle, int segmentIdx) { return 0; }
+  default boolean isPlanSegmentCapturable(Pointer planHandle, int segmentIdx) { return false; }
+  default boolean isPlanSegmentCaptureFailed(Pointer planHandle, int segmentIdx) { return false; }
+
+  // =============================================================================
+  // Per-Segment Pointer Tracking
+  // =============================================================================
+
+  default String getPlanSegmentTrackedPointers(Pointer planHandle, int segmentIdx) { return "[]"; }
+  default int getPlanSegmentNumCaptureBuffers(Pointer planHandle, int segmentIdx) { return 0; }
+  default String getPlanSegmentCaptureBuffersJson(Pointer planHandle, int segmentIdx) { return "[]"; }
+  default int getPlanSegmentNumHostPointers(Pointer planHandle, int segmentIdx) { return 0; }
+
+  // =============================================================================
+  // Replay Cache Management
+  // =============================================================================
+
+  default boolean isReplayCacheEnabled() { return false; }
+  default int getReplayCacheHits() { return 0; }
+  default int getReplayCacheMisses() { return 0; }
+  default void clearReplayCache() {}
+  default String getReplayCacheDir() { return ""; }
+  default String getReplayCacheDeviceStatsJson() { return "{}"; }
+  default int getReplayCacheDeviceEntryCount(int deviceType, int deviceIndex) { return 0; }
+  default void clearReplayCacheForDevice(int deviceType, int deviceIndex) {}
+  default boolean migrateReplayCache(int fromType, int fromIdx, int toType, int toIdx) { return false; }
+  default int pruneStaleReplayCacheDevices() { return 0; }
+  default int loadReplayCacheForDevice(Pointer planHandle, int deviceType, int deviceIndex) { return 0; }
+  default String getReplayCachedDevicesJson() { return "[]"; }
+
+  // =============================================================================
+  // Backend Plan Management
+  // =============================================================================
+
+  default String getPlanAvailableBackends(Pointer planHandle) { return "[]"; }
+  default String getPlanSegmentCompiledBackend(Pointer planHandle, int segIdx) { return ""; }
+  default String getPlanSegmentCompilationAudit(Pointer planHandle, int segIdx) { return "{}"; }
+  default void invalidatePlanSegmentCache(Pointer planHandle, int segIdx) {}
+  default void invalidatePlanBackendCaches(Pointer planHandle, String backendName) {}
+  default String getPlanBackendCacheStats(Pointer planHandle) { return "{}"; }
+  default void setPlanSegmentBackendOverride(Pointer planHandle, int segIdx, String backendName) {}
+  default void setPlanBackendPriority(Pointer planHandle, String priorityList) {}
 
   /**
    * Export the CUDA graph visualization to Chrome trace format.
@@ -1958,4 +2024,71 @@ public interface NativeOps {
   default int ncclGroupEnd() {
       return -1;
   }
+
+  // ─── DSP Diagnostics ─────────────────────────────────────────────────────
+
+  /**
+   * Set the enabled diagnostic categories (replaces current mask).
+   * @param mask bitfield of DspDiagCategory values
+   */
+  default void dspDiagSetCategories(int mask) {}
+
+  /**
+   * Enable additional diagnostic categories (OR with current mask).
+   * @param mask bitfield of DspDiagCategory values to enable
+   */
+  default void dspDiagEnableCategories(int mask) {}
+
+  /**
+   * Disable specific diagnostic categories (AND NOT with current mask).
+   * @param mask bitfield of DspDiagCategory values to disable
+   */
+  default void dspDiagDisableCategories(int mask) {}
+
+  /**
+   * Get the currently enabled diagnostic category mask.
+   * @return bitfield of enabled DspDiagCategory values
+   */
+  default int dspDiagGetEnabledMask() { return 0; }
+
+  /**
+   * Set the diagnostic detail level.
+   * @param level 0=SUMMARY, 1=DETAILED, 2=FULL
+   */
+  default void dspDiagSetLevel(int level) {}
+
+  /**
+   * Set the file path for JSON diagnostic output.
+   * @param path absolute file path, or null to disable
+   */
+  default void dspDiagSetJsonPath(String path) {}
+
+  /**
+   * Record a diagnostic event from Java code into the C++ ring buffer.
+   * @param category DspDiagCategory bitfield value
+   * @param slotId slot index or -1
+   * @param segmentId segment index or -1
+   * @param opName op name or null
+   * @param timingUs timing in microseconds or 0
+   * @param message event message
+   */
+  default void dspDiagRecordJavaEvent(int category, int slotId, int segmentId,
+                                       String opName, long timingUs, String message) {}
+
+  /**
+   * Get the structured text plan report from the C++ diagnostics singleton.
+   * @return formatted diagnostic report, or empty string if no data
+   */
+  default String dspDiagGetPlanReport() { return ""; }
+
+  /**
+   * Get the JSON plan report from the C++ diagnostics singleton.
+   * @return JSON string, or empty string if no data
+   */
+  default String dspDiagGetJsonReport() { return ""; }
+
+  /**
+   * Clear all diagnostic events and stats.
+   */
+  default void dspDiagClear() {}
 }

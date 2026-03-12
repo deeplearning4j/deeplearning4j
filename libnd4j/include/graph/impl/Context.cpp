@@ -912,6 +912,7 @@ void Context::allowHelpers(bool reallyAllow) { _helpersAllowed = reallyAllow; }
 bool Context::helpersAllowed() { return _helpersAllowed; }
 
 void Context::setTArguments(const std::vector<double> &tArgs) {
+  _tArgs.clear();
   for (auto t : tArgs) _tArgs.emplace_back(t);
   if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
     printf("t argument types set in context: ");
@@ -923,6 +924,7 @@ void Context::setTArguments(const std::vector<double> &tArgs) {
 }
 
 void Context::setIArguments(const std::vector<LongType> &iArgs) {
+  _iArgs.clear();
   for (auto i : iArgs) _iArgs.emplace_back(i);
   if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
     printf("int argument types set in context: ");
@@ -934,6 +936,7 @@ void Context::setIArguments(const std::vector<LongType> &iArgs) {
 }
 
 void Context::setBArguments(const std::vector<bool> &bArgs) {
+  _bArgs.clear();
   for (auto b : bArgs) _bArgs.push_back(b);
   if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
     printf("boolean types set in context: ");

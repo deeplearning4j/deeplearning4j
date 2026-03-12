@@ -79,6 +79,9 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();
+        if (numIArguments() > 0 && getIArgument(0) != null) {
+            numSegments = getIArgument(0).intValue();
+        }
     }
 
     @Override

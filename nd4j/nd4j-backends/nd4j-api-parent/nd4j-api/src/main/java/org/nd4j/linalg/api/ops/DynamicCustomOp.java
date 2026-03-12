@@ -108,6 +108,32 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      */
     private transient long cachedInputShapeSignature;
 
+    /**
+     * Ops whose output shape depends on the values of integer input arrays, not just their shapes.
+     * Wrappers override {@link #outputShapeDependsOnInputData()} where appropriate, but builder(...)
+     * returns raw DynamicCustomOp instances and needs an op-name-based fallback.
+     */
+    private static final Set<String> DATA_DEPENDENT_SHAPE_OPS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "broadcast_to",
+            "create",
+            "create_view",
+            "expand_dims",
+            "eye",
+            "fill",
+            "lin_space",
+            "mirror_pad",
+            "onehot",
+            "pad",
+            "range",
+            "reshape",
+            "reshape_no_copy",
+            "slice",
+            "squeeze",
+            "strided_slice",
+            "tile",
+            "unique"
+    )));
+
     public DynamicCustomOp() {
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
@@ -541,6 +567,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         ctx.setDArguments(dArguments);
                         ctx.setTArguments(tArguments);
                         ctx.setBArguments(bArguments);
+                        ctx.setSArguments(sArguments.toArray(new String[0]));
                         ctx.setInputArrays(inputArguments);
                         ctx.setOutputArrays(outputArguments);
 
@@ -1081,7 +1108,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * When true, input integer values are included in the shape cache signature.
      */
     public boolean outputShapeDependsOnInputData() {
-        return false;
+        return DATA_DEPENDENT_SHAPE_OPS.contains(opName());
     }
 
     /**
@@ -1618,6 +1645,52 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         super.setPropertiesForFunction(properties);
+        OpNamespace.OpDescriptor opDescriptor = OpDescriptorHolder.descriptorForOpName(opName());
+        if (opDescriptor == null) {
+            return;
+        }
+
+        for (OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
+            if (!properties.containsKey(argDescriptor.getName())) {
+                continue;
+            }
+
+            int argIndex = argDescriptor.getArgIndex();
+            switch (argDescriptor.getArgType()) {
+                case STRING:
+                    String stringValue = getStringFromProperty(argDescriptor.getName(), properties);
+                    if (stringValue != null) {
+                        setListValue(sArguments, argIndex, stringValue);
+                    }
+                    break;
+                case BOOL:
+                    Boolean boolValue = getBooleanFromProperty(argDescriptor.getName(), properties);
+                    if (boolValue != null) {
+                        setListValue(bArguments, argIndex, boolValue);
+                    }
+                    break;
+                case FLOAT:
+                case DOUBLE:
+                    Double doubleValue = getDoubleValueFromProperty(argDescriptor.getName(), properties);
+                    if (doubleValue != null) {
+                        setListValue(tArguments, argIndex, doubleValue);
+                    }
+                    break;
+                case INT32:
+                case INT64:
+                    Long longValue = getLongValueFromProperty(argDescriptor.getName(), properties);
+                    if (longValue != null) {
+                        setListValue(iArguments, argIndex, longValue);
+                    }
+                    break;
+                case DATA_TYPE:
+                    DataType dataType = getDataTypeFromProperty(argDescriptor.getName(), properties);
+                    if (dataType != null) {
+                        setListValue(dArguments, argIndex, dataType);
+                    }
+                    break;
+            }
+        }
     }
 
     @Override
@@ -1635,32 +1708,100 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public Map<String, Object> propertiesForFunction() {
         OpNamespace.OpDescriptor opDescriptor = OpDescriptorHolder.descriptorForOpName(opName());
         Map<String,Object> ret = new LinkedHashMap<>();
+        Map<String,Object> fieldBackedProperties = null;
         for(OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
             switch(argDescriptor.getArgType()) {
                 case STRING:
-                    if(argDescriptor.getArgIndex() < numSArguments())
-                        ret.put(argDescriptor.getName(),getSArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numSArguments()) {
+                        ret.put(argDescriptor.getName(), getSArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case BOOL:
-                    if(argDescriptor.getArgIndex() < numBArguments())
-                        ret.put(argDescriptor.getName(),getBArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numBArguments()) {
+                        ret.put(argDescriptor.getName(), getBArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case FLOAT:
                 case DOUBLE:
-                    if(argDescriptor.getArgIndex() < numTArguments())
-                        ret.put(argDescriptor.getName(),getTArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numTArguments()) {
+                        ret.put(argDescriptor.getName(), getTArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case INT32:
                 case INT64:
-                    if(argDescriptor.getArgIndex() < numIArguments())
-                        ret.put(argDescriptor.getName(),getIArgument(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numIArguments()) {
+                        ret.put(argDescriptor.getName(), getIArgument(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
                 case DATA_TYPE:
-                    if(argDescriptor.getArgIndex() < numDArguments())
-                        ret.put(argDescriptor.getName(),dArguments.get(argDescriptor.getArgIndex()));
+                    if(argDescriptor.getArgIndex() < numDArguments()) {
+                        ret.put(argDescriptor.getName(), dArguments.get(argDescriptor.getArgIndex()));
+                    } else {
+                        fieldBackedProperties = maybeGetFieldBackedProperties(fieldBackedProperties);
+                        if (fieldBackedProperties.containsKey(argDescriptor.getName())) {
+                            ret.put(argDescriptor.getName(), fieldBackedProperties.get(argDescriptor.getName()));
+                        }
+                    }
                     break;
             }
         }
         return ret;
+    }
+
+    private DataType getDataTypeFromProperty(String propertyName, Map<String, Object> properties) {
+        if (!properties.containsKey(propertyName)) {
+            return null;
+        }
+
+        Object value = properties.get(propertyName);
+        if (value instanceof DataType) {
+            return (DataType) value;
+        } else if (value instanceof String) {
+            return DataType.valueOf((String) value);
+        } else if (value instanceof String[]) {
+            String[] values = (String[]) value;
+            return values.length > 0 ? DataType.valueOf(values[0]) : null;
+        }
+
+        return null;
+    }
+
+    private Map<String,Object> maybeGetFieldBackedProperties(Map<String,Object> existing) {
+        if (existing != null) {
+            return existing;
+        }
+
+        try {
+            return super.propertiesForFunction();
+        } catch (RuntimeException e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private static <T> void setListValue(List<T> list, int index, T value) {
+        while (list.size() <= index) {
+            list.add(null);
+        }
+        list.set(index, value);
     }
 }

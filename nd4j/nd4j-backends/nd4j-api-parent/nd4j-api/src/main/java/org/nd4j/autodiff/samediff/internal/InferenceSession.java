@@ -141,10 +141,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private final ThreadLocal<Map<String, INDArray>> outputArrayCacheTl =
             ThreadLocal.withInitial(HashMap::new);
 
+    // Requested outer-frame outputs from the most recent execution. These provide the
+    // post-inference ARRAY lookup contract used by SameDiff/SDVariable without restoring
+    // the old behavior of retaining every intermediate in nodeValueOutputs.
+    private final ThreadLocal<Map<String, SDValue>> latestRequestedOutputsTl =
+            ThreadLocal.withInitial(LinkedHashMap::new);
+
     // The current DAG being executed. Set at the start of executeOperations() so that
     // sub-methods (executeNode, executeRegularOperation, etc.) can look up variable consumers
     // for proper last-consumer-based liveness tracking without passing the DAG through every call.
     private ForwardExecutionDAG currentExecutionDAG;
+
+    // DataBuffers from externally-provided placeholder arrays. These must NOT be closed during
+    // resetSession() — they are owned by the caller, not by this session.
+    @Getter
+    private final java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Boolean> externalPlaceholderBuffers = new java.util.IdentityHashMap<>();
 
 
     // ---- Java-side execution timing ----
@@ -336,6 +347,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         cachedInputsList = null;
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
+        latestRequestedOutputsTl.get().clear();
         // Clear dynamic shape plan
         if (dynamicShapePlan != null) {
             dynamicShapePlan.close();
@@ -383,6 +395,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Clear output shape and array caches
         outputShapeCacheTl.get().clear();
         outputArrayCacheTl.get().clear();
+        latestRequestedOutputsTl.get().clear();
 
         // Reset DSP step counter so the next session starts with immediate trim
         dspStepCount = 0;
@@ -451,6 +464,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
         // Clear freed arrays tracking from previous execution
         freedArrays().clear();
+        latestRequestedOutputsTl.get().clear();
+
+        // Track externally-provided placeholder DataBuffers so resetSession() won't close them.
+        // These arrays are owned by the caller, not this session.
+        if (placeholderValues != null) {
+            for (INDArray arr : placeholderValues.values()) {
+                if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                    externalPlaceholderBuffers.put(arr.data(), Boolean.TRUE);
+                }
+            }
+        }
 
         if (TIMING_ENABLED) resetTimingCounters();
 
@@ -895,7 +919,44 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             log.debug("CLEANUP: all phases complete");
         }
 
+        latestRequestedOutputsTl.get().putAll(filteredResults);
         return ExecutionResult.builder().valueOutputs(filteredResults).build();
+    }
+
+    @Override
+    public boolean contains(String variable, String frame, int iteration, FrameIter parentFrameIter) {
+        if (super.contains(variable, frame, iteration, parentFrameIter)) {
+            return true;
+        }
+
+        return isLatestRequestedOutputLookup(frame, iteration, parentFrameIter)
+                && latestRequestedOutputsTl.get().containsKey(variable);
+    }
+
+    @Override
+    public SDValue get(String variable, String frame, int iteration, FrameIter parentFrameIter,
+                       boolean enforceExistence) {
+        SDValue out = super.get(variable, frame, iteration, parentFrameIter, false);
+        if (out != null || super.contains(variable, frame, iteration, parentFrameIter)) {
+            return out;
+        }
+
+        if (isLatestRequestedOutputLookup(frame, iteration, parentFrameIter)) {
+            SDValue latest = latestRequestedOutputsTl.get().get(variable);
+            if (latest != null || latestRequestedOutputsTl.get().containsKey(variable)) {
+                return latest;
+            }
+        }
+
+        if (enforceExistence) {
+            Preconditions.checkNotNull(null,
+                    "No output found for variable %s (frame %s, iteration %s)", variable, frame, iteration);
+        }
+        return null;
+    }
+
+    private boolean isLatestRequestedOutputLookup(String frame, int iteration, FrameIter parentFrameIter) {
+        return OUTER_FRAME.equals(frame) && iteration == 0 && parentFrameIter == null;
     }
 
 
@@ -981,13 +1042,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             log.debug("Compiling DynamicShapePlan for {} outputs", outputSet.size());
             plan = DynamicShapePlanCompiler.compile(sameDiff, dag, outputSet);
             if (plan == null) {
-                log.debug("DynamicShapePlan compilation returned null (control flow detected)");
+                log.debug("DynamicShapePlan compilation returned null");
                 return null;
             }
             if (plan.isHasControlFlowOps()) {
-                log.debug("DynamicShapePlan has control flow ops");
-                plan.close();
-                return null;
+                log.debug("DynamicShapePlan has control flow ops - native CF execution enabled");
             }
 
             plan.assignDevices();
@@ -1080,8 +1139,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (TIMING_ENABLED) timingInitValuesNs = System.nanoTime() - tInit0;
 
 
-        // Execute operations in corrected topological order
-        List<ExecutionNode> executionOrder = dag.getFrameAwareExecutionOrder();
+        // Execute operations in topological order.
+        // Use getExecutionOrder() (not getFrameAwareExecutionOrder()) to preserve
+        // dependency ordering for control flow ops. Frame-aware ordering incorrectly
+        // groups Enter ops into child frames, placing them after their consumers.
+        List<ExecutionNode> executionOrder = dag.getExecutionOrder();
 
         // Suppress autoGc during InferenceSession execution. InferenceSession now manages
         // its own intermediate array lifecycle via consumer-based OpDep dependencies:
@@ -1103,6 +1165,25 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         try {
+        // Detect while-loop regions and build skip sets for control flow
+        Set<String> skipOps = new HashSet<>();
+        Map<String, WhileLoopRegion> whileLoopRegions = detectWhileLoopRegions(dag);
+        Set<String> opsInWhileLoops = new HashSet<>();
+        for (WhileLoopRegion r : whileLoopRegions.values()) {
+            opsInWhileLoops.addAll(r.allOps());
+        }
+        // Track which while-loop regions have been executed
+        Set<String> executedWhileLoops = new HashSet<>();
+
+        if (log.isDebugEnabled() && !whileLoopRegions.isEmpty()) {
+            for (Map.Entry<String, WhileLoopRegion> rEntry : whileLoopRegions.entrySet()) {
+                WhileLoopRegion r = rEntry.getValue();
+                log.debug("While-loop region '{}': {} merges, {} condOps, {} switches, {} bodyOps, {} nextIter, {} exits",
+                        r.frameName, r.mergeOps.size(), r.condOps.size(),
+                        r.switchOps.size(), r.bodyOps.size(), r.nextIterOps.size(), r.exitOps.size());
+            }
+        }
+
         int totalOps = executionOrder.size();
         int opIdx = 0;
         for (ExecutionNode node : executionOrder) {
@@ -1113,12 +1194,86 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 continue;
             }
 
-            // Check dependencies are satisfied
-            if (!node.isReadyToExecute(completedOps)) {
-                Set<String> missing = new HashSet<>(node.getDependsOnOperations());
-                missing.removeAll(completedOps);
-                throw new IllegalStateException("Operation " + node.getOperationName() +
-                        " not ready. Missing dependencies: " + missing);
+            String opName = node.getOperationName();
+
+            // Skip ops marked inactive (e.g., inactive if-branch after Switch)
+            if (skipOps.contains(opName)) {
+                continue;
+            }
+
+            // If this op is part of a while-loop, check if it's the first Merge
+            // of that region and execute the entire loop
+            if (opsInWhileLoops.contains(opName)) {
+                // Find which region this op belongs to
+                String regionKey = null;
+                for (Map.Entry<String, WhileLoopRegion> entry : whileLoopRegions.entrySet()) {
+                    if (entry.getValue().allOps().contains(opName)) {
+                        regionKey = entry.getKey();
+                        break;
+                    }
+                }
+                if (regionKey != null && !executedWhileLoops.contains(regionKey)) {
+                    // Check if we're at the first op of this region in execution order
+                    WhileLoopRegion region = whileLoopRegions.get(regionKey);
+                    if (region.mergeOps.contains(opName)) {
+                        // Execute the entire while loop
+                        executeWhileLoop(region, dag, variableValues, completedOps,
+                                allRequired, listeners, at, batch);
+                        executedWhileLoops.add(regionKey);
+                    }
+                }
+                // Skip individual execution - handled by executeWhileLoop
+                if (executedWhileLoops.contains(regionKey)) {
+                    continue;
+                }
+            }
+
+            // For Merge nodes (in if-conditionals), relax readiness: only need
+            // at least one input value to be non-null, not all dependencies completed
+            DifferentialFunction nodeOp = node.getOperation();
+            if (nodeOp instanceof Merge) {
+                // Check if at least one input has a value
+                boolean hasInput = false;
+                for (String input : node.getInputVariables()) {
+                    if (variableValues.get(input) != null) {
+                        hasInput = true;
+                        break;
+                    }
+                }
+                if (!hasInput) {
+                    // All inputs null/missing — this Merge is in a fully inactive branch.
+                    // Skip it and propagate skip to downstream consumers.
+                    log.debug("Merge {} has no available inputs (fully inactive branch), skipping", opName);
+                    completedOps.add(opName);
+                    // BFS from Merge outputs to mark downstream ops for skipping
+                    for (String output : node.getOutputVariables()) {
+                        Queue<String> inactiveQueue = new LinkedList<>();
+                        Set<String> consumers = dag.getVariableConsumers().get(output);
+                        if (consumers != null) inactiveQueue.addAll(consumers);
+                        while (!inactiveQueue.isEmpty()) {
+                            String consumer = inactiveQueue.poll();
+                            if (skipOps.contains(consumer)) continue;
+                            ExecutionNode consumerNode = dag.getOperationNodes().get(consumer);
+                            if (consumerNode == null) continue;
+                            // Stop at next Merge — let it decide based on its own inputs
+                            if (consumerNode.getOperation() instanceof Merge) continue;
+                            skipOps.add(consumer);
+                            for (String consumerOutput : consumerNode.getOutputVariables()) {
+                                Set<String> nextConsumers = dag.getVariableConsumers().get(consumerOutput);
+                                if (nextConsumers != null) inactiveQueue.addAll(nextConsumers);
+                            }
+                        }
+                    }
+                    continue;
+                }
+            } else {
+                // Check dependencies are satisfied
+                if (!node.isReadyToExecute(completedOps)) {
+                    Set<String> missing = new HashSet<>(node.getDependsOnOperations());
+                    missing.removeAll(completedOps);
+                    throw new IllegalStateException("Operation " + opName +
+                            " not ready. Missing dependencies: " + missing);
+                }
             }
 
             // Execute the operation
@@ -1126,7 +1281,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             // Mark as completed
             long tDep0 = TIMING_ENABLED ? System.nanoTime() : 0;
-            completedOps.add(node.getOperationName());
+            completedOps.add(opName);
+
+            // After Switch, mark inactive branch ops for skipping
+            if (nodeOp instanceof Switch) {
+                markInactiveBranchForSkipping(node, dag, variableValues, skipOps);
+            }
 
             // NOTE: We intentionally do NOT sync results to nodeValueOutputs here.
             // nodeValueOutputs is part of AbstractSession's old execution path and is
@@ -1136,7 +1296,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // variableValues map instead.
 
             // Mark operation dependency as satisfied in arrayUseTracker
-            Dep opDep = new OpDep(node.getOperationName(), OUTER_FRAME, 0, null);
+            Dep opDep = new OpDep(opName, OUTER_FRAME, 0, null);
             arrayUseTracker().markSatisfied(opDep, true);
 
             if (TIMING_ENABLED) timingDepTrackNs += System.nanoTime() - tDep0;
@@ -1177,9 +1337,18 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         long tDup0 = TIMING_ENABLED ? System.nanoTime() : 0;
         for(String output : allRequired) {
             if(!variableValues.containsKey(output)) {
-                throw new IllegalStateException("Output: " + output + " missing from the final output!");
+                // For control flow graphs, some intermediate variables (e.g., Switch
+                // inactive branch outputs) may not have values. Skip them rather than
+                // failing, since they weren't actually computed.
+                log.debug("Output '{}' not in variableValues after execution, skipping", output);
+                continue;
             }
             SDValue val = variableValues.get(output);
+            if (val == null) {
+                // Null values come from Switch inactive branches. Skip them.
+                log.debug("Output '{}' has null value (inactive control flow branch), skipping", output);
+                continue;
+            }
             if (val != null && val.getSdValueType() == SDValueType.TENSOR) {
                 INDArray arr = val.getTensorValue();
                 if (arr != null) {
@@ -2190,6 +2359,474 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         variableValues.put(outputVar, inputValue);
     }
 
+    // ======================== Control Flow Helpers ========================
+
+    /**
+     * Detect while-loop regions in the DAG by finding Merge ops whose inputs
+     * include both an Enter output and a NextIteration output.
+     */
+    private Map<String, WhileLoopRegion> detectWhileLoopRegions(ForwardExecutionDAG dag) {
+        Map<String, WhileLoopRegion> regions = new LinkedHashMap<>();
+        List<ExecutionNode> executionOrder = dag.getExecutionOrder();
+        Map<String, ExecutionNode> opNodes = dag.getOperationNodes();
+
+        // Find all Merge ops that have a NextIteration input (while-loop Merges)
+        // Group by frame name from the associated Enter op
+        Map<String, List<String>> frameToMerges = new LinkedHashMap<>();
+        Map<String, String> mergeToFrame = new HashMap<>();
+
+        for (ExecutionNode node : executionOrder) {
+            if (!(node.getOperation() instanceof Merge)) continue;
+
+            // Check if any input comes from a NextIteration op
+            boolean hasNextIterInput = false;
+            String frameName = null;
+            for (String inputVar : node.getInputVariables()) {
+                String producerOp = dag.getVariableProducers().get(inputVar);
+                if (producerOp == null) continue;
+                ExecutionNode producer = opNodes.get(producerOp);
+                if (producer == null) continue;
+                if (producer.getOperation() instanceof NextIteration) {
+                    hasNextIterInput = true;
+                }
+                if (producer.getOperation() instanceof Enter) {
+                    Enter enter = (Enter) producer.getOperation();
+                    frameName = enter.getFrameName();
+                }
+            }
+
+            if (hasNextIterInput && frameName != null) {
+                frameToMerges.computeIfAbsent(frameName, k -> new ArrayList<>())
+                        .add(node.getOperationName());
+                mergeToFrame.put(node.getOperationName(), frameName);
+            }
+        }
+
+        if (frameToMerges.isEmpty()) return regions;
+
+        // For each frame, build the complete while-loop region
+        for (Map.Entry<String, List<String>> entry : frameToMerges.entrySet()) {
+            String frameName = entry.getKey();
+            List<String> mergeOps = entry.getValue();
+
+            WhileLoopRegion region = new WhileLoopRegion();
+            region.frameName = frameName;
+            region.mergeOps = new ArrayList<>(mergeOps);
+            region.condOps = new ArrayList<>();
+            region.loopCondOp = null;
+            region.switchOps = new ArrayList<>();
+            region.bodyOps = new ArrayList<>();
+            region.nextIterOps = new ArrayList<>();
+            region.exitOps = new ArrayList<>();
+
+            // Walk the execution order and classify ops by their role in the loop.
+            // An op belongs to this loop if it consumes (transitively) from a Merge
+            // output and feeds into a NextIteration or Exit.
+            // Simpler approach: classify all control flow ops with matching frame,
+            // and all ops between Switch:true outputs and NextIteration inputs.
+
+            // First pass: find LoopCond, Switch, NextIteration, Exit ops for this frame
+            Set<String> mergeOutputs = new HashSet<>();
+            for (String mergeOp : mergeOps) {
+                ExecutionNode mergeNode = opNodes.get(mergeOp);
+                if (mergeNode != null) {
+                    mergeOutputs.addAll(mergeNode.getOutputVariables());
+                }
+            }
+
+            // Find all ops reachable from merge outputs (condition + body)
+            Set<String> reachableOps = new HashSet<>();
+            Queue<String> toVisit = new LinkedList<>();
+            // Seed with merge output variables
+            for (String mergeOutput : mergeOutputs) {
+                Set<String> consumers = dag.getVariableConsumers().get(mergeOutput);
+                if (consumers != null) {
+                    for (String consumer : consumers) {
+                        if (!mergeOps.contains(consumer)) {
+                            toVisit.add(consumer);
+                        }
+                    }
+                }
+            }
+
+            while (!toVisit.isEmpty()) {
+                String current = toVisit.poll();
+                if (reachableOps.contains(current)) continue;
+                reachableOps.add(current);
+
+                ExecutionNode currentNode = opNodes.get(current);
+                if (currentNode == null) continue;
+
+                // Don't traverse past Exit ops (they leave the loop)
+                if (currentNode.getOperation() instanceof Exit) continue;
+                // Don't traverse past NextIteration (they feed back to Merge)
+                if (currentNode.getOperation() instanceof NextIteration) continue;
+
+                // Add consumers of this op's outputs
+                for (String output : currentNode.getOutputVariables()) {
+                    Set<String> consumers = dag.getVariableConsumers().get(output);
+                    if (consumers != null) {
+                        for (String consumer : consumers) {
+                            if (!reachableOps.contains(consumer) && !mergeOps.contains(consumer)) {
+                                toVisit.add(consumer);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Classify reachable ops
+            // Condition ops: between Merge and Switch (including LoopCond)
+            // Body ops: between Switch:true and NextIteration
+            // We use execution order to maintain proper ordering
+            //
+            // IMPORTANT: Only classify a Switch as a while-loop Switch if its data input
+            // (first input) comes from a Merge output. This distinguishes while-loop
+            // switches (switchOp(merged[i], condResult)) from nested if-conditional
+            // switches that happen to be inside the loop body.
+            Set<String> switchOutputTrueVars = new HashSet<>();
+            for (String opName : reachableOps) {
+                ExecutionNode n = opNodes.get(opName);
+                if (n == null) continue;
+                DifferentialFunction op = n.getOperation();
+                if (op instanceof LoopCond) {
+                    region.loopCondOp = opName;
+                } else if (op instanceof Switch) {
+                    // Check if this is a while-loop Switch (data input from Merge)
+                    // vs a nested if Switch (data input from elsewhere in the body)
+                    boolean isWhileSwitch = false;
+                    List<String> inputs = n.getInputVariables();
+                    if (!inputs.isEmpty()) {
+                        String dataInput = inputs.get(0); // First input is data
+                        // Check if the data input is produced by one of our Merge ops
+                        String producerOp = dag.getVariableProducers().get(dataInput);
+                        if (producerOp != null && mergeOps.contains(producerOp)) {
+                            isWhileSwitch = true;
+                        }
+                    }
+
+                    if (isWhileSwitch) {
+                        region.switchOps.add(opName);
+                        // Track true-branch outputs (index 1)
+                        List<String> outputs = n.getOutputVariables();
+                        if (outputs.size() >= 2) {
+                            switchOutputTrueVars.add(outputs.get(1));
+                        }
+                    }
+                    // Non-while Switches will be classified as bodyOps later
+                } else if (op instanceof NextIteration) {
+                    region.nextIterOps.add(opName);
+                } else if (op instanceof Exit) {
+                    region.exitOps.add(opName);
+                }
+            }
+
+            // Also find Exit ops (reachable from Switch false outputs)
+            for (String switchOp : region.switchOps) {
+                ExecutionNode switchNode = opNodes.get(switchOp);
+                if (switchNode == null) continue;
+                List<String> outputs = switchNode.getOutputVariables();
+                if (outputs.size() >= 2) {
+                    String falseOutput = outputs.get(0);
+                    Set<String> consumers = dag.getVariableConsumers().get(falseOutput);
+                    if (consumers != null) {
+                        for (String consumer : consumers) {
+                            ExecutionNode consumerNode = opNodes.get(consumer);
+                            if (consumerNode != null && consumerNode.getOperation() instanceof Exit) {
+                                region.exitOps.add(consumer);
+                                reachableOps.add(consumer);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Now classify into condOps vs bodyOps using execution order
+            // condOps: reachable from Merge but not from Switch:true
+            // bodyOps: reachable from Switch:true outputs
+            Set<String> bodyReachable = new HashSet<>();
+            Queue<String> bodyQueue = new LinkedList<>();
+            for (String trueVar : switchOutputTrueVars) {
+                Set<String> consumers = dag.getVariableConsumers().get(trueVar);
+                if (consumers != null) bodyQueue.addAll(consumers);
+            }
+            while (!bodyQueue.isEmpty()) {
+                String current = bodyQueue.poll();
+                if (bodyReachable.contains(current)) continue;
+                ExecutionNode cn = opNodes.get(current);
+                if (cn == null) continue;
+                if (cn.getOperation() instanceof NextIteration) {
+                    bodyReachable.add(current);
+                    continue;
+                }
+                bodyReachable.add(current);
+                for (String output : cn.getOutputVariables()) {
+                    Set<String> consumers = dag.getVariableConsumers().get(output);
+                    if (consumers != null) {
+                        for (String c : consumers) {
+                            if (!bodyReachable.contains(c)) bodyQueue.add(c);
+                        }
+                    }
+                }
+            }
+
+            // Use execution order for proper ordering
+            for (ExecutionNode ordered : executionOrder) {
+                String name = ordered.getOperationName();
+                if (!reachableOps.contains(name)) continue;
+                if (region.switchOps.contains(name) || region.nextIterOps.contains(name) ||
+                        region.exitOps.contains(name) || name.equals(region.loopCondOp)) {
+                    continue;
+                }
+                if (bodyReachable.contains(name)) {
+                    region.bodyOps.add(name);
+                } else {
+                    region.condOps.add(name);
+                }
+            }
+
+            regions.put(frameName, region);
+            log.debug("Detected while-loop region '{}': {} merges, {} cond ops, {} switches, {} body ops, {} nextIter, {} exits",
+                    frameName, region.mergeOps.size(), region.condOps.size(),
+                    region.switchOps.size(), region.bodyOps.size(),
+                    region.nextIterOps.size(), region.exitOps.size());
+        }
+
+        return regions;
+    }
+
+    /**
+     * Execute a while-loop region iteratively until the condition is false.
+     */
+    private void executeWhileLoop(WhileLoopRegion region, ForwardExecutionDAG dag,
+                                   Map<String, SDValue> variableValues,
+                                   Set<String> completedOps,
+                                   Set<String> allRequired,
+                                   List<Listener> listeners, At at, MultiDataSet batch) {
+        Map<String, ExecutionNode> opNodes = dag.getOperationNodes();
+        int maxIterations = 10000;
+
+        // Build a map from NextIteration output var → Merge input var
+        // so we can find which Merge input comes from NextIteration
+        Set<String> nextIterOutputVars = new HashSet<>();
+        for (String nextIterOp : region.nextIterOps) {
+            ExecutionNode nextIterNode = opNodes.get(nextIterOp);
+            if (nextIterNode != null) {
+                nextIterOutputVars.addAll(nextIterNode.getOutputVariables());
+            }
+        }
+
+        for (int iteration = 0; iteration < maxIterations; iteration++) {
+            // 1. Execute Merge ops
+            // On iteration 0: pick the Enter input (first non-null)
+            // On iteration 1+: pick the NextIteration input (which was just updated)
+            for (String mergeOp : region.mergeOps) {
+                ExecutionNode mergeNode = opNodes.get(mergeOp);
+                if (mergeNode == null) continue;
+
+                if (iteration == 0) {
+                    // First iteration: use standard Merge (picks Enter input)
+                    executeNode(mergeNode, variableValues, allRequired, listeners, at, batch);
+                } else {
+                    // Subsequent iterations: prefer the NextIteration input
+                    List<String> inputs = mergeNode.getInputVariables();
+                    List<String> outputs = mergeNode.getOutputVariables();
+                    String outputVar = outputs.get(0);
+
+                    SDValue nextIterValue = null;
+                    for (String input : inputs) {
+                        if (nextIterOutputVars.contains(input)) {
+                            nextIterValue = variableValues.get(input);
+                            break;
+                        }
+                    }
+
+                    if (nextIterValue != null) {
+                        variableValues.put(outputVar, nextIterValue);
+                    } else {
+                        // Fallback to standard Merge
+                        executeNode(mergeNode, variableValues, allRequired, listeners, at, batch);
+                    }
+                }
+                completedOps.add(mergeOp);
+            }
+
+            // 2. Execute condition ops (between Merge and LoopCond)
+            for (String condOp : region.condOps) {
+                ExecutionNode condNode = opNodes.get(condOp);
+                if (condNode != null) {
+                    executeNode(condNode, variableValues, allRequired, listeners, at, batch);
+                    completedOps.add(condOp);
+                }
+            }
+
+            // 3. Execute LoopCond
+            if (region.loopCondOp != null) {
+                ExecutionNode loopCondNode = opNodes.get(region.loopCondOp);
+                if (loopCondNode != null) {
+                    executeNode(loopCondNode, variableValues, allRequired, listeners, at, batch);
+                    completedOps.add(region.loopCondOp);
+                }
+            }
+
+            // 4. Execute Switch ops
+            for (String switchOp : region.switchOps) {
+                ExecutionNode switchNode = opNodes.get(switchOp);
+                if (switchNode != null) {
+                    executeNode(switchNode, variableValues, allRequired, listeners, at, batch);
+                    completedOps.add(switchOp);
+                }
+            }
+
+            // 5. Check condition: if any Switch routed to false (exit), stop looping
+            boolean conditionTrue = true;
+            for (String switchOp : region.switchOps) {
+                ExecutionNode switchNode = opNodes.get(switchOp);
+                if (switchNode == null) continue;
+                List<String> outputs = switchNode.getOutputVariables();
+                if (outputs.size() >= 2) {
+                    // If true output is null, condition is false
+                    SDValue trueOutput = variableValues.get(outputs.get(1));
+                    if (trueOutput == null) {
+                        conditionTrue = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!conditionTrue) {
+                // Execute Exit ops to forward false-branch values out of the loop
+                for (String exitOp : region.exitOps) {
+                    ExecutionNode exitNode = opNodes.get(exitOp);
+                    if (exitNode != null) {
+                        executeNode(exitNode, variableValues, allRequired, listeners, at, batch);
+                        completedOps.add(exitOp);
+                    }
+                }
+                log.debug("While loop '{}' exited after {} iterations", region.frameName, iteration + 1);
+                break;
+            }
+
+            // 6. Execute body ops (with nested control flow support)
+            // Body ops may contain nested if-conditionals (Switch/Merge pairs).
+            // After executing a nested Switch, mark inactive branch ops for skipping.
+            // Reset skip set each iteration since if-condition may change between iterations.
+            Set<String> bodySkipOps = new HashSet<>();
+            for (String bodyOp : region.bodyOps) {
+                if (bodySkipOps.contains(bodyOp)) {
+                    continue; // Skip inactive branch ops from nested if
+                }
+                ExecutionNode bodyNode = opNodes.get(bodyOp);
+                if (bodyNode != null) {
+                    // For nested Merge ops (from if-conditionals), relax readiness:
+                    // only need at least one non-null input
+                    DifferentialFunction bodyNodeOp = bodyNode.getOperation();
+                    if (bodyNodeOp instanceof Merge) {
+                        boolean hasInput = false;
+                        for (String input : bodyNode.getInputVariables()) {
+                            if (variableValues.get(input) != null) {
+                                hasInput = true;
+                                break;
+                            }
+                        }
+                        if (!hasInput) {
+                            log.warn("Nested Merge {} in while body has no available inputs, skipping", bodyOp);
+                            continue;
+                        }
+                    }
+
+                    executeNode(bodyNode, variableValues, allRequired, listeners, at, batch);
+                    completedOps.add(bodyOp);
+
+                    // After nested Switch, mark inactive branch for skipping
+                    if (bodyNodeOp instanceof Switch) {
+                        markInactiveBranchForSkipping(bodyNode, dag, variableValues, bodySkipOps);
+                    }
+                }
+            }
+
+            // 7. Execute NextIteration ops (feed values back to Merge)
+            for (String nextIterOp : region.nextIterOps) {
+                ExecutionNode nextIterNode = opNodes.get(nextIterOp);
+                if (nextIterNode != null) {
+                    executeNode(nextIterNode, variableValues, allRequired, listeners, at, batch);
+                    completedOps.add(nextIterOp);
+                }
+            }
+        }
+    }
+
+    /**
+     * After a Switch op executes, mark all ops on the inactive branch for skipping.
+     * BFS from null Switch outputs through consumer ops. Stop at Merge nodes.
+     */
+    private void markInactiveBranchForSkipping(ExecutionNode switchNode, ForwardExecutionDAG dag,
+                                                Map<String, SDValue> variableValues,
+                                                Set<String> skipOps) {
+        List<String> outputs = switchNode.getOutputVariables();
+        if (outputs.size() < 2) return;
+
+        for (String output : outputs) {
+            SDValue val = variableValues.get(output);
+            if (val != null) continue; // Active branch
+
+            // This output is null (inactive). BFS through consumers.
+            Queue<String> queue = new LinkedList<>();
+            Set<String> consumers = dag.getVariableConsumers().get(output);
+            if (consumers != null) {
+                queue.addAll(consumers);
+            }
+
+            while (!queue.isEmpty()) {
+                String consumerOp = queue.poll();
+                if (skipOps.contains(consumerOp)) continue;
+
+                ExecutionNode consumerNode = dag.getOperationNodes().get(consumerOp);
+                if (consumerNode == null) continue;
+
+                // Stop at Merge nodes — they handle null inputs by picking the other
+                if (consumerNode.getOperation() instanceof Merge) continue;
+
+                skipOps.add(consumerOp);
+
+                // Continue BFS through this op's outputs
+                for (String consumerOutput : consumerNode.getOutputVariables()) {
+                    Set<String> nextConsumers = dag.getVariableConsumers().get(consumerOutput);
+                    if (nextConsumers != null) {
+                        queue.addAll(nextConsumers);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Represents a while-loop region in the graph. Contains all ops organized
+     * by their role in the loop execution cycle.
+     */
+    private static class WhileLoopRegion {
+        String frameName;
+        List<String> mergeOps;       // Merge ops that start the loop
+        List<String> condOps;        // Ops between Merge outputs and LoopCond (ordered)
+        String loopCondOp;           // The LoopCond op
+        List<String> switchOps;      // Switch ops (one per loop var)
+        List<String> bodyOps;        // Body ops in execution order
+        List<String> nextIterOps;    // NextIteration ops
+        List<String> exitOps;        // Exit ops
+
+        Set<String> allOps() {
+            Set<String> all = new HashSet<>();
+            all.addAll(mergeOps);
+            all.addAll(condOps);
+            if (loopCondOp != null) all.add(loopCondOp);
+            all.addAll(switchOps);
+            all.addAll(bodyOps);
+            all.addAll(nextIterOps);
+            all.addAll(exitOps);
+            return all;
+        }
+    }
+
     private void executeTensorArrayNode(ExecutionNode node, Map<String, SDValue> variableValues,
                                          DifferentialFunction op, Set<String> allRequired) {
         // Convert to VarId-based approach for tensor array operations
@@ -2515,6 +3152,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         opContext.setTArguments(dynOp.tArgs());
         opContext.setDArguments(dynOp.dArgs());
         opContext.setBArguments(dynOp.bArgs());
+        opContext.setSArguments(dynOp.sArgs());
 
         // Calculate output shapes with caching: for autoregressive generation, most ops
         // have identical input shapes across decode steps. Cache by (opName + input shapes + args).
@@ -4326,6 +4964,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 opContext.setIArguments(c.iArgs());
                 opContext.setTArguments(c.tArgs());
                 opContext.setBArguments(c.bArgs());
+                opContext.setDArguments(c.dArgs());
+                opContext.setSArguments(c.sArgs());
                 List<DataBuffer> shape;
                 try (MemoryWorkspace ws2 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     shape = c.calculateOutputShape(opContext);
@@ -4397,6 +5037,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     opContext.setIArguments(s.iArgs());
                     opContext.setTArguments(s.tArgs());
                     opContext.setBArguments(s.bArgs());
+                    opContext.setDArguments(s.dArgs());
+                    opContext.setSArguments(s.sArgs());
                     List<DataBuffer> shape;
                     try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         shape = s.calculateOutputShape(opContext);
@@ -4731,7 +5373,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 return new Pair<>(sdo, oc);
             }
 
-            oc.setArgs(args, customOp.iArgs(), customOp.dArgs() , customOp.tArgs(), customOp.bArgs() );
+            oc.setArgs(args, customOp.iArgs(), customOp.dArgs(), customOp.tArgs(), customOp.bArgs(), customOp.sArgs());
 
             //input and output should be same for assign
             if((df instanceof Assign)) {
@@ -4896,7 +5538,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
     /**
      * Compute a hash key for output shape caching based on op name, input array shapes,
-     * and all op arguments (iArgs, tArgs, dArgs, bArgs) since they all affect output shapes.
+     * and all op arguments (iArgs, tArgs, dArgs, bArgs, sArgs) since they all affect output shapes.
      */
     private long computeShapeKey(String opName, OpContext opContext) {
         long hash = opName.hashCode() * 0x9E3779B97F4A7C15L;
@@ -4955,6 +5597,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             for (Boolean b : bArgs) {
                 hash ^= b ? 1L : 0L;
                 hash *= 0x9E3779B97F4A7C15L;
+            }
+        }
+        // Include sArgs (string arguments)
+        List<String> sArgs = opContext.getSArguments();
+        if (sArgs != null) {
+            for (String s : sArgs) {
+                hash ^= (s == null ? 0L : s.hashCode());
+                hash *= 0x517CC1B727220A95L;
             }
         }
         return hash;

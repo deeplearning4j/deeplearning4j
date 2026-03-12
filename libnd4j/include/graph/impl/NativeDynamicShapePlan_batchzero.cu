@@ -299,5 +299,79 @@ void NativeDynamicShapePlan::freeBatchZeroResources() {
   batchZeroEntries_.clear();
 }
 
+// ── Batch D2D copy kernel ──────────────────────────────────────────────────
+// Replaces ~357 individual cudaMemcpyAsync D2D calls with a single kernel.
+// Each thread block copies one buffer using vectorized int4 reads/writes.
+
+__global__ void batchD2DKernel(void** srcPtrs, void** dstPtrs, size_t* sizes, int numBuffers) {
+  int bid = blockIdx.x;
+  if (bid >= numBuffers) return;
+
+  const char* src = (const char*)srcPtrs[bid];
+  char* dst = (char*)dstPtrs[bid];
+  size_t sz = sizes[bid];
+  if (src == nullptr || dst == nullptr || sz == 0) return;
+
+  // Vectorized copy using int4 (16 bytes per read/write)
+  const int4* s4 = (const int4*)src;
+  int4* d4 = (int4*)dst;
+  int n4 = sz / 16;
+  for (int i = threadIdx.x; i < n4; i += blockDim.x) {
+    d4[i] = s4[i];
+  }
+
+  // Handle remainder bytes
+  int base = n4 * 16;
+  for (int i = base + threadIdx.x; i < (int)sz; i += blockDim.x) {
+    dst[i] = src[i];
+  }
+}
+
+void NativeDynamicShapePlan::prepareBatchD2DDevice(int count, cudaStream_t stream) {
+  if (count <= 0) return;
+
+  // Reuse existing arrays if capacity is sufficient; reallocate if too small
+  if (batchD2DAllocated_ < count) {
+    freeBatchD2DResources();
+    cudaMalloc(&batchD2DDeviceSrcPtrs_, count * sizeof(void*));
+    cudaMalloc(&batchD2DDeviceDstPtrs_, count * sizeof(void*));
+    cudaMalloc(&batchD2DDeviceSizes_, count * sizeof(size_t));
+    cudaMallocHost(&batchD2DHostSrcPtrs_, count * sizeof(void*));
+    cudaMallocHost(&batchD2DHostDstPtrs_, count * sizeof(void*));
+    cudaMallocHost(&batchD2DHostSizes_, count * sizeof(size_t));
+    batchD2DAllocated_ = count;
+  }
+}
+
+void NativeDynamicShapePlan::launchBatchD2D(cudaStream_t stream) {
+  if (batchD2DCount_ <= 0) return;
+
+  // Upload src pointers (updated each step) to device
+  cudaMemcpyAsync(batchD2DDeviceSrcPtrs_, batchD2DHostSrcPtrs_,
+                  batchD2DCount_ * sizeof(void*), cudaMemcpyHostToDevice, stream);
+
+  // Launch single kernel: one block per buffer, 256 threads per block
+  int threadsPerBlock = 256;
+  batchD2DKernel<<<batchD2DCount_, threadsPerBlock, 0, stream>>>(
+      static_cast<void**>(batchD2DDeviceSrcPtrs_),
+      static_cast<void**>(batchD2DDeviceDstPtrs_),
+      static_cast<size_t*>(batchD2DDeviceSizes_),
+      batchD2DCount_);
+  DSP_DIAG(EXECUTE, "launchBatchD2D: single kernel (%d buffers, %d blocks)",
+           batchD2DCount_, batchD2DCount_);
+}
+
+void NativeDynamicShapePlan::freeBatchD2DResources() {
+  if (batchD2DDeviceSrcPtrs_) { cudaFree(batchD2DDeviceSrcPtrs_); batchD2DDeviceSrcPtrs_ = nullptr; }
+  if (batchD2DDeviceDstPtrs_) { cudaFree(batchD2DDeviceDstPtrs_); batchD2DDeviceDstPtrs_ = nullptr; }
+  if (batchD2DDeviceSizes_) { cudaFree(batchD2DDeviceSizes_); batchD2DDeviceSizes_ = nullptr; }
+  if (batchD2DHostSrcPtrs_) { cudaFreeHost(batchD2DHostSrcPtrs_); batchD2DHostSrcPtrs_ = nullptr; }
+  if (batchD2DHostDstPtrs_) { cudaFreeHost(batchD2DHostDstPtrs_); batchD2DHostDstPtrs_ = nullptr; }
+  if (batchD2DHostSizes_) { cudaFreeHost(batchD2DHostSizes_); batchD2DHostSizes_ = nullptr; }
+  batchD2DCount_ = 0;
+  batchD2DAllocated_ = 0;
+  captureBufferToBatchIdx_.clear();
+}
+
 }  // namespace graph
 }  // namespace sd

@@ -590,7 +590,8 @@ public class ND4JSystemProperties {
     /**
      * Applicability: DSP execution engine<br>
      * Description: Graph execution mode controlling which backend is used.<br>
-     * Values: "AUTO" (default), "SLOT_BY_SLOT", "CUDA_GRAPHS", "NVRTC_JIT", "PTX_JIT", "TRITON"
+     * Values: "AUTO" (default), "SLOT_BY_SLOT", "CUDA_GRAPHS", "NVRTC_JIT", "PTX_JIT", "TRITON",
+     *         "MLX", "ARM_HYBRID", "NNAPI"
      */
     public static final String DSP_GRAPH_EXECUTION_MODE = "nd4j.dsp.graphExecutionMode";
 
@@ -686,6 +687,31 @@ public class ND4JSystemProperties {
      */
     public static final String DSP_EXECUTION_TIMING = "nd4j.dsp.executionTiming";
 
+    // ---- DSP Diagnostics Reporting ----
+
+    /**
+     * Enable DSP diagnostic categories. Comma-separated list of category names,
+     * or "all" to enable everything, "none" to disable.
+     * Categories: COMPILE, JIT, EXECUTE, TIMING, MEMORY, BACKEND, SHAPE,
+     *             SEGMENT, FUSION, VERIFY, KV_CACHE, FALLBACK
+     * Example: -Dnd4j.dsp.diagnostics=COMPILE,EXECUTE,TIMING
+     */
+    public static final String DSP_DIAGNOSTICS = "nd4j.dsp.diagnostics";
+
+    /**
+     * Set the diagnostic output detail level.
+     * Values: summary (default), detailed (per-step), full (every event to stderr)
+     * Example: -Dnd4j.dsp.diagnostics.level=detailed
+     */
+    public static final String DSP_DIAGNOSTICS_LEVEL = "nd4j.dsp.diagnostics.level";
+
+    /**
+     * Set the file path for JSON diagnostic report output.
+     * When set, a JSON report is written to this path when the plan execution ends.
+     * Example: -Dnd4j.dsp.diagnostics.file=/tmp/dsp-report.json
+     */
+    public static final String DSP_DIAGNOSTICS_FILE = "nd4j.dsp.diagnostics.file";
+
     // ---- Triton + CUDA Graph Integration ----
 
     /**
@@ -780,6 +806,162 @@ public class ND4JSystemProperties {
      * Default: false
      */
     public static final String DSP_FP16_COMPUTE = "nd4j.dsp.fp16Compute";
+
+    /**
+     * Applicability: CUDA graph capture<br>
+     * Description: Replace per-slot memsets with a single batch-zero kernel during
+     * CUDA graph capture. Reduces graph node count by ~800 nodes.
+     * Environment variable: ND4J_DSP_BATCH_ZERO
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_BATCH_ZERO = "nd4j.dsp.batchZero";
+
+    /**
+     * Applicability: CUDA graph capture<br>
+     * Description: Log every buffer collected for batch-zero (very verbose).
+     * Environment variable: ND4J_DSP_BATCH_ZERO_VERBOSE
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_BATCH_ZERO_VERBOSE = "nd4j.dsp.batchZero.verbose";
+
+    /**
+     * Applicability: CUDA graph capture<br>
+     * Description: When true (default), only zero gap (native fallback) slot outputs.
+     * When false, zero ALL slot outputs including Triton sub-kernel outputs.
+     * Environment variable: ND4J_DSP_BATCH_ZERO_GAP_ONLY
+     * <p>
+     * Default: true
+     */
+    public static final String DSP_BATCH_ZERO_GAP_ONLY = "nd4j.dsp.batchZero.gapOnly";
+
+    /**
+     * Applicability: CUDA graph capture<br>
+     * Description: Use a single CUDA kernel to zero all buffers instead of N cudaMemsetAsync calls.
+     * Reduces graph nodes by ~797 but may have memory ordering differences.<br>
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_BATCH_ZERO_KERNEL = "nd4j.dsp.batchZero.kernel";
+
+    /**
+     * Applicability: CUDA graph capture<br>
+     * Description: Group consecutive same-shape matmul slots into single cublasGemmBatchedEx
+     * calls, reducing CUDA graph node count by ~96 nodes for typical transformer models.
+     * Environment variable: ND4J_DSP_BATCHED_GEMM
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_BATCHED_GEMM = "nd4j.dsp.batchedGemm";
+
+    /**
+     * Applicability: CUDA cuBLAS (sm_80+ Ampere and later)<br>
+     * Description: Enable TF32 tensor core math mode for cuBLAS FP32 GEMMs.
+     * Uses 10-bit mantissa precision for significant compute-bound speedup.
+     * Environment variable: ND4J_CUBLAS_TF32
+     * <p>
+     * Default: false
+     */
+    public static final String CUBLAS_TF32 = "nd4j.cublas.tf32";
+
+    /**
+     * Applicability: DSP FusionPass<br>
+     * Description: Sink FP16→FP32 cast ops through matmul boundaries.
+     * Marks cast ops as identity when their only consumer is a matmul,
+     * since MmulHelper handles mixed-precision internally.
+     * Environment variable: ND4J_DSP_CAST_SINK_MATMUL
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_CAST_SINK_MATMUL = "nd4j.dsp.castSinkMatmul";
+
+    /**
+     * Applicability: Triton GPU backend<br>
+     * Description: Consolidate per-kernel arg table H2D copies into a single buffer and copy.
+     * Reduces CUDA graph nodes by ~1165.
+     * Environment variable: ND4J_TRITON_CONSOLIDATED_ARG_TABLE
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_CONSOLIDATED_ARG_TABLE = "nd4j.triton.consolidatedArgTable";
+
+    /**
+     * Applicability: Triton GPU backend<br>
+     * Description: Skip arg table refresh for sub-kernels with only static (constant weight) args.
+     * Environment variable: ND4J_TRITON_ARG_DIRTY_TRACKING
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_ARG_DIRTY_TRACKING = "nd4j.triton.argDirtyTracking";
+
+    /**
+     * Applicability: Triton GPU backend<br>
+     * Description: Enable section fusion for Triton mega-kernel merging.
+     * When enabled, non-elementwise section types (GATHER, CONCAT, CONST_GEN, SPLIT, STACK)
+     * merge with adjacent sections into mega-kernels via buildSectionedModule() DAG analysis.
+     * Environment variable: ND4J_TRITON_SECTION_FUSION
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_SECTION_FUSION = "nd4j.triton.sectionFusion";
+
+    /**
+     * Applicability: Triton GPU backend<br>
+     * Description: Enable cost-model-based fusion scoring for section merge decisions.
+     * When enabled, adjacent sections are only merged if the fusion score exceeds the minimum threshold.
+     * Environment variable: ND4J_TRITON_FUSION_SCORING
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_FUSION_SCORING = "nd4j.triton.fusionScoring";
+
+    /**
+     * Applicability: Triton GPU backend<br>
+     * Description: Minimum fusion score required to merge two adjacent sections.
+     * Only used when fusion scoring is enabled.
+     * Environment variable: ND4J_TRITON_FUSION_MIN_SCORE
+     * <p>
+     * Default: 1.0
+     */
+    public static final String TRITON_FUSION_MIN_SCORE = "nd4j.triton.fusionMinScore";
+
+    /**
+     * Applicability: DSP execution<br>
+     * Description: Enable symbolic shape ranges to avoid recompilation when dimensions
+     * change within observed bounds. Dynamic dimensions are hashed by rank/dtype only.
+     * Environment variable: ND4J_DSP_SYMBOLIC_SHAPES
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_SYMBOLIC_SHAPES = "nd4j.dsp.symbolicShapes";
+
+    /**
+     * Applicability: DSP execution<br>
+     * Description: Number of observation steps before classifying dimensions as static or dynamic.
+     * Environment variable: ND4J_DSP_SYMBOLIC_SHAPE_WARMUP
+     * <p>
+     * Default: 2
+     */
+    public static final String DSP_SYMBOLIC_SHAPE_WARMUP = "nd4j.dsp.symbolicShapeWarmup";
+
+    /**
+     * Applicability: DSP CUDA execution<br>
+     * Description: Route capture buffer allocations through CudaMemoryPool for cross-segment reuse.
+     * Environment variable: ND4J_DSP_CAPTURE_POOL_ENABLED
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_CAPTURE_POOL_ENABLED = "nd4j.dsp.capturePoolEnabled";
+
+    /**
+     * Applicability: DSP CUDA execution<br>
+     * Description: Maximum bytes for capture buffer pool allocations.
+     * Environment variable: ND4J_DSP_CAPTURE_POOL_MAX_BYTES
+     * <p>
+     * Default: 1073741824 (1GB)
+     */
+    public static final String DSP_CAPTURE_POOL_MAX_BYTES = "nd4j.dsp.capturePoolMaxBytes";
 
     private ND4JSystemProperties() {
     }

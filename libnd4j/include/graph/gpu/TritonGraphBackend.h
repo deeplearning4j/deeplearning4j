@@ -92,9 +92,12 @@ class TritonGraphBackend : public GraphBackend {
   // Refresh all indirect arg table pinned host buffers with current NDArray
   // specialBuffer() addresses. Must be called before CUDA graph replay so the
   // graph's H2D memcpy nodes transfer up-to-date buffer pointers to device.
+  // @param execStream  The execution stream (from LaunchContext) — used for
+  //                    cudaStreamSynchronize to ensure prior async work is visible.
   Status refreshArgTablesForReplay(GraphSegment& seg,
                                    NDArray** externalInputs, int numExternalInputs,
-                                   NDArray** outputSlots, int totalOutputSlots);
+                                   NDArray** outputSlots, int totalOutputSlots,
+                                   void* execStream = nullptr);
 
   // Get the set of slot indices NOT covered by any sub-kernel (gap/fallback slots).
   // Used by batch-zero to only zero gap op outputs (Triton sub-kernel outputs are
@@ -259,7 +262,7 @@ class TritonGraphBackend : public GraphBackend {
   static constexpr int MIN_MAPPABLE_OPS = 1;
 
   // Default max parallel compilations
-  static constexpr int DEFAULT_MAX_PARALLEL_COMPILATIONS = 4;
+  static constexpr int DEFAULT_MAX_PARALLEL_COMPILATIONS = 8;
 
   // Configurable max parallel compilations (set via ND4J_TRITON_BUILD_THREADS env var)
   static int maxParallelCompilations_;

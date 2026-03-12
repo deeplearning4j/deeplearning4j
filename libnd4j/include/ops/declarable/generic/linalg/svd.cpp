@@ -29,7 +29,7 @@
 namespace sd {
 namespace ops {
 
-CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
+CUSTOM_OP_IMPL(svd, 1, -1, false, 0, 3) {
   auto x = INPUT_VARIABLE(0);
 
   const int rank = x->rankOf();
@@ -63,44 +63,33 @@ DECLARE_SHAPE_FN(svd) {
   REQUIRE_TRUE(rank >= 2, 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
   const int diagSize = inShapeInfo[rank] < inShapeInfo[rank - 1] ? inShapeInfo[rank] : inShapeInfo[rank - 1];
+  const auto dtype = ArrayOptions::dataType(inShapeInfo);
+  const auto order = shape::order(inShapeInfo);
 
-  LongType* sShapeInfo(nullptr);
-  if (rank == 2) {
-    ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), sd::LongType);
-    sShapeInfo[0] = 1;
-    sShapeInfo[1] = diagSize;
-  } else {
-    ALLOCATE(sShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank - 1), sd::LongType);
-    sShapeInfo[0] = rank - 1;
-    for (int i = 1; i <= rank - 2; ++i) sShapeInfo[i] = inShapeInfo[i];
-    sShapeInfo[rank - 1] = diagSize;
-  }
-
-  ShapeUtils::updateStridesAndType(sShapeInfo, inShapeInfo, shape::order(inShapeInfo));
+  auto sShape = ShapeUtils::shapeAsVector(inShapeInfo);
+  sShape.erase(sShape.end() - 2);
+  sShape.back() = diagSize;
+  auto sShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, sShape);
 
   if (calcUV) {
-    LongType *uShapeInfo(nullptr), *vShapeInfo(nullptr);
-    COPY_SHAPE(inShapeInfo, uShapeInfo);
-    COPY_SHAPE(inShapeInfo, vShapeInfo);
+    auto uShape = ShapeUtils::shapeAsVector(inShapeInfo);
+    auto vShape = ShapeUtils::shapeAsVector(inShapeInfo);
 
     if (fullUV) {
-      uShapeInfo[rank] = uShapeInfo[rank - 1];
-      vShapeInfo[rank - 1] = vShapeInfo[rank];
+      uShape[rank - 1] = uShape[rank - 2];
+      vShape[rank - 2] = vShape[rank - 1];
     } else {
-      uShapeInfo[rank] = diagSize;
-      vShapeInfo[rank - 1] = vShapeInfo[rank];
-      vShapeInfo[rank] = diagSize;
+      uShape[rank - 1] = diagSize;
+      vShape[rank - 2] = vShape[rank - 1];
+      vShape[rank - 1] = diagSize;
     }
 
-    shape::updateStrides(uShapeInfo, shape::order(inShapeInfo), false);
-    shape::updateStrides(vShapeInfo, shape::order(inShapeInfo), false);
-    auto result = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(sShapeInfo)->primary(),
-                            ConstantShapeHelper::getInstance().bufferForShapeInfo(uShapeInfo)->primary(),
-                            ConstantShapeHelper::getInstance().bufferForShapeInfo(vShapeInfo)->primary());
-    return result;
+    auto uShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, uShape);
+    auto vShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, vShape);
+    return SHAPELIST(sShapeInfo, uShapeInfo, vShapeInfo);
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(sShapeInfo));
+  return SHAPELIST(sShapeInfo);
 }
 
 }  // namespace ops

@@ -1205,7 +1205,25 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           auto midSplatPtr = builder.create<mlir::triton::SplatOp>(loc, midPtrTensorType, midFuncArg);
           auto midPtrs = builder.create<mlir::triton::AddPtrOp>(loc, midPtrTensorType, midSplatPtr, offsets);
           mlir::Value midStoreVal = castTo(builder, loc, ssaIt->second, midElemType);
-          builder.create<mlir::triton::StoreOp>(loc, midPtrs, midStoreVal, mask,
+
+          // Per-buffer mask: the reduction input buffer may be SMALLER than the global
+          // n_elements (e.g., cast output [2] in a kernel with n_elements=64). Using the
+          // global mask would write past the buffer boundary, corrupting adjacent memory.
+          mlir::Value midStoreMask = mask;  // default: global mask
+          LongType midBufElements = 1;
+          auto& midArg = result.args[midArgIdx];
+          for (auto d : midArg.shape) midBufElements *= d;
+          if (!midArg.shape.empty() && midBufElements > 0 &&
+              midBufElements < static_cast<LongType>(maxOutputElements)) {
+            auto midN = builder.create<mlir::arith::ConstantIntOp>(
+                loc, static_cast<int>(std::min(midBufElements, static_cast<LongType>(2147483647))), 32);
+            auto splatMidN = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, midN);
+            midStoreMask = builder.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::slt, offsets, splatMidN);
+            DSP_DIAG_SLOT(COMPILE, si, "TritonIRBuilder: reduction input slot %d: per-buffer mask (%lld elems vs %lld global)",
+                      inputSrc, (long long)midBufElements, (long long)maxOutputElements);
+          }
+          builder.create<mlir::triton::StoreOp>(loc, midPtrs, midStoreVal, midStoreMask,
               mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
           DSP_DIAG_SLOT(COMPILE, si, "TritonIRBuilder: stored reduction input slot %d to buffer for segmented reduction", inputSrc);
           // Memory fence + block barrier to ensure all threads' stores are visible

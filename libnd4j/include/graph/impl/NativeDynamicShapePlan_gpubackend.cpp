@@ -369,6 +369,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // cached graph so it gets re-captured with fresh pointers on the next call.
 #ifdef SD_CUDA
       seg.replayHandle.reset();
+      seg.argTableStable = false;
+      batchD2DCount_ = 0;
       seg.cachedShapeKey = 0;
 #endif
       seg.captureFailed = false;
@@ -579,6 +581,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     seg.replayHandle->getCapturedHostPtrs().clear();
     seg.replayHandle->clearExternalAddresses();
     seg.replayHandle.reset();
+    seg.argTableStable = false;
+    batchD2DCount_ = 0;
     seg.capturedInputAddrKey = 0;
     // Reset execution count to trigger warmup→capture flow
     seg.executionCount = 0;
@@ -606,6 +610,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     seg.replayHandle->getCapturedHostPtrs().clear();
     seg.replayHandle->clearExternalAddresses();
     seg.replayHandle.reset();
+    seg.argTableStable = false;
+    batchD2DCount_ = 0;
     seg.capturedInputAddrKey = 0;
     seg.capturedCreateValueKey = 0;
     seg.executionCount = 0;
@@ -613,24 +619,139 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     extAddrsStable = false;  // Force re-capture path
   }
 
-  // Triton-captured graphs use direct external buffer addresses (no capture buffers),
-  // so replay is valid only when both shape key and input-address key match.
+  // Triton graph replay conditions:
+  // 1. Shape key matches (frozen shapes)
+  // 2. Create op input values stable (ConstantOfShape shapes unchanged)
+  // 3. Either: addresses stable OR capture buffers handle data freshness
+  //
+  // With capture buffers (for PLACEHOLDER inputs), we D2D copy fresh data
+  // before replay. The graph reads from capture buffer addresses (baked in)
+  // and gets current placeholder values (position_ids, attention_mask, etc.).
+  bool hasTritonCaptureBuffers = seg.replayHandle != nullptr &&
+                                  !seg.replayHandle->getCaptureBuffers().empty();
   if (allowTritonCudaGraphReplay &&
-      (!seg.replayHandle || seg.replayHandle->getCaptureBuffers().empty()) &&
       seg.replayHandle != nullptr &&
       seg.replayHandle->isReady() &&
       seg.cachedShapeKey == segShapeKey &&
-      extAddrsStable) {
-    // Sync external inputs to device before graph replay.
-    // Java's DynamicShapePlanExecutor already calls syncToSpecial() for placeholder inputs
-    // (line 4213), so device buffers should have current values by the time we get here.
-    // Use syncToDevice() which respects DataBuffer actuality flags — if Java already synced,
-    // this is a no-op (correct). If something needs sync, it will be done.
-    // NOTE: Do NOT force H2D for model weights (SOURCE_VARIABLE) — their device buffers
-    // are authoritative after model load. Host buffers may have stale data.
+      createValuesStable &&
+      (hasTritonCaptureBuffers || extAddrsStable)) {
+
+    // Fast-replay: when arg table pointers are stable (all unchanged since last
+    // refresh), skip the arg table refresh loop and EXT_INPUT_SYNC entirely.
+    // Only D2D capture buffer copies + graph launch needed.
+    bool useFastReplay = hasTritonCaptureBuffers && seg.argTableStable
+                         && !Environment::getInstance().tritonVerifyKernels();
+
+    // Update capture buffers with fresh placeholder data (D2D copy).
+    // Use tl_dspExecutionStream for any syncToDevice calls inside the loop.
+    if (hasTritonCaptureBuffers) {
+      tl_dspExecutionStream = cudaStr;
+      auto& captureBuffers = seg.replayHandle->getCaptureBuffers();
+      int cbCount = static_cast<int>(captureBuffers.size());
+
+      // First pass: sync all source external inputs to device
+      // and build batch D2D arrays if not yet initialized
+      bool needBatchInit = (batchD2DCount_ == 0 && cbCount > 0);
+      if (needBatchInit) {
+        // Count valid entries for allocation
+        int validCount = 0;
+        for (int ci = 0; ci < cbCount; ci++) {
+          auto& cb = captureBuffers[ci];
+          if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
+          if (cb.directReference) continue;
+          NDArray* src = externalArrays[cb.externalInputIndex];
+          if (src == nullptr || cb.buffer == nullptr) continue;
+          size_t srcBytes = src->lengthOf() * src->sizeOfT();
+          if (srcBytes != cb.capturedSize || srcBytes == 0) continue;
+          validCount++;
+        }
+        if (validCount > 0) {
+          prepareBatchD2DDevice(validCount, cudaStr);
+          captureBufferToBatchIdx_.resize(cbCount, -1);
+
+          // Fill dst pointers and sizes (static — don't change between steps)
+          auto* h_dst = static_cast<void**>(batchD2DHostDstPtrs_);
+          auto* h_sizes = static_cast<size_t*>(batchD2DHostSizes_);
+          int idx = 0;
+          for (int ci = 0; ci < cbCount; ci++) {
+            auto& cb = captureBuffers[ci];
+            if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
+            if (cb.directReference) continue;
+            NDArray* src = externalArrays[cb.externalInputIndex];
+            if (src == nullptr || cb.buffer == nullptr) continue;
+            size_t srcBytes = src->lengthOf() * src->sizeOfT();
+            if (srcBytes != cb.capturedSize || srcBytes == 0) continue;
+            h_dst[idx] = cb.buffer->specialBuffer();
+            h_sizes[idx] = srcBytes;
+            captureBufferToBatchIdx_[ci] = idx;
+            idx++;
+          }
+          batchD2DCount_ = idx;
+          // Upload static dst/sizes to device (one-time)
+          cudaMemcpyAsync(batchD2DDeviceDstPtrs_, batchD2DHostDstPtrs_,
+                          idx * sizeof(void*), cudaMemcpyHostToDevice, cudaStr);
+          cudaMemcpyAsync(batchD2DDeviceSizes_, batchD2DHostSizes_,
+                          idx * sizeof(size_t), cudaMemcpyHostToDevice, cudaStr);
+          DSP_DIAG(EXECUTE, "BATCH_D2D_INIT: %d entries from %d capture buffers", idx, cbCount);
+        }
+      }
+
+      if (batchD2DCount_ > 0) {
+        // Update src pointers (change each step as Java updates external inputs)
+        auto* h_src = static_cast<void**>(batchD2DHostSrcPtrs_);
+        int cbUpdated = 0;
+        for (int ci = 0; ci < cbCount; ci++) {
+          int bIdx = (ci < static_cast<int>(captureBufferToBatchIdx_.size()))
+                     ? captureBufferToBatchIdx_[ci] : -1;
+          if (bIdx < 0) continue;
+          auto& cb = captureBuffers[ci];
+          NDArray* src = externalArrays[cb.externalInputIndex];
+          src->syncToDevice();
+          h_src[bIdx] = src->specialBuffer();
+          cbUpdated++;
+        }
+        // Launch single batch D2D kernel
+        launchBatchD2D(cudaStr);
+        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d buffers batch-D2D-copied for replay "
+                 "fastReplay=%d execCount=%d", cbUpdated, useFastReplay ? 1 : 0,
+                 seg.executionCount);
+      } else {
+        // Fallback: individual copies (no valid capture buffers for batching)
+        int cbUpdated = 0;
+        for (auto& cb : captureBuffers) {
+          if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
+          if (cb.directReference) continue;
+          NDArray* src = externalArrays[cb.externalInputIndex];
+          if (src == nullptr || cb.buffer == nullptr) continue;
+          size_t srcBytes = src->lengthOf() * src->sizeOfT();
+          if (srcBytes != cb.capturedSize || srcBytes == 0) continue;
+          src->syncToDevice();
+          if (src->specialBuffer() && cb.buffer->specialBuffer()) {
+            cudaMemcpyAsync(cb.buffer->specialBuffer(), src->specialBuffer(),
+                            srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
+            cbUpdated++;
+          }
+        }
+        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d buffers D2D-copied (individual) "
+                 "fastReplay=%d execCount=%d", cbUpdated, useFastReplay ? 1 : 0,
+                 seg.executionCount);
+      }
+      tl_dspExecutionStream = nullptr;
+    }
+
+    if (useFastReplay) {
+      // Fast path: all arg table pointers are stable. Only capture buffer D2D
+      // copies (above) are needed — they share cudaStr with graph launch, so
+      // stream ordering guarantees completion.
+      cudaGetLastError();
+    } else {
+    // Standard replay: sync ext inputs, refresh arg tables, diagnostics.
+    // Set tl_dspExecutionStream so syncToSpecial uses cudaStr instead of stream 0
+    // and skips per-call cudaStreamSynchronize (stream ordering with graph launch).
     {
       DspDiagnostics::ExtInputSyncResult syncResult = {0, 0, 0};
       DSP_DIAG_DUMP_EXT_INPUTS(externalArrays, numExt, seg.executionCount, syncResult);
+      tl_dspExecutionStream = cudaStr;
       int synced = 0, skipped = 0;
       for (int ei = 0; ei < numExt; ei++) {
         if (externalArrays[ei] != nullptr) {
@@ -642,17 +763,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           externalArrays[ei]->syncToDevice();
         }
       }
+      tl_dspExecutionStream = nullptr;
       DSP_DIAG(EXECUTE, "EXT_INPUT_SYNC replay: %d H2D, %d skip (device up-to-date) execCount=%d",
                synced, skipped, seg.executionCount);
 
-      // Dump SMALL variable external inputs (position_ids, input_ids, attention_mask head)
-      // to verify data is actually changing between replays (verify mode only)
+      // Dump SMALL variable external inputs (verify mode only)
       if (Environment::getInstance().tritonVerifyKernels()) {
       cudaDeviceSynchronize();
       for (int ei = 0; ei < numExt; ei++) {
         if (externalArrays[ei] == nullptr) continue;
         auto* arr = externalArrays[ei];
-        // Dump small arrays fully, large arrays just metadata
         bool isSmall = arr->lengthOf() <= 16;
         std::string name = (ei < (int)externalInputNames_.size()) ? externalInputNames_[ei] : "?";
         std::string vals = "?";
@@ -678,7 +798,6 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             }
           }
         }
-        // Only log if it's a model variable input (not constant shape params)
         if (!isSmall || name.find("input") != std::string::npos ||
             name.find("position") != std::string::npos ||
             name.find("attention") != std::string::npos ||
@@ -705,23 +824,35 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
     }
 
-    // Refresh Triton arg table pinned buffers before replay
+    // Refresh Triton arg table pinned buffers before replay.
+    // When capture buffers exist, temporarily swap externalArrays to capture buffer
+    // addresses so the arg table gets the addresses baked into the graph.
 #if HAVE_TRITON
     {
+      std::vector<std::pair<int, NDArray*>> savedForArgRefresh;
+      if (hasTritonCaptureBuffers) {
+        for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+          if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExt && cb.buffer) {
+            savedForArgRefresh.push_back({cb.externalInputIndex, externalArrays[cb.externalInputIndex]});
+            externalArrays[cb.externalInputIndex] = cb.buffer;
+          }
+        }
+      }
       auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(backend);
       if (tritonBackend != nullptr) {
         tritonBackend->refreshArgTablesForReplay(seg, externalArrays, numExt,
                                                  outputSlots_, totalOutputSlots_,
                                                  stream);
       }
+      for (auto& [extIdx, origArr] : savedForArgRefresh) {
+        externalArrays[extIdx] = origArr;
+      }
     }
 #endif
-    // Ensure all prior async work completes before replay.
-    // Use cudaDeviceSynchronize instead of cudaStreamSynchronize to guarantee
-    // that Java-side H2D copies (done on stream 0 by DataBuffer::syncToSpecial)
-    // are complete before graph replay starts on the execution stream.
-    cudaDeviceSynchronize();
+    // All H2D copies (ext input sync) and D2D copies (capture buffers) are on
+    // cudaStr. Graph launch on cudaStr is ordered after them — no explicit sync needed.
     cudaGetLastError();  // Clear any sticky errors
+    } // end standard replay path (else branch of useFastReplay)
 
     // DIAGNOSTIC: Zero capture workspace before replay to test stale-data hypothesis.
     // If zeroing the workspace fixes divergence, stale workspace data is the root cause.
@@ -836,6 +967,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             seg.replayHandle->clearExternalAddresses();
           }
           seg.replayHandle.reset();
+          seg.argTableStable = false;
+          batchD2DCount_ = 0;
           seg.capturedInputAddrKey = 0;
           DSP_DIAG(EXECUTE, "FORCE_RECAPTURE: invalidated after replay execCount=%d", seg.executionCount);
         }
@@ -857,6 +990,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         seg.replayHandle->clearExternalAddresses();
       }
       seg.replayHandle.reset();
+      seg.argTableStable = false;
+      batchD2DCount_ = 0;
       seg.capturedInputAddrKey = 0;
       seg.captureFailed = true;
       cudaGetLastError();
@@ -874,6 +1009,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       seg.replayHandle->clearExternalAddresses();
     }
     seg.replayHandle.reset();
+    seg.argTableStable = false;
+    batchD2DCount_ = 0;
     seg.capturedInputAddrKey = 0;
   }
 
@@ -887,6 +1024,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       seg.replayHandle->clearExternalAddresses();
     }
     seg.replayHandle.reset();
+    seg.argTableStable = false;
+    batchD2DCount_ = 0;
     seg.capturedInputAddrKey = 0;
   }
 #endif
@@ -1069,7 +1208,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // producing invalid graph nodes that SIGSEGV on cudaGraphLaunch.
     static const size_t CUBLAS_WORKSPACE_SIZE = 256 * 1024 * 1024;  // 256 MB
     ensureCublasWorkspace(CUBLAS_WORKSPACE_SIZE);
-    setCublasWorkspaceForCapture(stream);
+    // NOTE: setCublasWorkspaceForCapture is deferred to AFTER warmup (see below).
+    // Calling it here sets cublasSetStream_v2 to the capture stream, which causes
+    // cuBLAS matmuls in gap ops during warmup to run on tritonStr instead of gapStr.
+    // This stream mismatch creates data races: cast ops on gapStr write matmul
+    // inputs, but cuBLAS on tritonStr starts before gapStr completes.
 
     // Reset MmulHelper cast cache indices so capture reuses pre-allocated HALF buffers
     // in the same order as the warmup execution (avoids capture workspace temporaries)
@@ -1258,6 +1401,40 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       }
     }
 
+    // DIAGNOSTIC: warmup-only mode — skip capture, use warmup result directly.
+    // Enables bisection: if warmup-only produces correct output but capture+replay
+    // does not, the bug is in capture/replay. Set ND4J_TRITON_WARMUP_ONLY=1.
+    {
+      static bool warmupOnly = (std::getenv("ND4J_TRITON_WARMUP_ONLY") != nullptr &&
+                                 std::string(std::getenv("ND4J_TRITON_WARMUP_ONLY")) == "1");
+      if (warmupOnly) {
+        DSP_DIAG(EXECUTE, "WARMUP_ONLY: skipping capture for seg[%d-%d], using warmup result",
+                  seg.startSlot, seg.endSlot);
+        // Clean up thread-local state
+        tl_captureWorkspace = nullptr;
+        tl_captureWorkspaceSize = 0;
+        tl_captureWorkspaceOffset = 0;
+        tl_graphCaptureStream = prevCaptureStream;
+        // Don't create a replay handle — fall through to non-capture path next time
+        seg.captureFailed = true;
+        if (didPushCtx) {
+          CUcontext dummy;
+          cuCtxPopCurrent(&dummy);
+          CUdevice cuDev;
+          cuDeviceGet(&cuDev, tritonCaptureDevice);
+          cuDevicePrimaryCtxRelease(cuDev);
+        }
+        restoreCublasWorkspaceAfterCapture(stream);
+        return Status::OK;
+      }
+    }
+
+    // NOW set cuBLAS handle to capture stream — AFTER warmup completed.
+    // During warmup, gap ops must use their default stream (gapStr) for cuBLAS.
+    // Only during actual capture do we switch cuBLAS to tritonStr so GEMM nodes
+    // are recorded into the CUDA graph on the correct stream.
+    setCublasWorkspaceForCapture(stream);
+
     // Disable frozen fast path during capture. Same rationale as non-Triton path:
     // capture may re-create views, and the frozen context has stale input/output pointers
     // from the prior non-capture execution. Using the full (non-frozen) path during capture
@@ -1268,6 +1445,59 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     for (int s = seg.startSlot; s <= seg.endSlot; s++) {
       savedFrozenContextReadyTriton[s - seg.startSlot] = slots_[s].frozenContextReady;
       slots_[s].frozenContextReady = false;
+    }
+
+    // ── Create capture buffers for PLACEHOLDER external inputs ─────────────
+    // Only buffer the dynamic inputs (position_ids, attention_mask, input_ids,
+    // inputs_embeds) that Java updates between decode steps. Model weights and
+    // ConstantOfShape intermediates are NOT buffered — their data doesn't change
+    // or is handled by the createValueKey mechanism.
+    //
+    // During capture, the graph bakes in capture buffer addresses. Before each
+    // replay, we D2D copy fresh data from Java's arrays to capture buffers.
+    std::vector<std::pair<int, NDArray*>> savedExtForCapture;
+    {
+      std::unordered_set<int> capturedExtIndices;
+      for (int ei = 0; ei < numExt; ei++) {
+        if (ei >= static_cast<int>(externalInputIsVariable_.size())) break;
+        if (!externalInputIsVariable_[ei]) continue;  // Only PLACEHOLDER inputs
+        if (capturedExtIndices.count(ei)) continue;
+        NDArray* src = externalArrays[ei];
+        if (src == nullptr || src->lengthOf() == 0) continue;
+
+        capturedExtIndices.insert(ei);
+        src->syncToDevice();
+        auto srcShapeVec = *src->getShapeAsVector();
+        auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
+                                   sd::LaunchContext::defaultContext());
+        size_t srcBytes = src->lengthOf() * src->sizeOfT();
+        if (srcBytes > 0 && src->specialBuffer() && capBuf->specialBuffer()) {
+          cudaMemcpyAsync(capBuf->specialBuffer(), src->specialBuffer(),
+                          srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
+        }
+        // Also mirror host buffer for ops that read from host
+        if (srcBytes > 0 && src->buffer() && capBuf->buffer()) {
+          std::memcpy(capBuf->buffer(), src->buffer(), srcBytes);
+          capBuf->dataBuffer()->readPrimary();
+          capBuf->dataBuffer()->writeSpecial();
+        }
+
+        ReplayCaptureBuffer cb;
+        cb.buffer = capBuf;
+        cb.externalInputIndex = ei;
+        cb.crossSegmentSlotIdx = -1;
+        cb.capturedSize = srcBytes;
+        cb.neverSkipCopy = true;
+        seg.replayHandle->addCaptureBuffer(std::move(cb));
+
+        savedExtForCapture.push_back({ei, externalArrays[ei]});
+        externalArrays[ei] = capBuf;
+      }
+      if (!capturedExtIndices.empty()) {
+        cudaStreamSynchronize(cudaStr);
+        DSP_DIAG(EXECUTE, "CAPTURE_BUFFERS: created %zu buffers for PLACEHOLDER ext inputs",
+                 capturedExtIndices.size());
+      }
     }
 
     auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.replayHandle.get());
@@ -1613,6 +1843,8 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
             seg.replayHandle->clearExternalAddresses();
           }
           seg.replayHandle.reset();
+          seg.argTableStable = false;
+          batchD2DCount_ = 0;
           seg.capturedInputAddrKey = 0;
           DSP_DIAG(EXECUTE, "FORCE_RECAPTURE: invalidated after capture+launch execCount=%d", seg.executionCount);
         }
@@ -1628,6 +1860,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       DSP_DIAG(FALLBACK, "Triton graph capture beginCapture FAILED for seg[%d-%d]",
                 seg.startSlot, seg.endSlot);
       cudaGetLastError();
+    }
+
+    // Restore original external arrays after capture (undo capture buffer wiring)
+    for (auto& [extIdx, origArr] : savedExtForCapture) {
+      externalArrays[extIdx] = origArr;
     }
 
     // Restore primary CUDA context if we pushed it

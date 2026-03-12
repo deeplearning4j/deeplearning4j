@@ -26,7 +26,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PowDerivative extends BaseScalarOp {
     private double pow;
@@ -69,8 +71,24 @@ public class PowDerivative extends BaseScalarOp {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-       @Override
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("pow", pow);
+        return ret;
+    }
+
+    @Override
+    public void setPropertiesForFunction(Map<String, Object> properties) {
+        Object value = properties.get("pow");
+        if (value instanceof Number) {
+            this.pow = ((Number) value).doubleValue();
+            this.extraArgs = new Object[]{this.pow};
+        }
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 }

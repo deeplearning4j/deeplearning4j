@@ -287,6 +287,7 @@ public class PlanExecutor implements Closeable {
             ctx.setTArguments(slot.getTArgs());
             ctx.setBArguments(slot.getBArgs());
             ctx.setDArguments(slot.getDArgs());
+            ctx.setSArguments(((CustomOp) fn).sArgs());
             Nd4j.exec((CustomOp) fn, ctx);
         } else {
             Nd4j.exec((Op) fn, ctx);
@@ -303,6 +304,7 @@ public class PlanExecutor implements Closeable {
             ctx.setTArguments(slot.getTArgs());
             ctx.setBArguments(slot.getBArgs());
             ctx.setDArguments(slot.getDArgs());
+            ctx.setSArguments(((CustomOp) fn).sArgs());
 
             List<DataBuffer> outShapes = fn.calculateOutputShape(ctx);
             if (outShapes != null && !outShapes.isEmpty()) {

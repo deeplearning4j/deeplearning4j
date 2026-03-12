@@ -464,10 +464,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         OpaqueNDArray sourceOpaque = OpaqueNDArray.fromINDArray(source);
         OpaqueNDArray retOpaque = OpaqueNDArray.fromINDArray(ret);
 
-        val tempIndexes = new CudaLongDataBuffer(indexes.length);
-        AtomicAllocator.getInstance().memcpyBlocking(tempIndexes, new LongPointer(ArrayUtil.toLongArray(indexes)), indexes.length * 8, 0);
-
-        OpaqueNDArray indexOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(indexes));
+        OpaqueNDArray indexOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(ArrayUtil.toLongArray(indexes)));
 
         PointerPointer extras = new PointerPointer(null, // not used
                 context.getOldStream(), allocator.getDeviceIdPointer());

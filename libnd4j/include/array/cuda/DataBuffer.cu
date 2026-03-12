@@ -67,6 +67,11 @@ SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize = 0;
 // "use capture workspace + suppress D2H".
 SD_TLS_EXPORT thread_local bool tl_captureSkipFrees = false;
 
+// DSP execution stream: when set, syncToSpecial uses this stream instead of
+// stream 0 and skips per-call cudaStreamSynchronize (caller guarantees ordering
+// via same-stream graph launch or explicit sync). Set/unset by DSP replay path.
+SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream = nullptr;
+
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
@@ -719,6 +724,14 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     return;
   }
 
+  // If the host buffer was never written to, there is nothing meaningful to sync.
+  // This prevents copying uninitialized host garbage to the device for newly created
+  // output arrays (e.g., createUninitialized), which would overwrite valid device data
+  // or create stale values that survive kernel execution due to stream ordering.
+  if (!forceSync && !isPrimaryActual()) {
+    return;
+  }
+
   // During CUDA graph capture, use a capture-safe path:
   // - Skip cudaPointerGetAttributes (synchronous query breaks capture)
   // - Use the captured stream instead of stream 0 (default stream syncs with captured stream)
@@ -813,11 +826,12 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // Track H2D transfer
   auto startTime = std::chrono::high_resolution_clock::now();
 
-  // Always use stream 0 (default stream) for H2D transfers.
-  // Same rationale as syncToPrimary: accessing LaunchContext::defaultContext()->getCudaStream()
-  // triggers thread-local ContextBuffers reinitialization during cross-device DSP execution,
-  // creating a new stream with no ordering relationship with prior pool allocations.
-  cudaStream_t stream = 0;
+  // Use DSP execution stream when available (set by DSP replay path).
+  // This allows H2D copies to be async on the same stream as graph launch,
+  // with stream ordering guaranteeing completion before the graph reads the data.
+  // Falls back to stream 0 when no DSP stream is set (standalone syncToDevice calls).
+  bool useDspStream = (tl_dspExecutionStream != nullptr);
+  cudaStream_t stream = useDspStream ? tl_dspExecutionStream : 0;
   auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
   if (res != cudaSuccess) {
     // Restore device before throwing
@@ -835,17 +849,20 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  // Synchronize to ensure data is on device before returning
-  // Kernels that use this buffer will be scheduled after this sync
-  res = cudaStreamSynchronize(stream);
-  if (res != cudaSuccess) {
-    if (switchedDevice) {
-      cudaSetDevice(currentDeviceId);
+  // When using DSP execution stream, skip per-call sync — the caller guarantees
+  // ordering (graph launch on same stream, or explicit sync after the batch).
+  // For standalone calls (stream 0), sync to ensure data is on device before returning.
+  if (!useDspStream) {
+    res = cudaStreamSynchronize(stream);
+    if (res != cudaSuccess) {
+      if (switchedDevice) {
+        cudaSetDevice(currentDeviceId);
+      }
+      std::string errorMessage;
+      errorMessage += "DataBuffer::syncToSpecial: stream sync failed: ";
+      errorMessage += cudaGetErrorString(res);
+      THROW_EXCEPTION(errorMessage.c_str());
     }
-    std::string errorMessage;
-    errorMessage += "DataBuffer::syncToSpecial: stream sync failed: ";
-    errorMessage += cudaGetErrorString(res);
-    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   auto endTime = std::chrono::high_resolution_clock::now();

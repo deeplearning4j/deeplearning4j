@@ -1210,6 +1210,7 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
  { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_VERBOSE");     if (v >= 0) setDspBatchZeroVerbose(v); }
  { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_GAP_ONLY");    if (v >= 0) setDspBatchZeroGapOnly(v); }
  { int v = readBoolEnv("ND4J_DSP_BATCH_ZERO_KERNEL");      if (v >= 0) setDspBatchZeroKernel(v); }
+ { int v = readBoolEnv("ND4J_DSP_BATCHED_GEMM");           if (v >= 0) setDspBatchedGemm(v); }
 
  const char* tritonExcludeOpsVar = std::getenv("ND4J_TRITON_EXCLUDE_OPS");
  if (tritonExcludeOpsVar != nullptr) {
@@ -1284,6 +1285,21 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
  { int v = readBoolEnv("ND4J_TRITON_CONSOLIDATED_ARG_TABLE");   if (v >= 0) setTritonConsolidatedArgTable(v); }
  { int v = readBoolEnv("ND4J_TRITON_ARG_DIRTY_TRACKING");       if (v >= 0) setTritonArgDirtyTracking(v); }
  { int v = readBoolEnv("ND4J_TRITON_SECTION_FUSION");           if (v >= 0) setTritonSectionFusion(v); }
+{ int v = readBoolEnv("ND4J_TRITON_FUSION_SCORING");           if (v >= 0) setTritonFusionScoring(v); }
+{
+  const char* v = std::getenv("ND4J_TRITON_FUSION_MIN_SCORE");
+  if (v != nullptr) { float f = std::atof(v); if (f != 0.0f || std::string(v) == "0") setTritonFusionMinScore(f); }
+}
+{ int v = readBoolEnv("ND4J_DSP_SYMBOLIC_SHAPES");             if (v >= 0) setDspSymbolicShapes(v); }
+{
+  const char* v = std::getenv("ND4J_DSP_SYMBOLIC_SHAPE_WARMUP");
+  if (v != nullptr) { int n = std::atoi(v); if (n >= 0) setDspSymbolicShapeWarmup(n); }
+}
+{ int v = readBoolEnv("ND4J_DSP_CAPTURE_POOL_ENABLED");        if (v >= 0) setDspCapturePoolEnabled(v); }
+{
+  const char* v = std::getenv("ND4J_DSP_CAPTURE_POOL_MAX_BYTES");
+  if (v != nullptr) { long long n = std::atoll(v); if (n > 0) setDspCapturePoolMaxBytes(n); }
+}
 }
 #endif
 
@@ -1798,6 +1814,30 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setTritonSectionFusion(bool enabled) {
     _tritonSectionFusion.store(enabled);
+  }
+
+  void Environment::setTritonFusionScoring(bool enabled) {
+    _tritonFusionScoring.store(enabled);
+  }
+
+  void Environment::setTritonFusionMinScore(float score) {
+    _tritonFusionMinScore.store(score);
+  }
+
+  void Environment::setDspSymbolicShapes(bool enabled) {
+    _dspSymbolicShapes.store(enabled);
+  }
+
+  void Environment::setDspSymbolicShapeWarmup(int steps) {
+    _dspSymbolicShapeWarmup.store(steps);
+  }
+
+  void Environment::setDspCapturePoolEnabled(bool enabled) {
+    _dspCapturePoolEnabled.store(enabled);
+  }
+
+  void Environment::setDspCapturePoolMaxBytes(long long bytes) {
+    _dspCapturePoolMaxBytes.store(bytes);
   }
 
   void Environment::setTritonOverrideArch(const std::string& overrideArch) {

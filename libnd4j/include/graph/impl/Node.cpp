@@ -366,6 +366,14 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
 
 
   if (node != nullptr) {
+    auto copyExtraStrings = [node](ContextPrototype* block) {
+      if (node->extraStrings() != nullptr && node->extraStrings()->size() > 0) {
+        for (int e = 0; e < static_cast<int>(node->extraStrings()->size()); e++) {
+          block->getSArguments()->emplace_back(node->extraStrings()->Get(e)->str());
+        }
+      }
+    };
+
     this->_id = node->id();
     // this->_dataType = DataTypeUtils::fromFlatDataType(node->dataType());
     this->_opNum = node->opNum();
@@ -456,6 +464,7 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
             block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
           }
         }
+        copyExtraStrings(block);
 
         NDArray *_scalar = NDArrayFactory::create(0.0f);
         this->setContextPrototype(block);
@@ -495,6 +504,7 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
             block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
           }
         }
+        copyExtraStrings(block);
 
         this->setContextPrototype(block);
         NDArray *_scalar = NDArrayFactory::create(0.0f);
@@ -539,6 +549,8 @@ sd::graph::Node::Node(const ::graph::FlatNode* node) {
           block->getDArguments()->emplace_back((sd::DataType)node->extraTypes()->Get(e));
         }
       }
+
+      copyExtraStrings(block);
 
       for (auto v : _dimensions) block->getAxis()->emplace_back(v);
 

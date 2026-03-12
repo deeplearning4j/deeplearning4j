@@ -652,10 +652,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private Pointer getPointerForExtraArgs(Op op, DataType type) {
         if (op.extraArgs() != null) {
             val eadb = op.extraArgsDataBuff(type);
-            if (eadb != null)
-                return eadb.addressPointer();
-            else
+            if (eadb != null) {
+                if (eadb instanceof BaseCpuDataBuffer) {
+                    ((BaseCpuDataBuffer) eadb).actualizePointerAndIndexer();
+                }
+                // Use the realized data-buffer pointer here instead of addressPointer():
+                // JavaCPP marshals raw Pointer arguments using the pointer metadata, and
+                // the transient addressPointer() view for CPU constant buffers can have
+                // zero length metadata even when the raw address is non-zero.
+                Pointer extraArgsPointer = eadb.pointer();
+                if (extraArgsPointer == null || extraArgsPointer.address() == 0L) {
+                    throw new ND4JIllegalStateException("Extra arguments pointer was not initialized for op "
+                            + op.opName() + " with buffer type " + eadb.dataType() + " and execution type " + type);
+                }
+                return extraArgsPointer;
+            } else {
                 return null;
+            }
         }
 
         return null;
@@ -1265,7 +1278,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long extras = ArrayOptionsHelper.composeTypicalChecks(false,DataType.INT64,false,false,isView ,false,false );
         OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(getNativeOps().lastErrorMessage());
+            throw shapeInfoCreationException(shape, stride, elementWiseStride, order, dtype);
 
         val result = Nd4j.createBuffer(getNativeOps().getConstantShapeBufferPrimary(dbf),
                 Shape.shapeInfoLength(shape.length),DataType.INT64);
@@ -1286,13 +1299,24 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         LongPointer stridePointer = new LongPointer(stride);
         OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(getNativeOps().lastErrorMessage());
+            throw shapeInfoCreationException(shape, stride, elementWiseStride, order, dtype);
 
         val result = new LongBuffer(getNativeOps().getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
         result.setConstant(true);
 
         return result;
+    }
+
+    private ND4JIllegalStateException shapeInfoCreationException(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype) {
+        String message = getNativeOps().lastErrorMessage();
+        if (message == null || message.isEmpty()) {
+            message = String.format(
+                    "Native shape buffer creation failed for shape=%s, stride=%s, dtype=%s, order=%s, ews=%d",
+                    Arrays.toString(shape), Arrays.toString(stride), dtype, order, elementWiseStride);
+        }
+
+        return new ND4JIllegalStateException(message);
     }
 
     @Override

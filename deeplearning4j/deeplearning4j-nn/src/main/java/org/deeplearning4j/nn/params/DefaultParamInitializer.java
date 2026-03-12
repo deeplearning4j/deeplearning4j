@@ -97,7 +97,6 @@ public class DefaultParamInitializer implements ParamInitializer {
         if (!(conf.getLayer() instanceof FeedForwardLayer))
             throw new IllegalArgumentException("unsupported layer type: " + conf.getLayer().getClass().getName());
 
-        INDArray reshapedParamsView = paramsView.reshape(paramsView.length());
         Map<String, INDArray> params = Collections.synchronizedMap(new LinkedHashMap<>());
 
         val length = numParams(conf);
@@ -111,23 +110,21 @@ public class DefaultParamInitializer implements ParamInitializer {
         val nOut = layerConf.getNOut();
 
         val nWeightParams = nIn * nOut;
-        INDArray weightView = reshapedParamsView.get(NDArrayIndex.interval(0, nWeightParams));
+        INDArray weightView = viewSubset(paramsView, 0, nWeightParams);
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
 
         long offset = nWeightParams;
         if(hasBias(layerConf)) {
-            INDArray biasView = reshapedParamsView.get(
-                    NDArrayIndex.interval(offset, offset + nOut));
+            INDArray biasView = viewSubset(paramsView, offset, offset + nOut);
             params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
             conf.addVariable(BIAS_KEY);
             offset += nOut;
         }
 
         if(hasLayerNorm(layerConf)) {
-            INDArray gainView = reshapedParamsView.get(
-                    NDArrayIndex.interval(offset, offset + nOut));
+            INDArray gainView = viewSubset(paramsView, offset, offset + nOut);
             params.put(GAIN_KEY, createGain(conf, gainView, initializeParams));
             conf.addVariable(GAIN_KEY);
         }
@@ -142,9 +139,8 @@ public class DefaultParamInitializer implements ParamInitializer {
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         val nWeightParams = nIn * nOut;
-        INDArray gradientViewReshaped = gradientView.reshape(gradientView.length());
 
-        INDArray weightGradientView = gradientViewReshaped.get(NDArrayIndex.interval(0, nWeightParams))
+        INDArray weightGradientView = viewSubset(gradientView, 0, nWeightParams)
                         .reshape('f', nIn, nOut);
 
         Map<String, INDArray> out = new LinkedHashMap<>();
@@ -152,15 +148,13 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         long offset = nWeightParams;
         if(hasBias(layerConf)){
-            INDArray biasView = gradientViewReshaped.get(
-                    NDArrayIndex.interval(offset, offset + nOut)); //Already a row vector
+            INDArray biasView = viewSubset(gradientView, offset, offset + nOut); //Already a row vector
             out.put(BIAS_KEY, biasView);
             offset += nOut;
         }
 
         if(hasLayerNorm(layerConf)) {
-            INDArray gainView = gradientViewReshaped.get(
-                    NDArrayIndex.interval(offset, offset + nOut)); //Already a row vector
+            INDArray gainView = viewSubset(gradientView, offset, offset + nOut); //Already a row vector
             out.put(GAIN_KEY, gainView);
         }
 
@@ -220,6 +214,21 @@ public class DefaultParamInitializer implements ParamInitializer {
         } else {
             return WeightInitUtil.reshapeWeights(shape, weightParamView);
         }
+    }
+
+    protected INDArray viewSubset(INDArray paramsView, long from, long to) {
+        INDArray rowVectorView;
+        if (paramsView.rank() == 2 && paramsView.isRowVector()) {
+            rowVectorView = paramsView;
+        } else {
+            long length = paramsView.length();
+            rowVectorView = org.nd4j.linalg.factory.Nd4j.create(paramsView.data(), new long[]{1, length},
+                    new long[]{length, 1}, paramsView.offset(), 'c', true);
+        }
+
+        long innerStride = rowVectorView.stride(1);
+        return org.nd4j.linalg.factory.Nd4j.create(rowVectorView.data(), new long[]{to - from}, new long[]{innerStride},
+                rowVectorView.offset() + from * innerStride, 'c', true);
     }
 
     protected boolean hasBias(Layer layer){

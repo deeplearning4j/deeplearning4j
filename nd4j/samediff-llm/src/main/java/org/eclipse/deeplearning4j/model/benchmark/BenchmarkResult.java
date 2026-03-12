@@ -1,0 +1,94 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.eclipse.deeplearning4j.model.benchmark;
+
+import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
+
+/**
+ * Result of running a single benchmark configuration.
+ *
+ * Records timing, throughput, and Triton counters for a configuration run.
+ */
+public class BenchmarkResult {
+
+    private final String configName;
+    private boolean passed;
+    private String failureMessage;
+
+    // Timing
+    private long resetMs;
+    private long compileMs;
+    private long decodeMs;
+    private long validateMs;
+
+    // Decode metrics
+    private int tokenCount;
+    private double tokPerSec;
+    private long firstTokenMs;
+    private GenerationResult.FinishReason finishReason;
+
+    // Triton counters
+    private long tritonLaunches;
+    private long tritonCacheHits;
+
+    // Full result
+    private String generatedText;
+
+    public BenchmarkResult(String configName) {
+        this.configName = configName;
+    }
+
+    public String getConfigName() { return configName; }
+    public boolean isPassed() { return passed; }
+    public void setPassed(boolean passed) { this.passed = passed; }
+    public String getFailureMessage() { return failureMessage; }
+    public void setFailureMessage(String failureMessage) { this.failureMessage = failureMessage; }
+    public long getResetMs() { return resetMs; }
+    public void setResetMs(long resetMs) { this.resetMs = resetMs; }
+    public long getCompileMs() { return compileMs; }
+    public void setCompileMs(long compileMs) { this.compileMs = compileMs; }
+    public long getDecodeMs() { return decodeMs; }
+    public void setDecodeMs(long decodeMs) { this.decodeMs = decodeMs; }
+    public long getValidateMs() { return validateMs; }
+    public void setValidateMs(long validateMs) { this.validateMs = validateMs; }
+    public int getTokenCount() { return tokenCount; }
+    public void setTokenCount(int tokenCount) { this.tokenCount = tokenCount; }
+    public double getTokPerSec() { return tokPerSec; }
+    public void setTokPerSec(double tokPerSec) { this.tokPerSec = tokPerSec; }
+    public long getFirstTokenMs() { return firstTokenMs; }
+    public void setFirstTokenMs(long firstTokenMs) { this.firstTokenMs = firstTokenMs; }
+    public GenerationResult.FinishReason getFinishReason() { return finishReason; }
+    public void setFinishReason(GenerationResult.FinishReason finishReason) { this.finishReason = finishReason; }
+    public long getTritonLaunches() { return tritonLaunches; }
+    public void setTritonLaunches(long tritonLaunches) { this.tritonLaunches = tritonLaunches; }
+    public long getTritonCacheHits() { return tritonCacheHits; }
+    public void setTritonCacheHits(long tritonCacheHits) { this.tritonCacheHits = tritonCacheHits; }
+    public String getGeneratedText() { return generatedText; }
+    public void setGeneratedText(String generatedText) { this.generatedText = generatedText; }
+
+    public String summary() {
+        if (!passed) return String.format("[FAIL] %s: %s", configName, failureMessage);
+        return String.format("[PASS] %s: %d tokens, %.2f tok/s, firstToken=%dms | reset=%dms compile=%dms decode=%dms validate=%dms | triton: launches=%d hits=%d",
+                configName, tokenCount, tokPerSec, firstTokenMs,
+                resetMs, compileMs, decodeMs, validateMs,
+                tritonLaunches, tritonCacheHits);
+    }
+}

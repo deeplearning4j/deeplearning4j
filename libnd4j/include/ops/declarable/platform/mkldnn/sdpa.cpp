@@ -47,6 +47,7 @@
 #include <limits>
 
 #include "mkldnnUtils.h"
+#include <helpers/FlashAttentionHelper.h>
 
 namespace sd {
 namespace ops {
@@ -660,6 +661,7 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
   auto attentionLogits = OUTPUT_VARIABLE(2);
 
   auto rank = queries->rankOf();
+  bool isRank4 = (rank == 4);
   REQUIRE_TRUE(rank >= 2 && rank <= 4, 0,
                "dot_product_attention_v2: rank must be 2, 3, or 4, got %i", rank);
 
@@ -668,6 +670,87 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
     scale = 1.0 / std::sqrt(static_cast<double>(queries->sizeAt(-1)));
   }
 
+  // Detect attention bias at input 5 (when input 6 is absent, input 5 is bias not KV cache)
+  NDArray* attentionBias = nullptr;
+  auto extraInput = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
+  auto extraInput2 = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+  if (extraInput != nullptr && !extraInput->isEmpty() &&
+      (extraInput2 == nullptr || extraInput2->isEmpty())) {
+    // Use working queries for shape (handle rank 2 by using original queries shape)
+    auto tq = (rank == 2) ? queries->sizeAt(0) : queries->sizeAt(1);
+    auto tv = (rank == 2) ? values->sizeAt(0) : values->sizeAt(1);
+    bool looksLikeBias = false;
+    if (extraInput->rankOf() >= 2) {
+      auto d0 = extraInput->sizeAt(extraInput->rankOf() - 2);
+      auto d1 = extraInput->sizeAt(extraInput->rankOf() - 1);
+      looksLikeBias = (d0 == tq && d1 == tv) || (d0 == tv && d1 == tq);
+    }
+    if (looksLikeBias) {
+      attentionBias = extraInput;
+    }
+  }
+
+  bool hasAttentionBias = (attentionBias != nullptr && !attentionBias->isEmpty());
+
+  // When attention bias is present, delegate to FlashAttentionHelper which handles it
+  if (hasAttentionBias) {
+    // Handle rank 2 by reshaping to 3D
+    NDArray* q = queries;
+    NDArray* k = keys;
+    NDArray* v = values;
+    NDArray* out = output;
+    bool reshapedQ = false;
+
+    if (rank == 2) {
+      reshapedQ = true;
+      std::vector<sd::LongType> qShape = {1, queries->sizeAt(0), queries->sizeAt(1)};
+      std::vector<sd::LongType> vShape = {1, values->sizeAt(0), values->sizeAt(1)};
+      q = queries->reshape('c', qShape);
+      v = values->reshape('c', vShape);
+      if (keys != values) {
+        std::vector<sd::LongType> kShape = {1, keys->sizeAt(0), keys->sizeAt(1)};
+        k = keys->reshape('c', kShape);
+      } else {
+        k = v;
+      }
+      out = output->reshape('c', {1, output->sizeAt(0), output->sizeAt(1)});
+    }
+
+    // Cast attention bias to query dtype if needed
+    std::unique_ptr<NDArray> biasCastOwner;
+    NDArray* biasForHelper = attentionBias;
+    if (attentionBias->dataType() != q->dataType()) {
+      biasCastOwner.reset(attentionBias->cast(q->dataType()));
+      biasForHelper = biasCastOwner.get();
+    }
+
+    FlashAttentionHelper::Config config;
+    config.scale = static_cast<float>(scale);
+    config.isCausal = block.numB() > 0 ? B_ARG(0) : false;
+    config.dropout = 0.0f;
+    if (isRank4) {
+      config.numHeads = q->sizeAt(2);
+      config.numKvHeads = k->sizeAt(2);
+    } else {
+      config.numHeads = 1;
+      config.numKvHeads = 1;
+    }
+
+    FlashAttentionHelper::forward(q, k, v, out, config,
+                                  nullptr, attentionScores, attentionLogits,
+                                  block.launchContext(), biasForHelper);
+
+    if (reshapedQ) {
+      delete q;
+      delete v;
+      if (keys != values) delete k;
+      delete out;
+    }
+
+    return sd::Status::OK;
+  }
+
+  // No bias: use fast fused OneDNN graph path
   if (rank == 4) {
     // 4D path: [batch, seq, heads, dim]
     executeSDPA4D(queries, keys, values, output, static_cast<float>(scale), block.launchContext());

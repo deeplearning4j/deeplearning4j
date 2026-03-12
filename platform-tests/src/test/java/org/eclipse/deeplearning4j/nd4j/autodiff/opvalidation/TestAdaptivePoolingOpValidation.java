@@ -222,10 +222,8 @@ public class TestAdaptivePoolingOpValidation extends BaseOpValidation {
 
         // Expected: [batch, channels] after mean
         // Reshape to [batch, channels, 1, 1] to match adaptive pool output
-        SDVariable resultReshaped = result.reshape(batch, channels, 1, 1);
-        resultReshaped.rename("result_reshaped");
-
-        SDVariable loss = sd.mean("loss", result);
+        SDVariable resultReshaped = sd.reshape("result_reshaped", result, batch, channels, 1, 1);
+        SDVariable loss = sd.mean("loss", resultReshaped);
 
         TestCase tc = new TestCase(sd)
                 .testName("AdaptiveAvgPool2D Global")

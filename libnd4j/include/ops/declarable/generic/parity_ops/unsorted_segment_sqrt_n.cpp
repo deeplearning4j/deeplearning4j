@@ -27,8 +27,6 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(unsorted_segment_sqrt_n, 2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
-  auto reshapedInput = input;
-
   auto idxSegments = INPUT_VARIABLE(1);
   auto reshapedSegments = idxSegments;
   if (!idxSegments->isVector() && idxSegments->rankOf() > 1) {
@@ -51,12 +49,11 @@ CUSTOM_OP_IMPL(unsorted_segment_sqrt_n, 2, 1, false, 0, 0) {
   REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), reshapedSegments, numOfClasses, wrong),
                0, "unsorted_segment_sqrt_n: segment indices should be in range [0, %ld), but %ld != %ld", numOfClasses,
                wrong, numOfClasses);
-  helpers::unsortedSegmentSqrtNFunctor(block.launchContext(), reshapedInput, reshapedSegments, numOfClasses,
+  helpers::unsortedSegmentSqrtNFunctor(block.launchContext(), input, reshapedSegments, numOfClasses,
                                        segmentedOutput);
-
-
-  delete reshapedInput;
-  delete reshapedSegments;
+  if (reshapedSegments != idxSegments) {
+    delete reshapedSegments;
+  }
   return Status::OK;
 }
 

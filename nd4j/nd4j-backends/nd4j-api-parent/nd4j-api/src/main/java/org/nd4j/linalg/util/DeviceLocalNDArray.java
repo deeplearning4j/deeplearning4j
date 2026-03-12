@@ -246,21 +246,12 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
                 Nd4j.getDeallocatorService().releasePendingConstant(detachedForCurrentDevice);
             }
             set(deviceId, detachedForCurrentDevice);
-           if(!array.isEmpty() && array.data() != null) {
-               INDArray delayed;
-               try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                   delayed = sourceWasConstant ?
-                       Nd4j.getDeallocatorService().registerPendingConstant(array.dup(array.ordering()).detach()) :
-                       array.dup(array.ordering()).detach();
-               }
-               propagateConstantFlag(array, delayed);
-               if (sourceWasConstant) {
-                   Nd4j.getDeallocatorService().releasePendingConstant(delayed);
-               }
-               // Ensure delayed array data is synced to HOST for cross-device copies
+           if(!array.isEmpty() && array.data() != null && numDevices > 1) {
+               // Sync the detached copy to HOST so other devices can copy from it on-demand.
+               // No extra GPU allocation needed — reuse the same array as the delayed source.
                Nd4j.getExecutioner().commit();
-               Nd4j.getAffinityManager().ensureLocation(delayed, AffinityManager.Location.HOST);
-               delayedArray = delayed;
+               Nd4j.getAffinityManager().ensureLocation(detachedForCurrentDevice, AffinityManager.Location.HOST);
+               delayedArray = detachedForCurrentDevice;
 
                for (int i = 0; i < numDevices; i++) {
                    if (i != deviceId) {

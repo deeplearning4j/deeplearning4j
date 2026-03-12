@@ -49,12 +49,11 @@ endif()
 # Add the namespace as a compile definition
 add_definitions(-DSD_BACKEND_NAMESPACE=${SD_BACKEND_NAMESPACE})
 
-# Also define which backend type this is (for conditional compilation)
-if(SD_CUDA)
-    add_definitions(-DSD_BACKEND_TYPE_CUDA=1)
-elseif(SD_TPU)
+# SD_CUDA, SD_TPU are already propagated as preprocessor defines by cmake.
+# Only define the non-option backends explicitly.
+if(SD_TPU)
     add_definitions(-DSD_BACKEND_TYPE_TPU=1)
-else()
+elseif(NOT SD_CUDA)
     add_definitions(-DSD_BACKEND_TYPE_CPU=1)
 endif()
 
@@ -413,6 +412,23 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # For development builds, use faster but less optimized compilation
     if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR SD_FAST_BUILD)
         add_compile_options(-O0 -fno-inline-functions)
+    endif()
+endif()
+
+# --- Dependency Cache Options ---
+# Persistent cache for ExternalProject_Add dependencies (FlatBuffers, OneDNN, Triton/LLVM, etc.)
+# so that 'mvn clean install' doesn't re-download and rebuild everything.
+option(SD_DEP_CACHE "Enable dependency caching across clean builds" ON)
+set(SD_DEP_CACHE_DIR "" CACHE STRING "Dependency cache directory (default: ~/.libnd4j/dep-cache)")
+option(SD_DEP_CACHE_CLEAR "Clear all cached dependencies at configure time" OFF)
+set(SD_DEP_CACHE_CLEAR_DEP "" CACHE STRING "Clear cache for a specific dependency (e.g. 'triton_llvm')")
+
+# Set default cache directory if not specified
+if(SD_DEP_CACHE AND NOT SD_DEP_CACHE_DIR)
+    if(WIN32)
+        set(SD_DEP_CACHE_DIR "$ENV{USERPROFILE}/.libnd4j/dep-cache" CACHE STRING "" FORCE)
+    else()
+        set(SD_DEP_CACHE_DIR "$ENV{HOME}/.libnd4j/dep-cache" CACHE STRING "" FORCE)
     endif()
 endif()
 

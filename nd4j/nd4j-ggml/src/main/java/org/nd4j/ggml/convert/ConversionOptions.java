@@ -37,13 +37,13 @@ public class ConversionOptions {
      * How to handle quantized weights
      */
     @Builder.Default
-    private QuantizationMode quantizationMode = QuantizationMode.DEQUANTIZE_TO_FLOAT32;
+    private QuantizationMode quantizationMode = QuantizationMode.DEQUANTIZE_TO_FLOAT16;
 
     /**
      * Target data type for dequantization
      */
     @Builder.Default
-    private DataType targetDataType = DataType.FLOAT;
+    private DataType targetDataType = DataType.FLOAT16;
 
     /**
      * Whether to preserve tokenizer information in metadata
@@ -121,7 +121,7 @@ public class ConversionOptions {
     public static ConversionOptions forInference() {
         return ConversionOptions.builder()
                 .forTraining(false)
-                .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
+                .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT16)
                 .build();
     }
 

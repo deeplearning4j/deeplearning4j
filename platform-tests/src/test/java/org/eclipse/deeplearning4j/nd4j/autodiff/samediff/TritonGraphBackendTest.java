@@ -22,10 +22,12 @@ package org.eclipse.deeplearning4j.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assumptions;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -39,6 +41,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -1037,6 +1040,57 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
         }
     }
 
+    private void runStrictTritonOpTest(String testName, SameDiff sd, Map<String, INDArray> ph, String outputName) {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        Assumptions.assumeTrue(nativeOps.isTritonAvailable(), testName + ": Triton is unavailable");
+
+        Map<String, INDArray> ref = sd.output(ph, outputName);
+        INDArray refOutput = ref.get(outputName);
+        assertNotNull(refOutput, testName + ": reference output is null");
+
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, outputName);
+        assertNotNull(plan, testName + ": plan is null");
+        Pointer planHandle = compileNativePlan(plan);
+        Assumptions.assumeTrue(planHandle != null, testName + ": native executor is unavailable");
+
+        try {
+            INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+            nativeOps.resetTritonCounters();
+
+            long launchesBefore = nativeOps.getTritonKernelLaunchCount();
+            boolean tritonUsed = false;
+
+            for (int iter = 0; iter < 6; iter++) {
+                Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                INDArray nativeOutput = nativeResults.get(outputName);
+                assertNotNull(nativeOutput, testName + ": null output at iter " + iter);
+
+                double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                long launchesNow = nativeOps.getTritonKernelLaunchCount();
+                boolean usedThisIter = launchesNow > launchesBefore;
+
+                if (usedThisIter) {
+                    tritonUsed = true;
+                    assertTrue(maxDiff < TOLERANCE,
+                            testName + ": Triton maxDiff=" + maxDiff + " at iter " + iter);
+                    break;
+                }
+
+                assertTrue(maxDiff < TOLERANCE,
+                        testName + ": slot-by-slot maxDiff=" + maxDiff + " at iter " + iter);
+                launchesBefore = launchesNow;
+
+                if (iter == 0) {
+                    nativeOps.setPlanShapesFrozen(planHandle, true);
+                }
+            }
+
+            assertTrue(tritonUsed, testName + ": Triton did not execute");
+        } finally {
+            nativeOps.freeDynamicShapePlan(planHandle);
+        }
+    }
+
     @Test
     public void testTritonCast() {
         SameDiff sd = SameDiff.create();
@@ -1047,6 +1101,52 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
 
         INDArray xArr = Nd4j.randn(DataType.FLOAT, 4, 32);
         runOpTest("testTritonCast", sd, Map.of("x", xArr), "result");
+    }
+
+    /**
+     * Tests int64→float cast with large values through Triton.
+     * Exercises the i64→f64→f32 path (fixed from i64→i32→f32 truncation bug).
+     * Uses abs() after cast to prevent Triton from optimizing away the cast.
+     */
+    @Test
+    public void testTritonCastInt64ToFloat() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.INT64, -1, 8);
+        // int64 → float (exercises the i64→f64→f32 path)
+        SDVariable asFloat = sd.castTo("cast_to_float", x, DataType.FLOAT);
+        // abs() ensures Triton compiles a real kernel (not optimized away)
+        sd.math.abs("result", asFloat);
+
+        // Include values near and beyond 2^31 boundary
+        INDArray xArr = Nd4j.createFromArray(new long[][]{
+            {0L, 1L, -1L, 127L, 100000L, 2147483647L, -2147483648L, 4294967296L}
+        });
+        runOpTest("testTritonCastInt64ToFloat", sd, Map.of("x", xArr), "result");
+    }
+
+    /**
+     * Tests float→int64 cast through Triton by verifying the truncation behavior.
+     * Exercises the f32→f64→i64 path (fixed from f32→i32→i64 truncation bug).
+     * Uses add(0) on INT64 to prevent cast from being optimized away,
+     * then casts back to FLOAT for numeric comparison.
+     */
+    @Test
+    public void testTritonCastFloatToInt64ViaAdd() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 8);
+        // float → int64 (exercises f32→f64→i64 path)
+        SDVariable asLong = sd.castTo("cast_to_long", x, DataType.INT64);
+        // Add 0 as INT64 to force the INT64 value to actually be computed
+        SDVariable zero = sd.constant("zero", Nd4j.zeros(DataType.INT64, 1, 8));
+        SDVariable added = asLong.add("add_zero", zero);
+        // Cast back to float for comparison
+        sd.castTo("result", added, DataType.FLOAT);
+
+        // Values that are exact in float and exercise the i64 range
+        INDArray xArr = Nd4j.createFromArray(new float[][]{
+            {0f, 1f, -1f, 127f, 100000f, 2.14748365E9f, -2.14748365E9f, 4.29496730E9f}
+        });
+        runOpTest("testTritonCastFloatToInt64ViaAdd", sd, Map.of("x", xArr), "result");
     }
 
     @Test
@@ -1097,6 +1197,234 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
 
         INDArray xArr = Nd4j.randn(DataType.FLOAT, 4, 16);
         runOpTest("testTritonWhere", sd, Map.of("x", xArr), "result");
+    }
+
+    @Test
+    public void testTritonShapeInt64WhereCastChain() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 3, 3, 700, 64);
+        SDVariable shape = sd.shape("shape", x);
+        SDVariable negOnes = sd.constant("neg_ones",
+                Nd4j.createFromArray(new long[]{-1L, -1L, -1L, -1L, -1L}));
+        SDVariable ones = sd.constant("ones",
+                Nd4j.createFromArray(new long[]{1L, 1L, 1L, 1L, 1L}));
+        SDVariable eq = sd.eq("eq", shape, negOnes);
+        SDVariable eqLong = sd.castTo("eq_long", eq, DataType.INT64);
+        SDVariable eqBool = sd.castTo("eq_bool", eqLong, DataType.BOOL);
+        SDVariable shapeCast = sd.castTo("shape_cast", shape, DataType.INT64);
+        SDVariable selected = sd.where("selected", ones, shapeCast, eqBool);
+        sd.castTo("result", selected, DataType.FLOAT);
+
+        INDArray xArr = Nd4j.randn(DataType.FLOAT, 1, 3, 3, 700, 64);
+        runStrictTritonOpTest("testTritonShapeInt64WhereCastChain", sd, Map.of("x", xArr), "result");
+    }
+
+    @Test
+    public void testTritonShapeInt64CastFanOut() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 3, 3, 700, 64);
+        SDVariable shape = sd.shape("shape", x);
+        SDVariable cast1 = sd.castTo("cast1", shape, DataType.INT64);
+        SDVariable cast2 = sd.castTo("cast2", shape, DataType.INT64);
+        SDVariable cast3 = sd.castTo("cast3", shape, DataType.INT64);
+        SDVariable sum = cast1.add("sum", cast2);
+        SDVariable restored = sum.sub("restored", cast3);
+        sd.castTo("result", restored, DataType.FLOAT);
+
+        INDArray xArr = Nd4j.randn(DataType.FLOAT, 1, 3, 3, 700, 64);
+        runStrictTritonOpTest("testTritonShapeInt64CastFanOut", sd, Map.of("x", xArr), "result");
+    }
+
+    @Test
+    public void testTritonFrozenInt64AcrossNativeShapeGap() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        Assumptions.assumeTrue(nativeOps.isTritonAvailable(),
+                "testTritonFrozenInt64AcrossNativeShapeGap: Triton is unavailable");
+
+        boolean prevCapture = Nd4j.getEnvironment().tritonGraphCapture();
+        Nd4j.getEnvironment().setTritonGraphCapture(false);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable p = sd.placeHolder("p", DataType.INT64, 5);
+        SDVariable castA = sd.castTo("castA", p, DataType.INT64);
+        SDVariable castB = sd.castTo("castB", p, DataType.INT64);
+        SDVariable expanded = sd.expandDims("expanded", castA, 0);
+        SDVariable reshaped = sd.reshape("reshaped", expanded, 1, 5);
+        SDVariable squeezed = sd.squeeze("squeezed", reshaped, 0);
+        SDVariable eq = sd.eq("eq", castB, squeezed);
+        SDVariable eqLong = sd.castTo("eqLong", eq, DataType.INT64);
+        SDVariable sum = squeezed.add("sum", eqLong);
+        sd.castTo("result", sum, DataType.FLOAT);
+
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result");
+        assertNotNull(plan, "testTritonFrozenInt64AcrossNativeShapeGap: plan is null");
+        Pointer planHandle = compileNativePlan(plan);
+        Assumptions.assumeTrue(planHandle != null,
+                "testTritonFrozenInt64AcrossNativeShapeGap: native executor unavailable");
+
+        try {
+            nativeOps.resetTritonCounters();
+            long launchesBefore = nativeOps.getTritonKernelLaunchCount();
+            boolean tritonUsed = false;
+
+            long[][] values = new long[][]{
+                    {1, 3, 3, 700, 64},
+                    {2, 4, 4, 701, 65},
+                    {5, 7, 7, 702, 66},
+                    {8, 9, 9, 703, 67},
+                    {11, 13, 13, 704, 68},
+                    {21, 34, 34, 705, 69}
+            };
+
+            for (int iter = 0; iter < values.length; iter++) {
+                INDArray pArr = Nd4j.createFromArray(values[iter]);
+                Map<String, INDArray> placeholders = Map.of("p", pArr);
+                INDArray refOutput = sd.output(placeholders, "result").get("result");
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, placeholders);
+
+                Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                INDArray nativeOutput = nativeResults.get("result");
+                assertNotNull(nativeOutput,
+                        "testTritonFrozenInt64AcrossNativeShapeGap: null output at iter " + iter);
+
+                double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                long launchesNow = nativeOps.getTritonKernelLaunchCount();
+                if (launchesNow > launchesBefore) {
+                    tritonUsed = true;
+                }
+
+                assertTrue(maxDiff < TOLERANCE,
+                        "testTritonFrozenInt64AcrossNativeShapeGap iter " + iter
+                                + ": maxDiff=" + maxDiff);
+
+                if (iter == 0) {
+                    nativeOps.setPlanShapesFrozen(planHandle, true);
+                }
+                launchesBefore = launchesNow;
+            }
+
+            assertTrue(tritonUsed,
+                    "testTritonFrozenInt64AcrossNativeShapeGap: Triton did not execute");
+        } finally {
+            Nd4j.getEnvironment().setTritonGraphCapture(prevCapture);
+            nativeOps.freeDynamicShapePlan(planHandle);
+        }
+    }
+
+    @Test
+    public void testTritonDirectKvRetentionUsesCurrentOutputs() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        Assumptions.assumeTrue(nativeOps.isTritonAvailable(),
+                "testTritonDirectKvRetentionUsesCurrentOutputs: Triton is unavailable");
+
+        boolean prevCapture = Nd4j.getEnvironment().tritonGraphCapture();
+        boolean prevSkip = Nd4j.getEnvironment().tritonSkipKernels();
+        boolean prevVerify = Nd4j.getEnvironment().tritonVerifyKernels();
+        Nd4j.getEnvironment().setTritonGraphCapture(false);
+        Nd4j.getEnvironment().setTritonSkipKernels(false);
+        Nd4j.getEnvironment().setTritonVerifyKernels(false);
+
+        int maxKvLen = 4;
+        SameDiff sd = SameDiff.create();
+        SDVariable current = sd.placeHolder("current", DataType.FLOAT, 1, 1, 1, 4);
+        SDVariable past = sd.placeHolder("past", DataType.FLOAT, 1, 1, maxKvLen, 4);
+        SDVariable scale = sd.constant("scale",
+                Nd4j.createFromArray(new float[]{2f, 3f, 4f, 5f}).reshape(1, 1, 1, 4));
+        SDVariable bias = sd.constant("bias",
+                Nd4j.createFromArray(new float[]{10f, 20f, 30f, 40f}).reshape(1, 1, 1, 4));
+        SDVariable present = current.mul("present_mul", scale).add("present", bias);
+        sd.sum("result", past, true, 2);
+
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result", "present");
+        assertNotNull(plan, "testTritonDirectKvRetentionUsesCurrentOutputs: plan is null");
+        Pointer planHandle = compileNativePlan(plan);
+        Assumptions.assumeTrue(planHandle != null,
+                "testTritonDirectKvRetentionUsesCurrentOutputs: native executor unavailable");
+
+        try {
+            String[] extKeys = plan.getExternalInputKeys();
+            int pastExtIdx = -1;
+            for (int i = 0; i < extKeys.length; i++) {
+                if ("past".equals(extKeys[i])) {
+                    pastExtIdx = i;
+                    break;
+                }
+            }
+            assertTrue(pastExtIdx >= 0,
+                    "testTritonDirectKvRetentionUsesCurrentOutputs: missing external input 'past'");
+
+            try (IntPointer mappings = new IntPointer(new int[]{1, pastExtIdx, 2})) {
+                nativeOps.configurePlanKvCacheRetention(planHandle, mappings, 1, maxKvLen, 0);
+            }
+
+            nativeOps.resetTritonCounters();
+            long prevLaunches = nativeOps.getTritonKernelLaunchCount();
+            boolean tritonUsed = false;
+
+            INDArray pastNative = Nd4j.zeros(DataType.FLOAT, 1, 1, maxKvLen, 4);
+            INDArray pastExpected = pastNative.dup();
+            float[][] steps = new float[][]{
+                    {1f, 2f, 3f, 4f},
+                    {5f, 6f, 7f, 8f},
+                    {9f, 10f, 11f, 12f}
+            };
+
+            for (int iter = 0; iter < steps.length; iter++) {
+                INDArray currentArr = Nd4j.createFromArray(steps[iter]).reshape(1, 1, 1, 4);
+                Map<String, INDArray> placeholders = new LinkedHashMap<>();
+                placeholders.put("current", currentArr);
+                placeholders.put("past", pastExpected);
+
+                Map<String, INDArray> ref = sd.output(placeholders, "result", "present");
+                INDArray expectedResult = ref.get("result");
+                INDArray expectedPresent = ref.get("present");
+                assertNotNull(expectedResult);
+                assertNotNull(expectedPresent);
+
+                Map<String, INDArray> nativePlaceholders = new LinkedHashMap<>();
+                nativePlaceholders.put("current", currentArr);
+                nativePlaceholders.put("past", pastNative);
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, nativePlaceholders);
+                Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                INDArray nativeResult = nativeResults.get("result");
+                assertNotNull(nativeResult,
+                        "testTritonDirectKvRetentionUsesCurrentOutputs: null result at iter " + iter);
+
+                double maxDiff = expectedResult.sub(nativeResult).amaxNumber().doubleValue();
+                assertTrue(maxDiff < TOLERANCE,
+                        "testTritonDirectKvRetentionUsesCurrentOutputs iter " + iter
+                                + ": result maxDiff=" + maxDiff);
+
+                INDArray expectedSlice = expectedPresent.get(
+                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all());
+                pastExpected.get(
+                        NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(iter), NDArrayIndex.all())
+                        .assign(expectedSlice);
+
+                INDArray nativePastSnapshot = pastNative.dup();
+                double pastDiff = pastExpected.sub(nativePastSnapshot).amaxNumber().doubleValue();
+                assertTrue(pastDiff < TOLERANCE,
+                        "testTritonDirectKvRetentionUsesCurrentOutputs iter " + iter
+                                + ": past cache maxDiff=" + pastDiff);
+
+                long launchesNow = nativeOps.getTritonKernelLaunchCount();
+                if (launchesNow > prevLaunches) {
+                    tritonUsed = true;
+                }
+                if (iter == 0) {
+                    nativeOps.setPlanShapesFrozen(planHandle, true);
+                }
+                prevLaunches = launchesNow;
+            }
+
+            assertTrue(tritonUsed,
+                    "testTritonDirectKvRetentionUsesCurrentOutputs: Triton did not execute");
+        } finally {
+            Nd4j.getEnvironment().setTritonGraphCapture(prevCapture);
+            Nd4j.getEnvironment().setTritonSkipKernels(prevSkip);
+            Nd4j.getEnvironment().setTritonVerifyKernels(prevVerify);
+            nativeOps.freeDynamicShapePlan(planHandle);
+        }
     }
 
     @Test
@@ -3837,6 +4165,947 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
             } finally {
                 nativeOps.freeDynamicShapePlan(planHandle);
             }
+        }
+    }
+
+    /**
+     * Test that Triton-compiled broadcast multiply produces correct results
+     * for inner-dimension broadcasting (e.g., [1,3,3,S,D] * [1,3,1,S,D]).
+     * This is the GQA pattern: Q has N heads, KV has 1 head per group.
+     * The bug was that simple modular indexing (offsets % inputSize) is wrong
+     * for inner-dimension broadcasts, causing wrong values at high indices.
+     */
+    @Test
+    public void testTritonBroadcastMultiplyInnerDim() {
+        Assumptions.assumeTrue(
+                Nd4j.getBackend().getClass().getSimpleName().toLowerCase().contains("cublas") ||
+                Nd4j.getBackend().getClass().getSimpleName().toLowerCase().contains("cuda"),
+                "CUDA backend required for Triton");
+
+        int seqLen = 8;
+        int headDim = 4;
+        int numHeadGroups = 3;
+        int headsPerGroup = 3;
+        int kvHeadsPerGroup = 1;
+
+        // Shape: [1, numHeadGroups, headsPerGroup, seqLen, headDim]
+        // The multiply broadcasts KV (1 head) across Q (3 heads)
+        SameDiff sd = SameDiff.create();
+        SDVariable qInput = sd.placeHolder("q", DataType.FLOAT, 1, numHeadGroups, headsPerGroup, seqLen, headDim);
+        SDVariable kvInput = sd.placeHolder("kv", DataType.FLOAT, 1, numHeadGroups, kvHeadsPerGroup, seqLen, headDim);
+
+        // multiply with broadcast: [1,3,3,S,D] * [1,3,1,S,D]
+        // Also add identity on result so there are at least 2 ops for DSP
+        SDVariable product = qInput.mul("product", kvInput);
+        SDVariable result = sd.identity("result", product);
+
+        INDArray qArr = Nd4j.randn(DataType.FLOAT, 1, numHeadGroups, headsPerGroup, seqLen, headDim);
+        INDArray kvArr = Nd4j.randn(DataType.FLOAT, 1, numHeadGroups, kvHeadsPerGroup, seqLen, headDim);
+
+        // Expected output from native execution
+        Map<String, INDArray> ph = new java.util.HashMap<>();
+        ph.put("q", qArr);
+        ph.put("kv", kvArr);
+        INDArray expected = sd.outputSingle(ph, "result");
+        log.info("Expected shape: {}, len: {}", java.util.Arrays.toString(expected.shape()), expected.length());
+
+        // Now compile DSP plan and run with Triton
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+
+        // Run multiple times to trigger Triton compilation (fires at executionCount >= 2)
+        for (int iter = 0; iter < 4; iter++) {
+            INDArray actual = sd.outputSingle(ph, "result");
+            double maxDiff = Nd4j.getExecutioner().exec(
+                    new org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax(
+                            actual.sub(expected))).getDouble(0);
+            log.info("Iteration {}: maxDiff={}, shape={}", iter, maxDiff,
+                    java.util.Arrays.toString(actual.shape()));
+            if (iter >= 2 && maxDiff > 1e-3) {
+                // Print first 10 mismatched elements for debugging
+                INDArray diff = actual.sub(expected);
+                INDArray flatActual = actual.reshape(actual.length());
+                INDArray flatExpected = expected.reshape(expected.length());
+                INDArray flatDiff = diff.reshape(diff.length());
+                int printed = 0;
+                for (long j = 0; j < flatDiff.length() && printed < 20; j++) {
+                    double d = Math.abs(flatDiff.getDouble(j));
+                    if (d > 1e-3) {
+                        log.info("  MISMATCH idx={}: actual={} expected={} diff={}", j,
+                                flatActual.getDouble(j), flatExpected.getDouble(j), flatDiff.getDouble(j));
+                        printed++;
+                    }
+                }
+                assertEquals(0.0, maxDiff, 1e-3,
+                        "Broadcast multiply mismatch at iteration " + iter + " (maxDiff=" + maxDiff + ")");
+            }
+        }
+    }
+
+    /**
+     * Regression test for assign op Triton compilation.
+     *
+     * The assign(x, y) op copies input[1] (y) to the output. Previously, the Triton
+     * compiler categorized assign as IDENTITY (which returns input[0]), producing
+     * completely wrong output — maxDiff of FLT_MAX in the SmolDocling VLM pipeline.
+     *
+     * This test verifies that assign + cast chain produces correct output through
+     * the Triton-compiled path, matching the native slot-by-slot reference.
+     */
+    @Test
+    public void testTritonAssignOpCorrectness() {
+        Assumptions.assumeTrue(Nd4j.getNativeOps().isTritonAvailable(),
+                "Triton not available — skipping");
+
+        SameDiff sd = SameDiff.create();
+
+        // assign(x, y) should copy y to output, NOT x
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 576);
+        SDVariable y = sd.constant("y", Nd4j.ones(DataType.FLOAT, 1, 576).mul(42.0));
+        SDVariable assigned = sd.assign("assigned", x, y);
+        SDVariable castFp16 = assigned.castTo("castFp16", DataType.HALF);
+        SDVariable castFp32 = castFp16.castTo("castFp32", DataType.FLOAT);
+        SDVariable one = sd.constant("one", Nd4j.ones(DataType.FLOAT, 1, 576));
+        SDVariable result = castFp32.add("result", one);
+
+        INDArray xArr = Nd4j.randn(DataType.FLOAT, 1, 576);
+        runOpTest("testTritonAssignOpCorrectness", sd, Map.of("x", xArr), "result");
+    }
+
+    /**
+     * Regression test: assign op with same-shape inputs through multiple execution modes.
+     *
+     * Verifies that all execution modes produce the same output:
+     * 1. Standard SameDiff execution (reference)
+     * 2. DSP slot-by-slot (warmup iterations)
+     * 3. DSP with Triton kernels (iteration 2+)
+     */
+    @Test
+    public void testAssignAllExecutionModes() {
+        Assumptions.assumeTrue(Nd4j.getNativeOps().isTritonAvailable(),
+                "Triton not available — skipping");
+
+        SameDiff sd = SameDiff.create();
+
+        // Build: assign(x, y) -> multiply by 2 -> add 1
+        // assign should produce y (the constant), not x (the placeholder)
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 4, 8);
+        SDVariable y = sd.constant("y", Nd4j.linspace(1, 32, 32, DataType.FLOAT).reshape(4, 8));
+        SDVariable assigned = sd.assign("assigned", x, y);
+        SDVariable two = sd.constant("two", Nd4j.ones(DataType.FLOAT, 4, 8).mul(2.0));
+        SDVariable doubled = assigned.mul("doubled", two);
+        SDVariable one = sd.constant("one", Nd4j.ones(DataType.FLOAT, 4, 8));
+        SDVariable result = doubled.add("result", one);
+
+        INDArray xArr = Nd4j.randn(DataType.FLOAT, 4, 8).mul(100); // large values to make mismatch obvious
+
+        // Reference: standard SameDiff execution
+        Map<String, INDArray> ref = sd.output(Map.of("x", xArr), "result");
+        INDArray refOutput = ref.get("result");
+        assertNotNull(refOutput);
+
+        // Expected: y * 2 + 1 = linspace(1,32)*2 + 1 = linspace(3,65)
+        // Should NOT depend on x at all
+        double refFirst = refOutput.getDouble(0);
+        assertEquals(3.0, refFirst, 1e-3,
+                "assign(x, y) should produce y, not x. First element should be 1*2+1=3, got " + refFirst);
+
+        // Run through native plan (3 iterations to trigger Triton)
+        runOpTest("testAssignAllExecutionModes", sd, Map.of("x", xArr), "result");
+    }
+
+    /**
+     * Regression test: Triton CUDA graph capture + replay with fallback gaps.
+     *
+     * Creates a graph where some ops compile to Triton (elementwise) and others
+     * must run natively as fallback (matmul). With tritonAllowFallbackCapture=true,
+     * the entire sequence is captured as ONE CUDA graph. On replay, both Triton
+     * sub-kernels AND native fallback ops are replayed from the graph.
+     *
+     * This specifically tests the zero-output bug where graph replay produces
+     * all zeros because native gap ops' buffer addresses are baked into the graph
+     * but may change between capture and replay.
+     *
+     * Timeline:
+     *   iter 0: slot-by-slot warmup
+     *   iter 1: Triton compile + first execution (executionCount=1)
+     *   iter 2: CUDA graph capture (executionCount=2, captureMinExec=1)
+     *   iter 3-7: CUDA graph replay (the regression test target)
+     */
+    @Test
+    public void testTritonGraphCaptureWithFallbackGaps() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) {
+            log.info("Skipping (Triton not available)");
+            return;
+        }
+
+        // Save and set environment
+        var env = Nd4j.getEnvironment();
+        boolean prevCapture = env.tritonGraphCapture();
+        boolean prevFallbackCapture = env.tritonAllowFallbackCapture();
+        boolean prevCompileAll = env.tritonCompileAll();
+        int prevCaptureMinExec = env.tritonCaptureMinExec();
+
+        env.setTritonGraphCapture(true);
+        env.setTritonAllowFallbackCapture(true);
+        env.setTritonCompileAll(false);  // don't compile matmul via Triton
+        env.setTritonCaptureMinExec(1);  // capture on 2nd Triton execution
+
+        try {
+            nativeOps.invalidateTritonCache();
+            nativeOps.resetTritonCounters();
+
+            // Build: x -> EW ops -> matmul (gap) -> EW ops -> result
+            // EW ops compile to Triton, matmul runs natively as a gap
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 16);
+            SDVariable a = sd.constant("a", Nd4j.randn(DataType.FLOAT, 1, 16));
+            SDVariable b = sd.constant("b", Nd4j.randn(DataType.FLOAT, 1, 16));
+            SDVariable w = sd.constant("w", Nd4j.randn(DataType.FLOAT, 16, 32));
+            SDVariable bias = sd.constant("bias", Nd4j.randn(DataType.FLOAT, 1, 32));
+            SDVariable scale = sd.constant("scale", Nd4j.randn(DataType.FLOAT, 1, 32));
+            SDVariable shift = sd.constant("shift", Nd4j.randn(DataType.FLOAT, 1, 32));
+
+            // EW block 1 (Triton-compilable)
+            SDVariable h1 = x.add("add1", a);
+            SDVariable h2 = sd.nn.relu("relu1", h1, 0);
+            SDVariable h3 = h2.mul("mul1", b.add("addab", a));
+
+            // Matmul (native gap - not Triton compilable by default)
+            SDVariable h4 = sd.mmul("matmul", h3, w);
+
+            // EW block 2 (Triton-compilable)
+            SDVariable h5 = h4.add("add2", bias);
+            SDVariable h6 = sd.math.tanh("tanh1", h5);
+            SDVariable h7 = h6.mul("mul2", scale);
+            h7.add("result", shift);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 2, 16);
+            Map<String, INDArray> ph = Map.of("x", input);
+
+            // Reference output
+            Map<String, INDArray> ref = sd.output(ph, "result");
+            INDArray refOutput = ref.get("result");
+            assertNotNull(refOutput, "Reference output is null");
+
+            // Compile plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result");
+            assertNotNull(plan, "Plan is null");
+            Pointer planHandle = compileNativePlan(plan);
+            assertNotNull(planHandle, "Plan handle is null");
+
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+
+                int totalIters = 8;
+                int failedIters = 0;
+                StringBuilder failures = new StringBuilder();
+
+                for (int iter = 0; iter < totalIters; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("result");
+                    assertNotNull(nativeOutput, "Null output at iter " + iter);
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    boolean isZero = nativeOutput.amaxNumber().doubleValue() == 0.0;
+                    int argmax = Nd4j.argMax(nativeOutput.reshape(1, -1), 1).getInt(0);
+
+                    log.info("testTritonGraphCaptureWithFallbackGaps iter {}: maxDiff={} isZero={} argmax={} " +
+                            "first4=[{},{},{},{}]", iter, maxDiff, isZero, argmax,
+                            nativeOutput.getDouble(0), nativeOutput.getDouble(1),
+                            nativeOutput.getDouble(2), nativeOutput.getDouble(3));
+
+                    if (maxDiff >= 0.01) {
+                        String msg = String.format("iter %d: maxDiff=%.6f isZero=%b", iter, maxDiff, isZero);
+                        log.error("FAIL: {}", msg);
+                        failures.append(msg).append("\n");
+                        failedIters++;
+                    }
+
+                    // Freeze shapes after first iteration
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("testTritonGraphCaptureWithFallbackGaps: {} iterations, tritonLaunches={}, failures={}",
+                        totalIters, tritonLaunches, failedIters);
+
+                if (failedIters > 0) {
+                    fail("Triton graph capture/replay with fallback gaps produced wrong output:\n" + failures);
+                }
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonGraphCapture(prevCapture);
+            env.setTritonAllowFallbackCapture(prevFallbackCapture);
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonCaptureMinExec(prevCaptureMinExec);
+        }
+    }
+
+    /**
+     * Regression test: Triton CUDA graph replay correctness with compileAll=true.
+     *
+     * With compileAll=true and specific includeTypes, CONST_GEN ops run as
+     * fallback (alwaysFallback=true in SectionTypeConfig.h). This creates gaps
+     * within the mega-segment. Tests that graph replay produces correct output
+     * when mixing Triton sub-kernels with CONST_GEN fallback ops.
+     */
+    @Test
+    public void testTritonGraphCaptureCompileAllWithConstGen() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) {
+            log.info("Skipping (Triton not available)");
+            return;
+        }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCapture = env.tritonGraphCapture();
+        boolean prevFallbackCapture = env.tritonAllowFallbackCapture();
+        boolean prevCompileAll = env.tritonCompileAll();
+        int prevCaptureMinExec = env.tritonCaptureMinExec();
+
+        env.setTritonGraphCapture(true);
+        env.setTritonAllowFallbackCapture(true);
+        env.setTritonCompileAll(true);
+        env.setTritonCaptureMinExec(1);
+
+        try {
+            nativeOps.invalidateTritonCache();
+            nativeOps.resetTritonCounters();
+
+            // Build graph with shape_of (CONST_GEN, alwaysFallback) + EW ops
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, -1, 32);
+            SDVariable w = sd.constant("w", Nd4j.randn(DataType.FLOAT, 32, 64));
+            SDVariable b = sd.constant("b", Nd4j.randn(DataType.FLOAT, 1, 64));
+
+            // shape_of creates a CONST_GEN gap
+            SDVariable shapeOf = sd.shape("shape_x", x);
+            // Use shape info indirectly (force shape_of to execute)
+            SDVariable h1 = sd.mmul("mm", x, w);
+            SDVariable h2 = h1.add("add_bias", b);
+            SDVariable h3 = sd.nn.relu("relu", h2, 0);
+            SDVariable h4 = sd.math.tanh("tanh", h3);
+            h4.mul("result", sd.constant("scale", Nd4j.ones(DataType.FLOAT, 1, 64).mul(0.5)));
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 32);
+            Map<String, INDArray> ph = Map.of("x", input);
+
+            Map<String, INDArray> ref = sd.output(ph, "result");
+            INDArray refOutput = ref.get("result");
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result");
+            Pointer planHandle = compileNativePlan(plan);
+            assertNotNull(planHandle);
+
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+
+                int failedIters = 0;
+                for (int iter = 0; iter < 8; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("result");
+                    assertNotNull(nativeOutput);
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    boolean isZero = nativeOutput.amaxNumber().doubleValue() == 0.0;
+
+                    log.info("testTritonGraphCaptureCompileAllWithConstGen iter {}: maxDiff={} isZero={}",
+                            iter, maxDiff, isZero);
+
+                    if (maxDiff >= 0.01) {
+                        log.error("FAIL iter {}: maxDiff={} isZero={}", iter, maxDiff, isZero);
+                        failedIters++;
+                    }
+                    if (iter == 0) nativeOps.setPlanShapesFrozen(planHandle, true);
+                }
+
+                assertEquals(0, failedIters, "Graph replay with CONST_GEN fallback gaps produced wrong output");
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonGraphCapture(prevCapture);
+            env.setTritonAllowFallbackCapture(prevFallbackCapture);
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonCaptureMinExec(prevCaptureMinExec);
+        }
+    }
+
+    /**
+     * Large-scale VLM-like test: emulates the SmolDocling VLM decode pattern with
+     * many ops, multiple gap types (matmul + shape_of/cast), and graph capture/replay.
+     *
+     * The VLM decode graph has ~3840 ops with repeating "transformer block" patterns:
+     *   [EW norm] → [matmul Q/K/V projection (gap)] → [EW attention scores] →
+     *   [matmul attention (gap)] → [EW residual + norm] → [matmul FFN (gap)] → ...
+     *
+     * This test creates a similar pattern with configurable depth:
+     *   N "layers", each containing:
+     *     - EW ops (add, relu, mul) → Triton-compiled
+     *     - matmul projection → native gap
+     *     - shape_of → CONST_GEN gap (alwaysFallback)
+     *     - cast → gap
+     *     - EW ops (add, tanh) → Triton-compiled
+     *
+     * Tests that CUDA graph capture + replay produces correct output over many
+     * iterations, with compileAll=true and tritonAllowFallbackCapture=true.
+     */
+    @Test
+    /**
+     * Helper: run a SameDiff graph through native DSP with Triton compileAll enabled,
+     * compare against slot-by-slot reference. Returns maxDiff.
+     */
+    private double runTritonCompileAllAndCompare(SameDiff sd, String outputName,
+                                                  Map<String, INDArray> ph,
+                                                  int numIters, double tolerance) {
+        return runTritonCompileAllAndCompare(sd, outputName, ph, numIters, tolerance, true);
+    }
+
+    private double runTritonCompileAllAndCompare(SameDiff sd, String outputName,
+                                                  Map<String, INDArray> ph,
+                                                  int numIters, double tolerance,
+                                                  boolean freezeShapes) {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.invalidateTritonCache();
+        nativeOps.resetTritonCounters();
+
+        // Reference output (slot-by-slot)
+        Map<String, INDArray> ref = sd.output(ph, outputName);
+        INDArray refOutput = ref.get(outputName);
+        assertNotNull(refOutput, "Reference output is null");
+
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, outputName);
+        assertNotNull(plan, "Plan is null");
+        Pointer planHandle = compileNativePlan(plan);
+        assertNotNull(planHandle, "Plan handle is null");
+
+        double worstDiff = 0.0;
+        try {
+            INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+            for (int iter = 0; iter < numIters; iter++) {
+                Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                INDArray nativeOutput = nativeResults.get(outputName);
+                assertNotNull(nativeOutput, "Null output at iter " + iter);
+
+                double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                boolean isZero = nativeOutput.amaxNumber().doubleValue() == 0.0;
+                worstDiff = Math.max(worstDiff, maxDiff);
+
+                log.info("iter {}: maxDiff={} isZero={}", iter, maxDiff, isZero);
+
+                assertFalse(isZero, "ALL ZERO output at iter " + iter);
+                assertTrue(maxDiff < tolerance,
+                        String.format("iter %d: maxDiff=%.6f exceeds tolerance %.6f", iter, maxDiff, tolerance));
+
+                if (iter == 0 && freezeShapes) {
+                    nativeOps.setPlanShapesFrozen(planHandle, true);
+                }
+            }
+        } finally {
+            nativeOps.freeDynamicShapePlan(planHandle);
+        }
+        return worstDiff;
+    }
+
+    /**
+     * Test: shape_of(INT64) → cast(FLOAT) → reduce_mean fused with larger EW ops.
+     * Regression test for buffer overflow when storing to reductionInputSlot buffer
+     * that is smaller than the kernel's n_elements.
+     */
+    @Test
+    public void testTritonMultiShapeShapeOfCastReduceMean() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 64);
+
+            // EW ops on [1,64]
+            SDVariable normed = sd.nn.relu("relu", x, 0);
+            SDVariable scaled = normed.mul("scale", sd.constant("scaleW", Nd4j.ones(DataType.FLOAT, 1, 64).mul(0.5)));
+
+            // Matmul gap → shape_of gap → cast → reduce_mean (fused with EW)
+            SDVariable w = sd.constant("w", Nd4j.eye(64).castTo(DataType.FLOAT));
+            SDVariable proj = sd.mmul("proj", scaled, w);
+
+            SDVariable shape = sd.shape("shape", proj);  // INT64 [2]
+            SDVariable castFloat = shape.castTo("cast", DataType.FLOAT);  // FLOAT [2]
+            SDVariable shapeMean = castFloat.mean("shape_mean");  // FLOAT scalar
+
+            // Inject shape_mean back into the EW stream
+            SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 0.001f));
+            SDVariable shapeScale = shapeMean.mul("shape_scale", eps);
+            SDVariable output = proj.add("output", shapeScale);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 64);
+
+            // Test WITHOUT freezing — validates pure Triton compilation
+            double maxDiffNoFreeze = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3, false);
+            log.info("testTritonMultiShapeShapeOfCastReduceMean: noFreeze worstDiff={}", maxDiffNoFreeze);
+
+            // Test WITH freezing — validates frozen constant mechanism
+            double maxDiffFreeze = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3, true);
+            log.info("testTritonMultiShapeShapeOfCastReduceMean: withFreeze worstDiff={}", maxDiffFreeze);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: reduce_sum on a small INT64 input (from shape_of) cast to FLOAT,
+     * fused with larger EW ops on a different shape.
+     */
+    @Test
+    public void testTritonMultiShapeReduceSumSmallBuffer() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 128);
+
+            // Large EW ops on [1,128]
+            SDVariable activated = sd.math.tanh("tanh", x);
+
+            // Matmul gap → shape_of gap → cast → reduce_sum (small buffer [2] fused with [128] EW)
+            SDVariable w = sd.constant("w", Nd4j.eye(128).castTo(DataType.FLOAT));
+            SDVariable proj = sd.mmul("proj", activated, w);
+            SDVariable shape = sd.shape("shape", proj);
+            SDVariable castFloat = shape.castTo("cast", DataType.FLOAT);
+            SDVariable shapeSum = sd.sum("shape_sum", castFloat);  // sum instead of mean
+
+            SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 0.0001f));
+            SDVariable shapeScale = shapeSum.mul("shape_scale", eps);
+            SDVariable output = proj.add("output", shapeScale);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 128);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            log.info("testTritonMultiShapeReduceSumSmallBuffer: worstDiff={}", maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: reduce_max on a small buffer fused with larger EW ops.
+     * Verifies that reduction identity values and per-buffer masks work for max reduction.
+     */
+    @Test
+    public void testTritonMultiShapeReduceMaxSmallBuffer() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 64);
+
+            SDVariable activated = sd.nn.relu("relu", x, 0);
+
+            // Matmul gap → shape_of gap → cast → reduce_max
+            SDVariable w = sd.constant("w", Nd4j.eye(64).castTo(DataType.FLOAT));
+            SDVariable proj = sd.mmul("proj", activated, w);
+            SDVariable shape = sd.shape("shape", proj);
+            SDVariable castFloat = shape.castTo("cast", DataType.FLOAT);
+            SDVariable shapeMax = sd.max("shape_max", castFloat);
+
+            SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 0.001f));
+            SDVariable shapeScale = shapeMax.mul("shape_scale", eps);
+            SDVariable output = proj.add("output", shapeScale);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 64);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            log.info("testTritonMultiShapeReduceMaxSmallBuffer: worstDiff={}", maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: reduce_mean on a rank-3 tensor's shape (3-element INT64) fused with [1,256] EW ops.
+     * Larger shape disparity (3 vs 256 elements).
+     */
+    @Test
+    public void testTritonMultiShapeRank3ShapeReduce() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            // Use rank-3 placeholder so shape_of produces [3] (3-element INT64)
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 4, 64);
+
+            // EW ops on [1,4,64] = 256 elements
+            SDVariable activated = sd.nn.relu("relu", x, 0);
+
+            // shape_of → cast → reduce_mean: [3] intermediate in [256]-element kernel
+            SDVariable shape = sd.shape("shape", activated);
+            SDVariable castFloat = shape.castTo("cast", DataType.FLOAT);
+            SDVariable shapeMean = castFloat.mean("shape_mean");
+
+            SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 0.001f));
+            SDVariable shapeScale = shapeMean.mul("shape_scale", eps);
+
+            // Reshape to [1,256] then add
+            SDVariable flat = sd.reshape("flat", activated, 1, 256);
+            SDVariable output = flat.add("output", shapeScale);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 4, 64);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            log.info("testTritonMultiShapeRank3ShapeReduce: worstDiff={}", maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: cast(FLOAT→HALF) → reduce_mean fused with larger FLOAT EW ops.
+     * Different dtype cast path (float→half, not int64→float).
+     */
+    @Test
+    public void testTritonMultiShapeCastHalfReduceMean() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 64);
+
+            SDVariable activated = sd.nn.relu("relu", x, 0);
+
+            // Matmul gap → cast(FLOAT→HALF) → reduce_mean → cast(HALF→FLOAT)
+            SDVariable w = sd.constant("w", Nd4j.eye(64).castTo(DataType.FLOAT));
+            SDVariable proj = sd.mmul("proj", activated, w);
+
+            // reduce_mean along axis 1 (64 elements → scalar)
+            SDVariable mean = proj.mean("mean", 1);
+            SDVariable castHalf = mean.castTo("castHalf", DataType.HALF);
+            SDVariable castBack = castHalf.castTo("castBack", DataType.FLOAT);
+
+            // castBack is [1] element, proj is [1,64] — multi-shape
+            SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 0.01f));
+            SDVariable meanScale = castBack.mul("meanScale", eps);
+            SDVariable output = proj.add("output", meanScale);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 64);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-2);
+            log.info("testTritonMultiShapeCastHalfReduceMean: worstDiff={}", maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: Multiple reductions with different sizes in the same kernel.
+     * Two separate reduce_mean chains with different input sizes, fused with EW ops.
+     */
+    @Test
+    public void testTritonMultiShapeMultipleReductions() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 64);
+
+            SDVariable activated = sd.nn.relu("relu", x, 0);
+
+            // Gap ops
+            SDVariable w1 = sd.constant("w1", Nd4j.eye(64).castTo(DataType.FLOAT));
+            SDVariable proj1 = sd.mmul("proj1", activated, w1);
+
+            // Chain 1: shape_of → cast → reduce_mean (2-element input)
+            SDVariable shape1 = sd.shape("shape1", proj1);
+            SDVariable cast1 = shape1.castTo("cast1", DataType.FLOAT);
+            SDVariable mean1 = cast1.mean("mean1");
+
+            // Chain 2: reduce_mean on proj1 along axis 1 (64-element input)
+            SDVariable mean2 = proj1.mean("mean2", 1);
+
+            // Combine both means with the main stream
+            SDVariable eps1 = sd.constant("eps1", Nd4j.scalar(DataType.FLOAT, 0.001f));
+            SDVariable eps2 = sd.constant("eps2", Nd4j.scalar(DataType.FLOAT, 0.01f));
+            SDVariable scale1 = mean1.mul("scale1", eps1);
+            SDVariable scale2 = mean2.mul("scale2", eps2);
+            SDVariable combined = proj1.add("add1", scale1);
+            SDVariable output = combined.add("output", scale2);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 64);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            log.info("testTritonMultiShapeMultipleReductions: worstDiff={}", maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: Stacked layers with shape_of → cast → reduce_mean, each layer's reduction
+     * output feeding into the next layer. Tests accumulation of errors across layers.
+     */
+    @Test
+    public void testTritonMultiShapeStackedLayers() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            int numLayers = 8;
+            int hiddenDim = 32;
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, hiddenDim);
+
+            SDVariable current = x;
+            for (int i = 0; i < numLayers; i++) {
+                String p = "L" + i + "_";
+                // EW
+                current = sd.nn.relu(p + "relu", current, 0);
+                // Matmul gap
+                double scale = Math.sqrt(2.0 / hiddenDim);
+                SDVariable w = sd.constant(p + "w", Nd4j.randn(DataType.FLOAT, hiddenDim, hiddenDim).mul(scale));
+                SDVariable proj = sd.mmul(p + "proj", current, w);
+                // shape_of → cast → reduce_mean
+                SDVariable shape = sd.shape(p + "shape", proj);
+                SDVariable cast = shape.castTo(p + "cast", DataType.FLOAT);
+                SDVariable mean = cast.mean(p + "mean");
+                SDVariable eps = sd.constant(p + "eps", Nd4j.scalar(DataType.FLOAT, 0.0001f));
+                SDVariable shapeScale = mean.mul(p + "scale", eps);
+                // Residual
+                current = proj.add(p + "residual", current);
+                current = current.add(p + "inject", shapeScale);
+                current = sd.math.tanh(p + "act", current);
+            }
+
+            SDVariable outW = sd.constant("outW", Nd4j.eye(hiddenDim).castTo(DataType.FLOAT));
+            SDVariable output = sd.mmul("output", current, outW);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, hiddenDim);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            log.info("testTritonMultiShapeStackedLayers: {} layers, worstDiff={}", numLayers, maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Test: reduce_prod on a small buffer fused with larger EW ops.
+     * Verifies product reduction identity (1.0) and per-buffer masks.
+     */
+    @Test
+    public void testTritonMultiShapeReduceProdSmallBuffer() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) { log.info("Skipping (Triton not available)"); return; }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCompileAll = env.tritonCompileAll();
+        env.setTritonCompileAll(true);
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 64);
+
+            SDVariable activated = sd.nn.relu("relu", x, 0);
+
+            SDVariable w = sd.constant("w", Nd4j.eye(64).castTo(DataType.FLOAT));
+            SDVariable proj = sd.mmul("proj", activated, w);
+            SDVariable shape = sd.shape("shape", proj);
+            SDVariable castFloat = shape.castTo("cast", DataType.FLOAT);
+            SDVariable shapeProd = sd.prod("shape_prod", castFloat);
+
+            SDVariable eps = sd.constant("eps", Nd4j.scalar(DataType.FLOAT, 1e-6f));
+            SDVariable shapeScale = shapeProd.mul("shape_scale", eps);
+            SDVariable output = proj.add("output", shapeScale);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, 1, 64);
+            double maxDiff = runTritonCompileAllAndCompare(sd, "output", Map.of("x", input), 5, 1e-3);
+            log.info("testTritonMultiShapeReduceProdSmallBuffer: worstDiff={}", maxDiff);
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+        }
+    }
+
+    /**
+     * Original VLM-like multi-layer test with shape_of → cast → reduce_mean chain.
+     */
+    @Test
+    public void testTritonGraphCaptureVlmLikeMultiLayer() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        if (!nativeOps.isTritonAvailable()) {
+            log.info("Skipping (Triton not available)");
+            return;
+        }
+
+        var env = Nd4j.getEnvironment();
+        boolean prevCapture = env.tritonGraphCapture();
+        boolean prevFallbackCapture = env.tritonAllowFallbackCapture();
+        boolean prevCompileAll = env.tritonCompileAll();
+        int prevCaptureMinExec = env.tritonCaptureMinExec();
+
+        env.setTritonGraphCapture(true);
+        env.setTritonAllowFallbackCapture(true);
+        env.setTritonCompileAll(true);
+        env.setTritonCaptureMinExec(1);
+
+        try {
+            nativeOps.invalidateTritonCache();
+            nativeOps.resetTritonCounters();
+
+            int numLayers = 12;  // Restore to meaningful depth
+            int hiddenDim = 64;
+            int batchSize = 1;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable x = sd.placeHolder("x", DataType.FLOAT, batchSize, hiddenDim);
+
+            SDVariable current = x;
+            for (int layer = 0; layer < numLayers; layer++) {
+                String prefix = "L" + layer + "_";
+
+                // Layer norm weights (EW - Triton compiled)
+                SDVariable gamma = sd.constant(prefix + "gamma", Nd4j.ones(DataType.FLOAT, 1, hiddenDim));
+                SDVariable beta = sd.constant(prefix + "beta", Nd4j.zeros(DataType.FLOAT, 1, hiddenDim));
+
+                // EW block: simulated layer norm (mul + add)
+                SDVariable normed = current.mul(prefix + "norm_mul", gamma);
+                normed = normed.add(prefix + "norm_add", beta);
+                normed = sd.nn.relu(prefix + "norm_relu", normed, 0);
+
+                // Matmul projection (gap - not Triton compiled)
+                // Use Xavier initialization to prevent vanishing gradients
+                double scale = Math.sqrt(2.0 / hiddenDim);
+                SDVariable projW = sd.constant(prefix + "projW",
+                        Nd4j.randn(DataType.FLOAT, hiddenDim, hiddenDim).mul(scale));
+                SDVariable projected = sd.mmul(prefix + "proj", normed, projW);
+
+                // shape_of → cast(INT64→FLOAT) → reduce_mean → multiply chain
+                // This chain is the source of precision divergence when Triton compiles
+                // the cast+reduce_mean ops with shape_of as a gap op
+                SDVariable shape = sd.shape(prefix + "shape", projected);
+                SDVariable castFloat = shape.castTo(prefix + "cast", DataType.FLOAT);
+                SDVariable shapeMean = castFloat.mean(prefix + "shape_mean");
+                SDVariable shapeEpsilon = sd.constant(prefix + "shapeEps",
+                        Nd4j.scalar(DataType.FLOAT, 0.0001f));
+                SDVariable shapeScale = shapeMean.mul(prefix + "shape_scale_mul", shapeEpsilon);
+
+                // EW residual block (Triton compiled)
+                SDVariable residual = projected.add(prefix + "residual", current);
+                residual = residual.add(prefix + "shape_inject", shapeScale);
+                residual = sd.math.tanh(prefix + "act", residual);
+
+                // FFN matmul (gap)
+                SDVariable ffnW = sd.constant(prefix + "ffnW",
+                        Nd4j.randn(DataType.FLOAT, hiddenDim, hiddenDim).mul(scale));
+                SDVariable ffn = sd.mmul(prefix + "ffn", residual, ffnW);
+
+                // FFN activation (EW - Triton compiled)
+                SDVariable ffnBias = sd.constant(prefix + "ffnBias",
+                        Nd4j.zeros(DataType.FLOAT, 1, hiddenDim));
+                current = ffn.add(prefix + "ffn_add", ffnBias);
+                current = sd.nn.relu(prefix + "ffn_relu", current, 0);
+            }
+
+            // Final output
+            double outScale = Math.sqrt(2.0 / hiddenDim);
+            SDVariable outputW = sd.constant("outW",
+                    Nd4j.randn(DataType.FLOAT, hiddenDim, hiddenDim).mul(outScale));
+            SDVariable outBias = sd.constant("outBias", Nd4j.zeros(DataType.FLOAT, 1, hiddenDim));
+            SDVariable output = sd.mmul("out_proj", current, outputW);
+            output = output.add("output", outBias);
+
+            INDArray input = Nd4j.randn(DataType.FLOAT, batchSize, hiddenDim);
+            Map<String, INDArray> ph = Map.of("x", input);
+
+            // Reference output (slot-by-slot)
+            Map<String, INDArray> ref = sd.output(ph, "output");
+            INDArray refOutput = ref.get("output");
+            assertNotNull(refOutput, "Reference output is null");
+            log.info("testTritonGraphCaptureVlmLikeMultiLayer: ref argmax={} first4=[{},{},{},{}]",
+                    Nd4j.argMax(refOutput.reshape(1, -1), 1).getInt(0),
+                    refOutput.getDouble(0), refOutput.getDouble(1),
+                    refOutput.getDouble(2), refOutput.getDouble(3));
+
+            // Compile plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "output");
+            assertNotNull(plan, "Plan is null");
+            Pointer planHandle = compileNativePlan(plan);
+            assertNotNull(planHandle, "Plan handle is null");
+
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                int totalIters = 10;
+                int failedIters = 0;
+                StringBuilder failures = new StringBuilder();
+
+                for (int iter = 0; iter < totalIters; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("output");
+                    assertNotNull(nativeOutput, "Null output at iter " + iter);
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    boolean isZero = nativeOutput.amaxNumber().doubleValue() == 0.0;
+                    int argmax = Nd4j.argMax(nativeOutput.reshape(1, -1), 1).getInt(0);
+
+                    log.info("testTritonGraphCaptureVlmLikeMultiLayer iter {}: maxDiff={} isZero={} argmax={} " +
+                            "first4=[{},{},{},{}]", iter, maxDiff, isZero, argmax,
+                            nativeOutput.getDouble(0), nativeOutput.getDouble(1),
+                            nativeOutput.getDouble(2), nativeOutput.getDouble(3));
+
+                    if (isZero) {
+                        String msg = String.format("iter %d: ALL ZERO output (replay bug)", iter);
+                        log.error("FAIL: {}", msg);
+                        failures.append(msg).append("\n");
+                        failedIters++;
+                    } else if (maxDiff >= 0.01) {
+                        String msg = String.format("iter %d: maxDiff=%.6f", iter, maxDiff);
+                        log.error("FAIL: {}", msg);
+                        failures.append(msg).append("\n");
+                        failedIters++;
+                    }
+
+                    // Freeze shapes after first iteration (like VLM decode)
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("testTritonGraphCaptureVlmLikeMultiLayer: {} layers, {} iters, tritonLaunches={}, failures={}",
+                        numLayers, totalIters, tritonLaunches, failedIters);
+
+                if (failedIters > 0) {
+                    fail("VLM-like multi-layer graph capture/replay produced wrong output:\n" + failures);
+                }
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonGraphCapture(prevCapture);
+            env.setTritonAllowFallbackCapture(prevFallbackCapture);
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonCaptureMinExec(prevCaptureMinExec);
         }
     }
 }

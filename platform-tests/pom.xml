@@ -1614,7 +1614,7 @@
                     <excludedGroups>${excludedTests}</excludedGroups>
                     <trimStackTrace>false</trimStackTrace>
                     <reuseForks>false</reuseForks>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <redirectTestOutputToFile>false</redirectTestOutputToFile>
                     <trimStackTrace>false</trimStackTrace>
                     <testFailureIgnore>false</testFailureIgnore>
                     <properties>
@@ -1633,6 +1633,16 @@
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
+                        <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
+                        <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
+                        <ND4J_TRITON_VERIFY_KERNELS>${nd4j.triton.verifyKernels}</ND4J_TRITON_VERIFY_KERNELS>
+                        <ND4J_TRITON_FORCE_RECAPTURE>${nd4j.triton.forceRecapture}</ND4J_TRITON_FORCE_RECAPTURE>
+                        <ND4J_TRITON_CAPTURE_MIN_EXEC>${nd4j.triton.captureMinExec}</ND4J_TRITON_CAPTURE_MIN_EXEC>
+                        <ND4J_TRITON_GRAPH_CAPTURE>${nd4j.triton.graphCapture}</ND4J_TRITON_GRAPH_CAPTURE>
+                        <ND4J_TRITON_SKIP_KERNELS>${nd4j.triton.skipKernels}</ND4J_TRITON_SKIP_KERNELS>
+                        <ND4J_TRITON_GRAPH_REINSTANTIATE>${nd4j.triton.graphReinstantiate}</ND4J_TRITON_GRAPH_REINSTANTIATE>
+                        <ND4J_DSP_BATCHED_GEMM>${nd4j.dsp.batchedGemm}</ND4J_DSP_BATCHED_GEMM>
+                        <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->
@@ -1648,8 +1658,7 @@
                         <vlm.test.pdf.maxPages>${vlm.test.pdf.maxPages}</vlm.test.pdf.maxPages>
                         <vlm.test.pdf.dpi>${vlm.test.pdf.dpi}</vlm.test.pdf.dpi>
                         <vlm.test.maxTiles>${vlm.test.maxTiles}</vlm.test.maxTiles>
-                        <!-- VLM optimizer and decode configuration -->
-                        <vlm.test.maxTokens>${vlm.test.maxTokens}</vlm.test.maxTokens>
+                        <!-- VLM optimizer and cache configuration -->
                         <vlm.model.cache.disable>${vlm.model.cache.disable}</vlm.model.cache.disable>
                         <nd4j.optimizer.enabled>${nd4j.optimizer.enabled}</nd4j.optimizer.enabled>
                     </systemPropertyVariables>

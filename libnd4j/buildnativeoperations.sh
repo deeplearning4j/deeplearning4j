@@ -631,6 +631,12 @@ MLIR_VERSION="${MLIR_VERSION:-18}"
 MLIR_GPU="${MLIR_GPU:-OFF}"
 TRITON="${TRITON:-OFF}"
 
+# Dependency cache - persists built dependencies across 'mvn clean'
+DEP_CACHE="${DEP_CACHE:-ON}"
+DEP_CACHE_DIR="${DEP_CACHE_DIR:-}"
+DEP_CACHE_CLEAR="${DEP_CACHE_CLEAR:-OFF}"
+DEP_CACHE_CLEAR_DEP="${DEP_CACHE_CLEAR_DEP:-}"
+
 # Unity build - combines source files for faster compilation
 UNITY_BUILD="${UNITY_BUILD:-OFF}"
 
@@ -1481,6 +1487,22 @@ do
                     exit 1
                     ;;
             esac
+            shift # past argument
+            ;;
+        --dep-cache)
+            DEP_CACHE="$value"
+            shift # past argument
+            ;;
+        --dep-cache-dir)
+            DEP_CACHE_DIR="$value"
+            shift # past argument
+            ;;
+        --dep-cache-clear)
+            DEP_CACHE_CLEAR="$value"
+            shift # past argument
+            ;;
+        --dep-cache-clear-dep)
+            DEP_CACHE_CLEAR_DEP="$value"
             shift # past argument
             ;;
         -o|-platform|--platform)
@@ -2564,6 +2586,16 @@ fi
 TRITON_CMAKE="-DSD_TRITON=${TRITON}"
 UNITY_BUILD_CMAKE="-DSD_UNITY_BUILD=${UNITY_BUILD}"
 
+# Dependency cache CMake arguments
+DEP_CACHE_CMAKE="-DSD_DEP_CACHE=${DEP_CACHE}"
+if [ -n "$DEP_CACHE_DIR" ]; then
+    DEP_CACHE_CMAKE="${DEP_CACHE_CMAKE} -DSD_DEP_CACHE_DIR=${DEP_CACHE_DIR}"
+fi
+DEP_CACHE_CMAKE="${DEP_CACHE_CMAKE} -DSD_DEP_CACHE_CLEAR=${DEP_CACHE_CLEAR}"
+if [ -n "$DEP_CACHE_CLEAR_DEP" ]; then
+    DEP_CACHE_CMAKE="${DEP_CACHE_CMAKE} -DSD_DEP_CACHE_CLEAR_DEP=${DEP_CACHE_CLEAR_DEP}"
+fi
+
 echo PACKAGING           = "${PACKAGING}"
 echo BUILD               = "${BUILD}"
 echo CHIP                = "${CHIP}"
@@ -2653,6 +2685,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
             $KERNEL_CMAKE \
+            $DEP_CACHE_CMAKE \
             $MLIR_ARG \
             $TRITON_CMAKE \
         $UNITY_BUILD_CMAKE \
@@ -2687,6 +2720,7 @@ if [ "$PREPROCESS" == "ON" ]; then
             -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
             $HELPERS_CMAKE \
             $KERNEL_CMAKE \
+            $DEP_CACHE_CMAKE \
             $MLIR_ARG \
             $TRITON_CMAKE \
         $UNITY_BUILD_CMAKE \
@@ -2755,6 +2789,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
         $KERNEL_CMAKE \
+        $DEP_CACHE_CMAKE \
         $MLIR_ARG \
         $TRITON_CMAKE \
         $UNITY_BUILD_CMAKE \
@@ -2796,6 +2831,7 @@ else
         -DSD_CUDA_SPLIT_COMPILE="${CUDA_SPLIT_COMPILE}" \
         $HELPERS_CMAKE \
         $KERNEL_CMAKE \
+        $DEP_CACHE_CMAKE \
         $MLIR_ARG \
         $TRITON_CMAKE \
         $UNITY_BUILD_CMAKE \

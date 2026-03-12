@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Loader;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.device.CudaDeviceDescriptor;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -184,6 +185,9 @@ public class JCublasBackend extends Nd4jBackend {
             Properties props = Nd4j.getExecutioner().getEnvironmentInformation();
             List<Map<String, Object>> devicesList = (List<Map<String, Object>>) props.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
 
+            // Determine which GPU should be the default (largest total memory)
+            int bestGpu = DeviceMemoryManager.getInstance().selectBestGpu();
+
             for (int i = 0; i < nGPUs; i++) {
                 Map<String, Object> dev = devicesList.get(i);
                 String name = (String) dev.get(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY);
@@ -208,7 +212,7 @@ public class JCublasBackend extends Nd4jBackend {
                         getBackendId(),
                         i,
                         name,
-                        i == 0,  // First device is default
+                        i == bestGpu,  // GPU with most total memory is default
                         major,
                         minor,
                         smCount,

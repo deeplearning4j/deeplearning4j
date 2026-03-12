@@ -440,6 +440,7 @@ SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext *ptr, double *argumen
 SD_LIB_EXPORT void setGraphContextIArguments(OpaqueContext *ptr, sd::LongType *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextBArguments(OpaqueContext *ptr, bool *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) ;
+SD_LIB_EXPORT void setGraphContextSArgument(OpaqueContext *ptr, const char *argument, int index) ;
 SD_LIB_EXPORT void deleteGraphContext(OpaqueContext *ptr) ;
 SD_LIB_EXPORT sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator* ptr) ;
 SD_LIB_EXPORT sd::LongType getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr) ;
@@ -1751,6 +1752,180 @@ SD_LIB_EXPORT void printPlanCapturedGraphDebug(sd::Pointer planHandle);
  */
 SD_LIB_EXPORT const char* getPlanCaptureStats(sd::Pointer planHandle);
 
+// =============================================================================
+// Per-Segment Replay State
+// =============================================================================
+
+/**
+ * Get replay state for a specific segment.
+ * @return ReplayState as int: 0=EMPTY, 1=CAPTURING, 2=CAPTURED, 3=READY, 4=ERROR, -1=no handle
+ */
+SD_LIB_EXPORT int getPlanSegmentReplayState(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get replay count for a specific segment (number of graph replays).
+ */
+SD_LIB_EXPORT int getPlanSegmentReplayCount(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get backend name for a specific segment ("CUDA", "CPU", or "").
+ */
+SD_LIB_EXPORT const char* getPlanSegmentBackendName(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get statistics JSON for a specific segment.
+ * Returns: {"numOperations":N,"replayCount":N,"backendName":"..."}
+ */
+SD_LIB_EXPORT const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get total execution count for a specific segment.
+ */
+SD_LIB_EXPORT int getPlanSegmentExecutionCount(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Check if segment is eligible for capture.
+ */
+SD_LIB_EXPORT bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Check if capture permanently failed for a segment.
+ */
+SD_LIB_EXPORT bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx);
+
+// =============================================================================
+// Per-Segment Pointer Tracking
+// =============================================================================
+
+/**
+ * Get tracked external input pointer addresses for a segment as JSON.
+ * Returns: [{"inputIdx":0,"capturedAddr":"0x...","currentAddr":"0x...","match":true}, ...]
+ */
+SD_LIB_EXPORT const char* getPlanSegmentTrackedPointers(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get number of capture buffers for a segment.
+ */
+SD_LIB_EXPORT int getPlanSegmentNumCaptureBuffers(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get capture buffer descriptors as JSON for a segment.
+ */
+SD_LIB_EXPORT const char* getPlanSegmentCaptureBuffersJson(sd::Pointer planHandle, int segmentIdx);
+
+/**
+ * Get number of pinned host pointers held by segment's replay handle.
+ */
+SD_LIB_EXPORT int getPlanSegmentNumHostPointers(sd::Pointer planHandle, int segmentIdx);
+
+// =============================================================================
+// Replay Cache Management
+// =============================================================================
+
+/**
+ * Check if replay cache is enabled.
+ */
+SD_LIB_EXPORT bool isReplayCacheEnabled();
+
+/**
+ * Get number of replay cache hits.
+ */
+SD_LIB_EXPORT int getReplayCacheHits();
+
+/**
+ * Get number of replay cache misses.
+ */
+SD_LIB_EXPORT int getReplayCacheMisses();
+
+/**
+ * Clear all replay cache entries.
+ */
+SD_LIB_EXPORT void clearReplayCache();
+
+/**
+ * Get replay cache directory path.
+ */
+SD_LIB_EXPORT const char* getReplayCacheDir();
+
+/**
+ * Get per-device replay cache statistics as JSON.
+ */
+SD_LIB_EXPORT const char* getReplayCacheDeviceStatsJson();
+
+/**
+ * Get replay cache entry count for a specific device.
+ */
+SD_LIB_EXPORT int getReplayCacheDeviceEntryCount(int deviceType, int deviceIndex);
+
+/**
+ * Clear replay cache for a specific device.
+ */
+SD_LIB_EXPORT void clearReplayCacheForDevice(int deviceType, int deviceIndex);
+
+/**
+ * Migrate replay cache between compatible devices.
+ */
+SD_LIB_EXPORT bool migrateReplayCache(int fromType, int fromIdx, int toType, int toIdx);
+
+/**
+ * Prune stale device cache entries.
+ */
+SD_LIB_EXPORT int pruneStaleReplayCacheDevices();
+
+/**
+ * Load replay cache for a specific device into a plan.
+ */
+SD_LIB_EXPORT int loadReplayCacheForDevice(sd::Pointer planHandle, int deviceType, int deviceIndex);
+
+/**
+ * Get all cached device keys as JSON.
+ */
+SD_LIB_EXPORT const char* getReplayCachedDevicesJson();
+
+// =============================================================================
+// Backend Plan Management
+// =============================================================================
+
+/**
+ * Get available backends as JSON array.
+ */
+SD_LIB_EXPORT const char* getPlanAvailableBackends(sd::Pointer planHandle);
+
+/**
+ * Get which backend compiled a specific segment.
+ */
+SD_LIB_EXPORT const char* getPlanSegmentCompiledBackend(sd::Pointer planHandle, int segIdx);
+
+/**
+ * Get compilation audit JSON for a segment.
+ */
+SD_LIB_EXPORT const char* getPlanSegmentCompilationAudit(sd::Pointer planHandle, int segIdx);
+
+/**
+ * Invalidate compiled cache for a specific segment.
+ */
+SD_LIB_EXPORT void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx);
+
+/**
+ * Invalidate all caches for a specific backend type.
+ */
+SD_LIB_EXPORT void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName);
+
+/**
+ * Get aggregated cache stats JSON for all backends.
+ */
+SD_LIB_EXPORT const char* getPlanBackendCacheStats(sd::Pointer planHandle);
+
+/**
+ * Override backend selection for a segment.
+ */
+SD_LIB_EXPORT void setPlanSegmentBackendOverride(sd::Pointer planHandle, int segIdx, const char* backendName);
+
+/**
+ * Set backend priority order (comma-separated names).
+ */
+SD_LIB_EXPORT void setPlanBackendPriority(sd::Pointer planHandle, const char* priorityList);
+
 /**
  * Export the CUDA graph visualization to Chrome trace format.
  * The output JSON file can be loaded in chrome://tracing for detailed timeline analysis.
@@ -1836,6 +2011,84 @@ SD_LIB_EXPORT void invalidateTritonCache();
  * Used by tests to free GPU memory between test methods.
  */
 SD_LIB_EXPORT void invalidateTritonCache();
+
+/**
+ * Export the Triton kernel disk cache to a shareable .tkcache bundle (STORED ZIP).
+ * Returns the number of kernels exported, or negative on error.
+ */
+SD_LIB_EXPORT int exportTritonCacheBundle(const char* outputPath);
+
+/**
+ * Import a .tkcache bundle into the Triton override directory.
+ * Kernels from bundles take priority over on-disk cache.
+ * @param validateArch  If true, reject bundles compiled for incompatible GPU architectures.
+ * @return Number of kernels imported, -1 on error, -2 on architecture mismatch.
+ */
+SD_LIB_EXPORT int importTritonCacheBundle(const char* bundlePath, bool validateArch);
+
+/**
+ * Read and return the manifest JSON from a .tkcache bundle without importing.
+ * Returns a JSON string (thread-local buffer, valid until next call).
+ */
+SD_LIB_EXPORT const char* inspectTritonCacheBundle(const char* bundlePath);
+
+// =============================================================================
+// DSP Diagnostics
+// =============================================================================
+
+/**
+ * Set DSP diagnostic categories (replaces existing mask).
+ * Categories are bitfield values from DspDiagCategory enum.
+ */
+SD_LIB_EXPORT void dspDiagSetCategories(int mask);
+
+/**
+ * Enable additional DSP diagnostic categories (OR into existing mask).
+ */
+SD_LIB_EXPORT void dspDiagEnableCategories(int mask);
+
+/**
+ * Disable specific DSP diagnostic categories (AND-NOT from existing mask).
+ */
+SD_LIB_EXPORT void dspDiagDisableCategories(int mask);
+
+/**
+ * Get the currently enabled DSP diagnostic category bitmask.
+ */
+SD_LIB_EXPORT int dspDiagGetEnabledMask();
+
+/**
+ * Set DSP diagnostic output level.
+ * @param level  0=SUMMARY (stats only), 1=DETAILED (per-step), 2=FULL (echo all to stdout)
+ */
+SD_LIB_EXPORT void dspDiagSetLevel(int level);
+
+/**
+ * Set DSP diagnostic JSON output file path.
+ */
+SD_LIB_EXPORT void dspDiagSetJsonPath(const char* path);
+
+/**
+ * Record a diagnostic event from Java.
+ */
+SD_LIB_EXPORT void dspDiagRecordJavaEvent(int category, int slotId, int segmentId,
+                                            const char* opName, sd::LongType timingUs,
+                                            const char* message);
+
+/**
+ * Get human-readable plan execution report.
+ */
+SD_LIB_EXPORT const char* dspDiagGetPlanReport();
+
+/**
+ * Get JSON-formatted diagnostic report.
+ */
+SD_LIB_EXPORT const char* dspDiagGetJsonReport();
+
+/**
+ * Clear all diagnostic state (ring buffer, stats, snapshots).
+ */
+SD_LIB_EXPORT void dspDiagClear();
 
 // =============================================================================
 // NCCL Collective Communication Operations

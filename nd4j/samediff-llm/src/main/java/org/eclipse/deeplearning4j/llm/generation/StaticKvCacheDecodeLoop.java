@@ -243,7 +243,7 @@ public class StaticKvCacheDecodeLoop {
             // it destroys the DSP's internal output slot cache → fallback to Java path.
 
             // Diagnostic: top logit values at steps 0-3
-            if (step <= 3) {
+            if (step == 0) {
                 logLogitsDiagnostics(step, logitsRaw);
             }
 
@@ -526,7 +526,9 @@ public class StaticKvCacheDecodeLoop {
             // Close previous embeddings — but NOT if it's the same object as
             // currentEmbeddings (reusableEmbeddings is updated in-place via assign(),
             // so prevEmbeddings == currentEmbeddings == reusableEmbeddings).
+            // Also skip the original prefillEmbeddings — it's externally owned by the caller.
             if (prevEmbeddings != null && prevEmbeddings != currentEmbeddings
+                    && prevEmbeddings != prefillEmbeddings
                     && !prevEmbeddings.wasClosed()) {
                 prevEmbeddings.setCloseable(true);
                 prevEmbeddings.close();

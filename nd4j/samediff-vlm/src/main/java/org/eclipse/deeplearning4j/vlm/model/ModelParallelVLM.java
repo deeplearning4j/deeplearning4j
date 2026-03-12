@@ -471,6 +471,69 @@ public class ModelParallelVLM implements AutoCloseable {
     }
 
     /**
+     * Generate one output per page for a multi-page document.
+     *
+     * @param pageFiles page images in order
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @param temperature sampling temperature
+     * @param doSample whether to sample
+     * @return generated text per page (same order as input)
+     * @throws IOException if loading fails
+     */
+    public List<String> generatePages(List<File> pageFiles, String prompt, int maxNewTokens,
+                                      double temperature, boolean doSample) throws IOException {
+        checkNotClosed();
+        List<String> outputs = new ArrayList<>(pageFiles.size());
+        for (File pageFile : pageFiles) {
+            outputs.add(generate(pageFile, prompt, maxNewTokens, temperature, doSample));
+        }
+        return outputs;
+    }
+
+    /**
+     * Generate one output per page for a multi-page document (greedy defaults).
+     *
+     * @param pageFiles page images in order
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @return generated text per page (same order as input)
+     * @throws IOException if loading fails
+     */
+    public List<String> generatePages(List<File> pageFiles, String prompt, int maxNewTokens) throws IOException {
+        return generatePages(pageFiles, prompt, maxNewTokens, 1.0, true);
+    }
+
+    /**
+     * Generate a single combined document output from page images.
+     *
+     * @param pageFiles page images in order
+     * @param prompt prompt applied to each page
+     * @param maxNewTokens max tokens per page
+     * @param temperature sampling temperature
+     * @param doSample whether to sample
+     * @param pageDelimiter delimiter inserted between page outputs
+     * @return combined document output
+     * @throws IOException if loading fails
+     */
+    public String generateDocument(List<File> pageFiles, String prompt, int maxNewTokens,
+                                   double temperature, boolean doSample, String pageDelimiter) throws IOException {
+        List<String> pageOutputs = generatePages(pageFiles, prompt, maxNewTokens, temperature, doSample);
+        String delimiter = pageDelimiter == null ? "" : pageDelimiter;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < pageOutputs.size(); i++) {
+            if (i > 0) {
+                sb.append(delimiter);
+            }
+            String text = pageOutputs.get(i);
+            if (text != null) {
+                sb.append(text);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
      * Prefetch an image to the vision encoder device.
      *
      * @param imageFile the image to prefetch

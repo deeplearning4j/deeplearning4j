@@ -287,6 +287,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
     int metaNumWarps = compileNumWarps;
     int metaSharedMem = 0;
+    bool metaSharedMemPresent = false;
     int metaGlobalScratchBytes = 0;
     int metaGlobalScratchAlignment = 128;
     std::string metaKernelName;
@@ -303,6 +304,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
           parseIntValue(value, metaNumWarps);
         } else if (key == "sharedMemBytes") {
           parseIntValue(value, metaSharedMem);
+          metaSharedMemPresent = true;
         } else if (key == "globalScratchBytes") {
           parseIntValue(value, metaGlobalScratchBytes);
         } else if (key == "globalScratchAlignment") {
@@ -317,9 +319,12 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       return false;
     }
 
-    if (metaSharedMem == 0 && ptxUsesExternSharedMemory(ptxText)) {
+    // Only reject entries where sharedMemBytes metadata was missing entirely
+    // (pre-metadata era). sharedMemBytes=0 is valid for element-wise kernels
+    // that declare extern .shared (Triton convention) but don't use it.
+    if (!metaSharedMemPresent && metaSharedMem == 0 && ptxUsesExternSharedMemory(ptxText)) {
       DSP_DIAG(JIT, "TritonGraphBackend: %s entry for [%d-%d] is stale "
-             "(extern shared PTX with sharedMemBytes=0); ignoring",
+             "(extern shared PTX with no sharedMemBytes metadata); ignoring",
              sourceLabel, startSlot, endSlot);
       return false;
     }

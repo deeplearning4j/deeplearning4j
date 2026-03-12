@@ -137,16 +137,23 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
-  // Handle -1 and 0 in shape specification
-  // ONNX semantics: 0 means "copy dimension from input at same position"
+  // Handle -1 and 0 in shape specification.
+  // ND4J reshape treats 0 as a literal zero dimension, not "copy from input".
   sd::LongType negativeOneCount = 0;
   sd::LongType negativeOneIndex = -1;
   sd::LongType totalElements = shape::length(inShape);
   sd::LongType knownDimProduct = 1;
   sd::LongType inputRank = shape::rank(inShape);
+  sd::LongType inputNonZeroProduct = 1;
 
-  // Count -1s and calculate product of known dimensions
-  // Handle 0 = copy from input (ONNX semantics)
+  for (sd::LongType i = 0; i < inputRank; i++) {
+    const auto inputDim = shape::shapeOf(inShape)[i];
+    if (inputDim > 0) {
+      inputNonZeroProduct *= inputDim;
+    }
+  }
+
+  // Count -1s and calculate product of known non-zero dimensions.
   bool hasZeroDim = false;
   for (size_t i = 0; i < newShape.size(); i++) {
     if (newShape[i] == -1) {
@@ -161,20 +168,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       errorMessage += std::to_string(newShape.size());
       THROW_EXCEPTION(errorMessage.c_str());
     } else if (newShape[i] == 0) {
-      // ONNX semantics: 0 means "copy dimension from input at same position"
-      if (i < static_cast<size_t>(inputRank)) {
-        sd::LongType inputDim = shape::shapeOf(inShape)[i];
-        newShape[i] = inputDim;
-        if (inputDim == 0) {
-          hasZeroDim = true;
-        } else {
-          knownDimProduct *= inputDim;
-        }
-      } else {
-        // Position beyond input rank - treat as 1 (padding case)
-        newShape[i] = 1;
-        knownDimProduct *= 1;
-      }
+      hasZeroDim = true;
     } else {
       knownDimProduct *= newShape[i];
     }
@@ -187,9 +181,17 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   // Calculate the -1 dimension if present
   if (negativeOneCount == 1) {
-    if (hasZeroDim || totalElements == 0) {
-      // For empty arrays, set -1 dimension to 0 or 1 depending on context
-      newShape[negativeOneIndex] = (totalElements == 0) ? 0 : 1;
+    if (hasZeroDim) {
+      if (knownDimProduct == 0 || inputNonZeroProduct % knownDimProduct != 0) {
+        std::string errorMessage = "Cannot reshape array with non-zero input dimensions product ";
+        errorMessage += std::to_string(inputNonZeroProduct);
+        errorMessage += " into shape with known non-zero dimensions product ";
+        errorMessage += std::to_string(knownDimProduct);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+      newShape[negativeOneIndex] = inputNonZeroProduct / knownDimProduct;
+    } else if (totalElements == 0) {
+      newShape[negativeOneIndex] = 0;
     } else if (totalElements % knownDimProduct != 0) {
       std::string errorMessage = "Cannot reshape array of size ";
       errorMessage += std::to_string(totalElements);
@@ -225,6 +227,11 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
+  if (shape::isEmptyConst(inShape) || hasZeroDim) {
+    auto emptyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, newShape);
+    return SHAPELIST(CONSTANT(emptyShape));
+  }
+
   sd::LongType len = shape::shapeInfoLength(newShape.size());
   // Zero-initialize to prevent uninitialized memory errors in DirectShapeTrie comparisons
   sd::LongType *newShapeInfo = new sd::LongType[len + SD_SHAPE_ALLOC_PADDING]();  // value-initialized to zero
@@ -247,33 +254,22 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
-  // Handle empty output (either from empty input or zero dimension in shape)
-  if (shape::isEmptyConst(inShape) || hasZeroDim) {
-    newShapeInfo[0] = newShape.size();
-    shape::setShape(newShapeInfo, newShape.data());
-    // If reshape is not possible without allocation, fall back to regular reshape
+  bool reshapeNoAllocSuccess = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
+  if (!reshapeNoAllocSuccess || shape::order(inShape) != order) {
+    //we need new strides if we can't handle the copy
     shape::updateStrides(newShapeInfo, order, true);
     ArrayOptions::resetFlags(newShapeInfo);
     ArrayOptions::setDataType(newShapeInfo, dtype);
-    ArrayOptions::toggleIsEmpty(newShapeInfo);
+    //ensure we trigger a proper data copy
+    ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
   } else {
-    bool reshapeNoAllocSuccess = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
-    if (!reshapeNoAllocSuccess || shape::order(inShape) != order) {
-      //we need new strides if we can't handle the copy
-      shape::updateStrides(newShapeInfo, order, true);
-      ArrayOptions::resetFlags(newShapeInfo);
-      ArrayOptions::setDataType(newShapeInfo, dtype);
-      //ensure we trigger a proper data copy
-      ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
-    } else {
-      //we set strides in the reshape alloc success already
-      newShapeInfo[0] = newShape.size();
-      shape::setShape(newShapeInfo, newShape.data());
-      ArrayOptions::resetFlags(newShapeInfo);
-      // we need this in order to preserve the offset of the original buffer when creating the output array
-      ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
-      ArrayOptions::setDataType(newShapeInfo, dtype);
-    }
+    //we set strides in the reshape alloc success already
+    newShapeInfo[0] = newShape.size();
+    shape::setShape(newShapeInfo, newShape.data());
+    ArrayOptions::resetFlags(newShapeInfo);
+    // we need this in order to preserve the offset of the original buffer when creating the output array
+    ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
+    ArrayOptions::setDataType(newShapeInfo, dtype);
   }
 
 

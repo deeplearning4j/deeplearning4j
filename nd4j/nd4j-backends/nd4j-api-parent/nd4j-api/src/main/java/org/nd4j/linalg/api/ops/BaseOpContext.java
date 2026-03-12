@@ -44,6 +44,7 @@ public abstract class BaseOpContext implements OpContext {
     protected List<Long> fastpath_i = new ArrayList<>();
 
     protected List<DataType> fastpath_d = new ArrayList<>();
+    protected List<String> fastpath_s = new ArrayList<>();
 
     @Setter()
     @Getter
@@ -59,6 +60,13 @@ public abstract class BaseOpContext implements OpContext {
         setDArguments(customOp.dArgs());
         setInputArrays(customOp.inputArguments());
         setOutputArrays(customOp.outputArguments());
+        if (customOp.numSArguments() > 0) {
+            String[] sArgs = new String[customOp.numSArguments()];
+            for (int i = 0; i < customOp.numSArguments(); i++) {
+                sArgs[i] = customOp.getSArgument(i);
+            }
+            setSArguments(sArgs);
+        }
     }
 
 
@@ -238,6 +246,28 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public void setSArguments(String... arguments) {
+        fastpath_s.clear();
+        for (val v : arguments)
+            fastpath_s.add(v);
+    }
+
+    @Override
+    public void setSArguments(List<String> arguments) {
+        setSArguments(arguments.toArray(new String[0]));
+    }
+
+    @Override
+    public List<String> getSArguments() {
+        return fastpath_s;
+    }
+
+    @Override
+    public int numSArguments() {
+        return fastpath_s.size();
+    }
+
+    @Override
     public void setInputArray(int index, @NonNull INDArray array) {
         fastpath_in.put(index, array);
     }
@@ -332,7 +362,7 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
-    public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
+    public void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs, String[] sArgs) {
         if (inputArrs != null) {
             setInputArrays(inputArrs);
         }
@@ -344,6 +374,8 @@ public abstract class BaseOpContext implements OpContext {
             setTArguments(tArgs);
         if (bArgs != null)
             setBArguments(bArgs);
+        if (sArgs != null)
+            setSArguments(sArgs);
     }
 
     @Override

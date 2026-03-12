@@ -267,8 +267,13 @@ public abstract class DifferentialFunction {
 
     protected Boolean getBooleanFromProperty(String propertyName,Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Boolean value = (Boolean) properties.get(propertyName);
-            return value;
+            Object value = properties.get(propertyName);
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            }
+            if (value instanceof Number) {
+                return ((Number) value).doubleValue() != 0.0;
+            }
         }
 
         return null;
@@ -308,8 +313,13 @@ public abstract class DifferentialFunction {
 
     protected Integer getIntValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Number value = (Number) properties.get(propertyName);
-            return value.intValue();
+            Object value = properties.get(propertyName);
+            if (value instanceof Number) {
+                return ((Number) value).intValue();
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 1 : 0;
+            }
         }
 
         return null;
@@ -318,8 +328,13 @@ public abstract class DifferentialFunction {
 
     protected Long getLongValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Number value = (Number) properties.get(propertyName);
-            return value.longValue();
+            Object value = properties.get(propertyName);
+            if (value instanceof Number) {
+                return ((Number) value).longValue();
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 1L : 0L;
+            }
         }
 
         return null;
@@ -327,8 +342,13 @@ public abstract class DifferentialFunction {
 
     protected Double getDoubleValueFromProperty(String propertyName, Map<String,Object> properties) {
         if(properties.containsKey(propertyName)) {
-            Number value = (Number) properties.get(propertyName);
-            return value.doubleValue();
+            Object value = properties.get(propertyName);
+            if (value instanceof Number) {
+                return ((Number) value).doubleValue();
+            }
+            if (value instanceof Boolean) {
+                return (Boolean) value ? 1.0 : 0.0;
+            }
         }
 
         return null;

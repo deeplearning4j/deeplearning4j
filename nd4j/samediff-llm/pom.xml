@@ -79,6 +79,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- GGML/GGUF model import support -->
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-ggml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -94,18 +101,5 @@
         </plugins>
     </build>
 
-    <profiles>
-        <!-- Profile for GGML/GGUF support -->
-        <profile>
-            <id>ggml</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.eclipse.deeplearning4j</groupId>
-                    <artifactId>nd4j-ggml</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 
 </project>

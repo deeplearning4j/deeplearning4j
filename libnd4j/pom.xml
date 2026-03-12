@@ -181,6 +181,14 @@
         <!-- This allows parallel builds of different backends without interference -->
         <libnd4j.clean.all>false</libnd4j.clean.all>
 
+        <!-- Dependency Cache Configuration -->
+        <!-- Persistent cache for ExternalProject_Add dependencies (FlatBuffers, OneDNN, Triton/LLVM) -->
+        <!-- so that 'mvn clean install' doesn't re-download and rebuild everything. -->
+        <libnd4j.dep.cache>ON</libnd4j.dep.cache>
+        <libnd4j.dep.cache.dir></libnd4j.dep.cache.dir>
+        <libnd4j.dep.cache.clear>OFF</libnd4j.dep.cache.clear>
+        <libnd4j.dep.cache.clear.dep></libnd4j.dep.cache.clear.dep>
+
     </properties>
 
     <dependencies>
@@ -965,6 +973,14 @@
                                         <argument>${libnd4j.oom.process.max.mb}</argument>
                                         <argument>--oom-velocity-threshold</argument>
                                         <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--dep-cache</argument>
+                                        <argument>${libnd4j.dep.cache}</argument>
+                                        <argument>--dep-cache-dir</argument>
+                                        <argument>${libnd4j.dep.cache.dir}</argument>
+                                        <argument>--dep-cache-clear</argument>
+                                        <argument>${libnd4j.dep.cache.clear}</argument>
+                                        <argument>--dep-cache-clear-dep</argument>
+                                        <argument>${libnd4j.dep.cache.clear.dep}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
@@ -1116,6 +1132,14 @@
                                         <argument>${libnd4j.oom.process.max.mb}</argument>
                                         <argument>--oom-velocity-threshold</argument>
                                         <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--dep-cache</argument>
+                                        <argument>${libnd4j.dep.cache}</argument>
+                                        <argument>--dep-cache-dir</argument>
+                                        <argument>${libnd4j.dep.cache.dir}</argument>
+                                        <argument>--dep-cache-clear</argument>
+                                        <argument>${libnd4j.dep.cache.clear}</argument>
+                                        <argument>--dep-cache-clear-dep</argument>
+                                        <argument>${libnd4j.dep.cache.clear.dep}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -1317,6 +1341,14 @@
                                         <argument>${libnd4j.oom.process.max.mb}</argument>
                                         <argument>--oom-velocity-threshold</argument>
                                         <argument>${libnd4j.oom.velocity.threshold}</argument>
+                                        <argument>--dep-cache</argument>
+                                        <argument>${libnd4j.dep.cache}</argument>
+                                        <argument>--dep-cache-dir</argument>
+                                        <argument>${libnd4j.dep.cache.dir}</argument>
+                                        <argument>--dep-cache-clear</argument>
+                                        <argument>${libnd4j.dep.cache.clear}</argument>
+                                        <argument>--dep-cache-clear-dep</argument>
+                                        <argument>${libnd4j.dep.cache.clear.dep}</argument>
 
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>

@@ -188,19 +188,23 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void setIArguments(long... arguments) {
+        super.setIArguments(arguments);
         if (arguments.length > 0) {
-            super.setIArguments(arguments);
             LongPointer iArgs = new LongPointer(arguments);
             nativeOps.setGraphContextIArguments(context, iArgs, arguments.length);
+        } else {
+            nativeOps.setGraphContextIArguments(context, new LongPointer(0), 0);
         }
     }
 
     @Override
     public void setBArguments(boolean... arguments) {
+        super.setBArguments(arguments);
         if (arguments.length > 0) {
-            super.setBArguments(arguments);
             BooleanPointer bArgs = new BooleanPointer(arguments);
             nativeOps.setGraphContextBArguments(context, bArgs, arguments.length);
+        } else {
+            nativeOps.setGraphContextBArguments(context, new BooleanPointer(0), 0);
         }
     }
 
@@ -208,23 +212,35 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void setTArguments(double... arguments) {
+        super.setTArguments(arguments);
         if (arguments.length > 0) {
-            super.setTArguments(arguments);
             DoublePointer tArgs = new DoublePointer(arguments);
             nativeOps.setGraphContextTArguments(context, tArgs, arguments.length);
-        };
+        } else {
+            nativeOps.setGraphContextTArguments(context, new DoublePointer(0), 0);
+        }
     }
 
     @Override
     public void setDArguments(DataType... arguments) {
+        super.setDArguments(arguments);
         if (arguments.length > 0) {
-            super.setDArguments(arguments);
             val args = new int[arguments.length];
             for (int e = 0; e < arguments.length; e++)
                 args[e] = arguments[e].toInt();
 
             IntPointer dArgs =  new IntPointer(args);
-            nativeOps.setGraphContextDArguments(context,dArgs, arguments.length);
+            nativeOps.setGraphContextDArguments(context, dArgs, arguments.length);
+        } else {
+            nativeOps.setGraphContextDArguments(context, new IntPointer(0), 0);
+        }
+    }
+
+    @Override
+    public void setSArguments(String... arguments) {
+        super.setSArguments(arguments);
+        for (int i = 0; i < arguments.length; i++) {
+            nativeOps.setGraphContextSArgument(context, arguments[i], i);
         }
     }
 

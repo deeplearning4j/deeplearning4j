@@ -32,6 +32,10 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+inline bool evaluateConditionValue(NDArray& condition, LongType index) {
+  return condition.e<double>(index) != 0.0;
+}
+
 template <typename T>
 static void __where(NDArray &condition, NDArray &output, memory::Workspace *workspace) {
   // Early return if output is empty - check multiple ways for robustness
@@ -75,8 +79,7 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
     sd::LongType offset;
     COORDS2INDEX(condition.rankOf(), shape::stride(condition.shapeInfo()), coords, offset);
 
-    // Read as int8 and compare to 0 for consistent BOOL handling
-    if (condition.e<int8_t>(offset) != 0) {
+    if (evaluateConditionValue(condition, offset)) {
       std::vector<sd::LongType> arrShape = {1, condition.rankOf()};
       auto array = NDArrayFactory::create_('c', arrShape, output.dataType(), output.getContext());
       for (sd::LongType f = 0; f < condition.rankOf(); f++)  {
@@ -199,7 +202,7 @@ void _whereElementWise(LaunchContext* context, NDArray& condition, NDArray& x, N
     }
 
     // Select x or y based on condition
-    bool condVal = condition.e<int8_t>(condOffset) != 0;
+    bool condVal = evaluateConditionValue(condition, condOffset);
     if (output.isR()) {
 #ifdef HAS_DOUBLE
       output.p(zOffset, condVal ? x.e<double>(xOffset) : y.e<double>(yOffset));
@@ -242,7 +245,7 @@ void _whereTad(LaunchContext* context, NDArray& condition, NDArray& x, NDArray& 
   auto tadsZ = output.allTensorsAlongDimension(dimsToExclude);
 
   for (LongType e = 0; e < tadsX.size(); e++) {
-    bool condVal = condition.e<int8_t>(e) != 0;
+    bool condVal = evaluateConditionValue(condition, e);
     if (condVal) {
       tadsZ.at(e)->assign(tadsX.at(e));
     } else {
@@ -262,7 +265,7 @@ LongType countTrue(LaunchContext* context, NDArray& condition) {
 
   LongType count = 0;
   for (LongType i = 0; i < condition.lengthOf(); i++) {
-    if (condition.e<int8_t>(i) != 0) {
+    if (evaluateConditionValue(condition, i)) {
       count++;
     }
   }

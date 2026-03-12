@@ -100,7 +100,7 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
     // padding positions, 1e9 is insufficient and leaks residual signal through softmax.
     auto* maskComplement = new NDArray(1.0 - *reshapedMask);
     *maskComplement *= 3.4028235e+38f;
-    *weights -= *maskComplement;
+    weights->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maskComplement, weights, false);
     delete reshapedMask;
     delete maskComplement;
   }
@@ -212,7 +212,7 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
     // 1e9 is insufficient and leaks residual signal through softmax.
     auto* maskComplement = new NDArray(1.0 - *reshapedMask);
     *maskComplement *= 3.4028235e+38f;
-    preSoftmax -= *maskComplement;
+    preSoftmax.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), maskComplement, &preSoftmax, false);
     delete maskComplement;
   }
 

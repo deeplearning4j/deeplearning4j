@@ -37,6 +37,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -80,7 +81,7 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
         ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
 
         assertEquals(0x44535031, buf.getInt(), "Magic should be DSP1");
-        assertEquals(1, buf.getInt(), "Version should be 1");
+        assertEquals(5, buf.getInt(), "Version should be 5");
 
         int numSlots = buf.getInt();
         assertTrue(numSlots > 0, "Should have at least 1 slot");
@@ -114,6 +115,8 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
             long opHash = buf.getLong();
             assertEquals(slot.getOpNameHash(), opHash, "Op hash mismatch");
 
+            assertEquals(slot.getOpName(), readSerializedString(buf), "Op name mismatch");
+
             int numInputs = buf.getInt();
             assertEquals(slot.getInputSourceIndices().length, numInputs, "Input count mismatch");
 
@@ -143,17 +146,22 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
             int nTArgs = buf.getInt();
             int nBArgs = buf.getInt();
             int nDArgs = buf.getInt();
+            int nSArgs = buf.getInt();
 
             assertEquals(slot.getIArgs() != null ? slot.getIArgs().length : 0, nIArgs, "iArgs count mismatch");
             assertEquals(slot.getTArgs() != null ? slot.getTArgs().length : 0, nTArgs, "tArgs count mismatch");
             assertEquals(slot.getBArgs() != null ? slot.getBArgs().length : 0, nBArgs, "bArgs count mismatch");
             assertEquals(slot.getDArgs() != null ? slot.getDArgs().length : 0, nDArgs, "dArgs count mismatch");
+            assertEquals(slot.getSArgs() != null ? slot.getSArgs().length : 0, nSArgs, "sArgs count mismatch");
 
             // Skip args content
             for (int i = 0; i < nIArgs; i++) buf.getLong();
             for (int i = 0; i < nTArgs; i++) buf.getDouble();
             for (int i = 0; i < nBArgs; i++) buf.get();
             for (int i = 0; i < nDArgs; i++) buf.getInt();
+            for (int i = 0; i < nSArgs; i++) {
+                assertEquals(slot.getSArgs()[i], readSerializedString(buf), "sArg mismatch at " + i);
+            }
 
             // Read flags
             boolean needsZeroed = buf.get() != 0;
@@ -162,6 +170,11 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
             boolean needsSync = buf.get() != 0;
             boolean isCustomOp = buf.get() != 0;
             int targetDevice = buf.getInt();
+            int legacyOpType = buf.getInt();
+            int legacyOpNum = buf.getInt();
+            byte controlFlowType = buf.get();
+            int loopBackTarget = buf.getInt();
+            int loopRegionIndex = buf.getInt();
 
             assertEquals(slot.isNeedsZeroedOutput(), needsZeroed, "needsZeroedOutput mismatch");
             assertEquals(slot.isDataDependent(), isDataDep, "isDataDependent mismatch");
@@ -169,6 +182,11 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
             assertEquals(slot.isNeedsIntLongSync(), needsSync, "needsIntLongSync mismatch");
             assertEquals(slot.isCustomOp(), isCustomOp, "isCustomOp mismatch");
             assertEquals(slot.getTargetDeviceId(), targetDevice, "targetDeviceId mismatch");
+            assertEquals(slot.getLegacyOpType(), legacyOpType, "legacyOpType mismatch");
+            assertEquals(slot.getLegacyOpNum(), legacyOpNum, "legacyOpNum mismatch");
+            assertEquals(slot.getControlFlowType(), controlFlowType, "controlFlowType mismatch");
+            assertEquals(slot.getLoopBackTarget(), loopBackTarget, "loopBackTarget mismatch");
+            assertEquals(slot.getLoopRegionIndex(), loopRegionIndex, "loopRegionIndex mismatch");
         }
 
         plan.close();
@@ -187,16 +205,7 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
 
         // Skip all slots
         for (DynamicShapeSlot slot : plan.getSlots()) {
-            buf.getLong(); // opHash
-            int nIn = buf.getInt();
-            int nOut = buf.getInt();
-            buf.position(buf.position() + nIn * 4 + nIn + nOut * 4); // indices + types + outputIndices
-            int nI = buf.getInt();
-            int nT = buf.getInt();
-            int nB = buf.getInt();
-            int nD = buf.getInt();
-            buf.position(buf.position() + nI * 8 + nT * 8 + nB + nD * 4); // args
-            buf.position(buf.position() + 5 + 4); // flags + targetDeviceId
+            skipSerializedSlot(buf);
         }
 
         // Now read release schedule
@@ -326,6 +335,56 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    public void testSerializeWithStringArgs() {
+        SameDiff sd = SameDiff.create();
+        SDVariable left = sd.placeHolder("left", DataType.FLOAT, 2, 3);
+        SDVariable right = sd.placeHolder("right", DataType.FLOAT, 4, 3);
+        sd.linalg().einsum("z", new SDVariable[]{left, right}, "ik,jk->ij");
+
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "z");
+        NativeExecutorTestUtils.assertValidSerialization(plan);
+
+        DynamicShapeSlot einsumSlot = Arrays.stream(plan.getSlots())
+                .filter(slot -> "einsum".equals(slot.getOpName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No einsum slot found in plan"));
+
+        assertArrayEquals(new String[]{"ik,jk->ij"}, einsumSlot.getSArgs());
+
+        byte[] data = plan.serialize();
+        ByteBuffer buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        buf.position(24);
+
+        boolean found = false;
+        for (DynamicShapeSlot slot : plan.getSlots()) {
+            String opName = skipSlotHeaderAndReadName(buf);
+            if (!"einsum".equals(opName)) {
+                skipSlotBody(buf);
+                continue;
+            }
+
+            int nIn = buf.getInt();
+            int nOut = buf.getInt();
+            buf.position(buf.position() + nIn * 4 + nIn + nOut * 4);
+
+            int nI = buf.getInt();
+            int nT = buf.getInt();
+            int nB = buf.getInt();
+            int nD = buf.getInt();
+            int nS = buf.getInt();
+
+            buf.position(buf.position() + nI * 8 + nT * 8 + nB + nD * 4);
+            assertEquals(1, nS, "einsum slot should serialize one string argument");
+            assertEquals("ik,jk->ij", readSerializedString(buf), "Serialized equation mismatch");
+            found = true;
+            break;
+        }
+
+        assertTrue(found, "Did not find serialized einsum slot");
+        plan.close();
+    }
+
+    @Test
     public void testSerializeWithDeviceAssignment() {
         SameDiff sd = NativeExecutorTestUtils.createChainGraph();
         DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "z");
@@ -344,7 +403,8 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
 
         // Read first slot's targetDeviceId
         // Need to skip to flags section
-        long opHash = buf.getLong();
+        buf.getLong();
+        skipSerializedString(buf);
         int nIn = buf.getInt();
         int nOut = buf.getInt();
         buf.position(buf.position() + nIn * 4 + nIn + nOut * 4); // skip indices + types + outputs
@@ -352,7 +412,11 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
         int nT = buf.getInt();
         int nB = buf.getInt();
         int nD = buf.getInt();
-        buf.position(buf.position() + nI * 8 + nT * 8 + nB + nD * 4); // skip args
+        int nS = buf.getInt();
+        buf.position(buf.position() + nI * 8 + nT * 8 + nB + nD * 4); // skip numeric args
+        for (int i = 0; i < nS; i++) {
+            skipSerializedString(buf);
+        }
         buf.position(buf.position() + 5); // skip 5 flag bytes
 
         int deviceId = buf.getInt();
@@ -402,11 +466,51 @@ public class NativeExecutorSerializationTest extends BaseNd4jTestWithBackends {
     private byte[] createMinimalDsp1Header() {
         ByteBuffer buf = ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN);
         buf.putInt(0x44535031); // DSP1 magic
-        buf.putInt(1);          // version
+        buf.putInt(5);          // version
         buf.putInt(0);          // numSlots
         buf.putInt(0);          // totalOutputSlots
         buf.putInt(0);          // numExternalInputs
         buf.putInt(0);          // numRequestedOutputs
         return buf.array();
+    }
+
+    private static String readSerializedString(ByteBuffer buf) {
+        int len = buf.getInt();
+        byte[] bytes = new byte[len];
+        buf.get(bytes);
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    private static void skipSerializedString(ByteBuffer buf) {
+        int len = buf.getInt();
+        buf.position(buf.position() + len);
+    }
+
+    private static String skipSlotHeaderAndReadName(ByteBuffer buf) {
+        buf.getLong();
+        return readSerializedString(buf);
+    }
+
+    private static void skipSlotBody(ByteBuffer buf) {
+        int nIn = buf.getInt();
+        int nOut = buf.getInt();
+        buf.position(buf.position() + nIn * 4 + nIn + nOut * 4);
+
+        int nI = buf.getInt();
+        int nT = buf.getInt();
+        int nB = buf.getInt();
+        int nD = buf.getInt();
+        int nS = buf.getInt();
+        buf.position(buf.position() + nI * 8 + nT * 8 + nB + nD * 4);
+        for (int i = 0; i < nS; i++) {
+            skipSerializedString(buf);
+        }
+
+        buf.position(buf.position() + 5 + 4 + 4 + 4 + 1 + 4 + 4);
+    }
+
+    private static void skipSerializedSlot(ByteBuffer buf) {
+        skipSlotHeaderAndReadName(buf);
+        skipSlotBody(buf);
     }
 }

@@ -667,6 +667,14 @@ void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfA
   ptr->setDArguments(dtypes);
 }
 
+void setGraphContextSArgument(OpaqueContext *ptr, const char *argument, int index) {
+  auto sArgs = ptr->getSArguments();
+  while ((int)sArgs->size() <= index) {
+    sArgs->push_back(std::string());
+  }
+  sArgs->at(index) = std::string(argument);
+}
+
 void deleteGraphContext(Context *ptr) {
   // Tripwire: validate Context pointer before deletion
   if (ptr == nullptr) {

@@ -33,6 +33,162 @@ else()
 endif()
 
 message(STATUS "🔧 Dependency builds will use ${DEP_PARALLEL_JOBS} parallel jobs (${NPROC} cores, ${AVAILABLE_MEMORY}MB available)")
+
+# =============================================================================
+# DEPENDENCY CACHE INFRASTRUCTURE
+# =============================================================================
+# Persistent cache layer that survives 'mvn clean'. Dependencies are cached
+# in a directory outside the build tree (default: ~/.libnd4j/dep-cache).
+# On cache hit, ExternalProject_Add is skipped entirely.
+
+# Handle cache clearing at configure time
+if(SD_DEP_CACHE AND SD_DEP_CACHE_CLEAR)
+    if(SD_DEP_CACHE_CLEAR_DEP)
+        set(_clear_path "${SD_DEP_CACHE_DIR}/${SD_DEP_CACHE_CLEAR_DEP}")
+        if(EXISTS "${_clear_path}")
+            message(STATUS "DEP-CACHE: Clearing cache for '${SD_DEP_CACHE_CLEAR_DEP}' at ${_clear_path}")
+            file(REMOVE_RECURSE "${_clear_path}")
+        else()
+            message(STATUS "DEP-CACHE: No cache to clear for '${SD_DEP_CACHE_CLEAR_DEP}'")
+        endif()
+    else()
+        if(EXISTS "${SD_DEP_CACHE_DIR}")
+            message(STATUS "DEP-CACHE: Clearing ALL cached dependencies at ${SD_DEP_CACHE_DIR}")
+            file(REMOVE_RECURSE "${SD_DEP_CACHE_DIR}")
+        else()
+            message(STATUS "DEP-CACHE: No cache directory to clear")
+        endif()
+    endif()
+endif()
+
+# Compute a cache key for a dependency.
+# Key format: {version}-{8-char-md5-hash}
+# The hash covers: version, system name, processor, compiler ID/version, build type, extra config.
+function(sd_dep_cache_key dep_name version extra_config out_var)
+    set(_key_input "${version};${CMAKE_SYSTEM_NAME};${CMAKE_SYSTEM_PROCESSOR};${CMAKE_C_COMPILER_ID};${CMAKE_C_COMPILER_VERSION};${CMAKE_BUILD_TYPE};${extra_config}")
+    string(MD5 _hash "${_key_input}")
+    string(SUBSTRING "${_hash}" 0 8 _hash8)
+    set(${out_var} "${version}-${_hash8}" PARENT_SCOPE)
+endfunction()
+
+# Check if a cached dependency exists and is complete.
+# Sets out_hit to TRUE/FALSE and out_cache_path to the cache install directory.
+function(sd_dep_cache_check dep_name cache_key out_hit out_cache_path)
+    set(_cache_dir "${SD_DEP_CACHE_DIR}/${dep_name}/${cache_key}")
+    set(_marker "${_cache_dir}/.cache_complete")
+    if(EXISTS "${_marker}")
+        # Count files for logging
+        file(GLOB_RECURSE _cached_files "${_cache_dir}/install/*")
+        list(LENGTH _cached_files _file_count)
+        # Read marker timestamp
+        file(TIMESTAMP "${_marker}" _cache_date "%Y-%m-%d %H:%M" UTC)
+        message(STATUS "DEP-CACHE [${dep_name}] HIT - key=${cache_key} date=${_cache_date} files=${_file_count}")
+        set(${out_hit} TRUE PARENT_SCOPE)
+        set(${out_cache_path} "${_cache_dir}/install" PARENT_SCOPE)
+    else()
+        message(STATUS "DEP-CACHE [${dep_name}] MISS - key=${cache_key}")
+        set(${out_hit} FALSE PARENT_SCOPE)
+        set(${out_cache_path} "" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Restore cached dependency artifacts into the build directory.
+function(sd_dep_cache_restore dep_name cache_path install_dir)
+    message(STATUS "DEP-CACHE [${dep_name}] Restoring from ${cache_path} -> ${install_dir}")
+    file(MAKE_DIRECTORY "${install_dir}")
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${cache_path}" "${install_dir}"
+        RESULT_VARIABLE _copy_result
+    )
+    if(NOT _copy_result EQUAL 0)
+        message(WARNING "DEP-CACHE [${dep_name}] Restore failed (exit code ${_copy_result}), will rebuild")
+    endif()
+endfunction()
+
+# Store dependency artifacts into the persistent cache after build.
+# Adds an ExternalProject_Add_Step that runs post-install.
+function(sd_dep_cache_store dep_name cache_key install_dir ep_target)
+    set(_cache_dir "${SD_DEP_CACHE_DIR}/${dep_name}/${cache_key}")
+    set(_store_script "${CMAKE_BINARY_DIR}/dep_cache_store_${dep_name}.cmake")
+    # Write a cmake script that copies install_dir to cache and writes the marker
+    file(WRITE "${_store_script}" "
+        # Store dependency artifacts into cache
+        set(_cache_install \"${_cache_dir}/install\")
+        set(_marker \"${_cache_dir}/.cache_complete\")
+        # Remove old cache for this key if partial
+        if(EXISTS \"\${_cache_install}\" AND NOT EXISTS \"\${_marker}\")
+            file(REMOVE_RECURSE \"\${_cache_install}\")
+        endif()
+        # Only store if marker doesn't exist (avoid redundant copies)
+        if(NOT EXISTS \"\${_marker}\")
+            message(STATUS \"DEP-CACHE [${dep_name}] Storing artifacts to cache (key=${cache_key})\")
+            file(MAKE_DIRECTORY \"\${_cache_install}\")
+            execute_process(
+                COMMAND \${CMAKE_COMMAND} -E copy_directory \"${install_dir}\" \"\${_cache_install}\"
+                RESULT_VARIABLE _copy_result
+            )
+            if(_copy_result EQUAL 0)
+                # Write marker LAST to ensure atomicity
+                file(WRITE \"\${_marker}\" \"cached by libnd4j at configure time\")
+                message(STATUS \"DEP-CACHE [${dep_name}] Cache stored successfully\")
+            else()
+                message(WARNING \"DEP-CACHE [${dep_name}] Failed to store cache (exit code \${_copy_result})\")
+                # Clean up partial cache
+                file(REMOVE_RECURSE \"\${_cache_install}\")
+            endif()
+        endif()
+    ")
+    ExternalProject_Add_Step(${ep_target} dep_cache_store
+        COMMAND ${CMAKE_COMMAND} -P "${_store_script}"
+        DEPENDEES install
+        COMMENT "DEP-CACHE [${dep_name}] Storing build artifacts to persistent cache"
+    )
+endfunction()
+
+# Print dependency cache summary at configure time
+function(sd_dep_cache_summary)
+    if(NOT SD_DEP_CACHE)
+        message(STATUS "")
+        message(STATUS "=== Dependency Cache: DISABLED ===")
+        message(STATUS "  Enable with -DSD_DEP_CACHE=ON")
+        message(STATUS "==================================")
+        message(STATUS "")
+        return()
+    endif()
+
+    set(_cached_count 0)
+    set(_dep_summary "")
+
+    if(EXISTS "${SD_DEP_CACHE_DIR}")
+        file(GLOB _dep_dirs "${SD_DEP_CACHE_DIR}/*")
+        foreach(_dep_dir ${_dep_dirs})
+            if(IS_DIRECTORY "${_dep_dir}")
+                get_filename_component(_dep_name "${_dep_dir}" NAME)
+                file(GLOB _version_dirs "${_dep_dir}/*")
+                list(LENGTH _version_dirs _ver_count)
+                if(_ver_count GREATER 0)
+                    math(EXPR _cached_count "${_cached_count} + 1")
+                    string(APPEND _dep_summary "    ${_dep_name}: ${_ver_count} cached version(s)\n")
+                endif()
+            endif()
+        endforeach()
+    endif()
+
+    message(STATUS "")
+    message(STATUS "=== Dependency Cache Configuration ===")
+    message(STATUS "  Enabled:   ON")
+    message(STATUS "  Directory: ${SD_DEP_CACHE_DIR}")
+    message(STATUS "  Cached dependencies: ${_cached_count}")
+    if(_dep_summary)
+        message(STATUS "${_dep_summary}")
+    endif()
+    message(STATUS "======================================")
+    message(STATUS "")
+endfunction()
+
+# Print cache summary at configure time
+sd_dep_cache_summary()
+
 function(setup_android_arm_openblas)
     set(is_android_or_arm FALSE)
 
@@ -229,6 +385,41 @@ endfunction()
 function(setup_flatbuffers)
     set(FLATBUFFERS_VERSION "25.2.10")
     set(FLATBUFFERS_URL "https://github.com/google/flatbuffers/archive/v${FLATBUFFERS_VERSION}.tar.gz")
+
+    # --- Dependency cache check ---
+    if(SD_DEP_CACHE AND NOT CMAKE_CROSSCOMPILING)
+        set(_fb_flatc_flag "FLATC=OFF")
+        if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+            set(_fb_flatc_flag "FLATC=ON")
+        endif()
+        sd_dep_cache_key("flatbuffers" "${FLATBUFFERS_VERSION}" "${_fb_flatc_flag}" _fb_cache_key)
+        sd_dep_cache_check("flatbuffers" "${_fb_cache_key}" _fb_hit _fb_cache_path)
+        if(_fb_hit)
+            # Restore cached artifacts
+            set(_fb_restore_dir "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-cached")
+            sd_dep_cache_restore("flatbuffers" "${_fb_cache_path}" "${_fb_restore_dir}")
+            # Set up the same interface as a normal build
+            set(FLATBUFFERS_LIBRARY "${_fb_restore_dir}/lib/libflatbuffers.a")
+            set(FLATBUFFERS_SOURCE_DIR "${_fb_restore_dir}")
+            if(NOT TARGET flatbuffers_external)
+                add_custom_target(flatbuffers_external)
+            endif()
+            add_library(flatbuffers_interface INTERFACE)
+            target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
+            target_include_directories(flatbuffers_interface INTERFACE "${_fb_restore_dir}/include")
+            add_dependencies(flatbuffers_interface flatbuffers_external)
+            # Copy flatbuffers headers to project include dir if needed
+            if(EXISTS "${_fb_restore_dir}/include/flatbuffers")
+                execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory
+                    "${_fb_restore_dir}/include/flatbuffers"
+                    "${CMAKE_SOURCE_DIR}/libnd4j/include/flatbuffers")
+            endif()
+            set(FLATBUFFERS_LIBRARY ${FLATBUFFERS_LIBRARY} PARENT_SCOPE)
+            set(FLATBUFFERS_SOURCE_DIR ${FLATBUFFERS_SOURCE_DIR} PARENT_SCOPE)
+            message(STATUS "✅ FlatBuffers setup complete (from cache)")
+            return()
+        endif()
+    endif()
 
     # Determine if we should build flatc
     set(SHOULD_BUILD_FLATC FALSE)
@@ -505,6 +696,35 @@ function(setup_flatbuffers)
         add_dependencies(flatbuffers_interface flatbuffers_external)
     endif()
 
+    # --- Cache store for native build ---
+    if(SD_DEP_CACHE AND NOT CMAKE_CROSSCOMPILING AND DEFINED _fb_cache_key)
+        # Create a store script that gathers flatbuffers artifacts into a staging dir, then caches
+        set(_fb_cache_dir "${SD_DEP_CACHE_DIR}/flatbuffers/${_fb_cache_key}")
+        set(_fb_store_script "${CMAKE_BINARY_DIR}/dep_cache_store_flatbuffers.cmake")
+        file(WRITE "${_fb_store_script}" "
+            set(_cache_install \"${_fb_cache_dir}/install\")
+            set(_marker \"${_fb_cache_dir}/.cache_complete\")
+            if(NOT EXISTS \"\${_marker}\")
+                message(STATUS \"DEP-CACHE [flatbuffers] Storing artifacts to cache\")
+                file(MAKE_DIRECTORY \"\${_cache_install}/include\")
+                file(MAKE_DIRECTORY \"\${_cache_install}/lib\")
+                execute_process(COMMAND \${CMAKE_COMMAND} -E copy_directory
+                    \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include\"
+                    \"\${_cache_install}/include\")
+                execute_process(COMMAND \${CMAKE_COMMAND} -E copy_if_different
+                    \"${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a\"
+                    \"\${_cache_install}/lib/libflatbuffers.a\")
+                file(WRITE \"\${_marker}\" \"cached\")
+                message(STATUS \"DEP-CACHE [flatbuffers] Cache stored successfully\")
+            endif()
+        ")
+        ExternalProject_Add_Step(flatbuffers_external dep_cache_store
+            COMMAND ${CMAKE_COMMAND} -P "${_fb_store_script}"
+            DEPENDEES build
+            COMMENT "DEP-CACHE [flatbuffers] Storing build artifacts to persistent cache"
+        )
+    endif()
+
     # Set global variables for parent scope
     set(FLATBUFFERS_LIBRARY ${FLATBUFFERS_LIBRARY} PARENT_SCOPE)
     set(FLATBUFFERS_SOURCE_DIR ${FLATBUFFERS_SOURCE_DIR} PARENT_SCOPE)
@@ -544,6 +764,32 @@ function(setup_onednn)
     message(STATUS "OneDNN helper is enabled")
     set(HAVE_ONEDNN ON CACHE BOOL "OneDNN availability" FORCE)
     set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install")
+
+    # --- Dependency cache check ---
+    set(ONEDNN_VERSION "3.8.1")
+    if(SD_DEP_CACHE)
+        sd_dep_cache_key("onednn" "${ONEDNN_VERSION}" "${CMAKE_BUILD_TYPE};STATIC;GRAPH=ON" _onednn_cache_key)
+        sd_dep_cache_check("onednn" "${_onednn_cache_key}" _onednn_hit _onednn_cache_path)
+        if(_onednn_hit)
+            sd_dep_cache_restore("onednn" "${_onednn_cache_path}" "${ONEDNN_INSTALL_DIR}")
+            if(NOT TARGET onednn_external)
+                add_custom_target(onednn_external)
+            endif()
+            add_library(onednn_interface INTERFACE)
+            target_include_directories(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/include")
+            if(MSVC)
+                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib")
+            elseif(WIN32)
+                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a")
+            else()
+                target_link_libraries(onednn_interface INTERFACE "${ONEDNN_INSTALL_DIR}/lib64/libdnnl.a")
+            endif()
+            add_dependencies(onednn_interface onednn_external)
+            set(ONEDNN onednn_interface PARENT_SCOPE)
+            message(STATUS "✅ OneDNN ${ONEDNN_VERSION} setup complete (from cache)")
+            return()
+        endif()
+    endif()
     set(ONEDNN_PREFIX "${CMAKE_BINARY_DIR}/onednn_external")
     set(ONEDNN_VERSION "3.8.1")
     set(ONEDNN_STAMP_DIR "${ONEDNN_PREFIX}/stamp")
@@ -658,6 +904,11 @@ function(setup_onednn)
     add_dependencies(onednn_interface onednn_external)
     set(ONEDNN onednn_interface PARENT_SCOPE)
 
+    # --- Cache store ---
+    if(SD_DEP_CACHE AND DEFINED _onednn_cache_key)
+        sd_dep_cache_store("onednn" "${_onednn_cache_key}" "${ONEDNN_INSTALL_DIR}" "onednn_external")
+    endif()
+
     message(STATUS "✅ OneDNN ${ONEDNN_VERSION} setup complete (using URL download)")
 endfunction()
 
@@ -686,6 +937,27 @@ function(setup_armcompute)
         set(ARMCOMPUTE_PKG_NAME "arm_compute-${ARMCOMPUTE_VERSION}-${ARMCOMPUTE_PLATFORM}-${ARMCOMPUTE_ARCH}-${ARMCOMPUTE_FLAVOR}-bin")
         set(ARMCOMPUTE_URL "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PKG_NAME}.tar.gz")
 
+        # --- Dependency cache check ---
+        if(SD_DEP_CACHE)
+            sd_dep_cache_key("armcompute" "${ARMCOMPUTE_VERSION}" "${ARMCOMPUTE_PLATFORM}-${ARMCOMPUTE_ARCH}-${ARMCOMPUTE_FLAVOR}" _ac_cache_key)
+            sd_dep_cache_check("armcompute" "${_ac_cache_key}" _ac_hit _ac_cache_path)
+            if(_ac_hit)
+                sd_dep_cache_restore("armcompute" "${_ac_cache_path}" "${ARMCOMPUTE_INSTALL_DIR}")
+                if(NOT TARGET armcompute_external)
+                    add_custom_target(armcompute_external)
+                endif()
+                add_library(armcompute_interface INTERFACE)
+                target_include_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/include")
+                target_link_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/lib")
+                target_link_libraries(armcompute_interface INTERFACE arm_compute arm_compute_graph)
+                add_dependencies(armcompute_interface armcompute_external)
+                set(ARMCOMPUTE_LIBRARIES armcompute_interface PARENT_SCOPE)
+                set(HAVE_ARMCOMPUTE 1 PARENT_SCOPE)
+                message(STATUS "✅ ARM Compute setup complete (from cache)")
+                return()
+            endif()
+        endif()
+
         ExternalProject_Add(armcompute_external
                 PREFIX      "${CMAKE_BINARY_DIR}/armcompute_external"
                 URL         "${ARMCOMPUTE_URL}"
@@ -709,6 +981,11 @@ function(setup_armcompute)
 
         set(ARMCOMPUTE_LIBRARIES armcompute_interface PARENT_SCOPE)
         set(HAVE_ARMCOMPUTE 1 PARENT_SCOPE)
+
+        # --- Cache store ---
+        if(SD_DEP_CACHE AND DEFINED _ac_cache_key)
+            sd_dep_cache_store("armcompute" "${_ac_cache_key}" "${ARMCOMPUTE_INSTALL_DIR}" "armcompute_external")
+        endif()
     endif()
 endfunction()
 
@@ -865,6 +1142,28 @@ function(setup_zluda_download)
 
     message(STATUS "ZLUDA download URL: ${ZLUDA_URL}")
 
+    # --- Dependency cache check ---
+    if(SD_DEP_CACHE)
+        sd_dep_cache_key("zluda" "${ZLUDA_VERSION}" "${ZLUDA_PLATFORM}" _zluda_cache_key)
+        sd_dep_cache_check("zluda" "${_zluda_cache_key}" _zluda_hit _zluda_cache_path)
+        if(_zluda_hit)
+            sd_dep_cache_restore("zluda" "${_zluda_cache_path}" "${ZLUDA_INSTALL_DIR}")
+            if(NOT TARGET zluda_external)
+                add_custom_target(zluda_external)
+            endif()
+            add_library(zluda_interface INTERFACE)
+            target_include_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/include")
+            target_link_directories(zluda_interface INTERFACE "${ZLUDA_INSTALL_DIR}/lib")
+            add_dependencies(zluda_interface zluda_external)
+            set(HAVE_ZLUDA TRUE PARENT_SCOPE)
+            set(ZLUDA_PATH "${ZLUDA_INSTALL_DIR}" PARENT_SCOPE)
+            set(ZLUDA zluda_interface PARENT_SCOPE)
+            set(ENV{ZLUDA_PATH} "${ZLUDA_INSTALL_DIR}")
+            message(STATUS "✅ ZLUDA setup complete (from cache)")
+            return()
+        endif()
+    endif()
+
     # Download and extract ZLUDA
     ExternalProject_Add(zluda_external
             PREFIX            "${CMAKE_BINARY_DIR}/zluda_external"
@@ -899,6 +1198,11 @@ function(setup_zluda_download)
 
     # Set environment variable for runtime
     set(ENV{ZLUDA_PATH} "${ZLUDA_INSTALL_DIR}")
+
+    # --- Cache store ---
+    if(SD_DEP_CACHE AND DEFINED _zluda_cache_key)
+        sd_dep_cache_store("zluda" "${_zluda_cache_key}" "${ZLUDA_INSTALL_DIR}" "zluda_external")
+    endif()
 
     message(STATUS "ZLUDA setup complete")
     message(STATUS "   Install directory: ${ZLUDA_INSTALL_DIR}")
@@ -1066,6 +1370,7 @@ function(setup_triton)
     # After CMake cache clean, targets don't persist but install dirs do.
     set(TRITON_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_install")
     set(TRITON_LLVM_INSTALL_DIR "${CMAKE_BINARY_DIR}/triton_llvm_install")
+
     set(_TRITON_LIB_EXISTS FALSE)
     if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR
        EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib")
@@ -1219,6 +1524,34 @@ function(setup_triton)
         message(STATUS "   LLVM targets: host, NVPTX (no AMD backend)")
     endif()
 
+    # --- Dependency cache: restore Triton LLVM and Triton into build dirs ---
+    # This is done BEFORE the existing "reuse existing install" check so that
+    # the existing fast-path logic picks up restored files naturally.
+    if(SD_DEP_CACHE)
+        # Check Triton LLVM cache
+        set(TRITON_LLVM_COMMIT_SHORT "f6ded0be")
+        sd_dep_cache_key("triton_llvm" "${TRITON_LLVM_COMMIT_SHORT}" "TARGETS=${TRITON_LLVM_TARGETS}" _tllvm_cache_key)
+        sd_dep_cache_check("triton_llvm" "${_tllvm_cache_key}" _tllvm_hit _tllvm_cache_path)
+        if(_tllvm_hit AND NOT EXISTS "${TRITON_LLVM_INSTALL_DIR}/lib/cmake/mlir/MLIRConfig.cmake")
+            sd_dep_cache_restore("triton_llvm" "${_tllvm_cache_path}" "${TRITON_LLVM_INSTALL_DIR}")
+        endif()
+
+        # Check Triton cache
+        set(_triton_ver "3.6.0")
+        string(REPLACE ";" "_" _triton_backends_str "${TRITON_CODEGEN_BACKENDS}")
+        sd_dep_cache_key("triton" "${_triton_ver}" "BACKENDS=${_triton_backends_str}" _triton_cache_key)
+        sd_dep_cache_check("triton" "${_triton_cache_key}" _triton_hit _triton_cache_path)
+        if(_triton_hit)
+            set(_need_triton_restore TRUE)
+            if(EXISTS "${TRITON_INSTALL_DIR}/lib/libtriton.a" OR EXISTS "${TRITON_INSTALL_DIR}/lib/triton.lib")
+                set(_need_triton_restore FALSE)
+            endif()
+            if(_need_triton_restore)
+                sd_dep_cache_restore("triton" "${_triton_cache_path}" "${TRITON_INSTALL_DIR}")
+            endif()
+        endif()
+    endif()
+
     # Build-time-only SmartCcache partition key for Triton LLVM external build.
     # This stays in CMake/source-tree scope; runtime extraction infra is separate.
     set(_TRITON_LLVM_SHAPE_KEY_RAW "${TRITON_LLVM_COMMIT}-${TRITON_LLVM_TARGETS}-Release")
@@ -1329,6 +1662,41 @@ function(setup_triton)
             DEPENDEES install
             COMMENT "Patching MLIRConfig.cmake with absolute tablegen executable paths"
         )
+
+        # Patch Matchers.h for NVCC compatibility: NVCC cannot handle lambda-to-function-pointer
+        # conversion inside aggregate initialization. Guard the affected functions with __CUDACC__.
+        set(_PATCH_MATCHERS_SCRIPT "${CMAKE_BINARY_DIR}/patch_matchers.cmake")
+        file(WRITE "${_PATCH_MATCHERS_SCRIPT}" "
+            set(F \"${TRITON_LLVM_INSTALL_DIR}/include/mlir/IR/Matchers.h\")
+            if(EXISTS \"\${F}\")
+                file(READ \"\${F}\" C)
+                string(FIND \"\${C}\" \"__CUDACC__\" _HAS_GUARD)
+                if(_HAS_GUARD EQUAL -1)
+                    string(REPLACE
+                        \"/// Matches a constant scalar / vector splat / tensor splat float (both positive\"
+                        \"#ifndef __CUDACC__\\n/// Matches a constant scalar / vector splat / tensor splat float (both positive\"
+                        C \"\${C}\")
+                    string(REPLACE
+                        \"/// Matches the given OpClass.\"
+                        \"#endif // __CUDACC__\\n\\n/// Matches the given OpClass.\"
+                        C \"\${C}\")
+                    file(WRITE \"\${F}\" \"\${C}\")
+                    message(STATUS \"Patched Matchers.h with __CUDACC__ guard for NVCC compatibility\")
+                else()
+                    message(STATUS \"Matchers.h already has __CUDACC__ guard\")
+                endif()
+            endif()
+        ")
+        ExternalProject_Add_Step(triton_llvm_external patch_matchers
+            COMMAND ${CMAKE_COMMAND} -P "${_PATCH_MATCHERS_SCRIPT}"
+            DEPENDEES patch_mlir_config
+            COMMENT "Patching Matchers.h for NVCC compatibility"
+        )
+
+        # --- Cache store for Triton LLVM ---
+        if(SD_DEP_CACHE AND DEFINED _tllvm_cache_key)
+            sd_dep_cache_store("triton_llvm" "${_tllvm_cache_key}" "${TRITON_LLVM_INSTALL_DIR}" "triton_llvm_external")
+        endif()
     else()
         message(STATUS "   Reusing existing LLVM/MLIR at ${TRITON_LLVM_INSTALL_DIR}")
         # Create a dummy target so triton_external can depend on it
@@ -1350,6 +1718,25 @@ function(setup_triton)
                     _MLIR_CFG "${_MLIR_CFG}")
                 file(WRITE "${_MLIR_CONFIG_FILE}" "${_MLIR_CFG}")
                 message(STATUS "   Patched MLIRConfig.cmake with absolute tablegen paths")
+            endif()
+        endif()
+
+        # Patch Matchers.h for NVCC compatibility (idempotent)
+        set(_MATCHERS_FILE "${TRITON_LLVM_INSTALL_DIR}/include/mlir/IR/Matchers.h")
+        if(EXISTS "${_MATCHERS_FILE}")
+            file(READ "${_MATCHERS_FILE}" _MATCHERS_CONTENT)
+            string(FIND "${_MATCHERS_CONTENT}" "__CUDACC__" _HAS_GUARD)
+            if(_HAS_GUARD EQUAL -1)
+                string(REPLACE
+                    "/// Matches a constant scalar / vector splat / tensor splat float (both positive"
+                    "#ifndef __CUDACC__\n/// Matches a constant scalar / vector splat / tensor splat float (both positive"
+                    _MATCHERS_CONTENT "${_MATCHERS_CONTENT}")
+                string(REPLACE
+                    "/// Matches the given OpClass."
+                    "#endif // __CUDACC__\n\n/// Matches the given OpClass."
+                    _MATCHERS_CONTENT "${_MATCHERS_CONTENT}")
+                file(WRITE "${_MATCHERS_FILE}" "${_MATCHERS_CONTENT}")
+                message(STATUS "   Patched Matchers.h with __CUDACC__ guard for NVCC compatibility")
             endif()
         endif()
     endif()
@@ -1668,6 +2055,11 @@ function(setup_triton)
 
     add_dependencies(triton_interface triton_external)
     set(TRITON triton_interface PARENT_SCOPE)
+
+    # --- Cache store for Triton ---
+    if(SD_DEP_CACHE AND DEFINED _triton_cache_key)
+        sd_dep_cache_store("triton" "${_triton_cache_key}" "${TRITON_INSTALL_DIR}" "triton_external")
+    endif()
 
     message(STATUS "Triton ${TRITON_VERSION} setup complete (target: ${TRITON_GPU_TARGET})")
 endfunction()

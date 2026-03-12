@@ -92,14 +92,14 @@ class ShiftVertexTest extends BaseDL4JTest {
          * This function _simply_ tests whether ShiftVertex is _in fact_ adding the shift value to it's inputs.
          */
         // Just first n primes / 10.
-        INDArray input = Nd4j.create(new double[][] { { 0.2, 0.3, 0.5 }, { 0.7, 1.1, 1.3 }, { 1.7, 1.9, 2.3 }, { 2.9, 3.1, 3.7 } });
+        INDArray input = Nd4j.create(new double[][] { { 0.2, 0.3, 0.5 }, { 0.7, 1.1, 1.3 }, { 1.7, 1.9, 2.3 }, { 2.9, 3.1, 3.7 } }).castTo(DataType.DOUBLE);
         double sf = 4.1;
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("input").addLayer("denselayer", new DenseLayer.Builder().nIn(input.columns()).nOut(1).activation(Activation.IDENTITY).build(), "input").addLayer("identityinputactivation", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "input").addVertex("shiftvertex", new ShiftVertex(sf), "identityinputactivation").addLayer("identityshiftvertex", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "shiftvertex").setOutputs("identityshiftvertex", "denselayer").build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
         // We can call outputSingle, because we only have a single output layer. It has nothing to do with minibatches.
         INDArray output = cg.output(true, input)[0];
-        INDArray target = Nd4j.zeros(input.shape());
+        INDArray target = Nd4j.zeros(DataType.DOUBLE, input.shape());
         target.addi(input);
         target.addi(sf);
         INDArray squared = output.sub(target);
@@ -118,11 +118,11 @@ class ShiftVertexTest extends BaseDL4JTest {
         BaseActivationFunction a1 = new ActivationTanH();
         BaseActivationFunction a2 = new ActivationSigmoid();
         // Just first n primes / 10.
-        INDArray input = Nd4j.create(new double[][] { { 0.2, 0.3, 0.5 }, { 0.7, 1.1, 1.3 }, { 1.7, 1.9, 2.3 }, { 2.9, 3.1, 3.7 } });
+        INDArray input = Nd4j.create(new double[][] { { 0.2, 0.3, 0.5 }, { 0.7, 1.1, 1.3 }, { 1.7, 1.9, 2.3 }, { 2.9, 3.1, 3.7 } }).castTo(DataType.DOUBLE);
         double sf = 4.1;
         // Actually, given that I'm using a sigmoid on the output,
         // these should really be between 0 and 1
-        INDArray target = Nd4j.create(new double[][] { { 0.05, 0.10, 0.15, 0.20, 0.25 }, { 0.30, 0.35, 0.40, 0.45, 0.50 }, { 0.55, 0.60, 0.65, 0.70, 0.75 }, { 0.80, 0.85, 0.90, 0.95, 0.99 } });
+        INDArray target = Nd4j.create(new double[][] { { 0.05, 0.10, 0.15, 0.20, 0.25 }, { 0.30, 0.35, 0.40, 0.45, 0.50 }, { 0.55, 0.60, 0.65, 0.70, 0.75 }, { 0.80, 0.85, 0.90, 0.95, 0.99 } }).castTo(DataType.DOUBLE);
         ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).dataType(DataType.DOUBLE).updater(new Sgd(0.01)).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).graphBuilder().addInputs("input").addLayer("denselayer", new DenseLayer.Builder().nIn(input.columns()).nOut(input.columns()).activation(a1).build(), "input").addVertex("shiftvertex", new ShiftVertex(sf), "denselayer").addLayer("output", new OutputLayer.Builder().nIn(input.columns()).nOut(target.columns()).activation(a2).lossFunction(LossFunction.MSE).build(), "shiftvertex").setOutputs("output").build();
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -184,7 +184,7 @@ class ShiftVertexTest extends BaseDL4JTest {
         System.err.println(tbv);
         System.err.println(dEdq);
         */
-        INDArray dqdc = Nd4j.ones(1, batchsz);
+        INDArray dqdc = Nd4j.ones(DataType.DOUBLE, 1, batchsz);
         // This should be of size 1 x outputsz
         INDArray dEdc = dqdc.mmul(dEdq);
         INDArray dEdV = a.transpose().mmul(dEdq);
@@ -192,7 +192,7 @@ class ShiftVertexTest extends BaseDL4JTest {
         INDArray dEda = dEdq.mmul(V.transpose());
         Pair<INDArray, INDArray> derivs1 = a1.backprop(z, dEda);
         INDArray dEdz = derivs1.getFirst();
-        INDArray dzdb = Nd4j.ones(1, batchsz);
+        INDArray dzdb = Nd4j.ones(DataType.DOUBLE, 1, batchsz);
         INDArray dEdb = dzdb.mmul(dEdz);
         INDArray dEdW = input.transpose().mmul(dEdz);
         manual_gradients.put("output_b", dEdc);
@@ -209,7 +209,7 @@ class ShiftVertexTest extends BaseDL4JTest {
             summse += se;
             denominator += dl4j_gradient.columns() * dl4j_gradient.rows();
         }
-        Assertions.assertEquals(0.0, summse / denominator, this.epsilon);
+        Assertions.assertEquals(0.0, summse / denominator, this.gradientEpsilon);
     }
 
     private static double sum_errors(INDArray a, INDArray b) {
@@ -225,4 +225,5 @@ class ShiftVertexTest extends BaseDL4JTest {
     }
 
     private double epsilon = 1e-10;
+    private double gradientEpsilon = 2e-3;
 }

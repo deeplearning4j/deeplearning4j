@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_strided_slice)
 
 #include <helpers/ShapeUtils.h>
+#include <helpers/Loops.h>
 #include <cstring>  // for memcpy
 #include <ops/declarable/headers/parity_ops.h>
 #include <legacy/NativeOpExecutioner.h>
@@ -536,9 +537,9 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     // NOTE: Only use memcpy on CPU - on CUDA, data is on device and memcpy won't work
     const LongType length = z->lengthOf();
     const bool subContiguous = shape::order(subArrShapeInfo) == 'c' &&
-                                shape::strideDescendingCAscendingF(subArrShapeInfo);
+                               sd::isContiguousLayoutForLoops(subArrShapeInfo);
     const bool zContiguous = z->ordering() == 'c' &&
-                              shape::strideDescendingCAscendingF(z->shapeInfo());
+                             sd::isContiguousLayoutForLoops(z->shapeInfo());
     const bool isCpuBackend = Environment::getInstance().isCPU();
 
     if (isCpuBackend && subContiguous && zContiguous && length > 0) {
@@ -641,6 +642,19 @@ DECLARE_SHAPE_FN(strided_slice) {
 
   if (indices.size()) {
     auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inShape);
+    bool hasZeroDim = false;
+    for (const auto dim : outputShape) {
+      if (dim == 0) {
+        hasZeroDim = true;
+        break;
+      }
+    }
+
+    if (hasZeroDim) {
+      auto emptyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(retDtype, outputShape);
+      return SHAPELIST(emptyShape);
+    }
+
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', outputShape);
     return SHAPELIST(newShape);
   }

@@ -32,6 +32,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -577,6 +578,152 @@ public class TextGenerator {
      */
     public GenerationResult[] generateBatch(String[] prompts) {
         return generateBatch(prompts, config.getMaxNewTokens());
+    }
+
+    /**
+     * Generate one output per chunk, batched where possible.
+     *
+     * @param chunks ordered text chunks (for example: document pages/chunks)
+     * @param maxNewTokens maximum tokens to generate per chunk
+     * @return generation results aligned with input chunk order
+     */
+    public GenerationResult[] generateChunks(List<String> chunks, int maxNewTokens) {
+        if (chunks == null || chunks.isEmpty()) {
+            return new GenerationResult[0];
+        }
+        return generateBatch(chunks.toArray(new String[0]), maxNewTokens);
+    }
+
+    /**
+     * Generate one output per chunk using the default max token setting.
+     *
+     * @param chunks ordered text chunks
+     * @return generation results aligned with input chunk order
+     */
+    public GenerationResult[] generateChunks(List<String> chunks) {
+        return generateChunks(chunks, config.getMaxNewTokens());
+    }
+
+    /**
+     * Generate one combined document output from multiple chunks.
+     *
+     * @param chunks ordered text chunks
+     * @param maxNewTokens maximum tokens to generate per chunk
+     * @param chunkDelimiter delimiter inserted between per-chunk outputs
+     * @return combined output text
+     */
+    public String generateDocumentFromChunks(List<String> chunks, int maxNewTokens, String chunkDelimiter) {
+        GenerationResult[] results = generateChunks(chunks, maxNewTokens);
+        String delimiter = chunkDelimiter == null ? "" : chunkDelimiter;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < results.length; i++) {
+            if (i > 0) {
+                sb.append(delimiter);
+            }
+            if (results[i] != null && results[i].getText() != null) {
+                sb.append(results[i].getText());
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Generate one combined document output from multiple chunks using default max token settings.
+     *
+     * @param chunks ordered text chunks
+     * @param chunkDelimiter delimiter inserted between per-chunk outputs
+     * @return combined output text
+     */
+    public String generateDocumentFromChunks(List<String> chunks, String chunkDelimiter) {
+        return generateDocumentFromChunks(chunks, config.getMaxNewTokens(), chunkDelimiter);
+    }
+
+    /**
+     * Split text into overlapping token chunks.
+     *
+     * @param text source text to chunk
+     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param overlapTokens overlap between consecutive chunks (must be &gt;= 0 and &lt; chunkTokenSize)
+     * @return ordered chunk strings
+     */
+    public List<String> chunkText(String text, int chunkTokenSize, int overlapTokens) {
+        if (chunkTokenSize <= 0) {
+            throw new IllegalArgumentException("chunkTokenSize must be > 0");
+        }
+        if (overlapTokens < 0 || overlapTokens >= chunkTokenSize) {
+            throw new IllegalArgumentException("overlapTokens must be >= 0 and < chunkTokenSize");
+        }
+
+        String safeText = text == null ? "" : text;
+        int[] tokenIds = tokenizer.encode(safeText, false).getIds();
+        if (tokenIds.length == 0) {
+            return List.of("");
+        }
+
+        int stride = chunkTokenSize - overlapTokens;
+        List<String> chunks = new ArrayList<>();
+        for (int start = 0; start < tokenIds.length; start += stride) {
+            int end = Math.min(start + chunkTokenSize, tokenIds.length);
+            int[] chunkIds = Arrays.copyOfRange(tokenIds, start, end);
+            chunks.add(tokenizer.decode(chunkIds, false));
+            if (end >= tokenIds.length) {
+                break;
+            }
+        }
+        return chunks;
+    }
+
+    /**
+     * Chunk text by token count, then generate one output per chunk.
+     *
+     * @param text source text
+     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param overlapTokens overlap between chunks (must be >= 0 and < chunkTokenSize)
+     * @param maxNewTokens maximum tokens to generate per chunk
+     * @return generation results aligned with chunk order
+     */
+    public GenerationResult[] generateChunked(String text, int chunkTokenSize, int overlapTokens, int maxNewTokens) {
+        List<String> chunks = chunkText(text, chunkTokenSize, overlapTokens);
+        return generateChunks(chunks, maxNewTokens);
+    }
+
+    /**
+     * Chunk text by token count and generate one combined output.
+     *
+     * @param text source text
+     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param overlapTokens overlap between chunks (must be >= 0 and < chunkTokenSize)
+     * @param maxNewTokens maximum tokens to generate per chunk
+     * @param chunkDelimiter delimiter inserted between chunk outputs
+     * @return combined chunk output
+     */
+    public String generateChunkedDocument(String text, int chunkTokenSize, int overlapTokens,
+                                          int maxNewTokens, String chunkDelimiter) {
+        GenerationResult[] results = generateChunked(text, chunkTokenSize, overlapTokens, maxNewTokens);
+        String delimiter = chunkDelimiter == null ? "" : chunkDelimiter;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < results.length; i++) {
+            if (i > 0) {
+                sb.append(delimiter);
+            }
+            if (results[i] != null && results[i].getText() != null) {
+                sb.append(results[i].getText());
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Chunk text by token count and generate one combined output using default max token settings.
+     *
+     * @param text source text
+     * @param chunkTokenSize max tokens per chunk (must be > 0)
+     * @param overlapTokens overlap between chunks (must be >= 0 and < chunkTokenSize)
+     * @param chunkDelimiter delimiter inserted between chunk outputs
+     * @return combined chunk output
+     */
+    public String generateChunkedDocument(String text, int chunkTokenSize, int overlapTokens, String chunkDelimiter) {
+        return generateChunkedDocument(text, chunkTokenSize, overlapTokens, config.getMaxNewTokens(), chunkDelimiter);
     }
 
     /**

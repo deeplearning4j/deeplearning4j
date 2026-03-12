@@ -31,7 +31,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.deeplearning4j.frameworkimport.nd4j.serde.listeners.ExecPrintListener;
 import org.eclipse.deeplearning4j.frameworkimport.tensorflow.listener.OpExecOrderListener;
 import org.eclipse.deeplearning4j.tests.extensions.TFTestAllocationHandler;
-import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -579,12 +578,11 @@ public class TFGraphTestAllHelper {
             }*/
             graph.getSessions().clear();
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
+            // Legacy NativeGraphExecutioner removed — use SameDiff direct execution
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
-
-            val executioner = new NativeGraphExecutioner();
-            val results = executioner.executeGraph(graph, configuration);
+            graph.outputAll(null);
 
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
             for (String input : inputs.keySet()) {

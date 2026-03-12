@@ -37,6 +37,7 @@
 #include <ops/declarable/LegacyTransformFloatOp.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
+#include <ops/declarable/LegacyScalarBoolOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 
@@ -98,6 +99,7 @@ NativeSlot::NativeSlot(NativeSlot&& other) noexcept
       tArgs(other.tArgs), numTArgs(other.numTArgs),
       bArgs(other.bArgs), numBArgs(other.numBArgs),
       dArgs(other.dArgs), numDArgs(other.numDArgs),
+      sArgs(other.sArgs), numSArgs(other.numSArgs),
       needsZeroedOutput(other.needsZeroedOutput),
       isDataDependent(other.isDataDependent),
       outputShapeDependsOnInputValues(other.outputShapeDependsOnInputValues),
@@ -126,6 +128,7 @@ NativeSlot::NativeSlot(NativeSlot&& other) noexcept
   other.tArgs = nullptr;
   other.bArgs = nullptr;
   other.dArgs = nullptr;
+  other.sArgs = nullptr;
 }
 
 NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
@@ -137,6 +140,7 @@ NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
     delete[] tArgs;
     delete[] bArgs;
     delete[] dArgs;
+    delete[] sArgs;
 
     opHash = other.opHash;
     op = other.op;
@@ -150,6 +154,7 @@ NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
     tArgs = other.tArgs; numTArgs = other.numTArgs;
     bArgs = other.bArgs; numBArgs = other.numBArgs;
     dArgs = other.dArgs; numDArgs = other.numDArgs;
+    sArgs = other.sArgs; numSArgs = other.numSArgs;
     needsZeroedOutput = other.needsZeroedOutput;
     isDataDependent = other.isDataDependent;
     outputShapeDependsOnInputValues = other.outputShapeDependsOnInputValues;
@@ -179,6 +184,7 @@ NativeSlot& NativeSlot::operator=(NativeSlot&& other) noexcept {
     other.tArgs = nullptr;
     other.bArgs = nullptr;
     other.dArgs = nullptr;
+    other.sArgs = nullptr;
   }
   return *this;
 }
@@ -327,7 +333,7 @@ NativeDynamicShapePlan::~NativeDynamicShapePlan() {
 // ─── Deserialization from binary plan ─────────────────────────────────────────
 
 static const uint32_t DSP_MAGIC = 0x44535031;  // "DSP1"
-static const int32_t DSP_VERSION_MAX = 3;  // Max supported version
+static const int32_t DSP_VERSION_MAX = 5;  // Max supported version
 
 /**
  * Helper to read typed values from a byte stream.
@@ -388,8 +394,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   }
 
   int32_t version = reader.read<int32_t>();
-  if (version < 1 || version > 4) {
-    DSP_DIAG(COMPILE, "NativeDynamicShapePlan: unsupported version %d (expected 1-4)", version);
+  if (version < 1 || version > DSP_VERSION_MAX) {
+    DSP_DIAG(COMPILE, "NativeDynamicShapePlan: unsupported version %d (expected 1-%d)", version, DSP_VERSION_MAX);
     return nullptr;
   }
 
@@ -451,6 +457,17 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       }
     }
 
+    slot.numSArgs = 0;
+    if (version >= 5) {
+      slot.numSArgs = reader.read<int32_t>();
+      if (slot.numSArgs > 0) {
+        slot.sArgs = new std::string[slot.numSArgs];
+        for (int i = 0; i < slot.numSArgs; i++) {
+          slot.sArgs[i] = reader.readString();
+        }
+      }
+    }
+
     // Flags
     slot.needsZeroedOutput = reader.read<uint8_t>() != 0;
     slot.isDataDependent = reader.read<uint8_t>() != 0;
@@ -502,6 +519,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
           break;
         case 6:  // LegacyPairwiseTransformOp
           legacyOp = new sd::ops::LegacyPairwiseTransformOp(slot.legacyOpNum);
+          break;
+        case 7:  // LegacyScalarBoolOp
+          legacyOp = new sd::ops::LegacyScalarBoolOp(slot.legacyOpNum);
           break;
         default:
           DSP_DIAG(COMPILE, "unknown legacy op type %d for '%s'",
@@ -991,6 +1011,24 @@ Status NativeDynamicShapePlan::execute(
 
   // Frozen constant detection (extracted to NativeDynamicShapePlan_slotexec.cpp)
   detectFrozenConstants();
+
+#ifdef SD_CUDA
+  // Batched GEMM group detection: after first shapes-frozen warmup, scan for
+  // same-shape matmul slots that can be batched. Uses cachedOutputShapes from
+  // the warmup pass (persists even after arrays are released).
+  // Only detect when NOT using graph capture — batched GEMM replaces individual
+  // matmul ops during slot-by-slot execution, not during graph replay.
+  // Running detection + cudaMalloc during graph capture steps causes interference.
+  if (shapesFrozen_ && executeCount_ == 1 && batchedGemmGroups_.empty() &&
+      Environment::getInstance().dspBatchedGemm() &&
+      !gpuGraphCaptureEnabled_) {
+    detectBatchedGemmGroups(externalInputs, numExternalInputs);
+    if (!batchedGemmGroups_.empty()) {
+      cudaStream_t execStream = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+      prepareBatchedGemmDevice(execStream);
+    }
+  }
+#endif
 
   // Adaptive segment splitting (GPU only): if a segment's shape key
   // changes for consecutive executions, split it at the midpoint.

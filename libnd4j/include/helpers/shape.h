@@ -905,8 +905,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs
     if (dimsToExclude == nullptr) {  // --> means dimsToExclude == {0,1,2,...,dimsLen-1}
 
       for (sd::LongType i = 0; i < minRank; ++i) {
-        // FIX: Ensure proper modulo for tiling with dimensions of size 1
-        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[i + 1];
+        // shapeOf() already returns pointer past the rank element,
+        // so [i] is the correct index (not [i+1])
+        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[i];
         sd::LongType maxIdx = maxIdxs[i + dimsLen];
 
         // Only use modulo for non-zero dimension sizes to avoid division by zero
@@ -924,8 +925,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs
           continue;
         }
 
-        // FIX: Ensure proper modulo for tiling with dimensions of size 1
-        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[minI + 1];
+        // shapeOf() already returns pointer past the rank element,
+        // so [minI] is the correct index (not [minI+1])
+        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[minI];
 
         // Only use modulo for non-zero dimension sizes to avoid division by zero
         if (dimSize > 0) {

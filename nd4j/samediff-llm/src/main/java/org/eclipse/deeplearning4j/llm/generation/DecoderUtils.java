@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.factory.Nd4j;
 
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -433,6 +434,12 @@ public class DecoderUtils {
                         if (cachePos > 0) {
                             mask.putScalar(0, cachePos - 1, 1);
                         }
+                        // putScalar writes to host buffer via JavaCPP indexer but does NOT
+                        // mark the host as "written" in the C++ DataBuffer tracking counters.
+                        // Without this tag, syncToDevice() in the frozen fast path is a no-op
+                        // (isSpecialActual() returns true), so the CUDA graph replays with
+                        // stale attention_mask data — the model never sees new decode positions.
+                        Nd4j.getAffinityManager().tagLocation(mask, AffinityManager.Location.HOST);
                         decoderInputMap.put(inputName, mask);
                     } else {
                         INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
@@ -440,6 +447,8 @@ public class DecoderUtils {
                             mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
                         }
                         mask.putScalar(0, totalSeqLen - 1, 1);
+                        // Ensure host-side putScalar is visible to C++ syncToDevice
+                        Nd4j.getAffinityManager().tagLocation(mask, AffinityManager.Location.HOST);
                         decoderInputMap.put(inputName, mask);
                         if (canReuse) reusableInputs.put("attention_mask", mask);
                     }
@@ -463,6 +472,8 @@ public class DecoderUtils {
                 if (canReuse && reusableInputs.containsKey("position_ids")) {
                     INDArray posIds = reusableInputs.get("position_ids");
                     posIds.putScalar(0, 0, pastSeqLen);
+                    // Ensure host-side putScalar is visible to C++ syncToDevice
+                    Nd4j.getAffinityManager().tagLocation(posIds, AffinityManager.Location.HOST);
                     decoderInputMap.put(inputName, posIds);
                 } else {
                     INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)

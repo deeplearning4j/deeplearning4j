@@ -138,11 +138,9 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, &dimensions);
-  auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
     helpers::scatterSimple(
         block.launchContext(), 6, *gradI, *gradO, *indicesArr,
-        *vec);  // 6 corresponds to copy operation
-    delete vec;
+        dimensions);  // 6 corresponds to copy operation
     delete indicesArr;
   }
 

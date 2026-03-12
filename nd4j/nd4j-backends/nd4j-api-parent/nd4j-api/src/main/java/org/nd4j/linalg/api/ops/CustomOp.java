@@ -204,6 +204,15 @@ public interface CustomOp  {
    opContext.setDArguments(dArgs);
   }
 
+  // Set string arguments
+  if (numSArguments() > 0) {
+   String[] sArgs = new String[numSArguments()];
+   for (int i = 0; i < numSArguments(); i++) {
+    sArgs[i] = getSArgument(i);
+   }
+   opContext.setSArguments(sArgs);
+  }
+
   // Set output arguments
   val outputArgs = outputArguments();
   if (outputArgs != null && !outputArgs.isEmpty()) {

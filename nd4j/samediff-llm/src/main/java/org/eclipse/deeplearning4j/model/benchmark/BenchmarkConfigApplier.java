@@ -67,6 +67,9 @@ public class BenchmarkConfigApplier {
         Environment env = Nd4j.getEnvironment();
 
         // Reset ALL Triton flags to defaults
+        env.setDspBatchZero(false);
+        env.setDspBatchZeroKernel(false);
+        env.setDspBatchedGemm(false);
         env.setTritonGraphCapture(false);
         env.setTritonSectionFusion(false);
         env.setTritonConsolidatedArgTable(false);
@@ -118,6 +121,11 @@ public class BenchmarkConfigApplier {
         // DSP optimization flags
         env.setDspCastElimination(config.isDspCastElimination());
         env.setDspFp16Compute(config.isDspFp16Compute());
+
+        // DSP batch optimizations
+        env.setDspBatchZero(config.isDspBatchZero());
+        env.setDspBatchZeroKernel(config.isDspBatchZeroKernel());
+        env.setDspBatchedGemm(config.isDspBatchedGemm());
 
         applyTritonProfile(config.getTritonProfile());
 

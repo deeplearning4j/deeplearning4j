@@ -1688,30 +1688,18 @@ public class SameDiffSerializer {
                 df.setOwnName(opOwnName);
 
                 if (fn.propertiesLength() > 0) {
-                    Map<String, Object> properties = new HashMap<>();
-
-                    for (int j = 0; j < fn.propertiesLength(); j++) {
-                        FlatProperties prop = fn.properties(j);
-                        if (prop != null && prop.name() != null) {
-                            String key = prop.name();
-
-                            // Extract string array values
-                            if (prop.sLength() > 0) {
-                                String[] values = new String[prop.sLength()];
-                                for (int k = 0; k < prop.sLength(); k++) {
-                                    values[k] = prop.s(k);
-                                }
-                                properties.put(key, values);
-                            }
-                            // Extract single string value
-                            else if (prop.sLength() == 1) {
-                                properties.put(key, prop.s(0));
-                            }
-                        }
+                    FlatProperties[] flatProperties = new FlatProperties[fn.propertiesLength()];
+                    for (int j = 0; j < flatProperties.length; j++) {
+                        flatProperties[j] = fn.properties(j);
                     }
 
+                    Map<String, Object> properties = FlatBuffersMapper
+                            .mapFlatPropertiesToFunctionProperties(Arrays.asList(flatProperties));
                     if (!properties.isEmpty()) {
                         df.setPropertiesForFunction(properties);
+                        if (df instanceof org.nd4j.linalg.api.ops.CustomOp) {
+                            ((org.nd4j.linalg.api.ops.CustomOp) df).configureFromArguments();
+                        }
                     }
                 }
                 SameDiffOp sdo = SameDiffOp.builder().name(opOwnName).op(df).build();

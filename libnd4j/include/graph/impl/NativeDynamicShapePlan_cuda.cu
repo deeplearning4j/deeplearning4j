@@ -34,6 +34,7 @@
 #include <graph/NativePlanCompiler.h>
 #include <graph/DspDiagnostics.h>
 #include <graph/DspVerifyUtils.h>
+#include <graph/cuda/CudaGraphReplayHandle.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/MmulHelper.h>
 #include <memory/cuda/CudaMemoryPool.h>
@@ -42,6 +43,8 @@
 #include <graph/gpu/NvrtcKernelCache.h>
 #include <ops/declarable/helpers/kv_scatter.h>
 #include <system/Environment.h>
+
+#include <graph/gpu/CaptureBufferRegistry.h>
 
 #if HAVE_TRITON
 #include <graph/gpu/TritonGraphBackend.h>
@@ -142,11 +145,11 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   bool frozenFastPathInputStable = true;
   if (allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1) {
     auto& seg0 = segments_[0];
-    if (seg0.captureBuffers.empty()) {
+    if (!seg0.replayHandle || seg0.replayHandle->getCaptureBuffers().empty()) {
       // Per-address comparison: catches address changes that the hash may miss
       // (e.g. CUDA pool reuses an address for a different allocation, changing
       // only a subset of the hashed values in a way that produces a collision).
-      if (!seg0.capturedExternalAddrs.empty()) {
+      if (seg0.replayHandle && !seg0.replayHandle->getCapturedExternalAddresses().empty()) {
         frozenFastPathInputStable = externalAddrsMatch(seg0, externalInputs, numExternalInputs);
       } else if (seg0.capturedInputAddrKey != 0) {
         // Legacy fallback: hash-based check for graphs captured before the
@@ -157,8 +160,8 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     }
   }
   if (!(allowFrozenGraphFastPath && shapesFrozen_ && executeCount_ > 1 && segments_.size() == 1 &&
-        frozenFastPathInputStable && segments_[0].cachedGraph != nullptr &&
-        segments_[0].cachedGraph->getState() == cuda::GraphState::INSTANTIATED)) {
+        frozenFastPathInputStable && segments_[0].replayHandle != nullptr &&
+        segments_[0].replayHandle->isReady())) {
     return Status::MAYBE;  // Fast path not applicable
   }
 
@@ -181,7 +184,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   bool ok = true;
   int copiedCount = 0;
   int skippedCount = 0;
-  for (auto& cb : seg.captureBuffers) {
+  for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
     if (cb.directReference) {
       skippedCount++;
       continue;
@@ -231,7 +234,7 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
     auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
 
 #if HAVE_TRITON
-    if (seg.captureBuffers.empty()) {
+    if (seg.replayHandle->getCaptureBuffers().empty()) {
       for (int ei = 0; ei < numExternalInputs; ei++) {
         if (externalInputs[ei] != nullptr) {
           externalInputs[ei]->syncToDevice();
@@ -240,12 +243,13 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       auto* tritonBackend = dynamic_cast<TritonGraphBackend*>(getGpuGraphBackend());
       if (tritonBackend != nullptr) {
         tritonBackend->refreshArgTablesForReplay(seg, externalInputs, numExternalInputs,
-                                                 outputSlots_, totalOutputSlots_);
+                                                 outputSlots_, totalOutputSlots_,
+                                                 stream);
       }
     }
 #endif
 
-    if (seg.cachedGraph->launchAsync(cudaStr)) {
+    if (seg.replayHandle->replay(stream)) {
       auto tLaunchDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
       for (int i = 0; i < numRequestedOutputs_; i++) {
         int slotIdx = requestedOutputSlotIndices_[i];
@@ -309,7 +313,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
   {
     bool anyGraphCached = false;
     for (const auto& seg : segments_) {
-      if (seg.cachedGraph != nullptr) { anyGraphCached = true; break; }
+      if (seg.replayHandle != nullptr && seg.replayHandle->isReady()) { anyGraphCached = true; break; }
     }
     if (!anyGraphCached) {
       AttentionWorkspace::getInstance()->clear();
@@ -325,11 +329,10 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
   // Free captured graphs for segments whose shapes have changed
   if (!shapesFrozen_ || executeCount_ == 0) {
     for (auto& segment : segments_) {
-      if (segment.cachedGraph) {
+      if (segment.replayHandle) {
         LongType segShapeKey = computeSegmentShapeKey(segment, externalInputs, numExternalInputs);
         if (segment.cachedShapeKey != segShapeKey) {
-          segment.cachedGraph.reset();
-          segment.capturedExternalAddrs.clear();
+          segment.replayHandle.reset();
         }
       }
     }
@@ -342,7 +345,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
   // Keep caches for segments with an instantiated graph that can replay.
-  if (seg.cachedGraph != nullptr && !seg.captureFailed) return true;
+  if (seg.replayHandle != nullptr && !seg.captureFailed) return true;
   return false;
 }
 
@@ -465,7 +468,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] useGraph=1 isCapturable=%d captureFailed=%d hasGraph=%d",
            segment.startSlot, segment.endSlot,
            static_cast<int>(segment.isCapturable), static_cast<int>(segment.captureFailed),
-           static_cast<int>(segment.cachedGraph != nullptr));
+           static_cast<int>(segment.replayHandle != nullptr));
 
   // Try the selected GPU compiler backend (TRITON / NVRTC / PTX)
   auto* gpuBackend = getGpuGraphBackend();
@@ -533,7 +536,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
         status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
         if (status != Status::OK) return status;
       } else {
-        usedGraph = (segment.cachedGraph != nullptr && !segment.captureFailed);
+        usedGraph = (segment.replayHandle != nullptr && segment.replayHandle->isReady() && !segment.captureFailed);
       }
     } else {
       // No graph backends — slot-by-slot fallback
@@ -597,7 +600,8 @@ void NativeDynamicShapePlan::platformScatterKvEntry(
 
 void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
   for (auto& seg : segments_) {
-    for (auto& cb : seg.captureBuffers) {
+    if (!seg.replayHandle) continue;
+    for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
       for (int i = 0; i < kvCacheNumMappings_; i++) {
         if (cb.externalInputIndex == kvCacheMappings_[i].pastInputExternalIdx) {
           cb.neverSkipCopy = true;
@@ -613,18 +617,23 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
-  seg.cachedGraph.reset();
-  seg.captureBuffers.clear();
-  seg.capturedExternalAddrs.clear();
-  if (seg.captureWorkspacePtr != nullptr) {
-    cudaFree(seg.captureWorkspacePtr);
-    seg.captureWorkspacePtr = nullptr;
-    seg.captureWorkspaceBytes = 0;
+  if (seg.replayHandle) {
+    // Free capture buffer NDArrays before destroying the handle
+    for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+      if (!cb.directReference) delete cb.buffer;
+    }
+    // Free capture workspace
+    {
+      bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
+                     captureBufferRegistry_ != nullptr;
+      seg.replayHandle->releaseWorkspace(
+          usePool ? captureBufferRegistry_ : nullptr,
+          seg.startSlot);
+    }
+    // Free pinned host pointers
+    seg.replayHandle->freeHostPointers();
+    seg.replayHandle.reset();
   }
-  for (auto* ptr : seg.capturedHostPtrs) {
-    cudaFreeHost(ptr);
-  }
-  seg.capturedHostPtrs.clear();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -632,23 +641,36 @@ void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 void NativeDynamicShapePlan::platformFreePlanResources() {
+  bool usePool = Environment::getInstance().dspCapturePoolEnabled() &&
+                 captureBufferRegistry_ != nullptr;
+
   // Free capture buffers, workspace, and JIT kernels from all segments
   for (auto& seg : segments_) {
-    for (auto& cb : seg.captureBuffers) {
-      if (!cb.directReference) delete cb.buffer;
+    if (seg.replayHandle) {
+      for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+        if (!cb.directReference) delete cb.buffer;
+      }
+      seg.replayHandle->getCaptureBuffers().clear();
+      if (seg.replayHandle->getWorkspacePtr() != nullptr) {
+        if (usePool) {
+          // Pool registry will free via releaseAll below
+        } else {
+          seg.replayHandle->releaseWorkspace(nullptr, seg.startSlot);
+        }
+      }
+      seg.replayHandle->freeHostPointers();
+      seg.replayHandle.reset();
     }
-    seg.captureBuffers.clear();
-    if (seg.captureWorkspacePtr != nullptr) {
-      cudaFree(seg.captureWorkspacePtr);
-      seg.captureWorkspacePtr = nullptr;
-      seg.captureWorkspaceBytes = 0;
-    }
-    for (auto* ptr : seg.capturedHostPtrs) {
-      cudaFreeHost(ptr);
-    }
-    seg.capturedHostPtrs.clear();
     delete seg.jitKernel;
     seg.jitKernel = nullptr;
+  }
+
+  // Release all pool-managed capture buffers at once
+  if (usePool) {
+    auto* registry = static_cast<CaptureBufferRegistry*>(captureBufferRegistry_);
+    registry->releaseAll();
+    delete registry;
+    captureBufferRegistry_ = nullptr;
   }
 
   // Free pre-allocated cuBLAS workspace
@@ -660,6 +682,12 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
 
   // Free batch-zero resources
   freeBatchZeroResources();
+
+  // Free batch D2D resources
+  freeBatchD2DResources();
+
+  // Free batched GEMM resources
+  freeBatchedGemmResources();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -669,7 +697,7 @@ void NativeDynamicShapePlan::platformFreePlanResources() {
 int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
   int count = 0;
   for (const auto& seg : segments_) {
-    if (seg.cachedGraph) count++;
+    if (seg.replayHandle && seg.replayHandle->isReady()) count++;
   }
   return count;
 }

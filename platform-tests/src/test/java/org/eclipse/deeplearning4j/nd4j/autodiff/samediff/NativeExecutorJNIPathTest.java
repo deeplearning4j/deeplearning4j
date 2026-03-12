@@ -43,6 +43,7 @@ import org.nd4j.nativeblas.OpaqueContext;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.nativeblas.OpaqueNDArray;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -234,6 +235,36 @@ public class NativeExecutorJNIPathTest extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    public void testEinsumJNI() {
+        SameDiff sd = SameDiff.create();
+        SDVariable left = sd.placeHolder("left", DataType.FLOAT, 2, 3);
+        SDVariable right = sd.placeHolder("right", DataType.FLOAT, 4, 3);
+        sd.linalg().einsum("z", new SDVariable[]{left, right}, "ik,jk->ij");
+
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "z");
+        Pointer handle = compileNativePlan(plan);
+        if (handle == null || handle.isNull()) {
+            log.info("Skipping - backend doesn't support native executor");
+            return;
+        }
+
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        try {
+            INDArray leftArr = Nd4j.linspace(1, 6, 6, DataType.FLOAT).reshape(2, 3);
+            INDArray rightArr = Nd4j.linspace(1, 12, 12, DataType.FLOAT).reshape(4, 3);
+            Map<String, INDArray> placeholders = Map.of("left", leftArr, "right", rightArr);
+
+            INDArray expected = leftArr.mmul(rightArr.transpose());
+            INDArray[] extInputs = resolveExternalInputs(plan, sd, placeholders);
+            Map<String, INDArray> nativeResult = executeNativePlan(handle, plan, extInputs);
+            NativeExecutorTestUtils.assertArrayEquals(expected, nativeResult.get("z"), TOLERANCE, "einsum");
+        } finally {
+            nativeOps.freeDynamicShapePlan(handle);
+            plan.close();
+        }
+    }
+
+    @Test
     public void testMatMulJNI() {
         SameDiff sd = NativeExecutorTestUtils.createMatMulGraph(4, 8);
         DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "z");
@@ -258,6 +289,46 @@ public class NativeExecutorJNIPathTest extends BaseNd4jTestWithBackends {
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeDynamicShapePlan(handle);
             plan.close();
         }
+    }
+
+    @Test
+    public void testJNIViewOutputUsesOffsetAdjustedPointersAndLogicalLength() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        INDArray base = Nd4j.linspace(1, 20, 20, DataType.FLOAT).reshape(5, 4);
+        INDArray view = base.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all());
+        INDArray expected = view.dup();
+
+        assertTrue(view.offset() > 0, "Test setup requires a non-zero-offset view");
+
+        OpaqueNDArray opaqueView = OpaqueNDArray.fromINDArray(view);
+        assertNotNull(opaqueView, "Failed to create opaque view");
+        assertFalse(opaqueView.isNull(), "Opaque view was null");
+
+        long[] shapeInfo = OpaqueNDArray.getOpaqueNDArrayShapeInfo(opaqueView);
+        long[] shape = Shape.shape(shapeInfo);
+        DataType dtype = ArrayOptionsHelper.dataType(shapeInfo);
+        long logicalLength = Shape.length(shapeInfo);
+        long reportedLength = OpaqueNDArray.getOpaqueNDArrayLength(opaqueView);
+        long reportedOffset = OpaqueNDArray.getOpaqueNDArrayOffset(opaqueView);
+
+        assertArrayEquals(expected.shape(), shape, "Unexpected view shape");
+        assertEquals(view.offset(), reportedOffset, "JNI wrapper must report the INDArray offset");
+        assertEquals(logicalLength, reportedLength,
+                "JNI wrapper must report logical array length, not backing-buffer length");
+
+        Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueView);
+        Pointer nativeSpecial = nativeOps.getOpaqueNDArraySpecialBuffer(opaqueView);
+        OpaqueDataBuffer srcOdb = nativeOps.dbCreateExternalDataBuffer(
+                logicalLength, dtype.toInt(), nativePrimary, nativeSpecial);
+        assertNotNull(srcOdb, "Failed to wrap native view buffer");
+
+        INDArray copied = Nd4j.createUninitialized(dtype, shape);
+        OpaqueDataBuffer dstOdb = copied.data().opaqueBuffer();
+        assertNotNull(dstOdb, "Destination opaque buffer was null");
+        nativeOps.copyBuffer(dstOdb, logicalLength, srcOdb, 0, 0);
+
+        NativeExecutorTestUtils.assertArrayEquals(
+                expected, copied, TOLERANCE, "JNI output copy must respect view offset");
     }
 
     @Test

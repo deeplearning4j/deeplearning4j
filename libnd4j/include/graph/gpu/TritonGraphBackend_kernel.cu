@@ -871,7 +871,8 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
 Status TritonGraphBackend::refreshArgTablesForReplay(
     GraphSegment& seg,
     NDArray** externalInputs, int numExternalInputs,
-    NDArray** outputSlots, int totalOutputSlots) {
+    NDArray** outputSlots, int totalOutputSlots,
+    void* execStream) {
   int currentDevice = -1;
   cudaGetDevice(&currentDevice);
 
@@ -896,9 +897,14 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   bool useDirtyTracking = Environment::getInstance().tritonArgDirtyTracking()
                           && !compiledSeg->hasDynamicArgs.empty();
 
+  // specialBuffer() addresses are CPU-side pointer values set during allocation
+  // (cudaMallocAsync returns pointers synchronously). No stream sync needed
+  // to read them — actual data ordering is handled by graph launch on cudaStr.
+
   int refreshedCount = 0;
   int skippedCount = 0;
   int dirtySkippedCount = 0;
+  int totalChangedPtrs = 0;
   for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
     auto& subKernel = compiledSeg->subKernels[ki];
     if (!subKernel.useIndirectArgs || subKernel.cachedArgTableHostPinned == nullptr) {
@@ -906,13 +912,9 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
       continue;
     }
 
-    // Dirty tracking: skip sub-kernels with only static (constant weight) args.
-    // Their buffer pointers never change between steps, so no refresh needed.
-    if (useDirtyTracking && ki < compiledSeg->hasDynamicArgs.size()
-        && !compiledSeg->hasDynamicArgs[ki]) {
-      dirtySkippedCount++;
-      continue;
-    }
+    bool isStaticByDirtyTracking = useDirtyTracking
+        && ki < compiledSeg->hasDynamicArgs.size()
+        && !compiledSeg->hasDynamicArgs[ki];
 
     auto* argTableHostPinned = static_cast<int64_t*>(subKernel.cachedArgTableHostPinned);
     int numBufferArgs = static_cast<int>(subKernel.argSlotMapping.size());
@@ -937,17 +939,34 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
         }
       }
     }
+    totalChangedPtrs += changedPtrs;
     if (changedPtrs > 0) {
-      DSP_DIAG(EXECUTE, "REFRESH: subK[%zu] [%d-%d] %d/%d ptrs changed",
-               ki, subKernel.startSlot_, subKernel.endSlot_, changedPtrs, numBufferArgs);
+      if (isStaticByDirtyTracking) {
+        DSP_DIAG(EXECUTE, "DIRTY_TRACK_BUG: subK[%zu] [%d-%d] classified STATIC but %d/%d ptrs changed!",
+                 ki, subKernel.startSlot_, subKernel.endSlot_, changedPtrs, numBufferArgs);
+      } else {
+        DSP_DIAG(EXECUTE, "REFRESH: subK[%zu] [%d-%d] %d/%d ptrs changed",
+                 ki, subKernel.startSlot_, subKernel.endSlot_, changedPtrs, numBufferArgs);
+      }
     }
+    if (isStaticByDirtyTracking) dirtySkippedCount++;
     refreshedCount++;
   }
 
   if (refreshedCount > 0 || dirtySkippedCount > 0) {
     DSP_DIAG(EXECUTE, "TritonGraphBackend::refreshArgTablesForReplay: refreshed %d sub-kernels "
-             "(skipped %d non-indirect, %d static-only) for seg[%d-%d]",
-             refreshedCount, skippedCount, dirtySkippedCount, seg.startSlot, seg.endSlot);
+             "(skipped %d non-indirect, %d static-only, changedPtrs=%d) for seg[%d-%d]",
+             refreshedCount, skippedCount, dirtySkippedCount, totalChangedPtrs,
+             seg.startSlot, seg.endSlot);
+  }
+
+  // Mark arg table stable when no pointers changed — enables fast-replay path.
+  if (totalChangedPtrs == 0 && refreshedCount > 0) {
+    seg.argTableStable = true;
+    DSP_DIAG(EXECUTE, "ARG_TABLE_STABLE: seg[%d-%d] %d sub-kernels, fast-replay enabled",
+             seg.startSlot, seg.endSlot, refreshedCount);
+  } else {
+    seg.argTableStable = false;
   }
   return Status::OK;
 }

@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.autodiff.samediff.diagnostics.DspDiagnostics;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.device.DeviceMemoryManager;
@@ -717,6 +718,10 @@ public class DynamicShapePlanExecutor implements Closeable {
             log.info("Native executor: compiled plan with {} slots, {} external inputs, {} outputs (cudaGraphs={}, shapesFrozen={})",
                     plan.getSlots().length, plan.getExternalInputKeys().length,
                     plan.getRequestedOutputs().size(), cudaGraphsEnabled, false);
+            DspDiagnostics.record(DspDiagnostics.COMPILE,
+                    "Java: compiled native plan " + plan.getSlots().length + " slots, " +
+                    plan.getExternalInputKeys().length + " inputs, " +
+                    plan.getRequestedOutputs().size() + " outputs");
         }
 
         GraphExecutionMode resolvedMode = resolveRequestedGraphExecutionMode(requestedMode);
@@ -734,6 +739,9 @@ public class DynamicShapePlanExecutor implements Closeable {
             configuredGraphExecutionMode = effectiveMode;
             log.info("Native executor: mode resolution requested={} resolved={} effective={} tritonAvailable={} fallbackToAuto={}",
                     requestedMode, resolvedMode, effectiveMode, tritonAvailable, fallbackToAutoIfTritonUnavailable);
+            DspDiagnostics.record(DspDiagnostics.BACKEND,
+                    "Java: mode resolution requested=" + requestedMode + " effective=" + effectiveMode +
+                    " triton=" + tritonAvailable);
         } catch (UnsupportedOperationException e) {
             configuredGraphExecutionMode = GraphExecutionMode.AUTO;
         }
@@ -865,6 +873,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                 if (!cudaGraphsFailed && nativePlanHandle != null) {
                     // CUDA graph capture may have failed — disable graphs and retry slot-by-slot
                     log.info("Native executor failed (likely CUDA graph capture), retrying with graphs disabled: {}", e.getMessage());
+                    DspDiagnostics.record(DspDiagnostics.FALLBACK,
+                            "CUDA graph capture failed, retrying without graphs: " + e.getMessage());
                     cudaGraphsFailed = true;
                     try {
                         nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, false);
@@ -877,11 +887,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                     } catch (Exception retryEx) {
                         log.warn("Native executor failed even without CUDA graphs, falling back to Java: {}", retryEx.getMessage());
+                        DspDiagnostics.record(DspDiagnostics.FALLBACK,
+                                "native executor failed without graphs, falling back to Java: " + retryEx.getMessage());
                         nativeExecutorFailed = true;
                         freeNativePlanHandle();
                     }
                 } else {
                     log.warn("Native graph executor failed, falling back to Java executor: {}", e.getMessage());
+                    DspDiagnostics.record(DspDiagnostics.FALLBACK,
+                            "native graph executor failed, falling back to Java: " + e.getMessage());
                     nativeExecutorFailed = true;
                     freeNativePlanHandle();
                 }
@@ -2428,6 +2442,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             ctx.setTArguments(slot.getTArgs());
             ctx.setBArguments(slot.getBArgs());
             ctx.setDArguments(slot.getDArgs());
+            ctx.setSArguments(slot.getSArgs() == null ? new String[0] : slot.getSArgs());
             Nd4j.exec((CustomOp) fn, ctx);
         } else {
             Nd4j.exec((Op) fn, ctx);
@@ -2603,6 +2618,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             ctx.setTArguments(slot.getTArgs());
             ctx.setBArguments(slot.getBArgs());
             ctx.setDArguments(slot.getDArgs());
+            ctx.setSArguments(slot.getSArgs() == null ? new String[0] : slot.getSArgs());
             outShapes = ((DynamicCustomOp) fn).calculateOutputShapeFromInputs(ctx);
         }
 
@@ -2613,6 +2629,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     ctx.setTArguments(slot.getTArgs());
                     ctx.setBArguments(slot.getBArgs());
                     ctx.setDArguments(slot.getDArgs());
+                    ctx.setSArguments(slot.getSArgs() == null ? new String[0] : slot.getSArgs());
 
                     long opHash = ((CustomOp) fn).opHash();
                     OpaqueShapeList shapeList;
@@ -3819,6 +3836,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 ctx.setTArguments(slot.getTArgs());
                 ctx.setBArguments(slot.getBArgs());
                 ctx.setDArguments(slot.getDArgs());
+                ctx.setSArguments(slot.getSArgs() == null ? new String[0] : slot.getSArgs());
                 Nd4j.exec((CustomOp) fn, ctx);
             } else {
                 Nd4j.exec((Op) fn, ctx);
@@ -3984,6 +4002,8 @@ public class DynamicShapePlanExecutor implements Closeable {
      */
     private void closeSlotArrayCache() {
         if (slotArrayCache == null) return;
+        log.info("    closeSlotArrayCache: START (length={})", slotArrayCache.length);
+        System.out.flush(); System.err.flush();
 
         // Merge any remaining deferred buffers from mid-execution flushes.
         if (!deferredClose.isEmpty()) {
@@ -4007,7 +4027,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             slotArrayCache[i] = null;
         }
 
-        if (collected == 0) return;
+        if (collected == 0) {
+            log.info("    closeSlotArrayCache: nothing to free");
+            return;
+        }
+
+        log.info("    closeSlotArrayCache: collected {} buffers, calling freePendingBuffers", collected);
+        System.out.flush(); System.err.flush();
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         Pointer stream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
@@ -4018,6 +4044,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Free with full dedup. liveGpuAddresses=null because no slots are live during close().
         int[] stats = freePendingBuffers(nativeOps, stream, null);
         pendingClose.clear();
+
+        log.info("    closeSlotArrayCache: freePendingBuffers done ({}/{} freed, {}MB)", stats[0], stats[1], stats[2]);
+        System.out.flush(); System.err.flush();
 
         // Trim memory pool so freed memory is immediately available
         if (stream != null) {
@@ -4030,7 +4059,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
         }
-        log.debug("  closeSlotArrayCache: freed {}/{} buffers ({}MB)", stats[0], stats[1], stats[2]);
+        log.info("    closeSlotArrayCache: DONE");
+        System.out.flush(); System.err.flush();
     }
 
     /**
@@ -4056,6 +4086,10 @@ public class DynamicShapePlanExecutor implements Closeable {
          // Resolve external inputs (constants, variables, placeholders)
         // When frozen, cache constant/variable arrays and only re-resolve placeholders
         String[] extKeys = plan.getExternalInputKeys();
+        // Debug: identify external input 1331 (slot -1332) for H2D sync diagnostics
+        if (Nd4j.getEnvironment().isDebug() && extKeys.length > 1331) {
+            log.info("EXT_INPUT_1331: name='{}' total={}", extKeys[1331], extKeys.length);
+        }
         INDArray[] extInputs;
         if (shapesFrozen && cachedInputArrays != null && cachedInputArrays.length == extKeys.length) {
             // Fast path: reuse cached constant/variable arrays, only re-resolve placeholders.
@@ -4115,6 +4149,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 extInputs[i] = arr;
             }
+        }
+
+        // Debug: dump external input 1331 value info for H2D sync diagnostics
+        if (Nd4j.getEnvironment().isDebug() && extInputs.length > 1331 && extInputs[1331] != null) {
+            INDArray ext1331 = extInputs[1331];
+            log.info("EXT_INPUT_1331_VALUE: shape={} dtype={} sum={} max={} min={} isAttached={}",
+                    java.util.Arrays.toString(ext1331.shape()),
+                    ext1331.dataType(),
+                    ext1331.length() <= 1000 ? ext1331.sumNumber() : "SKIPPED",
+                    ext1331.length() <= 1000 ? ext1331.maxNumber() : "SKIPPED",
+                    ext1331.length() <= 1000 ? ext1331.minNumber() : "SKIPPED",
+                    ext1331.isAttached());
         }
 
         // Reuse OpaqueContext across calls to avoid JNI create/delete overhead.
@@ -4402,6 +4448,8 @@ public class DynamicShapePlanExecutor implements Closeable {
     private void freeNativePlanHandle() {
         // Free cached OpaqueContext first (it references the plan)
         if (cachedOpContext != null) {
+            log.info("    freeNativePlanHandle: deleteGraphContext");
+            System.out.flush(); System.err.flush();
             try {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 nativeOps.deleteGraphContext(cachedOpContext);
@@ -4409,11 +4457,15 @@ public class DynamicShapePlanExecutor implements Closeable {
             cachedOpContext = null;
         }
         if (nativePlanHandle != null && !nativePlanHandle.isNull()) {
+            log.info("    freeNativePlanHandle: freeDynamicShapePlan (handle={})", nativePlanHandle);
+            System.out.flush(); System.err.flush();
             try {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 nativeOps.freeDynamicShapePlan(nativePlanHandle);
+                log.info("    freeNativePlanHandle: freeDynamicShapePlan DONE");
+                System.out.flush(); System.err.flush();
             } catch (Exception e) {
-                log.debug("Error freeing native plan handle: {}", e.getMessage());
+                log.info("Error freeing native plan handle: {}", e.getMessage());
             }
         }
         nativePlanHandle = null;
@@ -4431,22 +4483,27 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     @Override
     public void close() {
-        log.debug("  DSP close() step 1: flushTo");
+        log.info("  DSP close() step 1: flushTo");
+        System.out.flush(); System.err.flush();
         if (localPool != null) {
             localPool.flushTo(mmgr);
             localPool = null;
         }
-        log.debug("  DSP close() step 2: closeSlotArrayCache");
+        log.info("  DSP close() step 2: closeSlotArrayCache");
+        System.out.flush(); System.err.flush();
         closeSlotArrayCache();
-        log.debug("  DSP close() step 3: constant replicas ({})", constantReplicaCache != null ? constantReplicaCache.size() : 0);
+        log.info("  DSP close() step 3: constant replicas ({})", constantReplicaCache != null ? constantReplicaCache.size() : 0);
+        System.out.flush(); System.err.flush();
         if (constantReplicaCache != null) {
             constantReplicaCache.clear();
             constantReplicaCache = null;
         }
-        log.debug("  DSP close() step 4: ctxPool ({})", ctxPool.size());
+        log.info("  DSP close() step 4: ctxPool ({})", ctxPool.size());
+        System.out.flush(); System.err.flush();
         ctxPool.clear();
 
-        log.debug("  DSP close() step 5: outputSlots");
+        log.info("  DSP close() step 5: outputSlots");
+        System.out.flush(); System.err.flush();
         if (outputSlots != null) {
             Arrays.fill(outputSlots, null);
         }
@@ -4455,6 +4512,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         // Destroy self-managed native workspace if we created one
         if (ownNativeWorkspace != null) {
+            log.info("  DSP close() step 5b: destroyNativeWorkspace");
+            System.out.flush(); System.err.flush();
             try {
                 NativeOps wsOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 wsOps.workspaceScopeOut(ownNativeWorkspace);
@@ -4465,6 +4524,8 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         // Free cached output wrappers
         if (zeroCopyOutputCache != null) {
+            log.info("  DSP close() step 6: zeroCopyOutputCache ({} entries)", zeroCopyOutputCache.size());
+            System.out.flush(); System.err.flush();
             for (INDArray arr : zeroCopyOutputCache.values()) {
                 if (arr != null && !arr.wasClosed()) {
                     arr.setCloseable(true);
@@ -4486,20 +4547,25 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         // Free cached OpaqueContext
         if (cachedOpContext != null) {
+            log.info("  DSP close() step 7: deleteGraphContext");
+            System.out.flush(); System.err.flush();
             try {
                 NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
                 nativeOps.deleteGraphContext(cachedOpContext);
             } catch (Exception e) {
-                log.debug("Error freeing cached OpaqueContext: {}", e.getMessage());
+                log.info("Error freeing cached OpaqueContext: {}", e.getMessage());
             }
             cachedOpContext = null;
         }
 
         // Free native C++ plan handle if compiled
+        log.info("  DSP close() step 8: freeNativePlanHandle");
+        System.out.flush(); System.err.flush();
         freeNativePlanHandle();
 
         currentPlan = null;
-        log.debug("  DSP close() complete");
+        log.info("  DSP close() complete");
+        System.out.flush(); System.err.flush();
     }
 
     /**

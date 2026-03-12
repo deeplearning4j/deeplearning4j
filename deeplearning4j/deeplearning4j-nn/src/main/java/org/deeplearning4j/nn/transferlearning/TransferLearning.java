@@ -953,6 +953,36 @@ public class TransferLearning {
             return this;
         }
 
+        private void stabilizeVertexOrder() {
+            Map<String, GraphVertex> currentVertices = editedConfigBuilder.getVertices();
+            Map<String, List<String>> currentVertexInputs = editedConfigBuilder.getVertexInputs();
+
+            LinkedHashMap<String, GraphVertex> orderedVertices = new LinkedHashMap<>();
+            LinkedHashMap<String, List<String>> orderedVertexInputs = new LinkedHashMap<>();
+
+            for (String vertexName : origConfig.getVertices().keySet()) {
+                GraphVertex currentVertex = currentVertices.get(vertexName);
+                if (currentVertex != null) {
+                    orderedVertices.put(vertexName, currentVertex);
+                    if (currentVertexInputs.containsKey(vertexName)) {
+                        orderedVertexInputs.put(vertexName, currentVertexInputs.get(vertexName));
+                    }
+                }
+            }
+
+            for (Map.Entry<String, GraphVertex> entry : currentVertices.entrySet()) {
+                if (!orderedVertices.containsKey(entry.getKey())) {
+                    orderedVertices.put(entry.getKey(), entry.getValue());
+                    if (currentVertexInputs.containsKey(entry.getKey())) {
+                        orderedVertexInputs.put(entry.getKey(), currentVertexInputs.get(entry.getKey()));
+                    }
+                }
+            }
+
+            editedConfigBuilder.setVertices(orderedVertices);
+            editedConfigBuilder.setVertexInputs(orderedVertexInputs);
+        }
+
         /**
          * Returns a computation graph build to specifications.
          * Init has been internally called. Can be fit directly.
@@ -960,6 +990,7 @@ public class TransferLearning {
          */
         public ComputationGraph build() {
             initBuilderIfReq();
+            stabilizeVertexOrder();
 
             ComputationGraphConfiguration newConfig = editedConfigBuilder
                     .validateOutputLayerConfig(validateOutputLayerConfig == null ? true : validateOutputLayerConfig).build();

@@ -59,7 +59,7 @@ public class DynamicPartitionBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs(){
-        return 2;   //input and partitions
+        return 1;
     }
 
     private static SDVariable[] argsArray(SDVariable input, SDVariable partitions, SDVariable[] grads){
@@ -72,8 +72,7 @@ public class DynamicPartitionBp extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        //Input gradients and partition 'gradients' - same type as inputs
-        return Arrays.asList(dataTypes.get(0), dataTypes.get(1));
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

@@ -63,12 +63,15 @@ void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, v
     auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
     auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
+    bool xEmpty = shape::isEmptyConst(x->shapeInfo());
+    bool zEmpty = shape::isEmptyConst(z->shapeInfo());
+
     auto lc = sd::LaunchContext::defaultContext();
     NativeOpExecutioner::execTransformBool(
-        lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
+        lc, opNum, xEmpty ? nullptr : x->buffer(), x->shapeInfo(),
+        xEmpty ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
+        zEmpty ? nullptr : z->buffer(), z->shapeInfo(),
+        zEmpty ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {

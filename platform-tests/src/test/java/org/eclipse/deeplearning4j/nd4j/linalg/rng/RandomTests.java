@@ -1432,6 +1432,28 @@ public class RandomTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOrthogonalDistributionLargeRectangular(Nd4jBackend backend) {
+        OrthogonalDistribution dist = new OrthogonalDistribution(1.0);
+        INDArray array = dist.sample(new int[] {96, 384});
+        assertArrayEquals(new long[] {96, 384}, array.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testOrthogonalDistributionLargeRectangularWithoutBlas(Nd4jBackend backend) {
+        boolean originalBlas = Nd4j.getEnvironment().isEnableBlas();
+        try {
+            Nd4j.getEnvironment().setEnableBlas(false);
+            OrthogonalDistribution dist = new OrthogonalDistribution(1.0);
+            INDArray array = dist.sample(new int[] {96, 384});
+            assertArrayEquals(new long[] {96, 384}, array.shape());
+        } finally {
+            Nd4j.getEnvironment().setEnableBlas(originalBlas);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void reproducabilityTest(Nd4jBackend backend) {
         int numBatches = 1;
 

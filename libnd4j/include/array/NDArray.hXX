@@ -187,8 +187,29 @@ LongType NDArray::getOffset(const LongType i) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
+  // Linear indexing is also used for views. Respect element-wise stride when it exists,
+  // otherwise translate the logical index through the full shape/stride metadata.
+  const auto elementWiseStride = ews();
+  if (isScalar() || elementWiseStride != 0) {
+    return _offset + i * elementWiseStride;
+  }
 
-  return _offset + i;
+  sd::LongType coords[SD_MAX_RANK] = {};
+  const auto rank = rankOf();
+
+  if (ordering() == 'f') {
+    sd::LongType idx = i;
+    for (int dim = 0; dim < rank; ++dim) {
+      coords[dim] = idx % sizeAt(dim);
+      idx /= sizeAt(dim);
+    }
+  } else {
+    INDEX2COORDS(i, rank, shapeOf(), coords);
+  }
+
+  sd::LongType offset = 0;
+  COORDS2INDEX(rank, stridesOf(), coords, offset);
+  return _offset + offset;
 
 }
 
@@ -570,6 +591,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   _buffer = new DataBuffer(buffer, len * sizeOfT(), dataType(), isBuffAlloc,
                            getContext()->getWorkspace());
   _ownsBuffer = true;
+  _offset = offset;
   RECORD_NDARRAY_ALLOCATION();
 }
 
@@ -878,6 +900,7 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   this->_shapeInfoD = constShapeInfo->special();
   _buffer = buffer;
   _ownsBuffer = false;  // External buffer - don't delete
+  _offset = offset;
   RECORD_NDARRAY_ALLOCATION();
 }
 
@@ -1026,6 +1049,7 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   // External buffer - don't take ownership
   _buffer = buffer;
   _ownsBuffer = false;  // External buffer (e.g., from Java) - don't delete
+  _offset = offset;
   _length = shape::length(_shapeInfo);
 
   RECORD_NDARRAY_ALLOCATION();
@@ -7061,7 +7085,7 @@ NDArray* NDArray::operator()(const sd::LongType subArrIdx,
     std::vector<sd::LongType> shapeOfSubArr(subArrRank), indexes(subArrRank);
     for (sd::LongType i = 0; i < subArrRank; ++i) shapeOfSubArr[i] = sizeAt(dimsToExclude[i]);
 
-    INDEX2COORDS(subArrIdx, subArrRank, shape::shapeOf(shapeOfSubArr.data()), indexes.data());
+    INDEX2COORDS(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
     for (sd::LongType i = 0; i < subArrRank; ++i) {
       sd::LongType currIdx = 2 * dimsToExclude[i];
       idxRanges[currIdx] = indexes[i];

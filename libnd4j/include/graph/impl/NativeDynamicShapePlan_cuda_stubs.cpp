@@ -33,6 +33,8 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/GraphBackend.h>
+#include <graph/GraphReplayHandle.h>
+#include <graph/cpu/FunctionalReplayHandle.h>
 
 #include <cstring>
 
@@ -65,6 +67,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 // ── Segment cache retention: check capturability on CPU ─────────────────────
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
+  if (seg.replayHandle && seg.replayHandle->isReady()) return true;
   if (seg.isCapturable && !seg.captureFailed) return true;
   return false;
 }
@@ -103,6 +106,7 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
     if (status == Status::OK) {
       usedGraph = true;
+      segment.compiledByBackend = "GPU";
       return Status::OK;
     }
   }
@@ -111,11 +115,34 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
   auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
   if (status == Status::OK) {
     usedGraph = true;
+    segment.compiledByBackend = "CPU";
     return Status::OK;
   }
 
-  // Fall back to slot-by-slot
-  return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+  // Create FunctionalReplayHandle on first execution of capturable segment
+  if (!segment.replayHandle && segment.isCapturable && !segment.captureFailed) {
+    segment.replayHandle = GraphReplayFactory::create(0);
+    segment.replayHandle->beginCapture(nullptr);
+  }
+
+  // Slot-by-slot execution (actual compute always runs on CPU)
+  status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+
+  // Finalize capture after first successful slot-by-slot pass
+  if (segment.replayHandle && segment.replayHandle->getState() == ReplayState::CAPTURING) {
+    if (status == Status::OK) {
+      segment.replayHandle->endCapture(nullptr);
+      segment.replayHandle->finalize();
+    } else {
+      segment.replayHandle.reset();  // Failed — don't keep broken handle
+    }
+  } else if (segment.replayHandle && segment.replayHandle->isReady()) {
+    // Track replay statistics (actual compute already ran above)
+    segment.replayHandle->replay(nullptr);
+  }
+
+  segment.compiledByBackend = "slot-by-slot";
+  return status;
 }
 
 // ── Post-segment check: no GPU errors on CPU ───────────────────────────────
@@ -161,22 +188,28 @@ void NativeDynamicShapePlan::platformMarkKvCaptureBuffersNeverSkip() {
   // No capture buffers on CPU
 }
 
-// ── Segment cleanup for rebuild: no-op on CPU ───────────────────────────────
+// ── Segment cleanup for rebuild: reset replayHandle on CPU ──────────────────
 
 void NativeDynamicShapePlan::platformCleanupSegmentForRebuild(GraphSegment& seg) {
-  // No GPU graphs, capture buffers, or workspace to free
+  seg.replayHandle.reset();
 }
 
-// ── Plan resource cleanup: no-op on CPU ─────────────────────────────────────
+// ── Plan resource cleanup: reset replayHandles on CPU ───────────────────────
 
 void NativeDynamicShapePlan::platformFreePlanResources() {
-  // No GPU-specific resources to free
+  for (auto& seg : segments_) {
+    seg.replayHandle.reset();
+  }
 }
 
-// ── Statistics: no captured graphs on CPU ────────────────────────────────────
+// ── Statistics: count segments with ready replayHandles ─────────────────────
 
 int NativeDynamicShapePlan::platformCountCapturedGraphSegments() const {
-  return 0;
+  int count = 0;
+  for (const auto& seg : segments_) {
+    if (seg.replayHandle && seg.replayHandle->isReady()) count++;
+  }
+  return count;
 }
 
 // ── Adaptive splitting: no-op on CPU (no GPU graphs to benefit from) ────────

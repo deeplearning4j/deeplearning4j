@@ -185,6 +185,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         context.setIArguments(op.iArgs());
         context.setTArguments(op.tArgs());
         context.setDArguments(op.dArgs());
+        context.setSArguments(op.sArgs());
     }
 
 
@@ -1237,81 +1238,17 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public void registerGraph(long id, Pointer graph) {
-        Nd4j.getNativeOps().registerGraph(null, id, graph);
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        throw new UnsupportedOperationException("registerGraph has been removed - use DynamicShapePlan execution instead");
     }
 
     @Override
     public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
-
-        val ptrBuffers = new PointerPointer(map.size());
-        val ptrShapes = new PointerPointer(map.size());
-        val ptrIndices = new IntPointer(map.size());
-
-        int cnt = 0;
-        val keySet = new ArrayList<String>(map.keySet());
-        for (val key: keySet) {
-            val array = map.get(key);
-
-            ptrBuffers.put(cnt, array.data().addressPointer());
-            ptrShapes.put(cnt, array.shapeInfoDataBuffer().addressPointer());
-            ptrIndices.put(cnt, reverseMap.get(key));
-
-            cnt++;
-        }
-
-        val newMap = new LinkedHashMap<String, INDArray>();
-
-        OpaqueVariablesSet result = Nd4j.getNativeOps().executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
-
-        OpStatus status = OpStatus.byNumber(Nd4j.getNativeOps().getVariablesSetStatus(result));
-
-        if (status != OpStatus.ND4J_STATUS_OK)
-            throw new ND4JIllegalStateException("Op execution failed: " + status);
-
-        for (int e = 0; e < Nd4j.getNativeOps().getVariablesSetSize(result); e++) {
-            OpaqueVariable var = Nd4j.getNativeOps().getVariable(result, e);
-            int nodeId = Nd4j.getNativeOps().getVariableId(var);
-            int index = Nd4j.getNativeOps().getVariableIndex(var);
-            LongPointer shapeInfo = Nd4j.getNativeOps().getVariableShape(var);
-            Pointer buffer = Nd4j.getNativeOps().getVariableBuffer(var);
-
-            val rank = (int) shapeInfo.get(0);
-            val jshape = new long[rank * 2 + 4];
-            for (int i = 0; i < jshape.length; i++) {
-                jshape[i] = shapeInfo.get(i);
-            }
-
-            val shapeOf = Shape.shapeOf(jshape);
-            val stridesOf = Shape.stridesOf(jshape);
-            val order = Shape.order(jshape);
-            val array = Nd4j.create(shapeOf, stridesOf, 0, order);
-
-            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-            Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()));
-
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()), MemcpyDirection.HOST_TO_HOST);
-
-            String nodeName = Nd4j.getNativeOps().getVariableName(var);
-            newMap.put(nodeName, array);
-        }
-
-        // Nd4j.getNativeOps().deleteVariablesSet(result);
-
-        return newMap;
+        throw new UnsupportedOperationException("executeGraph has been removed - use DynamicShapePlan execution instead");
     }
 
     @Override
     public void forgetGraph(long id) {
-        Nd4j.getNativeOps().unregisterGraph(null, id);
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+        throw new UnsupportedOperationException("forgetGraph has been removed - use DynamicShapePlan execution instead");
     }
 
     /**

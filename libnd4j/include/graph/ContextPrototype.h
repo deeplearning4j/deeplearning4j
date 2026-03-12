@@ -29,6 +29,7 @@
 #include <ops/declarable/OpDescriptor.h>
 #include <system/Environment.h>
 
+#include <string>
 #include <vector>
 
 #include <config.h>

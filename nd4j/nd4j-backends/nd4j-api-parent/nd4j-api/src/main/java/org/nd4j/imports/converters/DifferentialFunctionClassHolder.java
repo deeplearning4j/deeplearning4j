@@ -729,6 +729,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.custom.TriangularSolve.class,
                 org.nd4j.linalg.api.ops.custom.LinearSolve.class,
                 org.nd4j.linalg.api.ops.custom.Lstsq.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Qr.class,
                 org.nd4j.linalg.api.ops.custom.Logdet.class
         ));
@@ -1044,6 +1045,8 @@ public class DifferentialFunctionClassHolder {
                 return LoopCond.class;
             case ExternalErrorsFunction.OP_NAME:
                 return ExternalErrorsFunction.class;
+            case "einsum":
+                return org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum.class;
             default:
                 if(udfs.containsKey(name)) {
                     return udfs.get(name);

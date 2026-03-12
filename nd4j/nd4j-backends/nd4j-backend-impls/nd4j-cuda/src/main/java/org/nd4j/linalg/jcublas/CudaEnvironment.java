@@ -1083,6 +1083,56 @@ public class CudaEnvironment implements Environment {
         e.setTritonVerifyKernels(verify);
     }
 
+    @Override
+    public boolean tritonVerifyKeepNative() {
+        return e.tritonVerifyKeepNative();
+    }
+
+    @Override
+    public void setTritonVerifyKeepNative(boolean v) {
+        e.setTritonVerifyKeepNative(v);
+    }
+
+    @Override
+    public int tritonMaxSubKernelIndex() {
+        return e.tritonMaxSubKernelIndex();
+    }
+
+    @Override
+    public void setTritonMaxSubKernelIndex(int idx) {
+        e.setTritonMaxSubKernelIndex(idx);
+    }
+
+    @Override
+    public boolean tritonVerifyFullSnapshot() {
+        return e.tritonVerifyFullSnapshot();
+    }
+
+    @Override
+    public void setTritonVerifyFullSnapshot(boolean v) {
+        e.setTritonVerifyFullSnapshot(v);
+    }
+
+    @Override
+    public boolean tritonForceRecapture() {
+        return e.tritonForceRecapture();
+    }
+
+    @Override
+    public void setTritonForceRecapture(boolean v) {
+        e.setTritonForceRecapture(v);
+    }
+
+    @Override
+    public int tritonCaptureMinExec() {
+        return e.tritonCaptureMinExec();
+    }
+
+    @Override
+    public void setTritonCaptureMinExec(int v) {
+        e.setTritonCaptureMinExec(v);
+    }
+
     // Triton compilation scope
     @Override
     public boolean tritonCompileAll() {
@@ -1116,6 +1166,30 @@ public class CudaEnvironment implements Environment {
         e.setTritonIncludeTypes(types);
     }
 
+    // DSP batch-zero flags
+    @Override
+    public boolean dspBatchZero() { return e.dspBatchZero(); }
+    @Override
+    public void setDspBatchZero(boolean v) { e.setDspBatchZero(v); }
+    @Override
+    public boolean dspBatchZeroVerbose() { return e.dspBatchZeroVerbose(); }
+    @Override
+    public void setDspBatchZeroVerbose(boolean v) { e.setDspBatchZeroVerbose(v); }
+    @Override
+    public boolean dspBatchZeroGapOnly() { return e.dspBatchZeroGapOnly(); }
+    @Override
+    public void setDspBatchZeroGapOnly(boolean v) { e.setDspBatchZeroGapOnly(v); }
+    @Override
+    public boolean dspBatchZeroKernel() { return e.dspBatchZeroKernel(); }
+    @Override
+    public void setDspBatchZeroKernel(boolean v) { e.setDspBatchZeroKernel(v); }
+
+    // DSP batched GEMM
+    @Override
+    public boolean dspBatchedGemm() { return e.dspBatchedGemm(); }
+    @Override
+    public void setDspBatchedGemm(boolean v) { e.setDspBatchedGemm(v); }
+
     // DSP optimization flags
     @Override
     public boolean dspCastElimination() {
@@ -1145,5 +1219,55 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setDspFp16Compute(boolean enabled) {
         e.setDspFp16Compute(enabled);
+    }
+
+    @Override
+    public boolean cublasTf32Enabled() {
+        return e.cublasTf32Enabled();
+    }
+
+    @Override
+    public void setCublasTf32Enabled(boolean enabled) {
+        e.setCublasTf32Enabled(enabled);
+    }
+
+    @Override
+    public boolean dspCastSinkMatmul() {
+        return e.dspCastSinkMatmul();
+    }
+
+    @Override
+    public void setDspCastSinkMatmul(boolean enabled) {
+        e.setDspCastSinkMatmul(enabled);
+    }
+
+    @Override
+    public boolean tritonConsolidatedArgTable() {
+        return e.tritonConsolidatedArgTable();
+    }
+
+    @Override
+    public void setTritonConsolidatedArgTable(boolean enabled) {
+        e.setTritonConsolidatedArgTable(enabled);
+    }
+
+    @Override
+    public boolean tritonArgDirtyTracking() {
+        return e.tritonArgDirtyTracking();
+    }
+
+    @Override
+    public void setTritonArgDirtyTracking(boolean enabled) {
+        e.setTritonArgDirtyTracking(enabled);
+    }
+
+    @Override
+    public boolean tritonSectionFusion() {
+        return e.tritonSectionFusion();
+    }
+
+    @Override
+    public void setTritonSectionFusion(boolean enabled) {
+        e.setTritonSectionFusion(enabled);
     }
 }

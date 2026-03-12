@@ -68,7 +68,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/RandomGenerator.h",
                 "graph/Variable.h",
                 "graph/VariablesSet.h",
-                "graph/FlowPath.h",
                 "graph/Intervals.h",
                 "graph/Stash.h",
                 "graph/VariableSpace.h",
@@ -77,7 +76,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "graph/profiling/NodeProfile.h",
                 "graph/Context.h",
                 "graph/ContextPrototype.h",
-                "graph/ResultWrapper.h",
                 "helpers/shape.h",
                 "array/ShapeList.h",
                 "system/op_boilerplate.h",
@@ -180,8 +178,7 @@ public class Nd4jTpuPresets implements LoadEnabled, BuildEnabled, InfoMapper {
                .put(new Info("std::vector<std::vector<sd::LongType> >").pointerTypes("LongVectorVector").define())
                .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
-               .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
-               .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction"));
+               .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"));
 
         // TPU-specific type mappings
         infoMap.put(new Info("PJRT_Client", "PJRT_Buffer", "PJRT_LoadedExecutable", "PJRT_Api", "PJRT_Error")

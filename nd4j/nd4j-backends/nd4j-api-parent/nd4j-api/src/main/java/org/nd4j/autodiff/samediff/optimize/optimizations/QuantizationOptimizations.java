@@ -51,10 +51,13 @@ import java.util.*;
 public class QuantizationOptimizations extends BaseOptimizerSet {
 
     /**
-     * Optimizer that quantizes FP32 constant and variable arrays to FP16.
-     * This provides 2x memory reduction for model weights with minimal accuracy loss.
+     * Optimizer that quantizes FP32 constant and variable arrays to FP16 or BF16.
+     * This provides ~2x memory reduction for model weights with minimal accuracy loss.
      *
-     * Gated by system property {@code -Dnd4j.optimizer.fp16=true}.
+     * Gated by one of:
+     * - {@code -Dnd4j.optimizer.fp16=true}
+     * - {@code -Dnd4j.optimizer.bf16=true}
+     *
      * Runs once on the first op encountered (quantizes all constants/variables at once).
      */
     public static class QuantizeConstantsToFP16 implements Optimizer {
@@ -65,23 +68,35 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
             if (applied) return false;
-            if (!"true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.fp16"))) {
+            boolean fp16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.fp16"));
+            boolean bf16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.bf16"));
+            if (!fp16Enabled && !bf16Enabled) {
                 applied = true;
                 return false;
             }
+            if (fp16Enabled && bf16Enabled) {
+                throw new IllegalStateException("Only one low-precision optimizer mode may be enabled at a time: " +
+                        "set either nd4j.optimizer.fp16=true or nd4j.optimizer.bf16=true");
+            }
             applied = true;
+            DataType targetType = bf16Enabled ? DataType.BFLOAT16 : DataType.HALF;
+            String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";
 
-            // Only apply FP16 to large models (decoder) — small models like
+            // Only apply low-precision weight casting to large models (decoder) — small models like
             // vision encoder and embed_tokens need FP32 precision.
-            int minOps = Integer.parseInt(System.getProperty("nd4j.optimizer.fp16.minOps", "1000"));
+            String minOpsKey = targetType == DataType.BFLOAT16
+                    ? "nd4j.optimizer.bf16.minOps"
+                    : "nd4j.optimizer.fp16.minOps";
+            int minOps = Integer.parseInt(System.getProperty(minOpsKey, "1000"));
             if (sd.getOps().size() < minOps) {
-                log.info("FP16 skipped: model has {} ops (threshold {})", sd.getOps().size(), minOps);
+                log.info("{} quantization skipped: model has {} ops (threshold {})",
+                        modeName, sd.getOps().size(), minOps);
                 return false;
             }
 
-            int count = quantizeAllToHalf(sd);
+            int count = quantizeAllToType(sd, targetType);
             if (count > 0) {
-                log.info("Full FP16 quantization: {} arrays converted to HALF", count);
+                log.info("Full {} quantization: {} arrays converted to {}", modeName, count, targetType);
                 return true;
             }
             return false;
@@ -89,32 +104,46 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
 
         /**
          * Convert all FP32 CONSTANT and VARIABLE arrays to HALF for full FP16 inference.
+         */
+        public static int quantizeAllToHalf(SameDiff sd) {
+            return quantizeAllToType(sd, DataType.HALF);
+        }
+
+        /**
+         * Convert all FP32 CONSTANT and VARIABLE arrays to BFLOAT16 for full BF16 inference.
+         */
+        public static int quantizeAllToBFloat16(SameDiff sd) {
+            return quantizeAllToType(sd, DataType.BFLOAT16);
+        }
+
+        /**
+         * Convert all FP32 CONSTANT and VARIABLE arrays to a target low-precision dtype.
          *
-         * All key ops support HALF natively:
-         * - Matmul: cublasHgemm (tensor cores on compute 6.0+)
-         * - FlashAttention: explicit float16 templates
-         * - RMS norm: float16 template with FP32 internal reductions
-         * - OnnxMultiHeadAttention: accepts HALF Q/K/V
-         * - Swish/SwiGLU: element-wise ops support HALF
+         * FP16 is broadly supported on CUDA tensor-core paths.
+         * BF16 support depends on backend/hardware capabilities and is best used
+         * when the runtime path has explicit BF16 kernels enabled.
          *
          * Integer-typed arrays (LONG, INT, etc.) are not affected.
-         */
-        /**
-         * Minimum number of elements for an array to be quantized to HALF.
-         * Only large 2D+ weight matrices benefit from FP16 (tensor cores).
+         *
+         * Minimum number of elements for an array to be quantized to low precision.
+         * Only large 2D+ weight matrices benefit from FP16/BF16.
          * Small arrays (biases, normalization gammas/betas, scalars) stay FP32
          * because element-wise ops may not handle mixed HALF+FLOAT correctly
          * and the memory savings are negligible.
          */
-        private static final long MIN_ELEMENTS_FOR_FP16 = 1024;
+        private static final long MIN_ELEMENTS_FOR_LOW_PRECISION = 1024;
 
-        public static int quantizeAllToHalf(SameDiff sd) {
+        public static int quantizeAllToType(SameDiff sd, DataType targetType) {
+            if (targetType != DataType.HALF && targetType != DataType.BFLOAT16) {
+                throw new IllegalArgumentException("Unsupported low-precision target type: " + targetType);
+            }
             ArrayHolder constantArrays = sd.getConstantArrays();
             ArrayHolder variableArrays = sd.getVariablesArrays();
             int quantizedCount = 0;
             int skippedCount = 0;
             long fp32Bytes = 0;
-            long fp16Bytes = 0;
+            long quantizedBytes = 0;
+            String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";
 
             // Convert large FP32 constants (2D+ weight matrices)
             for (String name : new ArrayList<>(constantArrays.arrayNames())) {
@@ -122,11 +151,11 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
                 if (arr != null && arr.dataType() == DataType.FLOAT) {
                     // Only quantize large 2D+ arrays (matmul weights)
                     // Skip 1D (biases, norms), scalars, and small arrays
-                    if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_FP16) {
+                    if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
-                        INDArray fp16Arr = arr.castTo(DataType.HALF);
-                        constantArrays.setArray(name, fp16Arr);
-                        fp16Bytes += arr.length() * 2;
+                        INDArray quantizedArr = arr.castTo(targetType);
+                        constantArrays.setArray(name, quantizedArr);
+                        quantizedBytes += arr.length() * targetType.width();
                         quantizedCount++;
                     } else {
                         skippedCount++;
@@ -138,11 +167,11 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             for (String name : new ArrayList<>(variableArrays.arrayNames())) {
                 INDArray arr = variableArrays.getArray(name);
                 if (arr != null && arr.dataType() == DataType.FLOAT) {
-                    if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_FP16) {
+                    if (arr.rank() >= 2 && arr.length() >= MIN_ELEMENTS_FOR_LOW_PRECISION) {
                         fp32Bytes += arr.length() * 4;
-                        INDArray fp16Arr = arr.castTo(DataType.HALF);
-                        variableArrays.setArray(name, fp16Arr);
-                        fp16Bytes += arr.length() * 2;
+                        INDArray quantizedArr = arr.castTo(targetType);
+                        variableArrays.setArray(name, quantizedArr);
+                        quantizedBytes += arr.length() * targetType.width();
                         quantizedCount++;
                     } else {
                         skippedCount++;
@@ -151,9 +180,9 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
             }
 
             if (quantizedCount > 0) {
-                log.info("FP16 weights: {} arrays quantized ({}MB -> {}MB, {}x), {} small arrays kept FP32",
-                    quantizedCount, fp32Bytes / (1024 * 1024), fp16Bytes / (1024 * 1024),
-                    String.format("%.1f", (double) fp32Bytes / Math.max(1, fp16Bytes)),
+                log.info("{} weights: {} arrays quantized ({}MB -> {}MB, {}x), {} small arrays kept FP32",
+                    modeName, quantizedCount, fp32Bytes / (1024 * 1024), quantizedBytes / (1024 * 1024),
+                    String.format("%.1f", (double) fp32Bytes / Math.max(1, quantizedBytes)),
                     skippedCount);
             }
 

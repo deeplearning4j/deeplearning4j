@@ -2561,6 +2561,36 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testMMulRowColVectorMixedOrderLarge(Nd4jBackend backend) {
+        INDArray colVectorC = Nd4j.linspace(1, 96, 96, DataType.FLOAT).reshape('c', 96, 1);
+        INDArray rowVectorF = Nd4j.linspace(1, 384, 384, DataType.FLOAT).reshape('f', 1, 384);
+
+        boolean originalBlas = Nd4j.getEnvironment().isEnableBlas();
+        INDArray expected;
+        INDArray actual;
+        try {
+            Nd4j.getEnvironment().setEnableBlas(false);
+            expected = colVectorC.mmul(rowVectorF);
+
+            Nd4j.getEnvironment().setEnableBlas(true);
+            actual = colVectorC.mmul(rowVectorF);
+        } finally {
+            Nd4j.getEnvironment().setEnableBlas(originalBlas);
+        }
+
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUV(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.linalg().svd(input, true, true);
+        assertArrayEquals(new long[] {96}, s.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMMulFTimesC(Nd4jBackend backend) {
         int nRows = 3;
         int nCols = 3;

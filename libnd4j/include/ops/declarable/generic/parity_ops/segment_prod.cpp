@@ -95,7 +95,7 @@ DECLARE_TYPES(segment_prod) {
 DECLARE_SHAPE_FN(segment_prod_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
-  return SHAPELIST(CONSTANT(inIdx), CONSTANT(inIdx));
+  return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 
 DECLARE_TYPES(segment_prod_bp) {

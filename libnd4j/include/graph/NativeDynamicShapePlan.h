@@ -150,6 +150,7 @@ struct NativeSlot {
   double* tArgs;      int numTArgs;
   bool* bArgs;        int numBArgs;
   DataType* dArgs;    int numDArgs;
+  std::string* sArgs; int numSArgs;
 
   // Execution flags
   bool needsZeroedOutput;
@@ -212,6 +213,7 @@ struct NativeSlot {
         inputSourceTypes(nullptr), numOutputs(0), outputSlotIndices(nullptr),
         iArgs(nullptr), numIArgs(0), tArgs(nullptr), numTArgs(0),
         bArgs(nullptr), numBArgs(0), dArgs(nullptr), numDArgs(0),
+        sArgs(nullptr), numSArgs(0),
         needsZeroedOutput(true), isDataDependent(false),
         outputShapeDependsOnInputValues(false), needsIntLongSync(false),
         isCustomOp(true), isIdentityOp(false), isViewCapableOp(false),
@@ -231,6 +233,7 @@ struct NativeSlot {
     delete[] tArgs;
     delete[] bArgs;
     delete[] dArgs;
+    delete[] sArgs;
   }
 
   // No copy
@@ -335,6 +338,11 @@ struct GraphSegment {
   // User-forced backend override (empty = automatic selection via priority chain)
   std::string backendOverride;
 
+  // Fast-replay: when true, skip arg table refresh and EXT_INPUT_SYNC on replay.
+  // Set after first replay confirms all arg table pointers are unchanged.
+  // Reset to false on any graph invalidation (replayHandle.reset()).
+  bool argTableStable = false;
+
   GraphSegment()
       : startSlot(0), endSlot(0), isCapturable(false), shapeKey(0),
         executionCount(0), captureFailed(false),
@@ -380,8 +388,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
    *             inputSourceIndices[numInputs](int32),
    *             inputSourceTypes[numInputs](int8),
    *             outputSlotIndices[numOutputs](int32),
-   *             numIArgs/numTArgs/numBArgs/numDArgs(int32 each),
+   *             numIArgs/numTArgs/numBArgs/numDArgs/numSArgs(int32 each),
    *             iArgs[](int64), tArgs[](double), bArgs[](bool), dArgs[](int32),
+   *             sArgs[](int32 len + UTF-8),
    *             flags: needsZeroedOutput(bool), isDataDependent(bool),
    *                    outputShapeDependsOnInputValues(bool), needsIntLongSync(bool),
    *                    isCustomOp(bool), targetDeviceId(int32)
@@ -920,14 +929,67 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Capture buffer pool sharing: routes capture workspace allocation
   // through CudaMemoryPool for cross-segment reuse.
   void* captureBufferRegistry_ = nullptr;  // opaque ptr to CaptureBufferRegistry
+
+  // ── Batch D2D copy optimization ─────────────────────────────────────────
+  // Replaces ~357 individual cudaMemcpyAsync D2D calls for capture buffer
+  // updates with a single kernel launch (same pattern as batch-zero).
+  // dst pointers and sizes are static (capture buffers are fixed-address);
+  // src pointers are updated each step from external input specialBuffer().
+  void* batchD2DDeviceSrcPtrs_ = nullptr;   // Device: void*[count]
+  void* batchD2DDeviceDstPtrs_ = nullptr;   // Device: void*[count]
+  void* batchD2DDeviceSizes_ = nullptr;     // Device: size_t[count]
+  void* batchD2DHostSrcPtrs_ = nullptr;     // Pinned host: void*[count]
+  void* batchD2DHostDstPtrs_ = nullptr;     // Pinned host: void*[count] (static)
+  void* batchD2DHostSizes_ = nullptr;       // Pinned host: size_t[count] (static)
+  int batchD2DCount_ = 0;                   // Number of valid entries
+  int batchD2DAllocated_ = 0;               // Allocated capacity
+  // Map from capture buffer index → batchD2D index (-1 = skipped)
+  std::vector<int> captureBufferToBatchIdx_;
+
+  void prepareBatchD2DDevice(int count, cudaStream_t stream);
+  void launchBatchD2D(cudaStream_t stream);
+  void freeBatchD2DResources();
 #else
   void freeBatchZeroResources() {}
+  void freeBatchD2DResources() {}
 #endif
 
   // Available on all platforms (returns false on non-CUDA, no-op stubs)
   static bool isBatchZeroActive();
   static bool isBatchZeroRegistering();
   static void registerBatchZeroBuffer(void* ptr, size_t bytes);
+
+#ifdef SD_CUDA
+  // ── Batched GEMM optimization ──────────────────────────────────────────
+  // Groups consecutive matmul slots with identical (M,N,K,transA,transB,dtype)
+  // into single cublasGemmBatchedEx calls, reducing CUDA graph node count.
+  // For SmolDocling (24 layers × 9 matmuls), reduces ~211 → ~120 matmul nodes.
+  struct BatchedGemmGroup {
+    std::vector<int> slotIndices;  // matmul slot indices in this group (non-consecutive OK)
+    int triggerSlot;    // last slot in group — execution happens here
+    int M, N, K;        // shared dimensions
+    int transA, transB;
+    sd::DataType dtype;
+    void** d_A_ptrs;    // device pointer array
+    void** d_B_ptrs;
+    void** d_C_ptrs;
+    void** h_A_ptrs;    // pinned host staging
+    void** h_B_ptrs;
+    void** h_C_ptrs;
+    int maxBatchSize;   // allocated capacity
+  };
+  std::vector<BatchedGemmGroup> batchedGemmGroups_;
+  // Maps slot index → index into batchedGemmGroups_ (-1 if not part of a group)
+  std::vector<int> slotToBatchedGemmGroup_;
+
+  const LongType* resolveInputShapeInfo(int srcIdx, NDArray** externalArrays, int numExt) const;
+  void detectBatchedGemmGroups(NDArray** externalArrays, int numExt);
+  void prepareBatchedGemmDevice(cudaStream_t stream);
+  Status executeBatchedGemmGroup(int groupIdx, NDArray** externalArrays, int numExt, cudaStream_t stream);
+  void freeBatchedGemmResources();
+#else
+  void freeBatchedGemmResources() {}
+#endif
 };
 
 }  // namespace graph

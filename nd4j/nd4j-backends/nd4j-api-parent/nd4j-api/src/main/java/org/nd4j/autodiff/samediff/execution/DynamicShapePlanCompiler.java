@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.BaseScalarBoolOp;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
@@ -136,30 +137,30 @@ public class DynamicShapePlanCompiler {
      */
     public static DynamicShapePlan compile(SameDiff sd, ForwardExecutionDAG dag,
                                             Set<String> requestedOutputs) {
-        List<ExecutionNode> executionOrder = dag.getFrameAwareExecutionOrder();
+        // Use getExecutionOrder() (not getFrameAwareExecutionOrder()) to preserve
+        // correct topological ordering for control flow ops. Frame-aware ordering
+        // groups Enter ops into child frames, placing them after their Merge consumers.
+        List<ExecutionNode> executionOrder = dag.getExecutionOrder();
 
-        // Step 1: Filter to actual ops, detect control flow
+        // Step 1: Filter to actual ops, classify control flow ops
         List<ExecutionNode> opNodes = new ArrayList<>();
+        boolean hasControlFlow = false;
         for (ExecutionNode node : executionOrder) {
             if (node.getNodeType() == ExecutionNode.ExecutionNodeType.VARIABLE_INIT ||
                     node.getNodeType() == ExecutionNode.ExecutionNodeType.PLACEHOLDER_SET) {
                 continue;
             }
             if (node.getNodeType() == ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP) {
-                log.debug("Control flow op detected ({}), falling back to standard path",
-                        node.getOperationName());
-                return null;
+                hasControlFlow = true;
             }
-            // Check for control flow ops by opName as well
+            // Also detect CF ops by opName
             SameDiffOp sdOp = sd.getOps().get(node.getOperationName());
             if (sdOp != null && sdOp.getOp() != null) {
                 String opNameLower = sdOp.getOp().opName().toLowerCase();
                 if (opNameLower.equals("switch") || opNameLower.equals("merge") ||
                         opNameLower.equals("enter") || opNameLower.equals("exit") ||
                         opNameLower.equals("next_iteration") || opNameLower.equals("loop_cond")) {
-                    log.debug("Control flow op detected by name ({}), falling back to standard path",
-                            opNameLower);
-                    return null;
+                    hasControlFlow = true;
                 }
             }
             opNodes.add(node);
@@ -248,9 +249,27 @@ public class DynamicShapePlanCompiler {
                 } else if (op instanceof BaseTransformBoolOp) {
                     legacyOpType = DynamicShapeSlot.LEGACY_TRANSFORM_BOOL;
                     legacyOpNum = ((BaseTransformBoolOp) op).opNum();
+                } else if (op instanceof BaseScalarBoolOp) {
+                    legacyOpType = DynamicShapeSlot.LEGACY_SCALAR_BOOL;
+                    legacyOpNum = ((BaseScalarBoolOp) op).opNum();
                 } else if (op instanceof BaseScalarOp) {
                     legacyOpType = DynamicShapeSlot.LEGACY_SCALAR;
                     legacyOpNum = ((BaseScalarOp) op).opNum();
+                }
+            }
+
+            // Detect control flow type
+            byte controlFlowType = DynamicShapeSlot.CF_NONE;
+            if (node.getNodeType() == ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP ||
+                    hasControlFlow) {
+                switch (opNameLower) {
+                    case "switch":         controlFlowType = DynamicShapeSlot.CF_SWITCH; break;
+                    case "merge":          controlFlowType = DynamicShapeSlot.CF_MERGE; break;
+                    case "enter":          controlFlowType = DynamicShapeSlot.CF_ENTER; break;
+                    case "exit":           controlFlowType = DynamicShapeSlot.CF_EXIT; break;
+                    case "next_iteration": controlFlowType = DynamicShapeSlot.CF_NEXT_ITERATION; break;
+                    case "loop_cond":      controlFlowType = DynamicShapeSlot.CF_LOOP_COND; break;
+                    default: break; // regular op in a graph with CF ops
                 }
             }
 
@@ -349,12 +368,14 @@ public class DynamicShapePlanCompiler {
             double[] tArgs = new double[0];
             boolean[] bArgs = new boolean[0];
             DataType[] dArgs = new DataType[0];
+            String[] sArgs = new String[0];
             if (isCustomOp && op instanceof DynamicCustomOp) {
                 DynamicCustomOp dynOp = (DynamicCustomOp) op;
                 iArgs = dynOp.iArgs();
                 tArgs = dynOp.tArgs();
                 bArgs = dynOp.bArgs();
                 dArgs = dynOp.dArgs();
+                sArgs = dynOp.sArgs();
             } else if (op instanceof BaseScalarOp) {
                 // Scalar ops store their scalar value separately (not as tArgs).
                 // The C++ custom op equivalents (e.g., relu) expect it as tArg[0].
@@ -431,6 +452,7 @@ public class DynamicShapePlanCompiler {
                     .customOp(isCustomOp)
                     .legacyOpType(legacyOpType)
                     .legacyOpNum(legacyOpNum)
+                    .controlFlowType(controlFlowType)
                     .inputSourceIndices(inputSourceIndices)
                     .inputSourceTypes(inputSourceTypes)
                     .inputVarNames(inputVarNames)
@@ -440,6 +462,7 @@ public class DynamicShapePlanCompiler {
                     .tArgs(tArgs)
                     .bArgs(bArgs)
                     .dArgs(dArgs)
+                    .sArgs(sArgs)
                     .needsIntLongSync(hasIntLongInputs || isDataDependent)
                     .allIntLongInputsExternal(allIntLongExternal)
                     .isDataDependent(isDataDependent)
@@ -543,6 +566,93 @@ public class DynamicShapePlanCompiler {
             consumerCounts[slotIdx] = Integer.MAX_VALUE;
         }
 
+        // Step 6c: Detect loop regions and wire control flow
+        List<DynamicShapePlan.LoopRegion> loopRegionsList = new ArrayList<>();
+        if (hasControlFlow) {
+            for (int stepIdx = 0; stepIdx < numSteps; stepIdx++) {
+                DynamicShapeSlot slot = slots[stepIdx];
+                if (slot.getControlFlowType() != DynamicShapeSlot.CF_MERGE) continue;
+
+                // Find NextIteration that feeds back to this Merge
+                int nextIterStep = -1;
+                for (int cs = stepIdx + 1; cs < numSteps; cs++) {
+                    if (slots[cs].getControlFlowType() == DynamicShapeSlot.CF_NEXT_ITERATION) {
+                        int[] niOutputs = slots[cs].getOutputSlotIndices();
+                        for (int niOut : niOutputs) {
+                            for (int mi : slot.getInputSourceIndices()) {
+                                if (mi >= 0 && mi == niOut) { nextIterStep = cs; break; }
+                            }
+                            if (nextIterStep >= 0) break;
+                        }
+                        if (nextIterStep >= 0) break;
+                    }
+                }
+                if (nextIterStep < 0) continue; // if-else Merge, not a loop
+
+                int switchStep = -1, exitStep = -1;
+                for (int s = stepIdx + 1; s <= nextIterStep; s++) {
+                    if (slots[s].getControlFlowType() == DynamicShapeSlot.CF_SWITCH && switchStep < 0)
+                        switchStep = s;
+                    if (slots[s].getControlFlowType() == DynamicShapeSlot.CF_EXIT)
+                        exitStep = s;
+                }
+                // Exit may be after NextIteration (false branch of Switch)
+                if (exitStep < 0) {
+                    for (int s = nextIterStep + 1; s < numSteps; s++) {
+                        if (slots[s].getControlFlowType() == DynamicShapeSlot.CF_EXIT) {
+                            exitStep = s; break;
+                        }
+                    }
+                }
+                if (switchStep < 0) continue;
+
+                int bodyStart = switchStep + 1;
+                int bodyEnd = nextIterStep;
+                int regionIdx = loopRegionsList.size();
+
+                loopRegionsList.add(new DynamicShapePlan.LoopRegion(
+                        stepIdx, switchStep, nextIterStep,
+                        exitStep >= 0 ? exitStep : nextIterStep + 1,
+                        bodyStart, bodyEnd));
+
+                slots[nextIterStep].setLoopBackTarget(stepIdx);
+                for (int s = stepIdx; s <= Math.max(nextIterStep, exitStep >= 0 ? exitStep : nextIterStep); s++) {
+                    slots[s].setLoopRegionIndex(regionIdx);
+                }
+
+                // Defer release of loop body output slots to after Exit
+                Set<Integer> loopBodyOutputSlots = new HashSet<>();
+                for (int s = stepIdx; s <= nextIterStep; s++) {
+                    for (int oi : slots[s].getOutputSlotIndices()) {
+                        if (oi >= 0 && !finalOutputSlots.contains(oi))
+                            loopBodyOutputSlots.add(oi);
+                    }
+                }
+                for (int s = 0; s < numSteps; s++) {
+                    if (releaseAtStep[s].length > 0) {
+                        List<Integer> filtered = new ArrayList<>();
+                        for (int r : releaseAtStep[s]) {
+                            if (!loopBodyOutputSlots.contains(r)) filtered.add(r);
+                        }
+                        if (filtered.size() != releaseAtStep[s].length)
+                            releaseAtStep[s] = filtered.stream().mapToInt(Integer::intValue).toArray();
+                    }
+                }
+                int releaseStep = exitStep >= 0 ? exitStep : nextIterStep;
+                if (releaseStep < numSteps) {
+                    Set<Integer> combined = new LinkedHashSet<>();
+                    for (int r : releaseAtStep[releaseStep]) combined.add(r);
+                    combined.addAll(loopBodyOutputSlots);
+                    releaseAtStep[releaseStep] = combined.stream().mapToInt(Integer::intValue).toArray();
+                }
+
+                log.debug("Loop region {}: merge={}, switch={}, nextIter={}, exit={}, body=[{}-{}]",
+                        regionIdx, stepIdx, switchStep, nextIterStep, exitStep, bodyStart, bodyEnd);
+            }
+        }
+        DynamicShapePlan.LoopRegion[] loopRegions = loopRegionsList.isEmpty() ? null :
+                loopRegionsList.toArray(new DynamicShapePlan.LoopRegion[0]);
+
         // Step 7: OpContext pool — executor uses a small rotating pool instead of
         // pre-allocating one per op (avoids native heap corruption from bulk close).
         OpContext[] opContextPool = new OpContext[0];
@@ -577,7 +687,7 @@ public class DynamicShapePlanCompiler {
         }
         log.info("Op type histogram ({} total): {}", slots.length, allOpTypes);
 
-        return new DynamicShapePlan(
+        DynamicShapePlan plan = new DynamicShapePlan(
                 slots,
                 totalOutputSlots,
                 releaseAtStep,
@@ -585,12 +695,19 @@ public class DynamicShapePlanCompiler {
                 externalInputKeys.toArray(new String[0]),
                 requestedOutputs,
                 outputNameToSlotIndex,
-                false,
+                hasControlFlow,
+                loopRegions,
                 predecessorCounts,
                 predecessorsArr,
                 successorsArr,
                 consumerCounts,
                 rootSlots
         );
+
+        if (log.isDebugEnabled()) {
+            log.debug("Plan structure:\n{}", PlanIntrospection.formatPlan(plan));
+        }
+
+        return plan;
     }
 }

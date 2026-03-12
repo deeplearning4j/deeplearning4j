@@ -217,7 +217,9 @@ DECLARE_UNARY_SIMPLE_OP(Sign, (d1 > static_cast<X>(0)) - (d1 < static_cast<X>(0)
 
 
 DECLARE_UNARY_CONDITIONAL_OP(HardTanhDerivative,
-                             ((d1 >= static_cast<X>(-1.f) && d1 <= static_cast<X>(1.f)) ? static_cast<X>(1.f) : static_cast<X>(0.f)), d1, d1)
+                             d1 >= static_cast<X>(-1.f) && d1 <= static_cast<X>(1.f),
+                             static_cast<X>(1.f),
+                             static_cast<X>(0.f))
 
 DECLARE_UNARY_CONDITIONAL_OP(HardSigmoidDerivative,
                              d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<X>(0.f) : static_cast<X>(0.2f), d1, d1)
@@ -1886,8 +1888,8 @@ class MatchConditionBool {
     return static_cast<Z>(d1);
   }
 
-  // Remove SD_OP_DEF to avoid SIMD issues with float16/bfloat16
-  static Z op_simd(X d1, X *extraParams) { return op_logic(d1, extraParams); }
+  // SD_HOST_DEVICE required for NVCC to generate correct device code
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, X *extraParams) { return op_logic(d1, extraParams); }
 
  public:
   // Fix: Use explicit declarations instead of problematic macros

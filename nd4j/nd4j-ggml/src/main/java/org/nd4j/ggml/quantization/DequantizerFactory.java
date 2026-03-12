@@ -95,10 +95,22 @@ public class DequantizerFactory {
     }
 
     /**
-     * Dequantize data to INDArray
+     * Dequantize data to INDArray.
+     * Always dequantizes to FP32 first (native dequantizer output), then casts to target type
+     * with proper GPU memory cleanup of the FP32 intermediate. Without this cleanup, each
+     * tensor's FP32 intermediate (~2x the FP16 size) accumulates as zombie GPU allocations
+     * until GC runs, causing OOM during large model imports.
      */
     public static INDArray dequantizeToArray(byte[] data, GGMLDataType type, long[] shape, DataType targetType) {
-        return getDequantizer(type).dequantizeToArray(data, shape, targetType);
+        // Get FP32 from dequantizer (pass FLOAT to skip internal castTo which doesn't free intermediates)
+        INDArray fp32 = getDequantizer(type).dequantizeToArray(data, shape, DataType.FLOAT);
+        if (targetType == DataType.FLOAT) {
+            return fp32;
+        }
+        // Cast to target type and FREE the FP32 intermediate GPU memory immediately
+        INDArray result = fp32.castTo(targetType);
+        fp32.close();
+        return result;
     }
 
     /**

@@ -33,6 +33,7 @@
 #include <graph/NativePlanCompiler.h>
 #include <graph/SdnbReader.h>
 #include <graph/SdzReader.h>
+#include <graph/ReplayCacheManager.h>
 #include <system/common.h>
 
 #include <cstring>
@@ -40,6 +41,7 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <sstream>
 
 using namespace sd;
 using namespace sd::graph;
@@ -495,6 +497,308 @@ const char* getPlanCaptureStats(sd::Pointer planHandle) {
   return buf;
 }
 
+// =============================================================================
+// Per-Segment Replay State (CPU backend)
+// =============================================================================
+
+int getPlanSegmentReplayState(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return -1;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return -1;
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) return -1;
+  return static_cast<int>(seg.replayHandle->getState());
+}
+
+int getPlanSegmentReplayCount(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) return 0;
+  return seg.replayHandle->getStatistics().replayCount;
+}
+
+const char* getPlanSegmentBackendName(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return "";
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return "";
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) return "";
+  return seg.replayHandle->backendName();
+}
+
+const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx) {
+  static thread_local char buf[1024];
+  if (planHandle == nullptr) { buf[0] = '\0'; return buf; }
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { buf[0] = '\0'; return buf; }
+  auto& seg = segs[segmentIdx];
+  int numOps = seg.endSlot - seg.startSlot + 1;
+  const char* backend = (seg.replayHandle) ? seg.replayHandle->backendName() : "";
+  int replayCount = (seg.replayHandle) ? seg.replayHandle->getStatistics().replayCount : 0;
+  int replayState = (seg.replayHandle) ? static_cast<int>(seg.replayHandle->getState()) : -1;
+  snprintf(buf, sizeof(buf),
+           "{\"numOperations\":%d,\"replayCount\":%d,\"replayState\":%d,"
+           "\"backendName\":\"%s\",\"executionCount\":%d,"
+           "\"capturable\":%s,\"captureFailed\":%s,\"compiledByBackend\":\"%s\"}",
+           numOps, replayCount, replayState, backend, seg.executionCount,
+           seg.isCapturable ? "true" : "false",
+           seg.captureFailed ? "true" : "false",
+           seg.compiledByBackend.c_str());
+  return buf;
+}
+
+int getPlanSegmentExecutionCount(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
+  return segs[segmentIdx].executionCount;
+}
+
+bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return false;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return false;
+  return segs[segmentIdx].isCapturable;
+}
+
+bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return false;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return false;
+  return segs[segmentIdx].captureFailed;
+}
+
+// =============================================================================
+// Per-Segment Pointer Tracking (CPU backend)
+// =============================================================================
+
+const char* getPlanSegmentTrackedPointers(sd::Pointer planHandle, int segmentIdx) {
+  static thread_local std::string result;
+  if (planHandle == nullptr) { result = "[]"; return result.c_str(); }
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { result = "[]"; return result.c_str(); }
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) { result = "[]"; return result.c_str(); }
+
+  auto& addrs = seg.replayHandle->getCapturedExternalAddresses();
+  std::ostringstream ss;
+  ss << "[";
+  for (size_t i = 0; i < addrs.size(); ++i) {
+    if (i > 0) ss << ",";
+    ss << "{\"inputIdx\":" << i
+       << ",\"capturedAddr\":\"0x" << std::hex << addrs[i] << std::dec << "\""
+       << ",\"match\":true}";
+  }
+  ss << "]";
+  result = ss.str();
+  return result.c_str();
+}
+
+int getPlanSegmentNumCaptureBuffers(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) return 0;
+  return static_cast<int>(seg.replayHandle->getCaptureBuffers().size());
+}
+
+const char* getPlanSegmentCaptureBuffersJson(sd::Pointer planHandle, int segmentIdx) {
+  static thread_local std::string result;
+  if (planHandle == nullptr) { result = "[]"; return result.c_str(); }
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) { result = "[]"; return result.c_str(); }
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) { result = "[]"; return result.c_str(); }
+
+  auto& bufs = seg.replayHandle->getCaptureBuffers();
+  std::ostringstream ss;
+  ss << "[";
+  for (size_t i = 0; i < bufs.size(); ++i) {
+    if (i > 0) ss << ",";
+    ss << "{\"extInputIdx\":" << bufs[i].externalInputIndex
+       << ",\"size\":" << bufs[i].capturedSize
+       << ",\"directRef\":" << (bufs[i].directReference ? "true" : "false")
+       << ",\"neverSkip\":" << (bufs[i].neverSkipCopy ? "true" : "false") << "}";
+  }
+  ss << "]";
+  result = ss.str();
+  return result.c_str();
+}
+
+int getPlanSegmentNumHostPointers(sd::Pointer planHandle, int segmentIdx) {
+  if (planHandle == nullptr) return 0;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return 0;
+  auto& seg = segs[segmentIdx];
+  if (!seg.replayHandle) return 0;
+  return static_cast<int>(seg.replayHandle->getCapturedHostPtrs().size());
+}
+
+// =============================================================================
+// Replay Cache Management (CPU backend)
+// =============================================================================
+
+bool isReplayCacheEnabled() {
+  return sd::graph::ReplayCacheManager::getInstance().isEnabled();
+}
+
+int getReplayCacheHits() {
+  return sd::graph::ReplayCacheManager::getInstance().getCacheHits();
+}
+
+int getReplayCacheMisses() {
+  return sd::graph::ReplayCacheManager::getInstance().getCacheMisses();
+}
+
+void clearReplayCache() {
+  sd::graph::ReplayCacheManager::getInstance().clearAll();
+}
+
+const char* getReplayCacheDir() {
+  static thread_local std::string dir;
+  dir = sd::graph::ReplayCacheManager::getInstance().getCacheDir();
+  return dir.c_str();
+}
+
+const char* getReplayCacheDeviceStatsJson() {
+  static thread_local std::string result;
+  result = sd::graph::ReplayCacheManager::getInstance().getDeviceCacheStatsJson();
+  return result.c_str();
+}
+
+int getReplayCacheDeviceEntryCount(int deviceType, int deviceIndex) {
+  using namespace sd::graph;
+  auto key = ReplayCacheDeviceKey(static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex, "");
+  return ReplayCacheManager::getInstance().getDeviceCacheEntryCount(key);
+}
+
+void clearReplayCacheForDevice(int deviceType, int deviceIndex) {
+  using namespace sd::graph;
+  auto key = ReplayCacheDeviceKey(static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex, "");
+  ReplayCacheManager::getInstance().clearDevice(key);
+}
+
+bool migrateReplayCache(int fromType, int fromIdx, int toType, int toIdx) {
+  using namespace sd::graph;
+  auto from = ReplayCacheDeviceKey::fromDeviceManager(
+      static_cast<sd::modelparallel::DeviceType>(fromType), fromIdx);
+  auto to = ReplayCacheDeviceKey::fromDeviceManager(
+      static_cast<sd::modelparallel::DeviceType>(toType), toIdx);
+  return ReplayCacheManager::getInstance().migrateDeviceCache(from, to);
+}
+
+int pruneStaleReplayCacheDevices() {
+  return sd::graph::ReplayCacheManager::getInstance().pruneStaleDevices();
+}
+
+int loadReplayCacheForDevice(sd::Pointer planHandle, int deviceType, int deviceIndex) {
+  using namespace sd::graph;
+  auto key = ReplayCacheDeviceKey::fromDeviceManager(
+      static_cast<sd::modelparallel::DeviceType>(deviceType), deviceIndex);
+  return ReplayCacheManager::getInstance().loadAllForDevice(key);
+}
+
+const char* getReplayCachedDevicesJson() {
+  static thread_local std::string result;
+  result = sd::graph::ReplayCacheManager::getInstance().getCachedDevicesJson();
+  return result.c_str();
+}
+
+// =============================================================================
+// Backend Plan Management (CPU backend)
+// =============================================================================
+
+const char* getPlanAvailableBackends(sd::Pointer planHandle) {
+  static thread_local std::string result;
+  result = "[{\"name\":\"CPU\",\"type\":\"CPU\",\"available\":true,\"priority\":0}]";
+  return result.c_str();
+}
+
+const char* getPlanSegmentCompiledBackend(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return "";
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegments();
+  if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return "";
+  static thread_local std::string result;
+  result = segs[segIdx].compiledByBackend;
+  return result.c_str();
+}
+
+const char* getPlanSegmentCompilationAudit(sd::Pointer planHandle, int segIdx) {
+  static thread_local std::string result;
+  result = "{}";
+  return result.c_str();
+}
+
+void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegmentsMutable();
+  if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
+  auto& seg = segs[segIdx];
+  seg.replayHandle.reset();
+  seg.cachedShapeKey = 0;
+  seg.executionCount = 0;
+  seg.captureFailed = false;
+  seg.compiledByBackend.clear();
+}
+
+void invalidatePlanBackendCaches(sd::Pointer planHandle, const char* backendName) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  std::string name = backendName ? backendName : "";
+  for (auto& seg : plan->getSegmentsMutable()) {
+    if (seg.compiledByBackend == name || name.empty()) {
+      seg.replayHandle.reset();
+      seg.cachedShapeKey = 0;
+      seg.executionCount = 0;
+      seg.compiledByBackend.clear();
+    }
+  }
+}
+
+const char* getPlanBackendCacheStats(sd::Pointer planHandle) {
+  static thread_local std::string result;
+  result = "{\"backends\":[{\"name\":\"CPU\",\"compiledSegments\":0}]}";
+  if (planHandle != nullptr) {
+    auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+    int compiled = 0;
+    for (const auto& seg : plan->getSegments()) {
+      if (!seg.compiledByBackend.empty() && seg.compiledByBackend != "slot-by-slot") compiled++;
+    }
+    std::ostringstream ss;
+    ss << "{\"backends\":[{\"name\":\"CPU\",\"compiledSegments\":" << compiled << "}]}";
+    result = ss.str();
+  }
+  return result.c_str();
+}
+
+void setPlanSegmentBackendOverride(sd::Pointer planHandle, int segIdx, const char* backendName) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  auto& segs = plan->getSegmentsMutable();
+  if (segIdx < 0 || segIdx >= static_cast<int>(segs.size())) return;
+  segs[segIdx].backendOverride = backendName ? backendName : "";
+}
+
+void setPlanBackendPriority(sd::Pointer planHandle, const char* priorityList) {
+  // CPU backend has only one backend, priority doesn't apply
+}
+
 // ─── CUDA Graph Visualization stubs (CPU backend) ─────────────────────────────
 
 bool exportPlanCudaGraphChromeTrace(sd::Pointer planHandle, const char* outputPath) {
@@ -583,6 +887,14 @@ sd::LongType getTritonKernelLaunchCount() { return 0; }
 sd::LongType getTritonCacheHitCount() { return 0; }
 void resetTritonCounters() {}
 void invalidateTritonCache() {}
+
+// Triton cache bundle — CPU backend has no Triton, stubs return error
+int exportTritonCacheBundle(const char* outputPath) { return -1; }
+int importTritonCacheBundle(const char* bundlePath, bool validateArch) { return -1; }
+const char* inspectTritonCacheBundle(const char* bundlePath) {
+  static const char* err = "{\"error\": \"Triton not available on CPU backend\"}";
+  return err;
+}
 
 // ─── DSP Diagnostics JNI bridge ──────────────────────────────────────────────
 

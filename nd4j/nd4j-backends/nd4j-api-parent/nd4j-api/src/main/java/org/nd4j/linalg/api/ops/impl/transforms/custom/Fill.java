@@ -75,7 +75,7 @@ public class Fill extends DynamicCustomOp {
     }
 
     public Fill(INDArray shape, INDArray value, INDArray result) {
-        super(null, new INDArray[]{shape, value}, new INDArray[]{result});
+        super(null, new INDArray[]{shape, value}, result == null ? null : new INDArray[]{result});
     }
 
 

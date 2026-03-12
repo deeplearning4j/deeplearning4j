@@ -196,7 +196,8 @@ void FlashAttentionHelper::forward3D(
     // Some ONNX exports provide additive attention bias as [..., seqKV, seqQ]
     // (source,target) instead of [..., seqQ, seqKV]. Normalize by swapping the
     // trailing dimensions when needed.
-    if (biasForAdd->rankOf() >= 2 &&
+    if (seqLenQ != seqLenKV &&
+        biasForAdd->rankOf() >= 2 &&
         biasForAdd->sizeAt(biasForAdd->rankOf() - 2) == seqLenKV &&
         biasForAdd->sizeAt(biasForAdd->rankOf() - 1) == seqLenQ) {
       std::vector<LongType> perm(static_cast<size_t>(biasForAdd->rankOf()));
@@ -229,12 +230,16 @@ void FlashAttentionHelper::forward3D(
     LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
                           (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
-    *workBuffer += *causalMask;
+    workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, workBuffer, false);
   }
   if (logitsBuffer != nullptr) {
     logitsBuffer->assign(workBuffer);
   }
-  ops::helpers::softmax(context, workBuffer, workBuffer, -1);
+  // IMPORTANT: Must use explicit positive dimension for softmax.
+  // The TAD helper treats -1 as sentinel meaning "all dimensions" (entire array as one TAD),
+  // NOT as "last dimension". Using -1 produces all-1.0 output instead of proper softmax.
+  int softmaxDim3D = workBuffer->rankOf() - 1;
+  ops::helpers::softmax(context, workBuffer, workBuffer, softmaxDim3D);
 #endif
 
   // Batched matmul: scores @ V -> [batch, seqQ, dim]
@@ -456,7 +461,8 @@ void FlashAttentionHelper::forward4D(
     std::vector<LongType> scores4dShape = {batch, numHeads, seqLenQ, seqLenKV};
 
     // Normalize ONNX source/target ordering [..., seqKV, seqQ] -> [..., seqQ, seqKV].
-    if (biasForAdd->rankOf() >= 2 &&
+    if (seqLenQ != seqLenKV &&
+        biasForAdd->rankOf() >= 2 &&
         biasForAdd->sizeAt(biasForAdd->rankOf() - 2) == seqLenKV &&
         biasForAdd->sizeAt(biasForAdd->rankOf() - 1) == seqLenQ) {
       std::vector<LongType> perm(static_cast<size_t>(biasForAdd->rankOf()));
@@ -498,12 +504,16 @@ void FlashAttentionHelper::forward4D(
     LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask.fillAsTriangular,
                           (-1.0e9f, 1, causalOffset, causalMask, 'u', false), SD_COMMON_TYPES);
-    *workBuffer += causalMask;
+    workBuffer->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), &causalMask, workBuffer, false);
   }
   if (logitsBuffer != nullptr) {
     logitsBuffer->assign(workBuffer);
   }
-  ops::helpers::softmax(context, workBuffer, workBuffer, -1);
+  // IMPORTANT: Must use explicit positive dimension for softmax.
+  // The TAD helper treats -1 as sentinel meaning "all dimensions",
+  // NOT as "last dimension".
+  int softmaxDim4D = workBuffer->rankOf() - 1;
+  ops::helpers::softmax(context, workBuffer, workBuffer, softmaxDim4D);
 #endif
 
   // Output buffer
@@ -614,13 +624,14 @@ void FlashAttentionHelper::backward3D(
     LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
                           (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
-    *scores += *causalMask;
+    scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
 #endif
   }
 
-  // Softmax
+  // Softmax - use explicit positive dimension (TAD treats -1 as "all dimensions")
   NDArray* attnWeights = workspace->getBuffer("backward3d_attnWeights", scoresShape, query->dataType(), context);
-  ops::helpers::softmax(context, scores, attnWeights, -1);
+  int bwSoftmaxDim3D = scores->rankOf() - 1;
+  ops::helpers::softmax(context, scores, attnWeights, bwSoftmaxDim3D);
 
   // gradValue = attnWeights^T @ gradOutput -> [batch, seqKV, dim]
   MmulHelper::matmul(attnWeights, gradOutput, gradValue, true, false, 1.0, 0.0);
@@ -638,7 +649,7 @@ void FlashAttentionHelper::backward3D(
   std::vector<LongType> rowSumsShape = {scoresShape[0], scoresShape[1], 1};
   NDArray* rowSums = workspace->getBuffer("backward3d_rowSums", rowSumsShape, query->dataType(), context);
   dAttnTimesP->reduceAlongDimension(reduce::Sum, rowSums, &sumDims, true);
-  *dAttn -= *rowSums;
+  dAttn->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), rowSums, dAttn, false);
   dAttn->applyPairwiseTransform(pairwise::Multiply, attnWeights, dAttn);
   *dAttn *= scale;
 
@@ -754,13 +765,14 @@ void FlashAttentionHelper::backward4D(
     LongType causalOffset = (seqLenKV > seqLenQ) ? (seqLenKV - seqLenQ) : 0;
     BUILD_SINGLE_SELECTOR(query->dataType(), causalMask->fillAsTriangular,
                           (-1.0e9f, 1, causalOffset, *causalMask, 'u', false), SD_COMMON_TYPES);
-    *scores += *causalMask;
+    scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), causalMask, scores, false);
 #endif
   }
 
-  // Softmax
+  // Softmax - use explicit positive dimension (TAD treats -1 as "all dimensions")
   NDArray* attnWeights = workspace->getBuffer("backward4d_attnWeights", scoresShape, query->dataType(), context);
-  ops::helpers::softmax(context, scores, attnWeights, -1);
+  int bwSoftmaxDim4D = scores->rankOf() - 1;
+  ops::helpers::softmax(context, scores, attnWeights, bwSoftmaxDim4D);
 
   // gradValue = attnWeights^T @ gradOutput
   NDArray* gvReshaped = workspace->getBuffer("backward4d_gvReshaped", kvShape, query->dataType(), context);
@@ -779,7 +791,7 @@ void FlashAttentionHelper::backward4D(
   std::vector<LongType> rowSumsShape = {scoresShape[0], scoresShape[1], 1};
   NDArray* rowSums = workspace->getBuffer("backward4d_rowSums", rowSumsShape, query->dataType(), context);
   dAttnTimesP->reduceAlongDimension(reduce::Sum, rowSums, &sumDims, true);
-  *dAttn -= *rowSums;
+  dAttn->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), rowSums, dAttn, false);
   dAttn->applyPairwiseTransform(pairwise::Multiply, attnWeights, dAttn);
   *dAttn *= scale;
 

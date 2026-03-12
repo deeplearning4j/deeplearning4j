@@ -353,12 +353,97 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                tritonMaxSubKernelIndex, tritonVerifyFullSnapshot ? 1 : 0,
                seg.executionCount);
 
-  // Consolidated arg table: do ONE H2D memcpy for all sub-kernels' arg tables
+  // Consolidated arg table: do ONE H2D memcpy for all sub-kernels' arg tables.
+  // IMPORTANT: Must pre-allocate output arrays and sync inputs BEFORE populating
+  // the arg table, because allocateSpecial() in syncToDevice/syncToSpecial may
+  // change specialBuffer() pointers.  Without this prepare pass, the consolidated
+  // H2D would bake stale/null pointers into the CUDA graph.
   bool useConsolidated = compiledSeg->useConsolidatedArgTable;
   bool consolidatedArgsCopied = false;
   if (useConsolidated && compiledSeg->consolidatedArgTableHostPinned &&
       compiledSeg->consolidatedArgTableDevice &&
       compiledSeg->consolidatedArgTableBytes > 0) {
+
+    // ── Phase 1: Prepare pass — pre-allocate outputs + sync inputs ──
+    // This ensures all arrays have valid specialBuffer() pointers before
+    // we populate the consolidated arg table.
+    // CRITICAL: During CUDA graph capture, skip pre-allocation and input syncing.
+    // The pre-capture warmup execution already allocated all outputs and synced
+    // all inputs. Allocating during capture creates MemAlloc graph nodes with
+    // addresses that become stale on replay. Input syncing is also unnecessary
+    // since the pre-capture path already synced everything.
+    if (!streamCaptureActive) {
+      for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
+        auto& sk = compiledSeg->subKernels[ki];
+        if (!sk.useIndirectArgs) continue;
+
+        // Pre-allocate output arrays for slots that don't have arrays yet
+        for (auto& argMapping : sk.argSlotMapping) {
+          if (!argMapping.isOutput) continue;
+          if (argMapping.slotIndex < 0 || argMapping.slotIndex >= totalOutputSlots) continue;
+          if (outputSlots[argMapping.slotIndex] != nullptr) continue;
+          if (argMapping.shape.empty()) continue;
+          std::vector<LongType> shapeVec(argMapping.shape.begin(), argMapping.shape.end());
+          auto* newArr = new NDArray('c', shapeVec, argMapping.dtype, LaunchContext::defaultContext());
+          outputSlots[argMapping.slotIndex] = newArr;
+          if (seg.slotArrayCache) {
+            seg.slotArrayCache[argMapping.slotIndex] = newArr;
+          }
+          DSP_DIAG(MEMORY, "CONSOL PRE-ALLOC: subK[%zu] slot %d shape=[%s] dtype=%d specialBuf=%p",
+                   ki, argMapping.slotIndex,
+                   [&]() -> std::string {
+                     std::string s;
+                     for (size_t d = 0; d < shapeVec.size(); d++) {
+                       if (d > 0) s += ",";
+                       s += std::to_string(shapeVec[d]);
+                     }
+                     return s;
+                   }().c_str(),
+                   static_cast<int>(argMapping.dtype), newArr->specialBuffer());
+        }
+
+        // Sync all INPUT arrays to device
+        for (auto& argMapping : sk.argSlotMapping) {
+          if (argMapping.isOutput) continue;
+          NDArray* arr = nullptr;
+          if (argMapping.slotIndex < 0) {
+            int extIdx = -(argMapping.slotIndex + 1);
+            if (extIdx < numExternalInputs) arr = externalInputs[extIdx];
+          } else {
+            if (argMapping.slotIndex < totalOutputSlots) arr = outputSlots[argMapping.slotIndex];
+          }
+          if (arr && arr->lengthOf() > 0) {
+            if (argMapping.slotIndex < 0 && arr->dataBuffer() != nullptr) {
+              bool pAct = arr->dataBuffer()->isPrimaryActual();
+              bool sAct = arr->dataBuffer()->isSpecialActual();
+              if (pAct && !sAct) {
+                arr->dataBuffer()->syncToSpecial(true);
+              } else {
+                arr->syncToDevice();
+              }
+            } else {
+              arr->syncToDevice();
+            }
+          }
+        }
+      }
+    }
+
+    // Synchronize the execution stream to ensure all prior allocations
+    // (via CudaMemoryPool / cudaMallocAsync) and data transfers are
+    // complete before reading specialBuffer() pointers.
+    // CRITICAL: cudaStreamSynchronize is ILLEGAL during stream capture —
+    // it returns cudaErrorStreamCaptureUnsupported and invalidates the capture,
+    // causing all subsequent CUDA operations to fail with "operation failed
+    // due to a previous error during capture". During capture, output arrays
+    // are already pre-allocated from the warmup execution and input syncs
+    // are complete (the pre-capture warmup + cudaStreamSynchronize before
+    // beginCapture handles this). Skip the sync during capture.
+    if (!streamCaptureActive) {
+      cudaStreamSynchronize(static_cast<cudaStream_t>(actualStream));
+    }
+
+    // ── Phase 2: Populate consolidated arg table with post-sync pointers ──
     for (size_t ki = 0; ki < compiledSeg->subKernels.size(); ki++) {
       auto& sk = compiledSeg->subKernels[ki];
       if (!sk.useIndirectArgs || !sk.cachedArgTableHostPinned) continue;
@@ -412,6 +497,8 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
                            outputSlots, totalOutputSlots,
                            slots, seg.endSlot);
     }
+
+    // ── Phase 3: Single consolidated H2D ──
     auto memcpyErr = cudaMemcpyAsync(
         compiledSeg->consolidatedArgTableDevice,
         compiledSeg->consolidatedArgTableHostPinned,
@@ -1110,12 +1197,42 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
 void TritonGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);
   for (auto& entry : cache_) {
-    for (auto& kernel : entry.second.subKernels) {
-      if (kernel.cachedArgTableDevice != nullptr) {
+    auto& seg = entry.second;
+    // Free consolidated arg table buffers FIRST (before per-kernel cleanup,
+    // because per-kernel pointers are offsets into these buffers).
+    if (seg.useConsolidatedArgTable) {
+      if (seg.consolidatedArgTableDevice != nullptr) {
+        cudaFree(seg.consolidatedArgTableDevice);
+        seg.consolidatedArgTableDevice = nullptr;
+        seg.consolidatedArgTableBytes = 0;
+      }
+      if (seg.consolidatedArgTableHostPinned != nullptr) {
+        cudaFreeHost(seg.consolidatedArgTableHostPinned);
+        seg.consolidatedArgTableHostPinned = nullptr;
+      }
+      // Null out per-kernel pointers (they were offsets into consolidated buffer,
+      // NOT independent allocations — do NOT cudaFree them!)
+      for (auto& kernel : seg.subKernels) {
+        kernel.cachedArgTableDevice = nullptr;
+        kernel.cachedArgTableBytes = 0;
+        kernel.cachedArgTableDeviceId = -1;
+        kernel.cachedArgTableHostPinned = nullptr;
+        kernel.cachedArgTableHostPinnedBytes = 0;
+      }
+    }
+    for (auto& kernel : seg.subKernels) {
+      // Only free per-kernel arg tables if NOT consolidated (consolidated
+      // arg tables were freed above; per-kernel pointers are interior offsets).
+      if (!seg.useConsolidatedArgTable && kernel.cachedArgTableDevice != nullptr) {
         cudaFree(kernel.cachedArgTableDevice);
         kernel.cachedArgTableDevice = nullptr;
         kernel.cachedArgTableBytes = 0;
         kernel.cachedArgTableDeviceId = -1;
+      }
+      if (!seg.useConsolidatedArgTable && kernel.cachedArgTableHostPinned != nullptr) {
+        cudaFreeHost(kernel.cachedArgTableHostPinned);
+        kernel.cachedArgTableHostPinned = nullptr;
+        kernel.cachedArgTableHostPinnedBytes = 0;
       }
       if (kernel.cachedSyncCounterDevice != nullptr) {
         cudaFree(kernel.cachedSyncCounterDevice);

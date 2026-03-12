@@ -57,16 +57,13 @@ SD_INLINE void convertParams(const SourceType* source, TargetType* target, size_
 }
 
 /**
- * @brief Determine appropriate parameter type for mixed operations
- * For float16, use float for better compatibility; otherwise use Z type
+ * @brief Reduce-float ops consume extra params via X* or Z* overloads.
+ * Keep the converted parameter buffer on Z so mixed half-precision variants
+ * match the op interface used by the dimensional reduction loops.
  */
 template<typename X, typename Z>
 struct CompatibleParamType {
-  using type = typename std::conditional_t<
-      std::is_same_v<Z, float16> || std::is_same_v<Z, bfloat16>,
-      float,  // Use float for half-precision types
-      Z       // Use Z for all other types
-      >;
+  using type = Z;
 };
 
 } // namespace SafeTypeUtils

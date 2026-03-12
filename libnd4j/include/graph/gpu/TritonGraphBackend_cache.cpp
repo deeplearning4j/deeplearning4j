@@ -161,6 +161,7 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
 
   int metaNumWarps = irModule.numWarps;
   int metaSharedMem = 0;
+  bool metaSharedMemPresent = false;
   int metaGlobalScratchBytes = 0;
   int metaGlobalScratchAlignment = 128;
   std::string metaKernelName;
@@ -175,6 +176,7 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
       parseIntValue(value, metaNumWarps);
     } else if (key == "sharedMemBytes") {
       parseIntValue(value, metaSharedMem);
+      metaSharedMemPresent = true;
     } else if (key == "globalScratchBytes") {
       parseIntValue(value, metaGlobalScratchBytes);
     } else if (key == "globalScratchAlignment") {
@@ -188,12 +190,15 @@ bool TritonGraphBackend::loadBinaryFromDiskCache(int startSlot, int endSlot,
     return false;
   }
 
-  // Older cache entries were missing sharedMemBytes metadata. Recompile those
-  // kernels if PTX requires extern shared memory; otherwise launches would pass
-  // sharedMem=0 and corrupt memory.
-  if (metaSharedMem == 0 && ptxUsesExternSharedMemory(ptxText)) {
+  // Older cache entries were missing sharedMemBytes metadata entirely.
+  // Recompile those if PTX requires extern shared memory; otherwise launches
+  // would pass sharedMem=0 and corrupt memory.
+  // Note: sharedMemBytes=0 is VALID for element-wise Triton kernels that
+  // declare extern .shared (Triton convention) but don't actually use it.
+  // Only reject entries where the field was missing entirely (pre-metadata era).
+  if (!metaSharedMemPresent && metaSharedMem == 0 && ptxUsesExternSharedMemory(ptxText)) {
     DSP_DIAG(JIT, "TritonGraphBackend: disk cache entry for [%d-%d] is stale "
-             "(extern shared PTX with sharedMemBytes=0); forcing recompile",
+             "(extern shared PTX with no sharedMemBytes metadata); forcing recompile",
              startSlot, endSlot);
     return false;
   }

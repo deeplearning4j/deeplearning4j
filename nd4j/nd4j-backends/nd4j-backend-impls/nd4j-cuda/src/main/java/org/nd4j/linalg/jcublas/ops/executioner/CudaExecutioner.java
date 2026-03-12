@@ -1858,6 +1858,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
+        // Mark z as device-written so subsequent ops see correct device data
+        ((BaseCudaDataBuffer) z.data()).actualizePointerAndIndexer();
+        AtomicAllocator.getInstance().tickDeviceWrite(z);
+
         profilingConfigurableHookOut(op, oc, st);
 
         return z;

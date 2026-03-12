@@ -2105,12 +2105,13 @@ public class TestShapeOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.create(DataType.BOOL, 1917);
         DynamicCustomOp op = DynamicCustomOp.builder("Where")
                 .addInputs(in)
-                .addOutputs(Nd4j.empty(DataType.LONG))
                 .build();
         List<DataBuffer> l = op.calculateOutputShape();
-        Nd4j.getExecutioner().exec(op);
+        INDArray[] out = Nd4j.exec(op);
         long[] shape = Shape.shape(l.get(0).asLong());
         boolean isEmpty = Shape.isEmpty(l.get(0).asLong());
+        assertEquals(1, out.length);
+        assertTrue(out[0].isEmpty());
         assertTrue(isEmpty);    //Not empty, but should be
     }
 
@@ -2206,7 +2207,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
     print(out[0]);
      */
 
-        INDArray emptyIn = Nd4j.empty(DataType.FLOAT).reshape(0, 4);
+        INDArray emptyIn = Nd4j.create(DataType.FLOAT, 0, 4);
         INDArray axis = Nd4j.scalar(1);
 
         DynamicCustomOp op = DynamicCustomOp.builder("split")
@@ -2220,7 +2221,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
             val desc = l.get(i);
             assertArrayEquals(new long[]{0, 1}, Shape.shape(desc.asLong()));
             assertTrue(Shape.isEmpty(desc.asLong()));
-            op.addOutputArgument(Nd4j.empty(DataType.FLOAT).reshape(Shape.shape(desc.asLong())));
+            op.addOutputArgument(Nd4j.create(DataType.FLOAT, Shape.shape(desc.asLong())));
         }
 
         Nd4j.exec(op);

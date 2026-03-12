@@ -212,6 +212,43 @@ while [[ \$# -gt 0 ]]; do
     fi
 done
 
+ensure_output_parent_dirs() {
+    local pending_flag=\"\"
+    local output_path=\"\"
+
+    for arg in \"\$@\"; do
+        output_path=\"\"
+
+        if [[ \"\$pending_flag\" == \"-o\" || \"\$pending_flag\" == \"-MF\" ]]; then
+            output_path=\"\$arg\"
+            pending_flag=\"\"
+        else
+            case \"\$arg\" in
+                -o|-MF)
+                    pending_flag=\"\$arg\"
+                    continue
+                    ;;
+                -o?*)
+                    output_path=\"\${arg#-o}\"
+                    ;;
+                -MF?*)
+                    output_path=\"\${arg#-MF}\"
+                    ;;
+            esac
+        fi
+
+        if [[ -n \"\$output_path\" ]]; then
+            local output_dir
+            output_dir=\"\$(dirname \"\$output_path\")\"
+            if [[ \"\$output_dir\" != \".\" ]]; then
+                mkdir -p \"\$output_dir\" 2>/dev/null
+            fi
+        fi
+    done
+}
+
+ensure_output_parent_dirs \"\${EXPANDED_ARGS[@]}\"
+
 exec \"\$CCACHE\" \"\${EXPANDED_ARGS[@]}\"
 ")
 

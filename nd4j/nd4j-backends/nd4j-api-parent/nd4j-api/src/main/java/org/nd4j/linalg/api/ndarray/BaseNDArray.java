@@ -72,6 +72,8 @@ import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsInf;
+import org.nd4j.linalg.api.ops.impl.transforms.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan;
@@ -1918,7 +1920,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("isInfinite", true);
         if(isEmpty())
             return Nd4j.empty(DataType.BOOL);
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isInfinite()));
+        return Nd4j.getExecutioner().exec(new IsInf(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
@@ -1926,7 +1928,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("isNaN", true);
         if(isEmpty())
             return Nd4j.empty(DataType.BOOL);
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan()));
+        return Nd4j.getExecutioner().exec(new IsNaN(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
     }
 
     @Override
@@ -3021,7 +3023,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     }
                 }
             } else {
-                applyBroadcastOp(columnVector, operation);
+                applyBroadcastOp(columnVector, operation, 0);
             }
 
         }
@@ -3195,7 +3197,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
                 }
             } else {
-                applyBroadcastOp(rowVector, operation);
+                applyBroadcastOp(rowVector, operation, rank() - 1);
             }
         }
 
@@ -3203,13 +3205,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-    private void applyBroadcastOp(INDArray vector, final char operation) {
+    private void applyBroadcastOp(INDArray vector, final char operation, int alongDimension) {
         Nd4j.getCompressor().autoDecompress(this);
-        // For row vectors, use the last dimension (rank-1) instead of -1
-        // For a matrix [rows, cols] with row vector [cols], we broadcast along dimension 1 (columns)
-        // For column vectors, dimension 0 (rows) is correct
-        int alongDimension = Shape.isRowVectorShape(vector.shape()) ?
-                (rank() - 1) : 0;
+        if (vector.rank() == 1 && rank() > 1) {
+            long[] broadcastShape = new long[rank()];
+            Arrays.fill(broadcastShape, 1);
+            broadcastShape[alongDimension] = vector.length();
+            vector = vector.reshape(broadcastShape);
+        }
         switch (operation) {
             case 'a':
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));

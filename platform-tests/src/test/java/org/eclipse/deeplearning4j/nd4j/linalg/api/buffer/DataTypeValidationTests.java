@@ -112,7 +112,7 @@ public class DataTypeValidationTests extends BaseNd4jTestWithBackends {
      @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBlasValidation3(Nd4jBackend backend) {
-       assertThrows(IllegalStateException.class,() -> {
+       assertThrows(ND4JIllegalStateException.class,() -> {
            INDArray x = Nd4j.create(100, 100);
 
            Nd4j.setDataType(DataType.DOUBLE);

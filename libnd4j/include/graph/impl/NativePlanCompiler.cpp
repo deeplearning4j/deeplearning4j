@@ -410,6 +410,15 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       }
     }
 
+    auto* extraStrings = node->extraStrings();
+    if (extraStrings && extraStrings->size() > 0) {
+      slot.numSArgs = extraStrings->size();
+      slot.sArgs = new std::string[slot.numSArgs];
+      for (int i = 0; i < slot.numSArgs; i++) {
+        slot.sArgs[i] = extraStrings->Get(i)->str();
+      }
+    }
+
     slot.targetDeviceId = node->device();
   }
 

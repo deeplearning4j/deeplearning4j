@@ -218,6 +218,18 @@ public interface OpContext extends AutoCloseable {
 
 
     /**
+     * This method sets string arguments required for operation
+     * @param arguments
+     */
+    void setSArguments(String... arguments);
+
+    void setSArguments(List<String> arguments);
+
+    List<String> getSArguments();
+
+    int numSArguments();
+
+    /**
      * This method sets root-level seed for rng
      * @param rootState
      * @param nodeState
@@ -384,7 +396,20 @@ public interface OpContext extends AutoCloseable {
      * @param tArgs
      * @param bArgs
      */
-    void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs);
+    default void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs) {
+        setArgs(inputArrs, iArgs, dArgs, tArgs, bArgs, null);
+    }
+
+    /**
+     * set context arguments
+     * @param inputArrs
+     * @param iArgs
+     * @param dArgs
+     * @param tArgs
+     * @param bArgs
+     * @param sArgs
+     */
+    void setArgs(INDArray[] inputArrs, long[] iArgs, DataType[] dArgs, double[] tArgs, boolean[] bArgs, String[] sArgs);
 
     /**
      * Transfers double arguments in java to

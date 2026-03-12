@@ -143,7 +143,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<size_t> _cudaPersistingL2CacheSize{0}; // cudaLimitPersistingL2CacheSize
 
   // Triton GPU compilation settings
-  std::atomic<int> _tritonBuildThreads{4};
+  std::atomic<int> _tritonBuildThreads{8};
   std::atomic<bool> _tritonCacheEnabled{true};
   std::atomic<bool> _tritonCooperativeLaunch{false};  // cooperative launch OFF by default
   std::atomic<int> _tritonCoopTargetBlocks{0};  // 0 = auto
@@ -200,6 +200,9 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspBatchZeroGapOnly{true};     // ND4J_DSP_BATCH_ZERO_GAP_ONLY — only zero gap slots (default: true)
   std::atomic<bool> _dspBatchZeroKernel{false};     // ND4J_DSP_BATCH_ZERO_KERNEL — use single kernel instead of N memsets
 
+  // DSP batched GEMM: group consecutive same-shape matmul slots into single cublasGemmBatchedEx calls
+  std::atomic<bool> _dspBatchedGemm{false};          // ND4J_DSP_BATCHED_GEMM (default: off)
+
   // Triton debugging flags
   std::atomic<bool> _tritonSkipKernels{false};       // skip Triton kernels, run native fallback instead
   std::atomic<bool> _tritonVerifyKernels{false};     // run both Triton and native, compare outputs
@@ -218,6 +221,18 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _tritonConsolidatedArgTable{false}; // consolidate arg tables into single H2D copy
   std::atomic<bool> _tritonArgDirtyTracking{false};  // skip arg table refresh for static-only sub-kernels
   std::atomic<bool> _tritonSectionFusion{false};     // merge non-EW sections into mega-kernels
+
+  // Fusion scoring: cost-model-based section merge decisions
+  std::atomic<bool> _tritonFusionScoring{true};      // ND4J_TRITON_FUSION_SCORING — use cost model for section merges
+  std::atomic<float> _tritonFusionMinScore{1.0f};    // ND4J_TRITON_FUSION_MIN_SCORE — minimum score to merge sections
+
+  // Symbolic shape ranges: avoid recompilation when dimensions change within observed bounds
+  std::atomic<bool> _dspSymbolicShapes{true};         // ND4J_DSP_SYMBOLIC_SHAPES — enable range-based shape keys
+  std::atomic<int>  _dspSymbolicShapeWarmup{2};       // ND4J_DSP_SYMBOLIC_SHAPE_WARMUP — observation steps before ranging
+
+  // CUDA graph capture buffer pool sharing via CudaMemoryPool
+  std::atomic<bool> _dspCapturePoolEnabled{true};     // ND4J_DSP_CAPTURE_POOL_ENABLED — route capture buffers through pool
+  std::atomic<long long> _dspCapturePoolMaxBytes{1073741824LL}; // ND4J_DSP_CAPTURE_POOL_MAX_BYTES — 1GB default
 
   Environment();
 
@@ -577,6 +592,10 @@ class SD_LIB_EXPORT Environment {
   bool dspBatchZeroKernel() { return _dspBatchZeroKernel.load(); }
   void setDspBatchZeroKernel(bool v) { _dspBatchZeroKernel.store(v); }
 
+  // DSP batched GEMM
+  bool dspBatchedGemm() { return _dspBatchedGemm.load(); }
+  void setDspBatchedGemm(bool v) { _dspBatchedGemm.store(v); }
+
   // Triton compilation scope
   bool tritonCompileAll() { return _tritonCompileAll.load(); }
   void setTritonCompileAll(bool v) { _tritonCompileAll.store(v); }
@@ -620,6 +639,24 @@ class SD_LIB_EXPORT Environment {
   void setTritonArgDirtyTracking(bool enabled);
   bool tritonSectionFusion() { return _tritonSectionFusion.load(); }
   void setTritonSectionFusion(bool enabled);
+
+  // Fusion scoring
+  bool tritonFusionScoring() { return _tritonFusionScoring.load(); }
+  void setTritonFusionScoring(bool enabled);
+  float tritonFusionMinScore() { return _tritonFusionMinScore.load(); }
+  void setTritonFusionMinScore(float score);
+
+  // Symbolic shape ranges
+  bool dspSymbolicShapes() { return _dspSymbolicShapes.load(); }
+  void setDspSymbolicShapes(bool enabled);
+  int dspSymbolicShapeWarmup() { return _dspSymbolicShapeWarmup.load(); }
+  void setDspSymbolicShapeWarmup(int steps);
+
+  // Capture buffer pool sharing
+  bool dspCapturePoolEnabled() { return _dspCapturePoolEnabled.load(); }
+  void setDspCapturePoolEnabled(bool enabled);
+  long long dspCapturePoolMaxBytes() { return _dspCapturePoolMaxBytes.load(); }
+  void setDspCapturePoolMaxBytes(long long bytes);
 
   // Process environment path helpers used by native backends.
   std::string homeDirectory() const;

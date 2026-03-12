@@ -539,18 +539,18 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
       auto rX = hX + xTadOffsetForBlock;
       auto rZ = hZ + zTadOffsetForBlock;
 
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType zCoords[SD_MAX_RANK];
-      sd::LongType xOffset;
-      sd::LongType zOffset;
-
-      INDEX2COORDS(idx2, tadRank, tadShape, xCoords);
-      COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
-      INDEX2COORDS(idx2, zTadRank,zTadShape, zCoords);
-      COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
-
       for (sd::LongType i = 0; i < tadLength; i++) {
-        hZ[zOffset + i] = hX[xOffset + i];
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType zCoords[SD_MAX_RANK];
+        sd::LongType xOffset;
+        sd::LongType zOffset;
+
+        INDEX2COORDS(i, tadRank, tadShape, xCoords);
+        COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
+        INDEX2COORDS(i, zTadRank, zTadShape, zCoords);
+        COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
+
+        rZ[zOffset] = rX[xOffset];
       }
     }
   };
@@ -1877,96 +1877,43 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
       return;
     }
 
-    // If we validate first (call shapeInfo()), then cache later (call shapeInfo() again),
-    // the pointer could become invalid between the two calls, causing SIGSEGV.
-    // By caching once and validating the cached value, we ensure consistency.
-    const sd::LongType *xShapeInfoH = x->shapeInfo();
-    const sd::LongType *xShapeInfoD = x->specialShapeInfo();
-    void *xBuffer = x->buffer();
-    void *xSpecialBuffer = x->specialBuffer();
-
-    void *zBuffer = z->buffer();
-    const sd::LongType *zShapeInfoH = z->shapeInfo();
-    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
-    const sd::LongType zLength = z->lengthOf();
-
-    if (xShapeInfoH == nullptr) {
+    if (x->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x has null shapeInfo");
       return;
     }
-    if (zShapeInfoH == nullptr) {
+    if (z->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z has null shapeInfo");
       return;
     }
 
-    void *dimensionBuffer = dimension->buffer();
-    sd::DataBuffer *dimensionDb = dimension->getDataBuffer();
-    if (dimensionBuffer == nullptr || dimensionDb == nullptr) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null buffer");
-      return;
-    }
-
-    const sd::LongType xRank = shape::rank(xShapeInfoH);
-    const sd::DataType dimType = dimension->dataType();
-    if (dimType != sd::DataType::INT32 && dimType != sd::DataType::INT64) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      std::string err = "execReduceLong2: unsupported dimension buffer data type: ";
-      err += sd::DataTypeUtils::asString(dimType);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(err.c_str());
-      return;
-    }
-
-    const sd::LongType dimensionLength =
-        static_cast<sd::LongType>(dimensionDb->getLenInBytes() / sd::DataTypeUtils::sizeOf(dimType));
-
-    // Extract dimension values directly from the raw buffer. Do not rely on dimension->shapeInfo()
-    // because some callers mutate or free the dimension shape buffer once the NDArray is created.
-    std::vector<sd::LongType> dimensions(dimensionLength);
-    if (dimensionLength > 0) {
-      if (dimType == sd::DataType::INT32) {
-        auto dimensionData = reinterpret_cast<int *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = static_cast<sd::LongType>(dimensionData[i]);
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
-      } else {
-        auto dimensionData = reinterpret_cast<sd::LongType *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = dimensionData[i];
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
+    std::vector<sd::LongType> dimensions(dimension->lengthOf());
+    for (sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if (curr < 0) {
+        curr += x->rankOf();
       }
+      dimensions[i] = curr;
     }
 
-    // Validate output shape matches expected dimensions after reduction
-    // If ranks don't match, this indicates a shape mismatch from the calling layer
-    // DO NOT attempt to reshape - the buffer and shape must match
-    if (shape::rank(xShapeInfoH) - dimensionLength != shape::rank(zShapeInfoH) && zLength != 1) {
-      std::string errorMsg = "execReduceLong2: Output shape rank mismatch. ";
-      errorMsg += "Input rank: " + std::to_string(shape::rank(xShapeInfoH));
-      errorMsg += ", reduction dimensions: " + std::to_string(dimensionLength);
-      errorMsg += ", expected output rank: " + std::to_string(shape::rank(xShapeInfoH) - dimensionLength);
-      errorMsg += ", but got output rank: " + std::to_string(shape::rank(zShapeInfoH));
-      THROW_EXCEPTION(errorMsg.c_str());
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo()) && z->lengthOf() != 1) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<sd::LongType> *dims = (zLength != 1) ?
-                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(xShapeInfoH), &dimensions) :
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
                                   new std::vector<sd::LongType>();
 
     NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        xBuffer, xShapeInfoH, xSpecialBuffer, xShapeInfoD,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        zBuffer, zShapeInfoH, nullptr, nullptr,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;
@@ -1995,96 +1942,43 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
       return;
     }
 
-    // If we validate first (call shapeInfo()), then cache later (call shapeInfo() again),
-    // the pointer could become invalid between the two calls, causing SIGSEGV.
-    // By caching once and validating the cached value, we ensure consistency.
-    const sd::LongType *xShapeInfoH = x->shapeInfo();
-    const sd::LongType *xShapeInfoD = x->specialShapeInfo();
-    void *xBuffer = x->buffer();
-    void *xSpecialBuffer = x->specialBuffer();
-
-    void *zBuffer = z->buffer();
-    const sd::LongType *zShapeInfoH = z->shapeInfo();
-    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
-    const sd::LongType zLength = z->lengthOf();
-
-    if (xShapeInfoH == nullptr) {
+    if (x->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: input array x has null shapeInfo");
       return;
     }
-    if (zShapeInfoH == nullptr) {
+    if (z->shapeInfo() == nullptr) {
       sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
       sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: output array z has null shapeInfo");
       return;
     }
 
-    void *dimensionBuffer = dimension->buffer();
-    sd::DataBuffer *dimensionDb = dimension->getDataBuffer();
-    if (dimensionBuffer == nullptr || dimensionDb == nullptr) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("execReduceLong2: dimension array has null buffer");
-      return;
-    }
-
-    const sd::LongType xRank = shape::rank(xShapeInfoH);
-    const sd::DataType dimType = dimension->dataType();
-    if (dimType != sd::DataType::INT32 && dimType != sd::DataType::INT64) {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      std::string err = "execReduceLong2: unsupported dimension buffer data type: ";
-      err += sd::DataTypeUtils::asString(dimType);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(err.c_str());
-      return;
-    }
-
-    const sd::LongType dimensionLength =
-        static_cast<sd::LongType>(dimensionDb->getLenInBytes() / sd::DataTypeUtils::sizeOf(dimType));
-
-    // Extract dimension values directly from the raw buffer. Do not rely on dimension->shapeInfo()
-    // because some callers mutate or free the dimension shape buffer once the NDArray is created.
-    std::vector<sd::LongType> dimensions(dimensionLength);
-    if (dimensionLength > 0) {
-      if (dimType == sd::DataType::INT32) {
-        auto dimensionData = reinterpret_cast<int *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = static_cast<sd::LongType>(dimensionData[i]);
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
-      } else {
-        auto dimensionData = reinterpret_cast<sd::LongType *>(dimensionBuffer);
-        for (sd::LongType i = 0; i < dimensionLength; i++) {
-          sd::LongType curr = dimensionData[i];
-          if (curr < 0) {
-            curr += xRank;
-          }
-          dimensions[i] = curr;
-        }
+    std::vector<sd::LongType> dimensions(dimension->lengthOf());
+    for (sd::LongType i = 0; i < dimension->lengthOf(); i++) {
+      sd::LongType curr = dimension->e<sd::LongType>(i);
+      if (curr < 0) {
+        curr += x->rankOf();
       }
+      dimensions[i] = curr;
     }
 
-    // Validate output shape matches expected dimensions after reduction
-    // If ranks don't match, this indicates a shape mismatch from the calling layer
-    // DO NOT attempt to reshape - the buffer and shape must match
-    if (shape::rank(xShapeInfoH) - dimensionLength != shape::rank(zShapeInfoH) && zLength != 1) {
-      std::string errorMsg = "execReduceLong2: Output shape rank mismatch. ";
-      errorMsg += "Input rank: " + std::to_string(shape::rank(xShapeInfoH));
-      errorMsg += ", reduction dimensions: " + std::to_string(dimensionLength);
-      errorMsg += ", expected output rank: " + std::to_string(shape::rank(xShapeInfoH) - dimensionLength);
-      errorMsg += ", but got output rank: " + std::to_string(shape::rank(zShapeInfoH));
-      THROW_EXCEPTION(errorMsg.c_str());
+    const sd::LongType *zShapeInfoH = z->shapeInfo();
+    const sd::LongType *zShapeInfoD = z->specialShapeInfo();
+
+    if (shape::rank(x->shapeInfo()) - dimension->lengthOf() != shape::rank(z->shapeInfo()) && z->lengthOf() != 1) {
+      auto zPack = sd::ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), &dimensions);
+      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoD = reinterpret_cast<sd::LongType const *>(zPack->special());
     }
 
-    std::vector<sd::LongType> *dims = (zLength != 1) ?
-                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(xShapeInfoH), &dimensions) :
+    std::vector<sd::LongType> *dims = (z->lengthOf() != 1) ?
+                                  sd::ShapeUtils::evalDimsForReduceOp(shape::rank(x->shapeInfo()), &dimensions) :
                                   new std::vector<sd::LongType>();
 
     NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        xBuffer, xShapeInfoH, xSpecialBuffer, xShapeInfoD,
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        zBuffer, zShapeInfoH, nullptr, nullptr,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;

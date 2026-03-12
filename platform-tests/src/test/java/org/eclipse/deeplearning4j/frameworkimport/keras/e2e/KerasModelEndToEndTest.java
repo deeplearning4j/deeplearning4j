@@ -21,8 +21,6 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.Layer;
@@ -64,7 +62,6 @@ import org.nd4j.common.resources.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -531,25 +528,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     /**
-     * Inception V4
-     */
-    @Test
-    @Disabled
-    @DisplayName("Import Inception V 4")
-    // Model and weights have about 170mb, too large for test resources and also too excessive to enable as unit test
-    void importInceptionV4(@TempDir Path testDir) throws Exception {
-        String modelUrl = DL4JResources.getURLString("models/inceptionv4_keras_imagenet_weightsandconfig.h5");
-        File kerasFile = testDir.resolve("inceptionv4_keras_imagenet_weightsandconfig.h5").toFile();
-        if (!kerasFile.exists()) {
-            FileUtils.copyURLToFile(new URL(modelUrl), kerasFile);
-            kerasFile.deleteOnExit();
-        }
-        int[] inputShape = new int[] { 299, 299, 3 };
-        ComputationGraph graph = importFunctionalModelH5Test(testDir,kerasFile.getAbsolutePath(), inputShape, false);
-        // System.out.println(graph.summary());
-    }
-
-    /**
      * Xception
      */
     @Test
@@ -604,19 +582,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
         ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
-    }
-
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Res Value")
-    void importSepResValue(@TempDir Path tempDir) throws Exception {
-        String filePath = "C:\\Users\\agibs\\Documents\\GitHub\\keras1-import-test\\sep_res_value.h5";
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(filePath).enforceTrainingConfig(false);
-        KerasModel model = builder.buildModel();
-        ComputationGraph compGraph = model.getComputationGraph();
-        // ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        compGraph.output(input);
     }
 
     // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last

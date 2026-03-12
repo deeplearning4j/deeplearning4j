@@ -226,20 +226,34 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
                 return extraArgz;
             } else if (Shape.isR(dtype)) {
-                double extraz[] = new double[8];  // Always 8 elements
-                // Fill what we have
-                for (int i = 0; i < Math.min(extraArgs.length, 8); i++) {
-                    if (!(extraArgs[i] instanceof Number))
-                        continue;
-                    Number arg = (Number) extraArgs[i];
-                    if (arg == null)
-                        arg = 0.0;
-                    double val = arg.doubleValue();
-                    extraz[i] = val;
+                if (dtype == DataType.FLOAT || dtype == DataType.HALF || dtype == DataType.BFLOAT16) {
+                    float extraz[] = new float[8];  // Always 8 elements
+                    for (int i = 0; i < Math.min(extraArgs.length, 8); i++) {
+                        if (!(extraArgs[i] instanceof Number))
+                            continue;
+                        Number arg = (Number) extraArgs[i];
+                        if (arg == null)
+                            arg = 0.0f;
+                        extraz[i] = arg.floatValue();
+                    }
+                    extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
+                    return extraArgz;
+                } else {
+                    double extraz[] = new double[8];  // Always 8 elements
+                    // Fill what we have
+                    for (int i = 0; i < Math.min(extraArgs.length, 8); i++) {
+                        if (!(extraArgs[i] instanceof Number))
+                            continue;
+                        Number arg = (Number) extraArgs[i];
+                        if (arg == null)
+                            arg = 0.0;
+                        double val = arg.doubleValue();
+                        extraz[i] = val;
+                    }
+                    // Rest are already 0.0 (Java default initialization)
+                    extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
+                    return extraArgz;
                 }
-                // Rest are already 0.0 (Java default initialization)
-                extraArgz = Nd4j.getConstantHandler().getConstantBuffer(extraz, dtype);
-                return extraArgz;
             }
         }
 

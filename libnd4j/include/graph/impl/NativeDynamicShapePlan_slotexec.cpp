@@ -132,8 +132,39 @@ void NativeDynamicShapePlan::detectFrozenConstants() {
       if (isValueIndependentSlot[s]) valueIndepCount++;
     }
   }
-  DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants (%d value-independent)",
-            frozenConstCount, numSlots_, valueIndepCount);
+  // Collect frozen output slot indices for quick lookup
+  std::unordered_set<int> frozenOutputSlots;
+  for (int s = 0; s < numSlots_; s++) {
+    if (slots_[s].frozenConstantSlot) {
+      for (int o = 0; o < slots_[s].numOutputs; o++) {
+        frozenOutputSlots.insert(slots_[s].outputSlotIndices[o]);
+      }
+    }
+  }
+
+  // Disable in-place fusion for any op that would overwrite a frozen output buffer.
+  // In-place fusion writes the op's output directly into its input buffer.
+  // If that input comes from a frozen constant slot, the frozen value gets corrupted.
+  // Note: in-place fusion disabling for frozen slots is now done earlier in
+  // rebuildSegmentsForFrozenShapes() (before the warmup), so the warmup doesn't
+  // corrupt cached frozen values. The code here is a safety net for any case
+  // where rebuildSegments wasn't called before frozen detection.
+  int disabledInPlace = 0;
+  for (int s = 0; s < numSlots_; s++) {
+    auto& sl = slots_[s];
+    if (sl.inPlaceFused && sl.inPlaceFusedInputIdx >= 0 &&
+        sl.inPlaceFusedInputIdx < sl.numInputs) {
+      int srcSlot = sl.inputSourceIndices[sl.inPlaceFusedInputIdx];
+      if (srcSlot >= 0 && frozenOutputSlots.count(srcSlot)) {
+        sl.inPlaceFused = false;
+        sl.inPlaceFusedInputIdx = -1;
+        disabledInPlace++;
+      }
+    }
+  }
+
+  DSP_DIAG(SHAPE, "frozen constant detection: %d/%d slots are frozen constants (%d value-independent, %d in-place disabled)",
+            frozenConstCount, numSlots_, valueIndepCount, disabledInPlace);
 }
 
 // ─── Shape key computation ──────────────────────────────────────────────────
@@ -568,6 +599,10 @@ Status NativeDynamicShapePlan::executeSlot(
     if (slot.numTArgs > 0) ctx.setTArguments(slot.tArgs, slot.numTArgs);
     if (slot.numBArgs > 0) ctx.setBArguments(slot.bArgs, slot.numBArgs);
     if (slot.numDArgs > 0) ctx.setDArguments(slot.dArgs, slot.numDArgs);
+    ctx.getSArguments()->clear();
+    if (slot.numSArgs > 0) {
+      ctx.getSArguments()->insert(ctx.getSArguments()->end(), slot.sArgs, slot.sArgs + slot.numSArgs);
+    }
 
     ShapeList inputShapes;
     for (int i = 0; i < slot.numInputs; i++) {
@@ -865,6 +900,10 @@ Status NativeDynamicShapePlan::executeSlot(
   if (slot.numTArgs > 0) ctx.setTArguments(slot.tArgs, slot.numTArgs);
   if (slot.numBArgs > 0) ctx.setBArguments(slot.bArgs, slot.numBArgs);
   if (slot.numDArgs > 0) ctx.setDArguments(slot.dArgs, slot.numDArgs);
+  ctx.getSArguments()->clear();
+  if (slot.numSArgs > 0) {
+    ctx.getSArguments()->insert(ctx.getSArguments()->end(), slot.sArgs, slot.sArgs + slot.numSArgs);
+  }
 
   ctx.setShapeFunctionOverride(true);
 

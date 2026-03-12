@@ -4190,6 +4190,13 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
+     * Clear all cached DynamicShapePlans. Call when the graph structure changes.
+     */
+    public void clearDynamicShapePlanCache() {
+        dynamicShapePlanCache.clear();
+    }
+
+    /**
      * Apply a preset DSP/Triton compilation profile similar to PyTorch compile modes.
      * This configures graph backend selection and Triton compiler/runtime knobs.
      */
@@ -5669,7 +5676,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
         Preconditions.checkArgument((outputVars != null && !outputVars.isEmpty()) || (gradientVars != null && !gradientVars.isEmpty()),
                 "No variables were specified for either output or gradients");
         if (getFunction(GRAD_FN_KEY) == null) {
-            createGradFunction();
+            createGradFunction(gradientVars != null ? gradientVars.toArray(new String[0]) : null);
         }
 
         List<String> varNames = new ArrayList<>();
@@ -7169,7 +7176,63 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * @return
      */
     public static SameDiff loadSharded(File outputZipFile) throws IOException {
-        return SDZSerializer.load(outputZipFile,true);
+        return loadSdz(outputZipFile, true);
+    }
+
+    /**
+     * Explicitly load an SDZ model from file.
+     *
+     * @param file             SDZ/ZIP model file
+     * @param loadUpdaterState If true, load updater state if present
+     * @return Loaded SameDiff model
+     */
+    public static SameDiff loadSdz(@NonNull File file, boolean loadUpdaterState) {
+        try {
+            return SDZSerializer.load(file, loadUpdaterState);
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading SameDiff SDZ model from file", e);
+        }
+    }
+
+    /**
+     * Explicitly load an SDZ model from file, loading updater state.
+     *
+     * @param file SDZ/ZIP model file
+     * @return Loaded SameDiff model
+     */
+    public static SameDiff loadSdz(@NonNull File file) {
+        return loadSdz(file, true);
+    }
+
+    /**
+     * Explicitly load an SDZ model from an input stream.
+     *
+     * @param is               Input stream containing SDZ/ZIP bytes
+     * @param loadUpdaterState If true, load updater state if present
+     * @return Loaded SameDiff model
+     */
+    public static SameDiff loadSdz(@NonNull InputStream is, boolean loadUpdaterState) {
+        File tempFile = ND4JFileUtils.createTempFile("SameDiffSdzFile", ".sdz");
+        try {
+            try (OutputStream os = new BufferedOutputStream(new FileOutputStream(tempFile))) {
+                IOUtils.copy(is, os);
+            }
+            return SDZSerializer.load(tempFile, loadUpdaterState);
+        } catch (IOException e) {
+            throw new RuntimeException("Error loading SameDiff SDZ model from stream", e);
+        } finally {
+            tempFile.delete();
+        }
+    }
+
+    /**
+     * Explicitly load an SDZ model from an input stream, loading updater state.
+     *
+     * @param is Input stream containing SDZ/ZIP bytes
+     * @return Loaded SameDiff model
+     */
+    public static SameDiff loadSdz(@NonNull InputStream is) {
+        return loadSdz(is, true);
     }
 
     /**
@@ -7283,7 +7346,8 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
-     * Load the SameDiff instance previously saved with {@link #save(File, boolean)}
+     * Load the SameDiff instance previously saved with {@link #save(File, boolean)} (SDNB/FlatBuffer)
+     * or {@link #saveSharded(File, boolean)} (SDZ/ZIP).
      *
      * @param file             The file to load the network from
      * @param loadUpdaterState If true - load the updater state (history etc for updaters such as Adam, Nesterov momentum, RMSProp etc).
@@ -7295,6 +7359,11 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public static SameDiff load(@NonNull File file, boolean loadUpdaterState) {
         try {
+            // Keep parity with native SDZ/SDNB loading behavior:
+            // if this is a ZIP container (SDZ), use SDZ serializer; otherwise use flat-file SDNB path.
+            if (isZipArchive(file)) {
+                return SDZSerializer.load(file, loadUpdaterState);
+            }
             return fromFlatFile(file, loadUpdaterState);
         } catch (IOException e) {
             throw new RuntimeException("Error loading SameDiff instance from file", e);
@@ -7302,7 +7371,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     }
 
     /**
-     * As per {@link #load(File, boolean)} but the SameDiff instance
+     * As per {@link #load(File, boolean)} but loading from an input stream.
      *
      * @param is               Input stream to load the saved network from
      * @param loadUpdaterState If true - load the updater state (history etc for updaters such as Adam, Nesterov momentum, RMSProp etc).
@@ -7318,12 +7387,36 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             try (OutputStream os = new BufferedOutputStream(new FileOutputStream(tempFile))) {
                 IOUtils.copy(is, os);
             }
+            if (isZipArchive(tempFile)) {
+                return SDZSerializer.load(tempFile, loadUpdaterState);
+            }
             return fromFlatFile(tempFile, loadUpdaterState);
         } catch (IOException e) {
             throw new RuntimeException("Error loading SameDiff instance from file", e);
         } finally {
             tempFile.delete();
         }
+    }
+
+    private static boolean isZipArchive(@NonNull File file) throws IOException {
+        if (!file.exists() || !file.isFile() || file.length() < 4) {
+            return false;
+        }
+
+        byte[] magic = new byte[4];
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            dis.readFully(magic);
+        }
+
+        if (magic[0] != 0x50 || magic[1] != 0x4B) {
+            return false;
+        }
+
+        // Standard ZIP signatures:
+        // local file header (03 04), empty archive (05 06), spanning/split archive (07 08)
+        return (magic[2] == 0x03 && magic[3] == 0x04) ||
+                (magic[2] == 0x05 && magic[3] == 0x06) ||
+                (magic[2] == 0x07 && magic[3] == 0x08);
     }
 
     // ============================================================================================

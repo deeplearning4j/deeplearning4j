@@ -371,6 +371,16 @@ public class ForwardExecutionDAGBuilder {
             addControlFlowDependencies(node, dependencies, operationNodes);
             
             node.getDependsOnOperations().addAll(dependencies);
+
+            // Break NextIteration→Merge back-edges so Merge appears before body ops
+            // in topological order. The while-loop executor handles the iterative
+            // re-execution of Merge with NextIteration outputs.
+            if (node.getOperation() instanceof Merge) {
+                node.getDependsOnOperations().removeIf(dep -> {
+                    ExecutionNode depNode = operationNodes.get(dep);
+                    return depNode != null && depNode.getOperation() instanceof NextIteration;
+                });
+            }
         }
     }
     
@@ -442,7 +452,11 @@ public class ForwardExecutionDAGBuilder {
         String nodeName = node.getOperationName();
         
         if (visiting.contains(nodeName)) {
-            log.warn("Cycle detected involving node: {}", nodeName);
+            // Control flow ops (Merge, NextIteration, etc.) create expected cycles.
+            // Non-control-flow cycles are unexpected but we still continue gracefully.
+            if (node.getNodeType() != ExecutionNode.ExecutionNodeType.CONTROL_FLOW_OP) {
+                log.warn("Cycle detected involving node: {}", nodeName);
+            }
             return;
         }
         

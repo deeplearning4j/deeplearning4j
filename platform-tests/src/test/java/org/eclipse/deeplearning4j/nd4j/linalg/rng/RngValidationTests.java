@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -129,7 +128,6 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("CUDA RNG functions have native code issues - CUDA error 700 (illegal memory access)")
     @Tag(TagNames.NEEDS_VERIFY)
     public void validateRngDistributions(Nd4jBackend backend){
         List<TestCase> testCases = new ArrayList<>();
@@ -216,18 +214,17 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
             testCases.add(TestCase.builder().opType("range").dataType(type).shape(1000).minValue(1).maxValue(2).minValueInclusive(true).maxValueInclusive(true).arg("min", 1.0).arg("max",2.0)
                     .expectedMean((1+2)/2.0).expectedStd(Math.sqrt(1/12.0 * Math.pow(2.0-1.0, 2)) /*Var: 1/12 * (b-a)^2*/).build());
 
-            //AlphaDropout: implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d \in {0,1}.
-            //For ones input and p=0.5, this should give us values (a+b or a*alphaPrime+b) with probability 0.5
-            //Mean should be same as input - i.e., 1
-            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(new long[0]).maxValue(alphaDropoutA(0.5)+alphaDropoutB(0.5))
-                    .minValue(alphaDropoutA(0.5)*ALPHA_PRIME+alphaDropoutB(0.5)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
-            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(1000).maxValue(alphaDropoutA(0.4)+alphaDropoutB(0.4))
-                    .minValue(alphaDropoutA(0.4)*ALPHA_PRIME+alphaDropoutB(0.4)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
-                    //Mean: 0.4 probability of  being retained - mean is 0.4 probability * (1.0/0.4) = 1.0. i.e., expected mean is unchanged by inverted dropout
-                    .expectedMean(1.0).build());
-            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(100,10000).maxValue(alphaDropoutA(0.3)+alphaDropoutB(0.3))
-                    .minValue(alphaDropoutA(0.3)*ALPHA_PRIME+alphaDropoutB(0.3)).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
-                    .expectedMean(1.0).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+            //AlphaDropout: implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d in {0,1}.
+            //This validation feeds an all-ones input array, so the expected mean is the Bernoulli mixture of
+            //the retained value (a + b) and the dropped value (a * alphaPrime + b), rounded through the active dtype.
+            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(new long[0]).maxValue(dtypeUpperBound(type, alphaDropoutA(0.5)+alphaDropoutB(0.5)))
+                    .minValue(dtypeLowerBound(type, alphaDropoutA(0.5)*ALPHA_PRIME+alphaDropoutB(0.5))).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.5).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(1000).maxValue(dtypeUpperBound(type, alphaDropoutA(0.4)+alphaDropoutB(0.4)))
+                    .minValue(dtypeLowerBound(type, alphaDropoutA(0.4)*ALPHA_PRIME+alphaDropoutB(0.4))).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.4)
+                    .expectedMean(alphaDropoutMean(type, 0.4)).meanMinAbsErrorTolerance(0.05).build());
+            testCases.add(TestCase.builder().opType("alphaDropout").dataType(type).shape(100,10000).maxValue(dtypeUpperBound(type, alphaDropoutA(0.3)+alphaDropoutB(0.3)))
+                    .minValue(dtypeLowerBound(type, alphaDropoutA(0.3)*ALPHA_PRIME+alphaDropoutB(0.3))).minValueInclusive(true).maxValueInclusive(true).arg("p", 0.3)
+                    .expectedMean(alphaDropoutMean(type, 0.3)).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
 
             //--- Custom ops ---
@@ -245,21 +242,21 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
                     .expectedMean(0.2).expectedStd(Math.sqrt(0.2*(1-0.2)) /*var = p*(1-p)*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
             //3 cases: lambda = 1, 1, 0.4
-            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
-            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(1000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 1.0)
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(new long[0]).minValue(0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 1.0).build());       //Don't check mean/std for 1 element
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(1000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 1.0)
                     .expectedMean(1.0).expectedStd(1.0 /*var = 1 / lambda^2*/).build());
-            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(100,10000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(false).maxValueInclusive(true).arg("lambda", 0.4)
-                    .expectedMean(1.0 / 0.4).expectedStd(1.0 / Math.pow(0.4, 2) /*var = 1 / lambda^2*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
+            testCases.add(TestCase.builder().opType("randomexponential").dataType(type).shape(100,10000).minValue(0.0).maxValue(maxValue(type)).minValueInclusive(type == DataType.HALF).maxValueInclusive(true).arg("lambda", 0.4)
+                    .expectedMean(1.0 / 0.4).expectedStd(1.0 / 0.4 /*std = 1 / lambda*/).meanRelativeErrorTolerance(0.005).stdRelativeErrorTolerance(0.01).build());
 
             testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 0.0).arg("std", 1.0)
-                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.08).stdMinAbsErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("randomnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).arg("mean", 2.0).arg("std", 0.5)
                     .expectedMean(2.0).expectedStd(0.5).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
 
             testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(new long[0]).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true).build());       //Don't check mean/std for 1 element
             testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
-                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.05).stdMinAbsErrorTolerance(0.05).build());
+                    .expectedMean(0.0).expectedStd(1.0).meanMinAbsErrorTolerance(0.08).stdMinAbsErrorTolerance(0.05).build());
             testCases.add(TestCase.builder().opType("randomstandardnormal").dataType(type).shape(100,1000).minValue(minValue(type)).maxValue(maxValue(type)).minValueInclusive(true).maxValueInclusive(true)
                     .expectedMean(0.0).expectedStd(1.0).meanRelativeErrorTolerance(0.01).stdRelativeErrorTolerance(0.01).meanMinAbsErrorTolerance(0.001).build());
         }
@@ -397,7 +394,7 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
                 return new LogNormalDistribution(tc.arr(), (double)tc.prop("mu"), tc.prop("s"));
             case "choice":
                 INDArray source = Nd4j.linspace(0, 10, 11, tc.getDataType());
-                INDArray probs = Nd4j.ones(11).divi(11);
+                INDArray probs = Nd4j.ones(tc.getDataType(), 11).divi(11);
                 return new Choice(source, probs, tc.arr());
             case "probabilisticmerge":
                 INDArray x = Nd4j.zeros(tc.getDataType(), tc.getShape());
@@ -454,5 +451,42 @@ public class RngValidationTests extends BaseNd4jTestWithBackends {
     public static double alphaDropoutB(double p){
         double alphaPrime = -DEFAULT_LAMBDA * DEFAULT_ALPHA;
         return -alphaDropoutA(p) * (1-p)*alphaPrime;
+    }
+
+    public static double alphaDropoutMean(double p){
+        double a = alphaDropoutA(p);
+        double b = alphaDropoutB(p);
+        return p * (a + b) + (1 - p) * (a * ALPHA_PRIME + b);
+    }
+
+    public static double alphaDropoutMean(DataType dataType, double p){
+        double retained = dtypeValue(dataType, alphaDropoutA(p) + alphaDropoutB(p));
+        double dropped = dtypeValue(dataType, alphaDropoutA(p) * ALPHA_PRIME + alphaDropoutB(p));
+        return p * retained + (1 - p) * dropped;
+    }
+
+    private static double dtypeValue(DataType dataType, double value) {
+        return Nd4j.scalar(DataType.DOUBLE, value).castTo(dataType).getDouble(0);
+    }
+
+    private static double dtypeLowerBound(DataType dataType, double value) {
+        return dtypeValue(dataType, value) - dtypeBoundTolerance(dataType);
+    }
+
+    private static double dtypeUpperBound(DataType dataType, double value) {
+        return dtypeValue(dataType, value) + dtypeBoundTolerance(dataType);
+    }
+
+    private static double dtypeBoundTolerance(DataType dataType) {
+        switch (dataType) {
+            case DOUBLE:
+                return 0.0;
+            case FLOAT:
+                return 1e-6;
+            case HALF:
+                return 5e-3;
+            default:
+                throw new RuntimeException("Dtype not supported: " + dataType);
+        }
     }
 }

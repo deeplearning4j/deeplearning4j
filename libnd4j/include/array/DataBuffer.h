@@ -101,6 +101,16 @@ extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
  * Set by capture orchestrator, cleared after capture ends.
  */
 extern SD_TLS_EXPORT thread_local bool tl_captureSkipFrees;
+
+#ifdef SD_CUDA
+/**
+ * DSP execution stream override for syncToSpecial().
+ * When set, syncToSpecial uses this stream instead of stream 0 and skips
+ * per-call cudaStreamSynchronize (caller guarantees ordering via same-stream
+ * graph launch). Set/unset by DSP replay path around ext input sync loops.
+ */
+extern SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream;
+#endif
 #endif  // __JAVACPP_HACK__
 
 class SD_LIB_EXPORT DataBuffer {

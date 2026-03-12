@@ -3176,11 +3176,13 @@ public class Shape {
      */
     public static boolean wholeArrayDimension(long... arr) {
         // null or empty means "reduce all dimensions".
+        // {Integer.MAX_VALUE} is also a sentinel for "reduce all" used by
+        // NDArray.sum(Integer.MAX_VALUE) etc.
         // NOTE: {-1} is NOT treated as "reduce all" because -1 also means
         // "last axis" in NumPy/ONNX convention. Callers that want "reduce all"
         // should pass null or empty array, not {-1}.
-        // Legacy code that used {-1} as sentinel should be updated to use {} instead.
-        return arr == null || arr.length == 0;
+        return arr == null || arr.length == 0
+                || (arr.length == 1 && arr[0] == Integer.MAX_VALUE);
     }
 
     public static long[] uniquify(long[] array) {
@@ -3213,6 +3215,10 @@ public class Shape {
         // Empty or null axis means "reduce all dimensions" - return empty array
         // Native code handles empty dimensions as "full array reduction"
         if (axis == null || axis.length == 0)
+            return new long[0];
+
+        // Integer.MAX_VALUE is a sentinel for "reduce all dimensions"
+        if (axis.length == 1 && axis[0] == Integer.MAX_VALUE)
             return new long[0];
 
         // Normalize negative axes: -1 -> rank-1, -2 -> rank-2, etc.

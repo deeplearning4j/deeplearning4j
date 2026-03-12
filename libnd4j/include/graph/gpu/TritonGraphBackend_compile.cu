@@ -25,6 +25,7 @@
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/gpu/TritonTargetDispatch.h>
 #include <graph/gpu/SectionTypeConfig.h>
+#include <graph/gpu/FusionScoring.h>
 #include <graph/DspDiagnostics.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
@@ -352,13 +353,31 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     // Merge consecutive non-standalone, non-fallback sections into one compile range.
     int runStart = secIdx;
     int runEnd = secIdx;
+
+    bool fusionScoringEnabled = Environment::getInstance().tritonFusionScoring();
+    float fusionMinScore = Environment::getInstance().tritonFusionMinScore();
+
     while (runEnd + 1 < static_cast<int>(sections.size()) &&
            !isStandaloneSection(sections[runEnd + 1]) &&
            !isFallbackSection(sections[runEnd + 1])) {
+      if (fusionScoringEnabled) {
+        float score = scoreSectionFusion(sections[runEnd], sections[runEnd + 1],
+                                          slots, outputSlots, totalOutputSlots);
+        if (score < fusionMinScore) {
+          DSP_DIAG(FUSION, "TritonGraphBackend: section %d [%d-%d] NOT merged (score=%.2f < min=%.2f)",
+                   runEnd + 1, sections[runEnd + 1].startSlot, sections[runEnd + 1].endSlot,
+                   score, fusionMinScore);
+          break;
+        }
+        DSP_DIAG(FUSION, "TritonGraphBackend: section %d [%d-%d] type=%s SCORED merge (score=%.2f) into range starting at section %d",
+                 runEnd + 1, sections[runEnd + 1].startSlot, sections[runEnd + 1].endSlot,
+                 sectionTypeName(sections[runEnd + 1].type), score, runStart);
+      } else {
+        DSP_DIAG(FUSION, "TritonGraphBackend: section %d [%d-%d] type=%s MERGED into range starting at section %d",
+                 runEnd + 1, sections[runEnd + 1].startSlot, sections[runEnd + 1].endSlot,
+                 sectionTypeName(sections[runEnd + 1].type), runStart);
+      }
       runEnd++;
-      DSP_DIAG(FUSION, "TritonGraphBackend: section %d [%d-%d] type=%s MERGED into range starting at section %d",
-               runEnd, sections[runEnd].startSlot, sections[runEnd].endSlot,
-               sectionTypeName(sections[runEnd].type), runStart);
     }
 
     pendingRanges.push_back(makeRange(runStart, runEnd));

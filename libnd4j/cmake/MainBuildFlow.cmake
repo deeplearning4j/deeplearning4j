@@ -275,6 +275,15 @@ function(collect_all_sources out_source_list)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/cuda/*.cu)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE GRAPH_CUDA_SOURCES ./include/graph/*.cu)
+        # Exclude Triton .cu files when Triton is not available (they require MLIR headers)
+        if(NOT HAVE_TRITON)
+            file(GLOB_RECURSE _triton_cu_sources ./include/graph/gpu/Triton*.cu)
+            if(_triton_cu_sources)
+                list(REMOVE_ITEM GRAPH_CUDA_SOURCES ${_triton_cu_sources})
+                list(LENGTH _triton_cu_sources _triton_cu_count)
+                message(STATUS "Excluded ${_triton_cu_count} Triton .cu files (HAVE_TRITON=OFF)")
+            endif()
+        endif()
         file(GLOB_RECURSE VALIDATION_SOURCES ./include/array/DataTypeValidation.cpp)
         file(GLOB CPU_HELPERS_TO_EXCLUDE ./include/legacy/cpu/*.cpp ./include/helpers/cpu/*.cpp ./include/array/cpu/*.cpp)
 
@@ -590,6 +599,19 @@ function(create_and_link_library)
         add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
         target_link_libraries(${OBJECT_LIB_NAME} PUBLIC flatbuffers_interface)
 
+        # Generated instantiation sources compile into nested object directories
+        # under CMakeFiles/<target>.dir. Create those paths up front so clean
+        # parallel Makefile builds do not race the first generated compiles.
+        set(_generated_object_dir "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${OBJECT_LIB_NAME}.dir")
+        file(MAKE_DIRECTORY
+                "${_generated_object_dir}"
+                "${_generated_object_dir}/compilation_units")
+        if(SD_CUDA)
+            file(MAKE_DIRECTORY "${_generated_object_dir}/cuda_instantiations")
+        else()
+            file(MAKE_DIRECTORY "${_generated_object_dir}/cpu_instantiations")
+        endif()
+
         # =========================================================================
         # UNITY BUILD EXCLUSIONS
         # =========================================================================
@@ -601,14 +623,31 @@ function(create_and_link_library)
         # These files are intentionally split for parallel compilation and type-based
         # chunking, so excluding them from unity batching is correct.
         # =========================================================================
-        if(SD_UNITY_BUILD)
-            foreach(_src ${ALL_SOURCES})
-                get_filename_component(_dir "${_src}" DIRECTORY)
-                if(_dir MATCHES "compilation_units|cpu_instantiations|cuda_instantiations")
-                    set_source_files_properties(${_src} PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+        # =========================================================================
+        # EXCLUDE GENERATED FILES FROM UNITY BUILD AND PCH
+        # =========================================================================
+        # Generated instantiation and compilation-unit files are intentionally split
+        # for parallel compilation and type-based chunking, so they must be excluded
+        # from unity batching.
+        #
+        # They also only include their specific template headers (e.g.
+        # <loops/cpu/broadcasting_bool.hpp>) and do NOT need the project-wide PCH.
+        # Applying PCH to these files causes ccache to disable depend_mode
+        # (ccache disables depend_mode when PCH is detected), falling back to
+        # slower preprocessor-based caching with cache keys that change whenever
+        # any PCH header changes — causing cache misses on every rebuild.
+        # =========================================================================
+        foreach(_src ${ALL_SOURCES})
+            get_filename_component(_dir "${_src}" DIRECTORY)
+            if(_dir MATCHES "compilation_units|cpu_instantiations|cuda_instantiations")
+                set_source_files_properties(${_src} PROPERTIES
+                    SKIP_PRECOMPILE_HEADERS ON)
+                if(SD_UNITY_BUILD)
+                    set_source_files_properties(${_src} PROPERTIES
+                        SKIP_UNITY_BUILD_INCLUSION ON)
                 endif()
-            endforeach()
-        endif()
+            endif()
+        endforeach()
 
         # =========================================================================
         # NOTE ON EXCEPTION TABLE REDUCTION (ABANDONED APPROACH)
@@ -792,7 +831,14 @@ function(create_and_link_library)
         # PCH is ONLY enabled when SD_GCC_FUNCTRACE is OFF and NOT a CUDA build
         # SD_DISABLE_PCH env var: CI sets this because PCH breaks ccache across runner restores
         # (fresh SDK installs have new header mtimes, invalidating all PCH manifest entries)
+        # PCH is now DISABLED by default because it breaks ccache depend_mode.
+        # ccache falls back to preprocessor mode when PCH is detected, making
+        # cache keys include ALL PCH headers — any change to shape.h, templatemath.h,
+        # etc. invalidates all ~841 source files instead of just affected ones.
+        # Set SD_ENABLE_PCH=1 to force-enable PCH (e.g., for cold builds without ccache).
         if(DEFINED ENV{SD_DISABLE_PCH})
+            set(_SD_PCH_DISABLED_BY_ENV TRUE)
+        elseif(NOT DEFINED ENV{SD_ENABLE_PCH})
             set(_SD_PCH_DISABLED_BY_ENV TRUE)
         else()
             set(_SD_PCH_DISABLED_BY_ENV FALSE)
@@ -824,7 +870,7 @@ function(create_and_link_library)
         elseif(SD_CUDA)
             message(STATUS "⚠️ Precompiled headers DISABLED for CUDA build (nvcc compatibility)")
         elseif(_SD_PCH_DISABLED_BY_ENV)
-            message(STATUS "⚠️ Precompiled headers DISABLED by SD_DISABLE_PCH env var (CI ccache compatibility)")
+            message(STATUS "⚠️ Precompiled headers DISABLED (default — breaks ccache depend_mode). Set SD_ENABLE_PCH=1 to enable.")
         else()
             message(STATUS "⚠️ Precompiled headers DISABLED for functrace build (use clean build when switching)")
         endif()

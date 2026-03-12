@@ -33,7 +33,7 @@
 
 void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost, OpaqueNDArray z, void *extraArguments) {
   try {
-    z->prepareSpecialUse({}, {z});
+    z->prepareSpecialUse({z}, {});
 
     auto lc = sd::LaunchContext::defaultContext();
 
@@ -45,7 +45,7 @@ void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost, Op
         sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(z->shapeInfo())->special(),
         extraArguments);
 
-    z->registerSpecialUse({}, {z});
+    z->registerSpecialUse({z}, {});
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
