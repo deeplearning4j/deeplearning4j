@@ -74,10 +74,11 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 .paddingMode(ConvolutionUtils.paddingModeForConvolutionMode(convolutionMode))
                 .build();
 
-        //[kW, iC, oC]
+        //[kW, iC, oC] or format-dependent
+        WeightsFormat wFormat = ConvolutionUtils.getWeightFormat(layerConf().getCnn2dDataFormat());
         INDArray w = Convolution1DUtils.reshapeWeightArrayOrGradientForFormat(
                 getParam(ConvolutionParamInitializer.WEIGHT_KEY),
-                WeightsFormat.YXIO);
+                wFormat);
 
         INDArray[] inputArrs;
         INDArray[] outputArrs;
@@ -140,6 +141,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         org.deeplearning4j.nn.conf.layers.Convolution1DLayer c = layerConf();
+        WeightsFormat wFormat = ConvolutionUtils.getWeightFormat(layerConf().getCnn2dDataFormat());
         Conv1DConfig conf = Conv1DConfig.builder()
                 .k(c.getKernelSize()[0])
                 .s(c.getStride()[0])
@@ -152,7 +154,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         INDArray w = Convolution1DUtils.reshapeWeightArrayOrGradientForFormat(
                 getParam(ConvolutionParamInitializer.WEIGHT_KEY)
-                ,WeightsFormat.YXIO);
+                ,wFormat);
 
 
         INDArray[] inputs;

@@ -1642,6 +1642,10 @@
                         <ND4J_TRITON_SKIP_KERNELS>${nd4j.triton.skipKernels}</ND4J_TRITON_SKIP_KERNELS>
                         <ND4J_TRITON_GRAPH_REINSTANTIATE>${nd4j.triton.graphReinstantiate}</ND4J_TRITON_GRAPH_REINSTANTIATE>
                         <ND4J_DSP_BATCHED_GEMM>${nd4j.dsp.batchedGemm}</ND4J_DSP_BATCHED_GEMM>
+                        <ND4J_DSP_BATCH_ZERO>${nd4j.dsp.batchZero}</ND4J_DSP_BATCH_ZERO>
+                        <ND4J_DSP_BATCH_ZERO_KERNEL>${nd4j.dsp.batchZeroKernel}</ND4J_DSP_BATCH_ZERO_KERNEL>
+                        <ND4J_DSP_BATCH_ZERO_VERBOSE>${nd4j.dsp.batchZeroVerbose}</ND4J_DSP_BATCH_ZERO_VERBOSE>
+                        <ND4J_DSP_CAST_SINK_MATMUL>${nd4j.dsp.castSinkMatmul}</ND4J_DSP_CAST_SINK_MATMUL>
                         <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
                     </environmentVariables>
                     <systemPropertyVariables>

@@ -568,7 +568,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                     try {
                         // Check if it's a constant in the IR graph
-                        if (irGraph.hasConstantInitializer(inName)) {
+                        // BUT skip if a node in the graph produces this variable — the node's
+                        // computed output should take precedence over an initializer default value.
+                        // ONNX models sometimes have initializers that share names with node outputs
+                        // (e.g., shape tensors computed by Concat nodes).
+                        val hasProducer = sortResult.variableToProducer.containsKey(inName)
+                        if (irGraph.hasConstantInitializer(inName) && !hasProducer) {
                             val constantArray = irGraph.getConstantArrayForName(inName)
                             sd.constant(inName, constantArray)
                             if (sd.isEagerMode) {

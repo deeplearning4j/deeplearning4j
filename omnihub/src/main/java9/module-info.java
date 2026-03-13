@@ -10,6 +10,7 @@ open module omnihub {
     requires org.apache.commons.lang3;
     requires slf4j.api;
     requires progressbar;
+    requires com.google.gson;
     exports org.eclipse.deeplearning4j.omnihub;
     exports org.eclipse.deeplearning4j.omnihub.api;
     exports org.eclipse.deeplearning4j.omnihub.dsl;

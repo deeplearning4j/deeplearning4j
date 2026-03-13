@@ -90,6 +90,11 @@ public class DifferentialFunctionClassHolder {
         ));
         classFieldsToIgnore = new ConcurrentHashMap<>();
         classFieldsToIgnore.put(BaseOp.class, new HashSet<>(Arrays.asList("x", "y", "z", "n", "numProcessed", "xVertexId", "yVertexId", "zVertexId", "extraArgz")));
+        // Legacy scalar ops already serialize their scalar through FlatNode.scalar.
+        // Reflecting scalarValue as a generic property duplicates the payload and
+        // creates conflicting restore paths during FlatBuffer round-trips.
+        classFieldsToIgnore.put(BaseScalarOp.class, new HashSet<>(Collections.singletonList("scalarValue")));
+        classFieldsToIgnore.put(BaseScalarBoolOp.class, new HashSet<>(Collections.singletonList("scalarValue")));
         log.trace("Initialized class fields");
         log.trace("Initializing import class mapping");
         OP_NAME_MAP = new ConcurrentHashMap<>();

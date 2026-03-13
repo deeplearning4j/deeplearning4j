@@ -326,10 +326,13 @@ public class DynamicShapePlanCompiler {
                     }
                     inputSourceIndices[i] = -(externalIdx + 1);
 
-                    // Determine source type
-                    if (dag.getConstants().contains(inputVar)) {
+                    // Determine source type — check both inputVar and baseName
+                    // (inputVar may have ":0" suffix that constants/variables don't)
+                    String baseName2 = inputVar.contains(":") ?
+                            inputVar.substring(0, inputVar.lastIndexOf(':')) : inputVar;
+                    if (dag.getConstants().contains(inputVar) || dag.getConstants().contains(baseName2)) {
                         inputSourceTypes[i] = DynamicShapeSlot.SOURCE_CONSTANT;
-                    } else if (dag.getVariables().contains(inputVar)) {
+                    } else if (dag.getVariables().contains(inputVar) || dag.getVariables().contains(baseName2)) {
                         inputSourceTypes[i] = DynamicShapeSlot.SOURCE_VARIABLE;
                     } else {
                         inputSourceTypes[i] = DynamicShapeSlot.SOURCE_PLACEHOLDER;

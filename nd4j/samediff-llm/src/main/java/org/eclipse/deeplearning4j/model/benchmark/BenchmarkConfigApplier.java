@@ -70,6 +70,7 @@ public class BenchmarkConfigApplier {
         env.setDspBatchZero(false);
         env.setDspBatchZeroKernel(false);
         env.setDspBatchedGemm(false);
+        env.setDspCastSinkMatmul(false);
         env.setTritonGraphCapture(false);
         env.setTritonSectionFusion(false);
         env.setTritonConsolidatedArgTable(false);
@@ -120,6 +121,7 @@ public class BenchmarkConfigApplier {
 
         // DSP optimization flags
         env.setDspCastElimination(config.isDspCastElimination());
+        env.setDspCastSinkMatmul(config.isDspCastSinkMatmul());
         env.setDspFp16Compute(config.isDspFp16Compute());
 
         // DSP batch optimizations

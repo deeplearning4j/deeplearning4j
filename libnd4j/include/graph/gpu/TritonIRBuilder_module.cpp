@@ -1521,8 +1521,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         biasVal = getNormInput(2);
       }
 
+      // Read epsilon from tArgs (first float argument), default 1e-5 if not set
+      float epsilon = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-5f;
+
       auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputIt->second, axis, outputType,
-                                          scaleVal, biasVal, meanVal, varianceVal);
+                                          scaleVal, biasVal, meanVal, varianceVal, epsilon);
       // Safety: if normalization somehow returns a scalar, splat it back to tensor
       if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
         auto splatElemType = opResult.getType();
@@ -3545,8 +3548,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               biasVal = getNormInput(2);
             }
 
+            float epsilon2 = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-5f;
             auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputIt->second, axis, outputType,
-                                                scaleVal, biasVal, meanVal, varianceVal);
+                                                scaleVal, biasVal, meanVal, varianceVal, epsilon2);
             if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
               auto splatTensorType = mlir::RankedTensorType::get({blockSize}, opResult.getType());
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);

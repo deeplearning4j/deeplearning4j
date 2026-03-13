@@ -114,12 +114,6 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
     }
 
     override fun toNd4jNDArray(): INDArray {
-        // OPTIMIZATION: For raw data tensors, convert directly without building intermediate protobuf
-        // This avoids copying data through TensorNamespace.TensorProto builder
-        if (tensor.rawData != null && !tensor.rawData.isEmpty) {
-            return loadOnnxRawDataDirect(tensor)
-        }
-        // Fall back to standard path for non-raw data (float_data, int32_data, etc.)
         return ndarrayFromNameSpaceTensor(toArgTensor())
     }
 
@@ -146,21 +140,53 @@ class OnnxIRTensor(input: Onnx.TensorProto): IRTensor<Onnx.TensorProto, Onnx.Ten
         }
         if (totalLen < 1) totalLen = 1
 
-        // Get ByteBuffer view directly from protobuf (no copy)
+        // Decode raw bytes into typed Java arrays, then use Nd4j.createBuffer(typedArray).
+        // ONNX raw_data is always LITTLE_ENDIAN.
+        // Nd4j.createBuffer(ByteBuffer, DataType, int) has issues with INT64 on CUDA
+        // (corrupted pointer values in device buffer), so we use typed arrays instead.
         val protoBuffer = tensor.rawData.asReadOnlyByteBuffer()
+        protoBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
 
-        // Allocate direct buffer and copy once
-        val byteBuffer = ByteBuffer.allocateDirect((totalLen * dtype.width()).toInt())
-        byteBuffer.put(protoBuffer)
-        (byteBuffer as Buffer).rewind()
+        val dataBuffer: DataBuffer = when (dtype) {
+            DataType.FLOAT -> {
+                val arr = FloatArray(totalLen.toInt())
+                protoBuffer.asFloatBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.DOUBLE -> {
+                val arr = DoubleArray(totalLen.toInt())
+                protoBuffer.asDoubleBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.INT64 -> {
+                val arr = LongArray(totalLen.toInt())
+                protoBuffer.asLongBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.INT32 -> {
+                val arr = IntArray(totalLen.toInt())
+                protoBuffer.asIntBuffer().get(arr)
+                Nd4j.createBuffer(arr)
+            }
+            DataType.INT16, DataType.BFLOAT16, DataType.FLOAT16 -> {
+                val arr = ShortArray(totalLen.toInt())
+                protoBuffer.asShortBuffer().get(arr)
+                Nd4j.createTypedBuffer(arr, dtype)
+            }
+            else -> {
+                // For other types (INT8, UINT8, BOOL, etc.), copy raw bytes
+                val byteBuffer = ByteBuffer.allocateDirect((totalLen * dtype.width()).toInt())
+                byteBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                byteBuffer.put(protoBuffer)
+                (byteBuffer as Buffer).rewind()
+                Nd4j.createBuffer(byteBuffer, dtype, totalLen.toInt())
+            }
+        }
 
-        // Use CPU-only allocation for lazy GPU migration during model loading
-        // This defers GPU memory allocation until the tensor is actually used
-        val rawDataBuffer = Nd4j.createBufferCpuOnly(byteBuffer, dtype, totalLen)
-        return if (shape.isNotEmpty() && rawDataBuffer.length() > 0) {
-            Nd4j.create(rawDataBuffer as DataBuffer).reshape('c', *shape)
+        return if (shape.isNotEmpty() && dataBuffer.length() > 0) {
+            Nd4j.create(dataBuffer).reshape('c', *shape)
         } else {
-            Nd4j.create(rawDataBuffer as DataBuffer)
+            Nd4j.create(dataBuffer)
         }
     }
 

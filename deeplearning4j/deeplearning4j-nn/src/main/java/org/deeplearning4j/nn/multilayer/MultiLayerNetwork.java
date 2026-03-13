@@ -1593,15 +1593,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             return; //No op
         }
 
+        INDArray rowVectorParams = asRowVectorView(params);
         INDArray paramsSource;
-        if (flattenedParams != null && params.length() == flattenedParams.length()) {
-            if (params != flattenedParams) {
-                flattenedParams.assign(params);
+        if (flattenedParams != null && rowVectorParams.length() == flattenedParams.length()) {
+            if (rowVectorParams != flattenedParams) {
+                flattenedParams.assign(rowVectorParams);
             }
             paramsSource = flattenedParams;
         } else {
             if (flattenedParams == null)
-                flattenedParams = params.dup();
+                flattenedParams = asRowVectorView(rowVectorParams.dup());
             paramsSource = flattenedParams;
         }
 

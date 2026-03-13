@@ -436,6 +436,15 @@ include(cmake/Ppstep.cmake)
 endif()
 
 # =============================================================================
+# GOOGLE TEST INTEGRATION
+# =============================================================================
+if(SD_BUILD_TESTS)
+    message(STATUS "Building libnd4j tests (SD_BUILD_TESTS=ON)")
+    enable_testing()
+    add_subdirectory(tests_cpu)
+endif()
+
+# =============================================================================
 # CUDA CLEANUP HOOKS - Connect pre-build cleanup to main library target
 # This ensures CUDA temp files are cleaned before each build starts
 # =============================================================================

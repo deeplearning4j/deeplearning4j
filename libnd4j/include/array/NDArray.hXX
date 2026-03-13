@@ -187,11 +187,8 @@ LongType NDArray::getOffset(const LongType i) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  // Linear indexing is also used for views. Respect element-wise stride when it exists,
-  // otherwise translate the logical index through the full shape/stride metadata.
-  const auto elementWiseStride = ews();
-  if (isScalar() || elementWiseStride != 0) {
-    return _offset + i * elementWiseStride;
+  if (isScalar()) {
+    return _offset;
   }
 
   sd::LongType coords[SD_MAX_RANK] = {};
@@ -2173,9 +2170,9 @@ template <typename T>
 std::vector<T> NDArray::getBufferAsVector()  {
   int len = isScalar() ? 1 : lengthOf();
   std::vector<T> vector(len);
-  // Force sync from device to host before reading - this ensures we have the latest data
-  // even if actuality tracking has issues (e.g., race conditions in graph execution)
+  // Force sync from device to host before reading
   syncToHost();
+
   for (sd::LongType e = 0; e < len; e++) vector[e] = this->e<T>(e);
   return vector;
 }
@@ -4662,13 +4659,12 @@ std::vector<T> NDArray::asVectorT() {
     return std::vector<T>();
   }
 
-  // Force sync from device to host before reading - this ensures we have the latest data
-  // even if actuality tracking has issues (e.g., race conditions in graph execution)
+  // Force sync from device to host before reading
   syncToHost();
 
   int len = isScalar() ? 1 : lengthOf();
-
   std::vector<T> result(len);
+
   for (int e = 0; e < len; e++) {
     result[e] = this->e<T>(e);
   }

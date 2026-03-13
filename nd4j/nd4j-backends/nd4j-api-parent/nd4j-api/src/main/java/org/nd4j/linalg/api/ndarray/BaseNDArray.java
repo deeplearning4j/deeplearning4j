@@ -4228,7 +4228,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray putRow(long row, INDArray toPut) {
-        if (isRowVector() && toPut.isVector()) {
+        if (isRowVector() && toPut.isRowVector()) {
             return assign(toPut);
         }
         if(toPut.length() > this.columns()) {
@@ -4245,7 +4245,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalArgumentException("Illegal row: Vector length of " + toPut.length() + " greater than columns " + columns());
         }
 
-        if (isColumnVector() && toPut.isVector()) {
+        if (isColumnVector() && toPut.isColumnVector()) {
             return assign(toPut);
         }
         return put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(column)}, toPut);

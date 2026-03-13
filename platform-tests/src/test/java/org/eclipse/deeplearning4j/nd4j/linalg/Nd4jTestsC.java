@@ -56,6 +56,8 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
@@ -100,6 +102,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpaceND;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Svd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
@@ -2587,6 +2590,150 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
         INDArray s = Nd4j.linalg().svd(input, true, true);
         assertArrayEquals(new long[] {96}, s.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUVPreallocatedCOrderV(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, new long[] {384, 384}, 'c');
+        Nd4j.exec(new Svd(input, true, s, u, v));
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUVPreallocatedFOrderV(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, new long[] {384, 384}, 'f');
+        Nd4j.exec(new Svd(input, true, s, u, v));
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularDescriptorOutputsPreallocated(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(new Svd(input, true, true, 16));
+
+        INDArray s = Nd4j.createFromDescriptor(shapes.get(0));
+        INDArray u = Nd4j.createFromDescriptor(shapes.get(1));
+        INDArray v = Nd4j.createFromDescriptor(shapes.get(2));
+
+        INDArray manualS = Nd4j.create(DataType.FLOAT, 96);
+        INDArray manualU = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray manualV = Nd4j.create(DataType.FLOAT, 384, 384);
+
+        assertArrayEquals(manualS.shape(), s.shape());
+        assertArrayEquals(manualU.shape(), u.shape());
+        assertArrayEquals(manualV.shape(), v.shape());
+        assertArrayEquals(manualS.stride(), s.stride());
+        assertArrayEquals(manualU.stride(), u.stride());
+        assertArrayEquals(manualV.stride(), v.stride());
+        assertEquals(manualS.data().length(), s.data().length());
+        assertEquals(manualU.data().length(), u.data().length());
+        assertEquals(manualV.data().length(), v.data().length());
+        assertEquals(manualS.ordering(), s.ordering());
+        assertEquals(manualU.ordering(), u.ordering());
+        assertEquals(manualV.ordering(), v.ordering());
+
+        Nd4j.exec(new Svd(input, true, s, u, v));
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularDescriptorOutputsPreallocatedWithShapeOverride(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        List<DataBuffer> shapes = Nd4j.getExecutioner().calculateOutputShape(new Svd(input, true, true, 16));
+
+        INDArray s = Nd4j.createFromDescriptor(shapes.get(0));
+        INDArray u = Nd4j.createFromDescriptor(shapes.get(1));
+        INDArray v = Nd4j.createFromDescriptor(shapes.get(2));
+        Svd op = new Svd(input, true, s, u, v);
+
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            op.setupOpContextFromCustomOp(ctx);
+            ctx.shapeFunctionOverride(true);
+            Nd4j.getExecutioner().exec(op, ctx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularManualOutputsPreallocatedWithShapeOverride(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, 384, 384);
+        Svd op = new Svd(input, true, s, u, v);
+
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            op.setupOpContextFromCustomOp(ctx);
+            ctx.shapeFunctionOverride(true);
+            Nd4j.getExecutioner().exec(op, ctx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularAutoOutputsReusedOpFreshContext(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        Svd op = new Svd(input, true, true, 16);
+        boolean shapeOverride;
+
+        try (OpContext shapeCtx = Nd4j.getExecutioner().buildContext()) {
+            op.setupOpContextFromCustomOp(shapeCtx);
+            shapeOverride = op.initializeOutputs(shapeCtx);
+        }
+
+        try (OpContext execCtx = Nd4j.getExecutioner().buildContext()) {
+            DefaultOpExecutioner.initOpContext(op, shapeOverride, execCtx);
+            Nd4j.getExecutioner().exec(op, execCtx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, op.getOutputArgument(2).shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularLateOutputBindingFreshOp(Nd4jBackend backend) throws Exception {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray s = Nd4j.create(DataType.FLOAT, 96);
+        INDArray u = Nd4j.create(DataType.FLOAT, 96, 96);
+        INDArray v = Nd4j.create(DataType.FLOAT, 384, 384);
+        Svd op = new Svd(input, true, true, 16);
+        op.addOutputArgument(s, u, v);
+
+        try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+            DefaultOpExecutioner.initOpContext(op, true, ctx);
+            Nd4j.getExecutioner().exec(op, ctx);
+        }
+
+        assertArrayEquals(new long[] {384, 384}, v.shape());
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSvdLargeRectangularFullUVAutoOutputsRawOp(Nd4jBackend backend) {
+        INDArray input = Nd4j.randn(DataType.FLOAT, 96, 384);
+        INDArray[] out = Nd4j.exec(new Svd(input, true, true, 16));
+        try {
+            assertArrayEquals(new long[] {96}, out[0].shape());
+            assertArrayEquals(new long[] {96, 96}, out[1].shape());
+            assertArrayEquals(new long[] {384, 384}, out[2].shape());
+        } finally {
+            out[1].close();
+            out[2].close();
+        }
     }
 
     @ParameterizedTest

@@ -36,6 +36,7 @@
 #include <helpers/MmulHelper.h>
 #include <helpers/FlashAttentionHelper.h>
 #include <ops/declarable/helpers/rms_norm.h>
+#include <helpers/ShapeUtils.h>
 #include <math/templatemath.h>
 #include <cmath>
 
@@ -71,13 +72,23 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
         helpers::rmsNormCuda(input, gamma, output, eps, block.launchContext());
         return Status::OK;
     }
+    // Log fallback reason on first call
+    static bool logged = false;
+    if (!logged) {
+        sd_printf("rms_norm FALLBACK: contiguous=%d float=%d double=%d half=%d gammaContig=%d shape=%s\n",
+                  isContiguous, isFloat, isDouble, isHalf, gammaContiguous,
+                  ShapeUtils::shapeAsString(input->shapeInfo()).c_str());
+        logged = true;
+    }
 #endif
 
+#if !defined(SD_CUDA)
     // CPU fast path: fused 2-pass implementation via helper
     if (isContiguous && (isFloat || isDouble) && gammaContiguous) {
         helpers::rmsNormCpu(input, gamma, output, eps);
         return Status::OK;
     }
+#endif
 
     // General fallback path for non-contiguous data
     std::vector<LongType> axis = {input->rankOf() - 1};

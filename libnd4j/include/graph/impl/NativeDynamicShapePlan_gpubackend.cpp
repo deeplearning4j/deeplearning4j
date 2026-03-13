@@ -649,75 +649,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       auto& captureBuffers = seg.replayHandle->getCaptureBuffers();
       int cbCount = static_cast<int>(captureBuffers.size());
 
-      // First pass: sync all source external inputs to device
-      // and build batch D2D arrays if not yet initialized
-      bool needBatchInit = (batchD2DCount_ == 0 && cbCount > 0);
-      if (needBatchInit) {
-        // Count valid entries for allocation
-        int validCount = 0;
-        for (int ci = 0; ci < cbCount; ci++) {
-          auto& cb = captureBuffers[ci];
-          if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
-          if (cb.directReference) continue;
-          NDArray* src = externalArrays[cb.externalInputIndex];
-          if (src == nullptr || cb.buffer == nullptr) continue;
-          size_t srcBytes = src->lengthOf() * src->sizeOfT();
-          if (srcBytes != cb.capturedSize || srcBytes == 0) continue;
-          validCount++;
-        }
-        if (validCount > 0) {
-          prepareBatchD2DDevice(validCount, cudaStr);
-          captureBufferToBatchIdx_.resize(cbCount, -1);
-
-          // Fill dst pointers and sizes (static — don't change between steps)
-          auto* h_dst = static_cast<void**>(batchD2DHostDstPtrs_);
-          auto* h_sizes = static_cast<size_t*>(batchD2DHostSizes_);
-          int idx = 0;
-          for (int ci = 0; ci < cbCount; ci++) {
-            auto& cb = captureBuffers[ci];
-            if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
-            if (cb.directReference) continue;
-            NDArray* src = externalArrays[cb.externalInputIndex];
-            if (src == nullptr || cb.buffer == nullptr) continue;
-            size_t srcBytes = src->lengthOf() * src->sizeOfT();
-            if (srcBytes != cb.capturedSize || srcBytes == 0) continue;
-            h_dst[idx] = cb.buffer->specialBuffer();
-            h_sizes[idx] = srcBytes;
-            captureBufferToBatchIdx_[ci] = idx;
-            idx++;
-          }
-          batchD2DCount_ = idx;
-          // Upload static dst/sizes to device (one-time)
-          cudaMemcpyAsync(batchD2DDeviceDstPtrs_, batchD2DHostDstPtrs_,
-                          idx * sizeof(void*), cudaMemcpyHostToDevice, cudaStr);
-          cudaMemcpyAsync(batchD2DDeviceSizes_, batchD2DHostSizes_,
-                          idx * sizeof(size_t), cudaMemcpyHostToDevice, cudaStr);
-          DSP_DIAG(EXECUTE, "BATCH_D2D_INIT: %d entries from %d capture buffers", idx, cbCount);
-        }
-      }
-
-      if (batchD2DCount_ > 0) {
-        // Update src pointers (change each step as Java updates external inputs)
-        auto* h_src = static_cast<void**>(batchD2DHostSrcPtrs_);
-        int cbUpdated = 0;
-        for (int ci = 0; ci < cbCount; ci++) {
-          int bIdx = (ci < static_cast<int>(captureBufferToBatchIdx_.size()))
-                     ? captureBufferToBatchIdx_[ci] : -1;
-          if (bIdx < 0) continue;
-          auto& cb = captureBuffers[ci];
-          NDArray* src = externalArrays[cb.externalInputIndex];
-          src->syncToDevice();
-          h_src[bIdx] = src->specialBuffer();
-          cbUpdated++;
-        }
-        // Launch single batch D2D kernel
-        launchBatchD2D(cudaStr);
-        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d buffers batch-D2D-copied for replay "
-                 "fastReplay=%d execCount=%d", cbUpdated, useFastReplay ? 1 : 0,
-                 seg.executionCount);
-      } else {
-        // Fallback: individual copies (no valid capture buffers for batching)
-        int cbUpdated = 0;
+      // D2D copies for capture buffers with source data.
+      {
+        int cbUpdated = 0, cbSkipped = 0;
         for (auto& cb : captureBuffers) {
           if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
           if (cb.directReference) continue;
@@ -726,15 +660,24 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           size_t srcBytes = src->lengthOf() * src->sizeOfT();
           if (srcBytes != cb.capturedSize || srcBytes == 0) continue;
           src->syncToDevice();
-          if (src->specialBuffer() && cb.buffer->specialBuffer()) {
-            cudaMemcpyAsync(cb.buffer->specialBuffer(), src->specialBuffer(),
-                            srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-            cbUpdated++;
+          const void* srcPtr = src->specialBuffer();
+          if (!srcPtr || !cb.buffer->specialBuffer()) continue;
+
+          // Skip copy if source pointer unchanged since last replay
+          if (cb.initialCopyDone && !cb.neverSkipCopy &&
+              srcPtr == cb.lastSourcePtr) {
+            cbSkipped++;
+            continue;
           }
+          cudaMemcpyAsync(cb.buffer->specialBuffer(), srcPtr,
+                          srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
+          cb.lastSourcePtr = srcPtr;
+          cb.initialCopyDone = true;
+          cbUpdated++;
         }
-        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d buffers D2D-copied (individual) "
-                 "fastReplay=%d execCount=%d", cbUpdated, useFastReplay ? 1 : 0,
-                 seg.executionCount);
+        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d copied %d skipped (ptr-unchanged) "
+                 "fastReplay=%d execCount=%d", cbUpdated, cbSkipped,
+                 useFastReplay ? 1 : 0, seg.executionCount);
       }
       tl_dspExecutionStream = nullptr;
     }
@@ -891,6 +834,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                     hv[0],hv[1],hv[2],hv[3], dv[0],dv[1],dv[2],dv[3]);
         }
       }
+    }
+
+    // Pre-replay batch-zero: zero all output buffers OUTSIDE the graph.
+    // Individual cudaMemsetAsync calls use dedicated fill engines (not SMs),
+    // pipeline efficiently, and add 0 graph nodes (they run before cudaGraphLaunch).
+    // Stream ordering guarantees all zeroing completes before graph launch.
+    // NOTE: Do NOT use batchZeroKernel here — it runs on SMs (competition with
+    // compute kernels) and has alignment requirements that cause accuracy issues.
+    if (Environment::getInstance().dspBatchZero() && !batchZeroEntries_.empty()) {
+      for (auto& entry : batchZeroEntries_) {
+        if (entry.ptr != nullptr && entry.bytes > 0) {
+          cudaMemsetAsync(entry.ptr, 0, entry.bytes, cudaStr);
+        }
+      }
+      DSP_DIAG(MEMORY, "pre-replay batch-zero: %d buffers zeroed via cudaMemsetAsync (fill engines, outside graph)",
+                static_cast<int>(batchZeroEntries_.size()));
     }
 
     // Replay strategy: configurable via ND4J_TRITON_GRAPH_REINSTANTIATE.
@@ -1467,37 +1426,80 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
         capturedExtIndices.insert(ei);
         src->syncToDevice();
-        auto srcShapeVec = *src->getShapeAsVector();
-        auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
-                                   sd::LaunchContext::defaultContext());
         size_t srcBytes = src->lengthOf() * src->sizeOfT();
-        if (srcBytes > 0 && src->specialBuffer() && capBuf->specialBuffer()) {
-          cudaMemcpyAsync(capBuf->specialBuffer(), src->specialBuffer(),
-                          srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
-        }
-        // Also mirror host buffer for ops that read from host
-        if (srcBytes > 0 && src->buffer() && capBuf->buffer()) {
-          std::memcpy(capBuf->buffer(), src->buffer(), srcBytes);
-          capBuf->dataBuffer()->readPrimary();
-          capBuf->dataBuffer()->writeSpecial();
+
+        // Check if this is a KV cache input — these use directReference
+        // (the graph reads/writes the original buffer, no copy needed)
+        bool isKvCacheInput = false;
+        if (kvCacheRetentionEnabled_) {
+          for (int km = 0; km < kvCacheNumMappings_; km++) {
+            if (kvCacheMappings_[km].pastInputExternalIdx == ei) {
+              isKvCacheInput = true;
+              break;
+            }
+          }
         }
 
-        ReplayCaptureBuffer cb;
-        cb.buffer = capBuf;
-        cb.externalInputIndex = ei;
-        cb.crossSegmentSlotIdx = -1;
-        cb.capturedSize = srcBytes;
-        cb.neverSkipCopy = true;
-        seg.replayHandle->addCaptureBuffer(std::move(cb));
+        if (isKvCacheInput) {
+          // KV cache: graph uses the actual buffer — no copy needed on replay
+          ReplayCaptureBuffer cb;
+          cb.buffer = src;
+          cb.externalInputIndex = ei;
+          cb.crossSegmentSlotIdx = -1;
+          cb.capturedSize = srcBytes;
+          cb.directReference = true;
+          cb.initialCopyDone = true;
+          cb.lastSourcePtr = src->specialBuffer();
+          seg.replayHandle->addCaptureBuffer(std::move(cb));
+          // Do NOT save/replace externalArrays — graph uses src directly
+        } else {
+          // Regular placeholder: create a fixed-address capture buffer
+          auto srcShapeVec = *src->getShapeAsVector();
+          auto* capBuf = new NDArray(src->ordering(), srcShapeVec, src->dataType(),
+                                     sd::LaunchContext::defaultContext());
+          if (srcBytes > 0 && src->specialBuffer() && capBuf->specialBuffer()) {
+            cudaMemcpyAsync(capBuf->specialBuffer(), src->specialBuffer(),
+                            srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
+          }
+          // Also mirror host buffer for ops that read from host
+          if (srcBytes > 0 && src->buffer() && capBuf->buffer()) {
+            std::memcpy(capBuf->buffer(), src->buffer(), srcBytes);
+            capBuf->dataBuffer()->readPrimary();
+            capBuf->dataBuffer()->writeSpecial();
+          }
 
-        savedExtForCapture.push_back({ei, externalArrays[ei]});
-        externalArrays[ei] = capBuf;
+          ReplayCaptureBuffer cb;
+          cb.buffer = capBuf;
+          cb.externalInputIndex = ei;
+          cb.crossSegmentSlotIdx = -1;
+          cb.capturedSize = srcBytes;
+          cb.neverSkipCopy = true;
+          seg.replayHandle->addCaptureBuffer(std::move(cb));
+
+          savedExtForCapture.push_back({ei, externalArrays[ei]});
+          externalArrays[ei] = capBuf;
+        }
       }
       if (!capturedExtIndices.empty()) {
         cudaStreamSynchronize(cudaStr);
         DSP_DIAG(EXECUTE, "CAPTURE_BUFFERS: created %zu buffers for PLACEHOLDER ext inputs",
                  capturedExtIndices.size());
       }
+    }
+
+    // Pre-capture batch-zero: zero all registered buffers BEFORE beginCapture.
+    // These cudaMemsetAsync calls execute normally on the stream (not captured).
+    // This ensures ops get zeroed outputs during the capture run for correct results.
+    // During capture, individual nullify() calls are suppressed (no memset graph nodes).
+    // On replay, the same zeroing happens via pre-replay batch-zero above.
+    if (Environment::getInstance().dspBatchZero() && !batchZeroEntries_.empty()) {
+      for (auto& entry : batchZeroEntries_) {
+        if (entry.ptr != nullptr && entry.bytes > 0) {
+          cudaMemsetAsync(entry.ptr, 0, entry.bytes, cudaStr);
+        }
+      }
+      DSP_DIAG(MEMORY, "pre-capture batch-zero: %d buffers zeroed via cudaMemsetAsync (fill engines, before beginCapture)",
+                static_cast<int>(batchZeroEntries_.size()));
     }
 
     auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.replayHandle.get());
@@ -1508,14 +1510,16 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                 seg.startSlot, seg.endSlot, seg.executionCount);
       tl_graphExecutionActive = true;
 
-      // Launch batch-zero kernel INSIDE capture — this becomes a single graph node
-      // that replaces ~1000 individual memset nodes. The kernel zeros all output
-      // buffers for native fallback ops (matmul, cast, shape_manip, etc.).
-      // Controlled by ND4J_DSP_BATCH_ZERO env var (default: disabled)
-      if (Environment::getInstance().dspBatchZero() && batchZeroDeviceCount_ > 0) {
-        launchBatchZero(cudaStr);
+      // Batch-zero during capture: DON'T launch inside the graph — instead,
+      // suppress individual nullify() calls so no memset nodes get captured.
+      // The actual zeroing happens OUTSIDE the graph before each replay() call
+      // using cudaMemsetAsync (fill engines, no SM competition).
+      // This removes ~700 memset graph nodes while keeping fill-engine efficiency.
+      if (Environment::getInstance().dspBatchZero() && !batchZeroEntries_.empty()) {
         setBatchZeroActive(true);
-        DSP_DIAG(MEMORY, "batch-zero ENABLED (%d buffers)", batchZeroDeviceCount_);
+        DSP_DIAG(MEMORY, "batch-zero CAPTURE-SKIP: suppressing %d individual nullify() calls, "
+                  "zeroing will happen outside graph before replay",
+                  static_cast<int>(batchZeroEntries_.size()));
 
         // CRITICAL: Mark ALL output slot DataBuffers as device-actual (sAct=1)
         // after batch-zero.  Batch-zero zeroes device memory directly via a GPU
@@ -1547,18 +1551,18 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
         DSP_DIAG(MEMORY, "batch-zero actuality: marked %d output DataBuffers as device-actual",
                   markedCount);
         if (Environment::getInstance().tritonVerifyKernels()) {
-          DSP_DIAG(VERIFY, "SLOT_WRITE tag=BATCH_ZERO seg[%d-%d] %d buffers zeroed, %d marked sAct=1",
-                    seg.startSlot, seg.endSlot, batchZeroDeviceCount_, markedCount);
+          DSP_DIAG(VERIFY, "SLOT_WRITE tag=BATCH_ZERO seg[%d-%d] %d buffers suppressed (nullify skipped), %d marked sAct=1",
+                    seg.startSlot, seg.endSlot, static_cast<int>(batchZeroEntries_.size()), markedCount);
         }
       } else {
-        DSP_DIAG(MEMORY, "batch-zero DISABLED (dspBatchZero=%d, buffers=%d)",
-                  (int)Environment::getInstance().dspBatchZero(), batchZeroDeviceCount_);
+        DSP_DIAG(MEMORY, "batch-zero DISABLED (dspBatchZero=%d, entries=%d)",
+                  (int)Environment::getInstance().dspBatchZero(), static_cast<int>(batchZeroEntries_.size()));
       }
 
       // Query node count mid-capture to verify operations are being recorded
       size_t midCaptureNodes = handle->getNumNodesDuringCapture(cudaStr);
-      DSP_DIAG(EXECUTE, "Triton capture mid-check: %zu nodes recorded before executeSegment (batchZero=%d buffers)",
-                midCaptureNodes, batchZeroDeviceCount_);
+      DSP_DIAG(EXECUTE, "Triton capture mid-check: %zu nodes recorded before executeSegment (batchZero=%d entries, outside-graph)",
+                midCaptureNodes, static_cast<int>(batchZeroEntries_.size()));
 
       // Snapshot all buffer addresses at capture entry — compare with replay to detect stale pointers
       {
@@ -1932,9 +1936,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       // Check the same conditions as shouldCaptureTritonGraph but for executionCount==1
       // (the warmup step right BEFORE capture). We register which buffers get nullified
       // so the batch-zero kernel during capture zeros EXACTLY the right set.
+      // Registration doesn't require shapesFrozen_ — shapes may freeze after
+      // this execution but before capture. We just need to be the pre-capture
+      // warmup step (executionCount == 1) with no existing graph.
       bool wouldCaptureNextStep =
           Environment::getInstance().tritonGraphCapture() &&
-          shapesFrozen_ &&
           (!seg.replayHandle || seg.replayHandle->getCaptureBuffers().empty()) &&
           seg.replayHandle == nullptr &&
           !seg.captureFailed &&

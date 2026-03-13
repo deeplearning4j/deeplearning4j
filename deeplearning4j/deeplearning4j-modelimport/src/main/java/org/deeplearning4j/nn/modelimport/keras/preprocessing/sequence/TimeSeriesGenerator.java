@@ -72,12 +72,12 @@ public class TimeSeriesGenerator {
             throw new InvalidKerasConfigurationException("No configuration found for Keras tokenizer");
 
 
-        int length = (int) timeSeriesConfig.get("length");
-        int samplingRate = (int) timeSeriesConfig.get("sampling_rate");
-        int stride = (int) timeSeriesConfig.get("stride");
-        int startIndex = (int) timeSeriesConfig.get("start_index");
-        int endIndex = (int) timeSeriesConfig.get("end_index");
-        int batchSize = (int) timeSeriesConfig.get("batch_size");
+        int length = ((Number) timeSeriesConfig.get("length")).intValue();
+        int samplingRate = ((Number) timeSeriesConfig.get("sampling_rate")).intValue();
+        int stride = ((Number) timeSeriesConfig.get("stride")).intValue();
+        int startIndex = ((Number) timeSeriesConfig.get("start_index")).intValue();
+        int endIndex = ((Number) timeSeriesConfig.get("end_index")).intValue();
+        int batchSize = ((Number) timeSeriesConfig.get("batch_size")).intValue();
 
         boolean shuffle = (boolean) timeSeriesConfig.get("shuffle");
         boolean reverse = (boolean) timeSeriesConfig.get("reverse");

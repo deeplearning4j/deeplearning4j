@@ -266,7 +266,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         boolean rnnInput = false;
         //RNN input
         if(x.rank() == 3) {
-            x = x.reshape(Longs.concat(new long[]{1},x.shape()));
+            x = x.reshape(Longs.concat(new long[]{1},x.shape())).dup();
             rnnInput = true;
         }
         if(x.rank() == 4 && layerConf().getCnn2DFormat() == CNN2DFormat.NHWC)

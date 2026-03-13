@@ -470,11 +470,11 @@ class SD_LIB_HIDDEN ConvolutionUtils {
 
   static std::vector<LongType> expectWeightsShape(const int wFormat, const LongType kD, const LongType kH, const LongType kW,
                                                   const LongType iC, const LongType oC) {
-    if (0 == wFormat) return std::vector<LongType>({kH, kW, iC, oC});
+    if (0 == wFormat) return std::vector<LongType>({kD, kH, kW, iC, oC});
 
-    if (1 == wFormat) return std::vector<LongType>({oC, iC, kH, kW});
+    if (1 == wFormat) return std::vector<LongType>({oC, iC, kD, kH, kW});
 
-    return std::vector<LongType>({oC, kH, kW, iC});
+    return std::vector<LongType>({oC, kD, kH, kW, iC});
   }
 
   static void conv2d(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,

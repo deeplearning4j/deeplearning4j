@@ -97,6 +97,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.shade.guava.collect.Maps;
 import org.nd4j.weightinit.impl.OneInitScheme;
@@ -114,6 +115,154 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
     @Override
     public char ordering() {
         return 'c';
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testGatherFromShapeOp(Nd4jBackend backend) {
+        // Test 0: Raw INDArray — create shape array directly and gather
+        INDArray shapeArr = Nd4j.createFromArray(new long[]{1, 3, 512, 512});
+        System.out.println("Raw shape array: " + java.util.Arrays.toString(shapeArr.toLongVector()));
+        System.out.println("Raw shape array e(0): " + shapeArr.getLong(0));
+
+        // Test 1: SameDiff gather from constant shape array (no shape_of op)
+        {
+            SameDiff sd1 = SameDiff.create();
+            SDVariable data = sd1.constant("data", shapeArr);
+            SDVariable idx = sd1.constant("idx", Nd4j.scalar(0L));
+            SDVariable result = sd1.gather("result", data, idx, 0);
+            Map<String, INDArray> out = sd1.output((Map<String, INDArray>) null, "result");
+            System.out.println("Test1 - SameDiff gather from constant: " + out.get("result") + " (expected: 1)");
+            assertEquals(1L, out.get("result").getLong(0), "Gather from constant [1,3,512,512] at idx=0 should be 1");
+        }
+
+        // Test 2: SameDiff shape_of -> gather chain (the actual failing pattern)
+        {
+            SameDiff sd2 = SameDiff.create();
+            INDArray testInput = Nd4j.ones(DataType.FLOAT, 1, 3, 512, 512);
+            SDVariable input = sd2.placeHolder("input", DataType.FLOAT, -1, -1, -1, -1);
+            SDVariable shape = sd2.shape("shape_out", input);
+            SDVariable gatherIdx = sd2.constant("gIdx", Nd4j.scalar(0L));
+            SDVariable gathered = sd2.gather("gather_out", shape, gatherIdx, 0);
+
+            Map<String, INDArray> out = sd2.output(java.util.Map.of("input", testInput), "gather_out", "shape_out");
+            INDArray shapeResult = out.get("shape_out");
+            INDArray gatherResult = out.get("gather_out");
+
+            System.out.println("Test2 - Shape result: " + java.util.Arrays.toString(shapeResult.toLongVector()));
+            System.out.println("Test2 - Gather result: " + gatherResult + " (expected: 1)");
+            assertEquals(1L, gatherResult.getLong(0), "Gather(Shape([1,3,512,512]), idx=0, axis=0) should be 1");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testShapeOfDirectRead(Nd4jBackend backend) {
+        // Test: shape_of output read directly — no gather, just read the values back
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, -1, -1, -1);
+        SDVariable shape = sd.shape("shape_out", input);
+
+        INDArray testInput = Nd4j.ones(DataType.FLOAT, 1, 3, 512, 512);
+        Map<String, INDArray> out = sd.output(Map.of("input", testInput), "shape_out");
+        INDArray shapeResult = out.get("shape_out");
+
+        long[] expected = {1, 3, 512, 512};
+        long[] actual = shapeResult.toLongVector();
+        System.out.println("testShapeOfDirectRead: expected=" + java.util.Arrays.toString(expected)
+                + " actual=" + java.util.Arrays.toString(actual));
+        assertArrayEquals(expected, actual, "shape_of should return [1,3,512,512]");
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testShapeOfThenGatherSeparately(Nd4jBackend backend) {
+        // Test 1: shape_of + gather in SAME graph, request both
+        {
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, -1, -1, -1);
+            SDVariable shape = sd.shape("shape_out", input);
+            SDVariable gatherIdx = sd.constant("gIdx", Nd4j.scalar(0L));
+            SDVariable gathered = sd.gather("gather_out", shape, gatherIdx, 0);
+
+            INDArray testInput = Nd4j.ones(DataType.FLOAT, 1, 3, 512, 512);
+
+            // Request both outputs
+            Nd4j.getExecutioner().commit();
+            Map<String, INDArray> both = sd.output(Map.of("input", testInput), "shape_out", "gather_out");
+
+            INDArray shapeArr = both.get("shape_out");
+            INDArray gatherArr = both.get("gather_out");
+
+            // Force full sync before reading
+            Nd4j.getExecutioner().commit();
+
+            // Force D2H sync via native ops
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps.dbForceSyncToPrimary(shapeArr.data().opaqueBuffer());
+
+            long[] shapeVals = shapeArr.toLongVector();
+            System.out.println("Test1 - shape_out (force synced): " + java.util.Arrays.toString(shapeVals));
+            System.out.println("Test1 - shape_out id=" + shapeArr.getId() + " shape=" + java.util.Arrays.toString(shapeArr.shape()) + " dtype=" + shapeArr.dataType());
+            System.out.println("Test1 - shape_out data.length=" + shapeArr.data().length() + " isView=" + shapeArr.isView());
+
+            nativeOps.dbForceSyncToPrimary(gatherArr.data().opaqueBuffer());
+            long gatherVal = gatherArr.getLong(0);
+            System.out.println("Test1 - gather_out: " + gatherVal);
+
+            assertArrayEquals(new long[]{1, 3, 512, 512}, shapeVals, "shape_of output should be [1,3,512,512]");
+            assertEquals(1L, gatherVal, "gather(shape, 0) should be 1");
+        }
+
+        // Test 2: shape_of ONLY (no gather) — should always work
+        {
+            SameDiff sd2 = SameDiff.create();
+            SDVariable input2 = sd2.placeHolder("input", DataType.FLOAT, -1, -1, -1, -1);
+            SDVariable shape2 = sd2.shape("shape_out", input2);
+
+            INDArray testInput2 = Nd4j.ones(DataType.FLOAT, 1, 3, 512, 512);
+            Map<String, INDArray> out2 = sd2.output(Map.of("input", testInput2), "shape_out");
+            Nd4j.getExecutioner().commit();
+            NativeOps nativeOps2 = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps2.dbForceSyncToPrimary(out2.get("shape_out").data().opaqueBuffer());
+            long[] vals2 = out2.get("shape_out").toLongVector();
+            System.out.println("Test2 - shape_out alone (force synced): " + java.util.Arrays.toString(vals2));
+            assertArrayEquals(new long[]{1, 3, 512, 512}, vals2, "shape_of alone should be [1,3,512,512]");
+        }
+
+        // Test 3: request ONLY gather_out (not shape_out) — tests if shape_out being in allRequired matters
+        {
+            SameDiff sd3 = SameDiff.create();
+            SDVariable input3 = sd3.placeHolder("input", DataType.FLOAT, -1, -1, -1, -1);
+            SDVariable shape3 = sd3.shape("shape_out", input3);
+            SDVariable gatherIdx3 = sd3.constant("gIdx", Nd4j.scalar(0L));
+            SDVariable gathered3 = sd3.gather("gather_out", shape3, gatherIdx3, 0);
+
+            INDArray testInput3 = Nd4j.ones(DataType.FLOAT, 1, 3, 512, 512);
+            Map<String, INDArray> out3 = sd3.output(Map.of("input", testInput3), "gather_out");
+            Nd4j.getExecutioner().commit();
+            NativeOps nativeOps3 = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            nativeOps3.dbForceSyncToPrimary(out3.get("gather_out").data().opaqueBuffer());
+            long gatherVal3 = out3.get("gather_out").getLong(0);
+            System.out.println("Test3 - gather_out only: " + gatherVal3);
+            assertEquals(1L, gatherVal3, "gather(shape, 0) requesting only gather_out should be 1");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testShapeOfMultipleInputShapes(Nd4jBackend backend) {
+        // Test: shape_of with different input shapes to rule out caching issues
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, -1);
+        SDVariable shape = sd.shape("shape_out", input);
+
+        // 2D input
+        INDArray in2d = Nd4j.ones(DataType.FLOAT, 7, 13);
+        Map<String, INDArray> out = sd.output(Map.of("input", in2d), "shape_out");
+        long[] actual = out.get("shape_out").toLongVector();
+        System.out.println("testShapeOfMultipleInputShapes 2D: " + java.util.Arrays.toString(actual));
+        assertArrayEquals(new long[]{7, 13}, actual, "shape_of [7,13] input");
     }
 
     @ParameterizedTest
@@ -6545,5 +6694,89 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         assertEquals(nThreads * nIterationsPerThread, successCount.get());
         log.info("Transformer memory pattern test passed: {} successful iterations", successCount.get());
+    }
+
+    @Test
+    public void testTileWithIntReps() {
+        // Test Tile op with INT64 reps array to reproduce the VLM Tile failure
+        // where reps [1, 9, 1, 1] are read as zeros
+        SameDiff sd = SameDiff.create();
+
+        SDVariable input = sd.var("input", Nd4j.ones(DataType.LONG, 1, 1, 10, 10));
+        // Create reps as a LONG constant - this mimics the ONNX constant import path
+        INDArray repsArr = Nd4j.createFromArray(new long[]{1, 9, 1, 1});
+        SDVariable reps = sd.constant("reps", repsArr);
+
+        // Verify the constant values are correct before execution (Java-side read)
+        INDArray repsData = sd.getArrForVarName("reps");
+        log.info("Reps constant values (Java read): {}", repsData);
+        assertEquals(1L, repsData.getLong(0), "reps[0] should be 1");
+        assertEquals(9L, repsData.getLong(1), "reps[1] should be 9");
+        assertEquals(1L, repsData.getLong(2), "reps[2] should be 1");
+        assertEquals(1L, repsData.getLong(3), "reps[3] should be 1");
+
+        // Force D2H sync to ensure host buffer is correct before C++ reads it
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.dbForceSyncToPrimary(repsData.data().opaqueBuffer());
+        log.info("Reps after forced D2H sync: {}", repsData);
+        log.info("Reps values: [{}, {}, {}, {}]",
+            repsData.getLong(0), repsData.getLong(1), repsData.getLong(2), repsData.getLong(3));
+
+        // Also force H2D sync to ensure device buffer is correct
+        nativeOps.dbForceSyncToSpecial(repsData.data().opaqueBuffer());
+
+        SDVariable tiled = sd.tile(input, reps);
+
+        Map<String, INDArray> result = sd.output(Collections.emptyMap(), tiled.name());
+        INDArray out = result.get(tiled.name());
+
+        // Expected shape: [1*1, 1*9, 10*1, 10*1] = [1, 9, 10, 10]
+        assertArrayEquals(new long[]{1, 9, 10, 10}, out.shape(),
+            "Tile output shape should be [1, 9, 10, 10]");
+    }
+
+    @Test
+    public void testTileDirectNd4j() {
+        // Test Tile op directly via Nd4j (without SameDiff) to isolate the issue
+        INDArray input = Nd4j.ones(DataType.LONG, 1, 1, 10, 10);
+        INDArray repsArr = Nd4j.createFromArray(new long[]{1, 9, 1, 1});
+
+        log.info("Direct tile test - reps values: [{}, {}, {}, {}]",
+            repsArr.getLong(0), repsArr.getLong(1), repsArr.getLong(2), repsArr.getLong(3));
+        log.info("Direct tile test - reps data type: {}, length: {}", repsArr.dataType(), repsArr.length());
+
+        // Use DynamicCustomOp to call tile directly
+        DynamicCustomOp tileOp = DynamicCustomOp.builder("tile")
+            .addInputs(input, repsArr)
+            .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(tileOp);
+        assertNotNull(results);
+        assertTrue(results.length > 0);
+        assertArrayEquals(new long[]{1, 9, 10, 10}, results[0].shape(),
+            "Direct Tile output shape should be [1, 9, 10, 10]");
+    }
+
+    @Test
+    public void testClipByValueWithSDVariableInputs() {
+        // Test ClipByValue with SDVariable min/max inputs (ONNX calling convention)
+        // This should use input arrays, not tArgs, even if the ClipByValue op has default field values
+        SameDiff sd = SameDiff.create();
+
+        SDVariable input = sd.var("input", Nd4j.createFromArray(new float[]{-5.0f, -1.0f, 0.5f, 2.0f, 10.0f}));
+        SDVariable min = sd.var("min", Nd4j.createFromArray(new float[]{-2.0f}));
+        SDVariable max = sd.var("max", Nd4j.createFromArray(new float[]{5.0f}));
+
+        SDVariable clipped = sd.clipByValue(input, min, max);
+
+        Map<String, INDArray> result = sd.output(Collections.emptyMap(), clipped.name());
+        INDArray out = result.get(clipped.name());
+
+        // Expected: [-2.0, -1.0, 0.5, 2.0, 5.0]
+        assertEquals(-2.0f, out.getFloat(0), 1e-5, "Value below min should be clipped to min");
+        assertEquals(-1.0f, out.getFloat(1), 1e-5, "Value within range should be unchanged");
+        assertEquals(0.5f, out.getFloat(2), 1e-5, "Value within range should be unchanged");
+        assertEquals(2.0f, out.getFloat(3), 1e-5, "Value within range should be unchanged");
+        assertEquals(5.0f, out.getFloat(4), 1e-5, "Value above max should be clipped to max");
     }
 }

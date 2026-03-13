@@ -1110,6 +1110,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         try {
             op.setupOpContextFromCustomOp(context);
             boolean shapeOverride = op.initializeOutputs(context);
+            if (shapeOverride) {
+                // Shape calculation reuses this native context and leaves fastpath array bindings behind.
+                // Reset them before repopulating the execution context with the finalized outputs.
+                context.purgeForReuse();
+            }
             long start = profilingConfigurableHookIn(op,context);
             initOpContext(op, shapeOverride, context);
 

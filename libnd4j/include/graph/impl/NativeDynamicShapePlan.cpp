@@ -632,8 +632,9 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
   }
 
   // Build externalInputIsVariable_ by scanning slot input source types.
-  // VARIABLE/PLACEHOLDER external inputs need forced H2D sync before CUDA graph replay
-  // because Java may update host buffers between steps without clearing device actuality.
+  // Only PLACEHOLDER external inputs need forced H2D sync before CUDA graph replay.
+  // SOURCE_VARIABLE (model weights) should NOT be force-synced — their device buffers
+  // are authoritative after initial model load and never change during inference.
   plan->externalInputIsVariable_.resize(plan->numExternalInputs_, false);
   for (int s = 0; s < plan->numSlots_; s++) {
     auto& slot = plan->slots_[s];
@@ -642,7 +643,7 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
       if (srcIdx < 0) {
         int extIdx = -(srcIdx + 1);
         if (extIdx < plan->numExternalInputs_ &&
-            (slot.inputSourceTypes[i] == SOURCE_VARIABLE || slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER)) {
+            slot.inputSourceTypes[i] == SOURCE_PLACEHOLDER) {
           plan->externalInputIsVariable_[extIdx] = true;
         }
       }

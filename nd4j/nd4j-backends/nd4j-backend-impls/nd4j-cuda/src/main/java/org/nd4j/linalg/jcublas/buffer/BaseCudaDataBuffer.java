@@ -761,8 +761,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             nativeOps.dbTickDeviceWrite(ptrDataBuffer);
         }
 
-        // Mark HOST as having valid data
+        // Mark HOST as having valid data on BOTH Java and C++ sides.
+        // Without dbTickHostWrite, the C++ DataBuffer doesn't know the host was written,
+        // so isPrimaryActual() returns false. If syncToPrimary() is later called and the
+        // device buffer happens to be stale/zero, it would overwrite the correct host data
+        // with device zeros. By ticking host write on C++, isPrimaryActual() returns true
+        // and syncToPrimary() becomes a no-op, preserving the correct host data.
         allocationPoint.tickHostWrite();
+        nativeOps.dbTickHostWrite(ptrDataBuffer);
     }
 
     /**

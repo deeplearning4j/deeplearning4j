@@ -46,9 +46,10 @@ public class ActivationSigmoid extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
-        Nd4j.getExecutioner().execAndReturn(new SigmoidDerivative(in, epsilon, in));
+        INDArray dLdz = in.ulike();
+        Nd4j.getExecutioner().exec(new SigmoidDerivative(in, epsilon, dLdz));
 
-        return new Pair<>(in, null);
+        return new Pair<>(dLdz, null);
     }
 
     @Override

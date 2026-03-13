@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.omnihub.OmnihubConfig;
+import org.eclipse.deeplearning4j.pipeline.AutoModel;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
@@ -78,7 +79,11 @@ public class BootstrapFromLocal {
         }
         switch(outputFramework) {
             case SAMEDIFF:
-                importTfOnnxSameDiff(onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile, inputFileNameMinusFormat, format, saveModelDir);
+                if (framework == Framework.GGUF || framework == Framework.SAFETENSORS) {
+                    importPipelineSameDiff(inputFile, inputFileNameMinusFormat, format, saveModelDir);
+                } else {
+                    importTfOnnxSameDiff(onnxFrameworkImporter, tensorflowFrameworkImporter, framework, inputFile, inputFileNameMinusFormat, format, saveModelDir);
+                }
                 break;
             case DL4J:
                 File saveModel2 = new File(saveModelDir,inputFileNameMinusFormat + ".zip");
@@ -114,6 +119,18 @@ public class BootstrapFromLocal {
             sameDiff.asFlatFile(saveModel,true);
         else {
             System.err.println("Skipping model " + inputFile.getAbsolutePath());
+        }
+    }
+
+    private static void importPipelineSameDiff(File inputFile, String inputFileNameMinusFormat, String format, File saveModelDir) throws Exception {
+        if (format.equals("gguf") || format.equals("safetensors")) {
+            SameDiff sameDiff = AutoModel.fromPretrained(inputFile.getParentFile());
+            if (sameDiff != null) {
+                File saveModel = new File(saveModelDir, inputFileNameMinusFormat + ".fb");
+                sameDiff.asFlatFile(saveModel, true);
+            } else {
+                System.err.println("Skipping pipeline model " + inputFile.getAbsolutePath());
+            }
         }
     }
 

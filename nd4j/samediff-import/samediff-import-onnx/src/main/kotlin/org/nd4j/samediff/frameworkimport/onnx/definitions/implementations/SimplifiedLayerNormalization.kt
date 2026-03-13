@@ -68,25 +68,18 @@ class SimplifiedLayerNormalization : PreImportHook {
         val scale = sd.getVariable(op.inputsToOp[1])
 
         // Get attributes
-        val axis = (attributes.getOrDefault("axis", -1) as Number).toInt()
         val epsilon = (attributes.getOrDefault("epsilon", 1e-5) as Number).toDouble()
 
-        // RMS Norm: x / sqrt(mean(x^2) + epsilon) * scale
-        val squared = sd.math.pow(input, 2.0)
-        val meanSquared = sd.math.mean(squared, true, axis.toLong())
-        val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
-
-        // Normalize and scale — SameDiff div broadcasts automatically,
-        // no expandDims needed (removing it enables RMSNorm fusion)
-        val normalized = sd.math.div(input, rms)
-        val result = sd.math.mul(normalized, scale)
-
-        result.rename(outputNames[0])
+        // Use fused rms_norm op — single kernel instead of decomposed pow/mean/sqrt/div/mul
+        val result = sd.nn().rmsNorm(outputNames[0], input, scale, epsilon)
 
         // Some implementations also output the inverse RMS for backward pass
-        if (outputNames.size > 1) {
-            val invRms = sd.math.reciprocal(rms)
-            invRms.rename(outputNames[1])
+        if (outputNames.size > 1 && outputNames[1].isNotEmpty()) {
+            // Compute inv_rms for backward pass consumers: 1/sqrt(mean(x^2) + eps)
+            val squared = sd.math.pow(input, 2.0)
+            val meanSquared = sd.math.mean(squared, true, -1L)
+            val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
+            val invRms = sd.math.reciprocal(outputNames[1], rms)
             return mapOf(
                 outputNames[0] to listOf(result),
                 outputNames[1] to listOf(invRms)

@@ -21,15 +21,10 @@ package org.eclipse.deeplearning4j.frameworkimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.nn.conf.CNN2DFormat;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.nd4j.common.resources.Resources;
@@ -39,7 +34,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import java.io.IOException;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.DisplayName;
 
@@ -71,22 +65,6 @@ class KerasModelImportTest extends BaseDL4JTest {
     @DisplayName("Test H 5 Without Tensorflow Scope")
     void testH5WithoutTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("modelimport/keras/tfscope/model.h5");
-        assertNotNull(model);
-    }
-
-    @Test
-    @Disabled
-    @DisplayName("Test NCHWNWHC Change Import")
-    void testNCHWNWHCChangeImport() {
-        MultiLayerNetwork model = loadModel("modelimport/keras/weights/conv2dnchw/simpleconv2d.hdf5");
-        MultiLayerConfiguration multiLayerConfiguration = model.getLayerWiseConfigurations();
-        ConvolutionLayer convolutionLayer = (ConvolutionLayer) multiLayerConfiguration.getConf(0).getLayer();
-        assertEquals(CNN2DFormat.NCHW, convolutionLayer.getCnn2dDataFormat());
-        SubsamplingLayer subsamplingLayer = (SubsamplingLayer) multiLayerConfiguration.getConf(1).getLayer();
-        assertEquals(CNN2DFormat.NHWC, subsamplingLayer.getCnn2dDataFormat());
-        ConvolutionLayer convolutionLayer1 = (ConvolutionLayer) multiLayerConfiguration.getConf(2).getLayer();
-        assertEquals(CNN2DFormat.NHWC, convolutionLayer1.getCnn2dDataFormat());
-        model.output(Nd4j.zeros(1, 1, 28, 28));
         assertNotNull(model);
     }
 

@@ -72,6 +72,11 @@ class SD_LIB_EXPORT DebugHelper {
 
 
   static SD_INLINE void checkGlobalErrorCode(const char* failMessage = nullptr) {
+    // During CUDA graph capture, kernels are recorded but not executed.
+    // cudaGetLastError() may return stale errors from Triton compilation or other
+    // non-stream CUDA API calls, causing false failures and heap corruption.
+    if (tl_graphExecutionActive) return;
+
     cudaError_t res2 = cudaGetLastError();
     if (res2 != 0) {
       if (failMessage == nullptr) {

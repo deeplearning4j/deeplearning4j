@@ -20,7 +20,9 @@
 package org.eclipse.deeplearning4j.omnihub.api;
 
 public enum ModelType {
-    COMP_GRAPH,SEQUENTIAL;
+    COMP_GRAPH,
+    SEQUENTIAL,
+    SAMEDIFF_PIPELINE;
 
     public static ModelType fromString(String namespace) {
         switch(namespace.toLowerCase()) {
@@ -28,6 +30,8 @@ public enum ModelType {
                 return COMP_GRAPH;
             case "sequential":
                 return SEQUENTIAL;
+            case "samediff_pipeline":
+                return SAMEDIFF_PIPELINE;
             default:
                 return null;
         }

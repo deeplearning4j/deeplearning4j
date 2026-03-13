@@ -18,6 +18,12 @@ inputs:
     description: Artifact retention in days.
     required: false
     default: "14"
+  release-version:
+    description: >
+      When set, upload SDK dist files to a GitHub Release with this tag.
+      The release is created if it does not already exist.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -80,3 +86,44 @@ runs:
           ${{ inputs.build-root }}/**/sdx-runtime-sdk/bindings/**
         if-no-files-found: warn
         retention-days: ${{ inputs.retention-days }}
+
+    - name: Upload SDK to GitHub Release
+      if: steps.build_sdx.outputs.found == '1' && inputs.release-version != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_TAG: sdk-v${{ inputs.release-version }}
+        RELEASE_VERSION: ${{ inputs.release-version }}
+        BUILD_ROOT: ${{ inputs.build-root }}
+      run: |
+        set -euo pipefail
+
+        # Create the release if it does not exist yet (concurrent builds may race here)
+        if ! gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+          echo "Creating GitHub Release ${RELEASE_TAG}"
+          gh release create "${RELEASE_TAG}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "SDX Runtime SDK ${RELEASE_VERSION}" \
+            --notes "Per-platform SDX Runtime SDK packages for release ${RELEASE_VERSION}.
+
+        Each asset contains the C++ runtime library, C header, language binding wrappers, and manifest schema for a specific platform/variant combination.
+
+        **Platforms:** Linux x86_64, Linux ARM64, macOS x86_64, macOS ARM64, Windows x86_64, Android ARM64, Android x86_64
+        **Variants:** CPU, CUDA 12.6, CUDA 12.9 (with optional cuDNN, compile/MLIR, oneDNN, AVX2/AVX512 extensions)" \
+            --prerelease \
+          || echo "Release may have been created by another job (expected in parallel builds)"
+        fi
+
+        # Upload all dist files (zips, aars, xcframeworks) to the release
+        UPLOAD_COUNT=0
+        while IFS= read -r -d '' dist_file; do
+          BASENAME="$(basename "${dist_file}")"
+          echo "Uploading ${BASENAME} to release ${RELEASE_TAG}"
+          gh release upload "${RELEASE_TAG}" "${dist_file}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --clobber \
+          || echo "WARNING: Failed to upload ${BASENAME}"
+          UPLOAD_COUNT=$((UPLOAD_COUNT + 1))
+        done < <(find "${GITHUB_WORKSPACE}/${BUILD_ROOT}" -type f -path "*/sdx-runtime-sdk/dist/*" -print0)
+
+        echo "Uploaded ${UPLOAD_COUNT} SDK asset(s) to release ${RELEASE_TAG}"

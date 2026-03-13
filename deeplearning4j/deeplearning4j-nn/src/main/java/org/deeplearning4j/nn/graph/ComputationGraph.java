@@ -3319,12 +3319,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (params == flattenedParams)
             return; //No op
 
+        INDArray rowVectorParams = asRowVectorView(params);
         INDArray paramsViewSource;
-        if (this.flattenedParams != null && this.flattenedParams.length() == params.length()) {
-            this.flattenedParams.assign(params.reshape(flattenedParams.shape()));
+        if (this.flattenedParams != null && this.flattenedParams.length() == rowVectorParams.length()) {
+            this.flattenedParams.assign(rowVectorParams);
             paramsViewSource = this.flattenedParams;
         } else {
-            paramsViewSource = params;
+            paramsViewSource = rowVectorParams;
         }
         int idx = 0;
         for (int i = 0; i < topologicalOrder.length; i++) {

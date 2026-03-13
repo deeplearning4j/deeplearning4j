@@ -151,6 +151,7 @@
         <libnd4j.compiler></libnd4j.compiler>
         <libnd4j.link.only>OFF</libnd4j.link.only>
         <libnd4j.dry.run>OFF</libnd4j.dry.run>
+        <libnd4j.tests></libnd4j.tests>
 
         <!-- OOM Killer Configuration (cross-platform: Linux, macOS, Windows/MSYS2) -->
         <!-- Monitors memory usage during native build and terminates if threshold exceeded -->

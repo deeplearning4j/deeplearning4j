@@ -88,8 +88,8 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
         int top = rng.nextInt(cropTop + 1);
         int left = rng.nextInt(cropLeft + 1);
 
-        y = Math.min(top, mat.rows() - 1);
-        x = Math.min(left, mat.cols() - 1);
+        y = Math.max(0, Math.min(top, mat.rows() - outputHeight));
+        x = Math.max(0, Math.min(left, mat.cols() - outputWidth));
         Mat result = mat.apply(new Rect(x, y, outputWidth, outputHeight));
 
 

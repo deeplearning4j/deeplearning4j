@@ -41,8 +41,8 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 // shape_of: copy rank dimension values from device shapeInfo to device output
 //
-// For INT64 output (most common), uses cudaMemcpyAsync D2D directly.
-// For other types, uses a kernel to type-cast each dimension value.
+// Always uses a kernel to read from specialShapeInfo and write to output.
+// This is fully capturable by CUDA graphs and works for all output types.
 ///////////////////////////////////////////////////////////////////
 
 template <typename T>
@@ -65,19 +65,10 @@ static void shapeOfCudaLauncher(LaunchContext* context, const LongType* deviceSh
 void shapeOfHelper(LaunchContext* context, NDArray* x, NDArray* z, int rank) {
   NDArray::prepareSpecialUse({z}, {x});
 
-  if (z->dataType() == DataType::INT64) {
-    // Optimized path: direct D2D copy (shape dims are LongType in shapeInfo)
-    // shape::shapeOf() returns ptr+1, pure pointer arithmetic — works on device pointers
-    auto stream = context->getCudaStream();
-    const LongType* deviceShapePtr = shape::shapeOf(x->specialShapeInfo());
-    cudaMemcpyAsync(z->specialBuffer(), deviceShapePtr,
-                    rank * sizeof(LongType), cudaMemcpyDeviceToDevice, *stream);
-  } else {
-    // Type-conversion kernel for non-INT64 output types
-    BUILD_SINGLE_SELECTOR(z->dataType(), shapeOfCudaLauncher,
-                          (context, x->specialShapeInfo(), z->specialBuffer(), rank),
-                          SD_INTEGER_TYPES);
-  }
+  // Use kernel for all output types — reads directly from device specialShapeInfo
+  BUILD_SINGLE_SELECTOR(z->dataType(), shapeOfCudaLauncher,
+                        (context, x->specialShapeInfo(), z->specialBuffer(), rank),
+                        SD_INTEGER_TYPES);
 
   NDArray::registerSpecialUse({z}, {x});
 }

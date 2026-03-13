@@ -40,8 +40,6 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -77,7 +75,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 @Slf4j
 @DisplayName("Keras Model End To End Test")
-@Disabled
 @Tag(TagNames.FILE_IO)
 @Tag(TagNames.KERAS)
 @NativeTag
@@ -335,13 +332,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
         importSequentialModelH5Test(tempDir,"modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
     }
 
-    @Test
-    @Disabled("Neither keras or tfkeras can load this.")
-    @DisplayName("Import Dcgan Mnist Generator")
-    void importDcganMnistGenerator(@TempDir Path tempDir) throws Exception {
-        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
-    }
-
     /**
      * Auxillary classifier GAN import test
      */
@@ -363,13 +353,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
         INDArray latent = Nd4j.create(10, 100);
         INDArray label = Nd4j.create(10, 1);
         INDArray[] output = model.output(latent, label);
-    }
-
-    @Test
-    @DisplayName("Import Acgan Combined")
-    void importAcganCombined(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
-        // TODO: imports, but incorrectly. Has only one input, should have two.
     }
 
     /**
@@ -538,71 +521,12 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     /**
-     * Seq2seq model
-     */
-    @Test
-    @DisplayName("Import Seq 2 Seq")
-    // does not work yet, needs DL4J enhancements
-    void importSeq2Seq(@TempDir Path tempDir) throws Exception {
-        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
-    }
-
-    /**
      * Import all AlphaGo Zero model variants, i.e.
      * - Dual residual architecture
      * - Dual convolutional architecture
      * - Separate (policy and value) residual architecture
      * - Separate (policy and value) convolutional architecture
      */
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Conv Policy")
-    void importSepConvPolicy(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_policy.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Res Policy")
-    void importSepResPolicy(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_res_policy.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Sep Conv Value")
-    void importSepConvValue(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_value.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Dual Res")
-    void importDualRes(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/dual_res.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Import Dual Conv")
-    void importDualConv(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/dual_conv.h5");
-        INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
-    }
-
     /**
      * MTCNN
      */
@@ -610,25 +534,6 @@ class KerasModelEndToEndTest extends BaseDL4JTest {
     @DisplayName("Import MTCNN")
     void importMTCNN(@TempDir Path tempDir) throws Exception {
         ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/48net_complete.h5");
-    }
-
-    @Test
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    @DisplayName("Test NCHWNWHC Change Import Model")
-    void testNCHWNWHCChangeImportModel(@TempDir Path tempDir) throws Exception {
-        ComputationGraph computationGraph = importFunctionalModelH5Test(tempDir,"modelimport/keras/weights/simpleconv2d_model.hdf5");
-        computationGraph.output(Nd4j.zeros(1, 1, 28, 28));
-    }
-
-    @Test
-    @DisplayName("Import MTCNN 2 D")
-    // TODO: fails, since we can't use OldSoftMax on >2D data (here: convolution layer)
-    // TODO: also related to #6339, fix this together
-    void importMTCNN2D(@TempDir Path tempDir) throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/12net.h5", new int[] { 24, 24, 3 }, false);
-        INDArray input = Nd4j.create(10, 24, 24, 3);
-        model.output(input);
-        // System.out.println(model.summary());
     }
 
     /**

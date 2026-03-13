@@ -94,17 +94,8 @@ class SkipSimplifiedLayerNormalization : PreImportHook {
             hiddenStates = sd.math.add(hiddenStates, bias)
         }
 
-        // Step 2: RMS Norm: x / sqrt(mean(x^2) + epsilon) * gamma
-        // Normalization is typically over the last axis (hidden_size dimension)
-        val axis = -1
-
-        val squared = sd.math.pow(hiddenStates, 2.0)
-        val meanSquared = sd.math.mean(squared, true, axis.toLong())
-        val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
-
-        // Normalize and scale
-        val normalized = sd.math.div(hiddenStates, rms)
-        val result = sd.math.mul(outputNames[0], normalized, gamma)
+        // Step 2: Use fused rms_norm op — single kernel instead of decomposed pow/mean/sqrt/div/mul
+        val result = sd.nn().rmsNorm(outputNames[0], hiddenStates, gamma, epsilon)
 
         val outputMap = mutableMapOf<String, List<SDVariable>>()
         outputMap[outputNames[0]] = listOf(result)
@@ -116,13 +107,15 @@ class SkipSimplifiedLayerNormalization : PreImportHook {
 
         if (outputNames.size > 1 && outputNames[1].isNotEmpty()) {
             // Mean is not computed in RMS norm, but some graphs expect this output
-            // Use a zero placeholder or skip it
-            val placeholder = sd.zerosLike(outputNames[1], meanSquared)
+            val placeholder = sd.zerosLike(outputNames[1], hiddenStates)
             outputMap[outputNames[1]] = listOf(placeholder)
         }
 
         if (outputNames.size > 2 && outputNames[2].isNotEmpty()) {
-            // Inverse RMS for backward pass
+            // Inverse RMS for backward pass — compute decomposed since rms_norm doesn't output this
+            val squared = sd.math.pow(hiddenStates, 2.0)
+            val meanSquared = sd.math.mean(squared, true, -1L)
+            val rms = sd.math.sqrt(sd.math.add(meanSquared, epsilon))
             val invRms = sd.math.reciprocal(outputNames[2], rms)
             outputMap[outputNames[2]] = listOf(invRms)
         }

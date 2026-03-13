@@ -74,7 +74,7 @@ public class KerasPoolingUtils {
                 case NONE:
                 case TENSORFLOW:
                 default:
-                    dimensions = new long[]{1};
+                    dimensions = new long[]{2};
                     break;
                 case THEANO:
                     dimensions = new long[]{2};
@@ -86,7 +86,7 @@ public class KerasPoolingUtils {
                 case NONE:
                 case TENSORFLOW:
                 default:
-                    dimensions = new long[]{1,2};
+                    dimensions = new long[]{2,3};
                     break;
                 case THEANO:
                     dimensions = new long[]{2, 3};
@@ -98,7 +98,7 @@ public class KerasPoolingUtils {
                 case NONE:
                 case TENSORFLOW:
                 default:
-                    dimensions = new long[]{1,2,3};
+                    dimensions = new long[]{2,3,4};
                     break;
                 case THEANO:
                     dimensions = new long[]{2, 3, 4};
@@ -128,7 +128,7 @@ public class KerasPoolingUtils {
                 case NONE:
                 case TENSORFLOW:
                 default:
-                    dimensions = new int[]{1};
+                    dimensions = new int[]{2};
                     break;
                 case THEANO:
                     dimensions = new int[]{2};
@@ -140,7 +140,7 @@ public class KerasPoolingUtils {
                 case NONE:
                 case TENSORFLOW:
                 default:
-                    dimensions = new int[]{1,2};
+                    dimensions = new int[]{2,3};
                     break;
                 case THEANO:
                     dimensions = new int[]{2, 3};
@@ -152,7 +152,7 @@ public class KerasPoolingUtils {
                 case NONE:
                 case TENSORFLOW:
                 default:
-                    dimensions = new int[]{1,2,3};
+                    dimensions = new int[]{2,3,4};
                     break;
                 case THEANO:
                     dimensions = new int[]{2, 3, 4};

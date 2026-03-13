@@ -143,9 +143,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray delta = pair.getSecond();
 
         INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(), new long[]{w.size(0), delta.size(0)}, 'f');
-
-        epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
+        INDArray epsilonNext = backpropEpsilon(w, delta, workspaceMgr);
         epsilonNext = backpropDropOutIfPresent(epsilonNext);
 
 

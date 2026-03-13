@@ -118,7 +118,19 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
 
 
         val initializerNames = initializerByName.keys
-        val inputList = this.graphDef.inputList.filter { input -> !opTypes.containsKey(input.name.replace(":0","")) && !initializerNames.contains(input.name.replace(":0",""))}.map { input -> input.name.replace(":0","") }
+        // Collect all node output names to distinguish true graph inputs from node-produced values
+        val nodeOutputNames = HashSet<String>()
+        cachedNodeList.forEach { node ->
+            node.outputs().forEach { output ->
+                nodeOutputNames.add(output.replace(":0",""))
+            }
+        }
+        val inputList = this.graphDef.inputList.filter { input ->
+            val cleanName = input.name.replace(":0","")
+            !opTypes.containsKey(cleanName) &&
+            !initializerNames.contains(cleanName) &&
+            !nodeOutputNames.contains(cleanName)
+        }.map { input -> input.name.replace(":0","") }
         this.inputList.addAll(inputList)
         this.variableList.addAll(inputList)
         initializerSet.addAll(initializerNames)

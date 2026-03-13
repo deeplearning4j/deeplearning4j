@@ -24,7 +24,6 @@
 #if NOT_EXCLUDED(OP_reshape)
 #include <ops/declarable/headers/shape.h>
 #include <cstring>
-#include <cstdio>
 namespace sd {
 namespace ops {
 
@@ -220,7 +219,32 @@ DECLARE_SHAPE_FN(reshape) {
           "being specified.");
     };
   } else {
-    reshapeArgs = INPUT_VARIABLE(1)->getBufferAsVector<LongType>();
+    auto* shapeArr = INPUT_VARIABLE(1);
+
+    // Read shape values directly from the synced host buffer.
+    // getBufferAsVector<T> uses e<T>(i) which goes through buffer() + getOffset(),
+    // and buffer() applies the NDArray offset via primaryAtOffset. On CUDA, there's
+    // a known issue where the element accessor reads wrong values for INT64 arrays
+    // produced by Concat (likely due to DataBuffer dtype mismatch with NDArray dtype).
+    // Reading directly from the synced primary buffer avoids this entirely.
+    shapeArr->syncToHost();
+    auto* db = shapeArr->dataBuffer();
+    auto numEl = shapeArr->lengthOf();
+    auto dtype = shapeArr->dataType();
+
+    auto arrOffset = shapeArr->offset();
+    if (dtype == INT64) {
+      auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
+      for (sd::LongType i = 0; i < numEl; i++)
+        reshapeArgs.push_back(hostLongs[i]);
+    } else if (dtype == INT32) {
+      auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
+      for (sd::LongType i = 0; i < numEl; i++)
+        reshapeArgs.push_back(static_cast<LongType>(hostInts[i]));
+    } else {
+      // Fall back to element-wise accessor for other types
+      reshapeArgs = shapeArr->getBufferAsVector<LongType>();
+    }
 
     // VALIDATION: Check for pointer-like values in shape array
     // This catches a corruption bug where pointer addresses are stored as shape values
@@ -299,8 +323,8 @@ DECLARE_SHAPE_FN(reshape) {
   if(!x->isScalar() && !x->isEmpty())
   REQUIRE_TRUE(x->lengthOf() == len, 0,
                "Reshape: lengths before and after reshape should match, but "
-               "got %i vs %i",
-               x->lengthOf(), len);
+               "got %lld vs %lld",
+               (long long)x->lengthOf(), (long long)len);
 
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
 }

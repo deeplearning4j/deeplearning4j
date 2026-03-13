@@ -102,9 +102,7 @@ public class DefaultGradient implements Gradient {
     @Override
     public INDArray gradient() {
         if (flattenedGradient != null)
-            return flattenedGradient.reshape(flattenedGradient.length());
-        if(flattenedGradient != null && flattenedGradient.rank() > 1)
-            return flattenedGradient.reshape(flattenedGradient.length());
+            return flattenedGradient;
 
         flattenGradient();
         return flattenedGradient;

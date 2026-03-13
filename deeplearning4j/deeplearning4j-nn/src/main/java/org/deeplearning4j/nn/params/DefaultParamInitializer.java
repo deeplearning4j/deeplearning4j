@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
@@ -222,12 +223,12 @@ public class DefaultParamInitializer implements ParamInitializer {
             rowVectorView = paramsView;
         } else {
             long length = paramsView.length();
-            rowVectorView = org.nd4j.linalg.factory.Nd4j.create(paramsView.data(), new long[]{1, length},
+            rowVectorView = Nd4j.create(paramsView.data(), new long[]{1, length},
                     new long[]{length, 1}, paramsView.offset(), 'c', true);
         }
 
         long innerStride = rowVectorView.stride(1);
-        return org.nd4j.linalg.factory.Nd4j.create(rowVectorView.data(), new long[]{to - from}, new long[]{innerStride},
+        return Nd4j.create(rowVectorView.data(), new long[]{to - from}, new long[]{innerStride},
                 rowVectorView.offset() + from * innerStride, 'c', true);
     }
 

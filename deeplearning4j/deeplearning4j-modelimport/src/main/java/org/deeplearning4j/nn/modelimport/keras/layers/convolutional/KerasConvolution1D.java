@@ -189,8 +189,8 @@ public class KerasConvolution1D extends KerasConvolution {
                 case TENSORFLOW:
                     paramValue = kerasParamValue;
                     paramValue = paramValue.reshape(
-                            paramValue.size(0), paramValue.size(1),
-                            paramValue.size(2), 1);
+                            paramValue.size(0), paramValue.size(2),
+                            paramValue.size(1), 1);
                     break;
 
                 case THEANO:

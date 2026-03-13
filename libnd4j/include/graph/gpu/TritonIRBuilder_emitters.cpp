@@ -750,7 +750,8 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
                                                  mlir::Value scaleInput,
                                                  mlir::Value biasInput,
                                                  mlir::Value meanInput,
-                                                 mlir::Value varianceInput) {
+                                                 mlir::Value varianceInput,
+                                                 float epsilon) {
   std::string opKey = normalizeOpToken(opName);
 
   // Promote primary input to float for math-heavy normalization arithmetic.
@@ -822,14 +823,13 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     result = builder.create<mlir::arith::SubFOp>(loc, shifted, logSumSplat);
 
   } else if (opKey == "rmsnorm") {
-    constexpr float eps = 1e-6f;
     auto squared = builder.create<mlir::arith::MulFOp>(loc, input, input);
     auto sumSquared = makeReduce(squared, axis, addCombiner);
     auto countVal = builder.create<mlir::arith::ConstantOp>(
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(reductionSize)));
     auto meanSquared = builder.create<mlir::arith::DivFOp>(loc, sumSquared, countVal);
     auto epsVal = builder.create<mlir::arith::ConstantOp>(
-        loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(eps)));
+        loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(epsilon)));
     auto meanPlusEps = builder.create<mlir::arith::AddFOp>(loc, meanSquared, epsVal);
     auto rsqrtVal = builder.create<mlir::math::RsqrtOp>(loc, meanPlusEps);
     auto rsqrtSplat = builder.create<mlir::triton::SplatOp>(loc, tensorTy, rsqrtVal);
@@ -837,7 +837,6 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     result = maybeApplyAffine(result);
 
   } else if (opKey == "layernorm" || opKey == "layernormalization") {
-    constexpr float eps = 1e-5f;
     auto countVal = builder.create<mlir::arith::ConstantOp>(
         loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(reductionSize)));
 
@@ -850,7 +849,7 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
     auto varSum = makeReduce(centeredSq, axis, addCombiner);
     auto varianceVal = builder.create<mlir::arith::DivFOp>(loc, varSum, countVal);
     auto epsVal = builder.create<mlir::arith::ConstantOp>(
-        loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(eps)));
+        loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(epsilon)));
     auto varPlusEps = builder.create<mlir::arith::AddFOp>(loc, varianceVal, epsVal);
     auto rsqrtVal = builder.create<mlir::math::RsqrtOp>(loc, varPlusEps);
     auto rsqrtSplat = builder.create<mlir::triton::SplatOp>(loc, tensorTy, rsqrtVal);
@@ -862,12 +861,11 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
       std::string msg = "TritonIRBuilder::emitNormalizationOp: batch_norm requires mean and variance tensors";
       THROW_EXCEPTION(msg.c_str());
     }
-    constexpr float eps = 1e-5f;
     auto meanVal = castTo(builder, loc, meanInput, elemType);
     auto varVal = castTo(builder, loc, varianceInput, elemType);
     auto centered = builder.create<mlir::arith::SubFOp>(loc, input, meanVal);
     auto epsVal = builder.create<mlir::arith::ConstantOp>(
-        loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(eps)));
+        loc, elemType, builder.getFloatAttr(elemType, static_cast<double>(epsilon)));
     auto varPlusEps = builder.create<mlir::arith::AddFOp>(loc, varVal, epsVal);
     auto invStd = builder.create<mlir::math::RsqrtOp>(loc, varPlusEps);
     result = builder.create<mlir::arith::MulFOp>(loc, centered, invStd);

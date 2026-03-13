@@ -588,13 +588,13 @@ public class KerasLayerUtils {
         int nOut;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_OUTPUT_DIM()))
             /* Most feedforward layers: Dense, RNN, etc. */
-            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_OUTPUT_DIM());
+            nOut = ((Number) innerConfig.get(conf.getLAYER_FIELD_OUTPUT_DIM())).intValue();
         else if (innerConfig.containsKey(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM()))
             /* Embedding layers. */
-            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM());
+            nOut = ((Number) innerConfig.get(conf.getLAYER_FIELD_EMBEDDING_OUTPUT_DIM())).intValue();
         else if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_FILTER()))
             /* Convolutional layers. */
-            nOut = (int) innerConfig.get(conf.getLAYER_FIELD_NB_FILTER());
+            nOut = ((Number) innerConfig.get(conf.getLAYER_FIELD_NB_FILTER())).intValue();
         else
             throw new InvalidKerasConfigurationException("Could not determine number of outputs for layer: no "
                     + conf.getLAYER_FIELD_OUTPUT_DIM() + " or " + conf.getLAYER_FIELD_NB_FILTER() + " field found");
@@ -629,17 +629,17 @@ public class KerasLayerUtils {
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT())) {
             /* For most feedforward layers. */
             try {
-                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+                dropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT())).doubleValue();
             } catch (Exception e) {
-                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
+                double kerasDropout = ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT())).doubleValue();
                 dropout = 1.0 - kerasDropout;
             }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_W())) {
             /* For LSTMs. */
             try {
-                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+                dropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W())).doubleValue();
             } catch (Exception e) {
-                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
+                double kerasDropout = ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W())).doubleValue();
                 dropout = 1.0 - kerasDropout;
             }
         }
@@ -696,7 +696,7 @@ public class KerasLayerUtils {
         double maskValue = 0.0;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_MASK_VALUE())) {
             try {
-                maskValue = (double) innerConfig.get(conf.getLAYER_FIELD_MASK_VALUE());
+                maskValue = ((Number) innerConfig.get(conf.getLAYER_FIELD_MASK_VALUE())).doubleValue();
             } catch (Exception e) {
                 log.warn("Couldn't read masking value, default to 0.0");
             }

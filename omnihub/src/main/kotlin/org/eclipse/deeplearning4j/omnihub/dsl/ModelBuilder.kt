@@ -55,6 +55,52 @@ fun NamespaceModels.SameDiffModel(name: String,
 
 }
 
+fun NamespaceModels.GGUFModel(name: String,
+                              documentation: String,
+                              huggingFaceId: String,
+                              filePattern: String? = "*.gguf",
+                              pretrained: Boolean = true,
+                              block: (Model.() -> Unit)? = null): Model {
+    val model = Model(
+        modelUrl = "",
+        modelName = name,
+        pretrained = pretrained,
+        documentation = documentation,
+        framework = FrameworkNamespace.SAMEDIFF,
+        modelType = ModelType.SAMEDIFF_PIPELINE,
+        huggingFaceId = huggingFaceId,
+        modelFormat = "gguf",
+        filePattern = filePattern
+    )
+    if (block != null)
+        model.block()
+    this.models.add(model)
+    return model
+}
+
+fun NamespaceModels.SafeTensorsModel(name: String,
+                                     documentation: String,
+                                     huggingFaceId: String,
+                                     filePattern: String? = "*.safetensors",
+                                     pretrained: Boolean = true,
+                                     block: (Model.() -> Unit)? = null): Model {
+    val model = Model(
+        modelUrl = "",
+        modelName = name,
+        pretrained = pretrained,
+        documentation = documentation,
+        framework = FrameworkNamespace.SAMEDIFF,
+        modelType = ModelType.SAMEDIFF_PIPELINE,
+        huggingFaceId = huggingFaceId,
+        modelFormat = "safetensors",
+        filePattern = filePattern
+    )
+    if (block != null)
+        model.block()
+    this.models.add(model)
+    return model
+}
+
 fun NamespaceModels.Model(name: String,
                           documentation: String,
                           url: String,

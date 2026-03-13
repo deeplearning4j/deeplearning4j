@@ -78,16 +78,25 @@ public class KerasRnnUtils {
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         double dropout = 1.0;
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U()))
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_W()))
             try {
-                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
+                dropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W())).doubleValue();
             } catch (Exception e) {
-                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
-                dropout = 1.0 - (double) kerasDropout;
+                double kerasDropout = ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W())).doubleValue();
+                dropout = 1.0 - kerasDropout;
             }
-        if (dropout < 1.0)
-            throw new UnsupportedKerasConfigurationException(
-                    "Dropout > 0 on recurrent connections not supported.");
+        if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U())) {
+            double recurrentDropout = 1.0;
+            try {
+                recurrentDropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U())).doubleValue();
+            } catch (Exception e) {
+                recurrentDropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U())).doubleValue();
+            }
+            if (recurrentDropout < 1.0) {
+                throw new UnsupportedKerasConfigurationException(
+                        "Dropout > 0 on recurrent connections not supported.");
+            }
+        }
         return dropout;
     }
 }

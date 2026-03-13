@@ -61,7 +61,7 @@ public class KerasELU extends KerasLayer {
         double alpha = 1.0; // Set default alpha to default in nd4j
         String layerFieldLeakyReluAlpha = "alpha";
         if (innerConfig.containsKey(layerFieldLeakyReluAlpha)) {
-            alpha = (double) innerConfig.get(layerFieldLeakyReluAlpha);
+            alpha = ((Number) innerConfig.get(layerFieldLeakyReluAlpha)).doubleValue();
         }
         IActivation leakyReLU = new ActivationELU(alpha);
         this.layer = new ActivationLayer.Builder().name(this.layerName).activation(leakyReLU).build();

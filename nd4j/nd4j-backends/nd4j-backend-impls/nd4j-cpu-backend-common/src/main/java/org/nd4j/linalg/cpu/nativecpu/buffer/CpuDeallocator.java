@@ -79,9 +79,10 @@ public class CpuDeallocator implements Deallocator {
             EventLogger.getInstance().log(logEvent);
         }
 
-        Nd4j.getNativeOps().dbClose(opaqueDataBuffer);
-
-        opaqueDataBuffer.setNull();
+        // Coordinate CPU buffer cleanup with the OpaqueDataBuffer deallocator path.
+        // Raw dbClose() here can race the OpaqueDataBuffer-side deallocator and
+        // double-close the same native InteropDataBuffer.
+        opaqueDataBuffer.closeBuffer();
     }
 
     @Override

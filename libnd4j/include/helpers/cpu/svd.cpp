@@ -28,33 +28,6 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-namespace {
-inline void validateArrayBuffers(const char* stage, NDArray& m, NDArray& u, NDArray& v, bool calcV) {
-  try {
-    m.dataBuffer()->validateIntegrity();
-  } catch (const std::exception& e) {
-    std::string errorMessage = std::string(stage) + " corrupted _m buffer: " + e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  try {
-    u.dataBuffer()->validateIntegrity();
-  } catch (const std::exception& e) {
-    std::string errorMessage = std::string(stage) + " corrupted _u buffer: " + e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  if (calcV) {
-    try {
-      v.dataBuffer()->validateIntegrity();
-    } catch (const std::exception& e) {
-      std::string errorMessage = std::string(stage) + " corrupted _v buffer: " + e.what();
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-  }
-}
-}  // namespace
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV)
@@ -82,7 +55,7 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-  std::vector<sd::LongType> sShape = {_diagSize};
+  std::vector<sd::LongType> sShape = {_diagSize, 1};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
   _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
   _m = NDArray(matrix.ordering(), mShape, matrix.dataType(), matrix.getContext());
@@ -130,7 +103,7 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-  std::vector<sd::LongType> sShape = {_diagSize};
+  std::vector<sd::LongType> sShape = {_diagSize, 1};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
 
   _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
@@ -268,16 +241,8 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
   for (int i = 1; i < len; i++)
     if (diagInterval.template t<T>(i) < epsBig) {
-      try {
-        deflation1(col1, shift, i, len);
-        validateArrayBuffers("ops::helpers::SVD::deflation after deflation1", _m, _u, _v, _calcV);
-      } catch (const std::exception& e) {
-        std::string errorMessage = "ops::helpers::SVD::deflation failed during deflation1 at local index ";
-        errorMessage += std::to_string(i) + ": " + e.what();
-        THROW_EXCEPTION(errorMessage.c_str());
-      }
+      deflation1(col1, shift, i, len);
       for (int j = 0; j < len; ++j) diagInterval.template r<T>(j) = _m.t<T>(col1 + shift + j, col1 + shift + j);
-      validateArrayBuffers("ops::helpers::SVD::deflation after refreshing diagonal interval", _m, _u, _v, _calcV);
     }
 
   {
@@ -344,49 +309,27 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
       math::sd_swap<T>(diagInterval.template r<T>(i), diagInterval.template r<T>(jac));
 
       if (i != 0 && jac != 0) math::sd_swap<T>(colVec0.template r<T>(i), colVec0.template r<T>(jac));
-      validateArrayBuffers("ops::helpers::SVD::deflation after diagonal permutation swap", _m, _u, _v, _calcV);
 
       if (_calcU) {
-        try {
-          NDArray *temp1 = _u({col1, col1 + len + 1, col1 + i, col1 + i + 1});
-          NDArray *temp2 = _u({col1, col1 + len + 1, col1 + jac, col1 + jac + 1});
-          temp1->swapUnsafe(*temp2);
-          delete temp1;
-          delete temp2;
-          validateArrayBuffers("ops::helpers::SVD::deflation after swapping U columns", _m, _u, _v, _calcV);
-        } catch (const std::exception& e) {
-          std::string errorMessage = "ops::helpers::SVD::deflation failed while swapping U columns ";
-          errorMessage += std::to_string(col1 + i) + " and " + std::to_string(col1 + jac) + ": " + e.what();
-          THROW_EXCEPTION(errorMessage.c_str());
-        }
+        NDArray *temp1 = _u({col1, col1 + len + 1, col1 + i, col1 + i + 1});
+        NDArray *temp2 = _u({col1, col1 + len + 1, col1 + jac, col1 + jac + 1});
+        temp1->swapUnsafe(*temp2);
+        delete temp1;
+        delete temp2;
       } else {
-        try {
-          NDArray *temp1 = _u({0, 2, col1 + i, col1 + i + 1});
-          NDArray *temp2 = _u({0, 2, col1 + jac, col1 + jac + 1});
-          temp1->swapUnsafe(*temp2);
-          delete temp1;
-          delete temp2;
-          validateArrayBuffers("ops::helpers::SVD::deflation after swapping compact U columns", _m, _u, _v, _calcV);
-        } catch (const std::exception& e) {
-          std::string errorMessage = "ops::helpers::SVD::deflation failed while swapping compact U columns ";
-          errorMessage += std::to_string(col1 + i) + " and " + std::to_string(col1 + jac) + ": " + e.what();
-          THROW_EXCEPTION(errorMessage.c_str());
-        }
+        NDArray *temp1 = _u({0, 2, col1 + i, col1 + i + 1});
+        NDArray *temp2 = _u({0, 2, col1 + jac, col1 + jac + 1});
+        temp1->swapUnsafe(*temp2);
+        delete temp1;
+        delete temp2;
       }
 
       if (_calcV) {
-        try {
-          NDArray *temp1 = _v({row1W, row1W + len, col1W + i, col1W + i + 1});
-          NDArray *temp2 = _v({row1W, row1W + len, col1W + jac, col1W + jac + 1});
-          temp1->swapUnsafe(*temp2);
-          delete temp1;
-          delete temp2;
-          validateArrayBuffers("ops::helpers::SVD::deflation after swapping V columns", _m, _u, _v, _calcV);
-        } catch (const std::exception& e) {
-          std::string errorMessage = "ops::helpers::SVD::deflation failed while swapping V columns ";
-          errorMessage += std::to_string(col1W + i) + " and " + std::to_string(col1W + jac) + ": " + e.what();
-          THROW_EXCEPTION(errorMessage.c_str());
-        }
+        NDArray *temp1 = _v({row1W, row1W + len, col1W + i, col1W + i + 1});
+        NDArray *temp2 = _v({row1W, row1W + len, col1W + jac, col1W + jac + 1});
+        temp1->swapUnsafe(*temp2);
+        delete temp1;
+        delete temp2;
       }
 
       const int tI = tInd[i];
@@ -397,7 +340,6 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     }
 
     RELEASE(permut, _m.getContext()->getWorkspace());
-    validateArrayBuffers("ops::helpers::SVD::deflation after permutation stage", _m, _u, _v, _calcV);
   }
 
   {
@@ -408,22 +350,13 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
       --i;
 
     for (; i > 1; --i) {
-        if ((diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) < DataTypeUtils::eps<T>() * maxElem) {
+      if ((diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) < DataTypeUtils::eps<T>() * maxElem) {
         if (math::sd_abs<T,T>(diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) >= epsBig)
           THROW_EXCEPTION("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
-        try {
-          deflation2(col1, col1 + shift, row1W, col1W, i - 1, i, len);
-          validateArrayBuffers("ops::helpers::SVD::deflation after deflation2", _m, _u, _v, _calcV);
-        } catch (const std::exception& e) {
-          std::string errorMessage = "ops::helpers::SVD::deflation failed during deflation2 at local indices ";
-          errorMessage += std::to_string(i - 1) + " and " + std::to_string(i) + ": " + e.what();
-          THROW_EXCEPTION(errorMessage.c_str());
-        }
+        deflation2(col1, col1 + shift, row1W, col1W, i - 1, i, len);
       }
     }
   }
-
-  validateArrayBuffers("ops::helpers::SVD::deflation before return", _m, _u, _v, _calcV);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -749,12 +682,19 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift) {
+  if (col1 < 0 || col2 < col1) {
+    THROW_EXCEPTION("ops::helpers::SVD::DivideAndConquer received an invalid block range");
+  }
+
+  if (col1 + shift >= _diagSize || col2 + shift >= _diagSize) {
+    THROW_EXCEPTION("ops::helpers::SVD::DivideAndConquer recursion exceeded bidiagonal workspace bounds");
+  }
+
   // requires rows = cols + 1;
   const int n = col2 - col1 + 1;
   const int k = n / 2;
   const T almostZero = DataTypeUtils::min_positive<T>();
   T alphaK, betaK, r0, lambda, phi, c0, s0;
-  const std::string blockRange = "[" + std::to_string(col1) + "," + std::to_string(col2) + "]";
 
   std::vector<sd::LongType> lShape = {1, k};
   std::vector<sd::LongType> fShape = {1, n - k - 1};
@@ -798,7 +738,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     NDArray *firstPtr = diag({col1 + shift, col1 + shift + n, 0, 0}, true);
     NDArray first = *firstPtr;
     delete firstPtr;
-    NDArray *secondPtr = jac._s({0, n}, true);
+    NDArray *secondPtr = jac._s({0, n, 0, 0}, true);
     NDArray second = *secondPtr;
     delete secondPtr;
     first.assign(&second);
@@ -809,20 +749,8 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   alphaK = _m.t<T>(col1 + k, col1 + k);
   betaK = _m.t<T>(col1 + k + 1, col1 + k);
 
-  try {
-    DivideAndConquer(k + 1 + col1, col2, k + 1 + row1W, k + 1 + col1W, shift);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed in right recursive split for block ";
-    errorMessage += blockRange + ": " + e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  try {
-    DivideAndConquer(col1, k - 1 + col1, row1W, col1W + 1, shift + 1);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed in left recursive split for block ";
-    errorMessage += blockRange + ": " + e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  DivideAndConquer(k + 1 + col1, col2, k + 1 + row1W, k + 1 + col1W, shift);
+  DivideAndConquer(col1, k - 1 + col1, row1W, col1W + 1, shift + 1);
 
   if (_calcU) {
     lambda = _u.t<T>(col1 + k, col1 + k);
@@ -937,52 +865,26 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
   delete assignOne;
   delete assignTwo;
-  try {
-    deflation(col1, col2, k, row1W, col1W, shift);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed during deflation for block ";
-    errorMessage += blockRange + ": " + e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  deflation(col1, col2, k, row1W, col1W, shift);
 
   // Initialize as scalar placeholders (will be reassigned by calcBlockSVD)
   NDArray UofSVD(_u.dataType(), _u.getContext(), true);
   NDArray VofSVD(_v.dataType(), _v.getContext(), true);
   NDArray singVals(_m.dataType(), _m.getContext(), true);
 
-  try {
-    calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed during block SVD assembly for block ";
-    errorMessage += blockRange + ": " + e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);
   if (_calcU) {
     NDArray *tempPtr = _u({col1, col1 + n + 1, col1, col1 + n + 1}, true);
     NDArray temp = *tempPtr;
     delete tempPtr;
-    NDArray *assign2 = nullptr;
-    try {
-      assign2 = mmul(temp, UofSVD);
-    } catch (const std::exception& e) {
-      std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed while updating U for block ";
-      errorMessage += blockRange + ": " + e.what();
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
+    NDArray *assign2 = mmul(temp, UofSVD);
     temp.assign(assign2);
     delete assign2;
   } else {
     NDArray *tempPtr = _u({0, 0, col1, col1 + n + 1}, true);
     NDArray temp = *tempPtr;
     delete tempPtr;
-    NDArray *assign2 = nullptr;
-    try {
-      assign2 = mmul(temp, UofSVD);
-    } catch (const std::exception& e) {
-      std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed while updating compact U for block ";
-      errorMessage += blockRange + ": " + e.what();
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
+    NDArray *assign2 = mmul(temp, UofSVD);
     temp.assign(assign2);
     delete assign2;
   }
@@ -991,14 +893,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     NDArray *tempPtr = _v({row1W, row1W + n, row1W, row1W + n}, true);
     NDArray temp = *tempPtr;
     delete tempPtr;
-    NDArray *assign2 = nullptr;
-    try {
-      assign2 = mmul(temp, VofSVD);
-    } catch (const std::exception& e) {
-      std::string errorMessage = "ops::helpers::SVD::DivideAndConquer failed while updating V for block ";
-      errorMessage += blockRange + ": " + e.what();
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
+    NDArray *assign2 = mmul(temp, VofSVD);
     temp.assign(assign2);
     delete assign2;
   }
@@ -1067,29 +962,12 @@ void SVD<T>::evalData(NDArray& matrix) {
   delete reduce;
   if (scale == (T)0.) scale = 1.;
   NDArray *input = _transp ? matrix.transpose() : new NDArray((matrix / scale));
-  BiDiagonalUp* biDiag = nullptr;
-  try {
-    biDiag = new BiDiagonalUp(*input);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::evalData failed during bidiagonalization: ";
-    errorMessage += e.what();
-    delete input;
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  BiDiagonalUp biDiag(*input);
 
   _u.nullify();
   _v.nullify();
 
-  NDArray *assign1 = nullptr;
-  try {
-    assign1 = biDiag->_HHbidiag.transpose();
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::evalData failed while transposing bidiagonal form: ";
-    errorMessage += e.what();
-    delete biDiag;
-    delete input;
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  NDArray *assign1 = biDiag._HHbidiag.transpose();
   NDArray *mViewPtr = _m({0, _diagSize, 0, 0}, true);
   mViewPtr->assign(assign1);
   delete mViewPtr;
@@ -1099,21 +977,13 @@ void SVD<T>::evalData(NDArray& matrix) {
   mNullifyPtr->nullify();
   delete mNullifyPtr;
 
-  try {
-    DivideAndConquer(0, _diagSize - 1, 0, 0, 0);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::evalData failed during divide-and-conquer: ";
-    errorMessage += e.what();
-    delete biDiag;
-    delete input;
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  DivideAndConquer(0, _diagSize - 1, 0, 0, 0);
 
   for (int i = 0; i < _diagSize; ++i) {
     T a = math::sd_abs<T,T>(_m.t<T>(i, i));
     _s.template r<T>(i) = a * scale;
     if (a < almostZero) {
-      NDArray *sNullifyPtr = _s({i + 1, _diagSize});
+      NDArray *sNullifyPtr = _s({i + 1, _diagSize, 0, 0});
       sNullifyPtr->nullify();
       delete sNullifyPtr;
       break;
@@ -1121,36 +991,13 @@ void SVD<T>::evalData(NDArray& matrix) {
       break;
   }
 
-  HHsequence* hhV = nullptr;
-  HHsequence* hhU = nullptr;
-  try {
-    hhV = new HHsequence(biDiag->makeHHsequence('v'));
-    hhU = new HHsequence(biDiag->makeHHsequence('u'));
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::evalData failed while building Householder sequences: ";
-    errorMessage += e.what();
-    delete biDiag;
-    delete input;
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+  HHsequence hhV = biDiag.makeHHsequence('v');
+  HHsequence hhU = biDiag.makeHHsequence('u');
 
-  try {
-    if (_transp)
-      exchangeUV(*hhV, *hhU, _v, _u);
-    else
-      exchangeUV(*hhU, *hhV, _u, _v);
-  } catch (const std::exception& e) {
-    std::string errorMessage = "ops::helpers::SVD::evalData failed while exchanging U/V factors: ";
-    errorMessage += e.what();
-    delete hhV;
-    delete hhU;
-    delete biDiag;
-    delete input;
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  delete hhV;
-  delete hhU;
-  delete biDiag;
+  if (_transp)
+    exchangeUV(hhV, hhU, _v, _u);
+  else
+    exchangeUV(hhU, hhV, _u, _v);
   delete input;
 
 }

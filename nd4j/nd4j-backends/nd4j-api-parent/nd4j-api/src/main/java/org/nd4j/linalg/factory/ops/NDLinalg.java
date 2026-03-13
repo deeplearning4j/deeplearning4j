@@ -560,7 +560,7 @@ public class NDLinalg {
    */
   public INDArray svd(INDArray input, boolean fullUV, boolean computeUV) {
     NDValidation.validateNumerical("svd", "input", input);
-    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Svd(input, fullUV, computeUV, 16));
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Svd(input, fullUV, computeUV, org.nd4j.linalg.api.ops.impl.transforms.custom.Svd.DEFAULT_SWITCHNUM));
     try {
       return __tmp[0];
     } finally {

@@ -78,7 +78,7 @@ public class KerasSpatialDropout extends KerasLayer {
                     "parameter" + conf.getLAYER_FIELD_RATE() +
                     "needed for spatial dropout");
         }
-        double rate = (double) innerConfig.get(conf.getLAYER_FIELD_RATE()); // Keras stores drop rates
+        double rate = ((Number) innerConfig.get(conf.getLAYER_FIELD_RATE())).doubleValue(); // Keras stores drop rates
         double retainRate = 1 - rate;
 
         this.layer = new DropoutLayer.Builder().name(this.layerName)

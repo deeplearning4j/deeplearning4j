@@ -315,28 +315,37 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
     }
 
     // Pass 0.5: Cast sink through matmul — mark FP16→FP32 casts as identity when
-    // their only consumer is a matmul. MmulHelper already handles mixed (HALF, FP32)
+    // ALL consumers are matmul ops. MmulHelper already handles mixed (HALF, FP32)
     // inputs internally via cublasSgemmEx, so the explicit cast is redundant.
-    // This eliminates 261 cast kernel launches + FP32 temporaries.
+    // In transformer models, a single FP16→FP32 cast often feeds multiple matmuls
+    // (e.g., Q/K/V projections share the same hidden state cast), so we must check
+    // that ALL consumers (not just one) are matmul ops before sinking.
     if (Environment::getInstance().dspCastSinkMatmul()) {
         int castsSunk = 0;
+        int castsSkippedNonMatmulConsumer = 0;
+        int totalCasts = 0;
+        int castsFp32Target = 0;
+        int castsNoIArgs = 0;
+        int castsMultiIO = 0;
+        int castsNoConsumer = 0;
         for (int i = 0; i < numSlots; i++) {
             if (fused[i]) continue;
             std::string nameI = getOpName(slots[i]);
             if (nameI != "cast") continue;
-            if (slots[i].numOutputs != 1 || slots[i].numInputs != 1) continue;
-            if (slots[i].numIArgs < 1) continue;
+            totalCasts++;
+            if (slots[i].numOutputs != 1 || slots[i].numInputs != 1) { castsMultiIO++; continue; }
+            if (slots[i].numIArgs < 1) { castsNoIArgs++; continue; }
 
             int targetType = static_cast<int>(slots[i].iArgs[0]);
-            // Only sink FP16→FP32 casts (target must be FLOAT32=1)
+            // Only sink FP16→FP32 casts (target must be FLOAT32=5)
             if (targetType != static_cast<int>(FLOAT32)) continue;
-
-            // Check this cast is only consumed once
-            if (!isOnlyConsumedOnce(consumerCounts, slots, numSlots, i)) continue;
+            castsFp32Target++;
 
             int outputIdx = slots[i].outputSlotIndices[0];
 
-            // Find the single consumer — must be a matmul
+            // Check ALL consumers of this cast's output — every one must be a matmul
+            bool allConsumersAreMatmul = true;
+            int consumerCount = 0;
             for (int j = i + 1; j < numSlots; j++) {
                 if (fused[j]) continue;
                 bool consumesOutput = false;
@@ -348,18 +357,31 @@ std::vector<FusionCandidate> FusionPass::detectFusions(
                 }
                 if (!consumesOutput) continue;
 
+                consumerCount++;
                 std::string nameJ = getOpName(slots[j]);
-                if (nameJ == "matmul" || nameJ == "mmul" || nameJ == "tensormmul") {
-                    // Mark cast as identity — its output slot points to raw FP16 input
-                    slots[i].isIdentityOp = true;
-                    fused[i] = true;
-                    castsSunk++;
+                if (nameJ != "matmul" && nameJ != "mmul" && nameJ != "tensormmul") {
+                    allConsumersAreMatmul = false;
+                    break;
                 }
-                break;  // Found the consumer, stop searching
+            }
+
+            if (consumerCount > 0 && allConsumersAreMatmul) {
+                // Mark cast as identity — matmuls will receive FP16 input directly
+                // and MmulHelper handles mixed precision via cublasSgemmEx
+                slots[i].isIdentityOp = true;
+                fused[i] = true;
+                castsSunk++;
+            } else if (consumerCount > 0) {
+                castsSkippedNonMatmulConsumer++;
+            } else {
+                castsNoConsumer++;
             }
         }
-        if (castsSunk > 0) {
-            DSP_DIAG(FUSION, "cast sink through matmul eliminated %d cast ops", castsSunk);
+        DSP_DIAG(FUSION, "cast sink: total=%d fp32Target=%d sunk=%d skippedNonMatmul=%d noConsumer=%d",
+                 totalCasts, castsFp32Target, castsSunk, castsSkippedNonMatmulConsumer, castsNoConsumer);
+        if (castsSunk > 0 || castsSkippedNonMatmulConsumer > 0) {
+            DSP_DIAG(FUSION, "cast sink through matmul: %d sunk, %d skipped (non-matmul consumer)",
+                     castsSunk, castsSkippedNonMatmulConsumer);
         }
     }
 

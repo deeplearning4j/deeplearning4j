@@ -617,6 +617,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
             SDVariable in = sd.var("in", minibatch, nOut);
 
             INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+            INDArray inputForGraph = null;
 
             int dim;
             SDVariable t;
@@ -651,16 +652,19 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 6:
                     t = sd.math().pow(in, 2.5);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.pow(ia, 2.5, true));
                     break;
                 case 7:
                     t = sd.nn().sigmoid(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(2).subi(1.0);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.sigmoid(ia, true));
                     break;
                 case 8:
                     t = sd.math().tanh(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(2).subi(1.0);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.tanh(ia, true));
                     break;
                 case 9:
@@ -671,19 +675,23 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 10:
                     t = sd.math().cos(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.cos(ia, true));
                     break;
                 case 11:
                     t = sd.math().sin(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.sin(ia, true));
                     break;
                 case 12:
                     t = sd.nn().softplus(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.softPlus(ia, true));
                     break;
                 case 13:
                     t = sd.math().log(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.log(ia, true));
                     break;
                 case 14:
@@ -694,6 +702,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 15:
                     t = sd.math().acos(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(1.8).subi(0.9);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.acos(ia, true));
                     break;
                 case 16:
@@ -704,28 +713,34 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 17:
                     t = sd.math().asin(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(1.8).subi(0.9);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.asin(ia, true));
                     break;
                 case 18:
                     t = sd.math().atan(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(4).subi(2);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.atan(ia, true));
                     break;
                 case 19:
                     t = sd.math().atanh(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut).muli(1.8).subi(0.9);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.atanh(ia, true));
                     break;
                 case 20:
                     t = sd.math().cosh(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.cosh(ia, true));
                     break;
                 case 21:
                     t = sd.math().cube(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.pow(ia, 3.0, true));
                     break;
                 case 22:
                     t = sd.nn().elu(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.elu(ia, true));
                     break;
                 case 23:
@@ -737,10 +752,12 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 24:
                     t = sd.math().sqrt(in);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.sqrt(ia, true));
                     break;
                 case 25:
                     t = sd.math().square(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.pow(ia, 2.0, true));
                     break;
                 case 26:
@@ -749,10 +766,12 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 27:
                     t = sd.math().abs(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.abs(ia, true));
                     break;
                 case 28:
                     t = sd.math().sinh(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.sinh(ia, true));
                     break;
                 case 29:
@@ -761,20 +780,24 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 30:
                     t = sd.math().exp(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.exp(ia, true));
                     break;
                 case 31:
                     t = sd.math().floor(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.floor(ia, true));
                     break;
                 case 32:
                     t = sd.nn().relu(in, 0.0);
                     ia = Nd4j.rand(minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.relu(ia, true));
                     break;
                 case 33:
                     t = sd.nn().hardTanh(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(2).subi(1.0);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.hardTanh(ia, true));
                     break;
                 case 34:
@@ -787,20 +810,24 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 36:
                     t = sd.math().sign(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.sign(ia, true));
                     break;
                 case 37:
                     t = sd.nn().softsign(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.softsign(ia, true));
                     break;
                 case 38:
                     t = sd.nn().leakyRelu(in, 0.0);
                     ia = Nd4j.rand(minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.leakyRelu(ia, true));
                     break;
                 case 39:
                     t = sd.nn().logSoftmax(in);
                     ia = Nd4j.rand(minibatch, nOut).muli(10).subi(5);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.log(Transforms.softmax(ia, true)));
                     stdevLoss = true;
                     break;
@@ -836,6 +863,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 47:
                     t = sd.math().ceil(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.ceil(ia, true));
                     break;
                 case 48:
@@ -928,15 +956,18 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 56:
                     t = sd.math().expm1(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.expm1(ia, true));
                     break;
                 case 57:
                     t = sd.math().log1p(in);
                     ia = Nd4j.rand(minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.log1p(ia, true));
                     break;
                 case 58:
                     t = sd.math().round(in);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.round(ia, true));
                     break;
                 case 59:
@@ -948,6 +979,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 60:
                     t = sd.nn().relu6(in, 0);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.relu6(ia, true));
                     break;
                 case 61:
@@ -964,10 +996,12 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     break;
                 case 63:
                     t = sd.scalarMax(in, 0.5);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.max(ia, 0.5, true));
                     break;
                 case 64:
                     t = sd.scalarMin(in, 0.5);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expectedOutput(t.name(), Transforms.min(ia, 0.5, true));
                     break;
                 case 65:
@@ -1010,11 +1044,13 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 case 75:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.math().log(in, 2);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expected(t, Transforms.log(ia, 2, true));
                     break;
                 case 76:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.math().log(in, 10);
+                    inputForGraph = ia.dup(ia.ordering());
                     tc.expected(t, Transforms.log(ia, 10, true));
                     break;
                 case 77:
@@ -1042,6 +1078,7 @@ public class TestTransformOpValidation extends BaseOpValidation {
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(0.5);
                     t = sd.nn().preciseGelu(in);
                     // Precise GELU: 0.5 * x * (1 + tanh(sqrt(2/π) * (x + 0.044715 * x^3)))
+                    inputForGraph = ia.dup(ia.ordering());
                     INDArray x3 = Transforms.pow(ia, 3, true).muli(0.044715);  // 0.044715 * x^3
                     INDArray inner1 = ia.add(x3).mul(Math.sqrt(2.0 / Math.PI));
                     INDArray inner2 = Transforms.tanh(inner1, true).addi(1.0);
@@ -1067,7 +1104,10 @@ public class TestTransformOpValidation extends BaseOpValidation {
                 loss = sd.mean("loss", t);
             }
 
-            sd.associateArrayWithVariable(ia, in);
+            if (inputForGraph == null) {
+                inputForGraph = ia.dup(ia.ordering());
+            }
+            sd.associateArrayWithVariable(inputForGraph, in);
 
             tc.testName(name);
             String error = OpValidation.validate(tc, true);
@@ -1078,6 +1118,77 @@ public class TestTransformOpValidation extends BaseOpValidation {
 
         if (allFailed.size() > 0) {
             log.error("All failed transforms: " + allFailed);
+            fail(allFailed.size() + " transforms failed");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testTransformsScalarBoundaryIsolation(Nd4jBackend backend) {
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> allFailed = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            SameDiff sd = SameDiff.create();
+
+            int nOut = 4;
+            int minibatch = 5;
+            SDVariable in = sd.var("in", minibatch, nOut);
+
+            INDArray ia = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
+            INDArray inputForGraph = null;
+
+            SDVariable t;
+            TestCase tc = new TestCase(sd);
+            String opName = null;
+            switch (i) {
+                case 0:
+                    t = in.add(5.0);
+                    tc.expectedOutput(t.name(), ia.add(5.0));
+                    break;
+                case 1:
+                    t = in.sub(5.0);
+                    tc.expectedOutput(t.name(), ia.sub(5.0));
+                    break;
+                case 2:
+                    t = in.mul(2.5);
+                    tc.expectedOutput(t.name(), ia.mul(2.5));
+                    break;
+                case 3:
+                    t = in.div(4.0);
+                    tc.expectedOutput(t.name(), ia.div(4.0));
+                    break;
+                case 4:
+                    t = in.rsub(5.0);
+                    tc.expectedOutput(t.name(), ia.rsub(5.0));
+                    break;
+                case 5:
+                    t = in.rdiv(1.0);
+                    tc.expectedOutput(t.name(), ia.rdiv(1.0));
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            DifferentialFunction[] funcs = sd.ops();
+            String name = opName == null ? funcs[0].opName() : opName;
+            String msg = "boundary test: " + i + " - " + name;
+            log.info("*** Starting test: " + msg);
+
+            sd.mean("loss", t);
+            if (inputForGraph == null) {
+                inputForGraph = ia.dup(ia.ordering());
+            }
+            sd.associateArrayWithVariable(inputForGraph, in);
+
+            tc.testName(name);
+            String error = OpValidation.validate(tc, true);
+            if (error != null) {
+                allFailed.add(name + " - " + error);
+            }
+        }
+
+        if (!allFailed.isEmpty()) {
             fail(allFailed.size() + " transforms failed");
         }
     }

@@ -388,6 +388,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                 .dspBatchZero(true).dspBatchZeroKernel(true)
                 .dspBatchedGemm(true)
+                .dspCastSinkMatmul(true)
                 .maxTokens(100).minDiversityPct(0));
 
         configs.add(BenchmarkConfig.create("CUDA_GRAPHS_batchOps")
@@ -648,6 +649,25 @@ public class TestSmolDoclingOptimizedPipeline {
         log.info("ONNX import done [{}ms]: vision={} ops, decoder={} ops, embed={} ops",
                 ctx.importMs, visionEncoder.getOps().size(), ctx.decoderOps, ctx.embedOps);
 
+        // Log op-type distribution for the decoder to verify optimizer ran
+        Map<String, Integer> opCounts = new java.util.TreeMap<>();
+        for (var entry : ctx.decoder.getOps().entrySet()) {
+            var op = entry.getValue().getOp();
+            String opName = op != null ? op.opName() : "null";
+            opCounts.merge(opName, 1, Integer::sum);
+        }
+        log.info("Decoder op distribution ({} total):", ctx.decoderOps);
+        opCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(25)
+                .forEach(e -> log.info("  {} x {}", e.getValue(), e.getKey()));
+        int rmsNormCount = opCounts.getOrDefault("rms_norm", 0);
+        log.info("  rms_norm ops: {} (expected ~61 if optimizer ran)", rmsNormCount);
+        if (rmsNormCount == 0) {
+            log.warn("WARNING: No rms_norm ops found in decoder! GraphOptimizer may not have run. " +
+                     "Check nd4j.optimizer.enabled=true and delete stale SDZ caches if needed.");
+        }
+
         // Image preprocessing
         int targetSize = 512;
         BufferedImage pdfImage = loadImageFromPdfOrGenerate();
@@ -687,6 +707,19 @@ public class TestSmolDoclingOptimizedPipeline {
                     NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
             INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
 
+            // DIAGNOSTIC: check pixel values are non-zero
+            if (frameIdx == 0) {
+                double minVal = singleFrame.minNumber().doubleValue();
+                double maxVal = singleFrame.maxNumber().doubleValue();
+                double meanVal = singleFrame.meanNumber().doubleValue();
+                long zeroCount = singleFrame.eq(0.0).castTo(org.nd4j.linalg.api.buffer.DataType.INT64).sumNumber().longValue();
+                long totalElements = singleFrame.length();
+                log.info("DIAG pixel_values: shape={}, dtype={}, min={}, max={}, mean={}, zeroCount={}/{} ({}%)",
+                        java.util.Arrays.toString(singleFrame.shape()), singleFrame.dataType(),
+                        minVal, maxVal, meanVal, zeroCount, totalElements,
+                        (100.0 * zeroCount / totalElements));
+            }
+
             Map<String, INDArray> visionInputMap = new HashMap<>();
             for (String inputName : visionInputNames) {
                 if (inputName.equals("pixel_values")) {
@@ -698,7 +731,99 @@ public class TestSmolDoclingOptimizedPipeline {
                 }
             }
 
-            Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
+            // DIAGNOSTIC: Check shape variable before execution
+            if (frameIdx == 0) {
+                for (String vname : new String[]{"/Concat_output_0", "/Concat_output_0_"}) {
+                    if (visionEncoder.hasVariable(vname)) {
+                        INDArray arr = visionEncoder.getArrForVarName(vname);
+                        if (arr != null) {
+                            Nd4j.getAffinityManager().ensureLocation(arr, org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                            log.info("DIAG {}: shape={}, dtype={}, values={}", vname, java.util.Arrays.toString(arr.shape()),
+                                    arr.dataType(), arr.data().asLong());
+                        } else {
+                            log.info("DIAG {}: has variable but arr is null", vname);
+                        }
+                    }
+                }
+            }
+            Map<String, INDArray> visionOutputs;
+            try {
+                // First, try to compute intermediate outputs to diagnose the Where → Create chain
+                if (frameIdx == 0) {
+                    try {
+                        // Request just the Where output to see what it computes
+                        String[] diagOutputs = {"/vision_model/embeddings/Where_output_0"};
+                        // Also check if concat variable exists
+                        for (String diagVar : new String[]{
+                                "/ReduceSum_output_0",
+                                "/Equal_1_output_0",
+                                "/Not_output_0",
+                                "/GatherND_output_0",
+                                "/vision_model/embeddings/Shape_output_0",
+                                "/vision_model/embeddings/Gather_output_0",
+                                "/vision_model/embeddings/Concat_2_output_0",
+                                "/vision_model/embeddings/Equal_output_0",
+                                "/vision_model/embeddings/Where_output_0"}) {
+                            if (visionEncoder.hasVariable(diagVar)) {
+                                try {
+                                    Map<String, INDArray> diagResult = visionEncoder.output(
+                                            visionInputMap, diagVar);
+                                    INDArray val = diagResult.get(diagVar);
+                                    if (val != null) {
+                                        Nd4j.getAffinityManager().ensureLocation(val,
+                                                org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                                        log.info("DIAG COMPUTED {}: shape={}, dtype={}, values={}",
+                                                diagVar, java.util.Arrays.toString(val.shape()),
+                                                val.dataType(),
+                                                val.length() <= 20 ? val.toString() : "len=" + val.length());
+                                    }
+                                } catch (Exception diagEx) {
+                                    log.info("DIAG COMPUTED {} FAILED: {}", diagVar, diagEx.getMessage());
+                                }
+                            }
+                        }
+                    } catch (Exception diagEx) {
+                        log.info("DIAG intermediate computation failed: {}", diagEx.getMessage());
+                    }
+                }
+                visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
+            } catch (Exception e) {
+                // Dump intermediate variables for debugging
+                log.error("Vision encoder failed on frame {}, dumping intermediates:", frameIdx);
+                String[] diagVars = {
+                    "/Equal_output_0", "/Cast_output_0", "/ReduceSum_output_0",
+                    "/Equal_1_output_0", "/Not_output_0", "/NonZero_output_0",
+                    "/Transpose_output_0", "/Reshape_output_0", "/GatherND_output_0",
+                    "/vision_model/embeddings/Shape_output_0",
+                    "/vision_model/embeddings/Gather_output_0",
+                    "/vision_model/embeddings/Unsqueeze_2_output_0",
+                    "/vision_model/embeddings/Constant_14_output_0",
+                    "/vision_model/embeddings/Reshape_1_output_0",
+                    "/vision_model/embeddings/Mul_1_output_0",
+                    "/vision_model/embeddings/Equal_output_0",
+                    "/vision_model/embeddings/ConstantOfShape_output_0",
+                    "/vision_model/embeddings/Where_output_0"
+                };
+                for (String vname : diagVars) {
+                    if (visionEncoder.hasVariable(vname)) {
+                        INDArray arr = visionEncoder.getArrForVarName(vname);
+                        if (arr != null) {
+                            try {
+                                Nd4j.getAffinityManager().ensureLocation(arr, org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                                String vals = arr.length() <= 20 ? arr.toString() : "len=" + arr.length();
+                                log.error("  DIAG {}: shape={}, dtype={}, values={}", vname,
+                                    java.util.Arrays.toString(arr.shape()), arr.dataType(), vals);
+                            } catch (Exception ex) {
+                                log.error("  DIAG {}: shape={}, dtype={}, ERROR reading: {}", vname,
+                                    java.util.Arrays.toString(arr.shape()), arr.dataType(), ex.getMessage());
+                            }
+                        } else {
+                            log.error("  DIAG {}: arr is null (not yet computed?)", vname);
+                        }
+                    }
+                }
+                throw e;
+            }
             assertNotNull(visionOutputs, "Vision encoder output null for frame " + frameIdx);
             assertFalse(visionOutputs.isEmpty(), "Vision encoder output empty for frame " + frameIdx);
 

@@ -33,7 +33,10 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
  auto input = INPUT_VARIABLE(0);
  auto output = OUTPUT_VARIABLE(0);
 
- if (block.getTArguments()->size() > 0) {
+ // When 3+ inputs are provided (input, min, max), always use input arrays.
+ // This is the ONNX calling convention. Only use tArgs when there's a single input
+ // and tArgs are explicitly provided (the legacy/direct calling convention).
+ if (block.width() < 3 && block.getTArguments()->size() > 0) {
    auto left = T_ARG(0);
    auto right = T_ARG(1);
 

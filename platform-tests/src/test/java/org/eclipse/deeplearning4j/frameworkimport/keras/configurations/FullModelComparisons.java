@@ -32,8 +32,6 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -189,69 +187,6 @@ public class FullModelComparisons extends BaseDL4JTest {
         assertEquals(predOnes.getDouble(0, 0), 0.7216, 1e-4);
 
 
-    }
-
-    @Test()
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-
-
-    public void cnnBatchNormTest() throws IOException, UnsupportedKerasConfigurationException,
-            InvalidKerasConfigurationException {
-
-        String modelPath = "modelimport/keras/fullconfigs/cnn/cnn_batch_norm.h5";
-
-        KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
-                .modelHdf5Filename(Resources.asFile(modelPath).getAbsolutePath())
-                .enforceTrainingConfig(false)
-                .buildSequential();
-
-        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
-        model.init();
-
-        System.out.println(model.summary());
-
-        INDArray input = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn/input.npy"));
-
-
-        INDArray output = model.output(input);
-
-        INDArray kerasOutput = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn/predictions.npy"));
-
-        for (int i = 0; i < 5; i++) {
-            assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-4);
-        }
-    }
-
-
-    @Test()
-    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void cnnBatchNormLargerTest() throws IOException, UnsupportedKerasConfigurationException,
-            InvalidKerasConfigurationException {
-
-        String modelPath = "modelimport/keras/fullconfigs/cnn_batch_norm/cnn_batch_norm_medium.h5";
-
-        KerasSequentialModel kerasModel = new KerasModel().modelBuilder()
-                .modelHdf5Filename(Resources.asFile(modelPath).getAbsolutePath())
-                .enforceTrainingConfig(false)
-                .buildSequential();
-
-        MultiLayerNetwork model = kerasModel.getMultiLayerNetwork();
-        model.init();
-
-        System.out.println(model.summary());
-
-        INDArray input = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn_batch_norm/input.npy"));
-        //input = input.permute(0, 3, 1, 2);
-        //assertTrue(Arrays.equals(input.shape(), new long[] {5, 1, 48, 48}));
-
-        INDArray output = model.output(input);
-
-        INDArray kerasOutput = Nd4j.createFromNpyFile(Resources.asFile("modelimport/keras/fullconfigs/cnn_batch_norm/predictions.npy"));
-
-        for (int i = 0; i < 5; i++) {
-            // TODO this should be a little closer
-            assertEquals(output.getDouble(i), kerasOutput.getDouble(i), 1e-2);
-        }
     }
 
 }

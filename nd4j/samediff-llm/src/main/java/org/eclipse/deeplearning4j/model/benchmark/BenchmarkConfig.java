@@ -70,6 +70,7 @@ public class BenchmarkConfig {
 
     // DSP flags
     boolean dspCastElimination;
+    boolean dspCastSinkMatmul;
     boolean dspFp16Compute;
     boolean dspBatchZero;
     boolean dspBatchZeroKernel;
@@ -123,6 +124,7 @@ public class BenchmarkConfig {
     public BenchmarkConfig expectedSubstrings(String... s) { this.expectedSubstrings = s; return this; }
     public BenchmarkConfig expectStructuralTags(boolean b) { this.expectStructuralTags = b; return this; }
     public BenchmarkConfig dspCastElimination(boolean b) { this.dspCastElimination = b; return this; }
+    public BenchmarkConfig dspCastSinkMatmul(boolean b) { this.dspCastSinkMatmul = b; return this; }
     public BenchmarkConfig dspFp16Compute(boolean b) { this.dspFp16Compute = b; return this; }
     public BenchmarkConfig dspBatchZero(boolean b) { this.dspBatchZero = b; return this; }
     public BenchmarkConfig dspBatchZeroKernel(boolean b) { this.dspBatchZeroKernel = b; return this; }
@@ -162,6 +164,7 @@ public class BenchmarkConfig {
     public String[] getExpectedSubstrings() { return expectedSubstrings; }
     public boolean isExpectStructuralTags() { return expectStructuralTags; }
     public boolean isDspCastElimination() { return dspCastElimination; }
+    public boolean isDspCastSinkMatmul() { return dspCastSinkMatmul; }
     public boolean isDspFp16Compute() { return dspFp16Compute; }
     public boolean isDspBatchZero() { return dspBatchZero; }
     public boolean isDspBatchZeroKernel() { return dspBatchZeroKernel; }
@@ -191,6 +194,7 @@ public class BenchmarkConfig {
         if (tritonMaxSubsegmentSections > 0) sb.append(" maxSubSections=").append(tritonMaxSubsegmentSections);
         if (tritonAllowFallbackCapture) sb.append(" fallbackCapture");
         if (dspCastElimination) sb.append(" castElim");
+        if (dspCastSinkMatmul) sb.append(" castSinkMatmul");
         if (dspFp16Compute) sb.append(" fp16compute");
         if (dspBatchZero) sb.append(" batchZero");
         if (dspBatchZeroKernel) sb.append(" batchZeroKernel");

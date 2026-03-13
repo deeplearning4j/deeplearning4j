@@ -95,7 +95,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(), new long[]{W.size(0), delta.size(0)}, 'f');
+        INDArray epsilonNext = backpropEpsilon(W, delta, workspaceMgr);
         if(hasLayerNorm()) {
             INDArray g = getParam(DefaultParamInitializer.GAIN_KEY);
 
@@ -105,8 +105,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         }
 
-        epsilonNext = W.mmuli(delta.transpose(),epsilonNext).transpose();   //W.mmul(delta.transpose()).transpose();
-
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
         Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);           //TODO avoid castTo?
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
@@ -115,6 +113,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         epsilonNext = backpropDropOutIfPresent(epsilonNext);
         return new Pair<>(ret, epsilonNext);
+    }
+
+    protected INDArray backpropEpsilon(INDArray weights, INDArray delta, LayerWorkspaceMgr workspaceMgr) {
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, delta.dataType(),
+                new long[]{delta.size(0), weights.size(0)}, 'c');
+        Nd4j.gemm(delta, weights.castTo(delta.dataType()), epsilonNext, false, true, 1.0, 0.0);
+        return epsilonNext;
     }
 
     public void fit() {

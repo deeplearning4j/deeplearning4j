@@ -57,7 +57,29 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
     return Status::OK;
   }
 
-  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
+  std::vector<LongType> permutationVector;
+  if (block.width() > 1) {
+    // Read permutation indices directly from synced host buffer to avoid e<T>() bugs on CUDA.
+    auto* permArr = INPUT_VARIABLE(1);
+    permArr->syncToHost();
+    auto* db = permArr->dataBuffer();
+    auto numEl = permArr->lengthOf();
+    auto dtype = permArr->dataType();
+    auto arrOffset = permArr->offset();
+    if (dtype == INT64) {
+      auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
+      for (sd::LongType i = 0; i < numEl; i++)
+        permutationVector.push_back(hostLongs[i]);
+    } else if (dtype == INT32) {
+      auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
+      for (sd::LongType i = 0; i < numEl; i++)
+        permutationVector.push_back(static_cast<LongType>(hostInts[i]));
+    } else {
+      permutationVector = permArr->asVectorT<LongType>();
+    }
+  } else {
+    permutationVector = *block.getIArguments();
+  }
 
   // Handle empty permutation vector - just copy input to output
   if (permutationVector.empty()) {
@@ -137,7 +159,28 @@ DECLARE_SHAPE_FN(permute) {
     RELEASE(temp, nullptr);
     return SHAPELIST(ret);
   }
-  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
+  std::vector<LongType> permutationVector;
+  if (block.width() > 1) {
+    auto* permArr = INPUT_VARIABLE(1);
+    permArr->syncToHost();
+    auto* db = permArr->dataBuffer();
+    auto numEl = permArr->lengthOf();
+    auto dtype = permArr->dataType();
+    auto arrOffset = permArr->offset();
+    if (dtype == INT64) {
+      auto* hostLongs = reinterpret_cast<LongType*>(db->primary()) + arrOffset;
+      for (sd::LongType i = 0; i < numEl; i++)
+        permutationVector.push_back(hostLongs[i]);
+    } else if (dtype == INT32) {
+      auto* hostInts = reinterpret_cast<int*>(db->primary()) + arrOffset;
+      for (sd::LongType i = 0; i < numEl; i++)
+        permutationVector.push_back(static_cast<LongType>(hostInts[i]));
+    } else {
+      permutationVector = permArr->asVectorT<LongType>();
+    }
+  } else {
+    permutationVector = *block.getIArguments();
+  }
 
   // Handle empty permutation vector - return input shape unchanged
   if (permutationVector.empty()) {

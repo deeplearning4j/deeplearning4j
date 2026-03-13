@@ -65,27 +65,54 @@ public class KerasConvolutionUtils {
         int[] strides;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_CONVOLUTION_STRIDES()) && dimension >= 2) {
             /* 2D/3D Convolutional layers. */
-            @SuppressWarnings("unchecked")
-            List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_CONVOLUTION_STRIDES());
-            strides = ArrayUtil.toArray(stridesList);
+            Object stridesObj = innerConfig.get(conf.getLAYER_FIELD_CONVOLUTION_STRIDES());
+            if (stridesObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Object> stridesList = (List<Object>) stridesObj;
+                int[] result = new int[stridesList.size()];
+                for (int i = 0; i < stridesList.size(); i++) {
+                    result[i] = ((Number) stridesList.get(i)).intValue();
+                }
+                strides = result;
+            } else {
+                throw new InvalidKerasConfigurationException("Invalid strides type: expected List");
+            }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH()) && dimension == 1) {
             /* 1D Convolutional layers. */
-            if ((int) layerConfig.get("keras_version") == 2) {
-                @SuppressWarnings("unchecked")
-                List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
-                strides = ArrayUtil.toArray(stridesList);
+            if (((Number) layerConfig.get("keras_version")).intValue() == 2) {
+                Object stridesObj = innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
+                if (stridesObj instanceof List) {
+                    @SuppressWarnings("unchecked")
+                    List<Object> stridesList = (List<Object>) stridesObj;
+                    int[] result = new int[stridesList.size()];
+                    for (int i = 0; i < stridesList.size(); i++) {
+                        result[i] = ((Number) stridesList.get(i)).intValue();
+                    }
+                    strides = result;
+                } else {
+                    throw new InvalidKerasConfigurationException("Invalid subsample length type: expected List");
+                }
             } else {
-                int subsampleLength = (int) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
+                int subsampleLength = ((Number) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH())).intValue();
                 strides = new int[]{subsampleLength};
             }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_STRIDES()) && dimension >= 2) {
             /* 2D/3D Pooling layers. */
-            @SuppressWarnings("unchecked")
-            List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_STRIDES());
-            strides = ArrayUtil.toArray(stridesList);
+            Object stridesObj = innerConfig.get(conf.getLAYER_FIELD_POOL_STRIDES());
+            if (stridesObj instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Object> stridesList = (List<Object>) stridesObj;
+                int[] result = new int[stridesList.size()];
+                for (int i = 0; i < stridesList.size(); i++) {
+                    result[i] = ((Number) stridesList.get(i)).intValue();
+                }
+                strides = result;
+            } else {
+                throw new InvalidKerasConfigurationException("Invalid pool strides type: expected List");
+            }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_1D_STRIDES()) && dimension == 1) {
             /* 1D Pooling layers. */
-            int stride = (int) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_STRIDES());
+            int stride = ((Number) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_STRIDES())).intValue();
             strides = new int[]{stride};
         } else
             throw new InvalidKerasConfigurationException("Could not determine layer stride: no "
@@ -97,7 +124,7 @@ public class KerasConvolutionUtils {
     static int getDepthMultiplier(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        return  (int) innerConfig.get(conf.getLAYER_FIELD_DEPTH_MULTIPLIER());
+        return ((Number) innerConfig.get(conf.getLAYER_FIELD_DEPTH_MULTIPLIER())).intValue();
     }
     /**
      * Get atrous / dilation rate from config
@@ -136,16 +163,13 @@ public class KerasConvolutionUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] atrousRate;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension >= 2) {
-            @SuppressWarnings("unchecked")
-            List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
-            atrousRate = ArrayUtil.toArray(atrousRateList);
+            atrousRate = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE()));
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 1) {
-            if ((int) layerConfig.get("keras_version") == 2) {
-                @SuppressWarnings("unchecked")
-                List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
-                atrousRate = new int[]{atrousRateList.get(0), atrousRateList.get(0)};
+            if (((Number) layerConfig.get("keras_version")).intValue() == 2) {
+                int[] rates = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE()));
+                atrousRate = new int[]{rates[0], rates[0]};
             } else {
-                int atrous = (int) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
+                int atrous = ((Number) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE())).intValue();
                 atrousRate = new int[]{atrous, atrous};
             }
         } else {
@@ -219,11 +243,9 @@ public class KerasConvolutionUtils {
         int[] size;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE()) && dimension == 2
                 || innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_3D_SIZE()) && dimension == 3) {
-            @SuppressWarnings("unchecked")
-            List<Integer> sizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE());
-            size = ArrayUtil.toArray(sizeList);
+            size = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE()));
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE()) && dimension == 1) {
-            int upsamplingSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE());
+            int upsamplingSize1D = ((Number) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE())).intValue();
             size = new int[]{upsamplingSize1D};
         } else {
             throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
@@ -249,11 +271,9 @@ public class KerasConvolutionUtils {
         long[] size;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE()) && dimension == 2
                 || innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_3D_SIZE()) && dimension == 3) {
-            @SuppressWarnings("unchecked")
-            List<Long> sizeList = (List<Long>) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE());
-            size = ArrayUtil.toArrayLong(sizeList);
+            size = convertToLongArray(innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_2D_SIZE()));
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE()) && dimension == 1) {
-            int upsamplingSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE());
+            long upsamplingSize1D = ((Number) innerConfig.get(conf.getLAYER_FIELD_UPSAMPLING_1D_SIZE())).longValue();
             size = new long[]{upsamplingSize1D};
         } else {
             throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
@@ -295,31 +315,29 @@ public class KerasConvolutionUtils {
             if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
                     && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
                 /* 2D Convolutional layers. */
-                List<Integer> kernelSizeList = new ArrayList<>();
-                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
-                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = new int[2];
+                kernelSize[0] = ((Number) innerConfig.get(conf.getLAYER_FIELD_NB_ROW())).intValue();
+                kernelSize[1] = ((Number) innerConfig.get(conf.getLAYER_FIELD_NB_COL())).intValue();
+                return kernelSize;
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_1()) && dimension == 3
                     && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_2())
                     && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_3())) {
                 /* 3D Convolutional layers. */
-                List<Integer> kernelSizeList = new ArrayList<>();
-                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_1()));
-                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_2()));
-                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_3()));
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = new int[3];
+                kernelSize[0] = ((Number) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_1())).intValue();
+                kernelSize[1] = ((Number) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_2())).intValue();
+                kernelSize[2] = ((Number) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_3())).intValue();
+                return kernelSize;
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
                 /* 1D Convolutional layers. */
-                int filterLength = (int) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
+                int filterLength = ((Number) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH())).intValue();
                 kernelSize = new int[]{filterLength};
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension >= 2) {
                 /* 2D/3D Pooling layers. */
-                @SuppressWarnings("unchecked")
-                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE()));
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_1D_SIZE()) && dimension == 1) {
                 /* 1D Pooling layers. */
-                int poolSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE());
+                int poolSize1D = ((Number) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE())).intValue();
                 kernelSize = new int[]{poolSize1D};
             } else {
                 throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
@@ -332,24 +350,16 @@ public class KerasConvolutionUtils {
         } else {
             /* 2D/3D Convolutional layers. */
             if (innerConfig.containsKey(conf.getLAYER_FIELD_KERNEL_SIZE()) && dimension >= 2) {
-                @SuppressWarnings("unchecked")
-                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_KERNEL_SIZE());
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_KERNEL_SIZE()));
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
                 /* 1D Convolutional layers. */
-                @SuppressWarnings("unchecked")
-                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH()));
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension >= 2) {
                 /* 2D Pooling layers. */
-                @SuppressWarnings("unchecked")
-                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE()));
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_1D_SIZE()) && dimension == 1) {
                 /* 1D Pooling layers. */
-                @SuppressWarnings("unchecked")
-                List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE());
-                kernelSize = ArrayUtil.toArray(kernelSizeList);
+                kernelSize = convertToIntArray(innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE()));
             } else {
                 throw new InvalidKerasConfigurationException("Could not determine kernel size: no "
                         + conf.getLAYER_FIELD_KERNEL_SIZE() + ", or "
@@ -359,6 +369,42 @@ public class KerasConvolutionUtils {
         }
 
         return kernelSize;
+    }
+
+    private static int[] convertToIntArray(Object obj) {
+        if (obj == null) {
+            return new int[0];
+        }
+        if (obj instanceof List) {
+            List<?> list = (List<?>) obj;
+            int[] result = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                result[i] = ((Number) list.get(i)).intValue();
+            }
+            return result;
+        }
+        if (obj instanceof Number) {
+            return new int[]{((Number) obj).intValue()};
+        }
+        throw new IllegalArgumentException("Cannot convert to int array: " + obj.getClass());
+    }
+
+    private static long[] convertToLongArray(Object obj) {
+        if (obj == null) {
+            return new long[0];
+        }
+        if (obj instanceof List) {
+            List<?> list = (List<?>) obj;
+            long[] result = new long[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                result[i] = ((Number) list.get(i)).longValue();
+            }
+            return result;
+        }
+        if (obj instanceof Number) {
+            return new long[]{((Number) obj).longValue()};
+        }
+        throw new IllegalArgumentException("Cannot convert to long array: " + obj.getClass());
     }
 
     /**
@@ -469,25 +515,25 @@ public class KerasConvolutionUtils {
                 boolean isNested;
                 try {
                     @SuppressWarnings("unchecked")
-                    List<Integer> firstItem = (List<Integer>) paddingNoCast.get(0);
+                    List<Number> firstItem = (List<Number>) paddingNoCast.get(0);
                     isNested = true;
                     paddingList = new ArrayList<>(2 * dimension);
                 } catch (Exception e) {
-                    int firstItem = (int) paddingNoCast.get(0);
+                    int firstItem = ((Number) paddingNoCast.get(0)).intValue();
                     isNested = false;
                     paddingList = new ArrayList<>(dimension);
                 }
 
                 if ((paddingNoCast.size() == dimension) && !isNested) {
                     for (int i = 0; i < dimension; i++)
-                        paddingList.add((Long) paddingNoCast.get(i));
+                        paddingList.add(((Number) paddingNoCast.get(i)).longValue());
                     padding = ArrayUtil.toArrayLong(paddingList);
                 } else if ((paddingNoCast.size() == dimension) && isNested) {
                     for (int j = 0; j < dimension; j++) {
                         @SuppressWarnings("unchecked")
-                        List<Long> item = (List<Long>) paddingNoCast.get(j);
-                        paddingList.add((item.get(0)));
-                        paddingList.add((item.get(1)));
+                        List<Number> item = (List<Number>) paddingNoCast.get(j);
+                        paddingList.add((item.get(0)).longValue());
+                        paddingList.add((item.get(1)).longValue());
                     }
 
                     padding = ArrayUtil.toArrayLong(paddingList);
@@ -496,7 +542,7 @@ public class KerasConvolutionUtils {
                             + "D layer with invalid " + paddingList.size() + "D padding.");
                 }
             } catch (Exception e) {
-                int paddingInt = (int) innerConfig.get(layerField);
+                int paddingInt = ((Number) innerConfig.get(layerField)).intValue();
                 if (dimension == 2) {
                     padding = new long[]{paddingInt, paddingInt, paddingInt, paddingInt};
                 } else {
@@ -507,14 +553,14 @@ public class KerasConvolutionUtils {
         } else if (dimension == 1) {
             Object paddingObj  = innerConfig.get(layerField);
             if (paddingObj instanceof List) {
-                List<Long> paddingList = (List)paddingObj;
+                List<Number> paddingList = (List<Number>)paddingObj;
                 padding = new long[]{
-                        paddingList.get(0),
-                        paddingList.get(1)
+                        paddingList.get(0).longValue(),
+                        paddingList.get(1).longValue()
                 };
             }
             else{
-                int paddingInt = (int) innerConfig.get(layerField);
+                int paddingInt = ((Number) innerConfig.get(layerField)).intValue();
                 padding = new long[]{paddingInt, paddingInt};
             }
 
@@ -554,25 +600,25 @@ public class KerasConvolutionUtils {
                 boolean isNested;
                 try {
                     @SuppressWarnings("unchecked")
-                    List<Integer> firstItem = (List<Integer>) paddingNoCast.get(0);
+                    List<Number> firstItem = (List<Number>) paddingNoCast.get(0);
                     isNested = true;
                     paddingList = new ArrayList<>(2 * dimension);
                 } catch (Exception e) {
-                    int firstItem = (int) paddingNoCast.get(0);
+                    int firstItem = ((Number) paddingNoCast.get(0)).intValue();
                     isNested = false;
                     paddingList = new ArrayList<>(dimension);
                 }
 
                 if ((paddingNoCast.size() == dimension) && !isNested) {
                     for (int i = 0; i < dimension; i++)
-                        paddingList.add((int) paddingNoCast.get(i));
+                        paddingList.add(((Number) paddingNoCast.get(i)).intValue());
                     padding = ArrayUtil.toArray(paddingList);
                 } else if ((paddingNoCast.size() == dimension) && isNested) {
                     for (int j = 0; j < dimension; j++) {
                         @SuppressWarnings("unchecked")
-                        List<Integer> item = (List<Integer>) paddingNoCast.get(j);
-                        paddingList.add((item.get(0)));
-                        paddingList.add((item.get(1)));
+                        List<Number> item = (List<Number>) paddingNoCast.get(j);
+                        paddingList.add(item.get(0).intValue());
+                        paddingList.add(item.get(1).intValue());
                     }
 
                     padding = ArrayUtil.toArray(paddingList);
@@ -581,7 +627,7 @@ public class KerasConvolutionUtils {
                             + "D layer with invalid " + paddingList.size() + "D padding.");
                 }
             } catch (Exception e) {
-                int paddingInt = (int) innerConfig.get(layerField);
+                int paddingInt = ((Number) innerConfig.get(layerField)).intValue();
                 if (dimension == 2) {
                     padding = new int[]{paddingInt, paddingInt, paddingInt, paddingInt};
                 } else {
@@ -592,14 +638,14 @@ public class KerasConvolutionUtils {
         } else if (dimension == 1) {
             Object paddingObj  = innerConfig.get(layerField);
             if (paddingObj instanceof List){
-                List<Integer> paddingList = (List)paddingObj;
+                List<Number> paddingList = (List<Number>)paddingObj;
                 padding = new int[]{
-                        paddingList.get(0),
-                        paddingList.get(1)
+                        paddingList.get(0).intValue(),
+                        paddingList.get(1).intValue()
                 };
             }
             else{
-                int paddingInt = (int) innerConfig.get(layerField);
+                int paddingInt = ((Number) innerConfig.get(layerField)).intValue();
                 padding = new int[]{paddingInt, paddingInt};
             }
 

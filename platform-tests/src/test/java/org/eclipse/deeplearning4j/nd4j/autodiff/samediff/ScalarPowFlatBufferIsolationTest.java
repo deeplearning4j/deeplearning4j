@@ -45,16 +45,16 @@ public class ScalarPowFlatBufferIsolationTest extends BaseNd4jTestWithBackends {
     public void testScalarPowRoundTripOutputAll(Nd4jBackend backend) throws IOException {
         for (char order : new char[]{'c', 'f'}) {
             SameDiff sd = SameDiff.create();
-            SDVariable in = sd.placeHolder("in", DataType.DOUBLE, 2, 3, 4);
+            INDArray input = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 2, 3, 4).dup(order);
+            SDVariable in = sd.var("in", input);
             SDVariable out = sd.math().pow("out", in, 2.0);
             sd.standardDeviation("loss", out, true);
 
-            INDArray input = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 2, 3, 4).dup(order);
             ByteBuffer serialized = sd.asFlatBuffers(true);
             SameDiff restored = SameDiff.fromFlatBuffers(serialized);
 
-            Map<String, INDArray> originalOutputs = sd.outputAll(Map.of("in", input));
-            Map<String, INDArray> restoredOutputs = restored.outputAll(Map.of("in", input));
+            Map<String, INDArray> originalOutputs = sd.outputAll(null);
+            Map<String, INDArray> restoredOutputs = restored.outputAll(null);
 
             assertEquals(originalOutputs.get("out"), restoredOutputs.get("out"), "Scalar pow output mismatch for order " + order);
             assertEquals(originalOutputs.get("loss"), restoredOutputs.get("loss"), "Scalar pow loss mismatch for order " + order);
@@ -65,17 +65,18 @@ public class ScalarPowFlatBufferIsolationTest extends BaseNd4jTestWithBackends {
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testScalarPowRoundTripGradientsRetainExponent(Nd4jBackend backend) throws IOException {
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.placeHolder("in", DataType.DOUBLE, 2, 3, 4);
+        INDArray input = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 2, 3, 4);
+        SDVariable in = sd.var("in", input.dup());
         SDVariable out = sd.math().pow("out", in, 2.5);
         SDVariable loss = sd.sum("loss", out);
         sd.setLossVariables(loss.name());
 
         SameDiff restored = SameDiff.fromFlatBuffers(sd.asFlatBuffers(true));
-        INDArray input = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape('c', 2, 3, 4);
-
-        INDArray grad = restored.calculateGradients(Map.of("in", input), "in").get("in");
+        INDArray originalGrad = sd.calculateGradients(null, "in").get("in");
+        INDArray grad = restored.calculateGradients(null, "in").get("in");
         INDArray expected = Transforms.pow(input.dup(), 1.5, true).muli(2.5);
 
+        assertTrue(expected.equalsWithEps(originalGrad, 1e-6), "Scalar pow gradient mismatch before FlatBuffers round-trip");
         assertTrue(expected.equalsWithEps(grad, 1e-6), "Scalar pow gradient mismatch after FlatBuffers round-trip");
     }
 }

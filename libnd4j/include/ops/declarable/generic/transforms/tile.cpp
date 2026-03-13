@@ -79,6 +79,7 @@ DECLARE_SHAPE_FN(tile) {
     REQUIRE_TRUE(reps_vector->lengthOf() == inRank, 0,
                  "TILE op: repeats vector length should be equal to input rank, but got %i and %i correspondingly !",
                  reps_vector->lengthOf(), inRank);
+
     reps = reps_vector->template asVectorT<sd::LongType>();
   } else {
     REQUIRE_TRUE(false, 0,

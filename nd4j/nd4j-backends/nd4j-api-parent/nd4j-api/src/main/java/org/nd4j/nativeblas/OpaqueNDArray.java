@@ -440,6 +440,11 @@ public class OpaqueNDArray extends Pointer {
         if (!array.isEmpty() && array.data() != null && !array.data().wasClosed()) {
             OpaqueDataBuffer opaqueBuffer = array.data().opaqueBuffer();
             if (opaqueBuffer != null && !opaqueBuffer.isNull()) {
+                // Sync host→device for arrays where Java-side writes may have modified host data.
+                // Use non-force sync so actuality counters are respected: if a CUDA kernel already
+                // wrote to the device buffer (device is authoritative), the sync is skipped.
+                // Previously, INT/LONG arrays used forced sync which overwrote correct device data
+                // (e.g., shape_of kernel output) with stale host zeros.
                 opaqueBuffer.syncToSpecial();
             }
         }

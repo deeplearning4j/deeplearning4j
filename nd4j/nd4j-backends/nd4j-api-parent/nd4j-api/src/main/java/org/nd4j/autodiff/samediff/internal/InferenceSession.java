@@ -1154,16 +1154,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         int savedAutoGcWindow = Nd4j.getMemoryManager().getAutoGcWindow();
         Nd4j.getMemoryManager().setAutoGcWindow(Integer.MAX_VALUE);
 
-        // DIAGNOSTIC: Block the DeallocatorService during op execution to prevent
-        // GC-triggered native buffer frees from racing with active ops.
-        // If the heap corruption crash goes away with this enabled, it confirms
-        // the root cause is a race condition between the DeallocatorService and op execution.
-        boolean blockDeallocDuringExec = Boolean.parseBoolean(
-                System.getProperty("org.nd4j.inference.block.deallocator", "false"));
-        if (blockDeallocDuringExec) {
-            Nd4j.getDeallocatorService().toggleDeallocationBlock(true);
-        }
-
         try {
         // Detect while-loop regions and build skip sets for control flow
         Set<String> skipOps = new HashSet<>();
@@ -1317,9 +1307,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (TIMING_ENABLED) timingArrayReleaseNs += System.nanoTime() - tRelease0;
         }
 
-        if (blockDeallocDuringExec) {
-            Nd4j.getDeallocatorService().toggleDeallocationBlock(false);
-        }
         } finally {
             // Restore autoGc window to its previous value
             Nd4j.getMemoryManager().setAutoGcWindow(savedAutoGcWindow);
@@ -3239,6 +3226,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (TIMING_ENABLED) timingIntLongSyncNs += System.nanoTime() - tSync0;
 
             if (TIMING_ENABLED) timingShapeCacheMisses++;
+
             // Calculate shape outside workspace scope so shape buffers are heap-allocated
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 outShape = dynOp.calculateOutputShape(opContext);
