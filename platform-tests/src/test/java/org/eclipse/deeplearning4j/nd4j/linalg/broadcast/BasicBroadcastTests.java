@@ -22,7 +22,6 @@ package org.eclipse.deeplearning4j.nd4j.linalg.broadcast;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.eclipse.deeplearning4j.tests.extensions.BackendTest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Slf4j
 @NativeTag
 @Tag(TagNames.NDARRAY_INDEXING)
-@BackendTest(description = "Basic broadcast operations validation for all backends")
 public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest

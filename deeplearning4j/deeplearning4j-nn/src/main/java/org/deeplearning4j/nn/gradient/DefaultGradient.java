@@ -70,7 +70,10 @@ public class DefaultGradient implements Gradient {
             }
         }
         INDArray ret = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
-        return ret.reshape('c', 1, ret.length());
+        if(ret.rank() > 1) {
+            ret = ret.reshape(ret.length());
+        }
+        return ret;
     }
 
     private void flattenGradient() {
@@ -94,15 +97,19 @@ public class DefaultGradient implements Gradient {
             flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, gradients.values());
 
         }
-        if(flattenedGradient.rank() == 1){
-            flattenedGradient = flattenedGradient.reshape('c', 1, flattenedGradient.length());
+        if(flattenedGradient.rank() > 1){
+            flattenedGradient = flattenedGradient.reshape(flattenedGradient.length());
         }
     }
 
     @Override
     public INDArray gradient() {
-        if (flattenedGradient != null)
+        if (flattenedGradient != null) {
+            if(flattenedGradient.rank() > 1) {
+                flattenedGradient = flattenedGradient.reshape(flattenedGradient.length());
+            }
             return flattenedGradient;
+        }
 
         flattenGradient();
         return flattenedGradient;

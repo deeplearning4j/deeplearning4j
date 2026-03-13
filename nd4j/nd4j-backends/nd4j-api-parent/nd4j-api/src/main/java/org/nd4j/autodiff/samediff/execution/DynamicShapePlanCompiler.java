@@ -229,6 +229,48 @@ public class DynamicShapePlanCompiler {
                 opName = "unknown";
             }
             String opNameLower = opName.toLowerCase(Locale.ROOT);
+
+            // Remap reshape → reshape_no_copy for zero-copy view support.
+            // reshape_no_copy's C++ shape function calls reshapeNoAlloc() to determine
+            // if the reshape can be done as a view (shared buffer) or needs a copy.
+            // It sets ARRAY_COPY_OFFSET_INPUT_0 for views, ARRAY_NEEDS_COPY for copies.
+            // The iArgs format differs: reshape has order first [-99, dims...],
+            // reshape_no_copy has dims first then order [...dims, -99].
+            long[] reshapeNoCopyIArgs = null;
+            if (opNameLower.equals("reshape") && op instanceof DynamicCustomOp) {
+                DynamicCustomOp dynOp = (DynamicCustomOp) op;
+                long[] origIArgs = dynOp.iArgs();
+                int numInputs = sdOp.getInputsToOp() != null ? sdOp.getInputsToOp().size() : 0;
+                if (numInputs > 1) {
+                    // Shape from input 1 (ONNX pattern). iArgs[0] is positive order char (99='c', 102='f').
+                    // Convert to reshape_no_copy format: iArgs[0] = negative marker (-99 or -102).
+                    if (origIArgs != null && origIArgs.length > 0) {
+                        reshapeNoCopyIArgs = origIArgs.clone();
+                        long orderChar = reshapeNoCopyIArgs[0];
+                        if (orderChar == 99 || orderChar == 'c') {
+                            reshapeNoCopyIArgs[0] = -99;  // RESHAPE_NO_COPY_C_ORDER_MARKER
+                        } else if (orderChar == 102 || orderChar == 'f') {
+                            reshapeNoCopyIArgs[0] = -102;  // RESHAPE_NO_COPY_F_ORDER_MARKER
+                        }
+                    } else {
+                        reshapeNoCopyIArgs = new long[]{-99};
+                    }
+                } else if (numInputs == 1 && origIArgs != null && origIArgs.length > 1) {
+                    // Shape from iArgs. reshape format: [-99, dim1, dim2, ...]
+                    // reshape_no_copy format: [dim1, dim2, ..., -99]
+                    long first = origIArgs[0];
+                    if (first == -99 || first == -102) {
+                        reshapeNoCopyIArgs = new long[origIArgs.length];
+                        System.arraycopy(origIArgs, 1, reshapeNoCopyIArgs, 0, origIArgs.length - 1);
+                        reshapeNoCopyIArgs[origIArgs.length - 1] = first;
+                    }
+                }
+                if (reshapeNoCopyIArgs != null) {
+                    opName = "reshape_no_copy";
+                    opNameLower = "reshape_no_copy";
+                }
+            }
+
             boolean isCustomOp = op instanceof CustomOp;
 
             // Detect legacy op type and opNum for ops not registered as
@@ -445,6 +487,11 @@ public class DynamicShapePlanCompiler {
             // When true, INT/LONG input values are included in the shape cache key.
             // When false, only input shapes + dtypes are used, avoiding expensive CUDA D2H syncs.
             boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(opNameLower) || isDataDependent;
+
+            // Override iArgs for reshape → reshape_no_copy remapping
+            if (reshapeNoCopyIArgs != null) {
+                iArgs = reshapeNoCopyIArgs;
+            }
 
             // Pre-compute opName hash for shape key computation (avoids String.hashCode per step)
             long opNameHash = opName.hashCode() * 0x9E3779B97F4A7C15L;
