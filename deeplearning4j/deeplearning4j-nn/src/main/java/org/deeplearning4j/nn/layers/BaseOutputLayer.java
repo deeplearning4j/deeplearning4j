@@ -76,6 +76,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         ILossFunction lossFunction = layerConf().getLossFn();
 
         INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM);
+
         double score = lossFunction.computeScore(labels2d, preOut,
                 layerConf().getActivationFn(), maskArray,false);
 
@@ -171,7 +172,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Gradient gradient = new DefaultGradient();
 
         INDArray weightGradView = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
-        Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));         //TODO can we avoid cast?
+
+        Nd4j.gemm(input.castTo(weightGradView.dataType()), delta, weightGradView, true, false, 1.0, 0.0);
+
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradView);
 
         if(hasBias()) {

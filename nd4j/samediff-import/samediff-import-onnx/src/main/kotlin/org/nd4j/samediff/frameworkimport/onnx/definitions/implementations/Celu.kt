@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -65,10 +66,11 @@ class Celu : PreImportHook {
 
         // Get alpha attribute (default: 1.0)
         val alpha = (attributes.getOrDefault("alpha", 1.0) as Number).toDouble()
+        val inputDt = x.dataType()
 
         // Celu(x) = max(0, x) + min(0, alpha * (exp(x/alpha) - 1))
-        val zero = sd.constant("${opName}_zero", 0.0)
-        val alphaConst = sd.constant("${opName}_alpha", alpha)
+        val zero = sd.constant("${opName}_zero", Nd4j.scalar(inputDt, 0.0))
+        val alphaConst = sd.constant("${opName}_alpha", Nd4j.scalar(inputDt, alpha))
 
         // Positive part: max(0, x)
         val positivePart = sd.math.max("${opName}_pos", x, zero)
@@ -76,7 +78,7 @@ class Celu : PreImportHook {
         // Negative part: min(0, alpha * (exp(x/alpha) - 1))
         val xOverAlpha = sd.math.div("${opName}_xOverAlpha", x, alphaConst)
         val expPart = sd.math.exp("${opName}_exp", xOverAlpha)
-        val expMinus1 = sd.math.sub("${opName}_expMinus1", expPart, sd.constant(1.0))
+        val expMinus1 = sd.math.sub("${opName}_expMinus1", expPart, sd.constant("${opName}_one", Nd4j.scalar(inputDt, 1.0)))
         val scaled = sd.math.mul("${opName}_scaled", alphaConst, expMinus1)
         val negativePart = sd.math.min("${opName}_neg", scaled, zero)
 

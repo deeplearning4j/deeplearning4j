@@ -55,7 +55,7 @@ val names = mapOf(
         "Sinh" to "sinh",
         "Softsign" to "softsign",
         "Tan" to "tan",
-        "Tanh" to "tanh"
+        "Tanh" to "tanh",
 
 )
 
@@ -92,6 +92,13 @@ val add = OnnxMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "A","y" to "B"))),
         attributeMappingRules = booleanConstant(inputName = "inPlace",constantValue = false,argumentIndex = 0),
         opMappingRegistry = onnxOpRegistry)
+val reciprocal = OnnxMappingProcess(
+        inputFrameworkOpName = "Reciprocal",
+        opName = "Reciprocal",
+        tensorMappingRules = listOf(NDArrayMappingRule(mappingNamesToPerform = mutableMapOf("input" to "X"))),
+        attributeMappingRules = booleanConstant(inputName = "inPlace", constantValue = false, argumentIndex = 0),
+        opMappingRegistry = onnxOpRegistry)
+
 //Adagrad
 //Adam
 
@@ -629,7 +636,7 @@ val or = OnnxMappingProcess(
 )
 
 val xor = OnnxMappingProcess(
-        opName = "bitwise_xor",
+        opName = "boolean_xor",
         inputFrameworkOpName = "Xor",
         opMappingRegistry = onnxOpRegistry,
         attributeMappingRules = listOf(booleanConstant(inputName = "inPlace", constantValue = false,argumentIndex = 0)[0]),

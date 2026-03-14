@@ -79,6 +79,13 @@ public class ActivationReLU extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         INDArray dLdz;
         INDArray maxMask = (max == null || max == 0.0 ? null : in.lt(max));
         if(negativeSlope != null || threshold != null){

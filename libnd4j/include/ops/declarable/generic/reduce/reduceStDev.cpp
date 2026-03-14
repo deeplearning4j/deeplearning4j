@@ -44,6 +44,11 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   }
 
   if (block.getBArguments()->size()) {
@@ -77,6 +82,10 @@ DECLARE_SHAPE_FN(reduce_stdev) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(rank, axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   }
 
   if (block.getBArguments()->size()) {

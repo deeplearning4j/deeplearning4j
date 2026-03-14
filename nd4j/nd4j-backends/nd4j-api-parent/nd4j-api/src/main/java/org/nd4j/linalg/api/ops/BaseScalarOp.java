@@ -29,6 +29,7 @@ import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -68,6 +69,17 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         closeScalarValue();
     }
 
+    /**
+     * Create a scalar value outside of any workspace scope.
+     * Scalars are small constant values that should not be workspace-managed,
+     * as they may outlive the workspace scope and cause "leaked workspace pointer" errors.
+     */
+    private static INDArray createDetachedScalar(DataType dataType, Number value) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            return Nd4j.scalar(dataType, value);
+        }
+    }
+
     public BaseScalarOp() {
         closeScalarValue();
         // Don't allocate scalar during no-arg construction - this is used for prototype instances
@@ -82,8 +94,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        INDArray scalar = Nd4j.scalar(x.dataType(), num);
-        this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
+        this.scalarValue = createDetachedScalar(x.dataType(), num);
 
     }
 
@@ -93,8 +104,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        INDArray scalar = Nd4j.scalar(x.dataType(), num);
-        this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
+        this.scalarValue = createDetachedScalar(x.dataType(), num);
 
 
     }
@@ -104,8 +114,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
             Nd4j.getCompressor().decompressi(x);
 
         closeScalarValue();
-        INDArray scalar = Nd4j.scalar(x.dataType(), set);
-        this.scalarValue = scalar.isAttached() ? scalar.detach() : scalar;
+        this.scalarValue = createDetachedScalar(x.dataType(), set);
 
     }
 
@@ -127,8 +136,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         closeScalarValue();
-        INDArray scalarArr = Nd4j.scalar(i_v.dataType(), scalar);
-        this.scalarValue = scalarArr.isAttached() ? scalarArr.detach() : scalarArr;
+        this.scalarValue = createDetachedScalar(i_v.dataType(), scalar);
         this.xVertexId = i_v.name();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
         SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
@@ -190,8 +198,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public void setScalar(Number scalar) {
         closeScalarValue();
-        INDArray scalarArr = Nd4j.scalar(x.dataType(), scalar);
-        this.scalarValue = scalarArr.isAttached() ? scalarArr.detach() : scalarArr;
+        this.scalarValue = createDetachedScalar(x.dataType(), scalar);
     }
 
     @Override

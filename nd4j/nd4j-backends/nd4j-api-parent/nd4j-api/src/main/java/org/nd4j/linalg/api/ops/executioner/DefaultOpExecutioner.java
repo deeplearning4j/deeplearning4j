@@ -143,12 +143,19 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             if(Nd4j.getEnvironment().isDebugAndVerbose() && op.x().isView()) {
                 log.warn("Assign op running on a view. This may cause issues with the underlying buffer being modified and the view not seeing these changes");
             }
-            op2.addBArgument(op.x().isView());
-            op2.addInputArgument(op.x());
+            INDArray x = op.x();
+            INDArray z = op.z();
+            // When y is null and x/z have same length but different ranks (e.g. x=[N,1] z=[N]),
+            // reshape x to match z's shape so the custom assign op's shape validation passes.
+            if(op.y() == null && x.length() == z.length() && x.rank() != z.rank()) {
+                x = x.reshape(z.shape());
+            }
+            op2.addBArgument(x.isView());
+            op2.addInputArgument(x);
             if(op.y() != null)
                 op2.addInputArgument(op.y());
-            else op2.addInputArgument(op.x());
-            op2.addOutputArgument(op.z());
+            else op2.addInputArgument(x);
+            op2.addOutputArgument(z);
             INDArray[] result = executioner.exec(op2);
         } else {
             executioner.exec(op2, oc);
@@ -1129,6 +1136,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         val result = new ArrayList<DataBuffer>();
 
         OpaqueShapeList ptrptr;
+        Nd4j.getNativeOps().clearLastError();
         ptrptr = Nd4j.getNativeOps().calculateOutputShapes2(null, hash, opContext.contextPointer());
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0) {

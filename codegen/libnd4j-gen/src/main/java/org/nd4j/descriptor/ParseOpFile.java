@@ -152,9 +152,22 @@ public class ParseOpFile {
             Map<OpNamespace.ArgDescriptor.ArgType, List<OpNamespace.ArgDescriptor>> sortedByType = opList.getArgDescriptorList().stream().collect(Collectors.groupingBy(input -> input.getArgType()));
             Set<String> namesEncountered = new HashSet<>();
             sortedByType.entrySet().forEach(entry -> {
-                Collections.sort(entry.getValue(),Comparator.comparing(inputArg -> inputArg.getArgIndex()));
-                for(int j = 0; j < entry.getValue().size(); j++) {
-                    OpNamespace.ArgDescriptor currDescriptor = entry.getValue().get(j);
+                // Deduplicate by name within each arg type, keeping the entry with the lowest index.
+                // This handles cases where DECLARE_SHAPE_FN re-parses the same INT_ARG declarations,
+                // creating duplicate entries with the same name but potentially different indices.
+                Map<String, OpNamespace.ArgDescriptor> dedupByName = new LinkedHashMap<>();
+                for (OpNamespace.ArgDescriptor desc : entry.getValue()) {
+                    String name = desc.getName();
+                    if (!dedupByName.containsKey(name) || desc.getArgIndex() < dedupByName.get(name).getArgIndex()) {
+                        dedupByName.put(name, desc);
+                    }
+                }
+                List<OpNamespace.ArgDescriptor> deduped = new ArrayList<>(dedupByName.values());
+                Collections.sort(deduped, Comparator.comparing(inputArg -> inputArg.getArgIndex()));
+
+                // Re-index contiguously starting from 0
+                for(int j = 0; j < deduped.size(); j++) {
+                    OpNamespace.ArgDescriptor currDescriptor = deduped.get(j);
                     boolean isArrayArg = false;
                     String finalName = currDescriptor.getName();
                     if(currDescriptor.getName().contains("[")) {
@@ -162,23 +175,21 @@ public class ParseOpFile {
                         finalName = finalName.replaceAll("\\[.*\\]","").replace("*","");
                     }
 
-                    if(currDescriptor.getArgIndex() != j && !namesEncountered.contains(currDescriptor.getName())) {
-                        throw new IllegalStateException("Op name " + opList.getName() + " has incontiguous indices for type " + entry.getKey() + " with descriptor being "  +currDescriptor);
-                    } else if(currDescriptor.getArgIndex() != j && namesEncountered.contains(currDescriptor.getName())) {
-                       //skip names we already mapped
-                       System.err.println("Op name " + opList.getName() + " has incontiguous indices for type " + entry.getKey() + " with descriptor being "  +currDescriptor + " skipping");
+                    if(currDescriptor.getArgIndex() != j) {
+                        System.err.println("Op name " + opList.getName() + " re-indexing " + entry.getKey()
+                                + " arg '" + finalName + "' from index " + currDescriptor.getArgIndex() + " to " + j);
                     }
 
                     OpNamespace.ArgDescriptor.Builder newDescriptor = OpNamespace.ArgDescriptor.newBuilder()
                             .setName(finalName)
-                            .setArgIndex(currDescriptor.getArgIndex())
+                            .setArgIndex(j)
                             .setIsArray(isArrayArg)
                             .setArgType(currDescriptor.getArgType())
                             .setConvertBoolToInt(currDescriptor.getConvertBoolToInt());
 
                     sortedOpBuilder.addArgDescriptor(newDescriptor.build());
 
-                    namesEncountered.add(currDescriptor.getName());
+                    namesEncountered.add(finalName);
 
                 }
             });

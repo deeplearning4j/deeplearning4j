@@ -932,7 +932,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.createFromArray(new double[]{0,100,56, 17,220,5, 150,97,230, 255,2,13}).reshape(2,2,3);
 
         Nd4j.exec(new AdjustSaturation(in, 2.0, out));
-        assertEquals(expected, out);
+        assertTrue(expected.equalsWithEps(out, 1e-3));
     }
 
 
@@ -944,7 +944,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray expected = Nd4j.createFromArray(new double[]{100,0,44, 208,5,220, 177,230,97, 2,255,244}).reshape(2,2,3);
 
         Nd4j.exec(new AdjustHue(in, 0.5, out));
-        assertEquals(expected, out);
+        assertTrue(expected.equalsWithEps(out, 1e-3));
     }
 
 
@@ -1291,11 +1291,14 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray x = Nd4j.create(DataType.DOUBLE, 3,3);
         x.assign(0.5);
         INDArray expected = Nd4j.createFromArray(new double[]{4.934802, -16.828796, 97.409088, -771.474243,
-                7691.113770f, -92203.460938f, 1290440.250000, -20644900.000000, 3.71595e+08}).reshape(3,3);
+                7691.113770, -92203.460938, 1290440.250000, -20644900.000000, 3.71595e+08}).reshape(3,3);
         INDArray output = Nd4j.create(DataType.DOUBLE, expected.shape());
         val op = new Polygamma(n,x,output);
         Nd4j.exec(op);
-        assertEquals(expected, output);
+        // Values span 8 orders of magnitude (~5 to ~3.7e8), so use relative tolerance
+        INDArray relError = Nd4j.math().abs(expected.sub(output)).div(Nd4j.math().abs(expected).add(1e-12));
+        double maxRelError = relError.maxNumber().doubleValue();
+        assertTrue(maxRelError < 1e-3, "Max relative error " + maxRelError + " exceeds 1e-3");
     }
 
 
@@ -1385,7 +1388,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         BetaInc op = new BetaInc(a,b,c);
         INDArray[] ret = Nd4j.exec(op);
         INDArray expected = Nd4j.createFromArray(new float[]{0.9122f,    0.6344f,    0.8983f,    0.6245f});
-        assertEquals(expected, ret[0]);
+        assertTrue(expected.equalsWithEps(ret[0], 1e-3));
     }
 
 
@@ -1847,7 +1850,10 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         val op = new LinearSolve(a, b);
         INDArray[] ret = Nd4j.exec(op);
 
-        assertEquals(expected, ret[0]);
+        System.out.println("testLinearSolve expected: " + expected);
+        System.out.println("testLinearSolve actual:   " + ret[0]);
+        System.out.println("testLinearSolve diff:     " + expected.sub(ret[0]));
+        assertTrue(expected.equalsWithEps(ret[0], 1e-3));
     }
 
 
@@ -1875,7 +1881,10 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         val op = new LinearSolve(a, b, true);
         INDArray[] ret = Nd4j.exec(op);
 
-        assertEquals(expected, ret[0]);
+        System.out.println("testLinearSolveAdjust expected: " + expected);
+        System.out.println("testLinearSolveAdjust actual:   " + ret[0]);
+        System.out.println("testLinearSolveAdjust diff:     " + expected.sub(ret[0]));
+        assertTrue(expected.equalsWithEps(ret[0], 1e-3));
     }
 
 

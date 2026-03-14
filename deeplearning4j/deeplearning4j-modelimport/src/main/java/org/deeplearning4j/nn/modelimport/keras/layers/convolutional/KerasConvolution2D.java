@@ -97,6 +97,7 @@ public class KerasConvolution2D extends KerasConvolution {
                 .weightInit(init)
                 .dataFormat(dimOrder == KerasLayer.DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(KerasConvolutionUtils.getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(KerasConvolutionUtils.getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)

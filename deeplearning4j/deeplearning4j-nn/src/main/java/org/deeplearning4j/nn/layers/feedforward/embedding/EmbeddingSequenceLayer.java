@@ -33,7 +33,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
@@ -88,10 +87,9 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         if (!hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
-        INDArray indices = Nd4j.createFromArray(indexes);
-        ScatterAdd scatterAdd = new ScatterAdd(weightGradients, indices, delta);
-
-        Nd4j.getExecutioner().exec(scatterAdd);
+        for (int i = 0; i < indexes.length; i++) {
+            weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
+        }
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);

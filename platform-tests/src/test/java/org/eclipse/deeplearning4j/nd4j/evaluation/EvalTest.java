@@ -236,8 +236,6 @@ public class EvalTest extends BaseNd4jTestWithBackends {
         Evaluation evaluation2 = new Evaluation();
         evaluation2.evalTimeSeries(labels2, predicted2, labelsMask);
 
-//        System.out.println(evaluation.stats());
-//        System.out.println(evaluation2.stats());
         evaluation.stats();
         evaluation2.stats();
 

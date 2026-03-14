@@ -95,12 +95,12 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
       auto oX = x + xTadOffsets[r];
       PRAGMA_OMP_SIMD
       for (int f = 0; f < tadLength; f++) {
-        sd::LongType coords[SD_MAX_RANK];
+        sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
         sd::LongType xOffset, zOffset;
-        INDEX2COORDS(f, xTadRank, xTadShape, coords);
-        INDEX2COORDS(f, zTadRank, zTadShape, coords);
-        COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
-        COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
+        INDEX2COORDS(f, xTadRank, xTadShape, xCoords);
+        COORDS2INDEX(xTadRank, xTadStride, xCoords, xOffset);
+        INDEX2COORDS(f, zTadRank, zTadShape, zCoords);
+        COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
         oZ[zOffset] = OpType::op(oX[xOffset], scalars[0], extraParams);
       }
     }

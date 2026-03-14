@@ -58,7 +58,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform,
                                  ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                                 SD_NUMERIC_TYPES);
+                                 SD_COMMON_TYPES);
   };
 
   auto zLen = shape::length(hZShapeInfo);

@@ -103,6 +103,14 @@ public class LeakyReLU extends BaseScalarOp {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
         super.setPropertiesForFunction(properties);
+        // After reflection sets the 'alpha' field, sync the scalar value
+        // so the C++ kernel receives the correct alpha during execution.
+        // Without this, ONNX import leaves scalarValue=null (from no-arg constructor)
+        // while the alpha field has the correct value from the attribute mapping.
+        this.extraArgs = new Object[]{alpha};
+        // Use setScalar(INDArray) to avoid NPE from setScalar(Number) calling x.dataType()
+        // when x is not yet set during import-time property initialization.
+        this.setScalar(Nd4j.scalar(org.nd4j.linalg.api.buffer.DataType.FLOAT, alpha));
     }
 
 

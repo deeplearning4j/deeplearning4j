@@ -47,7 +47,6 @@ public class KerasInitilizationUtils {
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
 
 
-        // TODO: Identity and VarianceScaling need "scale" factor
         if (kerasInit != null) {
             if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_GLOROT_NORMAL_ALIAS())) {

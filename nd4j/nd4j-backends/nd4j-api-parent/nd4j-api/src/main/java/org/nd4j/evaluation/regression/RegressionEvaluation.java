@@ -248,8 +248,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         if (maskArray != null) {
             //Handle per-output masking. We are assuming *binary* masks here
-            labels = labels.mul(maskArray);
-            predictions = predictions.mul(maskArray);
+            //Detach results to avoid workspace lifecycle issues - the masked arrays
+            //are used throughout the rest of this method after the workspace closes
+            labels = labels.mul(maskArray).detach();
+            predictions = predictions.mul(maskArray).detach();
         }
 
         labelsSumPerColumn.addi(labels.sum(0).castTo(labelsSumPerColumn.dataType()));

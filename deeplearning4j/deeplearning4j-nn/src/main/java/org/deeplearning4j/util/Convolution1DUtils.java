@@ -234,17 +234,11 @@ public class Convolution1DUtils {
     public static long getOutputSizeLong(INDArray inputData, long kernel, long strides, long padding,
                                          ConvolutionMode convolutionMode, long dilation) {
         long inH = inputData.size(2);
-        long dilatedFilterSize = kernel + (kernel - 1) * (dilation - 1);
-        long outputLength;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outputLength = inH - dilatedFilterSize + 1;
-        } else if (convolutionMode == ConvolutionMode.Causal) {
-            outputLength = inH + dilatedFilterSize - 1;
-        } else {
-            throw new IllegalArgumentException("Unsupported convolution mode: " + convolutionMode);
+        long eKernel = effectiveKernelSize(kernel, dilation);
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
+            return (long) Math.ceil(inH / ((double) strides));
         }
-
-        return (outputLength + strides - 1) / strides;
+        return (inH - eKernel + 2 * padding) / strides + 1;
     }
 
     public static void validateShapes(INDArray inputData, int eKernel, int strides, int padding,

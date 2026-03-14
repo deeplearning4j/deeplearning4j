@@ -125,6 +125,8 @@ public class KerasSeparableConvolution1D extends KerasConvolution {
                 .depthMultiplier(depthMultiplier)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization)
+                .l2Bias(this.biasL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize((int) getKernelSizeFromConfigLong(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)

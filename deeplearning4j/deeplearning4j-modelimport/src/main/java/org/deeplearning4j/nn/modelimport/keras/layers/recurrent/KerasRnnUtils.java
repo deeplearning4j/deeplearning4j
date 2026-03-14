@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -31,6 +32,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
+@Slf4j
 public class KerasRnnUtils {
 
     /**
@@ -67,11 +69,10 @@ public class KerasRnnUtils {
 
     /**
      * Get recurrent weight dropout from Keras layer configuration.
-     * Non-zero dropout rates are currently not supported.
      *
      * @param conf        KerasLayerConfiguration
      * @param layerConfig dictionary containing Keras layer properties
-     * @return recurrent dropout rate
+     * @return dropout rate (1.0 - keras_dropout_value, where 1.0 means no dropout)
      * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
     public static double getRecurrentDropout(KerasLayerConfiguration conf, Map<String, Object> layerConfig)
@@ -86,15 +87,15 @@ public class KerasRnnUtils {
                 dropout = 1.0 - kerasDropout;
             }
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U())) {
-            double recurrentDropout = 1.0;
+            double recurrentDropout;
             try {
                 recurrentDropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U())).doubleValue();
             } catch (Exception e) {
                 recurrentDropout = 1.0 - ((Number) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U())).doubleValue();
             }
             if (recurrentDropout < 1.0) {
-                throw new UnsupportedKerasConfigurationException(
-                        "Dropout > 0 on recurrent connections not supported.");
+                log.warn("Recurrent dropout = {} detected. DL4J does not natively support recurrent dropout; " +
+                        "it will be ignored during inference.", 1.0 - recurrentDropout);
             }
         }
         return dropout;

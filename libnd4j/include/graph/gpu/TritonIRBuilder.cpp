@@ -175,7 +175,10 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["add_scalar"]      = {"add_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.add_scalar",      true};
   table["subtract_scalar"] = {"subtract_scalar", TritonOpCategory::UNARY_ELEMENTWISE, "custom.subtract_scalar", true};
   table["multiply_scalar"] = {"multiply_scalar", TritonOpCategory::UNARY_ELEMENTWISE, "custom.multiply_scalar", true};
+  table["mul_scalar"]      = {"mul_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.multiply_scalar", true};
   table["divide_scalar"]   = {"divide_scalar",   TritonOpCategory::UNARY_ELEMENTWISE, "custom.divide_scalar",   true};
+  table["div_scalar"]      = {"div_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.divide_scalar",   true};
+  table["sub_scalar"]      = {"sub_scalar",      TritonOpCategory::UNARY_ELEMENTWISE, "custom.subtract_scalar", true};
 
   // Comparison ops
   table["greater"]      = {"greater",      TritonOpCategory::COMPARISON,  "arith.cmpf OGT", false};

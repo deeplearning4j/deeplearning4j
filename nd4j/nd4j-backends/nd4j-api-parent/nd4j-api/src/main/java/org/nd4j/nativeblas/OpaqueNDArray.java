@@ -310,7 +310,8 @@ public class OpaqueNDArray extends Pointer {
      * @return A Pointer to the special buffer.
      */
     public static Pointer getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array).retainReference();
+        Pointer ptr = Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array);
+        return ptr != null ? ptr.retainReference() : null;
     }
 
     /**

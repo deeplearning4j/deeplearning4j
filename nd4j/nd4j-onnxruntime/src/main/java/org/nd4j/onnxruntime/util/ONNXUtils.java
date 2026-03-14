@@ -331,9 +331,11 @@ public class ONNXUtils {
             return ret;
         }
 
-        Pointer inputTensorValuesPtr = ndArray.data().pointer();
+        // Ensure contiguous memory layout for ORT by duplicating if needed
+        INDArray contiguous = ndArray.isView() ? ndArray.dup() : ndArray;
+        Pointer inputTensorValuesPtr = contiguous.data().pointer();
         Pointer inputTensorValues = inputTensorValuesPtr;
-        long sizeInBytes = ndArray.length() * ndArray.data().getElementSize();
+        long sizeInBytes = contiguous.length() * contiguous.data().getElementSize();
 
         LongPointer dims = new LongPointer(ndArray.shape());
         Value ret =  Value.CreateTensor(
@@ -432,7 +434,9 @@ public class ONNXUtils {
                 default:
                     throw new RuntimeException("Unsupported data type encountered");
             }
-            return buffer;
+            // Copy data into ND4J-managed memory before PointerScope closes
+            // and frees the ORT-owned native pointers
+            return buffer.dup();
         }
     }
 

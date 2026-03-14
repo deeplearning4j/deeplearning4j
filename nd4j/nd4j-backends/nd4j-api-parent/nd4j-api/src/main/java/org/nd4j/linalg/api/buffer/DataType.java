@@ -161,12 +161,11 @@ public enum DataType {
     }
 
     /**
-     * Return true if the value is numerical.<br>
-     * Equivalent to {@code this != UTF8 && && this != BOOL && this != COMPRESSED && this != UNKNOWN}<br>
-     * Note: Boolean values are considered numerical (0/1)<br>
+     * Return true if the value is numerical and fully supported for array creation.<br>
+     * Excludes string types (UTF8, UTF16, UTF32), BOOL, FLOAT8, COMPRESSED, and UNKNOWN.<br>
      */
     public boolean isNumerical(){
-        return this != UTF8 && this != BOOL && this != COMPRESSED && this != UNKNOWN;
+        return this != UTF8 && this != UTF16 && this != UTF32 && this != BOOL && this != FLOAT8 && this != COMPRESSED && this != UNKNOWN;
     }
 
     /**

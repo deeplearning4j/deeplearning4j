@@ -222,7 +222,9 @@ DECLARE_UNARY_CONDITIONAL_OP(HardTanhDerivative,
                              static_cast<X>(0.f))
 
 DECLARE_UNARY_CONDITIONAL_OP(HardSigmoidDerivative,
-                             d1 < static_cast<X>(-2.5f) || d1 > static_cast<X>(2.5f) ? static_cast<X>(0.f) : static_cast<X>(0.2f), d1, d1)
+                             d1 >= static_cast<X>(-2.5f) && d1 <= static_cast<X>(2.5f),
+                             static_cast<X>(0.2f),
+                             static_cast<X>(0.f))
 
 DECLARE_BINARY_MATH_OP(Remainder, sd_remainder)
 DECLARE_BINARY_MATH_OP(FMod, sd_fmod)
@@ -571,6 +573,22 @@ DECLARE_DISTANCE_OP_WITH_BOOL_SUPPORT(EuclideanDistance,
                                       (d1 - d2) * (d1 - d2),
                                       0.0f
 )
+
+// Override EuclideanDistance::postProcess to apply sqrt
+// The macro-generated postProcess returns reduction unchanged (sum of squared diffs).
+// Euclidean distance = sqrt(sum((x-y)^2)), so postProcess must apply sqrt.
+template <>
+SD_HOST_DEVICE SD_INLINE float EuclideanDistance<float, float>::postProcess(float reduction, sd::LongType n, float* extraParamsRef) {
+  return sd::math::sd_sqrt<float, float>(reduction);
+}
+template <>
+SD_HOST_DEVICE SD_INLINE double EuclideanDistance<double, double>::postProcess(double reduction, sd::LongType n, double* extraParamsRef) {
+  return sd::math::sd_sqrt<double, double>(reduction);
+}
+template <>
+SD_HOST_DEVICE SD_INLINE float16 EuclideanDistance<float16, float16>::postProcess(float16 reduction, sd::LongType n, float16* extraParamsRef) {
+  return sd::math::sd_sqrt<float16, float16>(reduction);
+}
 
 DECLARE_DISTANCE_OP_WITH_BOOL_SUPPORT(ManhattanDistance,
                                       static_cast<int>(d1) != static_cast<int>(d2) ? 1 : 0,

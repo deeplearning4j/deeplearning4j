@@ -695,7 +695,7 @@ SD_HOST sd::LongType ArrayOptions::defaultFlag() {
 }
 
 SD_HOST void ArrayOptions::resetFlags(sd::LongType *to) {
-  to[ArrayOptions::extraIndex(to)] = 1;
+  to[ArrayOptions::extraIndex(to)] = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

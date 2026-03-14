@@ -109,8 +109,8 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   // 2. Shape argument was corrupted
   if (newShape.empty()) {
     sd::LongType inputLength = shape::length(inShape);
-    if (inputLength == 1) {
-      // Valid: reshape single element to scalar
+    if (inputLength <= 1) {
+      // Valid: reshape single element or empty array to scalar
       // Create a rank-0 (scalar) shape info
       sd::LongType len = shape::shapeInfoLength(static_cast<sd::LongType>(0));  // rank 0
       // Zero-initialize to prevent uninitialized memory errors in DirectShapeTrie comparisons
@@ -119,8 +119,12 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       shape::setOrder(newShapeInfo, order);
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);
-      // Copy strides are not needed for scalars, but we need proper offset handling
-      ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
+      if (inputLength == 0 || shape::isEmptyConst(inShape)) {
+        ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_EMPTY);
+      } else {
+        // Copy strides are not needed for scalars, but we need proper offset handling
+        ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
+      }
 
       auto newShape2 = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo);
       delete[] newShapeInfo;
@@ -255,7 +259,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   }
 
   bool reshapeNoAllocSuccess = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
-  if (!reshapeNoAllocSuccess || shape::order(inShape) != order) {
+  if (!reshapeNoAllocSuccess) {
     //we need new strides if we can't handle the copy
     shape::updateStrides(newShapeInfo, order, true);
     ArrayOptions::resetFlags(newShapeInfo);

@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -90,10 +89,16 @@ public class TimeSeriesUtils {
         if (timeSeriesMask.rank() != 2)
             throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
 
-        if (timeSeriesMask.ordering() != 'f' || !Shape.hasDefaultStridesForShape(timeSeriesMask))
-            timeSeriesMask = workspaceMgr.dup(arrayType, timeSeriesMask, 'f');
+        //Scope out of workspaces for both dup and reshape to avoid stale workspace references.
+        //Without this, reshape may allocate a copy in an inactive workspace (e.g., WS_LAYER_WORKING_MEM
+        //left as 'current' but not 'active' after ffToLayerActivationsDetached).
+        try(org.nd4j.linalg.api.memory.MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            if (timeSeriesMask.ordering() != 'f' || !Shape.hasDefaultStridesForShape(timeSeriesMask))
+                timeSeriesMask = timeSeriesMask.dup('f');
 
-        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', timeSeriesMask.length(), 1));
+            INDArray reshaped = timeSeriesMask.reshape('f', timeSeriesMask.length(), 1);
+            return workspaceMgr.leverageTo(arrayType, reshaped);
+        }
     }
 
     /**
@@ -172,6 +177,10 @@ public class TimeSeriesUtils {
         if (shape[2] == 1)
             return in.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
         INDArray permuted = in.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+        //Dup to 'f' to ensure contiguous strides before reshape - reshape('f') on a
+        //non-contiguous permuted view may not correctly respect the 'f' ordering
+        if (permuted.ordering() != 'f' || !Shape.hasDefaultStridesForShape(permuted))
+            permuted = permuted.dup('f');
         return permuted.reshape('f', shape[0] * shape[2], shape[1]);
     }
 
@@ -186,6 +195,9 @@ public class TimeSeriesUtils {
             ret = in.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
         } else {
             INDArray permuted = in.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            //Dup to 'f' to ensure contiguous strides before reshape
+            if (permuted.ordering() != 'f' || !Shape.hasDefaultStridesForShape(permuted))
+                permuted = workspaceMgr.dup(arrayType, permuted, 'f');
             ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
         return workspaceMgr.leverageTo(arrayType, ret);
@@ -324,8 +336,6 @@ public class TimeSeriesUtils {
             return null;
         }
 
-
-
         if(mask.rank() == 3) {
             //Should normally not be used - but handle the per-output masking case
             return reverseTimeSeries(mask, workspaceMgr, arrayType);
@@ -334,11 +344,12 @@ public class TimeSeriesUtils {
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
-
-        Reverse reverse = new Reverse(mask,workspaceMgr.create(arrayType, mask.dataType(), mask.shape(), 'f'), 1);
-        INDArray result2 = Nd4j.getExecutioner().exec(reverse)[0];
-        return result2;
-
+        //Use reverseTimeSeries by adding a fake middle dimension of size 1
+        //This reuses the working 3D reversal logic which handles ordering correctly
+        //IMPORTANT: use mask.ordering() to preserve logical values regardless of memory layout
+        INDArray mask3d = mask.reshape(mask.ordering(), mask.size(0), 1, mask.size(1));
+        INDArray reversed3d = reverseTimeSeries(mask3d, workspaceMgr, arrayType);
+        return reversed3d.reshape(reversed3d.ordering(), mask.size(0), mask.size(1));
     }
 
     /**

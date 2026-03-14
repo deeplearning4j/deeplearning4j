@@ -49,6 +49,14 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasStride(INDArray arr) {
+        if (arr.isVector()) {
+            // For vectors, return the minimum stride to correctly traverse elements.
+            // F-order column vector [N,1] has strides [1, N] — stride(-1) returns N
+            // which would cause BLAS to read out of bounds. Use stride(0) = 1 instead.
+            int s0 = arr.stride(0);
+            int s1 = arr.rank() > 1 ? arr.stride(1) : s0;
+            return Math.min(s0, s1);
+        }
         return arr.stride(-1);
     }
 

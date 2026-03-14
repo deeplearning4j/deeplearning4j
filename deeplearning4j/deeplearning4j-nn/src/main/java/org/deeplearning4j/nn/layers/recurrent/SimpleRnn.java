@@ -65,7 +65,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
-        INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
+        INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
         INDArray out = activateHelper(last, training, false, workspaceMgr).getFirst();
         if(storeLastForTBPTT) {
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){

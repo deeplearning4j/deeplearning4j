@@ -61,7 +61,8 @@ class Where : PreImportHook {
             1 -> {
                 // Single input mode - return coordinates of true elements
                 val condition = sd.getVariable(op.inputsToOp[0])
-                sd.where(condition)
+                val conditionBool = if (condition.dataType() != DataType.BOOL) condition.castTo(DataType.BOOL) else condition
+                sd.where(conditionBool)
             }
             3 -> {
                 // Three input mode - conditional selection with type casting
@@ -71,12 +72,12 @@ class Where : PreImportHook {
 
                 val conditionCasted = condition.castTo(DataType.BOOL)
                 // Cast x and y to common type if needed
-                val castedX = x.castTo(DataType.INT64)
+                val commonType = determineCommonDataType(x.dataType(), y.dataType())
+                val castedX = if (x.dataType() != commonType) x.castTo(commonType) else x
+                val castedY = if (y.dataType() != commonType) y.castTo(commonType) else y
 
-                val castedY = y.castTo(DataType.INT64)
-
-                // Perform conditional selection
-                sd.where(castedX, castedY,conditionCasted)
+                // sd.where signature is (x, y, condition) — condition is the LAST argument
+                sd.where(castedX, castedY, conditionCasted)
             }
             else -> {
                 throw IllegalArgumentException("Where operation requires 1 or 3 inputs, got ${op.inputsToOp.size}")

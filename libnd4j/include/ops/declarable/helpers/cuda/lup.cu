@@ -688,7 +688,17 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
 
   auto n = input->sizeAt(-1);
 
-  output->assign(input);  // fill up output tensor with zeros
+  output->assign(input);  // copy input data to output
+
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs
+  // which breaks coordinate-based indexing in luNN_. Process the single matrix directly.
+  if (input->rankOf() == 2) {
+    luNN_<T, I>(context, output, permutationVectors, n);
+    NDArray::registerPrimaryUse({output}, {input, permutationVectors});
+    output->syncToDevice();
+    return;
+  }
+
   ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
   ResultSet permutations;
   if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});

@@ -222,8 +222,12 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
     fun loadFromDefinitions(mapperDeclarations: MapperNamespace.MappingDefinitionSet,
                             mappingProcessLoader: MappingProcessLoader<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>) {
         mapperDeclarations.mappingsList.forEach {
-            val process = mappingProcessLoader.createProcess(it)
-            this.registerMappingProcess(it.inputFrameworkOpName,process)
+            try {
+                val process = mappingProcessLoader.createProcess(it)
+                this.registerMappingProcess(it.inputFrameworkOpName, process)
+            } catch (e: Exception) {
+                System.err.println("WARNING: Skipping mapping for op ${it.inputFrameworkOpName} -> ${it.opName}: ${e.message}")
+            }
         }
 
     }

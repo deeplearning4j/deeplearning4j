@@ -1648,11 +1648,23 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           }
         }
         // Dump top logit from capture execution via DSP_DIAG
-        if (seg.endSlot < totalOutputSlots_ && outputSlots_[seg.endSlot] != nullptr) {
-          auto* out = outputSlots_[seg.endSlot];
-          if (out->dataType() == FLOAT32 && out->lengthOf() > 0) {
-            DSP_DIAG_DUMP_SEG_OUTPUT("CAPTURE_EXEC", seg.endSlot, out->specialBuffer(),
-                                     out->lengthOf(), seg.executionCount, stream);
+        // Use outputSlotIndices[0] to get the ACTUAL final output slot
+        // (matches GRAPH_REPLAY logic for apples-to-apples comparison)
+        {
+          int captureOutputSlot = -1;
+          if (seg.endSlot < numSlots_ && slots_[seg.endSlot].numOutputs > 0) {
+            captureOutputSlot = slots_[seg.endSlot].outputSlotIndices[0];
+          }
+          if (captureOutputSlot < 0 || captureOutputSlot >= totalOutputSlots_) {
+            captureOutputSlot = seg.endSlot;
+          }
+          if (captureOutputSlot >= 0 && captureOutputSlot < totalOutputSlots_ &&
+              outputSlots_[captureOutputSlot] != nullptr) {
+            auto* out = outputSlots_[captureOutputSlot];
+            if (out->dataType() == FLOAT32 && out->lengthOf() > 0) {
+              DSP_DIAG_DUMP_SEG_OUTPUT("CAPTURE_EXEC", captureOutputSlot, out->specialBuffer(),
+                                       out->lengthOf(), seg.executionCount, stream);
+            }
           }
         }
       }

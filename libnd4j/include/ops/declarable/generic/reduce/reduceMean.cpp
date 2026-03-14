@@ -34,10 +34,15 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   auto dimensions = *block.getIArguments();
-  
+
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   }
 
   bool keepDims = false;
@@ -67,6 +72,10 @@ DECLARE_SHAPE_FN(reduce_mean) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(shape::rank(in), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   }
 
   bool keepDims = false;

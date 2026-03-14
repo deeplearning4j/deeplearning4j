@@ -36,6 +36,7 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RealDivOp;
@@ -272,9 +273,8 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
         val x = Nd4j.create(DataType.FLOAT, 1, 2);
         val y = Nd4j.create(DataType.FLOAT, 0, 2);
 
-        val z = x.addi(y);
-        assertEquals(y, z);
-
+        // In-place addi cannot change the shape of x from [1,2] to [0,2]
+        assertThrows(IllegalStateException.class, () -> x.addi(y));
     }
 
     @ParameterizedTest
@@ -386,7 +386,9 @@ public class BasicBroadcastTests extends BaseNd4jTestWithBackends {
 
         val l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertEquals(DataType.BOOL, l.get(0).dataType());
+        // Extract the encoded data type from the shape info buffer
+        val shapeInfo = l.get(0).asLong();
+        assertEquals(DataType.BOOL, ArrayOptionsHelper.dataType(shapeInfo));
     }
 
     @Override

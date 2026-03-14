@@ -52,6 +52,28 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   LongType oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
   LongType oW = ConvolutionUtils::calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
 
+  // For SAME/CAUSAL padding modes, compute padding values.
+  // Without this, im2col with pH=0/pW=0 produces right-biased padding which
+  // gives different results from TF/Keras for odd kernel sizes (k=3, k=5, etc.).
+  // NOTE: Do NOT use calcPadding2D here — its "symmetry adjustment" can produce
+  // negative padding values for stride>1 cases. Compute directly using TF formula.
+  if (paddingMode == 1 || paddingMode == 2) {
+    const LongType eKH = (kH - 1) * dH + 1;
+    const LongType eKW = (kW - 1) * dW + 1;
+    LongType totalPadH = std::max((LongType)0, (oH - 1) * sH + eKH - iH);
+    LongType totalPadW = std::max((LongType)0, (oW - 1) * sW + eKW - iW);
+    if (paddingMode == 1) {
+      // SAME: centered padding, extra goes to bottom/right (TF convention)
+      pH = totalPadH / 2;
+      pW = totalPadW / 2;
+    } else {
+      // CAUSAL: explicit left-only padding = (kernel-1) * dilation
+      // TF pads input with this many zeros on the left, then does valid conv
+      pH = (kH - 1) * dH;
+      pW = (kW - 1) * dW;
+    }
+  }
+
   // Create col in C-order {bS, oH, oW, kH, kW, iC}.
   // im2col writes through colP strides, filling col so that
   // col[b, oh, ow, kh, kw, ic] = input patch value at that position.

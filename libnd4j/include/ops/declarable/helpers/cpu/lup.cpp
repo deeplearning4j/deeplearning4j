@@ -340,7 +340,15 @@ template <typename T, typename I>
 static void lu_(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
   auto n = input->sizeAt(-1);
 
-  output->assign(input);  // fill up output tensor with zeros
+  output->assign(input);  // copy input data to output
+
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs
+  // which breaks coordinate-based indexing in luNN_. Process the single matrix directly.
+  if (input->rankOf() == 2) {
+    luNN_<T, I>(context, output, permutationVectors, n);
+    return;
+  }
+
   ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
   ResultSet permutations;
   if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});
@@ -508,6 +516,13 @@ static sd::Status upperInverse_(LaunchContext* context, NDArray* input, NDArray*
   auto n2 = n * n;
 
   output->nullify();  // fill up output tensor with zeros
+
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.
+  if (input->rankOf() == 2) {
+    invertUpperMatrix(input, output);
+    return sd::Status::OK;
+  }
+
   auto inputPart = input->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
   auto totalCount = outputPart.size();
@@ -531,23 +546,32 @@ sd::Status upperInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArr
 
 template <typename T>
 static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
-  ResultSet lastMatrixList = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
-  for (sd::LongType i = 0; i < lastMatrixList.size(); i++) {
-    auto thisMatrix = lastMatrixList.at(i);
-    // check for symmetric
+  // For unbatched (2D) inputs, process directly to avoid rank-0 TAD issues
+  auto checkMatrix = [&](NDArray* thisMatrix) -> bool {
     for (sd::LongType r = 0; r < thisMatrix->rows(); r++)
       for (sd::LongType c = 0; c < thisMatrix->columns(); c++)
-        if (sd::math::sd_abs<T,T>(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c, r)) >
+        if (sd::math::sd_abs<T,T>(thisMatrix->e<T>(r, c) - thisMatrix->e<T>(c, r)) >
             DataTypeUtils::min_positive<T>())
           return false;
 
     NDArray *output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
-    if (sd::Status::OK != determinant(context, thisMatrix, output)) return false;
-    if (output->e<T>(0) <= T(0)) return 0;
+    if (sd::Status::OK != determinant(context, thisMatrix, output)) { delete output; return false; }
+    if (output->e<T>(0) <= T(0)) { delete output; return false; }
     NDArray reversedMatrix(*thisMatrix);
-    if (sd::Status::OK != inverse(context, thisMatrix, &reversedMatrix)) return false;
-    if (sd::Status::OK != determinant(context, &reversedMatrix, output)) return false;
-    if (output->e<T>(0) <= T(0)) return 0;
+    if (sd::Status::OK != inverse(context, thisMatrix, &reversedMatrix)) { delete output; return false; }
+    if (sd::Status::OK != determinant(context, &reversedMatrix, output)) { delete output; return false; }
+    if (output->e<T>(0) <= T(0)) { delete output; return false; }
+    delete output;
+    return true;
+  };
+
+  if (input->rankOf() == 2) {
+    return checkMatrix(input);
+  }
+
+  ResultSet lastMatrixList = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
+  for (sd::LongType i = 0; i < lastMatrixList.size(); i++) {
+    if (!checkMatrix(lastMatrixList.at(i))) return false;
   }
 
   return true;
@@ -604,17 +628,25 @@ template <typename T>
 sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* output) {
   auto tempOutput = input->dup();
   auto res = cholesky_<T>(context, input, tempOutput, false);
-  if (res != sd::Status::OK) return res;
+  if (res != sd::Status::OK) { delete tempOutput; return res; }
   auto n = input->sizeAt(-1);
   auto totalCount = output->lengthOf();
-  std::vector<T> d(n);
+
+  // For unbatched (2D) inputs, process directly to avoid rank-0 TAD issues
+  if (input->rankOf() == 2) {
+    for (sd::LongType i = 0; i < n; ++i)
+      output->r<T>(0) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(tempOutput->t<T>(i, i), T(2)));
+    delete tempOutput;
+    return sd::Status::OK;
+  }
+
   ResultSet matrices = tempOutput->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
   for (sd::LongType e = 0; e < totalCount; e++) {
     for (sd::LongType i = 0; i < n; ++i)
       output->r<T>(e) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(matrices.at(e)->t<T>(i, i), T(2)));
   }
-  delete tempOutput;  // Clean up duped array
+  delete tempOutput;
   return sd::Status::OK;
 }
 

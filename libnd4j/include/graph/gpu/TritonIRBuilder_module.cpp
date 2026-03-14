@@ -1601,9 +1601,32 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // Handles past_key/past_value (inputs 4-5) and BSHD (3D) vs BHSD (4D) layout.
       if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
         int qSrc = slot.inputSourceIndices[0];
-        int kSrc = slot.inputSourceIndices[1];
-        int vSrc = slot.inputSourceIndices[2];
+        // dot_product_attention_v2 input order: (Q=0, V=1, K=2)
+        // onnx_multi_head_attention input order: (Q=0, K=1, V=2)
+        // Detect op name to swap K/V source indices for DPA v2.
+        std::string opLowerKV = slot.opName;
+        std::transform(opLowerKV.begin(), opLowerKV.end(), opLowerKV.begin(), ::tolower);
+        bool isDpaV2 = (opLowerKV.find("dot_product_attention") != std::string::npos);
+
+        int kSrc = isDpaV2 ? slot.inputSourceIndices[2] : slot.inputSourceIndices[1];
+        int vSrc = isDpaV2 ? slot.inputSourceIndices[1] : slot.inputSourceIndices[2];
         int outSlot = slot.outputSlotIndices[0];
+
+        // onnx_multi_head_attention is a compound op: it takes 3D Q/K/V [B,S,H*D],
+        // internally reshapes to 4D, concatenates past_key/past_value with current K/V,
+        // runs attention, then reshapes output back to 3D. The Triton fused attention
+        // kernel only handles the raw attention computation on already-projected 4D inputs.
+        // Emitting the reshape+concat as MLIR is complex, so fall back to C++ for this op.
+        NDArray* qArrCheck = resolveArr(qSrc);
+        bool qIs3D = (qArrCheck && qArrCheck->rankOf() == 3);
+        if (qIs3D) {
+          DSP_DIAG(JIT, "TritonIRBuilder: fused attention '%s' at slot %d has 3D Q [%lld,%lld,%lld] "
+                    "— compound op needs reshape+concat, falling back to C++",
+                    slot.opName, si,
+                    (long long)qArrCheck->sizeAt(0), (long long)qArrCheck->sizeAt(1),
+                    (long long)qArrCheck->sizeAt(2));
+          return result;  // result.valid = false → C++ fallback
+        }
 
         // Check for past_key/past_value (inputs 4 and 5)
         bool hasPastKv = false;
@@ -1628,20 +1651,25 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Extract attention dimensions
         int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 64;
         bool qIsBSHD = false;
+
+        // Detect BSHD vs BHSD layout from op name.
+        // dot_product_attention_v2 uses BSHD: [batch, seq, heads, headDim]
+        bool opUsesBSHD = isDpaV2;
+
         if (qArr && qArr->rankOf() >= 4) {
           batchSize = static_cast<int>(qArr->sizeAt(0));
-          numQHeads = static_cast<int>(qArr->sizeAt(1));
-          seqQ = static_cast<int>(qArr->sizeAt(2));
-          headDim = static_cast<int>(qArr->sizeAt(3));
-        } else if (qArr && qArr->rankOf() == 3) {
-          // 3D BSHD: [batch, seq, numQHeads*headDim]
-          batchSize = static_cast<int>(qArr->sizeAt(0));
-          seqQ = static_cast<int>(qArr->sizeAt(1));
-          int hidden = static_cast<int>(qArr->sizeAt(2));
-          numQHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
-          if (numQHeads <= 0) numQHeads = 1;
-          headDim = hidden / numQHeads;
-          qIsBSHD = true;
+          if (opUsesBSHD) {
+            // BSHD: [batch, seq, heads, headDim]
+            seqQ = static_cast<int>(qArr->sizeAt(1));
+            numQHeads = static_cast<int>(qArr->sizeAt(2));
+            headDim = static_cast<int>(qArr->sizeAt(3));
+            qIsBSHD = true;
+          } else {
+            // BHSD: [batch, heads, seq, headDim]
+            numQHeads = static_cast<int>(qArr->sizeAt(1));
+            seqQ = static_cast<int>(qArr->sizeAt(2));
+            headDim = static_cast<int>(qArr->sizeAt(3));
+          }
         }
         // Extract KV head count from past_key (4D BHSD: [B, KvHeads, seqK, HD])
         if (hasPastKv && effectiveKArr && effectiveKArr->rankOf() == 4) {
@@ -1650,7 +1678,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         }
         if (numKvHeads <= 0) numKvHeads = numQHeads;
         if (effectiveKArr && effectiveKArr->rankOf() >= 4) {
-          seqK = static_cast<int>(effectiveKArr->sizeAt(2));
+          if (opUsesBSHD && !hasPastKv) {
+            // BSHD K/V: [batch, seqK, heads, headDim]
+            seqK = static_cast<int>(effectiveKArr->sizeAt(1));
+          } else {
+            // BHSD K/V: [batch, heads, seqK, headDim]
+            seqK = static_cast<int>(effectiveKArr->sizeAt(2));
+          }
         } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
           seqK = static_cast<int>(effectiveKArr->sizeAt(1));
         }
@@ -1676,11 +1710,30 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         auto vPtr = getSlotArgPtr(effectiveVSrc);
         auto outPtr = getSlotArgPtr(outSlot);
 
+        // Resolve attention bias/mask (input[3]) if present and non-empty
+        mlir::Value biasPtr;
+        std::vector<LongType> biasShape;
+        if (slot.numInputs > 3) {
+          int biasSrc = slot.inputSourceIndices[3];
+          NDArray* biasArr = resolveArr(biasSrc);
+          // Only use bias if it's a real tensor (not empty/scalar placeholder)
+          if (biasArr && !biasArr->isEmpty() && biasArr->rankOf() >= 2 && biasArr->lengthOf() > 1) {
+            biasPtr = getSlotArgPtr(biasSrc);
+            for (int d = 0; d < biasArr->rankOf(); d++) {
+              biasShape.push_back(biasArr->sizeAt(d));
+            }
+            DSP_DIAG(JIT, "TritonIRBuilder: fused attention bias: slot=%d rank=%d len=%lld",
+                      biasSrc, biasArr->rankOf(),
+                      (long long)biasArr->lengthOf());
+          }
+        }
+
         if (qPtr && kPtr && vPtr && outPtr) {
           emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                    batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                    scale, blockM, blockN, qIsBSHD, kIsBSHD,
-                                   mlir::Value(), std::vector<LongType>());
+                                   biasPtr, biasShape,
+                                   mlir::Value(), mlir::Value(), 0, 0);
 
           // output[0] = attention result
           DataType outDtype = FLOAT32;
@@ -2948,25 +3001,67 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             slot.numInputs < 1) {
           continue;
         }
+        // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
+        std::string opLowerGrid = slot.opName;
+        std::transform(opLowerGrid.begin(), opLowerGrid.end(), opLowerGrid.begin(), ::tolower);
+        bool isDpaV2Grid = (opLowerGrid.find("dot_product_attention") != std::string::npos);
+        bool opUsesBSHDGrid = isDpaV2Grid;
+        // For DPA v2: input[1]=V, input[2]=K; resolve K for seqK
+        int kInputIdx = isDpaV2Grid ? 2 : 1;
+
         auto qShape = resolveShape(slot.inputSourceIndices[0]);
         if (qShape.size() >= 4) {
           batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
-          numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
-          seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
+          if (opUsesBSHDGrid) {
+            // BSHD: [batch, seqQ, numHeads, headDim]
+            seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
+            numHeads = static_cast<int>(std::max<LongType>(1, qShape[2]));
+          } else {
+            // BHSD: [batch, numHeads, seqQ, headDim]
+            numHeads = static_cast<int>(std::max<LongType>(1, qShape[1]));
+            seqQ = static_cast<int>(std::max<LongType>(1, qShape[2]));
+          }
           headDim = static_cast<int>(std::max<LongType>(1, qShape[3]));
-          if (slot.numInputs >= 2) {
-            auto kShape = resolveShape(slot.inputSourceIndices[1]);
+          if (slot.numInputs > kInputIdx) {
+            auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
             if (kShape.size() >= 3) {
-              seqK = static_cast<int>(std::max<LongType>(1, kShape[2]));
+              // seqK is at dim[1] for BSHD, dim[2] for BHSD
+              int seqKDim = opUsesBSHDGrid ? 1 : 2;
+              if (static_cast<int>(kShape.size()) > seqKDim) {
+                seqK = static_cast<int>(std::max<LongType>(1, kShape[seqKDim]));
+              }
             }
           }
         } else if (qShape.size() == 3) {
+          // 3D Q: [B, seqQ, H*D] — compound attention (onnx_multi_head_attention)
           batchSize = static_cast<int>(std::max<LongType>(1, qShape[0]));
-          numHeads = 1;
           seqQ = static_cast<int>(std::max<LongType>(1, qShape[1]));
-          headDim = static_cast<int>(std::max<LongType>(1, qShape[2]));
-          if (slot.numInputs >= 2) {
-            auto kShape = resolveShape(slot.inputSourceIndices[1]);
+          int hidden = static_cast<int>(std::max<LongType>(1, qShape[2]));
+          // numHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
+          numHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+          if (numHeads <= 0) numHeads = 1;
+          headDim = hidden / numHeads;
+
+          // Check for past_key (input 4) — 4D BHSD [B,H,pastSeq,D]
+          bool hasPastKvGrid = false;
+          if (slot.numInputs > 4) {
+            auto pastKeyShape = resolveShape(slot.inputSourceIndices[4]);
+            if (pastKeyShape.size() == 4 && pastKeyShape[0] > 0 && pastKeyShape[2] > 0) {
+              hasPastKvGrid = true;
+              int pastSeq = static_cast<int>(pastKeyShape[2]);
+              // current K is input[1], 3D [B, seqKV, H*D]
+              int seqKV = 1;
+              if (slot.numInputs > kInputIdx) {
+                auto curKShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
+                if (curKShape.size() == 3) {
+                  seqKV = static_cast<int>(std::max<LongType>(1, curKShape[1]));
+                }
+              }
+              seqK = pastSeq + seqKV;  // total sequence for attention
+            }
+          }
+          if (!hasPastKvGrid && slot.numInputs > kInputIdx) {
+            auto kShape = resolveShape(slot.inputSourceIndices[kInputIdx]);
             if (kShape.size() >= 2) {
               seqK = static_cast<int>(std::max<LongType>(1, kShape[1]));
             }
@@ -3853,20 +3948,31 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (slot.numInputs < 3 || slot.numOutputs < 1) continue;
 
           int qSrc = slot.inputSourceIndices[0];
-          int kSrc = slot.inputSourceIndices[1];
-          int vSrc = slot.inputSourceIndices[2];
+          // Detect DPA v2 (input order Q,V,K) vs standard (Q,K,V)
+          std::string opLowerSec = slot.opName;
+          std::transform(opLowerSec.begin(), opLowerSec.end(), opLowerSec.begin(), ::tolower);
+          bool isDpaV2Sec = (opLowerSec.find("dot_product_attention") != std::string::npos);
+
+          // 3D Q: compound attention (onnx_multi_head_attention) — handled via dual-buffer kernel
+          auto qShapeSec = resolveShape(qSrc);
+
+          int kSrc = isDpaV2Sec ? slot.inputSourceIndices[2] : slot.inputSourceIndices[1];
+          int vSrc = isDpaV2Sec ? slot.inputSourceIndices[1] : slot.inputSourceIndices[2];
           int outSlot = slot.outputSlotIndices[0];
 
           // Check for past_key/past_value (inputs 4 and 5)
           bool hasPastKv = false;
           int pastKeySrc = -1, pastValueSrc = -1;
+          bool pastKeyIsExternal = false;
           if (slot.numInputs > 4) {
             pastKeySrc = slot.inputSourceIndices[4];
+            pastKeyIsExternal = (pastKeySrc < 0);
             auto pastKeyShape = resolveShape(pastKeySrc);
             if (pastKeyShape.size() == 4 && shapeLength(pastKeyShape) > 1) {
               hasPastKv = true;
             }
           }
+
           if (hasPastKv && slot.numInputs > 5) {
             pastValueSrc = slot.inputSourceIndices[5];
           }
@@ -3879,12 +3985,20 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           auto effectiveKShape = resolveShape(effectiveKSrc);
           int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 1;
           bool isBSHD = false;
+          bool opUsesBSHDSec = isDpaV2Sec;
 
           if (qShape.size() >= 4) {
-            // 4D BHSD: [batch, numQHeads, seqQ, headDim]
             batchSize = static_cast<int>(qShape[0]);
-            numQHeads = static_cast<int>(qShape[1]);
-            seqQ = static_cast<int>(qShape[2]);
+            if (opUsesBSHDSec) {
+              // 4D BSHD: [batch, seqQ, numQHeads, headDim]
+              seqQ = static_cast<int>(qShape[1]);
+              numQHeads = static_cast<int>(qShape[2]);
+              isBSHD = true;
+            } else {
+              // 4D BHSD: [batch, numQHeads, seqQ, headDim]
+              numQHeads = static_cast<int>(qShape[1]);
+              seqQ = static_cast<int>(qShape[2]);
+            }
             headDim = static_cast<int>(qShape[3]);
           } else if (qShape.size() == 3) {
             // 3D BSHD: [batch, seqQ, numQHeads*headDim]
@@ -3903,9 +4017,26 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           }
           // Default: MHA (KV heads = Q heads)
           if (numKvHeads <= 0) numKvHeads = numQHeads;
-          // seqK from effective K source
-          if (effectiveKShape.size() >= 4) seqK = static_cast<int>(effectiveKShape[2]);
-          else if (effectiveKShape.size() == 3) seqK = static_cast<int>(effectiveKShape[1]);
+
+          // Determine if we need dual-buffer mode (3D Q with past_key)
+          bool useDualBuffer = (qShape.size() == 3 && hasPastKv);
+          int pastSeqLen = 0, seqKVCur = 0;
+
+          if (useDualBuffer) {
+            // past_key shape is 4D BHSD: [B, kvH, pastSeq, D]
+            pastSeqLen = static_cast<int>(effectiveKShape[2]);
+            auto curKShape = resolveShape(kSrc);
+            seqKVCur = (curKShape.size() == 3) ? static_cast<int>(curKShape[1]) : 1;
+            seqK = pastSeqLen + seqKVCur;
+          } else {
+            // seqK from effective K source
+            if (effectiveKShape.size() >= 4) {
+              int seqKDim = (opUsesBSHDSec && !hasPastKv) ? 1 : 2;
+              seqK = static_cast<int>(effectiveKShape[seqKDim]);
+            } else if (effectiveKShape.size() == 3) {
+              seqK = static_cast<int>(effectiveKShape[1]);
+            }
+          }
 
           // past_key is always 4D BHSD; current key follows Q layout
           bool kIsBSHD = hasPastKv ? false : isBSHD;
@@ -3927,38 +4058,47 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (attnTile.adjustedForSharedMem && !loggedAttnTileAdjust) {
             DSP_DIAG(COMPILE, "TritonIRBuilder::buildSectionedModule: adjusted attention tiles for section [%d-%d] "
                       "to BM=%d BN=%d (headDim=%d, seqQ=%d, seqK=%d, estimatedSmem=%d, limit=%d) "
-                      "(hasPastKv=%d, numQHeads=%d, numKvHeads=%d, isBSHD=%d)",
+                      "(hasPastKv=%d, numQHeads=%d, numKvHeads=%d, isBSHD=%d, dualBuffer=%d)",
                       sec.startSlot, sec.endSlot,
                       blockM, blockN, headDim, seqQ, seqK,
                       attnTile.estimatedSharedMemBytes, attnTile.sharedMemLimitBytes,
-                      hasPastKv ? 1 : 0, numQHeads, numKvHeads, isBSHD ? 1 : 0);
+                      hasPastKv ? 1 : 0, numQHeads, numKvHeads, isBSHD ? 1 : 0,
+                      useDualBuffer ? 1 : 0);
             loggedAttnTileAdjust = true;
           }
 
           auto qPtr = getSlotArgPtr(qSrc);
-          auto kPtr = getSlotArgPtr(effectiveKSrc);
-          auto vPtr = getSlotArgPtr(effectiveVSrc);
           auto outPtr = getSlotArgPtr(outSlot);
+
+          // For dual-buffer: kPtr/vPtr = past_key/past_value (BHSD), curKPtr/curVPtr = current key/value (BSHD)
+          mlir::Value kPtr, vPtr, curKPtr, curVPtr;
+          if (useDualBuffer) {
+            // past_key/value are the main K/V buffers (BHSD layout)
+            kPtr = getSlotArgPtr(pastKeySrc);
+            vPtr = getSlotArgPtr(pastValueSrc);
+            // current key/value are the secondary buffers (3D BSHD layout)
+            curKPtr = getSlotArgPtr(kSrc);
+            curVPtr = getSlotArgPtr(vSrc);
+          } else {
+            kPtr = getSlotArgPtr(effectiveKSrc);
+            vPtr = getSlotArgPtr(effectiveVSrc);
+          }
 
           // Extract attention bias/mask from input[3] if available and non-scalar
           mlir::Value attnBiasPtr;
           std::vector<LongType> attnBiasShape;
+          DSP_DIAG(COMPILE, "TritonIRBuilder: attention slot=%d op=%s numInputs=%d numOutputs=%d "
+                    "seqQ=%d seqK=%d heads=%d/%d hd=%d hasPastKv=%d dualBuf=%d",
+                    si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
+                    seqQ, seqK, numQHeads, numKvHeads, headDim,
+                    hasPastKv ? 1 : 0, useDualBuffer ? 1 : 0);
           if (slot.numInputs > 3) {
             int biasSrc = slot.inputSourceIndices[3];
             auto bShape = resolveShape(biasSrc);
-            // Only use bias if it's a real tensor (rank >= 3, length > 1)
-            if (bShape.size() >= 3 && shapeLength(bShape) > 1) {
+            // Accept bias if rank >= 2 and non-scalar (rank 2 = [B, seqK] padding mask)
+            if (bShape.size() >= 2 && shapeLength(bShape) > 1) {
               attnBiasPtr = getSlotArgPtr(biasSrc);
               attnBiasShape = bShape;
-              if (attnBiasPtr) {
-                std::string biasShapeStr;
-                for (size_t d = 0; d < bShape.size(); d++) {
-                  if (d) biasShapeStr += ",";
-                  biasShapeStr += std::to_string(bShape[d]);
-                }
-                DSP_DIAG_SLOT(COMPILE, si, "TritonIRBuilder: attention bias at slot %d: shape=[%s] — will apply to QK scores",
-                              si, biasShapeStr.c_str());
-              }
             }
           }
 
@@ -3966,28 +4106,55 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                      batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                      scale, blockM, blockN, isBSHD, kIsBSHD,
-                                     attnBiasPtr, attnBiasShape);
+                                     attnBiasPtr, attnBiasShape,
+                                     curKPtr, curVPtr, pastSeqLen, seqKVCur);
             // output[0] = attention result (loaded from output buffer)
             DataType outDtype = resolveDtype(outSlot);
             auto loaded = loadBlock(outSlot, outDtype);
             if (loaded) ssaValues[outSlot] = loaded;
 
-            // output[1] = present_key (pass-through effective key SSA)
-            // output[2] = present_value (pass-through effective value SSA)
-            if (slot.numOutputs >= 2) {
-              if (ssaValues.count(effectiveKSrc)) {
-                ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
-              } else {
-                auto kLoaded = loadBlock(effectiveKSrc, resolveDtype(effectiveKSrc));
-                if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+            // output[1] = present_key, output[2] = present_value
+            if (useDualBuffer && slot.numOutputs >= 2) {
+              // Dual-buffer: write current K/V to present_key/value output at position pastSeq
+              int presentKeySlot = slot.outputSlotIndices[1];
+              auto presentKeyPtr = getSlotArgPtr(presentKeySlot);
+              if (presentKeyPtr && curKPtr) {
+                int totalSeq = pastSeqLen + seqKVCur;
+                emitPresentKvWrite(builder, loc, curKPtr, presentKeyPtr,
+                                   batchSize, numQHeads, numKvHeads,
+                                   pastSeqLen, seqKVCur, totalSeq, headDim);
+                auto pkLoaded = loadBlock(presentKeySlot, resolveDtype(presentKeySlot));
+                if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
               }
-            }
-            if (slot.numOutputs >= 3) {
-              if (ssaValues.count(effectiveVSrc)) {
-                ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
-              } else {
-                auto vLoaded = loadBlock(effectiveVSrc, resolveDtype(effectiveVSrc));
-                if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+              if (slot.numOutputs >= 3) {
+                int presentValSlot = slot.outputSlotIndices[2];
+                auto presentValPtr = getSlotArgPtr(presentValSlot);
+                if (presentValPtr && curVPtr) {
+                  int totalSeq = pastSeqLen + seqKVCur;
+                  emitPresentKvWrite(builder, loc, curVPtr, presentValPtr,
+                                     batchSize, numQHeads, numKvHeads,
+                                     pastSeqLen, seqKVCur, totalSeq, headDim);
+                  auto pvLoaded = loadBlock(presentValSlot, resolveDtype(presentValSlot));
+                  if (pvLoaded) ssaValues[presentValSlot] = pvLoaded;
+                }
+              }
+            } else {
+              // Non-dual-buffer: pass-through effective key/value SSA
+              if (slot.numOutputs >= 2) {
+                if (ssaValues.count(effectiveKSrc)) {
+                  ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
+                } else {
+                  auto kLoaded = loadBlock(effectiveKSrc, resolveDtype(effectiveKSrc));
+                  if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+                }
+              }
+              if (slot.numOutputs >= 3) {
+                if (ssaValues.count(effectiveVSrc)) {
+                  ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
+                } else {
+                  auto vLoaded = loadBlock(effectiveVSrc, resolveDtype(effectiveVSrc));
+                  if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+                }
               }
             }
           } else {

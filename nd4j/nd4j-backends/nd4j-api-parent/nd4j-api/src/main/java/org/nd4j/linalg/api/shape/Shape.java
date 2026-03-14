@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.shape.loop.coordinatefunction.CoordinateFunction;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.common.util.ArrayUtil;
@@ -3228,6 +3229,9 @@ public class Shape {
         int cnt = 0;
         for (val v: axis) {
             val t = v < 0 ? v + rank : v;
+            if (t < 0 || t >= rank) {
+                throw new ND4JIllegalStateException("Axis value " + v + " (normalized: " + t + ") is out of range for rank " + rank + ". Valid range: [" + (-rank) + ", " + (rank - 1) + "]");
+            }
             tmp[cnt++] =  t;
         }
 

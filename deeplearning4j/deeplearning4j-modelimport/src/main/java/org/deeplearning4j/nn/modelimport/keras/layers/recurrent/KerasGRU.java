@@ -175,6 +175,8 @@ public class KerasGRU extends KerasLayer {
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization)
+                .l2Bias(this.biasL2Regularization)
                 .dataFormat(RNNFormat.NWC);
 
         builder.setUseBias(useBias);

@@ -43,6 +43,11 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (dimensions.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
@@ -78,6 +83,10 @@ DECLARE_SHAPE_FN(reduce_prod) {
   if (block.width() > 1) {
     auto axesVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (dimensions.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 

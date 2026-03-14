@@ -246,10 +246,10 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
 
         INDArray labelsPerm = labels.permute(permuteDims);
-        INDArray dupped = labelsPerm.dup('c');
+        INDArray dupped = labelsPerm.dup('c').detach();
         INDArray lOut = dupped.reshape('c',size0, labels.size(axis));
-        INDArray pOut = predictions.permute(permuteDims).dup('c').reshape('c',size0, labels.size(axis));
-        INDArray mOut = mask == null ? null : mask.permute(permuteDims).dup('c').reshape('c',size0, labels.size(axis));
+        INDArray pOut = predictions.permute(permuteDims).dup('c').detach().reshape('c',size0, labels.size(axis));
+        INDArray mOut = mask == null ? null : mask.permute(permuteDims).dup('c').detach().reshape('c',size0, labels.size(axis));
 
         return new Triple<>(lOut, pOut, mOut);
     }

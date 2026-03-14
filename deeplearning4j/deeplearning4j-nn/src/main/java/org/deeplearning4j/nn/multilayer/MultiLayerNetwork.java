@@ -801,7 +801,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
 
             if(paramLength > 0) {
-                flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+                flattenedGradients = Nd4j.create(flattenedParams.dataType(), new long[]{1, paramLength}, 'f');
             } else if(paramLength == 0) {
                 return;
             }
@@ -1033,6 +1033,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
+        //Save the initial workspace so we can restore it after processing - prevents workspace state leakage
+        MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Should  be unnecessary (and no op), if layer is implemented correctly
 
@@ -1083,6 +1086,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 FF_CACHE
         };
         workspaceMgr.closeWorkspace(toClose);
+
+        //Restore the initial workspace to prevent workspace state from leaking to callers
+        Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
         return out;
     }
@@ -2036,6 +2042,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                 false, "Backprop");
                     }
+
 
                     for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
                         String origName = entry.getKey();

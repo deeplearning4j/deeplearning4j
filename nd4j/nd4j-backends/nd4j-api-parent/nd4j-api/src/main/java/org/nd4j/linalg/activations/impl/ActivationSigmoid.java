@@ -46,6 +46,14 @@ public class ActivationSigmoid extends BaseActivationFunction {
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
 
+        // Ensure matching ordering and data type for pairwise op
+        if (in.dataType() != epsilon.dataType()) {
+            epsilon = epsilon.castTo(in.dataType());
+        }
+        if (in.ordering() != epsilon.ordering()) {
+            epsilon = epsilon.dup(in.ordering());
+        }
+
         INDArray dLdz = in.ulike();
         Nd4j.getExecutioner().exec(new SigmoidDerivative(in, epsilon, dLdz));
 

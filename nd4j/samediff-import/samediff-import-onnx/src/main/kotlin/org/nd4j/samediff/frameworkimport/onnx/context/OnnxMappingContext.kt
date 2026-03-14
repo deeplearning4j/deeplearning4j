@@ -60,10 +60,15 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
                 .setName("value").addTensors(Onnx.TensorProto.getDefaultInstance())
                 .build()
         else if(attrValue == null) {
-            attrValue = Onnx.AttributeProto.newBuilder()
-                .setName(valueName)
-                .build()
-            println("Unable to resolve attribute for name $valueName for node ${nodeName()} for op type ${opName()}")
+            // Use the op schema default value if available (e.g., Elu alpha=1.0, LeakyRelu alpha=0.01)
+            if(attrDef.type != Onnx.AttributeProto.AttributeType.UNDEFINED) {
+                attrValue = attrDef
+            } else {
+                attrValue = Onnx.AttributeProto.newBuilder()
+                    .setName(valueName)
+                    .build()
+                println("Unable to resolve attribute for name $valueName for node ${nodeName()} for op type ${opName()}")
+            }
         }
         return OnnxIRAttr(inputAttributeDef = attrDef, inputAttributeValue = attrValue!!)
 

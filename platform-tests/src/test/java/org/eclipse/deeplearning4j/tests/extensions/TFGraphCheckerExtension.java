@@ -19,16 +19,15 @@
  */
 package org.eclipse.deeplearning4j.tests.extensions;
 
-import org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitioned0;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.nd4j.common.tests.tags.TagNames;
 
+import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase.EXECUTE_ONLY_MODELS;
 
 
 /**
@@ -48,19 +47,46 @@ public class TFGraphCheckerExtension implements ExecutionCondition {
         add(TagNames.PYTHON);
     }};
 
+    private static volatile List<String> executeOnlyModels;
+    private static volatile boolean loadAttempted;
 
+    @SuppressWarnings("unchecked")
+    private static List<String> getExecuteOnlyModels() {
+        if (!loadAttempted) {
+            synchronized (TFGraphCheckerExtension.class) {
+                if (!loadAttempted) {
+                    try {
+                        Class<?> baseClass = Class.forName(
+                                "org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase");
+                        Field field = baseClass.getField("EXECUTE_ONLY_MODELS");
+                        executeOnlyModels = (List<String>) field.get(null);
+                    } catch (ClassNotFoundException | NoClassDefFoundError | NoSuchFieldException | IllegalAccessException e) {
+                        executeOnlyModels = null;
+                    }
+                    loadAttempted = true;
+                }
+            }
+        }
+        return executeOnlyModels;
+    }
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-        if (EXECUTE_ONLY_MODELS.isEmpty() && context.getTestClass().get().getName().contains("TFGraph")
-                && !context.getDisplayName().contains("TestTFGraphAllSameDiff")
-                && !context.getDisplayName().equals("runTest(Map, Map, String, File)")) {
-            if(!EXECUTE_ONLY_MODELS.isEmpty()) {
-                if(EXECUTE_ONLY_MODELS.contains(context.getDisplayName()))
-                    return ConditionEvaluationResult.enabled("TFGraphCheckerExtension");
-                else
-                    return ConditionEvaluationResult.disabled("TFGraphCheckerExtension");
+        List<String> models = getExecuteOnlyModels();
+        if (models == null) {
+            return ConditionEvaluationResult.enabled("TFGraphCheckerExtension - TF classes not available");
+        }
+
+        // When EXECUTE_ONLY_MODELS is non-empty, filter to only those models
+        if (!models.isEmpty() && context.getTestClass().isPresent()
+                && context.getTestClass().get().getName().contains("TFGraph")) {
+            String displayName = context.getDisplayName();
+            for (String model : models) {
+                if (displayName.contains(model)) {
+                    return ConditionEvaluationResult.enabled("TFGraphCheckerExtension - model in EXECUTE_ONLY_MODELS");
+                }
             }
+            return ConditionEvaluationResult.disabled("TFGraphCheckerExtension - model not in EXECUTE_ONLY_MODELS list");
         }
 
         return ConditionEvaluationResult.enabled("TFGraphCheckerExtension");

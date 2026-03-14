@@ -68,39 +68,41 @@ public class KerasPoolingUtils {
     public static long[] mapGlobalPoolingDimensionsLong(String className, KerasLayerConfiguration conf, KerasLayer.DimOrder dimOrder)
             throws UnsupportedKerasConfigurationException {
         long[] dimensions = null;
+        // TF/channels_last: spatial dims come first after batch (NWC, NHWC, NDHWC)
+        // Theano/channels_first: spatial dims come after channels (NCW, NCHW, NCDHW)
         if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D())) {
             switch(dimOrder) {
-                case NONE:
                 case TENSORFLOW:
-                default:
-                    dimensions = new long[]{2};
+                    dimensions = new long[]{1};
                     break;
+                case NONE:
                 case THEANO:
+                default:
                     dimensions = new long[]{2};
                     break;
             }
         } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
             switch(dimOrder) {
-                case NONE:
                 case TENSORFLOW:
-                default:
-                    dimensions = new long[]{2,3};
+                    dimensions = new long[]{1, 2};
                     break;
+                case NONE:
                 case THEANO:
+                default:
                     dimensions = new long[]{2, 3};
                     break;
             }
         } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_3D())) {
             switch(dimOrder) {
-                case NONE:
                 case TENSORFLOW:
-                default:
-                    dimensions = new long[]{2,3,4};
+                    dimensions = new long[]{1, 2, 3};
                     break;
+                case NONE:
                 case THEANO:
+                default:
                     dimensions = new long[]{2, 3, 4};
                     break;
             }
@@ -125,36 +127,36 @@ public class KerasPoolingUtils {
         if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_1D())) {
             switch(dimOrder) {
-                case NONE:
                 case TENSORFLOW:
-                default:
-                    dimensions = new int[]{2};
+                    dimensions = new int[]{1};
                     break;
+                case NONE:
                 case THEANO:
+                default:
                     dimensions = new int[]{2};
                     break;
             }
         } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_2D())) {
             switch(dimOrder) {
-                case NONE:
                 case TENSORFLOW:
-                default:
-                    dimensions = new int[]{2,3};
+                    dimensions = new int[]{1, 2};
                     break;
+                case NONE:
                 case THEANO:
+                default:
                     dimensions = new int[]{2, 3};
                     break;
             }
         } else if (className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_MAX_POOLING_3D()) ||
                 className.equals(conf.getLAYER_CLASS_NAME_GLOBAL_AVERAGE_POOLING_3D())) {
             switch(dimOrder) {
-                case NONE:
                 case TENSORFLOW:
-                default:
-                    dimensions = new int[]{2,3,4};
+                    dimensions = new int[]{1, 2, 3};
                     break;
+                case NONE:
                 case THEANO:
+                default:
                     dimensions = new int[]{2, 3, 4};
                     break;
             }

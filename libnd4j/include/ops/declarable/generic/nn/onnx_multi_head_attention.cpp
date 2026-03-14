@@ -72,12 +72,22 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   if (pastValue != nullptr && (pastValue->isEmpty() || pastValue->rankOf() == 0 || pastValue->lengthOf() <= 1)) pastValue = nullptr;
   
   auto output = OUTPUT_VARIABLE(0);
-  
+
   LongType numHeads = INT_ARG(0);
   bool useCausalMask = INT_ARG(1) != 0;
-  
+
   double scale = block.numT() > 0 ? T_ARG(0) : 0.0;
-  
+
+  // Handle empty K/V inputs — no key-value pairs to attend to.
+  // This happens during the first decode step when the KV cache is empty.
+  // Zero the output and present_key/present_value since there's nothing to attend to.
+  if (key->isEmpty() || key->lengthOf() == 0 || value->isEmpty() || value->lengthOf() == 0) {
+    output->nullify();
+    if (block.outputWidth() > 1) OUTPUT_VARIABLE(1)->nullify();
+    if (block.outputWidth() > 2) OUTPUT_VARIABLE(2)->nullify();
+    return sd::Status::OK;
+  }
+
   auto batch = query->sizeAt(0);
   auto seqQ = query->sizeAt(1);
   auto hidden = query->sizeAt(2);
@@ -310,18 +320,27 @@ DECLARE_SHAPE_FN(onnx_multi_head_attention) {
       totalSeqKV += shape::sizeAt(pastKeyShape, static_cast<LongType>(2));
     }
   }
-  
+
   auto dtype = ArrayOptions::dataType(queryShape);
-  
+
+  // Handle empty K/V — produce empty present shapes with ARRAY_EMPTY flag
+  if (shape::isEmpty(keyShape) || seqKV == 0) {
+    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {batch, seqQ, hidden});
+    std::vector<LongType> presentDims = {batch, numHeads, totalSeqKV, headDim};
+    auto presentKeyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, presentDims);
+    auto presentValueShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, presentDims);
+    return SHAPELIST(outputShape, CONSTANT(presentKeyShape), CONSTANT(presentValueShape));
+  }
+
   // Output: [batch, seqQ, hidden]
   auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {batch, seqQ, hidden});
-  
+
   // Present key/value: [batch, numHeads, totalSeqKV, headDim] (BHSD for ONNX)
-  auto presentKeyShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', 
+  auto presentKeyShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c',
                                                                              {batch, numHeads, totalSeqKV, headDim});
   auto presentValueShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c',
                                                                                {batch, numHeads, totalSeqKV, headDim});
-  
+
   return SHAPELIST(outputShape, presentKeyShape, presentValueShape);
 }
 

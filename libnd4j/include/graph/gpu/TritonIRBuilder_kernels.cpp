@@ -72,7 +72,7 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
   auto cElemType = cPtrType.getPointeeType();
 
   // Determine InputPrecision for DotOp based on input types
-  auto dotPrecision = mlir::triton::InputPrecision::TF32;  // default for f32 inputs
+  auto dotPrecision = mlir::triton::InputPrecision::IEEE;  // default for f32 inputs
   bool inputIsF32 = mlir::isa<mlir::Float32Type>(aElemType);
   if (!inputIsF32) {
     // f16, bf16, int8 use IEEE — TF32 only applies to f32 inputs
@@ -284,7 +284,14 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                                 int blockM, int blockN,
                                                 bool qIsBSHD, bool kIsBSHD,
                                                 mlir::Value biasPtr,
-                                                const std::vector<LongType>& biasShape) {
+                                                const std::vector<LongType>& biasShape,
+                                                mlir::Value curKPtr, mlir::Value curVPtr,
+                                                int pastSeq, int seqKVCur) {
+  // Dual-buffer mode: when curKPtr is valid, K/V are split across two buffers:
+  //   kPtr  = past_key  [B,H,pastSeq,D]   BHSD (positions [0, pastSeq))
+  //   curKPtr = current_key [B,seqKVCur,H*D] BSHD (positions [pastSeq, seqK))
+  // seqK = pastSeq + seqKVCur (total sequence length for attention)
+  bool dualBuffer = curKPtr ? true : false;
   // GQA: numQHeads >= numKvHeads, each KV head serves (numQHeads/numKvHeads) Q heads
   if (numKvHeads <= 0) numKvHeads = numQHeads;
   int kvGroupSize = (numKvHeads > 0) ? (numQHeads / numKvHeads) : 1;
@@ -370,14 +377,38 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
         builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimConst));
     kvRowStride = kvNhTimesHd;
   } else {
-    // BHSD: [batch, numKvHeads, seqK, headDim] — use kvHeadIdx for GQA
+    // BHSD: [batch, numKvHeads, actualSeqDim, headDim] — use kvHeadIdx for GQA
+    // In dual-buffer mode, the K buffer has pastSeq positions (not total seqK).
+    // Using seqK here would shift every KV head's base offset by (seqKVCur * headDim) per head.
+    mlir::Value kvSeqDimConst;
+    if (dualBuffer) {
+      kvSeqDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, pastSeq, 32);
+    } else {
+      kvSeqDimConst = seqKConst;
+    }
     auto kvStride0 = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst,
-        builder.create<mlir::arith::MulIOp>(loc, seqKConst, headDimConst));
-    auto kvStride1 = builder.create<mlir::arith::MulIOp>(loc, seqKConst, headDimConst);
+        builder.create<mlir::arith::MulIOp>(loc, kvSeqDimConst, headDimConst));
+    auto kvStride1 = builder.create<mlir::arith::MulIOp>(loc, kvSeqDimConst, headDimConst);
     kvBase = builder.create<mlir::arith::AddIOp>(loc,
         builder.create<mlir::arith::MulIOp>(loc, batchIdx, kvStride0),
         builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, kvStride1));
     kvRowStride = headDimConst;
+  }
+
+  // Dual-buffer: compute base and stride for current key/value (BSHD layout)
+  // current_key [B, seqKVCur, numKvHeads*headDim] = [B, seqKVCur, numKvHeads, headDim] BSHD
+  // base = b * seqKVCur * numKvHeads * headDim + kvH * headDim
+  // rowStride = numKvHeads * headDim
+  mlir::Value curKvBase, curKvRowStride, pastSeqConst;
+  if (dualBuffer) {
+    auto seqKVCurConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqKVCur, 32);
+    pastSeqConst = builder.create<mlir::arith::ConstantIntOp>(loc, pastSeq, 32);
+    auto curNhTimesHd = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst, headDimConst);
+    auto curStride0 = builder.create<mlir::arith::MulIOp>(loc, seqKVCurConst, curNhTimesHd);
+    curKvBase = builder.create<mlir::arith::AddIOp>(loc,
+        builder.create<mlir::arith::MulIOp>(loc, batchIdx, curStride0),
+        builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimConst));
+    curKvRowStride = curNhTimesHd;
   }
 
   // Load Q tile [BLOCK_M, headDim]
@@ -501,12 +532,63 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
     kMask2D = builder.create<mlir::arith::AndIOp>(loc, kMask2D_row, hdMask2DBn);
   }
 
-  mlir::Value kPtrsVal = kPtrs;
-  auto kLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
-      kPtrsVal, kMask2D, mlir::Value(),
-      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-  // Cast K to f32 for computation
-  auto kLoaded = castTo(builder, loc, kLoadedRaw, f32Type);
+  mlir::Value kLoaded;
+  if (dualBuffer) {
+    // Dual-buffer K loading: past positions from kPtr (BHSD), current positions from curKPtr (BSHD)
+    // isPast mask: kIndices < pastSeq — determines which buffer to read from
+    auto pastSeqSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnType, pastSeqConst);
+    auto isPast1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+        kIndices, pastSeqSplat);
+    auto isPastExp = builder.create<mlir::triton::ExpandDimsOp>(loc, isPast1D, 1);  // [BN, 1]
+    auto isPast2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, isPastExp);
+
+    // Past K mask: isPast AND kMask2D (valid past positions with headDim masking)
+    auto pastKMask = builder.create<mlir::arith::AndIOp>(loc, isPast2D, kMask2D);
+
+    // Load from past_key buffer (kPtr) — existing pointers are already computed as kPtrs
+    auto pastKLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        kPtrs, pastKMask, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto pastKLoaded = castTo(builder, loc, pastKLoadedRaw, f32Type);
+
+    // Current K: compute adjusted indices (kIndices - pastSeq) and BSHD offsets
+    auto adjustedK = builder.create<mlir::arith::SubIOp>(loc, kIndices, pastSeqSplat);
+    auto adjustedKExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, adjustedK, 1);  // [BN, 1]
+    auto curKvRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
+        mlir::RankedTensorType::get({blockN, 1}, i32Type), curKvRowStride);
+    auto curKRowOffsets = builder.create<mlir::arith::MulIOp>(loc, adjustedKExpanded, curKvRowStrideSplat);
+    auto curKRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, curKRowOffsets);
+    auto curKOffsets2D = builder.create<mlir::arith::AddIOp>(loc, curKRowBroadcast, hdBroadcastK);
+    auto curKvBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnHdType, curKvBase);
+    auto curKFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, curKvBaseSplat, curKOffsets2D);
+
+    auto curKPtrType = mlir::cast<mlir::triton::PointerType>(curKPtr.getType());
+    auto curKPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, curKPtrType);
+    auto curKSplat = builder.create<mlir::triton::SplatOp>(loc, curKPtrTensorType, curKPtr);
+    auto curKPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curKPtrTensorType, curKSplat, curKFinalOffsets);
+
+    // Current K mask: kIndices >= pastSeq AND kIndices < seqK (AND headDim mask)
+    // Use isCurrent = !isPast (kIndices >= pastSeq)
+    auto isCur1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge,
+        kIndices, pastSeqSplat);
+    auto isCurExp = builder.create<mlir::triton::ExpandDimsOp>(loc, isCur1D, 1);
+    auto isCur2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, isCurExp);
+    auto curKMask = builder.create<mlir::arith::AndIOp>(loc, isCur2D, kMask2D);
+
+    auto curKLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        curKPtrs, curKMask, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto curKLoaded = castTo(builder, loc, curKLoadedRaw, f32Type);
+
+    // Merge: addition works because exactly one is zero per element (masked load returns 0)
+    kLoaded = builder.create<mlir::arith::AddFOp>(loc, pastKLoaded, curKLoaded);
+  } else {
+    // Single-buffer K loading (original path)
+    auto kLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        kPtrs, kMask2D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    kLoaded = castTo(builder, loc, kLoadedRaw, f32Type);
+  }
 
   // QK^T = dot(q_scaled [BM, HD], k^T [HD, BN]) -> [BM, BN]
   auto transposeOrder = builder.getDenseI32ArrayAttr({1, 0});
@@ -517,7 +599,7 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto qkZeroInit = splatConstantF32(builder, loc, f32BmBnType, 0.0f);
   auto qk = builder.create<mlir::triton::DotOp>(
       loc, f32BmBnType, qScaled, kTransposed, qkZeroInit,
-      mlir::triton::InputPrecision::TF32, /*maxNumImpreciseAcc=*/0);
+      mlir::triton::InputPrecision::IEEE, /*maxNumImpreciseAcc=*/0);
 
   // Apply key mask: set qk to -inf where kIndices >= seqK
   auto negInfSplat = splatConstantF32(builder, loc, f32BmBnType, -3.4028235e+38f);
@@ -536,11 +618,20 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
     // Determine bias strides based on rank:
     // Rank 4: [B, H, seqQ, seqK] → offset = b*H*seqQ*seqK + h*seqQ*seqK + q*seqK + k
     // Rank 3: [B, seqQ, seqK]    → offset = b*seqQ*seqK + q*seqK + k (no head dim)
+    // Rank 2: [B, seqK]          → offset = b*seqK + k (broadcasts across all Q and heads)
     int biasNumHeads = (biasRank >= 4) ? static_cast<int>(biasShape[1]) : 0;
-    int biasSeqQ = (biasRank >= 4) ? static_cast<int>(biasShape[2]) :
-                   (biasRank >= 3) ? static_cast<int>(biasShape[1]) : seqQ;
-    int biasSeqK = (biasRank >= 4) ? static_cast<int>(biasShape[3]) :
-                   (biasRank >= 3) ? static_cast<int>(biasShape[2]) : seqK;
+    int biasSeqQ, biasSeqK;
+    if (biasRank >= 4) {
+      biasSeqQ = static_cast<int>(biasShape[2]);
+      biasSeqK = static_cast<int>(biasShape[3]);
+    } else if (biasRank == 3) {
+      biasSeqQ = static_cast<int>(biasShape[1]);
+      biasSeqK = static_cast<int>(biasShape[2]);
+    } else {
+      // Rank 2: [B, seqK] — broadcast across Q positions and heads
+      biasSeqQ = 1;
+      biasSeqK = static_cast<int>(biasShape[biasRank - 1]);
+    }
 
     auto biasSeqKConst = builder.create<mlir::arith::ConstantIntOp>(loc, biasSeqK, 32);
 
@@ -646,16 +737,63 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto lNew = builder.create<mlir::arith::AddFOp>(loc, lScaled, rowSum);
 
   // Load V tile [BN, headDim]
-  auto vPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, vPtrTypeAttn);
-  auto vSplat = builder.create<mlir::triton::SplatOp>(loc, vPtrTensorType, vPtr);
-  auto vPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vPtrTensorType, vSplat, kFinalOffsets);
+  mlir::Value vLoaded;
+  if (dualBuffer && curVPtr) {
+    // Dual-buffer V loading: same split as K (past from vPtr BHSD, current from curVPtr BSHD)
+    auto pastSeqSplatV = builder.create<mlir::triton::SplatOp>(loc, i32BnType, pastSeqConst);
+    auto isPastV1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+        kIndices, pastSeqSplatV);
+    auto isPastVExp = builder.create<mlir::triton::ExpandDimsOp>(loc, isPastV1D, 1);
+    auto isPastV2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, isPastVExp);
+    auto pastVMask = builder.create<mlir::arith::AndIOp>(loc, isPastV2D, kMask2D);
 
-  mlir::Value vPtrsVal = vPtrs;
-  auto vLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
-      vPtrsVal, kMask2D, mlir::Value(),
-      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
-  // Cast V to f32 for computation
-  auto vLoaded = castTo(builder, loc, vLoadedRaw, f32Type);
+    // Past V: same offsets as past K (both share BHSD layout and base)
+    auto vPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, vPtrTypeAttn);
+    auto vSplat = builder.create<mlir::triton::SplatOp>(loc, vPtrTensorType, vPtr);
+    auto vPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vPtrTensorType, vSplat, kFinalOffsets);
+    auto pastVLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        vPtrs, pastVMask, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto pastVLoaded = castTo(builder, loc, pastVLoadedRaw, f32Type);
+
+    // Current V: BSHD offsets (same computation as current K)
+    auto adjustedKV = builder.create<mlir::arith::SubIOp>(loc, kIndices, pastSeqSplatV);
+    auto adjustedKVExpanded = builder.create<mlir::triton::ExpandDimsOp>(loc, adjustedKV, 1);
+    auto curVRowStrideSplat = builder.create<mlir::triton::SplatOp>(loc,
+        mlir::RankedTensorType::get({blockN, 1}, i32Type), curKvRowStride);
+    auto curVRowOffsets = builder.create<mlir::arith::MulIOp>(loc, adjustedKVExpanded, curVRowStrideSplat);
+    auto curVRowBroadcast = builder.create<mlir::triton::BroadcastOp>(loc, i32BnHdType, curVRowOffsets);
+    auto curVOffsets2D = builder.create<mlir::arith::AddIOp>(loc, curVRowBroadcast, hdBroadcastK);
+    auto curVBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32BnHdType, curKvBase);
+    auto curVFinalOffsets = builder.create<mlir::arith::AddIOp>(loc, curVBaseSplat, curVOffsets2D);
+
+    auto curVPtrType = mlir::cast<mlir::triton::PointerType>(curVPtr.getType());
+    auto curVPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, curVPtrType);
+    auto curVSplat = builder.create<mlir::triton::SplatOp>(loc, curVPtrTensorType, curVPtr);
+    auto curVPtrs = builder.create<mlir::triton::AddPtrOp>(loc, curVPtrTensorType, curVSplat, curVFinalOffsets);
+
+    auto isCurV1D = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::sge,
+        kIndices, pastSeqSplatV);
+    auto isCurVExp = builder.create<mlir::triton::ExpandDimsOp>(loc, isCurV1D, 1);
+    auto isCurV2D = builder.create<mlir::triton::BroadcastOp>(loc, i1BnHdType, isCurVExp);
+    auto curVMask = builder.create<mlir::arith::AndIOp>(loc, isCurV2D, kMask2D);
+
+    auto curVLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        curVPtrs, curVMask, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    auto curVLoaded = castTo(builder, loc, curVLoadedRaw, f32Type);
+
+    vLoaded = builder.create<mlir::arith::AddFOp>(loc, pastVLoaded, curVLoaded);
+  } else {
+    // Single-buffer V loading (original path)
+    auto vPtrTensorType = mlir::RankedTensorType::get({blockN, headDimPadded}, vPtrTypeAttn);
+    auto vSplat = builder.create<mlir::triton::SplatOp>(loc, vPtrTensorType, vPtr);
+    auto vPtrs = builder.create<mlir::triton::AddPtrOp>(loc, vPtrTensorType, vSplat, kFinalOffsets);
+    auto vLoadedRaw = builder.create<mlir::triton::LoadOp>(loc,
+        vPtrs, kMask2D, mlir::Value(),
+        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+    vLoaded = castTo(builder, loc, vLoadedRaw, f32Type);
+  }
 
   // acc_new = acc * splat(correction) + dot(p, V)
   // correction is [BM], need to broadcast to [BM, HD]
@@ -666,7 +804,7 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   // dot(p[BM,BN], V[BN,HD]) -> [BM, HD]
   auto pv = builder.create<mlir::triton::DotOp>(
       loc, f32BmHdType, p, vLoaded, accScaled,
-      mlir::triton::InputPrecision::TF32, /*maxNumImpreciseAcc=*/0);
+      mlir::triton::InputPrecision::IEEE, /*maxNumImpreciseAcc=*/0);
 
   // Yield for next iteration
   mlir::Value pvVal = pv, mNewVal = mNew, lNewVal = lNew;
@@ -699,9 +837,182 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
                                          mlir::triton::EvictionPolicy::NORMAL);
 
   DSP_DIAG(JIT, "TritonIRBuilder: emitted fused attention kernel batch=%d qHeads=%d kvHeads=%d seqQ=%d seqK=%d "
-            "headDim=%d scale=%f BM=%d BN=%d kvGroupSize=%d hasBias=%d",
+            "headDim=%d scale=%f BM=%d BN=%d kvGroupSize=%d hasBias=%d dualBuffer=%d",
             batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim, scale, blockM, blockN, kvGroupSize,
-            biasPtr ? 1 : 0);
+            biasPtr ? 1 : 0, dualBuffer ? 1 : 0);
+}
+
+// ─── Present KV write (for compound attention ops) ──────────────────────────
+//
+// Writes current key/value (BSHD, 3D [B,seqKV,H*D]) to present_key/value
+// output buffer (BHSD, 4D [B,H,totalSeq,D]) at position pastSeq.
+// Only writes seqKV new positions — scatterKvEntries reads only the last position.
+//
+// Grid: pid0 = batch * numKvHeads + kvHeadIdx (same decomposition as attention kernel)
+//        pid1 = tile index over seqKV positions
+// Each block copies BLOCK_S positions × headDim elements.
+
+void TritonIRBuilder::emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Location loc,
+                                          mlir::Value curPtr, mlir::Value presentPtr,
+                                          int batchSize, int numQHeads, int numKvHeads,
+                                          int pastSeq, int seqKV, int totalSeq, int headDim) {
+  // This function is called WITHIN the attention kernel (same tt.func).
+  // Grid is attention's: pid0 = b * numQHeads + qHeadIdx, pid1 = seqQ tile.
+  // We decompose pid0 to get batch and qHeadIdx, then map qHeadIdx → kvHeadIdx.
+  // Only threads where pid1 == 0 execute the write (avoid redundant writes).
+  // For GQA: only write when qHeadIdx % kvGroupSize == 0 (first Q head per KV group).
+  auto i32Type = builder.getI32Type();
+  auto i1Type = builder.getI1Type();
+
+  int headDimPadded = headDim;
+  if (headDimPadded > 0 && (headDimPadded & (headDimPadded - 1)) != 0) {
+    int p = 1;
+    while (p < headDimPadded) p <<= 1;
+    headDimPadded = p;
+  }
+  bool needsHdMask = (headDimPadded != headDim);
+
+  // Use the attention kernel's program IDs
+  auto pid0 = builder.create<mlir::triton::GetProgramIdOp>(
+      loc, i32Type, mlir::triton::ProgramIDDim::X);
+  auto pid1 = builder.create<mlir::triton::GetProgramIdOp>(
+      loc, i32Type, mlir::triton::ProgramIDDim::Y);
+
+  // Only execute on pid1 == 0 to avoid redundant writes across Q tiles
+  auto zero = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32);
+  auto isPid1Zero = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq, pid1, zero);
+
+  // Wrap the entire write in an if (pid1 == 0) block
+  auto ifOp = builder.create<mlir::scf::IfOp>(loc, isPid1Zero, /*withElseRegion=*/false);
+  builder.setInsertionPointToStart(&ifOp.getThenRegion().front());
+
+  // Decompose pid0: batch = pid0 / numQHeads, qHeadIdx = pid0 % numQHeads
+  auto numQHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numQHeads, 32);
+  auto batchIdx = builder.create<mlir::arith::DivSIOp>(loc, pid0, numQHeadsConst);
+  auto qHeadIdx = builder.create<mlir::arith::RemSIOp>(loc, pid0, numQHeadsConst);
+
+  // For GQA: kvHeadIdx = qHeadIdx / kvGroupSize. Only write when qHeadIdx % kvGroupSize == 0.
+  int kvGroupSize = (numKvHeads > 0) ? (numQHeads / numKvHeads) : 1;
+  if (kvGroupSize < 1) kvGroupSize = 1;
+
+  mlir::Value kvHeadIdx;
+  if (kvGroupSize > 1) {
+    auto kvGroupConst = builder.create<mlir::arith::ConstantIntOp>(loc, kvGroupSize, 32);
+    kvHeadIdx = builder.create<mlir::arith::DivSIOp>(loc, qHeadIdx, kvGroupConst);
+    // Only first Q head in group writes
+    auto remainder = builder.create<mlir::arith::RemSIOp>(loc, qHeadIdx, kvGroupConst);
+    auto isFirstInGroup = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::eq, remainder, zero);
+    auto innerIf = builder.create<mlir::scf::IfOp>(loc, isFirstInGroup, /*withElseRegion=*/false);
+    builder.setInsertionPointToStart(&innerIf.getThenRegion().front());
+  } else {
+    kvHeadIdx = qHeadIdx;
+  }
+
+  auto headDimConst = builder.create<mlir::arith::ConstantIntOp>(loc, headDim, 32);
+  auto numKvHeadsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numKvHeads, 32);
+  auto seqKVConst = builder.create<mlir::arith::ConstantIntOp>(loc, seqKV, 32);
+  auto totalSeqConst = builder.create<mlir::arith::ConstantIntOp>(loc, totalSeq, 32);
+  auto pastSeqConst = builder.create<mlir::arith::ConstantIntOp>(loc, pastSeq, 32);
+
+  // For decode (seqKV=1), just write a single row of headDim elements per (batch, kvHead)
+  // Range over headDim (columns)
+  auto i32HdType = mlir::RankedTensorType::get({headDimPadded}, i32Type);
+  auto rangeHd = builder.create<mlir::triton::MakeRangeOp>(loc, i32HdType, 0, headDimPadded);
+
+  // headDim mask
+  mlir::Value hdMask;
+  if (needsHdMask) {
+    auto headDimSplatHd = builder.create<mlir::triton::SplatOp>(loc, i32HdType, headDimConst);
+    hdMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt,
+        rangeHd, headDimSplatHd);
+  }
+
+  // Loop over seqKV positions (usually seqKV=1 for decode, so this is just one iteration)
+  auto seqKVVal = builder.create<mlir::arith::ConstantIntOp>(loc, seqKV, 32);
+  auto oneConst = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 32);
+
+  auto forOp = builder.create<mlir::scf::ForOp>(loc, zero, seqKVVal, oneConst);
+  builder.setInsertionPointToStart(forOp.getBody());
+  auto sIdx = forOp.getInductionVar();  // current position in seqKV
+
+  // Source: curPtr [B, seqKV, numKvHeads*headDim] BSHD (3D)
+  // offset = b * seqKV * numKvHeads * headDim + sIdx * numKvHeads * headDim + kvH * headDim + rangeHd
+  auto nhTimesHd = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst, headDimConst);
+  auto srcStride0 = builder.create<mlir::arith::MulIOp>(loc, seqKVConst, nhTimesHd);
+  auto srcBatchOff = builder.create<mlir::arith::MulIOp>(loc, batchIdx, srcStride0);
+  auto srcSeqOff = builder.create<mlir::arith::MulIOp>(loc, sIdx, nhTimesHd);
+  auto srcHeadOff = builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, headDimConst);
+  auto srcBase = builder.create<mlir::arith::AddIOp>(loc, srcBatchOff,
+      builder.create<mlir::arith::AddIOp>(loc, srcSeqOff, srcHeadOff));
+
+  auto srcBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, srcBase);
+  auto srcOffsets = builder.create<mlir::arith::AddIOp>(loc, srcBaseSplat, rangeHd);
+
+  auto curPtrType = mlir::cast<mlir::triton::PointerType>(curPtr.getType());
+  auto srcPtrTensorType = mlir::RankedTensorType::get({headDimPadded}, curPtrType);
+  auto srcSplat = builder.create<mlir::triton::SplatOp>(loc, srcPtrTensorType, curPtr);
+  auto srcPtrs = builder.create<mlir::triton::AddPtrOp>(loc, srcPtrTensorType, srcSplat, srcOffsets);
+
+  auto i1HdType = mlir::RankedTensorType::get({headDimPadded}, i1Type);
+  mlir::Value loadMask;
+  if (needsHdMask) {
+    loadMask = hdMask;
+  } else {
+    // All true mask
+    auto trueConst = builder.create<mlir::arith::ConstantIntOp>(loc, 1, 1);
+    loadMask = builder.create<mlir::triton::SplatOp>(loc, i1HdType, trueConst);
+  }
+
+  auto loaded = builder.create<mlir::triton::LoadOp>(loc,
+      srcPtrs, loadMask, mlir::Value(),
+      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+
+  // Destination: presentPtr [B, numKvHeads, totalSeq, headDim] BHSD
+  // offset = b * numKvHeads * totalSeq * headDim + kvH * totalSeq * headDim + (pastSeq + sIdx) * headDim + rangeHd
+  auto totalHd = builder.create<mlir::arith::MulIOp>(loc, totalSeqConst, headDimConst);
+  auto dstStride0 = builder.create<mlir::arith::MulIOp>(loc, numKvHeadsConst, totalHd);
+  auto dstBatchOff = builder.create<mlir::arith::MulIOp>(loc, batchIdx, dstStride0);
+  auto dstHeadOff = builder.create<mlir::arith::MulIOp>(loc, kvHeadIdx, totalHd);
+  auto dstSeqIdx = builder.create<mlir::arith::AddIOp>(loc, pastSeqConst, sIdx);
+  auto dstSeqOff = builder.create<mlir::arith::MulIOp>(loc, dstSeqIdx, headDimConst);
+  auto dstBase = builder.create<mlir::arith::AddIOp>(loc, dstBatchOff,
+      builder.create<mlir::arith::AddIOp>(loc, dstHeadOff, dstSeqOff));
+
+  auto dstBaseSplat = builder.create<mlir::triton::SplatOp>(loc, i32HdType, dstBase);
+  auto dstOffsets = builder.create<mlir::arith::AddIOp>(loc, dstBaseSplat, rangeHd);
+
+  auto presentPtrType = mlir::cast<mlir::triton::PointerType>(presentPtr.getType());
+  auto dstPtrTensorType = mlir::RankedTensorType::get({headDimPadded}, presentPtrType);
+  auto dstSplat = builder.create<mlir::triton::SplatOp>(loc, dstPtrTensorType, presentPtr);
+  auto dstPtrs = builder.create<mlir::triton::AddPtrOp>(loc, dstPtrTensorType, dstSplat, dstOffsets);
+
+  // Cast if types differ
+  mlir::Value storeVal = loaded;
+  auto srcElemType = curPtrType.getPointeeType();
+  auto dstElemType = presentPtrType.getPointeeType();
+  if (srcElemType != dstElemType) {
+    storeVal = castTo(builder, loc, loaded, dstElemType);
+  }
+
+  builder.create<mlir::triton::StoreOp>(loc, dstPtrs, storeVal, loadMask,
+                                         mlir::triton::CacheModifier::NONE,
+                                         mlir::triton::EvictionPolicy::NORMAL);
+
+  // End for loop
+  builder.setInsertionPointAfter(forOp);
+
+  // End GQA guard if needed
+  if (kvGroupSize > 1) {
+    // Builder is inside innerIf, move after it
+    auto* innerIfBlock = builder.getBlock()->getParentOp();
+    builder.setInsertionPointAfter(innerIfBlock);
+  }
+
+  // End pid1==0 guard
+  builder.setInsertionPointAfter(ifOp);
+
+  DSP_DIAG(JIT, "TritonIRBuilder: emitted present KV write batch=%d qHeads=%d kvHeads=%d pastSeq=%d seqKV=%d totalSeq=%d headDim=%d",
+            batchSize, numQHeads, numKvHeads, pastSeq, seqKV, totalSeq, headDim);
 }
 
 }  // namespace graph

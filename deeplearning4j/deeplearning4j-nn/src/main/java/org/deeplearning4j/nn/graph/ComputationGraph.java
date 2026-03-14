@@ -1422,8 +1422,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
                 vertexLayer.setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum]);
 
-                score += ((IOutputLayer) vertexLayer).computeScore(r, true, workspaceMgr);
-
+                try(MemoryWorkspace wsWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                    score += ((IOutputLayer) vertexLayer).computeScore(r, true, workspaceMgr);
+                }
 
                 //Only want to add l1/l2 component once...
                 r = 0.0;
@@ -2407,6 +2408,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     out = features[vIdx];
 
                 } else {
+                    try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
 
                     if (fwdPassType == FwdPassType.STANDARD) {
                         //Standard feed-forward case
@@ -2492,6 +2494,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     } else {
                         throw new IllegalArgumentException("Unsupported forward pass type for this method: " + fwdPassType);
                     }
+
+                    }  // close wsFFWorking
 
                     validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
                 }
@@ -2835,10 +2839,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (traceLog) {
                     log.trace("Completed backprop: {} (\"{}\") - {}", i, vertexName, current.getClass().getSimpleName());
                 }
+
+                //Close activation gradient workspaces that are no longer needed
+                if (closeAtEndIteraton[i] != null) {
+                    for (MemoryWorkspace wsAct : closeAtEndIteraton[i]) {
+                        LayerWorkspaceMgr wsm = openActivationsWorkspaces.remove(wsAct);
+                        wsAct.close();
+                        if (wsm != null)
+                            freeWorkspaceManagers.add(wsm);
+                    }
+                }
             }
         } catch (Throwable t2) {
             t = t2;
         } finally {
+            //Close any remaining open activation gradient workspaces
+            for (MemoryWorkspace wsAct : openActivationsWorkspaces.keySet()) {
+                try {
+                    wsAct.close();
+                } catch (Exception e) {
+                    log.warn("Error closing activation gradient workspace", e);
+                }
+            }
+            openActivationsWorkspaces.clear();
+
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
             if(t != null){
@@ -3128,7 +3152,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
-            score += ((LayerVertex) gv).computeScore(r, training, mgr);
+            try(MemoryWorkspace wsWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                score += ((LayerVertex) gv).computeScore(r, training, mgr);
+            }
 
             //Only want to add l1/l2 once...
             r = 0.0;
@@ -3198,41 +3224,40 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         setInputs(dataSet.getFeatures());
 
         //Need to feed forward, but not the output layers
-        //TODO maybe optimize? We only need *some* of the activations in the WS...
-        //mgr.keepOpen(ArrayType.values());
-        ffToLayerActivationsInWS(false, vertices.length - 1, getOutputLayerIndices(), FwdPassType.STANDARD, false,
-                dataSet.getFeatures(), dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays(), false);
+        try(MemoryWorkspace wsAllActivations = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+            ffToLayerActivationsInWS(false, vertices.length - 1, getOutputLayerIndices(), FwdPassType.STANDARD, false,
+                    dataSet.getFeatures(), dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays(), false);
 
-        INDArray[] labels = dataSet.getLabels();
-        setLabels(labels);
+            INDArray[] labels = dataSet.getLabels();
+            setLabels(labels);
 
+            double r = (addRegularizationTerms ? calcRegularizationScore(true) : 0.0);
+            int i = 0;
+            for (String s : configuration.getNetworkOutputs()) {
+                GraphVertex gv = verticesMap.get(s);
+                Layer outLayer = gv.getLayer();
+                if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
+                    throw new UnsupportedOperationException(
+                            "Cannot calculate score: vertex \"" + s + "\" is not an output layer");
+                }
 
-        double r = (addRegularizationTerms ? calcRegularizationScore(true) : 0.0);
-        int i = 0;
-        for (String s : configuration.getNetworkOutputs()) {
-            GraphVertex gv = verticesMap.get(s);
-            Layer outLayer = gv.getLayer();
-            if (outLayer == null || !(outLayer instanceof IOutputLayer)) {
-                throw new UnsupportedOperationException(
-                        "Cannot calculate score: vertex \"" + s + "\" is not an output layer");
+                IOutputLayer ol = (IOutputLayer) outLayer;
+                ol.setLabels(labels[i++]);
+
+                INDArray scoreCurrLayer;
+                try(MemoryWorkspace wsWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                    scoreCurrLayer = ((LayerVertex) gv).computeScoreForExamples(r, mgr);
+                }
+
+                if (out == null)
+                    out = scoreCurrLayer.detach();
+                else
+                    out.addi(scoreCurrLayer);
+
+                //Only want to add l1/l2 once...
+                r = 0.0;
             }
-
-            IOutputLayer ol = (IOutputLayer) outLayer;
-            ol.setLabels(labels[i++]);
-
-            INDArray scoreCurrLayer;;
-
-            scoreCurrLayer =((LayerVertex) gv).computeScoreForExamples(r, mgr);
-
-            if (out == null)
-                out = scoreCurrLayer.detach();
-            else
-                out.addi(scoreCurrLayer);
-
-            //Only want to add l1/l2 once...
-            r = 0.0;
         }
-
 
         if (dataSet.hasMaskArrays())
             clearLayerMaskArrays();

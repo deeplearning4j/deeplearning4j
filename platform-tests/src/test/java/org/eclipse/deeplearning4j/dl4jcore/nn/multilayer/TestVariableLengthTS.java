@@ -260,17 +260,18 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                 }
             }
 
-            //Finally: check that the activations for the first two (dense) layers are zero at the appropriate time step
-            FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
+            //Finally: check that the activations for the first two (dense) layers are zero at the appropriate time step.
+            //The 2D DenseLayer output uses F-order interleaved row ordering after RnnToFeedForwardPreProcessor:
+            //row = batch_idx + time_idx * nExamples. So for batch j, the masked time step 4 is at row j + 4*nExamples.
             INDArray l0Before = activations2.get(1);
             INDArray l1Before = activations2.get(2);
-            INDArray l0After = temp.preProcess(l0Before, nExamples, LayerWorkspaceMgr.noWorkspaces());
-            INDArray l1After = temp.preProcess(l1Before, nExamples, LayerWorkspaceMgr.noWorkspaces());
-
             for (int j = 0; j < nExamples; j++) {
+                int maskedRow = j + 4 * nExamples;
                 for (int k = 0; k < nIn; k++) {
-                    assertEquals(0.0, l0After.getDouble(j, k, 4), 0.0);
-                    assertEquals(0.0, l1After.getDouble(j, k, 4), 0.0);
+                    assertEquals(0.0, l0Before.getDouble(maskedRow, k), 0.0,
+                            "nExamples=" + nExamples + " j=" + j + " k=" + k + " l0Before[row=" + maskedRow + ",k]=" + l0Before.getDouble(maskedRow, k));
+                    assertEquals(0.0, l1Before.getDouble(maskedRow, k), 0.0,
+                            "nExamples=" + nExamples + " j=" + j + " k=" + k + " l1Before[row=" + maskedRow + ",k]=" + l1Before.getDouble(maskedRow, k));
                 }
             }
         }
@@ -466,7 +467,12 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                     test_reverse()
             */
             INDArray inReverseExp = reverseTimeSeries(in);
-            //verified with numpy: numpy.flip(..) is the equivalent numpy operation.
+            //Reversed along time dimension (axis 1).
+            //linspace(1,30,30).reshape('f',3,10) gives F-order layout:
+            //  row0: [1, 4, 7, 10, 13, 16, 19, 22, 25, 28]
+            //  row1: [2, 5, 8, 11, 14, 17, 20, 23, 26, 29]
+            //  row2: [3, 6, 9, 12, 15, 18, 21, 24, 27, 30]
+            //Reversed within each row:
             float[][] array = {{28, 25, 22, 19, 16, 13, 10, 7, 4, 1},
                     {29, 26, 23, 20, 17, 14, 11, 8, 5, 2},
                     {30, 27, 24, 21, 18, 15, 12, 9, 6, 3}};

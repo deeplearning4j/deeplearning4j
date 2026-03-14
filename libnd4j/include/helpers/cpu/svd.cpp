@@ -55,7 +55,7 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-  std::vector<sd::LongType> sShape = {_diagSize, 1};
+  std::vector<sd::LongType> sShape = {_diagSize};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
   _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
   _m = NDArray(matrix.ordering(), mShape, matrix.dataType(), matrix.getContext());
@@ -103,7 +103,7 @@ SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool 
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-  std::vector<sd::LongType> sShape = {_diagSize, 1};
+  std::vector<sd::LongType> sShape = {_diagSize};
   std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
 
   _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
@@ -701,7 +701,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   NDArray l(_u.ordering(),lShape, _u.dataType(), _u.getContext());
   NDArray f(_u.ordering(), fShape, _u.dataType(), _u.getContext());
 
-  if (n < _switchSize) {
+  if (n <= _switchSize) {
     NDArray *mViewPtr = _m({col1, col1 + n + 1, col1, col1 + n}, true);
     JacobiSVD<T> jac(*mViewPtr, _calcU, _calcV, _fullUV);
     delete mViewPtr;
@@ -738,7 +738,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     NDArray *firstPtr = diag({col1 + shift, col1 + shift + n, 0, 0}, true);
     NDArray first = *firstPtr;
     delete firstPtr;
-    NDArray *secondPtr = jac._s({0, n, 0, 0}, true);
+    NDArray *secondPtr = jac._s({0, n}, true);
     NDArray second = *secondPtr;
     delete secondPtr;
     first.assign(&second);
@@ -947,7 +947,7 @@ template <typename T>
 void SVD<T>::evalData(NDArray& matrix) {
   const T almostZero = DataTypeUtils::min_positive<T>();
 
-  if (matrix.sizeAt(1) < _switchSize) {
+  if (matrix.sizeAt(1) <= _switchSize) {
     JacobiSVD<T> jac(matrix, _calcU, _calcV, _fullUV);
 
     if (_calcU) _u = jac._u;
@@ -983,7 +983,7 @@ void SVD<T>::evalData(NDArray& matrix) {
     T a = math::sd_abs<T,T>(_m.t<T>(i, i));
     _s.template r<T>(i) = a * scale;
     if (a < almostZero) {
-      NDArray *sNullifyPtr = _s({i + 1, _diagSize, 0, 0});
+      NDArray *sNullifyPtr = _s({i + 1, _diagSize});
       sNullifyPtr->nullify();
       delete sNullifyPtr;
       break;

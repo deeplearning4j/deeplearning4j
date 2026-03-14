@@ -127,7 +127,7 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
     public boolean validateDataTypes(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         INDArray y = oc != null ? oc.getInputArray(1) : y();
-        if (y != null)
+        if (y != null && !y.dataType().isIntType())
             Preconditions.checkArgument(x.dataType()  == y.dataType(),"Op.X type must be the same as Op.Y:" +
                             " x.dataType=%s, y.dataType=%s, op=%s", x.dataType(), y.dataType(), getClass().getName());
 

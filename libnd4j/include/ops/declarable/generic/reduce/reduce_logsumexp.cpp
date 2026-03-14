@@ -33,6 +33,11 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);
+    // TF semantics: empty axis input means no reduction (return input unchanged)
+    if (axes.empty()) {
+      output->assign(input);
+      return sd::Status::OK;
+    }
   } else if (block.getIArguments()->size() > 0) {
     axes = *block.getIArguments();
   }
@@ -99,6 +104,10 @@ DECLARE_SHAPE_FN(reduce_logsumexp) {
   if (block.width() > 1) {
     auto axisVector = INPUT_VARIABLE(1);
     helpers::adjustAxis(input->rankOf(), axisVector, axes);
+    // TF semantics: empty axis input means no reduction (return input shape unchanged)
+    if (axes.empty()) {
+      return SHAPELIST(CONSTANT(inputShape->at(0)));
+    }
   } else if (block.getIArguments()->size() > 0) {
     axes = *block.getIArguments();
   }

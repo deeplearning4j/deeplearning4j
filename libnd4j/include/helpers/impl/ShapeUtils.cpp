@@ -665,6 +665,12 @@ LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDA
 
   shape::setOrder(shapeInfoNew, arr->ordering());
   ArrayOptions::setDataType(shapeInfoNew, arr->dataType());
+
+  // Preserve ARRAY_EMPTY flag if input has it
+  if (arr->isEmpty() && !shape::isEmpty(shapeInfoNew)) {
+    ArrayOptions::togglePropertyBit(shapeInfoNew, ARRAY_EMPTY);
+  }
+
   return shapeInfoNew;
 }
 

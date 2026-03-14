@@ -52,9 +52,9 @@ BROADCASTABLE_OP_IMPL(divide, 0, 0) {
 
   // Fast path: same shape - skip BroadcastHelper dispatch overhead
   if (x->isSameShape(y)) {
-    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
-    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
-    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
+    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo()) && !shape::isViewConst(x->shapeInfo());
+    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo()) && !shape::isViewConst(y->shapeInfo());
+    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo()) && !shape::isViewConst(z->shapeInfo());
 
     if (xContiguous && yContiguous && zContiguous) {
       helpers::fusedDivideContiguous(*x, *y, *z);

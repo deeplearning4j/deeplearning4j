@@ -431,6 +431,13 @@ class TritonIRBuilder {
   // Emit a fused attention kernel (Flash Attention pattern with online softmax)
   // Grid: (batch * num_heads, ceil(seqQ / BLOCK_M)) — 2D
   // Takes Q, K, V pointers and produces output; uses online softmax to avoid O(seq^2) storage
+  // Emit a fused attention kernel (Flash Attention pattern with online softmax).
+  // Grid: (batch * num_heads, ceil(seqQ / BLOCK_M)) — 2D.
+  // Supports optional dual-buffer K/V reading for compound attention ops
+  // (onnx_multi_head_attention) where past_key and current_key are in separate
+  // buffers. When curKPtr is valid, positions [0,pastSeq) read from kPtr (BHSD)
+  // and positions [pastSeq,seqK) read from curKPtr (BSHD). When curKPtr is null,
+  // all positions read from kPtr (existing single-buffer behavior).
   static void emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::Location loc,
                                         mlir::Value qPtr, mlir::Value kPtr,
                                         mlir::Value vPtr, mlir::Value outPtr,
@@ -440,7 +447,20 @@ class TritonIRBuilder {
                                         int blockM, int blockN,
                                         bool qIsBSHD, bool kIsBSHD,
                                         mlir::Value biasPtr,
-                                        const std::vector<LongType>& biasShape);
+                                        const std::vector<LongType>& biasShape,
+                                        mlir::Value curKPtr,
+                                        mlir::Value curVPtr,
+                                        int pastSeq,
+                                        int seqKVCur);
+
+  // Emit present_key/value writes for compound attention ops.
+  // Writes current_key (BSHD/3D) to present_key (BHSD) output buffer at position pastSeq.
+  // Only writes the NEW token positions — scatterKvEntries reads only the last position.
+  // Grid: uses same pid0 decomposition as attention kernel (b * numQHeads + qHeadIdx).
+  static void emitPresentKvWrite(mlir::OpBuilder& builder, mlir::Location loc,
+                                  mlir::Value curPtr, mlir::Value presentPtr,
+                                  int batchSize, int numQHeads, int numKvHeads,
+                                  int pastSeq, int seqKV, int totalSeq, int headDim);
 
  public:
   // ── Section emitters (TritonIRBuilder_sections.cpp) ──

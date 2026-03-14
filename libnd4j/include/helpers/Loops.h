@@ -1069,7 +1069,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
           std::is_same_v<OpType, simdOps::Assign<X, Z>>;
 
       if constexpr (expects_x_ptr) {
-        result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
+        result = OpType::op(x[xOffset], reinterpret_cast<X*>(extraParams));
       } else {
         // Operations that expect Z* (bool*): IsFinite, IsInfOrNan, etc.
         result = OpType::op(x[xOffset], static_cast<Z*>(nullptr));

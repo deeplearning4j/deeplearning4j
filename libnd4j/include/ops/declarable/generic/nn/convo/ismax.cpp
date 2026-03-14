@@ -45,7 +45,7 @@ CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {
 DECLARE_SYN(IsMax, ismax);
 
 DECLARE_TYPES(ismax) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::BOOL);
+  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::ANY);
 }
 
 }  // namespace ops

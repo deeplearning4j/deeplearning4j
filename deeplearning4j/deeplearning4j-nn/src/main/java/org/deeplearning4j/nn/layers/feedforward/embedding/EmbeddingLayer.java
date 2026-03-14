@@ -23,7 +23,6 @@ package org.deeplearning4j.nn.layers.feedforward.embedding;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterAdd;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -59,14 +58,11 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        long[] indexes = new long[(int) input.length()];
-        for (int i = 0; i < indexes.length; i++) {
-            indexes[i] = input.getInt(i, 0);
+        int numExamples = (int) input.length();
+        for (int i = 0; i < numExamples; i++) {
+            int idx = input.getInt(i, 0);
+            weightGradients.getRow(idx).addi(delta.getRow(i));
         }
-
-        INDArray indices = Nd4j.createFromArray(indexes);
-        ScatterAdd op = new ScatterAdd(weightGradients, indices, delta);
-        Nd4j.getExecutioner().exec(op);
 
 
         Gradient ret = new DefaultGradient();

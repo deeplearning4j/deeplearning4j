@@ -227,11 +227,10 @@ public class OrthogonalDistribution extends BaseDistribution {
         val m = flatRng.rows();
         val n = flatRng.columns();
 
-        val s = Nd4j.create(dtype, m < n ? m : n);
-        val u = Nd4j.create(dtype, m, m);
-        val v = Nd4j.create(dtype, new long[] {n, n}, 'f');
-
-        Nd4j.exec(new Svd(flatRng, true, s, u, v));
+        INDArray[] svdResults = Nd4j.exec(new Svd(flatRng, true, true, Svd.DEFAULT_SWITCHNUM));
+        val s = svdResults[0];
+        val u = svdResults[1];
+        val v = svdResults[2];
 
         if (gains == null) {
             if (u.rows() >= numRows && u.columns() >= numCols) {

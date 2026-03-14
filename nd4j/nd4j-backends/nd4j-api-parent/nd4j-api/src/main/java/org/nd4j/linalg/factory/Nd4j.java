@@ -1062,7 +1062,7 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
-        Nd4j.exec(new Mmul(a, b, c, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
+        getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
         return c;
     }
 
@@ -4855,7 +4855,9 @@ public class Nd4j {
     public static INDArray valueArrayOf(long[] shape, double value, DataType type) {;
         checkShapeValues(shape);
         INDArray ret = createUninitialized(type, shape);
-        ret.assign(value);
+        if (ret.length() > 0) {
+            ret.assign(value);
+        }
         return ret;
     }
 
@@ -4864,13 +4866,15 @@ public class Nd4j {
      */
     @SuppressWarnings("Duplicates")
     public static INDArray valueArrayOf(long[] shape, long value, DataType type) {
-        if (shape.length == 0 || ArrayUtil.prod(shape) == 0)
+        if (shape.length == 0)
             return scalar(type, value);
 
         checkShapeValues(shape);
 
         INDArray ret = createUninitialized(type, shape);
-        ret.assign(value);
+        if (ret.length() > 0) {
+            ret.assign(value);
+        }
         return ret;
     }
 
@@ -4930,7 +4934,9 @@ public class Nd4j {
      */
     public static INDArray ones(DataType dataType, @NonNull long... shape) {
         INDArray ret = INSTANCE.createUninitialized(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
-        ret.assign(1);
+        if (ret.length() > 0) {
+            ret.assign(1);
+        }
         return ret;
     }
 
@@ -5215,6 +5221,7 @@ public class Nd4j {
             case FLOAT:
             case BFLOAT16:
             case HALF:
+            case FLOAT8:
                 return INSTANCE.create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
             case UINT32:
             case INT:

@@ -40,10 +40,22 @@ namespace helpers {
 // //
 template <typename T>
 static void adjointMatrix_(sd::LaunchContext* context, NDArray * input, NDArray* output) {
-  auto inputPart = input->allTensorsAlongDimension({-2, -1});
-  auto outputPart = output->allTensorsAlongDimension({-2, -1});
   auto rows = input->sizeAt(-2);
   output->assign(input);
+
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs
+  // which breaks coordinate-based indexing. Use the arrays directly instead.
+  if (input->rankOf() == 2) {
+    for (sd::LongType r = 0; r < rows; r++) {
+      for (sd::LongType c = 0; c < r; c++) {
+        math::sd_swap(output->r<T>(r, c), output->r<T>(c, r));
+      }
+    }
+    return;
+  }
+
+  auto inputPart = input->allTensorsAlongDimension({-2, -1});
+  auto outputPart = output->allTensorsAlongDimension({-2, -1});
 
   auto batchLoop = PRAGMA_THREADS_FOR {
     for (auto batch = start; batch < stop; batch++) {
@@ -66,6 +78,15 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
   auto leftOutput = leftInput->ulike();
   auto permuShape = rightInput->getShapeAsVector();
   permuShape->pop_back();
+
+  // For non-batched (2D) inputs, pop_back() leaves a 1D shape (e.g., [3]).
+  // allTensorsAlongDimension({-1}) on a 1D array doesn't properly decompose
+  // into individual vectors. Ensure the shape is at least 2D by prepending a 1
+  // so that the batch decomposition works correctly (e.g., [3] -> [1, 3]).
+  if (permuShape->size() == 1) {
+    permuShape->insert(permuShape->begin(), 1);
+  }
+
   std::vector<sd::LongType> &shapeDeRef = *permuShape;
   auto permutations = NDArrayFactory::create<sd::LongType>('c', shapeDeRef, context);
   helpers::lu(context, leftInput, leftOutput, permutations);
@@ -73,25 +94,38 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
 
   auto P = leftInput->ulike();  // permutations batched matrix
   P->nullify();                  // to fill up matrices with zeros
-  auto PPart = P->allTensorsAlongDimension({-2, -1});
-  auto permutationsPart = permutations->allTensorsAlongDimension({-1});
-  for (auto batch = 0; batch < permutationsPart.size(); batch++) {
-    for (sd::LongType row = 0; row < PPart[batch]->rows(); row++) {
-      std::vector<sd::LongType> vec = {row,permutationsPart[batch]->t<sd::LongType>(row)};
-      PPart[batch]->r<T>(row, permutationsPart[batch]->t<sd::LongType>(row)) = T(1.f);
+
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs
+  // which breaks coordinate-based indexing. Use the arrays directly instead.
+  bool unbatched = (leftInput->rankOf() == 2);
+  if (unbatched) {
+    for (sd::LongType row = 0; row < P->rows(); row++) {
+      P->r<T>(row, permutations->t<sd::LongType>(row)) = T(1.f);
+    }
+  } else {
+    auto PPart = P->allTensorsAlongDimension({-2, -1});
+    auto permutationsPart = permutations->allTensorsAlongDimension({-1});
+    for (auto batch = 0; batch < permutationsPart.size(); batch++) {
+      for (sd::LongType row = 0; row < PPart[batch]->rows(); row++) {
+        PPart[batch]->r<T>(row, permutationsPart[batch]->t<sd::LongType>(row)) = T(1.f);
+      }
     }
   }
-
-
-
 
   auto leftLower = leftOutput->dup(leftOutput->ordering());
   auto rightOutput = rightInput->ulike();
   auto rightPart = rightInput->ulike();
-  MmulHelper::matmul(P, rightInput, rightPart, 0.0, 0, 0, 0, rightPart);
-  ResultSet leftLowerPart = leftLower->allTensorsAlongDimension({-2, -1});
-  for (auto i = 0; i < leftLowerPart.size(); i++) {
-    for (sd::LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
+
+  MmulHelper::matmul(P, rightInput, rightPart, false, false, 1.0, 0.0, rightPart);
+
+  // Set diagonal of lower triangular part to 1
+  if (unbatched) {
+    for (sd::LongType r = 0; r < leftLower->rows(); r++) leftLower->r<T>(r, r) = (T)1.f;
+  } else {
+    ResultSet leftLowerPart = leftLower->allTensorsAlongDimension({-2, -1});
+    for (auto i = 0; i < leftLowerPart.size(); i++) {
+      for (sd::LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
+    }
   }
 
   // stage 2: triangularSolveFunctor for Lower with given b

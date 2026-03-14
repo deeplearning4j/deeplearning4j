@@ -55,7 +55,7 @@ class TestRunner {
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
-        boolean verboseDebugMode = true;
+        boolean verboseDebugMode = false;
         if (debugModeRegexes != null) {
             for (String regex : debugModeRegexes) {
                 if (modelName.matches(regex)) {
@@ -66,10 +66,12 @@ class TestRunner {
         }
 
         try {
-            Nd4j.getEnvironment().setDeletePrimary(false);
-            Nd4j.getEnvironment().setDeleteSpecial(false);
-            Nd4j.getExecutioner().enableDebugMode(true);
-            Nd4j.getExecutioner().enableVerboseMode(true);
+            if (verboseDebugMode) {
+                Nd4j.getEnvironment().setDeletePrimary(false);
+                Nd4j.getEnvironment().setDeleteSpecial(false);
+                Nd4j.getExecutioner().enableDebugMode(true);
+                Nd4j.getExecutioner().enableVerboseMode(true);
+            }
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, new TFGraphTestAllHelper.DefaultGraphLoader(inputs), maxRE, minAbs, verboseDebugMode);
         } catch (Throwable t) {
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);

@@ -122,6 +122,17 @@ template <typename T>
 static Status triangularSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                           bool lower, bool unitsOnDiag, NDArray* output) {
 
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.
+  // Process the single matrix directly.
+  if (leftInput->rankOf() == 2) {
+    if (lower) {
+      lowerTriangularSolve<T>(context, leftInput, rightInput, unitsOnDiag, output);
+    } else {
+      upperTriangularSolve<T>(context, leftInput, rightInput, unitsOnDiag, output);
+    }
+    return Status::OK;
+  }
+
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});

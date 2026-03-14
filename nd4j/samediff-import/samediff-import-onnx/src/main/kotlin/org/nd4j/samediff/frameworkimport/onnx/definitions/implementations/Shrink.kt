@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -70,16 +71,17 @@ class Shrink : PreImportHook {
         // Get attributes
         val bias = (attributes.getOrDefault("bias", 0.0) as Number).toDouble()
         val lambd = (attributes.getOrDefault("lambd", 0.5) as Number).toDouble()
+        val inputDt = input.dataType()
 
         // Shrink function:
         // if x < -lambd: x + bias
         // if x > lambd: x - bias
         // else: 0
 
-        val lambdConst = sd.constant("${opName}_lambd", lambd)
-        val negLambdConst = sd.constant("${opName}_negLambd", -lambd)
-        val biasConst = sd.constant("${opName}_bias", bias)
-        val zero = sd.constant("${opName}_zero", 0.0)
+        val lambdConst = sd.constant("${opName}_lambd", Nd4j.scalar(inputDt, lambd))
+        val negLambdConst = sd.constant("${opName}_negLambd", Nd4j.scalar(inputDt, -lambd))
+        val biasConst = sd.constant("${opName}_bias", Nd4j.scalar(inputDt, bias))
+        val zero = sd.constant("${opName}_zero", Nd4j.scalar(inputDt, 0.0))
 
         // Compute masks for each condition
         val ltMask = sd.lt("${opName}_ltMask", input, negLambdConst)  // x < -lambd

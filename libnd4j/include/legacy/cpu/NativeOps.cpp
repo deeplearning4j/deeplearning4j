@@ -2134,7 +2134,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
   #ifdef __cpp_exceptions
   try {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,
@@ -2150,7 +2150,7 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
   }
   #else
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,

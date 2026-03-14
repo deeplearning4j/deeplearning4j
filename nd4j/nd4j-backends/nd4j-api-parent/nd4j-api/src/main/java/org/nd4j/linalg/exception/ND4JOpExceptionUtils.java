@@ -81,6 +81,10 @@ public class ND4JOpExceptionUtils {
 
         String message = sb.toString();
 
+        if (cause instanceof ND4JIllegalStateException) {
+            return (ND4JIllegalStateException) cause;
+        }
+
         if (cause != null) {
             return new RuntimeException(message, cause);
         }
@@ -146,6 +150,10 @@ public class ND4JOpExceptionUtils {
         }
 
         String message = sb.toString();
+
+        if (cause instanceof ND4JIllegalStateException) {
+            return (ND4JIllegalStateException) cause;
+        }
 
         if (cause != null) {
             return new RuntimeException(message, cause);

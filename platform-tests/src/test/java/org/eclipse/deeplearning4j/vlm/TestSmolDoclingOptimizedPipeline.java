@@ -116,7 +116,72 @@ public class TestSmolDoclingOptimizedPipeline {
         boolean triton = Nd4j.getNativeOps().isTritonAvailable();
         List<BenchmarkConfig> configs = new ArrayList<>();
 
-        // 1. Baselines
+        // DEFAULT: Best-known optimal config — Triton + ATTENTION + CUDA graphs + batch ops.
+        // This is the ONLY config that runs unless vlm.test.configs selects others.
+        // Target: ≥90 tok/s steady-state decode with ≥50% token diversity.
+        if (triton) {
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchOps")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .dspBatchZero(true).dspBatchZeroKernel(true)
+                    .dspBatchedGemm(true)
+                    .dspCastSinkMatmul(true)
+                    .maxTokens(100).minDiversityPct(0));
+        }
+
+        // DIAGNOSTIC: SLOT_BY_SLOT baseline — no Triton, no graph capture, proves model works
+        configs.add(BenchmarkConfig.create("DIAG_SLOT_BY_SLOT_baseline")
+                .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
+                .maxTokens(10)
+                .minDiversityPct(0));
+
+        // DIAGNOSTIC: Triton WITHOUT graph capture — isolates Triton kernel correctness
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+
+        // DIAGNOSTIC: Triton + GC but WITHOUT ATTENTION — isolates attention compilation
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_Triton_gc_noATTN")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES)
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+
+        // DIAGNOSTIC: Triton + GC + ATTENTION but WITHOUT argOpt — isolates arg table
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_Triton_gc_ATTN_noArgOpt")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+
+        // DIAGNOSTIC: Full config without batch ops
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_full_noBatchOps")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+
+        // Only include other configs when explicitly requested via vlm.test.configs=ALL
+        String filterProp = System.getProperty("vlm.test.configs");
+        boolean includeAll = "ALL".equalsIgnoreCase(filterProp);
+        if (!includeAll) return configs;
+
+        // ── Additional configs below only run with vlm.test.configs=ALL ──
+
+        // Baselines
         configs.add(BenchmarkConfig.create("SLOT_BY_SLOT")
                 .executionMode(GraphExecutionMode.SLOT_BY_SLOT)
                 .maxTokens(100)
@@ -381,15 +446,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 .dspBatchZero(true).dspBatchZeroKernel(true)
                 .maxTokens(100).minDiversityPct(0));
 
-        configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_gc_argOpt_batchOps")
-                .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
-                .tritonSectionFusion(true).tritonCompileAll(true)
-                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
-                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                .dspBatchZero(true).dspBatchZeroKernel(true)
-                .dspBatchedGemm(true)
-                .dspCastSinkMatmul(true)
-                .maxTokens(100).minDiversityPct(0));
+        // (TRITON_compileAll_best_ATTN_gc_argOpt_batchOps is now the default — defined at top)
 
         configs.add(BenchmarkConfig.create("CUDA_GRAPHS_batchOps")
                 .executionMode(GraphExecutionMode.CUDA_GRAPHS)
@@ -453,9 +510,10 @@ public class TestSmolDoclingOptimizedPipeline {
 
         List<BenchmarkConfig> configs = getAllConfigs();
 
-        // Filter configs by name if vlm.test.configs is set (comma-separated)
+        // Filter configs by name if vlm.test.configs is set (comma-separated).
+        // "ALL" loads every config (handled in getAllConfigs). Specific names filter the list.
         String filterProp = System.getProperty("vlm.test.configs");
-        if (filterProp != null && !filterProp.isEmpty()) {
+        if (filterProp != null && !filterProp.isEmpty() && !"ALL".equalsIgnoreCase(filterProp)) {
             Set<String> keep = Set.of(filterProp.split(","));
             configs.removeIf(c -> !keep.contains(c.getName()));
             log.info("Filtered to {} configs via vlm.test.configs: {}", configs.size(), keep);

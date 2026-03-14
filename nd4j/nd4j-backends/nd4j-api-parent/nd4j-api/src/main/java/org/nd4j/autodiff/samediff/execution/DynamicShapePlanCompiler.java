@@ -488,9 +488,15 @@ public class DynamicShapePlanCompiler {
             // When false, only input shapes + dtypes are used, avoiding expensive CUDA D2H syncs.
             boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(opNameLower) || isDataDependent;
 
-            // Override iArgs for reshape → reshape_no_copy remapping
+            // Override iArgs and op for reshape → reshape_no_copy remapping.
+            // The slot's op must be a ReshapeNoCopy instance (not the original Reshape)
+            // so that fn.opHash() dispatches to the correct C++ shape/execute functions.
+            // The original Reshape op interprets iArgs differently (order-first vs order-last),
+            // causing -99 shape corruption when iArgs are in reshape_no_copy format.
+            DifferentialFunction slotOp = op;
             if (reshapeNoCopyIArgs != null) {
                 iArgs = reshapeNoCopyIArgs;
+                slotOp = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy();
             }
 
             // Pre-compute opName hash for shape key computation (avoids String.hashCode per step)
@@ -498,7 +504,7 @@ public class DynamicShapePlanCompiler {
 
             slots[stepIdx] = DynamicShapeSlot.builder()
                     .opName(opName)
-                    .op(op)
+                    .op(slotOp)
                     .customOp(isCustomOp)
                     .legacyOpType(legacyOpType)
                     .legacyOpNum(legacyOpNum)

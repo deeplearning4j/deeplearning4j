@@ -420,6 +420,21 @@ DECLARE_CUSTOM_OP(contrastive_loss, 2, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(contrastive_loss_grad, 2, 2, false, 0, 0);
 #endif
 
+#if NOT_EXCLUDED(OP_attention_distillation_loss)
+DECLARE_CUSTOM_OP(attention_distillation_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(attention_distillation_loss_grad, 2, 2, false, 0, 0);
+#endif
+
+#if NOT_EXCLUDED(OP_distillation_kl_loss)
+DECLARE_CUSTOM_OP(distillation_kl_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(distillation_kl_loss_grad, 2, 2, false, 0, 0);
+#endif
+
+#if NOT_EXCLUDED(OP_feature_distillation_loss)
+DECLARE_CUSTOM_OP(feature_distillation_loss, 2, 1, false, 0, 0);
+DECLARE_CUSTOM_OP(feature_distillation_loss_grad, 2, 2, false, 0, 0);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

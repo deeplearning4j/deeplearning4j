@@ -1734,7 +1734,8 @@ void TritonIRBuilder::emitAttentionSection(mlir::OpBuilder& builder, mlir::Locat
                             section.headDim, section.attentionScale,
                             blockM, blockN,
                             section.attnQIsBSHD, section.attnKIsBSHD,
-                            mlir::Value(), std::vector<LongType>());
+                            mlir::Value(), std::vector<LongType>(),
+                            mlir::Value(), mlir::Value(), 0, 0);
 }
 
 void TritonIRBuilder::emitSplitSection(mlir::OpBuilder& builder, mlir::Location loc,

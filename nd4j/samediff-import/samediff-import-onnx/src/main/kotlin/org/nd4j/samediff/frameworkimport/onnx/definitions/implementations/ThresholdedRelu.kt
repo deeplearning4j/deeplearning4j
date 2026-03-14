@@ -22,6 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -68,7 +69,7 @@ class ThresholdedRelu : PreImportHook {
 
         // ThresholdedRelu(x) = x if x > alpha else 0
         // Implemented as: x * (x > alpha)
-        val alphaConst = sd.constant("${opName}_alpha", alpha)
+        val alphaConst = sd.constant("${opName}_alpha", Nd4j.scalar(x.dataType(), alpha))
         val mask = sd.gt("${opName}_mask", x, alphaConst)
         val maskFloat = mask.castTo(x.dataType())
         val output = sd.math.mul(outputNames[0], x, maskFloat)

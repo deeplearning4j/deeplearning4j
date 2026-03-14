@@ -134,6 +134,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
     COORDS2INDEX(outRank, outStrides, coords, idx2);
     outBuff[idx2] = sd::math::sd_exp<T, T>(inBuff[inIndices[i2]] - max);
     sum += outBuff[idx2];
+    outIndices[i2] = idx2;
   }
 
   PRAGMA_OMP_SIMD

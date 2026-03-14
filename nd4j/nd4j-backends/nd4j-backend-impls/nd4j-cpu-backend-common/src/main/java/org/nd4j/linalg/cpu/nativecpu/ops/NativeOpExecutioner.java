@@ -182,7 +182,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(IndexAccumulation op, OpContext oc) {
         checkForCompression(op);
-
+        getNativeOps().clearLastError();
         INDArray x = getX(op, oc);
         INDArray z = getZ(op, oc);
         if (extraz.get() == null)
@@ -247,7 +247,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             // If dimArray had null data, we use the normalized dimension array instead
             INDArray dimsToUse = (dimArray != null && dimArray.data() != null) ? dimArray : Nd4j.createFromArray(dimension);
             OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(dimsToUse);
-            getNativeOps().execIndexReduce(dummy,op.opNum(),xb,zb,fromDims, null);
+            getNativeOps().execIndexReduce(dummy,op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()),zb,fromDims);
         }
 
         if (getNativeOps().lastErrorCode() != 0) {
@@ -289,8 +289,54 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
+        getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op, oc);
         op.validateDataTypes(oc);
+
+        // Handle empty input arrays: native code crashes on nullptr buffers
+        if (x.isEmpty()) {
+            if (z == null) {
+                // Compute the correct output shape for the reduction
+                long[] dims = op.dimensions() != null ? op.dimensions().toLongVector() : new long[0];
+                boolean keepDims = op.isKeepDims();
+                if (dims.length == 0) {
+                    // Full reduction: result is scalar
+                    z = Nd4j.scalar(x.dataType(), 0.0);
+                } else {
+                    // Partial reduction: compute output shape
+                    long[] xShape = x.shape();
+                    if (keepDims) {
+                        long[] outShape = xShape.clone();
+                        for (long d : dims) {
+                            int di = d < 0 ? (int)(d + xShape.length) : (int)d;
+                            outShape[di] = 1;
+                        }
+                        z = Nd4j.zeros(x.dataType(), outShape);
+                    } else {
+                        java.util.Set<Integer> dimSet = new java.util.HashSet<>();
+                        for (long d : dims) {
+                            dimSet.add(d < 0 ? (int)(d + xShape.length) : (int)d);
+                        }
+                        java.util.List<Long> outDims = new java.util.ArrayList<>();
+                        for (int i = 0; i < xShape.length; i++) {
+                            if (!dimSet.contains(i)) {
+                                outDims.add(xShape[i]);
+                            }
+                        }
+                        long[] outShape = outDims.stream().mapToLong(Long::longValue).toArray();
+                        z = Nd4j.zeros(x.dataType(), outShape);
+                    }
+                }
+                setZ(z, op, oc);
+            } else {
+                if (z.length() > 0) {
+                    z.assign(0.0);
+                }
+            }
+            profilingConfigurableHookOut(op, oc, st);
+            return z;
+        }
+
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
@@ -599,6 +645,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     public INDArray exec(ScalarOp op, OpContext oc) {
         long st = profilingConfigurableHookIn(op);
+
+        // Handle empty input arrays: native code crashes on nullptr buffers
+        INDArray scalarX = getX(op, oc);
+        if (scalarX != null && scalarX.isEmpty()) {
+            if (getZ(op, oc) == null) {
+                setZ(Nd4j.create(scalarX.dataType(), scalarX.shape()), op, oc);
+            }
+            profilingConfigurableHookOut(op, oc, st);
+            return getZ(op, oc);
+        }
+
         if((oc != null && oc.getOutputArray(0) == null) || getZ(op, oc) == null) {
             switch (op.getOpType()) {
                 case SCALAR:
@@ -679,7 +736,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
+        getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op,oc);
+
+        // Handle empty input arrays: native code crashes on nullptr buffers
+        if (x != null && x.isEmpty()) {
+            if (z == null) {
+                setZ(Nd4j.create(op.resultType(oc), x.shape()), op, oc);
+            }
+            profilingConfigurableHookOut(op, oc, st);
+            return;
+        }
+
         //redirect assign so we support more ops cases lke strings
         if(op instanceof Assign) {
             DefaultOpExecutioner.execAssign(op, oc,this);
@@ -797,7 +865,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     }
 
                     case TRANSFORM_BOOL: {
-                        getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, z.dataType()), zb);
+                        // Must use x.dataType() for extraArgs, not z.dataType()
+                        // C++ MatchConditionBool reads extraParams as X* (input type)
+                        // z is always BOOL for transform_bool ops
+                        getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb);
                         break;
                     }
                     default:
@@ -832,6 +903,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
+        getNativeOps().clearLastError();
         long st = profilingConfigurableHookIn(op,oc);
         op.validateDataTypes(experimentalMode.get());
         val xb = OpaqueNDArray.fromINDArray(x);
@@ -985,7 +1057,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
-
+        getNativeOps().clearLastError();
         if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null) {
             //Ugly hack to ensure the triple arg call occurs
             //See GaussianDistribution.setZ etc
@@ -1190,7 +1262,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 return context.getOutputArrays().toArray(new INDArray[0]);
             }
 
-
+            getNativeOps().clearLastError();
 
             val status = getNativeOps().execCustomOp2(null, op.opHash(), context.contextPointer());
 
@@ -1281,6 +1353,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         LongPointer shapePointer = new LongPointer(shape);
         LongPointer stridePointer = new LongPointer(stride);
         long extras = ArrayOptionsHelper.composeTypicalChecks(false,DataType.INT64,false,false,isView ,false,false );
+        getNativeOps().clearLastError();
         OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (getNativeOps().lastErrorCode() != 0)
             throw shapeInfoCreationException(shape, stride, elementWiseStride, order, dtype);
@@ -1302,6 +1375,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
         LongPointer shapePointer = new LongPointer(shape);
         LongPointer stridePointer = new LongPointer(stride);
+        getNativeOps().clearLastError();
         OpaqueConstantShapeBuffer dbf = getNativeOps().shapeBufferEx(shape.length, shapePointer, stridePointer, dtype.toInt(), order, elementWiseStride, extras);
         if (getNativeOps().lastErrorCode() != 0)
             throw shapeInfoCreationException(shape, stride, elementWiseStride, order, dtype);
@@ -1331,6 +1405,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             inputDimensions[i] = dimension[i];
         }
         try {
+            getNativeOps().clearLastError();
             OpaqueTadPack pack = getNativeOps().tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(inputDimensions), dimension.length);
 
             if (getNativeOps().lastErrorCode() != 0)

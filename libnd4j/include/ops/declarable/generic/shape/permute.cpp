@@ -143,9 +143,31 @@ DECLARE_TYPES(permute) {
 DECLARE_SHAPE_FN(permute) {
   auto x = INPUT_VARIABLE(0);
 
-  // Handle empty input - return same shape
+  // Handle empty input - permute dimensions but preserve ARRAY_EMPTY flag.
+  // We must get the permutation vector first, then apply it to the shape.
   if (x->isEmpty()) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), *x->getShapeAsVector()));
+    std::vector<LongType> permVec;
+    if (block.width() > 1) {
+      auto* permArr = INPUT_VARIABLE(1);
+      permArr->syncToHost();
+      permVec = permArr->asVectorT<LongType>();
+    } else if (block.getIArguments()->size() > 0) {
+      permVec = *block.getIArguments();
+    }
+
+    auto inputShape = *x->getShapeAsVector();
+    std::vector<LongType> permutedShape;
+    if (!permVec.empty() && permVec.size() == inputShape.size()) {
+      permutedShape.resize(inputShape.size());
+      for (size_t i = 0; i < permVec.size(); i++) {
+        permutedShape[i] = inputShape[permVec[i]];
+      }
+    } else {
+      permutedShape = inputShape;
+    }
+
+    auto emptyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), permutedShape);
+    return SHAPELIST(CONSTANT(emptyShape));
   }
 
   // Handle scalar input - permute is a no-op for scalars, return scalar shape

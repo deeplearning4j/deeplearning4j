@@ -72,6 +72,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
         INDArray nextEpsilon;
+
+        //RNN input: [batch, channels, time] -> [batch, channels, 1, time]
+        boolean rnnInput = false;
+        if(epsilon.rank() == 3) {
+            epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), 1, epsilon.size(2));
+            rnnInput = true;
+        }
+
         val shape = getShape(epsilon);
         val batchSize = epsilon.size(0); // number examples in batch
         org.deeplearning4j.nn.conf.layers.BatchNormalization layerConf = layerConf();
@@ -81,6 +89,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         int chIdx = epsilon.rank() == 2 || nchw ? 1 : 3;
 
         INDArray input = this.input.castTo(dataType);   //No-op if correct type
+        //Also reshape input if RNN
+        if(rnnInput && input.rank() == 3) {
+            input = input.reshape(input.size(0), input.size(1), 1, input.size(2));
+        }
 
         INDArray globalMean = params.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
         INDArray globalVar = params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);             //One of log10std will be null depending on config
@@ -212,9 +224,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //First: we have log10(var[i]) from last iteration, hence can calculate var[i] and stdev[i]
             //Need to calculate log10{std[i]) - log10(std[i+1]) as the "update"
             //Note, var[i+1] = d*var[i] + (1-d)*batchVar
-            INDArray vari = Nd4j.valueArrayOf(globalLog10Std.shape(), 10.0, globalMean.dataType());
-            Transforms.pow(vari, globalLog10Std, false);     //variance = (10^log10(s))^2
-            vari.muli(vari);
+            // Compute variance from log10(std): var = (10^log10std)^2 = 10^(2*log10std)
+            // Use exp(2 * log10std * ln(10)) instead of Transforms.pow to avoid PowPairwise issues
+            double ln10 = Math.log(10.0);
+            INDArray vari = Transforms.exp(globalLog10Std.mul(2.0 * ln10), true);  // dup=true to not modify globalLog10Std
 
             double decay = layerConf().getDecay();
             INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1 - decay).reshape(vari.shape()));
@@ -237,6 +250,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         //TODO could optimize this
         nextEpsilon = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, nextEpsilon);
+
+        //Reshape back to rank 3 for RNN
+        if(rnnInput && nextEpsilon.rank() == 4) {
+            nextEpsilon = nextEpsilon.reshape(nextEpsilon.size(0), nextEpsilon.size(1), nextEpsilon.size(3));
+        }
 
         xHat = null;
         xMu = null;
@@ -264,9 +282,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         int dim = 1;
         INDArray originalInput = x;
         boolean rnnInput = false;
-        //RNN input
+        //RNN input: [batch, channels, time] -> [batch, channels, 1, time] for NCHW processing
         if(x.rank() == 3) {
-            x = x.reshape(Longs.concat(new long[]{1},x.shape())).dup();
+            x = x.reshape(x.size(0), x.size(1), 1, x.size(2));
             rnnInput = true;
         }
         if(x.rank() == 4 && layerConf().getCnn2DFormat() == CNN2DFormat.NHWC)
@@ -337,10 +355,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             // Global mean and variance estimate - used after training
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             if(layerConf().isUseLogStd()){
-                //var = (10^(log10(s)))^2
+                //var = (10^(log10(s)))^2 = 10^(2*log10(s)) = exp(2*log10(s)*ln(10))
                 INDArray log10s = getParam(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
-                var = Transforms.pow(Nd4j.valueArrayOf(log10s.shape(), 10.0, dataType), log10s);
-                var.muli(var);
+                var = Transforms.exp(log10s.mul(2.0 * Math.log(10.0)), true);
             } else {
                 var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
             }
@@ -418,7 +435,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         if(rnnInput) {
             //change back the output to rank 3 after running batch norm for rnn inputs
-            activations = activations.reshape(activations.size(1),activations.size(2),activations.size(3));
+            // From [batch, channels, 1, time] back to [batch, channels, time]
+            activations = activations.reshape(activations.size(0), activations.size(1), activations.size(3));
         }
         return activations;
     }

@@ -79,6 +79,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         Pair<INDArray, INDArray> zAndPreNorm = preOutputWithPreNorm(true, true, workspaceMgr);
         INDArray z = zAndPreNorm.getFirst(); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         INDArray preNorm = zAndPreNorm.getSecond();
+
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
@@ -106,7 +107,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
 
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
-        Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);           //TODO avoid castTo?
+        Nd4j.gemm(input.castTo(weightGrad.dataType()), delta, weightGrad, true, false, 1.0, 0.0);
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
 
         weightNoiseParams.clear();

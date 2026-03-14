@@ -63,26 +63,10 @@ DECLARE_SHAPE_FN(create) {
     shape = shapeInput->getBufferAsVector<LongType>();
   }
 
-  // DIAGNOSTIC: dump create shape info to file
-  {
-    FILE* f = fopen("/tmp/create_diag.txt", "a");
-    if (f) {
-      fprintf(f, "CREATE shape_fn: numEl=%lld, inputDtype=%d, offset=%lld, primary=%p\n",
-              (long long)numEl, (int)inputDtype, (long long)arrOffset, (void*)db->primary());
-      fprintf(f, "  shape values: [");
-      for (size_t i = 0; i < shape.size(); i++) {
-        if (i > 0) fprintf(f, ", ");
-        fprintf(f, "%lld", (long long)shape[i]);
-      }
-      fprintf(f, "]\n");
-      fclose(f);
-    }
-  }
-
   return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
 }
 
-DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(ANY); }
+DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS, sd::DataType::BOOL})->setAllowedOutputTypes(ANY); }
 }  // namespace ops
 }  // namespace sd
 

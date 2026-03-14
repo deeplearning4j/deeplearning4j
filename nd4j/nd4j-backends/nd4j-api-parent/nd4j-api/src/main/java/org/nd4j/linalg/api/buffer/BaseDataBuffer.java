@@ -1764,6 +1764,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected void doReadObject(ObjectInputStream s) {
         try {
             s.defaultReadObject();
+            // Initialize transient fields that are not restored by deserialization
+            if (released == null) released = new AtomicBoolean(false);
+            if (referenced == null) referenced = new AtomicBoolean(false);
             val header = BaseDataBuffer.readHeader(s);
             read(s, header.getLeft(), header.getMiddle(), header.getRight());
         } catch (Exception e) {

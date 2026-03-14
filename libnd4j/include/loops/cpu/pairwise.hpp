@@ -173,7 +173,7 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
     sd::LongType zCoords[SD_MAX_RANK];
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, zRank,xShape, zCoords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
       sd::LongType xOffset, yOffset, zOffset;
       COORDS2INDEX(xRank, xStride, zCoords, xOffset);
       COORDS2INDEX(yRank, yStride, zCoords, yOffset);

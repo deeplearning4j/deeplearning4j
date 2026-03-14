@@ -472,7 +472,9 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
 
         val reshaped = orig.reshape();
 
-        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp.rank(), reshaped.rank());
+        assertArrayEquals(exp.shape(), reshaped.shape());
+        assertEquals(exp.dataType(), reshaped.dataType());
         assertEquals(exp, reshaped);
     }
 
@@ -486,7 +488,9 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
 
         val reshaped = orig.reshape();
 
-        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp.rank(), reshaped.rank());
+        assertArrayEquals(exp.shape(), reshaped.shape());
+        assertEquals(exp.dataType(), reshaped.dataType());
         assertEquals(exp, reshaped);
     }
 
@@ -500,7 +504,9 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
 
         val reshaped = orig.reshape(1);
 
-        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp.rank(), reshaped.rank());
+        assertArrayEquals(exp.shape(), reshaped.shape());
+        assertEquals(exp.dataType(), reshaped.dataType());
         assertEquals(exp, reshaped);
     }
 
@@ -514,7 +520,9 @@ public class ShapeTestsC extends BaseNd4jTestWithBackends {
 
         val reshaped = orig.reshape(new int[0]);
 
-        assertArrayEquals(exp.shapeInfoDataBuffer().asLong(), reshaped.shapeInfoDataBuffer().asLong());
+        assertEquals(exp.rank(), reshaped.rank());
+        assertArrayEquals(exp.shape(), reshaped.shape());
+        assertEquals(exp.dataType(), reshaped.dataType());
         assertEquals(exp, reshaped);
     }
 

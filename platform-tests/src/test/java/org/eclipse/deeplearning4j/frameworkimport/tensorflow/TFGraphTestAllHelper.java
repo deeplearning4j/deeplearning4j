@@ -174,18 +174,22 @@ public class TFGraphTestAllHelper {
         //set the tf allocation handler model for controlling deallocations of these variables later
         //after the test is done
         for (int i = startIndex; i <  endIndex; i++) {
-            System.out.println("Loading model " + modelNames[i] + " - " + (i + 1) + " of " + modelNames.length);
-            Object[] currentParams = new Object[4];
-            System.setProperty(TFTestAllocationHandler.CURRENT_MODEL_PROPERTY,modelNames[i]);
+            try {
+                System.out.println("Loading model " + modelNames[i] + " - " + (i + 1) + " of " + modelNames.length);
+                Object[] currentParams = new Object[4];
+                System.setProperty(TFTestAllocationHandler.CURRENT_MODEL_PROPERTY, modelNames[i]);
 
-            System.out.println("Reading input variables");
-            currentParams[0] = inputVars(modelNames[i], baseDir, localTestDir); //input variable map - could be null
-            System.out.println("Reading output variables");
-            currentParams[1] = outputVars(modelNames[i], baseDir, localTestDir); //saved off predictions
-            System.out.println("Reading model");
-            currentParams[2] = modelNames[i];
-            currentParams[3] = localTestDir;
-            modelParams.add(currentParams);
+                System.out.println("Reading input variables");
+                currentParams[0] = inputVars(modelNames[i], baseDir, localTestDir); //input variable map - could be null
+                System.out.println("Reading output variables");
+                currentParams[1] = outputVars(modelNames[i], baseDir, localTestDir); //saved off predictions
+                System.out.println("Reading model");
+                currentParams[2] = modelNames[i];
+                currentParams[3] = localTestDir;
+                modelParams.add(currentParams);
+            } catch (Exception e) {
+                log.error("Failed to load test data for model {}: {}", modelNames[i], e.getMessage());
+            }
         }
         return modelParams;
     }

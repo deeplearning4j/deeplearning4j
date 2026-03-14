@@ -22,12 +22,14 @@ package org.nd4j.linalg.api.blas.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.blas.Level3;
+import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -51,11 +53,33 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
-        // Convert char transpose flags to boolean
-        // 'T' or 't' means transpose, anything else (typically 'N' or 'n') means no transpose
-        boolean transposeA = (TransA == 'T' || TransA == 't');
-        boolean transposeB = (TransB == 'T' || TransB == 't');
-        Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
+        // If C is a view or has non-standard strides, use a temp array to avoid BLAS pointer offset issues
+        boolean requiresTemp = C.isView() || C.ordering() != 'f' || !Shape.hasDefaultStridesForShape(C);
+        INDArray cActual = requiresTemp ? Nd4j.createUninitialized(C.dataType(), C.shape(), 'f') : C;
+        if (requiresTemp && beta != 0.0) {
+            cActual.assign(C);
+        }
+
+        GemmParams params = new GemmParams(A, B, cActual);
+
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, params.getA(), params.getB(), params.getC());
+            dgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), alpha,
+                            params.getA(), params.getLda(), params.getB(), params.getLdb(), beta, cActual, params.getLdc());
+        } else if (A.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, params.getA(), params.getB(), params.getC());
+            sgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), (float) alpha,
+                            params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta, cActual, params.getLdc());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataType.HALF, params.getA(), params.getB(), params.getC());
+            hgemm(Order, params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(), (float) alpha,
+                            params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta, cActual, params.getLdc());
+        }
+
+        if (requiresTemp) {
+            C.assign(cActual);
+        }
+
         OpExecutionerUtil.checkForAny(C);
     }
 
@@ -64,7 +88,34 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha,
                     double beta) {
-        Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
+        // If C is a view or has non-standard strides, use a temp array to avoid BLAS pointer offset issues
+        boolean requiresTemp = C.isView() || C.ordering() != 'f' || !Shape.hasDefaultStridesForShape(C);
+        INDArray cActual = requiresTemp ? Nd4j.createUninitialized(C.dataType(), C.shape(), 'f') : C;
+        if (requiresTemp && beta != 0.0) {
+            cActual.assign(C);
+        }
+
+        GemmParams params = new GemmParams(A, B, cActual, transposeA, transposeB);
+        if (A.data().dataType() == DataType.DOUBLE) {
+            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, params.getA(), params.getB(), cActual);
+            dgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
+                            alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), beta, cActual,
+                            params.getLdc());
+        } else if (A.data().dataType() == DataType.FLOAT) {
+            DefaultOpExecutioner.validateDataType(DataType.FLOAT, params.getA(), params.getB(), cActual);
+            sgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
+                            (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
+                            cActual, params.getLdc());
+        } else {
+            DefaultOpExecutioner.validateDataType(DataType.HALF, params.getA(), params.getB(), cActual);
+            hgemm(A.ordering(), params.getTransA(), params.getTransB(), params.getM(), params.getN(), params.getK(),
+                            (float) alpha, params.getA(), params.getLda(), params.getB(), params.getLdb(), (float) beta,
+                            cActual, params.getLdc());
+        }
+
+        if (requiresTemp) {
+            C.assign(cActual);
+        }
 
         OpExecutionerUtil.checkForAny(C);
     }

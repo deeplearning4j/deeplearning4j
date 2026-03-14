@@ -3357,34 +3357,53 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private void executeStandardOp(Op op, OpContext opContext, ExecutionNode node,
                                    Map<String, SDValue> variableValues, Set<String> allRequired) {
 
-        // Calculate output shape outside workspace scope so shape buffers are heap-allocated
-        long tShape0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        List<DataBuffer> outputShape;
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            outputShape = ((BaseOp) op).calculateOutputShape(opContext);
-        }
-        if (outputShape == null || outputShape.isEmpty()) {
-            throw new IllegalStateException("No output shape calculated for op: " + op.opName());
-        }
-        if (TIMING_ENABLED) {
-            timingShapeCalcNs += System.nanoTime() - tShape0;
-            timingShapeCacheMisses++; // standard ops don't use shape cache
+        // For reduce ops with axis as second input, extract dimensions before shape calculation.
+        // TF semantics: empty axis = no reduction (return input unchanged).
+        if (op instanceof ReduceOp && ((ReduceOp) op).getOpType() != Op.Type.REDUCE3
+                && opContext.getInputArrays().size() >= 2) {
+            handleReduceOpAxis(op, opContext);
         }
 
-        // Declare variables before try block so they're in scope after
+        // Handle empty reduce: allocate output with input shape, skip shape calculation
+        boolean emptyReduce = (op instanceof BaseReduceOp) && ((BaseReduceOp) op).isEmptyReduce();
+
         List<String> outputNames = node.getOutputVariables();
         INDArray outputArray = null;
 
-        long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        try {
-            DataBuffer shapeBuffer = outputShape.get(0);
+        if (emptyReduce) {
+            // TF semantics: empty axis = no reduction, output shape = input shape
+            long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
+            INDArray input = opContext.getInputArray(0);
             boolean isOutput = !outputNames.isEmpty() && allRequired.contains(outputNames.get(0));
-            outputArray = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
-
+            outputArray = mmgr.allocate(isOutput, input.dataType(), input.shape());
             opContext.setOutputArray(0, outputArray);
-        } finally {
+            if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
+        } else {
+            // Calculate output shape outside workspace scope so shape buffers are heap-allocated
+            long tShape0 = TIMING_ENABLED ? System.nanoTime() : 0;
+            List<DataBuffer> outputShape;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                outputShape = ((BaseOp) op).calculateOutputShape(opContext);
+            }
+            if (outputShape == null || outputShape.isEmpty()) {
+                throw new IllegalStateException("No output shape calculated for op: " + op.opName());
+            }
+            if (TIMING_ENABLED) {
+                timingShapeCalcNs += System.nanoTime() - tShape0;
+                timingShapeCacheMisses++; // standard ops don't use shape cache
+            }
+
+            long tAlloc0 = TIMING_ENABLED ? System.nanoTime() : 0;
+            try {
+                DataBuffer shapeBuffer = outputShape.get(0);
+                boolean isOutput = !outputNames.isEmpty() && allRequired.contains(outputNames.get(0));
+                outputArray = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
+
+                opContext.setOutputArray(0, outputArray);
+            } finally {
+            }
+            if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
         }
-        if (TIMING_ENABLED) timingMemAllocNs += System.nanoTime() - tAlloc0;
 
         // Execute the operation
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;

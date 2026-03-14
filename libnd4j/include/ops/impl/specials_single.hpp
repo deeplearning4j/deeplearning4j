@@ -79,6 +79,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
   bool shapeExtendedWithOnes = isShapeExtendedWithOnes(output, axis);
   bool matchesOutputOrdering = true;
+  bool allInputsContiguous = !shape::isViewConst(output.shapeInfo());
   const char outputOrdering = output.ordering();
   for (int i = 0; i < numOfInArrs; ++i) {
     // Early exit if conditions already failed
@@ -88,12 +89,16 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
     if (matchesOutputOrdering) {
       matchesOutputOrdering = inArrs[i]->ordering() == outputOrdering;
     }
-    // If both are false, no need to continue checking
-    if (!shapeExtendedWithOnes && !matchesOutputOrdering) break;
+    if (allInputsContiguous) {
+      allInputsContiguous = !shape::isViewConst(inArrs[i]->shapeInfo());
+    }
+    // If all are false, no need to continue checking
+    if (!shapeExtendedWithOnes && !matchesOutputOrdering && !allInputsContiguous) break;
   }
 
   // OPTIMIZATION: Removed ews (element-wise stride) checks as they're no longer used
-  bool copyCase1 = matchesOutputOrdering && shapeExtendedWithOnes;
+  // Fast paths require all inputs to be contiguous (not views) since they use memcpy
+  bool copyCase1 = matchesOutputOrdering && shapeExtendedWithOnes && allInputsContiguous;
 
   if (copyCase1 && numOfInArrs > 1) {
     // copyCase1:
@@ -131,7 +136,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   }
   
   // OPTIMIZATION: Simplified copyCase2 without ews checks
-  bool copyCase2 = matchesOutputOrdering && outputOrdering == 'c';
+  // Views with non-contiguous strides cannot use memcpy
+  bool copyCase2 = matchesOutputOrdering && outputOrdering == 'c' && allInputsContiguous;
   if (copyCase2) {
     sd::LongType times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());
@@ -168,7 +174,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   }
 
   // OPTIMIZATION: copyCase3 for F-order (mirrors copyCase2)
-  bool copyCase3 = matchesOutputOrdering && outputOrdering == 'f';
+  // Views with non-contiguous strides cannot use memcpy
+  bool copyCase3 = matchesOutputOrdering && outputOrdering == 'f' && allInputsContiguous;
   if (copyCase3) {
     sd::LongType times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());

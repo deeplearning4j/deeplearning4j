@@ -53,9 +53,9 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   // This is the most common case in BERT (residual connections, etc.)
   if (x->isSameShape(y)) {
     // Ultra-fast path for contiguous same-shape same-type arrays
-    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
-    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo());
-    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
+    const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo()) && !shape::isViewConst(x->shapeInfo());
+    const bool yContiguous = y->ordering() == 'c' && shape::strideDescendingCAscendingF(y->shapeInfo()) && !shape::isViewConst(y->shapeInfo());
+    const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo()) && !shape::isViewConst(z->shapeInfo());
 
     if (xContiguous && yContiguous && zContiguous) {
       helpers::fusedAddContiguous(*x, *y, *z);
@@ -101,9 +101,9 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
     }
     if (compatible && (yRank == 1 || y->sizeAt(-1) == x->sizeAt(-1))) {
       // Ultra-fast fused kernel for contiguous bias add
-      const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo());
-      const bool yContiguous = shape::strideDescendingCAscendingF(y->shapeInfo());
-      const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo());
+      const bool xContiguous = x->ordering() == 'c' && shape::strideDescendingCAscendingF(x->shapeInfo()) && !shape::isViewConst(x->shapeInfo());
+      const bool yContiguous = shape::strideDescendingCAscendingF(y->shapeInfo()) && !shape::isViewConst(y->shapeInfo());
+      const bool zContiguous = z->ordering() == 'c' && shape::strideDescendingCAscendingF(z->shapeInfo()) && !shape::isViewConst(z->shapeInfo());
 
       if (xContiguous && yContiguous && zContiguous) {
         helpers::fusedAdd1DLast(*x, *y, *z);

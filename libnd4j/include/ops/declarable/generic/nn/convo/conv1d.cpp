@@ -144,11 +144,11 @@ DECLARE_SHAPE_FN(conv1d) {
     outputShapeInfo[3] = oC;
   }
 
-  sd::LongType * second = shape::calcStridesFortran(outputShapeInfo,shape::rank(outputShapeInfo));
-  shape::setStride(outputShapeInfo,second);
+  sd::LongType * second = shape::calcStrides(shape::shapeOf(outputShapeInfo), shape::rank(outputShapeInfo));
+  shape::setStride(outputShapeInfo, second);
   outputShapeInfo[2 * rank + 1] = 0;  // zero extra flags before setDataType reads it
-  outputShapeInfo[2 * rank + 2] = -1; // EWS unknown
-  shape::setOrder(outputShapeInfo, 'f');
+  outputShapeInfo[2 * rank + 2] = 1;  // EWS = 1 for contiguous C-order
+  shape::setOrder(outputShapeInfo, 'c');
   ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
   delete[] second;
   return SHAPELIST(CONSTANT(outputShapeInfo));

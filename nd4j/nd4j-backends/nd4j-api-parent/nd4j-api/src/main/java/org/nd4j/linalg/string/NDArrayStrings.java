@@ -167,7 +167,7 @@ public class NDArrayStrings {
      * @return the formatted array
      */
     public String format(INDArray arr, boolean summarize) {
-        if(arr.isEmpty())
+        if(arr.isEmpty() || arr.length() == 0)
             return EMPTY_ARRAY_STR;
         this.scientificFormat = "0.";
         int addPrecision = this.precision;

@@ -61,7 +61,10 @@ public class ArrayOptionsHelper {
     public static final long DTYPE_BYTE_BIT = 32768;        //Also used for UBYTE in conjunction with sign bit
     public static final long DTYPE_SHORT_BIT = 65536;
     public static final long DTYPE_UTF8_BIT = 1048576;
+    public static final long DTYPE_UTF16_BIT = 4194304;        // ARRAY_UTF16 in C++
+    public static final long DTYPE_UTF32_BIT = 16777216;       // ARRAY_UTF32 in C++
     public static final long DTYPE_UNSIGNED_BIT = 8388608;
+    public static final long DTYPE_FLOAT8_BIT = 1024;           // ARRAY_QUANTIZED in C++
 
     public static final long HAS_PADDED_BUFFER = (1<<25);
 
@@ -223,6 +226,12 @@ public class ArrayOptionsHelper {
             flags.add(DTYPE_SHORT_BIT);
         } else if (dataType == DataType.UTF8) {
             flags.add(DTYPE_UTF8_BIT);
+        } else if (dataType == DataType.UTF16) {
+            flags.add(DTYPE_UTF16_BIT);
+        } else if (dataType == DataType.UTF32) {
+            flags.add(DTYPE_UTF32_BIT);
+        } else if (dataType == DataType.FLOAT8) {
+            flags.add(DTYPE_FLOAT8_BIT);
         } else if (dataType == DataType.UINT8 || dataType == DataType.UINT16 ||
                 dataType == DataType.UINT32 || dataType == DataType.UINT64) {
             flags.add(DTYPE_UNSIGNED_BIT);
@@ -464,47 +473,54 @@ public class ArrayOptionsHelper {
      * @return the modified options value with the appropriate bits set for the given DataType
      */
     public static long setDataType(long opt, DataType dataType) {
-        // Clear existing data type bits
-        opt &= ~((1L << DTYPE_COMPRESSED_BIT) | (1L << DTYPE_HALF_BIT) | (1L << DTYPE_BFLOAT16_BIT) |
-                (1L << DTYPE_FLOAT_BIT) | (1L << DTYPE_DOUBLE_BIT) | (1L << DTYPE_INT_BIT) |
-                (1L << DTYPE_LONG_BIT) | (1L << DTYPE_BOOL_BIT) | (1L << DTYPE_BYTE_BIT) |
-                (1L << DTYPE_SHORT_BIT) | (1L << DTYPE_UTF8_BIT) | (1L << DTYPE_UNSIGNED_BIT));
+        // Clear existing data type bits - constants are already bit values, NOT bit positions
+        opt &= ~(DTYPE_COMPRESSED_BIT | DTYPE_HALF_BIT | DTYPE_BFLOAT16_BIT |
+                DTYPE_FLOAT_BIT | DTYPE_DOUBLE_BIT | DTYPE_INT_BIT |
+                DTYPE_LONG_BIT | DTYPE_BOOL_BIT | DTYPE_BYTE_BIT |
+                DTYPE_SHORT_BIT | DTYPE_UTF8_BIT | DTYPE_UNSIGNED_BIT |
+                DTYPE_FLOAT8_BIT | DTYPE_UTF16_BIT | DTYPE_UTF32_BIT);
 
         // Set the appropriate bits based on the DataType
         if (dataType == DataType.COMPRESSED) {
-            opt |= 1L << DTYPE_COMPRESSED_BIT;
+            opt |= DTYPE_COMPRESSED_BIT;
         } else if (dataType == DataType.FLOAT16) {
-            opt |= 1L << DTYPE_HALF_BIT;
+            opt |= DTYPE_HALF_BIT;
         } else if (dataType == DataType.BFLOAT16) {
-            opt |= 1L << DTYPE_BFLOAT16_BIT;
+            opt |= DTYPE_BFLOAT16_BIT;
         } else if (dataType == DataType.FLOAT) {
-            opt |= 1L << DTYPE_FLOAT_BIT;
+            opt |= DTYPE_FLOAT_BIT;
         } else if (dataType == DataType.DOUBLE) {
-            opt |= 1L << DTYPE_DOUBLE_BIT;
+            opt |= DTYPE_DOUBLE_BIT;
         } else if (dataType == DataType.UINT32) {
-            opt |= 1L << DTYPE_INT_BIT;
-            opt |= 1L << DTYPE_UNSIGNED_BIT;
+            opt |= DTYPE_INT_BIT;
+            opt |= DTYPE_UNSIGNED_BIT;
         } else if (dataType == INT32) {
-            opt |= 1L << DTYPE_INT_BIT;
+            opt |= DTYPE_INT_BIT;
         } else if (dataType == DataType.UINT64) {
-            opt |= 1L << DTYPE_LONG_BIT;
-            opt |= 1L << DTYPE_UNSIGNED_BIT;
+            opt |= DTYPE_LONG_BIT;
+            opt |= DTYPE_UNSIGNED_BIT;
         } else if (dataType == DataType.INT64) {
-            opt |= 1L << DTYPE_LONG_BIT;
+            opt |= DTYPE_LONG_BIT;
         } else if (dataType == DataType.BOOL) {
-            opt |= 1L << DTYPE_BOOL_BIT;
+            opt |= DTYPE_BOOL_BIT;
         } else if (dataType == DataType.UINT8) {
-            opt |= 1L << DTYPE_BYTE_BIT;
-            opt |= 1L << DTYPE_UNSIGNED_BIT;
+            opt |= DTYPE_BYTE_BIT;
+            opt |= DTYPE_UNSIGNED_BIT;
         } else if (dataType == DataType.INT8) {
-            opt |= 1L << DTYPE_BYTE_BIT;
+            opt |= DTYPE_BYTE_BIT;
         } else if (dataType == DataType.UINT16) {
-            opt |= 1L << DTYPE_SHORT_BIT;
-            opt |= 1L << DTYPE_UNSIGNED_BIT;
+            opt |= DTYPE_SHORT_BIT;
+            opt |= DTYPE_UNSIGNED_BIT;
         } else if (dataType == DataType.INT16) {
-            opt |= 1L << DTYPE_SHORT_BIT;
+            opt |= DTYPE_SHORT_BIT;
         } else if (dataType == DataType.UTF8) {
-            opt |= 1L << DTYPE_UTF8_BIT;
+            opt |= DTYPE_UTF8_BIT;
+        } else if (dataType == DataType.UTF16) {
+            opt |= DTYPE_UTF16_BIT;
+        } else if (dataType == DataType.UTF32) {
+            opt |= DTYPE_UTF32_BIT;
+        } else if (dataType == DataType.FLOAT8) {
+            opt |= DTYPE_FLOAT8_BIT;
         } else {
             throw new IllegalArgumentException("Unknown DataType: " + dataType);
         }
@@ -537,6 +553,12 @@ public class ArrayOptionsHelper {
             return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.UINT16 : DataType.INT16;
         else if (hasBitSet(opt, DTYPE_UTF8_BIT))
             return DataType.UTF8;
+        else if (hasBitSet(opt, DTYPE_UTF16_BIT))
+            return DataType.UTF16;
+        else if (hasBitSet(opt, DTYPE_UTF32_BIT))
+            return DataType.UTF32;
+        else if (hasBitSet(opt, DTYPE_FLOAT8_BIT))
+            return DataType.FLOAT8;
         else
             throw new ND4JUnknownDataTypeException("Unknown extras set: [" + opt + "]");
     }
@@ -598,6 +620,15 @@ public class ArrayOptionsHelper {
                 break;
             case UTF8:
                 bit = DTYPE_UTF8_BIT;
+                break;
+            case UTF16:
+                bit = DTYPE_UTF16_BIT;
+                break;
+            case UTF32:
+                bit = DTYPE_UTF32_BIT;
+                break;
+            case FLOAT8:
+                bit = DTYPE_FLOAT8_BIT;
                 break;
             case COMPRESSED:
                 bit = DTYPE_COMPRESSED_BIT;

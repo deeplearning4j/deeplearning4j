@@ -32,17 +32,16 @@ namespace helpers {
 
 template <typename T>
 NDArray matrixMinor(NDArray& in, sd::LongType col) {
-  NDArray* m = in.ulike();
-  m->setIdentity();
-  auto mRef = *m;
-  auto view = mRef({col, m->rows(), col, m->columns()});
-  auto inView = in({col, m->rows(), col, m->columns()});
+  // Allocate on stack via shapeInfo constructor — no pointer aliasing issues
+  NDArray m(in.shapeInfo(), false, in.getContext(), false);
+  m.setIdentity();
+  auto view = m({col, m.rows(), col, m.columns()});
+  auto inView = in({col, m.rows(), col, m.columns()});
   view->assign(inView);
   delete view;
   delete inView;
-  delete m;
 
-  return mRef;
+  return m;
 }
 
 /* m = I - v v^T */
@@ -82,7 +81,7 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     auto *normPtr = currentColumn->reduceAlongDimension(reduce::Norm2,&zeroVec);
     NDArray norm = *normPtr;
     delete normPtr;
-    
+
     if (matrix->t<T>(k, k) > T(0.f)) {  // negate on positive matrix diagonal element
       NDArray *negNorm = norm * T(-1.f);
       norm.assign(negNorm);
@@ -93,17 +92,18 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     NDArray *ePlusColumn = e + (*currentColumn);
     e.assign(ePlusColumn);
     delete ePlusColumn;
-    
+
     auto *normEPtr = e.reduceAlongDimension(reduce::Norm2, &zeroVec);
     NDArray *eDivNormE = e / (*normEPtr);
     e.assign(eDivNormE);
     delete eDivNormE;
     delete normEPtr;
-    
+
     q[k] = new NDArray(vmul<T>(e, M));
     auto qQ = z.ulike();
-    MmulHelper::matmul(q[k], &z, qQ, false, false, 0, 0, qQ);
+    MmulHelper::matmul(q[k], &z, qQ, false, false, 1.0, 0.0, qQ);
     z = std::move(*qQ);
+    delete qQ;
 
     delete currentColumn;
   }
@@ -112,21 +112,20 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
   resQ->assign(q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
-    auto tempResQ = resQ;
-    MmulHelper::matmul(q[i], resQ, tempResQ, false, false, 0, 0, tempResQ);  // use mmulMxM?
-    resQ = std::move(tempResQ);
+    auto tempResQ = resQ->ulike();
+    MmulHelper::matmul(q[i], resQ, tempResQ, false, false, 1.0, 0.0, tempResQ);
+    delete resQ;
+    resQ = tempResQ;
   }
-  MmulHelper::matmul(resQ, matrix, resR, false, false, 0, 0, resR);
+  MmulHelper::matmul(resQ, matrix, resR, false, false, 1.0, 0.0, resR);
   // resR *= -1.f;
   resQ->transposei();
   if (fullMatricies) {
     Q->assign(resQ);
     R->assign(resR);
   } else {
-    auto resQRef = *resQ;
-    auto resRRef = *resR;
-    auto resQView = resQRef({0, 0, 0, N});
-    auto resRView = resRRef({0, N, 0, 0});
+    auto resQView = (*resQ)({0, 0, 0, N});
+    auto resRView = (*resR)({0, N, 0, 0});
     Q->assign(resQView);
     R->assign(resRView);
     delete resQView;
@@ -146,6 +145,13 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
 
 template <typename T>
 void qr_(NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.
+  // Process the single matrix directly.
+  if (input->rankOf() == 2) {
+    qrSingle<T>(input, outputQ, outputR, fullMatricies);
+    return;
+  }
+
   sd::LongType lastDim = input->rankOf() - 1;
   sd::LongType preLastDim = input->rankOf() - 2;
   ResultSet listOutQ(outputQ->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
@@ -153,7 +159,6 @@ void qr_(NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMat
   ResultSet listInput(input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
   auto batching = PRAGMA_THREADS_FOR {
     for (auto batch = start; batch < stop; batch++) {
-      // qr here
       qrSingle<T>(listInput.at(batch), listOutQ.at(batch), listOutR.at(batch), fullMatricies);
     }
   };

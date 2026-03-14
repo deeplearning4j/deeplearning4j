@@ -177,8 +177,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     const LongType dilatedKernelDim = kernelDim + (kernelDim - 1) * (dilation - 1);
     LongType outputLength = 0;
 
-    if (paddingMode == 0) {  // valid
-      outputLength = inputDim - dilatedKernelDim + 1;
+    if (paddingMode == 0) {  // valid with explicit padding
+      outputLength = inputDim + 2 * padding - dilatedKernelDim + 1;
     } else if (paddingMode == 1 || paddingMode == 2) {  // same
       outputLength = inputDim;
     } else {
@@ -337,24 +337,14 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     oW = calcOutDimDeconv(iW, kW, sW, pW, dW, paddingMode);
   }
 
-  // calculation of output height and width in 3D deconvolution procedure
+  // calculation of output depth, height and width in 3D deconvolution procedure
   static inline void calcOutSizeDeconv3D(LongType& oD, LongType& oH, LongType& oW, const LongType kD, const LongType kH, const LongType kW,
                                          const LongType sD, const LongType sH, const LongType sW,  LongType pD,  LongType pH,
                                          LongType pW, const LongType dD, const LongType dH, const LongType dW, const LongType iD,
                                          const LongType iH, const LongType iW, const int paddingMode) {
-    if (paddingMode == 1) {  // same
-      oD = sD * (iD - 1) + dD * (kD - 1) + 1 - 2 * pD;
-      oH = sH * (iH - 1) + dH * (kH - 1) + 1 - 2 * pH;
-      oW = sW * (iW - 1) + dW * (kW - 1) + 1 - 2 * pW;
-    } else if (paddingMode == 2) {  // causal
-      oD = sD * (iD - 1) + dD * (kD - 1) + 1 - pD;
-      oH = sH * (iH - 1) + dH * (kH - 1) + 1 - pH;
-      oW = sW * (iW - 1) + dW * (kW - 1) + 1 - pW;
-    } else {  // valid
-      oD = sD * (iD - 1) + dD * (kD - 1) + 1;
-      oH = sH * (iH - 1) + dH * (kH - 1) + 1;
-      oW = sW * (iW - 1) + dW * (kW - 1) + 1;
-    }
+    oD = calcOutDimDeconv(iD, kD, sD, pD, dD, paddingMode);
+    oH = calcOutDimDeconv(iH, kH, sH, pH, dH, paddingMode);
+    oW = calcOutDimDeconv(iW, kW, sW, pW, dW, paddingMode);
   }
 
   // evaluates sizes values and indexes using input and output arrays depending on data format

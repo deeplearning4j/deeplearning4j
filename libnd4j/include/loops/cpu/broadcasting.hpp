@@ -698,24 +698,30 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
     }
   }
   else {
-    // Default case for other ranks - general purpose implementation
-    sd::LongType xCoords[SD_MAX_RANK];
-    sd::LongType yCoords[SD_MAX_RANK];
-    sd::LongType zCoords[SD_MAX_RANK];
+    // Default TAD-based broadcast: iterate over TADs, apply Y to each TAD.
+    // start/stop are TAD indices (numTads), NOT element indices.
+    // Each TAD has shape matching Y's shape (along the broadcast dimension).
+    sd::LongType tadLength = shape::length(xTadShapeInfo);
 
     for (auto i = start; i < stop; i++) {
-      // Calculate independent coordinates for each array
-      INDEX2COORDS(i, xRank, xShape, xCoords);
-      INDEX2COORDS(i, yRank, yShape, yCoords);
-      INDEX2COORDS(i, zRank, zShape, zCoords);
+      auto oX = x + xTadOffset[i];
+      auto oZ = z + (zTadOffset ? zTadOffset[i] : xTadOffset[i]);
 
-      // Calculate offsets based on each array's coordinates and strides
-      sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(xRank, xStrides, xCoords, xOffset);
-      COORDS2INDEX(yRank, yStrides, yCoords, yOffset);
-      COORDS2INDEX(zRank, zStrides, zCoords, zOffset);
+      for (sd::LongType f = 0; f < tadLength; f++) {
+        sd::LongType xCoord[SD_MAX_RANK], yCoord[SD_MAX_RANK], zCoord[SD_MAX_RANK];
+        sd::LongType xOff, yOff, zOff;
 
-      z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+        INDEX2COORDS(f, xTadRank, xTadShape, xCoord);
+        COORDS2INDEX(xTadRank, xTadStrides, xCoord, xOff);
+
+        INDEX2COORDS(f, yRank, yShape, yCoord);
+        COORDS2INDEX(yRank, yStrides, yCoord, yOff);
+
+        INDEX2COORDS(f, zTadRank, zTadShape, zCoord);
+        COORDS2INDEX(zTadRank, zTadStrides, zCoord, zOff);
+
+        oZ[zOff] = OpType::op(oX[xOff], y[yOff]);
+      }
     }
   }
 }

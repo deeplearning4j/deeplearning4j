@@ -177,7 +177,8 @@ public class ConvolutionUtils {
     @Deprecated
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode) {
-        return getOutputSize(inputData, kernel, strides, padding, convolutionMode, ONES);
+        int[] pad = padding != null ? padding : new int[]{0, 0};
+        return getOutputSize(inputData, kernel, strides, pad, convolutionMode, ONES);
     }
 
 
@@ -309,7 +310,8 @@ public class ConvolutionUtils {
     @Deprecated
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode, int[] dilation) {
-        return Arrays.stream(getOutputSize(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+        return Arrays.stream(getOutputSize(inputData, toLongArray(kernel), toLongArray(strides),
+                padding != null ? toLongArray(padding) : null,
                 convolutionMode, toLongArray(dilation), CNN2DFormat.NCHW)).mapToInt(Math::toIntExact).toArray();
     }
 
@@ -337,11 +339,19 @@ public class ConvolutionUtils {
         if (strides.length != 2) {
             throw new IllegalArgumentException("Strides must be an array of length 2 (received array of length " + strides.length + ")");
         }
-        if (padding.length != 2) {
-            throw new IllegalArgumentException("Padding must be an array of length 2 (received array of length " + padding.length + ")");
-        }
         if (dilation.length != 2) {
             throw new IllegalArgumentException("Dilation must be an array of length 2 (received array of length " + dilation.length + ")");
+        }
+
+        // For Same mode, padding is not used; default to zeros if null
+        if (padding == null) {
+            if (convolutionMode != ConvolutionMode.Same) {
+                throw new IllegalArgumentException("Padding must not be null for convolution mode " + convolutionMode);
+            }
+            padding = new long[]{0, 0};
+        }
+        if (padding.length != 2) {
+            throw new IllegalArgumentException("Padding must be an array of length 2 (received array of length " + padding.length + ")");
         }
 
         long inH = format == CNN2DFormat.NCHW ? inputData.size(2) : inputData.size(1);
@@ -359,13 +369,30 @@ public class ConvolutionUtils {
         long dH = dilation[0];
         long dW = dilation[1];
 
+        // Effective kernel size accounting for dilation
+        long eKH = (kH - 1) * dH + 1;
+        long eKW = (kW - 1) * dW + 1;
+
         long outH, outW;
         if (convolutionMode == ConvolutionMode.Same) {
             outH = (long) Math.ceil(inH / (double) sH);
             outW = (long) Math.ceil(inW / (double) sW);
+        } else if (convolutionMode == ConvolutionMode.Strict) {
+            long hRemainder = (inH + 2 * padH - eKH) % sH;
+            long wRemainder = (inW + 2 * padW - eKW) % sW;
+            if (hRemainder != 0 || wRemainder != 0) {
+                throw new DL4JInvalidConfigException(
+                        "ConvolutionMode.Strict: output size is not an integer. Input size [h,w] = [" + inH + "," + inW
+                                + "], kernel = [" + kH + "," + kW + "], strides = [" + sH + "," + sW
+                                + "], padding = [" + padH + "," + padW + "], dilation = [" + dH + "," + dW + "]."
+                                + " To truncate extra input, use ConvolutionMode.Truncate; to use padding, use ConvolutionMode.Same");
+            }
+            outH = (inH + 2 * padH - eKH) / sH + 1;
+            outW = (inW + 2 * padW - eKW) / sW + 1;
         } else {
-            outH = (long) Math.ceil((inH - (kH - 1) * dH + 2 * padH) / (double) sH);
-            outW = (long) Math.ceil((inW - (kW - 1) * dW + 2 * padW) / (double) sW);
+            // Truncate mode: floor division
+            outH = (inH + 2 * padH - eKH) / sH + 1;
+            outW = (inW + 2 * padW - eKW) / sW + 1;
         }
 
         return new long[]{outH, outW};
@@ -518,7 +545,7 @@ public class ConvolutionUtils {
 
         long oH, oW;
 
-        if (convolutionMode == ConvolutionMode.Truncate) {  // valid
+        if (convolutionMode == ConvolutionMode.Truncate || convolutionMode == ConvolutionMode.Strict) {  // valid
             oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
             oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
         } else if (convolutionMode == ConvolutionMode.Same) {  // same

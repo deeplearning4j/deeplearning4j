@@ -100,34 +100,22 @@ public class KerasLayerUtils {
                                                            boolean enforceTrainingConfig,
                                                            KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_B_REGULARIZER())) {
-            Map<String, Object> regularizerConfig =
-                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_B_REGULARIZER());
-            if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L1()))
-                throw new UnsupportedKerasConfigurationException("L1 regularization for bias parameter not supported");
-        }
-        return 0.0;
+        return KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, conf.getLAYER_FIELD_B_REGULARIZER(), conf.getREGULARIZATION_TYPE_L1());
     }
 
     /**
      * Get L2 bias regularization (if any) from Keras bias regularization configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return L1 regularization strength (0.0 if none)
+     * @return L2 regularization strength (0.0 if none)
      */
-    private static double getBiasL2RegularizationFromConfig(Map<String, Object> layerConfig,
+    public static double getBiasL2RegularizationFromConfig(Map<String, Object> layerConfig,
                                                             boolean enforceTrainingConfig,
                                                             KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
-        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (innerConfig.containsKey(conf.getLAYER_FIELD_B_REGULARIZER())) {
-            Map<String, Object> regularizerConfig =
-                    (Map<String, Object>) innerConfig.get(conf.getLAYER_FIELD_B_REGULARIZER());
-            if (regularizerConfig != null && regularizerConfig.containsKey(conf.getREGULARIZATION_TYPE_L2()))
-                throw new UnsupportedKerasConfigurationException("L2 regularization for bias parameter not supported");
-        }
-        return 0.0;
+        return KerasRegularizerUtils.getWeightRegularizerFromConfig(
+                layerConfig, conf, conf.getLAYER_FIELD_B_REGULARIZER(), conf.getREGULARIZATION_TYPE_L2());
     }
 
     /**

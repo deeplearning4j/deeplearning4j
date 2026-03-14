@@ -2631,7 +2631,25 @@ public class DynamicShapePlanExecutor implements Closeable {
                     ctx.setDArguments(slot.getDArgs());
                     ctx.setSArguments(slot.getSArgs() == null ? new String[0] : slot.getSArgs());
 
-                    long opHash = ((CustomOp) fn).opHash();
+                    // Use the slot's opName for hash lookup, not fn.opHash().
+                    // The compiler may remap ops (e.g., reshape → reshape_no_copy) and
+                    // store the remapped name in the slot while keeping the original op
+                    // object. fn.opHash() would return the ORIGINAL op's hash (e.g.,
+                    // "reshape"), causing the C++ side to call the wrong shape function
+                    // with incompatible iArgs format.
+                    String slotOpName = slot.getOpName();
+                    long opHash;
+                    if (!slotOpName.equals(fn.opName())) {
+                        // Op was remapped — look up hash by the slot's actual op name
+                        Map<String, org.nd4j.linalg.api.ops.CustomOpDescriptor> customOps = Nd4j.getExecutioner().getCustomOperations();
+                        org.nd4j.linalg.api.ops.CustomOpDescriptor desc = customOps.get(slotOpName);
+                        if (desc == null) {
+                            throw new RuntimeException("Op name " + slotOpName + " not found in custom operations registry");
+                        }
+                        opHash = desc.getHash();
+                    } else {
+                        opHash = ((CustomOp) fn).opHash();
+                    }
                     OpaqueShapeList shapeList;
                     if (!slot.isOutputShapeDependsOnInputValues()) {
                         shapeList = nativeOps.calculateOutputShapesNoSync(null, opHash,

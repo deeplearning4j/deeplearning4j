@@ -2024,6 +2024,7 @@ NDArray &NDArray::operator=(NDArray &other) {
     _shapeInfoBuffer = constDesc;
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
+    _length = other._length;
 
     if (!other.isEmpty()) {
       // Manually delete old buffer before assigning new one if we own it
@@ -6864,7 +6865,11 @@ NDArray *NDArray::like() {
 
 ////////////////////////////////////////////////////////////////////////
 NDArray *NDArray::ulike()  {
-  NDArray * ret = new  NDArray(this, false, getContext());
+  // Allocate a NEW buffer (uninitialized) with the same shape.
+  // Must NOT share the buffer with 'this' — the old code used a constructor
+  // that aliased the same primary/special pointers, causing writes to the
+  // "new" array to corrupt 'this'.
+  NDArray *ret = new NDArray(shapeInfo(), false, getContext(), false);
   return ret;
 }
 

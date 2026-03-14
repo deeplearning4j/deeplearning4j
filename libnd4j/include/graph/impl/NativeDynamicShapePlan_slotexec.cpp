@@ -794,6 +794,17 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
+    // Empty arrays (ARRAY_EMPTY flag): use full-shapeInfo constructor to
+    // preserve the flag.  NDArray(order, shape, dt) rebuilds shapeInfo from
+    // dimensions alone, losing ARRAY_EMPTY and crashing concat/etc.
+    if (shape::isEmpty(const_cast<LongType*>(shapeInfo))) {
+      NDArray* emptyOut = new NDArray(const_cast<LongType*>(shapeInfo), true);
+      outputs[i] = emptyOut;
+      outputSlots_[slotIdx] = emptyOut;
+      slotArrayCache_[slotIdx] = emptyOut;
+      continue;
+    }
+
     std::vector<LongType> shape(rank);
     for (int d = 0; d < rank; d++) {
       shape[d] = shapeInfo[d + 1];
@@ -884,6 +895,24 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   step4_execute:
+
+  // Skip execution if all outputs are empty arrays — nothing to compute.
+  // This prevents CUDA kernel launches on zero-element arrays which cause
+  // illegal memory access errors (e.g., set_scalar on [1,3,3,0,64]).
+  {
+    bool allOutputsEmpty = true;
+    for (int i = 0; i < numActualOutputs; i++) {
+      if (outputs[i] != nullptr && !outputs[i]->isEmpty()) {
+        allOutputsEmpty = false;
+        break;
+      }
+    }
+    if (allOutputsEmpty && numActualOutputs > 0) {
+      DSP_DIAG_SLOT(EXECUTE, stepIdx, "skipping slot %d (%s): all %d outputs are empty",
+                stepIdx, slot.opName.c_str(), numActualOutputs);
+      return Status::OK;
+    }
+  }
 
   // ── Step 4: Configure context and execute ────────────────────────────────
   auto& ctx = *contextPool_[stepIdx];

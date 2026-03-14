@@ -72,6 +72,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsInf;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.IsNaN;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
@@ -1471,11 +1472,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             return flattened;
         } else {
-            for (int i = 0; i < vectorsAlongDimension(dimension); i++) {
-                INDArray vec = vectorAlongDimension(i, dimension);
-                vec.cumsumi(0);
-
-            }
+            // Use the CumSum op which correctly handles multi-dimensional arrays
+            // via the C++ prefix sum implementation
+            INDArray result = Nd4j.base().cumsum(this, false, false, dimension);
+            this.assign(result);
         }
 
         return this;
@@ -2092,15 +2092,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         }
 
-        // For views, we need to create a new contiguous array and copy the data
-        // Simply duplicating the underlying buffer doesn't work because:
-        // 1. The view may reference only a subset of the buffer
-        // 2. The view's strides/offset don't make sense with a copied buffer when serialized
+        // When the ordering changes or the array is a view, we need to create a new
+        // contiguous array and copy elements in logical order. Simply duplicating the
+        // underlying buffer doesn't work because:
+        // 1. Views may reference only a subset of the buffer
+        // 2. Changing ordering requires data rearrangement (e.g., row-major to column-major)
+        // 3. The view's strides/offset don't make sense with a copied buffer when serialized
         INDArray z;
-        if (isView()) {
+        if (isView() || this.ordering() != order) {
             // Create a new contiguous array with the proper shape and ordering
             z = Nd4j.create(dataType(), shape(), order);
-            // Copy all elements from this view to the new contiguous array
+            // Copy all elements from this array to the new contiguous array
             z.assign(this);
         } else {
             z = Nd4j.create(localData.dup(), shape(), stride(), offset(), order);
@@ -3451,7 +3453,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mmul(INDArray other, char resultOrder) {
         Preconditions.checkArgument(resultOrder == 'c' || resultOrder == 'f', "Order must be either 'c' or 'f', but [" + resultOrder + "] was given");
-        Preconditions.checkState(this.dataType() == other.dataType(), "Matrix multiplication: arrays must have same dtype: %s vs. %s", this.dataType(), other.dataType());
+        if (this.dataType() != other.dataType()) {
+            throw new ND4JIllegalStateException("Matrix multiplication: arrays must have same dtype: " + this.dataType() + " vs. " + other.dataType());
+        }
         // FIXME: add support for 3D+ here?
         long[] shape = other.rank() == 1 ? new long[]{rows()} : new long[]{rows(), other.columns()};
         INDArray result = createUninitialized(this.dataType(), shape, resultOrder);
@@ -3495,7 +3499,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public double[] toDoubleVector() {
         DataBuffer localData = this.data;
-        if (localData == null || isEmpty()) {
+        if (localData == null || isEmpty() || length() == 0) {
             return new double[0];
         }
         if(!isVectorOrScalar()) {
@@ -3514,7 +3518,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public float[] toFloatVector() {
         DataBuffer localData = this.data;
-        if (localData == null || isEmpty()) {
+        if (localData == null || isEmpty() || length() == 0) {
             return new float[0];
         }
         if(!isVectorOrScalar()) {
@@ -3556,7 +3560,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public int[] toIntVector() {
         DataBuffer localData = this.data;
-        if (localData == null || isEmpty()) {
+        if (localData == null || isEmpty() || length() == 0) {
             return new int[0];
         }
 
@@ -3576,7 +3580,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public long[] toLongVector() {
         DataBuffer localData = this.data;
-        if (localData == null || isEmpty()) {
+        if (localData == null || isEmpty() || length() == 0) {
             return new long[0];
         }
 
@@ -3758,7 +3762,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         /* check sizes and resize if necessary */
 
 
-        if (result == this || result == other) {
+        boolean resultOverlapsInputs = result == this || result == other
+                || (result.data() != null && this.data() != null && result.data() == this.data())
+                || (result.data() != null && other.data() != null && result.data() == other.data());
+        if (resultOverlapsInputs) {
             /* actually, blas cannot do multiplications in-place. Therefore, we will fake by
              * allocating a temporary object on the side and copy the result later.
              */
@@ -4668,11 +4675,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
 
         if (isColumnVector() && c == 0) {
-            if (keepDim) {
-                return this;
-            } else {
-                return reshape(length());
-            }
+            // The whole array is the single column — return as-is regardless of keepDim
+            return this;
         } else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for column");
         Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
@@ -5045,7 +5049,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public boolean equalsWithEps(Object o, double eps) {
         Nd4j.getCompressor().autoDecompress(this);
-
+        eps = Math.abs(eps);
 
         if (o == null)
             return false;
@@ -5071,11 +5075,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (this.length() != n.length())
             return false;
 
+        // Two arrays with zero length are equal if they have the same shape and data type,
+        // regardless of isEmpty() flag mismatch
+        if (this.length() == 0 && n.length() == 0)
+            return Shape.shapeEquals(this.shape(), n.shape()) && this.dataType() == n.dataType();
+
         if (this.isEmpty() != n.isEmpty())
             return false;
-
-        if (this.isEmpty() && n.isEmpty())
-            return Shape.shapeEquals(this.shape(), n.shape());
 
         if (this.dataType() != n.dataType())
             return false;
@@ -5115,36 +5121,37 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 return val == val2;
             }
 
-        } else if (isVector() && n.isVector()) {
-            val op = new EqualsWithEps(this, n, eps);
-            Nd4j.exec(op);
-            val diff = op.z().getDouble(0);
-
-            return Math.abs(1.0 - diff) <= eps;
         }
 
         if (!Arrays.equals(this.shape(), n.shape()))
             return false;
 
-
         if (!Shape.shapeEquals(shape(), n.shape())) {
             return false;
         }
 
-
         if (slices() != n.slices())
             return false;
 
-        // Create array of all dimensions for full array comparison
-        long[] allDims = new long[rank()];
-        for (int i = 0; i < rank(); i++) {
-            allDims[i] = i;
+        // For integer and boolean types, use element-wise eq() comparison
+        if (isZ() || isB()) {
+            INDArray eq = this.eq(n);
+            long matchCount = eq.castTo(DataType.LONG).sumNumber().longValue();
+            return matchCount == length();
         }
-        EqualsWithEps op = new EqualsWithEps(this, n, eps, allDims);
-        Nd4j.getExecutioner().exec(op);
-        double diff = op.z().getDouble(0);
 
-        return Math.abs(1.0 - diff) <= eps;
+        // For floating point types, check element-wise abs difference against eps
+        // The EqualsWithEps reduce3 op has issues with multi-dimensional arrays
+        if (eps == 0) {
+            INDArray eq = this.eq(n);
+            long matchCount = eq.castTo(DataType.LONG).sumNumber().longValue();
+            return matchCount == length();
+        }
+
+        INDArray absDiff = Nd4j.math().abs(this.sub(n));
+        INDArray withinEps = absDiff.lt(eps);
+        long matchCount = withinEps.castTo(DataType.LONG).sumNumber().longValue();
+        return matchCount == length();
     }
 
     @Override
@@ -5175,6 +5182,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int hashCode() {
+        if (isEmpty() || length() == 0) {
+            return Arrays.hashCode(shape());
+        }
         val longHash = Nd4j.exec(new HashCode(this))[0].getLong(0);
         return Math.abs(longHash) <= Integer.MAX_VALUE ? (int) longHash : (int) (longHash % Integer.MAX_VALUE);
     }
@@ -6075,43 +6085,44 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
             return this;
         }
+        // Temporarily redirect allocations to the target workspace.
+        // Note: we only set the current workspace pointer - we do NOT call notifyScopeEntered()
+        // as that would create unmatched scope entries leading to workspace lifecycle corruption
+        // (leaked scope counts prevent workspaces from properly closing between iterations).
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
-        if(target != null) {
-            target.notifyScopeEntered();
-        }
         INDArray copy = null;
-        if (!this.isView()) {
-            Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
-            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+        try {
+            if (!this.isView()) {
+                Nd4j.getExecutioner().commit();
+                DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
+                Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
-            copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
-            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
-                Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(copy.getId(),
-                        NDArrayEvent.builder()
-                                .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                                .stackTrace(Thread.currentThread().getStackTrace())
-                                .dataAtEvent(NDArrayMetaData.from(copy))
-                                .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
-                                .build());
+                copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+                if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                    Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(copy.getId(),
+                            NDArrayEvent.builder()
+                                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
+                                    .stackTrace(Thread.currentThread().getStackTrace())
+                                    .dataAtEvent(NDArrayMetaData.from(copy))
+                                    .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
+                                    .build());
+                }
+            } else {
+                copy = this.dup(this.ordering());
+                if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                    Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(copy.getId(),
+                            NDArrayEvent.builder()
+                                    .parentDataAtEvent(NDArrayMetaData.fromArr(this))
+                                    .stackTrace(Thread.currentThread().getStackTrace())
+                                    .dataAtEvent(NDArrayMetaData.from(copy))
+                                    .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
+                                    .build());
+                }
+                Nd4j.getExecutioner().commit();
             }
-        } else {
-            copy = this.dup(this.ordering());
-            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
-                Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(copy.getId(),
-                        NDArrayEvent.builder()
-                                .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                                .stackTrace(Thread.currentThread().getStackTrace())
-                                .dataAtEvent(NDArrayMetaData.from(copy))
-                                .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
-                                .build());
-            }
-            Nd4j.getExecutioner().commit();
-        }
-
-        Nd4j.getMemoryManager().setCurrentWorkspace(current);
-        if(current != null) {
-            current.notifyScopeEntered();
+        } finally {
+            // Always restore the previous current workspace
+            Nd4j.getMemoryManager().setCurrentWorkspace(current);
         }
 
         return copy;
@@ -6582,16 +6593,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.closeable = closeable;
 
         if (!closeable) {
-            DataBuffer dataBuffer = data();
-            if (dataBuffer != null) {
-                // Mark the data buffer as constant to prevent deallocation
-                dataBuffer.setConstant(true);
-            }
+            // Only mark the data buffer as constant if this is NOT a view.
+            // Views share the data buffer with their parent; marking the shared
+            // buffer constant would poison the parent's closeable() check too.
+            if (!isView()) {
+                DataBuffer dataBuffer = data();
+                if (dataBuffer != null) {
+                    dataBuffer.setConstant(true);
+                }
 
-            // Also mark the shape info buffer as constant
-            DataBuffer shapeBuffer = shapeInfoDataBuffer();
-            if (shapeBuffer != null) {
-                shapeBuffer.setConstant(true);
+                DataBuffer shapeBuffer = shapeInfoDataBuffer();
+                if (shapeBuffer != null) {
+                    shapeBuffer.setConstant(true);
+                }
             }
         } else {
             // Restore closeable state: undo the constant marking set by setCloseable(false).

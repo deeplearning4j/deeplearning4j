@@ -61,7 +61,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer) conf.getLayer();
 
-        poolingDimensions = ArrayUtil.toLongArray(layerConf.getPoolingDimensions());
+        poolingDimensions = layerConf.getPoolingDimensions() != null
+                ? ArrayUtil.toLongArray(layerConf.getPoolingDimensions()) : null;
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
     }

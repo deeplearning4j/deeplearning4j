@@ -102,8 +102,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
                     INDArray gradientViewSubset = null;
                     INDArray paramsViewSubset = null;
-                    INDArray paramsViewReshape = paramsView.reshape(paramsView.length());
-                    INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
+                    INDArray paramsViewReshape = paramsView.rank() == 1 ? paramsView : paramsView.reshape(paramsView.length());
+                    INDArray gradientViewReshape = gradientView.rank() == 1 ? gradientView : gradientView.reshape(gradientView.length());
                     if (paramSizeThisVariable > 0) {
                         paramsViewSubset = paramsViewReshape.get(NDArrayIndex.interval(paramsViewSoFar,
                                 paramsViewSoFar + paramSizeThisVariable));
@@ -177,7 +177,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             }
 
             if (gradSize > 0) {
-                INDArray gradientViewSubset = gradientView.reshape(gradientView.length()).get(
+                INDArray grad1d = gradientView.rank() == 1 ? gradientView : gradientView.reshape(gradientView.length());
+                INDArray gradientViewSubset = grad1d.get(
                         NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + gradSize));
                 ub.setGradientView(gradientViewSubset);
             }
@@ -315,18 +316,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         for (UpdaterBlock ub : updaterBlocks) {
             if (ub.skipDueToPretrainConfig(this instanceof LayerUpdater)) {
-                //Should skip some updater blocks sometimes
-                //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
             if (isExternal) {
-                //RL4J etc type case: calculate gradients in 1 net, update them in another
                 ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());
             } else {
-                //Standard case
                 ub.update(iteration, epoch);
             }
-
         }
     }
 
@@ -352,7 +348,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     protected List<INDArray> getMinibatchDivisionSubsets(INDArray from){
-        from = from.reshape(from.length());
+        from = from.rank() == 1 ? from : from.reshape(from.length());
         List<INDArray> out = new ArrayList<>();
         long paramsSoFar = 0;
         long currentStart = 0;
@@ -379,7 +375,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         if(currentEnd > currentStart && currentStart < from.length()){
             //Process last part of the gradient view array
-            INDArray subset = from.reshape(from.length()).get( NDArrayIndex.interval(currentStart, currentEnd));
+            INDArray from1d = from.rank() == 1 ? from : from.reshape(from.length());
+            INDArray subset = from1d.get( NDArrayIndex.interval(currentStart, currentEnd));
             out.add(subset);
         }
         return out;
@@ -388,6 +385,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected boolean isSingleLayerUpdater() {
         return false;
     }
+
 
     /**
      * Pre-apply: Apply gradient normalization/clipping

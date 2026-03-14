@@ -90,6 +90,7 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
                 .weightInit(init)
                 .dilation(getDilationRateLong(layerConfig, 2, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
                 .dataFormat(dimOrder == KerasLayer.DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)

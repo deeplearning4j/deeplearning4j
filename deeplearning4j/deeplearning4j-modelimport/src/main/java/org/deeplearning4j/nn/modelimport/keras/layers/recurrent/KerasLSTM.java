@@ -165,8 +165,7 @@ public class KerasLSTM extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
 
-        // TODO: support recurrent dropout
-        // double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
+        KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -187,9 +186,11 @@ public class KerasLSTM extends KerasLayer {
                 .activation(KerasActivationUtils.getIActivationFromConfig(layerConfig, conf))
                 .weightInit(init)
                 .weightInitRecurrent(recurrentInit)
-                .biasInit(0.0) // TODO: this is incorrect
+                .biasInit(0.0)
                 .l1(this.weightL1Regularization)
-                .l2(this.weightL2Regularization).dataFormat(RNNFormat.NWC);
+                .l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization)
+                .l2Bias(this.biasL2Regularization).dataFormat(RNNFormat.NWC);
         Integer nIn = KerasLayerUtils.getNInFromInputDim(layerConfig, conf);
         if(nIn != null)
             builder.setNIn(nIn);

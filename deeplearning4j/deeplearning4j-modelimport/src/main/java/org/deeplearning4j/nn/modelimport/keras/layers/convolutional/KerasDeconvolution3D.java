@@ -96,8 +96,9 @@ public class KerasDeconvolution3D extends KerasConvolution {
                 .weightInit(init)
                 .dataFormat(KerasConvolutionUtils.getCNN3DDataFormatFromConfig(layerConfig,conf))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
+                .l1Bias(this.biasL1Regularization).l2Bias(this.biasL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 2, conf, kerasMajorVersion))
+                .kernelSize(getKernelSizeFromConfigLong(layerConfig, 3, conf, kerasMajorVersion))
                 .hasBias(hasBias)
                 .stride(getStrideFromConfigLong(layerConfig, 3, conf));
         long[] padding = getPaddingFromBorderModeConfigLong(layerConfig, 3, conf, kerasMajorVersion);

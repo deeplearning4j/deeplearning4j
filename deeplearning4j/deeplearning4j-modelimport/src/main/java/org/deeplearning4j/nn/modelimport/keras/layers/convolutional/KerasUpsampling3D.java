@@ -62,14 +62,13 @@ public class KerasUpsampling3D extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
-        int[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfig(layerConfig, 3, conf);
-        // TODO: make sure to allow different sizes.
+        long[] size = KerasConvolutionUtils.getUpsamplingSizeFromConfigLong(layerConfig, 3, conf);
 
         Upsampling3D.Builder builder = new Upsampling3D.Builder()
                 .name(this.layerName)
                 .dropOut(this.dropout)
                 .dataFormat(getCNN3DDataFormatFromConfig(layerConfig,conf))
-                .size(size[0]);
+                .size(size);
 
         this.layer = builder.build();
         this.vertex = null;

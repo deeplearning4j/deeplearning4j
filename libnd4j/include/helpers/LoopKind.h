@@ -153,9 +153,14 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const LongType* xShapeInfo, c
   }
 
 
-  if (3 == xRank) return BROADCAST_3D;
-  if (4 == xRank) return BROADCAST_4D;
-  if (5 == xRank) return BROADCAST_5D;
+  // Only use fast ND paths when all arrays have the same rank.
+  // When yRank < xRank, the start/stop range is numTads (not the full element count),
+  // which is incompatible with these fast paths that iterate over all dimensions.
+  if (xRank == yRank && yRank == zRank) {
+    if (3 == xRank) return BROADCAST_3D;
+    if (4 == xRank) return BROADCAST_4D;
+    if (5 == xRank) return BROADCAST_5D;
+  }
 
 
   return COMMON;

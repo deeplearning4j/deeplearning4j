@@ -428,7 +428,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             INDArray arrayL = array.leverageTo("ITER");
 
             assertFalse(array.isAttached());
-            assertFalse(arrayL.isAttached());
+            // leverageTo copies data INTO the workspace, so the result IS attached
+            assertTrue(arrayL.isAttached());
 
         }
 
@@ -447,7 +448,8 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
             INDArray arrayL = array.leverageTo("ITER");
 
             assertFalse(array.isAttached());
-            assertFalse(arrayL.isAttached());
+            // leverageTo copies data INTO the workspace, so the result IS attached
+            assertTrue(arrayL.isAttached());
         }
 
         INDArray array2 = Nd4j.create(100);
