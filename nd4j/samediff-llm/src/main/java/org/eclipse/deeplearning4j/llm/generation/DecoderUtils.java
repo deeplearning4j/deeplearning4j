@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.factory.Nd4j;
 
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
@@ -426,45 +425,24 @@ public class DecoderUtils {
             if (inputName.equals("inputs_embeds")) {
                 decoderInputMap.put(inputName, embeddings);
             } else if (inputName.equals("attention_mask")) {
-                if (usingStaticKv) {
-                    long totalSeqLen = maxKvLen + currentSeqLen;
-                    if (canReuse && reusableInputs.containsKey("attention_mask")) {
-                        // Reuse existing mask, just set the new cachePos bit
-                        INDArray mask = reusableInputs.get("attention_mask");
-                        if (cachePos > 0) {
-                            mask.putScalar(0, cachePos - 1, 1);
-                        }
-                        // putScalar writes to host buffer via JavaCPP indexer but does NOT
-                        // mark the host as "written" in the C++ DataBuffer tracking counters.
-                        // Without this tag, syncToDevice() in the frozen fast path is a no-op
-                        // (isSpecialActual() returns true), so the CUDA graph replays with
-                        // stale attention_mask data — the model never sees new decode positions.
-                        Nd4j.getAffinityManager().tagLocation(mask, AffinityManager.Location.HOST);
-                        decoderInputMap.put(inputName, mask);
-                    } else {
-                        INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-                        if (cachePos > 0) {
-                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
-                        }
-                        mask.putScalar(0, totalSeqLen - 1, 1);
-                        // Ensure host-side putScalar is visible to C++ syncToDevice
-                        Nd4j.getAffinityManager().tagLocation(mask, AffinityManager.Location.HOST);
-                        decoderInputMap.put(inputName, mask);
-                        if (canReuse) reusableInputs.put("attention_mask", mask);
-                    }
-                } else {
-                    long totalSeqLen = pastSeqLen + currentSeqLen;
+                // Use contiguous all-ones mask for both growing and static KV paths.
+                // Static KV passes a VIEW [0:cachePos] of the buffer (not the full padded
+                // buffer), so the mask length matches: cachePos + currentSeqLen.
+                // Using the full padded buffer with a sparse mask (1s, gap of 0s, then 1)
+                // breaks because the ONNX model's attn_mask_reformat subgraph adds a causal
+                // mask component that masks positions > position_ids[0]. With the full buffer,
+                // the new token's KV is at position maxKvLen which exceeds position_ids[0],
+                // so it gets masked → model can't attend to its own output → garbage.
+                {
+                    long totalSeqLen = usingStaticKv ? cachePos + currentSeqLen : pastSeqLen + currentSeqLen;
                     decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
                 }
             } else if (inputName.equals("_causal_mask")) {
-                if (canReuse && reusableInputs.containsKey("_causal_mask")) {
-                    // For seqLen=1, causal mask is all zeros — reuse directly
-                    decoderInputMap.put(inputName, reusableInputs.get("_causal_mask"));
-                } else {
-                    long totalSeqLen = usingStaticKv ? maxKvLen + currentSeqLen : pastSeqLen + currentSeqLen;
+                {
+                    // Use cachePos (not maxKvLen) for static KV — matches the VIEW size
+                    long totalSeqLen = usingStaticKv ? cachePos + currentSeqLen : pastSeqLen + currentSeqLen;
                     INDArray causalMask = buildCausalMask(currentSeqLen, totalSeqLen);
                     decoderInputMap.put(inputName, causalMask);
-                    if (canReuse) reusableInputs.put("_causal_mask", causalMask);
                 }
             } else if (inputName.equals("input_ids")) {
                 decoderInputMap.put(inputName, inputIds);
@@ -485,7 +463,21 @@ public class DecoderUtils {
                 if (usingStaticKv) {
                     INDArray staticBuf = staticKvBuffers.get(inputName);
                     if (staticBuf != null) {
-                        decoderInputMap.put(inputName, staticBuf);
+                        // Pass a VIEW [0:cachePos] containing only valid KV entries.
+                        // The full padded buffer would include zero-filled positions that the
+                        // model's causal mask can't properly handle (see attention_mask comment).
+                        if (cachePos > 0 && cachePos < staticBuf.size(2)) {
+                            INDArray view = staticBuf.get(
+                                    NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.interval(0, cachePos), NDArrayIndex.all());
+                            decoderInputMap.put(inputName, view);
+                        } else if (cachePos >= staticBuf.size(2)) {
+                            // Buffer full — use entire buffer
+                            decoderInputMap.put(inputName, staticBuf);
+                        } else {
+                            // cachePos == 0 — empty cache
+                            decoderInputMap.put(inputName, createEmptyKvCache(decoder, inputName, 1, hiddenSize));
+                        }
                     } else {
                         decoderInputMap.put(inputName, createEmptyKvCache(decoder, inputName, 1, hiddenSize));
                     }

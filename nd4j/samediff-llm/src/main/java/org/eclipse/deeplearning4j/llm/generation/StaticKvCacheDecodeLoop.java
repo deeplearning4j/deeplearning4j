@@ -28,7 +28,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.TokenSample;
@@ -184,6 +183,20 @@ public class StaticKvCacheDecodeLoop {
 
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
+        // Clear any pre-compiled DSP plan before the prefill step.
+        // BenchmarkConfigApplier may have compiled a plan using empty placeholder shapes
+        // (past_key_values = [1,3,0,64]), which caches empty present KV shapes. The prefill
+        // step needs fresh shape computation based on the actual input shapes.
+        {
+            InferenceSession prefillCheckSession = decoder.getOrCreateSession();
+            DynamicShapePlanExecutor prefillDspCheck = prefillCheckSession.getDynamicShapePlanExecutor();
+            if (prefillDspCheck != null && prefillDspCheck.getCurrentPlan() != null) {
+                log.info("  Clearing pre-compiled DSP plan for prefill (stale shapes from empty placeholders)");
+                decoder.clearDynamicShapePlanCache();
+                prefillCheckSession.clearAllCaches();
+            }
+        }
+
         for (int step = 0; step < maxNewTokens; step++) {
             long stepStart = System.nanoTime();
             long currentSeqLen = currentEmbeddings.shape()[1];
@@ -218,8 +231,8 @@ public class StaticKvCacheDecodeLoop {
 
             long tAfterDecoder = System.nanoTime();
 
-            // Diagnostic: present KV shapes at steps 1-3 (skip when C++ KV scatter manages outputs)
-            if (step >= 1 && step <= 3 && !kvScatterInCpp) {
+            // Diagnostic: present KV shapes at steps 0-3 (skip when C++ KV scatter manages outputs)
+            if (step <= 3 && !kvScatterInCpp) {
                 logPresentKvDiagnostics(step, decoderOutputs, kvNames);
             }
 
@@ -324,38 +337,22 @@ public class StaticKvCacheDecodeLoop {
                     }
                 }
 
-                // Freeze shapes for CUDA graph capture
+                // View-based KV cache: pass [0:cachePos] view each step instead of
+                // the full padded buffer. Shapes grow by 1 each step, so we cannot
+                // freeze shapes or use CUDA graph capture. But this approach is correct
+                // for ONNX models with attn_mask_reformat (causal mask computed from
+                // sequence dimensions — padded buffer positions exceed position_ids,
+                // causing the model to mask out the new token's own KV).
+                //
+                // Clear any pre-compiled DSP plan since shapes will change every step.
                 InferenceSession decoderSession = decoder.getOrCreateSession();
                 DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
-                boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
-                if (dspExec != null && !skipFreeze) {
-                    dspExec.setShapesFrozen(true);
-                    dspExec.setTraceEnabled(true);
-                    dspExec.setExecutionTimingEnabled(true);
-
-                    // Configure C++ KV scatter: present outputs → static input buffers
-                    // This eliminates 60 copyBuffer + 60 Java view+assign per step
-                    boolean cppKvEnabled = !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
-                    DynamicShapePlan plan = cppKvEnabled ? dspExec.getCurrentPlan() : null;
-                    if (plan != null) {
-                        List<String> presentNames = new ArrayList<>();
-                        presentNames.addAll(kvNames.keyNames);
-                        presentNames.addAll(kvNames.valueNames);
-                        List<String> pastNames = new ArrayList<>();
-                        for (String pn : presentNames) {
-                            pastNames.add(pn.replace("present", "past_key_values"));
-                        }
-                        dspExec.configureKvCacheRetention(plan, presentNames, pastNames,
-                                (int) maxKvLen, (int) cachePos);
-                        kvScatterInCpp = true;
-                        log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}",
-                                presentNames.size(), cachePos);
-                    }
-
-                    log.info("  [Perf] Shapes frozen — static KV buffer shape=[1,h,{},d], decode fast path active", maxKvLen);
-                } else {
-                    log.warn("  [Perf] No DSP executor found to freeze shapes");
+                if (dspExec != null && dspExec.getCurrentPlan() != null) {
+                    decoder.clearDynamicShapePlanCache();
+                    decoderSession.clearAllCaches();
+                    log.info("  [KV-VIEW] Cleared DSP plan — shapes grow each step, cannot freeze");
                 }
+                log.info("  [KV-VIEW] Using contiguous view approach: past_kv=[0:cachePos], mask=all-ones");
             }
 
             long tAfterKvUpdate = System.nanoTime();
@@ -628,13 +625,31 @@ public class StaticKvCacheDecodeLoop {
     private void logPresentKvDiagnostics(int step, Map<String, INDArray> decoderOutputs,
                                           DecoderUtils.KVCacheNames kvNames) {
         for (String pn : kvNames.keyNames) {
-            if (pn.contains(".0")) {
+            INDArray pv = decoderOutputs.get(pn);
+            if (pv != null) {
+                if (step == 0 || pn.contains(".0")) {
+                    long seqDim = pv.rank() >= 3 ? pv.shape()[2] : -1;
+                    if (seqDim > 0) {
+                        log.info("  [DIAG] step={} present {}: shape={} isEmpty={} lastPosAbsMax={}",
+                                step, pn, Arrays.toString(pv.shape()), pv.isEmpty(),
+                                pv.get(NDArrayIndex.point(0), NDArrayIndex.all(),
+                                        NDArrayIndex.point(seqDim - 1), NDArrayIndex.all()).amaxNumber().floatValue());
+                    } else {
+                        log.info("  [DIAG] step={} present {}: shape={} isEmpty={} rank={} seqDim={}",
+                                step, pn, Arrays.toString(pv.shape()), pv.isEmpty(), pv.rank(), seqDim);
+                    }
+                }
+            } else if (step == 0) {
+                log.info("  [DIAG] step={} present {}: NULL", step, pn);
+            }
+        }
+        if (step == 0) {
+            for (String pn : kvNames.valueNames) {
                 INDArray pv = decoderOutputs.get(pn);
-                if (pv != null) {
-                    log.info("  [DIAG] step={} present {}: shape={} lastPosAbsMax={}",
-                            step, pn, Arrays.toString(pv.shape()),
-                            pv.get(NDArrayIndex.point(0), NDArrayIndex.all(),
-                                    NDArrayIndex.point(pv.shape()[2] - 1), NDArrayIndex.all()).amaxNumber().floatValue());
+                if (pv != null && pn.contains(".0")) {
+                    long seqDim = pv.rank() >= 3 ? pv.shape()[2] : -1;
+                    log.info("  [DIAG] step={} present {}: shape={} isEmpty={} seqDim={}",
+                            step, pn, Arrays.toString(pv.shape()), pv.isEmpty(), seqDim);
                 }
             }
         }
