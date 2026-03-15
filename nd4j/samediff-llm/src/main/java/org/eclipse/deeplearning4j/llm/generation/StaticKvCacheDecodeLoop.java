@@ -367,29 +367,33 @@ public class StaticKvCacheDecodeLoop {
                     log.info("  [BIAS-OVERRIDE] Using pre-computed bias [1,1,1,{}] — full static KV, fixed shapes",
                             maxKvLen + 1);
 
-                    // Freeze shapes for CUDA graph capture
-                    InferenceSession decoderSession = decoder.getOrCreateSession();
-                    DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
-                    boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
-                    if (dspExec != null && !skipFreeze) {
-                        dspExec.setShapesFrozen(true);
-                        dspExec.setTraceEnabled(true);
-                        dspExec.setExecutionTimingEnabled(true);
-
-                        // C++ KV scatter is disabled for bias-override mode.
-                        // The bias-override approach uses static KV buffers where the model's
-                        // internal concat produces present=[B,H,maxKvLen+1,D] outputs. The
-                        // Java-side scatter correctly extracts the last position (new token)
-                        // and copies it into the static past buffer. The C++ KV scatter was
-                        // designed for frozen-KV (no-concat) mode and doesn't handle the
-                        // concat-based output correctly → stale KV → degenerate output.
-                        // TODO: Fix C++ KV scatter for concat-based present outputs.
-                        log.info("  [Perf] Using Java-side KV scatter (bias-override mode)");
-
-                        log.info("  [Perf] Shapes frozen — static KV buffer shape=[1,h,{},d], decode fast path active", maxKvLen);
-                    } else {
-                        log.warn("  [Perf] No DSP executor found to freeze shapes");
+                    // Clear the stale DSP plan (compiled with prefill shapes) so it recompiles
+                    // on step 1 with actual decode shapes. This is critical for Triton: the
+                    // compiler needs the real decode shapes (KV=[1,h,maxKvLen,d], mask=[1,maxKvLen+1])
+                    // to generate correct kernels. Without this, all slots are "dynamic" and
+                    // Triton won't compile anything → launches=0.
+                    {
+                        InferenceSession session = decoder.getOrCreateSession();
+                        DynamicShapePlanExecutor staleExec = session.getDynamicShapePlanExecutor();
+                        if (staleExec != null && staleExec.getCurrentPlan() != null) {
+                            // Preserve the configured execution mode (e.g., TRITON) so the
+                            // auto-recompiled plan uses the same mode. Without this, the
+                            // auto-compile defaults to AUTO and Triton kernels never launch.
+                            org.nd4j.autodiff.samediff.execution.GraphExecutionMode prevMode =
+                                    staleExec.getConfiguredGraphExecutionMode();
+                            if (prevMode != null) {
+                                decoder.setGraphExecutionMode(prevMode);
+                                log.info("  [BIAS-OVERRIDE] Preserved execution mode {} for recompilation", prevMode);
+                            }
+                            log.info("  [BIAS-OVERRIDE] Clearing stale DSP plan (prefill shapes) for decode recompilation");
+                            decoder.clearDynamicShapePlanCache();
+                            session.clearAllCaches();
+                        }
                     }
+                    // NOTE: shapes will be frozen AFTER step 1 completes (see below).
+                    // Step 1 runs without frozen shapes to establish the decode shape profile.
+                    // C++ KV scatter is disabled for bias-override mode — Java scatter is used.
+                    log.info("  [Perf] Using Java-side KV scatter (bias-override mode)");
                 } else {
                     // No attn_mask_reformat detected — fall back to view-based approach.
                     // Shapes grow each step, no CUDA graph capture possible.
@@ -401,6 +405,22 @@ public class StaticKvCacheDecodeLoop {
                         log.info("  [KV-VIEW] Cleared DSP plan — shapes grow each step, cannot freeze");
                     }
                     log.info("  [KV-VIEW] No attn_mask_reformat detected — using view approach: past_kv=[0:cachePos], mask=all-ones");
+                }
+            }
+
+            // After step 1 with bias override: freeze shapes now that decode shapes are established.
+            // Step 1 was the first decode step — the plan compiled during step 1 has the correct
+            // decode shapes (KV=[1,h,maxKvLen,d], mask=[1,maxKvLen+1], bias=[1,1,1,maxKvLen+1]).
+            // Freezing here means steps 2+ can benefit from CUDA graph capture and Triton kernels.
+            if (step == 1 && customAttnBias != null) {
+                InferenceSession decoderSession = decoder.getOrCreateSession();
+                DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
+                boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
+                if (dspExec != null && !skipFreeze) {
+                    dspExec.setShapesFrozen(true);
+                    dspExec.setTraceEnabled(true);
+                    dspExec.setExecutionTimingEnabled(true);
+                    log.info("  [Perf] Shapes frozen after step 1 — decode shape profile established, fast path active");
                 }
             }
 
