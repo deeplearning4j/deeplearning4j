@@ -26,6 +26,7 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -181,6 +182,10 @@ public class StaticKvCacheDecodeLoop {
         INDArray reusableEmbeddings = null;  // [1, 1, hiddenSize]
         INDArray reusableInputIds = null;    // [1, 1]
 
+        // Custom attention bias for bypassing attn_mask_reformat (enables fixed-shape CUDA graphs)
+        Map<String, INDArray> customAttnBias = null;  // null = use view-based approach
+        INDArray attnBiasTemplate = null;  // pre-allocated [1,1,1,maxKvLen+1], updated in-place
+
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
         // Clear any pre-compiled DSP plan before the prefill step.
@@ -202,13 +207,21 @@ public class StaticKvCacheDecodeLoop {
             long currentSeqLen = currentEmbeddings.shape()[1];
 
             // Build input map (with reusable input cache for decode steps)
+            // Rebuild custom attn bias each step — the executor may close the previous one.
+            // The bias shape [1,1,1,maxKvLen+1] is constant, only values change (gap shrinks).
+            if (customAttnBias != null && step >= 1) {
+                INDArray freshBias = DecoderUtils.buildStaticKvAttnBias(maxKvLen, cachePos);
+                for (String key : customAttnBias.keySet()) {
+                    customAttnBias.put(key, freshBias);
+                }
+            }
             Map<String, INDArray> decoderInputMap = DecoderUtils.buildDecoderInputMap(
                     decoderInputNames, decoder,
                     currentEmbeddings, currentInputIds,
                     pastSeqLen, currentSeqLen,
                     staticKvBuffers, maxKvLen, cachePos,
                     usingStaticKv, resolvedHiddenSize,
-                    reusableInputs);
+                    reusableInputs, customAttnBias);
 
             long tAfterInputBuild = System.nanoTime();
 
@@ -337,22 +350,58 @@ public class StaticKvCacheDecodeLoop {
                     }
                 }
 
-                // View-based KV cache: pass [0:cachePos] view each step instead of
-                // the full padded buffer. Shapes grow by 1 each step, so we cannot
-                // freeze shapes or use CUDA graph capture. But this approach is correct
-                // for ONNX models with attn_mask_reformat (causal mask computed from
-                // sequence dimensions — padded buffer positions exceed position_ids,
-                // causing the model to mask out the new token's own KV).
-                //
-                // Clear any pre-compiled DSP plan since shapes will change every step.
-                InferenceSession decoderSession = decoder.getOrCreateSession();
-                DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
-                if (dspExec != null && dspExec.getCurrentPlan() != null) {
-                    decoder.clearDynamicShapePlanCache();
-                    decoderSession.clearAllCaches();
-                    log.info("  [KV-VIEW] Cleared DSP plan — shapes grow each step, cannot freeze");
+                // Detect attn_mask_reformat subgraph outputs in the decoder graph.
+                // If found, we can pre-compute the attention bias in Java and pass the
+                // full static KV buffer (fixed shapes → CUDA graph capture). Without it,
+                // fall back to view-based approach (variable shapes, no CUDA graphs).
+                List<String> attnMaskVars = DecoderUtils.findAttnMaskReformatOutputs(decoder);
+                if (!attnMaskVars.isEmpty()) {
+                    // Custom bias mode: bypass attn_mask_reformat, use full static buffer
+                    attnBiasTemplate = DecoderUtils.buildStaticKvAttnBias(maxKvLen, cachePos);
+                    customAttnBias = new HashMap<>();
+                    for (String varName : attnMaskVars) {
+                        customAttnBias.put(varName, attnBiasTemplate);
+                    }
+                    log.info("  [BIAS-OVERRIDE] Detected {} attn_mask_reformat output(s): {}",
+                            attnMaskVars.size(), attnMaskVars);
+                    log.info("  [BIAS-OVERRIDE] Using pre-computed bias [1,1,1,{}] — full static KV, fixed shapes",
+                            maxKvLen + 1);
+
+                    // Freeze shapes for CUDA graph capture
+                    InferenceSession decoderSession = decoder.getOrCreateSession();
+                    DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
+                    boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
+                    if (dspExec != null && !skipFreeze) {
+                        dspExec.setShapesFrozen(true);
+                        dspExec.setTraceEnabled(true);
+                        dspExec.setExecutionTimingEnabled(true);
+
+                        // C++ KV scatter is disabled for bias-override mode.
+                        // The bias-override approach uses static KV buffers where the model's
+                        // internal concat produces present=[B,H,maxKvLen+1,D] outputs. The
+                        // Java-side scatter correctly extracts the last position (new token)
+                        // and copies it into the static past buffer. The C++ KV scatter was
+                        // designed for frozen-KV (no-concat) mode and doesn't handle the
+                        // concat-based output correctly → stale KV → degenerate output.
+                        // TODO: Fix C++ KV scatter for concat-based present outputs.
+                        log.info("  [Perf] Using Java-side KV scatter (bias-override mode)");
+
+                        log.info("  [Perf] Shapes frozen — static KV buffer shape=[1,h,{},d], decode fast path active", maxKvLen);
+                    } else {
+                        log.warn("  [Perf] No DSP executor found to freeze shapes");
+                    }
+                } else {
+                    // No attn_mask_reformat detected — fall back to view-based approach.
+                    // Shapes grow each step, no CUDA graph capture possible.
+                    InferenceSession decoderSession = decoder.getOrCreateSession();
+                    DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
+                    if (dspExec != null && dspExec.getCurrentPlan() != null) {
+                        decoder.clearDynamicShapePlanCache();
+                        decoderSession.clearAllCaches();
+                        log.info("  [KV-VIEW] Cleared DSP plan — shapes grow each step, cannot freeze");
+                    }
+                    log.info("  [KV-VIEW] No attn_mask_reformat detected — using view approach: past_kv=[0:cachePos], mask=all-ones");
                 }
-                log.info("  [KV-VIEW] Using contiguous view approach: past_kv=[0:cachePos], mask=all-ones");
             }
 
             long tAfterKvUpdate = System.nanoTime();

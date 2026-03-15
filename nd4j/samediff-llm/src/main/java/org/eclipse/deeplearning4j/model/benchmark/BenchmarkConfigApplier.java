@@ -134,7 +134,7 @@ public class BenchmarkConfigApplier {
         // Enable DSP diagnostics for graph capture configs
         if (config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS) {
             DspDiagnostics.enableCategories(
-                    DspDiagnostics.EXECUTE | DspDiagnostics.FALLBACK |
+                    DspDiagnostics.COMPILE | DspDiagnostics.EXECUTE | DspDiagnostics.FALLBACK |
                     DspDiagnostics.BACKEND | DspDiagnostics.MEMORY);
             DspDiagnostics.setLevel(DspDiagnostics.LEVEL_FULL);
         }

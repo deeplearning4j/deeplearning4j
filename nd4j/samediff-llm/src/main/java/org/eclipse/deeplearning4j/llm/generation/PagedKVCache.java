@@ -76,14 +76,14 @@ public class PagedKVCache implements AutoCloseable {
     private final INDArray valueBlockPool;
 
     // Free block IDs (LIFO for cache locality)
-    private final Deque<Integer> freeBlocks;
+    protected final Deque<Integer> freeBlocks;
 
     // Per-sequence page tables: pageTable[seqIdx] = int[] of physical block IDs
     // -1 means no block allocated for that logical position
-    private final int[][] pageTables;
+    protected final int[][] pageTables;
 
     // Per-sequence current length (number of valid tokens)
-    private final int[] seqLengths;
+    protected final int[] seqLengths;
 
     // Maximum logical blocks per sequence
     private final int maxBlocksPerSeq;
@@ -222,6 +222,16 @@ public class PagedKVCache implements AutoCloseable {
     }
 
     /**
+     * Get the raw page table array for a sequence.
+     *
+     * @param seqIdx batch index
+     * @return int[] of physical block IDs (includes -1 for unallocated slots)
+     */
+    protected int[] getRawPageTable(int seqIdx) {
+        return pageTables[seqIdx];
+    }
+
+    /**
      * Get the page table for a sequence as an INDArray (for passing to native ops).
      *
      * @param seqIdx batch index
@@ -311,12 +321,29 @@ public class PagedKVCache implements AutoCloseable {
         // Slot is now clean — ready for append()
     }
 
-    private int allocateBlock() {
+    protected int allocateBlock() {
         if (freeBlocks.isEmpty()) {
             throw new IllegalStateException("PagedKVCache: no free blocks (pool exhausted). "
                     + "Consider increasing maxSeqLen or poolSizeFactor.");
         }
         return freeBlocks.pop();
+    }
+
+    protected void freeBlock(int blockId) {
+        freeBlocks.push(blockId);
+    }
+
+    protected void setSequenceLength(int seqIdx, int length) {
+        seqLengths[seqIdx] = length;
+    }
+
+    public void copyBlock(int srcBlockId, int dstBlockId) {
+        INDArray srcKey = keyBlockPool.get(NDArrayIndex.point(srcBlockId));
+        INDArray dstKey = keyBlockPool.get(NDArrayIndex.point(dstBlockId));
+        dstKey.assign(srcKey);
+        INDArray srcVal = valueBlockPool.get(NDArrayIndex.point(srcBlockId));
+        INDArray dstVal = valueBlockPool.get(NDArrayIndex.point(dstBlockId));
+        dstVal.assign(srcVal);
     }
 
     @Override
