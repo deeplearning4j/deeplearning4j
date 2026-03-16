@@ -28,16 +28,21 @@
 namespace sd {
 namespace ops {
 
-CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
+CUSTOM_OP_IMPL(check_numerics, -1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
-  auto message = INPUT_VARIABLE(1);
   auto output = OUTPUT_VARIABLE(0);
 
   auto* allFinite = input->reduceNumber(reduce::BoolOps::IsFinite);
   bool isFinite = allFinite->e<bool>(0);
   delete allFinite;
-  
-  REQUIRE_TRUE(isFinite, 0, "CheckNumerics: %s", message->e<std::string>(0).c_str());
+
+  // Message is optional (second input) - only check if provided
+  if (block.width() > 1) {
+    auto message = INPUT_VARIABLE(1);
+    REQUIRE_TRUE(isFinite, 0, "CheckNumerics: %s", message->e<std::string>(0).c_str());
+  } else {
+    REQUIRE_TRUE(isFinite, 0, "CheckNumerics: input contains NaN or Inf");
+  }
 
   if (!block.isInplace()) output->assign(input);
 

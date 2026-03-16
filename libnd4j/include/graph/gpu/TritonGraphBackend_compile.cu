@@ -532,8 +532,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
   std::mutex workMtx;
   std::condition_variable workCv;
   std::vector<CompileRangeResult> allResults;
-  bool leafFailed = false;       // Set when an unsplittable range fails
-  SubSegmentRange failedLeaf{};  // The range that caused the leaf failure
+  std::vector<SlotRange> leafFallbackRanges;  // Leaf ranges that failed → native fallback
   std::atomic<int> activeWorkers{0};
 
   auto workerLoop = [&]() {
@@ -542,10 +541,9 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
       {
         std::unique_lock<std::mutex> lock(workMtx);
         workCv.wait(lock, [&] {
-          return !pendingRanges.empty() || leafFailed ||
+          return !pendingRanges.empty() ||
                  (pendingRanges.empty() && activeWorkers.load() == 0);
         });
-        if (leafFailed) return;
         if (pendingRanges.empty()) {
           if (activeWorkers.load() == 0) return;  // All work done
           continue;
@@ -574,9 +572,16 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
             splitRange(range);
             // New sub-ranges are in pendingRanges; wake other workers
           } else {
-            // Leaf range failed -- signal all workers to stop
-            leafFailed = true;
-            failedLeaf = range;
+            // Leaf range failed — add to fallback ranges instead of aborting
+            std::string opNames;
+            for (int s = range.startSlot; s <= range.endSlot; s++) {
+              if (!opNames.empty()) opNames += ",";
+              opNames += slots[s].opName;
+            }
+            DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
+                     "adding to native fallback (ops: %s)",
+                     range.startSlot, range.endSlot, opNames.c_str());
+            leafFallbackRanges.push_back({range.startSlot, range.endSlot});
           }
         }
         activeWorkers.fetch_sub(1);
@@ -599,7 +604,7 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
     }
   } else {
     // Single-threaded: drain queue directly (no thread overhead)
-    while (!pendingRanges.empty() && !leafFailed) {
+    while (!pendingRanges.empty()) {
       SubSegmentRange range = pendingRanges.front();
       pendingRanges.pop_front();
 
@@ -618,41 +623,37 @@ bool TritonGraphBackend::compileSegment(GraphSegment& seg, NativeSlot* slots,
           splitRetryCount++;
           splitRange(range);
         } else {
-          leafFailed = true;
-          failedLeaf = range;
+          // Leaf range failed — add to fallback ranges instead of aborting
+          std::string opNames;
+          for (int s = range.startSlot; s <= range.endSlot; s++) {
+            if (!opNames.empty()) opNames += ",";
+            opNames += slots[s].opName;
+          }
+          DSP_DIAG(COMPILE, "TritonGraphBackend: leaf range [%d-%d] not compilable, "
+                   "adding to native fallback (ops: %s)",
+                   range.startSlot, range.endSlot, opNames.c_str());
+          leafFallbackRanges.push_back({range.startSlot, range.endSlot});
         }
       }
     }
   }
 
-  if (leafFailed) {
-    // Leaf range failed: all-or-nothing reject entire segment.
-    for (auto& r : allResults) {
-      if (r.compiled.gpuModule) {
-        TritonTargetDispatch::unloadModule(r.compiled.gpuModule);
-        r.compiled.gpuModule = nullptr;
-        r.compiled.kernelFunction = nullptr;
+  // Merge leaf fallback ranges into compiledSeg
+  if (!leafFallbackRanges.empty()) {
+    for (auto& fb : leafFallbackRanges) {
+      compiledSeg.fallbackRanges.push_back(fb);
+      // Add audit entries for fallback slots
+      for (int s = fb.startSlot; s <= fb.endSlot; s++) {
+        CompilationAuditEntry entry;
+        entry.slotIndex = s;
+        entry.opName = slots[s].opName;
+        entry.wasCompiled = false;
+        entry.reason = "leaf range not Triton-compilable, using native fallback";
+        compiledSeg.audit.push_back(entry);
       }
     }
-    compiledSeg.subKernels.clear();
-    compiledSeg.audit.clear();
-    for (int s = seg.startSlot; s <= seg.endSlot; s++) {
-      CompilationAuditEntry entry;
-      entry.slotIndex = s;
-      entry.opName = slots[s].opName;
-      entry.wasCompiled = false;
-      entry.reason = "segment rejected (all-or-nothing Triton compile failed)";
-      compiledSeg.audit.push_back(entry);
-    }
-    lastCompilationAudit_ = compiledSeg.audit;
-    {
-      std::lock_guard<std::mutex> lock(cacheMtx_);
-      failedCache_.insert(key);
-    }
-    DSP_DIAG(COMPILE, "TritonGraphBackend: all-or-nothing compile FAILED for [%d-%d]; "
-             "leaf range [%d-%d] is not Triton-compilable on this graph/device (deviceId=%d)",
-             seg.startSlot, seg.endSlot, failedLeaf.startSlot, failedLeaf.endSlot, compileDevice);
-    return false;
+    DSP_DIAG(COMPILE, "TritonGraphBackend: %d leaf ranges added to native fallback for [%d-%d]",
+             static_cast<int>(leafFallbackRanges.size()), seg.startSlot, seg.endSlot);
   }
 
   // Move successful results into compiledSeg

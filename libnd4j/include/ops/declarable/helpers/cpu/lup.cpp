@@ -374,12 +374,49 @@ static sd::Status determinant_(LaunchContext* context, NDArray* input, NDArray* 
   sd::LongType n2 = n * n;
 
   auto matrix =
-      NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);  //, block.getWorkspace());
+      NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);
 
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix->p(row, input->e<T>(k));
-    auto ret = lup_<T, sd::LongType>(context, matrix, (NDArray*)nullptr, (NDArray*)nullptr);
-    output->p(e, &ret);
+    
+    // Compute determinant using LU decomposition
+    T determinant = static_cast<T>(1.0);
+    NDArray compoundMatrix = *matrix;
+    sd::LongType swapCount = 0;
+    
+    for (sd::LongType i = 0; i < n; i++) {
+      T pivotValue = T(0.0);
+      sd::LongType pivot = -1;
+      for (sd::LongType rowCounter = i; rowCounter < n; rowCounter++) {
+        if (sd::math::sd_abs<T,T>(compoundMatrix.t<T>(rowCounter, i)) > pivotValue) {
+          pivotValue = sd::math::sd_abs<T,T>(compoundMatrix.t<T>(rowCounter, i));
+          pivot = rowCounter;
+        }
+      }
+
+      if (pivotValue > DataTypeUtils::min_positive<T>()) {
+        if (pivot != i) {
+          swapRows(&compoundMatrix, pivot, i);
+          swapCount++;
+        }
+
+        for (sd::LongType j = i + 1; j < n; j++) {
+          compoundMatrix.r<T>(j, i) /= compoundMatrix.t<T>(i, i);
+          for (sd::LongType k = i + 1; k < n; k++) {
+            compoundMatrix.r<T>(j, k) -= compoundMatrix.t<T>(j, i) * compoundMatrix.t<T>(i, k);
+          }
+        }
+      }
+    }
+
+    for (sd::LongType e2 = 0; e2 < n; e2++) {
+      determinant *= compoundMatrix.e<T>(e2, e2);
+    }
+    if (swapCount % 2) {
+      determinant = -determinant;
+    }
+    
+    output->p(e, determinant);
   }
 
   return sd::Status::OK;

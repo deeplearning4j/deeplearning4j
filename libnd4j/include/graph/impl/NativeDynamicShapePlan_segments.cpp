@@ -419,6 +419,19 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
 
   bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
   if (needsCompile) {
+    // Restore outputSlots_ from slotArrayCache_ for the compilation range.
+    // When shapes aren't frozen, outputSlots_ was zeroed at the start of execute().
+    // The compiler needs access to warmup arrays for shape resolution.
+    if (slotArrayCache_ != nullptr) {
+      for (int si = seg.startSlot; si <= seg.endSlot && si < totalOutputSlots_; si++) {
+        if (outputSlots_[si] == nullptr && slotArrayCache_[si] != nullptr) {
+          auto* db = slotArrayCache_[si]->dataBuffer();
+          if (db != nullptr && db->isValid()) {
+            outputSlots_[si] = slotArrayCache_[si];
+          }
+        }
+      }
+    }
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
                                  numSlots_)) {

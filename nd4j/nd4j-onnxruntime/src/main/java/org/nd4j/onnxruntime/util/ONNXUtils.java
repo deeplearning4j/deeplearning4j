@@ -333,6 +333,10 @@ public class ONNXUtils {
 
         // Ensure contiguous memory layout for ORT by duplicating if needed
         INDArray contiguous = ndArray.isView() ? ndArray.dup() : ndArray;
+        // Sync device→host so the host pointer has current data (required for CUDA backend)
+        Nd4j.getExecutioner().commit();
+        Nd4j.getAffinityManager().ensureLocation(contiguous,
+                org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
         Pointer inputTensorValuesPtr = contiguous.data().pointer();
         Pointer inputTensorValues = inputTensorValuesPtr;
         long sizeInBytes = contiguous.length() * contiguous.data().getElementSize();

@@ -119,6 +119,15 @@ public class DynamicShapeSlot {
     private final boolean needsZeroedOutput;
 
     /**
+     * Whether this op produces view outputs (shares input buffer, no data copy).
+     * View-capable ops: reshape, reshape_no_copy, expand_dims, squeeze, permute.
+     * When true, the executor can skip output allocation entirely and pass an empty
+     * placeholder — C++ will replace it with a view of the input's buffer.
+     * Matches C++ NativePlanCompiler's isViewCapableOp flag.
+     */
+    private final boolean viewCapableOp;
+
+    /**
      * Whether ALL INT/LONG inputs to this op come from external sources (constants, variables,
      * placeholders) rather than from prior op outputs. When true, syncIntLongInputs() can skip
      * the expensive commit() (cudaStreamSynchronize) because external inputs were either:

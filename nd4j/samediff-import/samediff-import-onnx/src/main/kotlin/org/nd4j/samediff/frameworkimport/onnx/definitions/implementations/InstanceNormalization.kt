@@ -74,18 +74,11 @@ class InstanceNormalization : PreImportHook {
         // Get epsilon attribute (default: 1e-5)
         val epsilon = (attributes.getOrDefault("epsilon", 1e-5) as Number).toDouble()
 
-        // Get input shape and rank
-        val inputShape = sd.shape(input)
-        val inputRank = sd.rank(input)
-
-        // For NCHW format (common in ONNX), we normalize over dimensions 2, 3, ... (spatial dimensions)
-        // For a 4D input [N, C, H, W], normalize over H and W (dims 2 and 3)
-
+        // For 4D input [N, C, H, W], normalize over spatial dimensions (H, W)
         // Compute mean over spatial dimensions (keep dims for broadcasting)
-        // For 4D: dims 2, 3
         val mean = sd.mean("${opName}_mean", input, true, 2, 3)
 
-        // Compute variance over spatial dimensions
+        // Compute variance over spatial dimensions (unbiased=false, keepDims=true)
         val variance = sd.variance("${opName}_var", input, false, true, 2, 3)
 
         // Normalize: (x - mean) / sqrt(variance + epsilon)
@@ -93,23 +86,17 @@ class InstanceNormalization : PreImportHook {
         val stddev = sd.math.sqrt("${opName}_std", variance.add(epsilon))
         val normalized = sd.math.div("${opName}_normalized", centered, stddev)
 
-        // Apply scale and bias
-        // Scale and bias are [C], need to reshape to [1, C, 1, 1, ...] for broadcasting
-        val c = sd.gather("${opName}_c", inputShape, sd.constant(1L), 0)
+        // Apply scale and bias - reshape from [C] to [1, C, 1, 1] for broadcasting
+        val inputShape = input.shape ?: throw IllegalStateException("InstanceNormalization requires static input shape")
+        val c = inputShape[1].toInt()
+        val shapeArr = longArrayOf(1, c.toLong(), 1, 1)
 
-        // Build broadcast shape: [1, C, 1, 1, ...]
-        val onesVec = sd.onesLike("${opName}_ones", inputShape)
-        val cIdx = sd.constant("${opName}_cIdx", 1L)
-        val cVal = sd.expandDims("${opName}_cVal", c, 0)
-        val broadcastShape = sd.scatterNdUpdate("${opName}_bcastShape", onesVec,
-            sd.expandDims(cIdx, 1), cVal)
-
-        val scaleBroadcast = sd.reshape("${opName}_scaleBcast", scale, broadcastShape)
-        val biasBroadcast = sd.reshape("${opName}_biasBcast", bias, broadcastShape)
+        val scaleReshaped = sd.reshape("${opName}_scaleReshaped", scale, *shapeArr)
+        val biasReshaped = sd.reshape("${opName}_biasReshaped", bias, *shapeArr)
 
         // y = scale * normalized + bias
-        val scaled = sd.math.mul("${opName}_scaled", normalized, scaleBroadcast)
-        val output = sd.math.add(outputNames[0], scaled, biasBroadcast)
+        val scaled = sd.math.mul("${opName}_scaled", normalized, scaleReshaped)
+        val output = sd.math.add(outputNames[0], scaled, biasReshaped)
 
         return mapOf(outputNames[0] to listOf(output))
     }

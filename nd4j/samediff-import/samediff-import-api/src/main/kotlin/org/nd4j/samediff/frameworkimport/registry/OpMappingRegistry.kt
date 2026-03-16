@@ -36,6 +36,7 @@ import org.nd4j.samediff.frameworkimport.process.MappingProcessLoader
 import org.nd4j.samediff.frameworkimport.process.PreImportHookMappingProcess
 import org.nd4j.samediff.frameworkimport.reflect.ImportReflectionCache
 import org.nd4j.shade.protobuf.TextFormat
+import org.tensorflow.framework.OpDef
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.nio.charset.Charset
@@ -99,26 +100,24 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         //workaround for placeholder not being defined, only used in limited circumstances
         if(name == "Placeholder" && !opDefList.containsKey("Placeholder"))
             return opDefList["Constant"]!!
-            
-        // Check if this is a PreImportHook operation before failing
-        if (!opDefList.containsKey(name)) {
-            val hasPreHookRules = cache.preProcessRuleImplementationsByOp.cellSet().any { cell ->
-                cell.rowKey == inputFrameworkName && cell.columnKey == name
-            }
-            
-            if (hasPreHookRules) {
-                // Create a dummy op definition for PreImportHook operations
-                val dummyOpDef = createDummyOpDefinition(name)
-                opDefList[name] = dummyOpDef
-                return dummyOpDef
-            }
+
+        // Check if this is a PreImportHook operation FIRST - PreImportHook takes precedence over op def
+        val hasPreHookRules = cache.preProcessRuleImplementationsByOp.cellSet().any { cell ->
+            cell.rowKey == inputFrameworkName && cell.columnKey == name
         }
-        
+
+        if (hasPreHookRules) {
+            // Create a dummy op definition for PreImportHook operations
+            val dummyOpDef = createDummyOpDefinition(name)
+            opDefList[name] = dummyOpDef
+            return dummyOpDef
+        }
+
         // Check if the op definition exists
         if (!opDefList.containsKey(name)) {
             throw IllegalArgumentException("No op definition found for '$name' in framework '$inputFrameworkName'. Available ops: ${opDefList.keys.sorted()}")
         }
-        
+
         return opDefList[name]!!
     }
 
@@ -131,6 +130,12 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
                     .setOpType(opName)
                     .setDomain("com.microsoft") // Default domain for most PreImportHook ops
                     .setName("${opName}_prehook")
+                    .build() as OP_DEF_TYPE
+            }
+            "tensorflow" -> {
+                // For TensorFlow, create a minimal OpDef
+                OpDef.newBuilder()
+                    .setName(opName)
                     .build() as OP_DEF_TYPE
             }
             else -> {

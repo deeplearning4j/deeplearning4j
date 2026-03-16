@@ -754,9 +754,14 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     INDEX2COORDS(e, outputRank, outputShape, offsetCoords);
     COORDS2INDEX(outputRank, outputStride, offsetCoords, offset);
 
+    // Initialize output to 1.0 before atomic multiplication
+    T initVal = static_cast<T>(1);
+    auto outputBuf = reinterpret_cast<T*>(output->specialBuffer()) + offset;
+    cudaMemcpyAsync(outputBuf, &initVal, sizeof(T), cudaMemcpyHostToDevice, *stream);
+    cudaStreamSynchronize(*stream);
+
     // Execute determinant kernel
     auto inputBuf = reinterpret_cast<T*>(matrix->specialBuffer());
-    auto outputBuf = reinterpret_cast<T*>(output->specialBuffer()) + offset;
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
     sd::DebugHelper::checkErrorCode(stream, "determinantKernel failed");
   }

@@ -92,9 +92,10 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   auto seqQ = query->sizeAt(1);
   auto hidden = query->sizeAt(2);
   auto seqKV = key->sizeAt(1);
+  auto kvHidden = key->sizeAt(2);
   auto headDim = hidden / numHeads;
-  
-  REQUIRE_TRUE(query->rankOf() == 3, 0, 
+
+  REQUIRE_TRUE(query->rankOf() == 3, 0,
                "onnx_multi_head_attention: query must be rank 3 [batch, seq, hidden], got %s",
                ShapeUtils::shapeAsString(query).c_str());
   REQUIRE_TRUE(key->rankOf() == 3, 0,
@@ -106,16 +107,27 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   REQUIRE_TRUE(hidden % numHeads == 0, 0,
                "onnx_multi_head_attention: hidden size %lld must be divisible by numHeads %lld",
                hidden, numHeads);
-  
+
+  // GQA (Grouped Query Attention): K/V may have fewer heads than Q.
+  // Q hidden = numHeads * headDim, KV hidden = numKvHeads * headDim
+  REQUIRE_TRUE(headDim > 0, 0, "onnx_multi_head_attention: headDim must be > 0");
+  REQUIRE_TRUE(kvHidden % headDim == 0, 0,
+               "onnx_multi_head_attention: KV hidden size %lld must be divisible by headDim %lld",
+               kvHidden, headDim);
+  LongType numKvHeads = kvHidden / headDim;
+  REQUIRE_TRUE(numHeads % numKvHeads == 0, 0,
+               "onnx_multi_head_attention: numHeads %lld must be divisible by numKvHeads %lld (GQA constraint)",
+               numHeads, numKvHeads);
+
   // Compute scale if not provided
   if (scale <= 0.0) {
     scale = 1.0 / std::sqrt(static_cast<double>(headDim));
   }
-  
-  // Reshape [batch, seq, hidden] -> [batch, seq, numHeads, headDim] (BSHD format for FlashAttentionHelper)
-  // reshape() returns NDArray* - we need to manage memory carefully
+
+  // Reshape [batch, seq, hidden] -> [batch, seq, heads, headDim] (BSHD format for FlashAttentionHelper)
+  // Q uses numHeads, K/V use numKvHeads (may differ for GQA)
   std::vector<LongType> qShape4d = {batch, seqQ, numHeads, headDim};
-  std::vector<LongType> kvShape4d = {batch, seqKV, numHeads, headDim};
+  std::vector<LongType> kvShape4d = {batch, seqKV, numKvHeads, headDim};
   
   NDArray* qReshaped = query->reshape('c', qShape4d);
   NDArray* kReshaped = key->reshape('c', kvShape4d);
@@ -129,87 +141,81 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   LongType totalSeqKV = seqKV;
   
   if (pastKey != nullptr && pastValue != nullptr) {
-    // Past is [batch, numHeads, pastSeq, headDim] (BHSD format from ONNX)
-    // Need to permute to [batch, pastSeq, numHeads, headDim] (BSHD) for concat
+    // Past is [batch, numKvHeads, pastSeq, headDim] (BHSD format from ONNX)
+    // Need to permute to [batch, pastSeq, numKvHeads, headDim] (BSHD) for concat
     auto pastSeq = pastKey->sizeAt(2);
     totalSeqKV = pastSeq + seqKV;
-    
+
     // Get output buffers for direct write
     auto presentKeyOut = block.outputWidth() > 1 ? OUTPUT_VARIABLE(1) : nullptr;
     auto presentValueOut = block.outputWidth() > 2 ? OUTPUT_VARIABLE(2) : nullptr;
-    
+
     if (presentKeyOut != nullptr && presentValueOut != nullptr) {
-      // Write directly to output buffers - they are already the correct size [batch, numHeads, totalSeqKV, headDim]
+      // Write directly to output buffers - they are already the correct size [batch, numKvHeads, totalSeqKV, headDim]
       // Permute output from BHSD to BSHD for use in attention
       std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
       kFinal = presentKeyOut->permute(permBHSDtoBSHD, false, false);
       vFinal = presentValueOut->permute(permBHSDtoBSHD, false, false);
       ownKVFinal = false;
-      
+
       // Copy past KV to [0:pastSeq] positions
       NDArray* pastKeyBSHD = pastKey->permute(permBHSDtoBSHD, false, false);
       NDArray* pastValueBSHD = pastValue->permute(permBHSDtoBSHD, false, false);
-      
-      // Use applyTrueBroadcast for the past portion (more reliable than slice assign)
-      std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numHeads, 0, headDim};
+
+      std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numKvHeads, 0, headDim};
       NDArray* kPastSlice = (*kFinal)(pastSliceIdx);
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
-      // Sync to ensure past KV copy completes before current KV write
       kPastSlice->syncToDevice();
       vPastSlice->syncToDevice();
       delete kPastSlice;
       delete vPastSlice;
       delete pastKeyBSHD;
       delete pastValueBSHD;
-      
+
       // Write current K/V to [pastSeq:totalSeqKV] position
-      std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numHeads, 0, headDim};
+      std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numKvHeads, 0, headDim};
       NDArray* kCurSlice = (*kFinal)(curSliceIdx);
       NDArray* vCurSlice = (*vFinal)(curSliceIdx);
-      
-      // CRITICAL: The view-based assign can fail during CUDA graph replay when the 
-      // underlying buffer shape changes. Use applyTrueBroadcast as a more reliable alternative.
-      // This ensures the data is properly written to the target buffer.
+
       if (kCurSlice->lengthOf() > 0 && kReshaped->lengthOf() > 0) {
         kCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), kReshaped, kCurSlice, false);
         vCurSlice->applyTrueBroadcast(BroadcastOpsTuple::Assign(), vReshaped, vCurSlice, false);
-        // Force synchronization to ensure write completes before buffer is used
         kCurSlice->syncToDevice();
         vCurSlice->syncToDevice();
       }
-      
+
       delete kCurSlice;
       delete vCurSlice;
     } else {
-      // Fallback: allocate new buffers (not compatible with CUDA graphs but functional)
+      // Fallback: allocate new buffers
       std::vector<LongType> permBHSDtoBSHD = {0, 2, 1, 3};
       NDArray* pastKeyBSHD = pastKey->permute(permBHSDtoBSHD, false, false);
       NDArray* pastValueBSHD = pastValue->permute(permBHSDtoBSHD, false, false);
-      
-      std::vector<LongType> finalShape = {batch, totalSeqKV, numHeads, headDim};
+
+      std::vector<LongType> finalShape = {batch, totalSeqKV, numKvHeads, headDim};
       kFinal = new NDArray('c', finalShape, key->dataType(), block.launchContext());
       vFinal = new NDArray('c', finalShape, value->dataType(), block.launchContext());
       ownKVFinal = true;
-      
-      std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numHeads, 0, headDim};
-      std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numHeads, 0, headDim};
-      
+
+      std::vector<LongType> pastSliceIdx = {0, batch, 0, pastSeq, 0, numKvHeads, 0, headDim};
+      std::vector<LongType> curSliceIdx = {0, batch, pastSeq, totalSeqKV, 0, numKvHeads, 0, headDim};
+
       NDArray* kPastSlice = (*kFinal)(pastSliceIdx);
       NDArray* vPastSlice = (*vFinal)(pastSliceIdx);
       kPastSlice->assign(pastKeyBSHD);
       vPastSlice->assign(pastValueBSHD);
       delete kPastSlice;
       delete vPastSlice;
-      
+
       NDArray* kCurSlice = (*kFinal)(curSliceIdx);
       NDArray* vCurSlice = (*vFinal)(curSliceIdx);
       kCurSlice->assign(kReshaped);
       vCurSlice->assign(vReshaped);
       delete kCurSlice;
       delete vCurSlice;
-      
+
       delete pastKeyBSHD;
       delete pastValueBSHD;
     }
@@ -218,6 +224,22 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
     kFinal = kReshaped;
     vFinal = vReshaped;
     ownKVFinal = false;  // Don't delete, kReshaped/vReshaped will be deleted later
+
+    // Write current K/V as present outputs even without past
+    // kReshaped is BSHD [batch, seqKV, numKvHeads, headDim], permute to BHSD for ONNX format
+    std::vector<LongType> permBSHDtoBHSD = {0, 2, 1, 3};
+    if (block.outputWidth() > 1) {
+      auto presentKey = OUTPUT_VARIABLE(1);
+      NDArray* kBHSD = kReshaped->permute(permBSHDtoBHSD, false, false);
+      presentKey->assign(kBHSD);
+      delete kBHSD;
+    }
+    if (block.outputWidth() > 2) {
+      auto presentValue = OUTPUT_VARIABLE(2);
+      NDArray* vBHSD = vReshaped->permute(permBSHDtoBHSD, false, false);
+      presentValue->assign(vBHSD);
+      delete vBHSD;
+    }
   }
   
   // Setup FlashAttentionHelper config
@@ -226,7 +248,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   config.isCausal = useCausalMask;
   config.dropout = 0.0f;
   config.numHeads = numHeads;
-  config.numKvHeads = numHeads;
+  config.numKvHeads = numKvHeads;
   
   // Output in BSHD format [batch, seqQ, numHeads, headDim]
   std::vector<LongType> outShape4d = {batch, seqQ, numHeads, headDim};
@@ -254,7 +276,7 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   // Skip if we already wrote directly to output buffers (ownKVFinal == false && using output view)
   if (block.outputWidth() > 1 && ownKVFinal) {
     auto presentKey = OUTPUT_VARIABLE(1);
-    // kFinal is BSHD, permute to BHSD
+    // kFinal is BSHD [batch, totalSeqKV, numKvHeads, headDim], permute to BHSD
     std::vector<LongType> permBSHDtoBHSD = {0, 2, 1, 3};
     NDArray* kBHSD = kFinal->permute(permBSHDtoBHSD, false, false);
     presentKey->assign(kBHSD);
@@ -294,27 +316,27 @@ DECLARE_TYPES(onnx_multi_head_attention) {
 DECLARE_SHAPE_FN(onnx_multi_head_attention) {
   auto queryShape = inputShape->at(0);
   auto keyShape = inputShape->at(1);
-  
-  // Validate query and key shapes
-  REQUIRE_TRUE(shape::rank(queryShape) >= 3, 0, 
+
+  REQUIRE_TRUE(shape::rank(queryShape) >= 3, 0,
                "onnx_multi_head_attention: query shape must have rank >= 3, got rank %d", shape::rank(queryShape));
   REQUIRE_TRUE(shape::rank(keyShape) >= 3, 0,
                "onnx_multi_head_attention: key shape must have rank >= 3, got rank %d", shape::rank(keyShape));
-  
+
   auto batch = shape::sizeAt(queryShape, static_cast<LongType>(0));
   auto seqQ = shape::sizeAt(queryShape, static_cast<LongType>(1));
   auto hidden = shape::sizeAt(queryShape, static_cast<LongType>(2));
   auto seqKV = shape::sizeAt(keyShape, static_cast<LongType>(1));
-  
+  auto kvHidden = shape::sizeAt(keyShape, static_cast<LongType>(2));
+
   LongType numHeads = INT_ARG(0);
   auto headDim = hidden / numHeads;
-  
+  // GQA: K/V may have fewer heads than Q
+  LongType numKvHeads = (headDim > 0) ? (kvHidden / headDim) : numHeads;
+
   // Check for past key/value to determine total sequence length
-  // Past key/value are optional - scalar placeholders (rank 0 or length <= 1) indicate absence
   LongType totalSeqKV = seqKV;
   if (inputShape->size() > 4) {
     auto pastKeyShape = inputShape->at(4);
-    // Only process if past key is a valid 4D tensor (not empty, not scalar placeholder)
     auto pastKeyRank = shape::rank(pastKeyShape);
     if (pastKeyShape != nullptr && !shape::isEmpty(pastKeyShape) && pastKeyRank == 4 && shape::length(pastKeyShape) > 1) {
       totalSeqKV += shape::sizeAt(pastKeyShape, static_cast<LongType>(2));
@@ -326,7 +348,7 @@ DECLARE_SHAPE_FN(onnx_multi_head_attention) {
   // Handle empty K/V — produce empty present shapes with ARRAY_EMPTY flag
   if (shape::isEmpty(keyShape) || seqKV == 0) {
     auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {batch, seqQ, hidden});
-    std::vector<LongType> presentDims = {batch, numHeads, totalSeqKV, headDim};
+    std::vector<LongType> presentDims = {batch, numKvHeads, totalSeqKV, headDim};
     auto presentKeyShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, presentDims);
     auto presentValueShape = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, presentDims);
     return SHAPELIST(outputShape, CONSTANT(presentKeyShape), CONSTANT(presentValueShape));
@@ -335,11 +357,11 @@ DECLARE_SHAPE_FN(onnx_multi_head_attention) {
   // Output: [batch, seqQ, hidden]
   auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {batch, seqQ, hidden});
 
-  // Present key/value: [batch, numHeads, totalSeqKV, headDim] (BHSD for ONNX)
+  // Present key/value: [batch, numKvHeads, totalSeqKV, headDim] (BHSD for ONNX)
   auto presentKeyShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c',
-                                                                             {batch, numHeads, totalSeqKV, headDim});
+                                                                             {batch, numKvHeads, totalSeqKV, headDim});
   auto presentValueShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c',
-                                                                               {batch, numHeads, totalSeqKV, headDim});
+                                                                               {batch, numKvHeads, totalSeqKV, headDim});
 
   return SHAPELIST(outputShape, presentKeyShape, presentValueShape);
 }

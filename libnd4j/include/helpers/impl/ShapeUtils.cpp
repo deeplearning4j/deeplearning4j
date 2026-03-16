@@ -188,7 +188,10 @@ LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<Lon
 
     if (keepDims) {
       outShape.assign(shapeInfo + 1, shapeInfo + 1 + rank);
-      for (const auto dim : *dimsToExclude) outShape[dim] = 1;
+      for (const auto dim : *dimsToExclude) {
+        // FIX: Preserve zero dimensions - reducing over an empty dimension should keep it empty
+        outShape[dim] = outShape[dim] == 0 ? 0 : 1;
+      }
     } else {
       for (LongType i = 0, j = 0; i < rank; ++i) {
         if (j < static_cast<sd::LongType>(dimsToExclude->size()) && i == dimsToExclude->at(j))
@@ -330,7 +333,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
     for (LongType i = 0; i < rank; ++i) {
       if (std::binary_search(dimsToExclude->begin(), dimsToExclude->end(),
                              i))  // dimsToExclude is already sorted after shape::checkDimensions() has been applied
-        newShapeInfo[i + 1] = 1;
+        // FIX: Preserve zero dimensions - reducing over an empty dimension should keep it empty
+        newShapeInfo[i + 1] = shapeInfo[i + 1] == 0 ? 0 : 1;
       else
         newShapeInfo[i + 1] = shapeInfo[i + 1];
     }
@@ -821,13 +825,31 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
     LongType maxDim = shape::sizeAt(maxShapeInfo, -1 - i);
     LongType minDim = shape::sizeAt(minShapeInfo, -1 - i);
 
-    // If either dimension is 0, result should be 0 (empty array)
-    if (maxDim == 0 || minDim == 0) {
+    // Standard broadcasting rules: result is max of the two
+    // Special case: 0 behaves specially for broadcasting
+    // - 0 with 0 = 0 (both empty)
+    // - 0 with 1 = 0 (empty dimension stays empty when broadcasting with singleton)
+    // - 0 with N>1 = N (empty dimension broadcasts to N)
+    if (maxDim == 0 && minDim == 0) {
+      // Both are 0, result is 0
       tmpShapeInfo[1 + maxRank - 1 - i] = 0;
-    }
-      // Otherwise follow standard broadcasting rules
-    else if (maxDim < minDim) {
+    } else if (maxDim == 0 && minDim == 1) {
+      // maxDim is 0, minDim is 1: result is 0 (empty stays empty with singleton)
+      tmpShapeInfo[1 + maxRank - 1 - i] = 0;
+    } else if (minDim == 0 && maxDim == 1) {
+      // minDim is 0, maxDim is 1: result is 0 (empty stays empty with singleton)
+      tmpShapeInfo[1 + maxRank - 1 - i] = 0;
+    } else if (maxDim == 0) {
+      // maxDim is 0 (empty), minDim > 1: result is minDim (broadcast into empty)
       tmpShapeInfo[1 + maxRank - 1 - i] = minDim;
+    } else if (minDim == 0) {
+      // minDim is 0 (empty), maxDim > 1: result is maxDim (broadcast into empty)
+      tmpShapeInfo[1 + maxRank - 1 - i] = maxDim;
+    } else if (maxDim < minDim) {
+      tmpShapeInfo[1 + maxRank - 1 - i] = minDim;
+    } else if (minDim < maxDim) {
+      // minDim broadcasts to maxDim
+      tmpShapeInfo[1 + maxRank - 1 - i] = maxDim;
     }
   }
 

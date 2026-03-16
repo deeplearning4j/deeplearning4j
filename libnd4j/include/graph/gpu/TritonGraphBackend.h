@@ -82,6 +82,15 @@ class TritonGraphBackend : public GraphBackend {
 
   void invalidateCache() override;
 
+  /**
+   * Clear only the failed-compilation cache (negative cache).
+   * Called during plan recompilation to allow previously-failed segments
+   * (e.g., attention with seqK=0 before KV setup) to retry compilation
+   * with updated external input shapes.  Unlike invalidateCache(), this
+   * does NOT free compiled kernels.
+   */
+  void clearFailedSegmentCache();
+
   std::vector<CompilationAuditEntry> getLastCompilationAudit() const override;
 
   static TritonGraphBackend& getInstance();

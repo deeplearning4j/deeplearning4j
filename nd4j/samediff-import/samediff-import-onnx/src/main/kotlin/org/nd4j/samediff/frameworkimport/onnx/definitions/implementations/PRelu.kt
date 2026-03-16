@@ -42,9 +42,15 @@ class PRelu: PreImportHook {
     ): Map<String, List<SDVariable>> {
         val inputVariable = sd.getVariable(op.inputsToOp[0])
         val slope = sd.getVariable(op.inputsToOp[1])
-        val output = sd.nn().prelu(outputNames[0],inputVariable,slope,2,3)
+
+        // ONNX PRelu: y = max(0, x) + slope * min(0, x)
+        // Use element-wise formula for correct broadcasting in all cases:
+        // scalar slope, channel-wise slope [1,C,1,1], or element-wise slope
+        val zero = sd.constant(0.0f)
+        val positivePart = sd.math().max(inputVariable, zero)
+        val negativePart = sd.math().min(inputVariable, zero)
+        val output = positivePart.add(outputNames[0], slope.mul(negativePart))
+
         return mapOf(output.name() to listOf(output))
     }
-
-
 }

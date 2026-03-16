@@ -94,6 +94,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // Ops with data-dependent output shapes that can't be cached even with non-INT/LONG inputs.
     // Where: output length depends on number of true elements in BOOL input.
     // unique: output length depends on number of unique values.
+    // Ops with data-dependent output shapes (shape depends on input VALUES, not just input shapes)
+    // These ops are never cacheable and always need INT/LONG input sync.
     private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("Where", "unique");
 
     protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
@@ -3302,8 +3304,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                     // Create output as a view sharing the input's buffer at the input's offset
                     outputArrays[i] = Nd4j.create(input.data(), actualShape, strides, input.offset(), ordering, true);
+                } else if (Shape.isEmpty(shapeInfo)) {
+                    // Empty array case: use allocateFromDescriptor to preserve ARRAY_EMPTY flag
+                    boolean isOutput = i < outputNames.size() && allRequired.contains(outputNames.get(i));
+                    outputArrays[i] = mmgr.allocateFromDescriptor(isOutput, shapeBuffer);
                 } else {
-                    // Standard case: allocate new array
+                    // Standard case: allocate new array (including empty arrays with 0 dimensions)
                     DataType dt = Shape.dataType(shapeInfo);
                     long[] actualShape = Shape.shape(shapeInfo);
 
@@ -3427,7 +3433,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     private void handleReduceOpAxis(Op op, OpContext opContext) {
         if (opContext.getInputArrays().size() >= 2) {
             INDArray axisArray = opContext.getInputArray(1);
-            if (!axisArray.isEmpty()) {
+            // FIX: Check both isEmpty() flag AND length() == 0.
+            // TF empty axis tensor has shape [0] with length 0, but may not have ARRAY_EMPTY flag set.
+            if (axisArray.length() > 0 && !axisArray.isEmpty()) {
                 long[] axis = axisArray.toLongVector();
                 int rank = opContext.getInputArray(0).rank();
                 axis = Shape.normalizeAxis(rank, axis);

@@ -174,7 +174,7 @@ public class PreprocessorConfig {
     public static PreprocessorConfig forSmolDocling() {
         PreprocessorConfig config = new PreprocessorConfig();
         config.setDoResize(true);
-        config.setSize(new ImageSize(384, 384)); // Typical Idefics3 size
+        config.setSize(new ImageSize(512, 512)); // SmolDocling vision encoder expects 512x512
         config.setDoRescale(true);
         config.setRescaleFactor(1.0 / 255.0);
         config.setDoNormalize(true);

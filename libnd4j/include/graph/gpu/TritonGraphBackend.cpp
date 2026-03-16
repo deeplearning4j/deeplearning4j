@@ -122,6 +122,13 @@ bool TritonGraphBackend::areAllOpsMappable(NativeSlot* slots, int start, int end
 }
 
 // ─── Segment fusibility check ───────────────────────────────────────────────
+//
+// A segment is fusible if it contains at least one Triton-mappable op.
+// Non-mappable ops (matmul, gather, etc.) become fallback sections inside
+// compileSegment() — they run via slot-by-slot execution while the mappable
+// chains get compiled into Triton kernels.  The previous version required
+// ALL ops to be mappable, which caused the post-freeze mega-segment
+// (1 segment, 3407 ops) to always fail canFuseSegment → launches=0.
 
 bool TritonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   if (!isAvailable()) return false;
@@ -129,13 +136,15 @@ bool TritonGraphBackend::canFuseSegment(NativeSlot* slots, int start, int end) {
   int totalOps = end - start + 1;
   if (totalOps < MIN_MAPPABLE_OPS) return false;
 
+  // Check if at least one op is Triton-mappable.
+  // compileSegment handles mixed segments via isFallbackSection.
   for (int i = start; i <= end; i++) {
-    if (!TritonIRBuilder::isTritonMappable(slots[i].opName)) {
-      return false;
+    if (TritonIRBuilder::isTritonMappable(slots[i].opName)) {
+      return true;
     }
   }
 
-  return true;
+  return false;  // No mappable ops at all
 }
 
 }  // namespace graph

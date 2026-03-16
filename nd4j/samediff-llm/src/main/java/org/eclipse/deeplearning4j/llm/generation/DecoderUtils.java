@@ -25,7 +25,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.factory.Nd4j;
 
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -398,7 +397,7 @@ public class DecoderUtils {
             boolean usingStaticKv, long hiddenSize) {
         return buildDecoderInputMap(decoderInputNames, decoder, embeddings, inputIds,
                 pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
-                usingStaticKv, hiddenSize, null);
+                usingStaticKv, hiddenSize, null, false);
     }
 
     /**
@@ -409,30 +408,9 @@ public class DecoderUtils {
      * on subsequent calls, avoiding per-step allocations.
      *
      * @param reusableInputs optional cache map; populated on first use, updated in-place thereafter
-     */
-    public static Map<String, INDArray> buildDecoderInputMap(
-            List<String> decoderInputNames, SameDiff decoder,
-            INDArray embeddings, INDArray inputIds,
-            long pastSeqLen, long currentSeqLen,
-            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
-            boolean usingStaticKv, long hiddenSize,
-            Map<String, INDArray> reusableInputs) {
-        return buildDecoderInputMap(decoderInputNames, decoder, embeddings, inputIds,
-                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
-                usingStaticKv, hiddenSize, reusableInputs, null);
-    }
-
-    /**
-     * Build the complete decoder input map with optional custom attention bias override.
-     *
-     * When {@code customAttnBias} is provided (non-null map), the full static KV buffer
-     * is passed (fixed shapes for CUDA graph capture) and the custom bias overrides the
-     * model's attn_mask_reformat subgraph output. Without it, KV views are used (variable
-     * shapes, no CUDA graph capture).
-     *
-     * @param reusableInputs optional cache map
-     * @param customAttnBias map of attn_mask_reformat variable names to pre-computed bias arrays;
-     *                       null to use view-based approach
+     * @param dspActive whether DSP (DynamicShapePlan) is active — determines padded vs view-based inputs.
+     *                  When true: full static KV buffer + sparse attention_mask (fixed shapes for CUDA graphs).
+     *                  When false: KV views [0:cachePos] + all-ones attention_mask (growing shapes).
      */
     public static Map<String, INDArray> buildDecoderInputMap(
             List<String> decoderInputNames, SameDiff decoder,
@@ -441,28 +419,26 @@ public class DecoderUtils {
             Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
-            Map<String, INDArray> customAttnBias) {
+            boolean dspActive) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
         boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
-        boolean hasBiasOverride = customAttnBias != null && !customAttnBias.isEmpty();
+        // DSP active = padded inputs with full static KV buffer (fixed shapes)
+        boolean usePadded = dspActive && usingStaticKv;
 
         for (String inputName : decoderInputNames) {
             if (inputName.equals("inputs_embeds")) {
                 decoderInputMap.put(inputName, embeddings);
             } else if (inputName.equals("attention_mask")) {
-                if (usingStaticKv && hasBiasOverride) {
-                    // Custom bias mode: full static buffer + sparse mask
-                    // The bias overrides attn_mask_reformat, so the model's causal mask
-                    // computation is bypassed. The attention_mask still needs to reflect
-                    // which positions are valid (for any non-attn_mask_reformat consumers).
+                if (usePadded) {
+                    // Padded mode: sparse mask [1, maxKvLen + currentSeqLen]
+                    // 1s at valid past positions and current token, 0s at padding
                     long totalSeqLen = maxKvLen + currentSeqLen;
                     if (canReuse && reusableInputs.containsKey("attention_mask")) {
                         INDArray mask = reusableInputs.get("attention_mask");
                         if (cachePos > 0) {
                             mask.putScalar(0, cachePos - 1, 1);
                         }
-                        Nd4j.getAffinityManager().tagLocation(mask, AffinityManager.Location.HOST);
                         decoderInputMap.put(inputName, mask);
                     } else {
                         INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
@@ -470,7 +446,6 @@ public class DecoderUtils {
                             mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
                         }
                         mask.putScalar(0, totalSeqLen - 1, 1);
-                        Nd4j.getAffinityManager().tagLocation(mask, AffinityManager.Location.HOST);
                         decoderInputMap.put(inputName, mask);
                         if (canReuse) reusableInputs.put("attention_mask", mask);
                     }
@@ -483,8 +458,8 @@ public class DecoderUtils {
                     decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
                 }
             } else if (inputName.equals("_causal_mask")) {
-                if (usingStaticKv && hasBiasOverride) {
-                    // Custom bias mode: causal mask matches full buffer size
+                if (usePadded) {
+                    // Padded mode: causal mask matches full buffer size
                     if (canReuse && reusableInputs.containsKey("_causal_mask")) {
                         decoderInputMap.put(inputName, reusableInputs.get("_causal_mask"));
                     } else {
@@ -509,7 +484,6 @@ public class DecoderUtils {
                 if (canReuse && reusableInputs.containsKey("position_ids")) {
                     INDArray posIds = reusableInputs.get("position_ids");
                     posIds.putScalar(0, 0, pastSeqLen);
-                    Nd4j.getAffinityManager().tagLocation(posIds, AffinityManager.Location.HOST);
                     decoderInputMap.put(inputName, posIds);
                 } else {
                     INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
@@ -521,8 +495,8 @@ public class DecoderUtils {
                 if (usingStaticKv) {
                     INDArray staticBuf = staticKvBuffers.get(inputName);
                     if (staticBuf != null) {
-                        if (hasBiasOverride) {
-                            // Custom bias mode: pass full static buffer (fixed shape)
+                        if (usePadded) {
+                            // Padded mode: pass full static buffer (fixed shape)
                             decoderInputMap.put(inputName, staticBuf);
                         } else {
                             // View-based mode: pass VIEW [0:cachePos]
@@ -546,13 +520,6 @@ public class DecoderUtils {
             }
         }
 
-        // Add custom attention bias overrides (these are intermediate variables,
-        // not listed in decoderInputNames, but SameDiff will use them directly
-        // and skip computing the attn_mask_reformat subgraph)
-        if (hasBiasOverride) {
-            decoderInputMap.putAll(customAttnBias);
-        }
-
         if (!decoderInputMap.containsKey("inputs_embeds")) {
             decoderInputMap.put("inputs_embeds", embeddings);
         }
@@ -560,111 +527,4 @@ public class DecoderUtils {
         return decoderInputMap;
     }
 
-    /**
-     * Find all variable names in the decoder graph that are outputs of the
-     * attn_mask_reformat subgraph. These variables produce the 4D additive attention
-     * bias consumed by onnx_multi_head_attention ops.
-     *
-     * @param decoder the SameDiff decoder model
-     * @return list of variable names (empty if no attn_mask_reformat detected)
-     */
-    public static List<String> findAttnMaskReformatOutputs(SameDiff decoder) {
-        List<String> results = new ArrayList<>();
-        // The attn_mask_reformat subgraph is inlined during ONNX import.
-        // Its final output is the Tile op that produces the 4D attention bias
-        // consumed by onnx_multi_head_attention ops. We must ONLY override this
-        // single output — intermediate subgraph variables have different shapes
-        // (BOOL, INT64, etc.) and overriding them with a FLOAT bias causes errors.
-        //
-        // Strategy: find the variable containing "attn_mask_reformat" AND "Tile"
-        // (the Tile op is always the last step that broadcasts the mask to 4D).
-        for (SDVariable var : decoder.variables()) {
-            String name = var.name();
-            if (name.contains("attn_mask_reformat") && name.contains("Tile")) {
-                results.add(name);
-            }
-        }
-
-        if (!results.isEmpty()) {
-            log.info("Found attn_mask_reformat Tile output(s): {}", results);
-        }
-        return results;
-    }
-
-    /**
-     * Build an additive attention bias for decode steps with a padded static KV cache.
-     *
-     * This bias replaces the model's attn_mask_reformat subgraph output, allowing
-     * fixed-shape KV buffers for CUDA graph capture. The bias masks the padding gap
-     * (positions cachePos..maxKvLen-1) while allowing valid past positions and the
-     * new token position (maxKvLen, where the model's internal concat places it).
-     *
-     * Shape: [1, 1, 1, maxKvLen + 1] (broadcastable to [batch, heads, seqQ, seqKV])
-     *
-     * @param maxKvLen total static KV buffer size
-     * @param cachePos number of valid KV entries (positions 0..cachePos-1 are filled)
-     * @return INDArray of shape [1, 1, 1, maxKvLen + 1] with FLOAT dtype
-     */
-    public static INDArray buildStaticKvAttnBias(long maxKvLen, long cachePos) {
-        long totalSeqKv = maxKvLen + 1; // past KV positions + new token after concat
-        INDArray bias = Nd4j.zeros(DataType.FLOAT, 1, 1, 1, totalSeqKv);
-        // Mask the padding gap: positions cachePos..maxKvLen-1
-        if (cachePos < maxKvLen) {
-            bias.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.point(0),
-                    NDArrayIndex.interval(cachePos, maxKvLen)).assign(MASK_FILL);
-        }
-        // Position maxKvLen (new token) stays 0 (allow self-attention)
-        // Positions 0..cachePos-1 stay 0 (allow attending to valid past)
-        return bias;
-    }
-
-    /**
-     * Update an existing attention bias in-place for a new cachePos.
-     * Opens one more position by setting bias[cachePos-1] = 0 (was MASK_FILL).
-     *
-     * @param bias the bias array [1, 1, 1, maxKvLen + 1]
-     * @param cachePos the new cache position (the position just opened up is cachePos-1)
-     */
-    public static void updateStaticKvAttnBias(INDArray bias, long cachePos) {
-        // Position cachePos-1 was just written — unmask it
-        if (cachePos > 0) {
-            bias.putScalar(new long[]{0, 0, 0, cachePos - 1}, 0.0f);
-            Nd4j.getAffinityManager().tagLocation(bias, AffinityManager.Location.HOST);
-        }
-    }
-
-    /**
-     * Build a static-size attention mask for decode steps with a padded KV cache.
-     *
-     * Returns [batchSize, maxKvLen+1] LONG mask: 1 for valid positions 0..cachePos-1,
-     * 0 for padding positions cachePos..maxKvLen-1, and 1 for position maxKvLen
-     * (the new token being decoded). Finished sequences get all zeros.
-     *
-     * @param batchSize number of sequences in the batch
-     * @param cachePos number of valid KV entries (positions 0..cachePos-1 are filled)
-     * @param maxKvLen maximum KV cache length (total static buffer size)
-     * @param finished per-sequence finished flags (length = original batchSize)
-     * @return INDArray of shape [batchSize, maxKvLen+1] with LONG dtype
-     */
-    public static INDArray buildStaticDecodeMask(int batchSize, long cachePos, long maxKvLen, boolean[] finished) {
-        long totalLen = maxKvLen + 1; // past KV positions + new token position
-        INDArray mask = Nd4j.zeros(DataType.LONG, batchSize, totalLen);
-
-        // Set all valid past positions (columns 0..cachePos-1) to 1 for all rows
-        if (cachePos > 0) {
-            mask.get(NDArrayIndex.all(), NDArrayIndex.interval(0, cachePos)).assign(1);
-        }
-        // Set new token position (column maxKvLen) to 1 for all rows
-        mask.get(NDArrayIndex.all(), NDArrayIndex.point(maxKvLen)).assign(1);
-
-        // Zero out finished sequences: build [batchSize,1] active mask, broadcast-multiply
-        long[] activeFlags = new long[batchSize];
-        for (int b = 0; b < batchSize; b++) {
-            activeFlags[b] = (b < finished.length && finished[b]) ? 0L : 1L;
-        }
-        INDArray activeMask = Nd4j.createFromArray(activeFlags).reshape(batchSize, 1);
-        mask.muli(activeMask);
-
-        return mask;
-    }
 }

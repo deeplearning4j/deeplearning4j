@@ -2612,6 +2612,435 @@ public class OnnxOpTests {
         return Stream.of(Arguments.of("MatMulInteger"));
     }
 
+    // ======================== EXTENDED ONNX IMPORT HOOK TESTS ========================
+    // Tests for the changed ONNX pre-import hooks: GatherND, Pad, Resize, PRelu, NMS, BitShift
+
+    // --- GatherND: Q=1 with 3D data (vision encoder pattern: gather from [vocab, hidden]) ---
+
+    @ParameterizedTest(name = "GatherND_Q1_3D")
+    @MethodSource("gatherND_Q1_3D_args")
+    void testGatherND_Q1_3D(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_q1_3d_");
+        // data: [5, 4, 3] (e.g., 5 positions, each with 4x3 features)
+        INDArray data = Nd4j.rand(DataType.FLOAT, 5, 4, 3);
+        // indices: [2, 1] with Q=1 → gather 2 rows from axis 0
+        INDArray indices = Nd4j.createFromArray(new long[][]{{1}, {3}}).castTo(DataType.LONG);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{5, 4, 3}, data),
+                        InputSpec.graphInput("indices", DataType.LONG, new long[]{2, 1}, indices)),
+                List.of(new OutputSpec("output", DataType.FLOAT, new long[]{2, 4, 3})),
+                Map.of("batch_dims", intAttr("batch_dims", 0)),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> gatherND_Q1_3D_args() {
+        return Stream.of(Arguments.of("GatherND"));
+    }
+
+    // --- GatherND: Q=2 with 3D data (multi-dimensional indexing) ---
+
+    @ParameterizedTest(name = "GatherND_Q2_3D")
+    @MethodSource("gatherND_Q2_3D_args")
+    void testGatherND_Q2_3D(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_q2_3d_");
+        // data: [3, 4, 5]
+        INDArray data = Nd4j.rand(DataType.FLOAT, 3, 4, 5);
+        // indices: [2, 2] with Q=2 → index 2 dimensions, output has remaining dims
+        INDArray indices = Nd4j.createFromArray(new long[][]{{0, 1}, {2, 3}}).castTo(DataType.LONG);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{3, 4, 5}, data),
+                        InputSpec.graphInput("indices", DataType.LONG, new long[]{2, 2}, indices)),
+                List.of(new OutputSpec("output", DataType.FLOAT, new long[]{2, 5})),
+                Map.of("batch_dims", intAttr("batch_dims", 0)),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> gatherND_Q2_3D_args() {
+        return Stream.of(Arguments.of("GatherND"));
+    }
+
+    // --- GatherND: Q=3 full indexing (scalar output per index) ---
+
+    @ParameterizedTest(name = "GatherND_Q3_fullIndex")
+    @MethodSource("gatherND_Q3_fullIndex_args")
+    void testGatherND_Q3_fullIndex(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_q3_full_");
+        // data: [3, 4, 5]
+        INDArray data = Nd4j.rand(DataType.FLOAT, 3, 4, 5);
+        // indices: [2, 3] with Q=3 → full indexing, output is scalar per index row
+        INDArray indices = Nd4j.createFromArray(new long[][]{{0, 1, 2}, {2, 3, 4}}).castTo(DataType.LONG);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{3, 4, 5}, data),
+                        InputSpec.graphInput("indices", DataType.LONG, new long[]{2, 3}, indices)),
+                List.of(new OutputSpec("output", DataType.FLOAT, new long[]{2})),
+                Map.of("batch_dims", intAttr("batch_dims", 0)),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> gatherND_Q3_fullIndex_args() {
+        return Stream.of(Arguments.of("GatherND"));
+    }
+
+    // --- GatherND: batch_dims=1 ---
+
+    @ParameterizedTest(name = "GatherND_batchDims1")
+    @MethodSource("gatherND_batchDims1_args")
+    void testGatherND_batchDims1(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_batch1_");
+        // data: [2, 3, 4] (batch=2)
+        INDArray data = Nd4j.rand(DataType.FLOAT, 2, 3, 4);
+        // indices: [2, 1, 1] with batch_dims=1
+        INDArray indices = Nd4j.createFromArray(new long[]{0, 2}).reshape(2, 1, 1).castTo(DataType.LONG);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{2, 3, 4}, data),
+                        InputSpec.graphInput("indices", DataType.LONG, new long[]{2, 1, 1}, indices)),
+                List.of(new OutputSpec("output", DataType.FLOAT, null)),
+                Map.of("batch_dims", intAttr("batch_dims", 1)),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> gatherND_batchDims1_args() {
+        return Stream.of(Arguments.of("GatherND"));
+    }
+
+    // --- Pad: 4D NCHW constant padding (vision encoder pattern) ---
+
+    @ParameterizedTest(name = "Pad_4D_constant")
+    @MethodSource("pad4DConstantArgs")
+    void testPad4DConstant(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_4d_");
+        INDArray data = Nd4j.rand(DataType.FLOAT, 1, 3, 4, 4);
+        // ONNX format: [begin_N, begin_C, begin_H, begin_W, end_N, end_C, end_H, end_W]
+        INDArray pads = Nd4j.createFromArray(new long[]{0, 0, 1, 1, 0, 0, 1, 1});
+        INDArray constantValue = Nd4j.scalar(DataType.FLOAT, 0.0f);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{1, 3, 4, 4}, data),
+                        InputSpec.constantInput("pads", DataType.LONG, new long[]{8}, pads),
+                        InputSpec.constantInput("constant_value", DataType.FLOAT, new long[]{}, constantValue)),
+                List.of(new OutputSpec("output", DataType.FLOAT, new long[]{1, 3, 6, 6})),
+                Map.of("mode", stringAttr("mode", "constant")),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> pad4DConstantArgs() {
+        return Stream.of(Arguments.of("Pad"));
+    }
+
+    // --- Pad: non-zero constant value ---
+
+    @ParameterizedTest(name = "Pad_nonzeroConstant")
+    @MethodSource("padNonzeroConstantArgs")
+    void testPadNonzeroConstant(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_nonzero_");
+        INDArray data = Nd4j.rand(DataType.FLOAT, 3, 3);
+        INDArray pads = Nd4j.createFromArray(new long[]{1, 2, 1, 2});
+        INDArray constantValue = Nd4j.scalar(DataType.FLOAT, -1.5f);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{3, 3}, data),
+                        InputSpec.constantInput("pads", DataType.LONG, new long[]{4}, pads),
+                        InputSpec.constantInput("constant_value", DataType.FLOAT, new long[]{}, constantValue)),
+                List.of(new OutputSpec("output", DataType.FLOAT, new long[]{5, 7})),
+                Map.of("mode", stringAttr("mode", "constant")),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> padNonzeroConstantArgs() {
+        return Stream.of(Arguments.of("Pad"));
+    }
+
+    // --- Pad: reflect mode ---
+
+    @ParameterizedTest(name = "Pad_reflect")
+    @MethodSource("padReflectArgs")
+    void testPadReflect(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_reflect_");
+        INDArray data = Nd4j.rand(DataType.FLOAT, 3, 4);
+        // Reflect padding must be < dim size
+        INDArray pads = Nd4j.createFromArray(new long[]{1, 2, 1, 2});
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("data", DataType.FLOAT, new long[]{3, 4}, data),
+                        InputSpec.constantInput("pads", DataType.LONG, new long[]{4}, pads)),
+                List.of(new OutputSpec("output", DataType.FLOAT, new long[]{5, 8})),
+                Map.of("mode", stringAttr("mode", "reflect")),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> padReflectArgs() {
+        return Stream.of(Arguments.of("Pad"));
+    }
+
+    // --- Resize: sizes-based (op has 4 inputs) ---
+
+    @ParameterizedTest(name = "Resize_sizesBased")
+    @MethodSource("resizeSizesBasedArgs")
+    void testResizeSizesBased(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_sizes_");
+        INDArray input = Nd4j.rand(DataType.FLOAT, 1, 1, 2, 2);
+        INDArray sizes = Nd4j.createFromArray(new long[]{1, 1, 4, 4});
+
+        Onnx.GraphProto.Builder graphBuilder = Onnx.GraphProto.newBuilder()
+                .setName("test_Resize_sizes");
+
+        graphBuilder.addNode(Onnx.NodeProto.newBuilder()
+                .setOpType("Resize")
+                .setName("Resize_0")
+                .addInput("X")
+                .addInput("")  // empty roi
+                .addInput("")  // empty scales
+                .addInput("sizes")
+                .addOutput("Y")
+                .addAttribute(stringAttr("mode", "nearest"))
+                .build());
+
+        graphBuilder.addInput(makeValueInfo("X", DataType.FLOAT, new long[]{1, 1, 2, 2}));
+        graphBuilder.addInitializer(org.nd4j.onnx.OnnxTensorUtils.toTensorProto(sizes, "sizes"));
+        graphBuilder.addOutput(makeValueInfo("Y", DataType.FLOAT, new long[]{1, 1, 4, 4}));
+
+        Onnx.ModelProto model = Onnx.ModelProto.newBuilder()
+                .setIrVersion(7)
+                .setGraph(graphBuilder.build())
+                .addOpsetImport(Onnx.OperatorSetIdProto.newBuilder().setVersion(DEFAULT_OPSET).build())
+                .build();
+
+        java.io.File modelFile = saveModel(model, opDir);
+        Map<String, INDArray> inputMap = Map.of("X", input);
+
+        Map<String, INDArray> ortOutputs;
+        try (org.nd4j.onnxruntime.runner.OnnxRuntimeRunner runner =
+                     org.nd4j.onnxruntime.runner.OnnxRuntimeRunner.builder()
+                             .modelUri(modelFile.getAbsolutePath()).build()) {
+            ortOutputs = runner.exec(inputMap);
+            assertNotNull(ortOutputs);
+        }
+
+        org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter importer =
+                new org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter();
+        org.nd4j.autodiff.samediff.SameDiff sd = importer.runImport(
+                modelFile.getAbsolutePath(), inputMap, false, false);
+        Map<String, INDArray> sdOutputs = sd.outputAll(inputMap);
+        assertNotNull(sdOutputs);
+
+        compareOutputs(ortOutputs, sdOutputs, 1e-4, 1e-6);
+    }
+
+    static Stream<Arguments> resizeSizesBasedArgs() {
+        return Stream.of(Arguments.of("Resize"));
+    }
+
+    // --- Resize: bilinear mode ---
+
+    @ParameterizedTest(name = "Resize_bilinear")
+    @MethodSource("resizeBilinearArgs")
+    void testResizeBilinear(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_bilinear_");
+        INDArray input = Nd4j.rand(DataType.FLOAT, 1, 1, 2, 2);
+        INDArray scales = Nd4j.createFromArray(new float[]{1.0f, 1.0f, 3.0f, 3.0f});
+
+        Onnx.GraphProto.Builder graphBuilder = Onnx.GraphProto.newBuilder()
+                .setName("test_Resize_bilinear");
+
+        graphBuilder.addNode(Onnx.NodeProto.newBuilder()
+                .setOpType("Resize")
+                .setName("Resize_0")
+                .addInput("X")
+                .addInput("")  // empty roi
+                .addInput("scales")
+                .addOutput("Y")
+                .addAttribute(stringAttr("mode", "linear"))
+                .build());
+
+        graphBuilder.addInput(makeValueInfo("X", DataType.FLOAT, new long[]{1, 1, 2, 2}));
+        graphBuilder.addInitializer(org.nd4j.onnx.OnnxTensorUtils.toTensorProto(scales, "scales"));
+        graphBuilder.addOutput(makeValueInfo("Y", DataType.FLOAT, new long[]{1, 1, 6, 6}));
+
+        Onnx.ModelProto model = Onnx.ModelProto.newBuilder()
+                .setIrVersion(7)
+                .setGraph(graphBuilder.build())
+                .addOpsetImport(Onnx.OperatorSetIdProto.newBuilder().setVersion(DEFAULT_OPSET).build())
+                .build();
+
+        java.io.File modelFile = saveModel(model, opDir);
+        Map<String, INDArray> inputMap = Map.of("X", input);
+
+        Map<String, INDArray> ortOutputs;
+        try (org.nd4j.onnxruntime.runner.OnnxRuntimeRunner runner =
+                     org.nd4j.onnxruntime.runner.OnnxRuntimeRunner.builder()
+                             .modelUri(modelFile.getAbsolutePath()).build()) {
+            ortOutputs = runner.exec(inputMap);
+            assertNotNull(ortOutputs);
+        }
+
+        org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter importer =
+                new org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter();
+        org.nd4j.autodiff.samediff.SameDiff sd = importer.runImport(
+                modelFile.getAbsolutePath(), inputMap, false, false);
+        Map<String, INDArray> sdOutputs = sd.outputAll(inputMap);
+        assertNotNull(sdOutputs);
+
+        compareOutputs(ortOutputs, sdOutputs, 1e-4, 1e-6);
+    }
+
+    static Stream<Arguments> resizeBilinearArgs() {
+        return Stream.of(Arguments.of("Resize"));
+    }
+
+    // --- PRelu: 4D NCHW with 1D channel slope (common conv pattern) ---
+
+    @ParameterizedTest(name = "PRelu_4D_channelSlope")
+    @MethodSource("prelu4DChannelSlopeArgs")
+    void testPRelu4DChannelSlope(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_4d_");
+        INDArray x = Nd4j.rand(DataType.FLOAT, 2, 3, 4, 4).muli(2).subi(1);
+        // ONNX PRelu requires slope to be unidirectionally broadcastable to X
+        // For NCHW [2,3,4,4], use [1,3,1,1] for channel-wise broadcasting
+        INDArray slope = Nd4j.rand(DataType.FLOAT, 1, 3, 1, 1).muli(0.25f);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("X", DataType.FLOAT, new long[]{2, 3, 4, 4}, x),
+                        InputSpec.graphInput("slope", DataType.FLOAT, new long[]{1, 3, 1, 1}, slope)),
+                List.of(new OutputSpec("Y", DataType.FLOAT, new long[]{2, 3, 4, 4})),
+                null,
+                opDir,
+                1e-4, 1e-6);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> prelu4DChannelSlopeArgs() {
+        return Stream.of(Arguments.of("PRelu"));
+    }
+
+    // --- PRelu: 2D input with scalar slope ---
+
+    @ParameterizedTest(name = "PRelu_2D_scalarSlope")
+    @MethodSource("prelu2DScalarSlopeArgs")
+    void testPRelu2DScalarSlope(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_2d_scalar_");
+        INDArray x = Nd4j.rand(DataType.FLOAT, 4, 5).muli(2).subi(1);
+        INDArray slope = Nd4j.scalar(DataType.FLOAT, 0.1f);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("X", DataType.FLOAT, new long[]{4, 5}, x),
+                        InputSpec.graphInput("slope", DataType.FLOAT, new long[]{}, slope)),
+                List.of(new OutputSpec("Y", DataType.FLOAT, new long[]{4, 5})),
+                null,
+                opDir,
+                1e-4, 1e-6);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> prelu2DScalarSlopeArgs() {
+        return Stream.of(Arguments.of("PRelu"));
+    }
+
+    // --- NonMaxSuppression: verify output values match ORT ---
+
+    @ParameterizedTest(name = "NonMaxSuppression_verifyValues")
+    @MethodSource("nmsVerifyArgs")
+    void testNonMaxSuppressionVerifyValues(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_verify_");
+        // 4 non-overlapping boxes, easy case
+        INDArray boxes = Nd4j.createFromArray(new float[]{
+                0, 0, 1, 1,   2, 2, 3, 3,   4, 4, 5, 5,   6, 6, 7, 7
+        }).reshape(1, 4, 4);
+        INDArray scores = Nd4j.createFromArray(new float[]{
+                0.9f, 0.8f, 0.7f, 0.6f
+        }).reshape(1, 1, 4);
+
+        INDArray maxOutputBoxes = Nd4j.scalar(DataType.LONG, 4);
+        INDArray iouThreshold = Nd4j.scalar(DataType.FLOAT, 0.5f);
+        INDArray scoreThreshold = Nd4j.scalar(DataType.FLOAT, 0.0f);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("boxes", DataType.FLOAT, new long[]{1, 4, 4}, boxes),
+                        InputSpec.graphInput("scores", DataType.FLOAT, new long[]{1, 1, 4}, scores),
+                        InputSpec.constantInput("max_output_boxes_per_class", DataType.LONG, new long[]{}, maxOutputBoxes),
+                        InputSpec.constantInput("iou_threshold", DataType.FLOAT, new long[]{}, iouThreshold),
+                        InputSpec.constantInput("score_threshold", DataType.FLOAT, new long[]{}, scoreThreshold)),
+                List.of(new OutputSpec("selected_indices", DataType.LONG, null)),
+                null,
+                opDir,
+                0, 0);
+        if (result.onnxRuntimeError != null) {
+            fail("ORT failed: " + result.onnxRuntimeError.getMessage());
+        }
+        if (result.sameDiffError != null) {
+            fail("SameDiff failed: " + result.sameDiffError.getMessage());
+        }
+        // Verify we got all 4 non-overlapping boxes selected
+        assertNotNull(result.onnxRuntimeOutputs);
+        assertNotNull(result.sameDiffOutputs);
+    }
+
+    static Stream<Arguments> nmsVerifyArgs() {
+        return Stream.of(Arguments.of("NonMaxSuppression"));
+    }
+
+    // --- BitShift: left shift ---
+
+    @ParameterizedTest(name = "BitShift_left")
+    @MethodSource("bitShiftLeftArgs")
+    void testBitShiftLeft(String opType) throws Exception {
+        Path opDir = Files.createTempDirectory(tempDir, opType + "_left_");
+        INDArray x = Nd4j.createFromArray(new int[]{1, 2, 4, 8, 16, 32}).reshape(2, 3).castTo(DataType.UINT32);
+        INDArray y = Nd4j.createFromArray(new int[]{1, 2, 3, 1, 2, 3}).reshape(2, 3).castTo(DataType.UINT32);
+
+        OpTestResult result = executeOpTest(
+                opType,
+                List.of(
+                        InputSpec.graphInput("X", DataType.UINT32, new long[]{2, 3}, x),
+                        InputSpec.graphInput("Y", DataType.UINT32, new long[]{2, 3}, y)),
+                List.of(new OutputSpec("Z", DataType.UINT32, new long[]{2, 3})),
+                Map.of("direction", stringAttr("direction", "LEFT")),
+                opDir,
+                0, 0);
+        assertOpResult(result);
+    }
+
+    static Stream<Arguments> bitShiftLeftArgs() {
+        return Stream.of(Arguments.of("BitShift"));
+    }
+
     // ======================== HELPER METHODS ========================
 
     /**

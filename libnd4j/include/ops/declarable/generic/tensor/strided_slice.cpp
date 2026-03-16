@@ -526,15 +526,19 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   }
 
   if (indices->size()) {
+    // View path: if output already shares input's buffer (set up by Java initializeOutputs),
+    // the view is already correct — nothing to do.
+    if (x->dataBuffer() == z->dataBuffer()) {
+      return Status::OK;
+    }
+
+    // Fallback copy path: buffers differ (standard non-DSP execution)
     LongType* subArrShapeInfo = nullptr;
     ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()) * 8, sd::LongType);
     LongType offset;
 
     shape::calcSubArrShapeInfoAndOffset(indices->data(), x->shapeInfo(), subArrShapeInfo, offset, true, true);
 
-    // Fast path: check if both source slice and destination are contiguous
-    // For contiguous memory, use memcpy instead of transform
-    // NOTE: Only use memcpy on CPU - on CUDA, data is on device and memcpy won't work
     const LongType length = z->lengthOf();
     const bool subContiguous = shape::order(subArrShapeInfo) == 'c' &&
                                sd::isContiguousLayoutForLoops(subArrShapeInfo);
@@ -543,14 +547,12 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     const bool isCpuBackend = Environment::getInstance().isCPU();
 
     if (isCpuBackend && subContiguous && zContiguous && length > 0) {
-      // Both contiguous and on CPU - use direct memcpy
       x->syncToHost();
       const auto sizeBytes = length * x->sizeOfT();
       std::memcpy(z->buffer(), x->bufferWithOffset(offset), sizeBytes);
       z->tickWriteHost();
       z->syncToDevice();
     } else if (length > 0) {
-      // Non-contiguous - use transform
       auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);
 
       NDArray::prepareSpecialUse({z}, {x});

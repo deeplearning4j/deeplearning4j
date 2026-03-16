@@ -466,4 +466,147 @@ public class OnnxMultiHeadAttentionTest {
                     "Shape mismatch for numHeads=" + numHeads);
         }
     }
+
+    /**
+     * Test Grouped Query Attention (GQA) where K/V have fewer heads than Q.
+     * This is the pattern used by SmolDocling: Q has 9 heads, K/V have 3 heads.
+     * Q hidden=576 (9*64), KV hidden=192 (3*64), headDim=64.
+     */
+    @Test
+    public void testGroupedQueryAttention() {
+        int batch = 1;
+        int seqLen = 4;
+        int numQHeads = 9;
+        int numKvHeads = 3;
+        int headDim = 64;
+        int qHidden = numQHeads * headDim;   // 576
+        int kvHidden = numKvHeads * headDim;  // 192
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, qHidden);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, kvHidden);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, kvHidden);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("onnx_multi_head_attention")
+                .addInputs(query, key, value)
+                .addIntegerArguments((long) numQHeads, 0L)
+                .addFloatingPointArguments(0.0)
+                .build();
+
+        INDArray[] outputs = Nd4j.exec(op);
+
+        assertNotNull(outputs);
+        assertTrue(outputs.length >= 1);
+        // Output should have Q's hidden dim
+        assertArrayEquals(new long[]{batch, seqLen, qHidden}, outputs[0].shape(),
+                "GQA output shape should match Q hidden");
+
+        if (outputs.length >= 2) {
+            // Present key should use numKvHeads, not numQHeads
+            assertArrayEquals(new long[]{batch, numKvHeads, seqLen, headDim}, outputs[1].shape(),
+                    "Present key should use numKvHeads");
+        }
+        if (outputs.length >= 3) {
+            assertArrayEquals(new long[]{batch, numKvHeads, seqLen, headDim}, outputs[2].shape(),
+                    "Present value should use numKvHeads");
+        }
+
+        double absSum = outputs[0].ameanNumber().doubleValue();
+        assertTrue(absSum > 1e-6, "GQA output should not be all zeros");
+    }
+
+    /**
+     * Test GQA with past key/value (KV cache) — the exact SmolDocling decode pattern.
+     * Q=[1,1,576] (9 heads), K=[1,1,192] (3 heads), past_key=[1,3,10,64].
+     */
+    @Test
+    public void testGQAWithPastKeyValue() {
+        int batch = 1;
+        int seqQ = 1;
+        int pastSeq = 10;
+        int numQHeads = 9;
+        int numKvHeads = 3;
+        int headDim = 64;
+        int qHidden = numQHeads * headDim;   // 576
+        int kvHidden = numKvHeads * headDim;  // 192
+
+        INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqQ, qHidden);
+        INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden);
+        INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden);
+
+        // Past KV in BHSD: [batch, numKvHeads, pastSeq, headDim]
+        INDArray pastKey = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, pastSeq, headDim);
+        INDArray pastValue = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, pastSeq, headDim);
+
+        OnnxMultiHeadAttention op = new OnnxMultiHeadAttention(
+                query, key, value,
+                null, pastKey, pastValue,
+                numQHeads, 0.0, true
+        );
+
+        INDArray[] outputs = Nd4j.exec(op);
+
+        assertNotNull(outputs);
+        assertTrue(outputs.length >= 3);
+
+        // Attention output
+        assertArrayEquals(new long[]{batch, seqQ, qHidden}, outputs[0].shape(),
+                "GQA+KV output shape should match Q hidden");
+
+        // Present key/value: [batch, numKvHeads, pastSeq+seqQ, headDim]
+        int totalSeq = pastSeq + seqQ;
+        assertArrayEquals(new long[]{batch, numKvHeads, totalSeq, headDim}, outputs[1].shape(),
+                "Present key should have numKvHeads and totalSeq");
+        assertArrayEquals(new long[]{batch, numKvHeads, totalSeq, headDim}, outputs[2].shape(),
+                "Present value should have numKvHeads and totalSeq");
+
+        double absSum = outputs[0].ameanNumber().doubleValue();
+        assertTrue(absSum > 1e-6, "GQA+KV output should not be all zeros");
+    }
+
+    /**
+     * Test multiple GQA head configurations:
+     * 9Q/3KV, 12Q/4KV, 8Q/2KV, 6Q/1KV (MQA)
+     */
+    @Test
+    public void testMultipleGQAConfigurations() {
+        int batch = 1;
+        int seqLen = 4;
+        int headDim = 32;
+
+        int[][] configs = {
+            {9, 3},   // SmolDocling-like
+            {12, 4},  // 3:1 ratio
+            {8, 2},   // 4:1 ratio
+            {6, 1},   // MQA (Multi-Query Attention)
+            {4, 4},   // Standard MHA (no grouping)
+        };
+
+        for (int[] cfg : configs) {
+            int numQHeads = cfg[0];
+            int numKvHeads = cfg[1];
+            int qHidden = numQHeads * headDim;
+            int kvHidden = numKvHeads * headDim;
+
+            INDArray query = Nd4j.randn(DataType.FLOAT, batch, seqLen, qHidden);
+            INDArray key = Nd4j.randn(DataType.FLOAT, batch, seqLen, kvHidden);
+            INDArray value = Nd4j.randn(DataType.FLOAT, batch, seqLen, kvHidden);
+
+            DynamicCustomOp op = DynamicCustomOp.builder("onnx_multi_head_attention")
+                    .addInputs(query, key, value)
+                    .addIntegerArguments((long) numQHeads, 0L)
+                    .addFloatingPointArguments(0.0)
+                    .build();
+
+            INDArray[] outputs = Nd4j.exec(op);
+
+            assertNotNull(outputs, "Failed for Q=" + numQHeads + " KV=" + numKvHeads);
+            assertArrayEquals(new long[]{batch, seqLen, qHidden}, outputs[0].shape(),
+                    "Output shape mismatch for Q=" + numQHeads + " KV=" + numKvHeads);
+
+            if (outputs.length >= 2) {
+                assertArrayEquals(new long[]{batch, numKvHeads, seqLen, headDim}, outputs[1].shape(),
+                        "Present key shape mismatch for Q=" + numQHeads + " KV=" + numKvHeads);
+            }
+        }
+    }
 }

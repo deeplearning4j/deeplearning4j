@@ -22,7 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.ops.impl.shape.Reshape as Nd4jReshape
+import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy as Nd4jReshapeNoCopy
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -75,7 +75,7 @@ class Reshape : PreImportHook  {
             // For the static shape case, C++ handles 0-copy-from-input natively.
             // allowzero with static shapes containing 0 will produce empty tensors in C++.
             val finalOutput = sd.updateVariableNameAndReference(
-                Nd4jReshape(sd, inputVariable, shapeArr).outputVariable(),
+                Nd4jReshapeNoCopy(sd, inputVariable, shapeArr).outputVariable(),
                 outputNames[0]
             )
             return mapOf(outputNames[0] to listOf(finalOutput))
@@ -109,7 +109,7 @@ class Reshape : PreImportHook  {
             }
 
             val finalOutput = sd.updateVariableNameAndReference(
-                Nd4jReshape(sd, inputVariable, shapeVar).outputVariable(),
+                Nd4jReshapeNoCopy(sd, inputVariable, shapeVar).outputVariable(),
                 outputNames[0]
             )
             return mapOf(outputNames[0] to listOf(finalOutput))

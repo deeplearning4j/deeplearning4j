@@ -112,6 +112,12 @@ static const char* sourceTypeName(int8_t st) {
 // Templated helpers in DspVerifyUtils.h (dspVerifyCopyValues, dspMaxDiff, dspFormatValues, etc.)
 #endif  // SD_CUDA
 
+void NativeDynamicShapePlan::clearGpuBackendFailedCache() {
+#if HAVE_TRITON
+  TritonGraphBackend::getInstance().clearFailedSegmentCache();
+#endif
+}
+
 GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
   if (gpuGraphBackendChecked_) return gpuGraphBackend_;
   gpuGraphBackendChecked_ = true;
@@ -387,6 +393,22 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // This keeps the hot path focused on dispatch instead of repeated compile checks.
   bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
   if (needsCompile) {
+    // Restore outputSlots_ from slotArrayCache_ for the compilation range.
+    // When shapes aren't frozen, outputSlots_ was zeroed at the start of execute().
+    // The compiler needs access to warmup arrays for shape resolution — without them,
+    // sub-segments that consume cross-sub-segment intermediates (e.g., attention consuming
+    // matmul outputs) can't resolve shapes, causing missing kernel args and SIGABRT.
+    if (slotArrayCache_ != nullptr) {
+      for (int si = seg.startSlot; si <= seg.endSlot && si < totalOutputSlots_; si++) {
+        if (outputSlots_[si] == nullptr && slotArrayCache_[si] != nullptr) {
+          // Validate the cached array is still live (DataBuffer not freed)
+          auto* db = slotArrayCache_[si]->dataBuffer();
+          if (db != nullptr && db->isValid()) {
+            outputSlots_[si] = slotArrayCache_[si];
+          }
+        }
+      }
+    }
     if (!backend->compileSegment(seg, slots_, externalArrays, numExt,
                                  outputSlots_, totalOutputSlots_, segShapeKey,
                                  numSlots_)) {
@@ -651,7 +673,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
       // D2D copies for capture buffers with source data.
       {
-        int cbUpdated = 0, cbSkipped = 0;
+        int cbUpdated = 0;
         for (auto& cb : captureBuffers) {
           if (cb.externalInputIndex < 0 || cb.externalInputIndex >= numExt) continue;
           if (cb.directReference) continue;
@@ -663,20 +685,19 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
           const void* srcPtr = src->specialBuffer();
           if (!srcPtr || !cb.buffer->specialBuffer()) continue;
 
-          // Skip copy if source pointer unchanged since last replay
-          if (cb.initialCopyDone && !cb.neverSkipCopy &&
-              srcPtr == cb.lastSourcePtr) {
-            cbSkipped++;
-            continue;
-          }
+          // NOTE: We NEVER skip D2D copies based on pointer comparison.
+          // GPU memory pools reuse addresses — a freed buffer's address can be
+          // returned for a new allocation with completely different data.
+          // The cost of always copying is negligible (typically <10KB per buffer)
+          // and eliminates the alternating-stale-data bug.
           cudaMemcpyAsync(cb.buffer->specialBuffer(), srcPtr,
                           srcBytes, cudaMemcpyDeviceToDevice, cudaStr);
           cb.lastSourcePtr = srcPtr;
           cb.initialCopyDone = true;
           cbUpdated++;
         }
-        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d copied %d skipped (ptr-unchanged) "
-                 "fastReplay=%d execCount=%d", cbUpdated, cbSkipped,
+        DSP_DIAG(EXECUTE, "CAPTURE_BUFFER_UPDATE: %d copied "
+                 "fastReplay=%d execCount=%d", cbUpdated,
                  useFastReplay ? 1 : 0, seg.executionCount);
       }
       tl_dspExecutionStream = nullptr;

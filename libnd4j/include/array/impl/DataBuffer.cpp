@@ -486,8 +486,10 @@ void DataBuffer::validateIntegrity() const {
     THROW_EXCEPTION(ss.str().c_str());
   }
 
-  // Validate canary values to detect buffer overruns
-  if (_workspace == nullptr && _primaryBuffer != nullptr && _primaryAllocBytes > _lenInBytes) {
+  // Validate canary values to detect buffer overruns.
+  // FIX: Skip canary check for zero-length buffers - the canary would be at offset 0
+  // (start of buffer), and any write to the buffer would corrupt it.
+  if (_workspace == nullptr && _lenInBytes > 0 && _primaryBuffer != nullptr && _primaryAllocBytes > _lenInBytes) {
     const uint64_t* canary = reinterpret_cast<const uint64_t*>(
         static_cast<const int8_t*>(_primaryBuffer) + _lenInBytes);
     static constexpr size_t HOST_ALLOC_PADDING = 65536;
@@ -620,7 +622,9 @@ void DataBuffer::deletePrimary() {
     // Check canary values before freeing to detect buffer overruns.
     // allocatePrimary() writes 0xDEADBEEFCAFEBABE in the HOST_ALLOC_PADDING region
     // after the data. If any canary is corrupted, a C++ op wrote past this buffer.
-    if (_workspace == nullptr && _primaryAllocBytes > 0 && _primaryAllocBytes > _lenInBytes) {
+    // FIX: Skip canary check for zero-length buffers - the canary would be at offset 0
+    // (start of buffer), and any write to the buffer would corrupt it.
+    if (_workspace == nullptr && _lenInBytes > 0 && _primaryAllocBytes > 0 && _primaryAllocBytes > _lenInBytes) {
       auto canary = reinterpret_cast<uint64_t*>(
           static_cast<int8_t*>(_primaryBuffer) + _lenInBytes);
       size_t paddingBytes = _primaryAllocBytes - _lenInBytes;

@@ -84,6 +84,12 @@ DECLARE_SHAPE_FN(reduce_sum) {
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
+  // FIX: Also check for empty dimensions from iArguments (TF import case)
+  // TF semantics: empty axis means no reduction (return input shape unchanged)
+  if (dimensions.empty()) {
+    return SHAPELIST(CONSTANT(inputShape->at(0)));
+  }
+
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_SUM OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",

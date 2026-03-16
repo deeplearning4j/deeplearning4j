@@ -203,10 +203,10 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
 
     if (srcBytes > 0) {
       const void* currentPtr = src->specialBuffer();
-      if (cb.initialCopyDone && currentPtr == cb.lastSourcePtr && !cb.neverSkipCopy) {
-        skippedCount++;
-        continue;
-      }
+      // NOTE: Never skip D2D copies based on pointer comparison.
+      // GPU memory pools reuse addresses — a freed buffer's address can be
+      // returned for a new allocation with completely different data.
+      // Always copy to avoid alternating-stale-data bugs.
 
       auto dt = src->dataType();
       bool hostMirror = (dt == INT32 || dt == INT64 || dt == BOOL)

@@ -61,7 +61,19 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
   LongType   iC = ConvolutionUtils::inChannels(weights->shapeInfo(), wFormat);
   LongType    iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCW);
   LongType    oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
-  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
+  
+  // For SAME padding, calculate output and padding directly
+  LongType oW;
+  LongType actualPaddingMode = paddingMode;
+  if (paddingMode == 1) {
+    oW = (iW + sW - 1) / sW;
+    const LongType eKW = (kW - 1) * dW + 1;
+    pW = std::max((LongType)0, ((oW - 1) * sW + eKW - iW)) / 2;
+    // After calculating padding, use VALID mode so conv2d doesn't recalculate
+    actualPaddingMode = 0;
+  } else {
+    oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);
+  }
 
 
   std::vector<LongType> reshapeForInput, reshapeForOutput;
@@ -88,13 +100,13 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     //note this might look strange but we get a segfault otherwise.
     //this problem was actually the source of a very strange JVM hang.
     ret = conv2d.execute({inputReshaped, weightsReshaped}, {outputReshaped}, {},
-                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, originalNCW}, {});
+                         {1, kW, 1, sW, 0, pW, 1, dW, actualPaddingMode, originalNCW}, {});
 
     output->assign(outputReshaped);
 
   } else {
     ret = conv2d.execute({inputReshaped, weightsReshaped, bias}, {outputReshaped}, {},
-                         {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, originalNCW}, {});
+                         {1, kW, 1, sW, 0, pW, 1, dW, actualPaddingMode, originalNCW}, {});
 
     output->assign(outputReshaped);
 
@@ -130,7 +142,14 @@ DECLARE_SHAPE_FN(conv1d) {
   LongType   iC = ConvolutionUtils::inChannels(weightsShapeInfo, wFormat);
   LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCW);
   LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
-  LongType   oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);  // batch size, input channels, input height/width, output channels, output height/width;
+  
+  // For SAME padding, calculate output directly
+  LongType oW;
+  if (paddingMode == 1) {
+    oW = (iW + sW - 1) / sW;
+  } else {
+    oW = ConvolutionUtils::calcOutDimConv(iW,kW,sW,pW,dW,paddingMode);
+  }
   LongType* outputShapeInfo = nullptr;
   ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 

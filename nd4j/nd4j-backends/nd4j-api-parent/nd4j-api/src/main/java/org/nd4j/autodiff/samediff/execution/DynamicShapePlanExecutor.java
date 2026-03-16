@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -149,6 +150,10 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** External input array cache: resolved constant/variable/placeholder arrays. */
     private INDArray[] externalInputs;
 
+    /** Whether constants/variables in externalInputs have been resolved and cached.
+     *  When true, only placeholders are re-resolved on subsequent execute() calls. */
+    private boolean externalConstantsResolved;
+
     /** BitSet tracking which slots are currently live (have valid arrays). */
     private BitSet liveSlots;
 
@@ -245,6 +250,7 @@ public class DynamicShapePlanExecutor implements Closeable {
     private int timingShapeHits, timingShapeMisses;
     private int timingZeroSkipped, timingZeroApplied;
     private int timingPoolHits, timingPoolMisses;
+    private int timingViewSkips, timingFreshAllocs;
     // Cache miss diagnostics
     private Map<String, Integer> timingCacheMissReasons = new HashMap<>();
     private int timingCacheLeakedConstant;
@@ -402,6 +408,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         externalInputs = new INDArray[plan.getExternalInputKeys().length];
         externalInputDeviceIds = new int[plan.getExternalInputKeys().length];
         Arrays.fill(externalInputDeviceIds, -1);
+        externalConstantsResolved = false;
         liveSlots = new BitSet(totalSlots);
         pendingClose = new ArrayList<>();
         localPool = new LocalBufferPool();
@@ -917,6 +924,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             timingShapeHits = timingShapeMisses = 0;
             timingZeroSkipped = timingZeroApplied = 0;
             timingPoolHits = timingPoolMisses = 0;
+            timingViewSkips = timingFreshAllocs = 0;
             timingCacheMissReasons.clear();
             timingCacheLeakedConstant = 0;
             timingCacheLeakedConstantBytes = 0;
@@ -929,8 +937,20 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Clear output slots from the previous execution.
         Arrays.fill(outputSlots, null);
         Arrays.fill(outputSlotDeviceIds, -1);
-        Arrays.fill(externalInputs, null);
-        Arrays.fill(externalInputDeviceIds, -1);
+        // Only clear placeholder external inputs — constants/variables are cached.
+        if (externalConstantsResolved) {
+            byte[] sourceTypes = plan.getExternalInputSourceTypes();
+            for (int i = 0; i < externalInputs.length; i++) {
+                byte srcType = (sourceTypes != null && i < sourceTypes.length) ? sourceTypes[i] : -1;
+                if (srcType == DynamicShapeSlot.SOURCE_PLACEHOLDER || srcType < 0) {
+                    externalInputs[i] = null;
+                    externalInputDeviceIds[i] = -1;
+                }
+            }
+        } else {
+            Arrays.fill(externalInputs, null);
+            Arrays.fill(externalInputDeviceIds, -1);
+        }
         liveSlots.clear();
         pendingClose.clear();
 
@@ -1624,11 +1644,26 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     private void resolveExternalInputs(DynamicShapePlan plan, Map<String, INDArray> placeholderArrays) {
         String[] keys = plan.getExternalInputKeys();
+        byte[] sourceTypes = plan.getExternalInputSourceTypes();
         for (int i = 0; i < keys.length; i++) {
+            byte srcType = (sourceTypes != null && i < sourceTypes.length) ? sourceTypes[i] : -1;
+
+            // Constants and variables: resolve once and cache across execute() calls.
+            // They don't change between steps in autoregressive decoding.
+            if (externalConstantsResolved &&
+                    (srcType == DynamicShapeSlot.SOURCE_CONSTANT || srcType == DynamicShapeSlot.SOURCE_VARIABLE)) {
+                // Already resolved and cached — skip re-resolution.
+                // Still need ensureLocation for variables (may be modified between calls).
+                if (srcType == DynamicShapeSlot.SOURCE_VARIABLE && externalInputs[i] != null) {
+                    Nd4j.getAffinityManager().ensureLocation(externalInputs[i], AffinityManager.Location.DEVICE);
+                }
+                continue;
+            }
+
             String varName = keys[i];
             INDArray arr = null;
 
-            // Try placeholder first
+            // Try placeholder first (always re-resolve — values change each step)
             if (placeholderArrays != null) {
                 arr = placeholderArrays.get(varName);
             }
@@ -1644,7 +1679,15 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
 
             externalInputs[i] = arr;
+
+            // Unconditional HOST→DEVICE sync for ALL external inputs.
+            // Without this, arrays created/modified on host (e.g., attention bias,
+            // position_ids, attention_mask) stay host-only and C++ reads zeros.
+            if (arr != null) {
+                Nd4j.getAffinityManager().ensureLocation(arr, AffinityManager.Location.DEVICE);
+            }
         }
+        externalConstantsResolved = true;
     }
 
     private void executeSlot(DynamicShapeSlot slot, OpContext ctx, NativeOps nativeOps,
@@ -1869,22 +1912,24 @@ public class DynamicShapePlanExecutor implements Closeable {
             INDArray out = null;
             int slotIdx = (i < outputSlotIndices.length) ? outputSlotIndices[i] : -1;
 
-            // For known view-producing INTERMEDIATE CustomOp slots, use an empty placeholder.
-            // C++ will modify it in-place to point to the input's buffer (view).
+            // For view-capable INTERMEDIATE CustomOp slots, use an empty placeholder.
+            // C++ will replace it with a view of the input's buffer (zero data copy).
+            // Detection sources (OR'd):
+            //   - Compile-time: slot.isViewCapableOp() — reshape, expand_dims, squeeze, permute
+            //   - Runtime: slotIsViewProducer[slotIdx] — detected after first execution
             // We skip OUTPUT slots — the caller needs the data, so we must allocate
-            // even though C++ will replace the buffer. The orphaned allocation for
-            // output slots is a one-time cost (they're views, caller can't close them
-            // via isView() anyway — the parent in the slot cache holds the GPU memory).
+            // even though C++ will replace the buffer.
             // We also skip non-CustomOp (legacy) ops because the Java executor validates
-            // X.length == Z.length BEFORE calling C++. An empty Z with length=0 fails
-            // this check. C++ would handle the empty output (replacing it with a view),
-            // but Java rejects it first, causing shape mismatch errors.
-            if (slotIdx >= 0 && slotIsViewProducer != null && slotIsViewProducer[slotIdx]
+            // X.length == Z.length BEFORE calling C++.
+            boolean isViewSlotCompileTime = slot.isViewCapableOp();
+            boolean isViewSlotRuntime = slotIsViewProducer != null && slotIsViewProducer[slotIdx];
+            if (slotIdx >= 0 && (isViewSlotCompileTime || isViewSlotRuntime)
                     && !outputSlotSet.get(slotIdx) && slot.isCustomOp()) {
                 out = Nd4j.empty(dt);
                 outputArrays[i] = out;
                 outputSlots[slotIdx] = out;
                 liveSlots.set(slotIdx);
+                if (TIMING_ENABLED) timingViewSkips++;
                 // Clear any stale cached array for view producer slots to prevent
                 // use-after-free when the slot is reused in future executions.
                 if (slotArrayCache != null && slotArrayCache[slotIdx] != null) {
@@ -1894,6 +1939,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                         pendingClose.add(sbuf);
                     }
                     slotArrayCache[slotIdx] = null;
+                }
+                // Mark as view producer immediately (compile-time knowledge)
+                if (isViewSlotCompileTime && slotIsViewProducer != null) {
+                    slotIsViewProducer[slotIdx] = true;
                 }
                 continue;
             }
@@ -2026,7 +2075,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                     } else {
                         out = allocateWithHeadroom(dt, actualShape);
                     }
-                    if (TIMING_ENABLED) timingPoolMisses++;
+                    if (TIMING_ENABLED) { timingPoolMisses++; timingFreshAllocs++; }
                 }
             }
             outputArrays[i] = out;
@@ -2372,11 +2421,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (deviceSwitchOccurred) {
             nativeOps.clearLastError();
         }
-        // For data-dependent shapes (reshape with dynamic shape input, etc.), Java shape
-        // calculation may read stale GPU values before they're synced to host. This causes
-        // shape mismatch → buffer overflow → heap corruption. Disable shape override for
-        // these ops to let C++ calculate shapes after host sync.
-        boolean enableShapeOverride = SHAPE_OVERRIDE && !slot.isDataDependent();
+        // Disable shape override for:
+        // 1. Data-dependent shapes — Java may read stale GPU values before host sync
+        // 2. View-capable ops — C++ must create its own output (a view of the input buffer);
+        //    our pre-allocated empty placeholder cannot be used as the output buffer.
+        boolean enableShapeOverride = SHAPE_OVERRIDE && !slot.isDataDependent() && !slot.isViewCapableOp();
         ctx.shapeFunctionOverride(enableShapeOverride);
 
         // Attach native workspace to OpContext — this allows C++ ops to use bump allocation
@@ -2443,6 +2492,29 @@ public class DynamicShapePlanExecutor implements Closeable {
             ctx.setBArguments(slot.getBArgs());
             ctx.setDArguments(slot.getDArgs());
             ctx.setSArguments(slot.getSArgs() == null ? new String[0] : slot.getSArgs());
+            // For view-capable ops, call initializeOutputs to let the op create its
+            // view with the correct offset/strides before C++ execution. This is
+            // critical for strided_slice which needs a non-zero offset into the input
+            // buffer. If initializeOutputs returns false, it has set up the output
+            // already and we can update the slot tracking.
+            if (slot.isViewCapableOp() && fn instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) fn;
+                boolean needsShapeCalc = customOp.initializeOutputs(ctx);
+                if (!needsShapeCalc && customOp.numOutputArguments() > 0) {
+                    // initializeOutputs created a view — update outputSlots and ctx
+                    INDArray viewOut = customOp.getOutputArgument(0);
+                    if (viewOut != null && !viewOut.isEmpty()) {
+                        ctx.setOutputArray(0, viewOut);
+                        int[] outSlotIndices = slot.getOutputSlotIndices();
+                        if (outSlotIndices.length > 0 && outSlotIndices[0] >= 0) {
+                            int viewSlotIdx = outSlotIndices[0];
+                            outputSlots[viewSlotIdx] = viewOut;
+                            if (slotArrayCache != null) slotArrayCache[viewSlotIdx] = viewOut;
+                            if (slotIsViewProducer != null) slotIsViewProducer[viewSlotIdx] = true;
+                        }
+                    }
+                }
+            }
             Nd4j.exec((CustomOp) fn, ctx);
         } else {
             Nd4j.exec((Op) fn, ctx);
@@ -3072,9 +3144,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         log.info("  INT/LONG sync: {}ms", String.format("%.2f", timingSyncNs / 1_000_000.0));
         log.info("  Shape calc:   {}ms (hits={}, misses={})",
                 String.format("%.2f", timingShapeNs / 1_000_000.0), timingShapeHits, timingShapeMisses);
-        log.info("  Mem alloc:    {}ms (slot cache hits={}, misses={}, zero skipped={}, zero applied={})",
+        log.info("  Mem alloc:    {}ms (cache hits={}, fresh={}, view skips={}, zero skipped={}, zero applied={})",
                 String.format("%.2f", timingAllocNs / 1_000_000.0),
-                timingPoolHits, timingPoolMisses, timingZeroSkipped, timingZeroApplied);
+                timingPoolHits, timingFreshAllocs, timingViewSkips, timingZeroSkipped, timingZeroApplied);
         if (!timingCacheMissReasons.isEmpty()) {
             log.info("  Cache miss reasons: {}", timingCacheMissReasons);
         }
@@ -4181,6 +4253,20 @@ public class DynamicShapePlanExecutor implements Closeable {
                     ext1331.isAttached());
         }
 
+        // ATTN_DIAG: Print past_key_values external inputs to diagnose rank-0 issue
+        for (int i = 0; i < extKeys.length; i++) {
+            if (extKeys[i].contains("past_key_values")) {
+                INDArray arr = extInputs[i];
+                log.info("ATTN_DIAG_JAVA: extIdx={} name='{}' rank={} shape={} empty={} length={} dtype={}",
+                        i, extKeys[i],
+                        arr != null ? arr.rank() : -1,
+                        arr != null ? java.util.Arrays.toString(arr.shape()) : "null",
+                        arr != null ? arr.isEmpty() : true,
+                        arr != null ? arr.length() : 0,
+                        arr != null ? arr.dataType() : "null");
+            }
+        }
+
         // Reuse OpaqueContext across calls to avoid JNI create/delete overhead.
         // Only recreate if input/output count changes.
         int numOutputs = plan.getRequestedOutputs().size();
@@ -4582,6 +4668,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         freeNativePlanHandle();
 
         currentPlan = null;
+        externalConstantsResolved = false;
         log.info("  DSP close() complete");
         System.out.flush(); System.err.flush();
     }

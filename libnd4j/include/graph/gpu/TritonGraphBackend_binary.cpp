@@ -91,8 +91,16 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors from failed IR build
 #endif
-    DSP_DIAG(COMPILE, "TritonGraphBackend: IR build FAILED for segment [%d-%d] after %lld ms",
-             startSlot, endSlot, irBuildMs);
+    // Build op list for the failed range
+    std::string failedOps;
+    for (int s = startSlot; s <= endSlot; s++) {
+      if (!failedOps.empty()) failedOps += ",";
+      failedOps += slots[s].opName;
+    }
+    DSP_DIAG(COMPILE, "TritonGraphBackend: IR build FAILED for [%d-%d] after %lld ms "
+             "(numExtInputs=%d, numOutputSlots=%d, ops: %s)",
+             startSlot, endSlot, irBuildMs, numExternalInputs, totalOutputSlots, failedOps.c_str());
+    cleanupModule();
     return result;
   }
   DSP_DIAG(COMPILE, "TritonGraphBackend: IR build OK [%d-%d] in %lld ms "
@@ -114,9 +122,9 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
       mod->print(os, mlir::OpPrintingFlags().enableDebugInfo());
       FILE* f = fopen("/tmp/triton_ir_verify_fail.mlir", "w");
       if (f) { fprintf(f, "%s", irDump.c_str()); fclose(f); }
-      sd_printf("TritonGraphBackend: MLIR verification FAILED for [%d-%d]. "
-                "IR dumped to /tmp/triton_ir_verify_fail.mlir (%d bytes)\n",
-                startSlot, endSlot, static_cast<int>(irDump.size()));  // Keep: actual error
+      DSP_DIAG(COMPILE, "TritonGraphBackend: MLIR verification FAILED for [%d-%d]. "
+                "IR dumped to /tmp/triton_ir_verify_fail.mlir (%d bytes)",
+                startSlot, endSlot, static_cast<int>(irDump.size()));
       cleanupModule();
       return result;
     }
@@ -449,7 +457,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors from failed module load
 #endif
-    sd_printf("TritonGraphBackend: module load failed for segment [%d-%d]\n", startSlot, endSlot);  // Keep: actual error
+    DSP_DIAG(COMPILE, "TritonGraphBackend: module load failed for segment [%d-%d]", startSlot, endSlot);
     delete[] static_cast<char*>(binary.data);
     cleanupModule();
     return result;
@@ -461,7 +469,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 #ifdef SD_CUDA
     cudaGetLastError();  // Clear sticky CUDA errors
 #endif
-    sd_printf("TritonGraphBackend: kernel function '%s' not found in module\n", irModule.kernelName.c_str());  // Keep: actual error
+    DSP_DIAG(COMPILE, "TritonGraphBackend: kernel function '%s' not found in module", irModule.kernelName.c_str());
     TritonTargetDispatch::unloadModule(result.gpuModule);
     result.gpuModule = nullptr;
     delete[] static_cast<char*>(binary.data);
@@ -475,9 +483,9 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
 
   if (binary.target == TritonGpuTarget::NVIDIA) {
     if (!configureCudaKernelSharedMemory(result.kernelFunction, requestedSharedMem)) {
-      sd_printf("TritonGraphBackend: shared memory setup failed for segment [%d-%d] "
-                "(requested=%u bytes)\n",
-                startSlot, endSlot, requestedSharedMem);  // Keep: actual error
+      DSP_DIAG(COMPILE, "TritonGraphBackend: shared memory setup failed for segment [%d-%d] "
+                "(requested=%u bytes)",
+                startSlot, endSlot, requestedSharedMem);
       TritonTargetDispatch::unloadModule(result.gpuModule);
       result.gpuModule = nullptr;
       result.kernelFunction = nullptr;

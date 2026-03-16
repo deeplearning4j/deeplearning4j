@@ -86,9 +86,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   else
     colPermut = {2, 3, 1, 0, 4, 5};
 
-  if (isSameMode)  // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not
-    // deconv) forward pass
-    ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
+  if (isSameMode)  // Use deconv-specific padding calculation for SAME mode
+    ConvolutionUtils::calcPaddingDeconv2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
   std::vector<sd::LongType> colShape = {bS, oC, kH, kW, iH, iW};
   NDArray columns(input->ordering(), colShape, input->dataType(), block.launchContext());
@@ -258,10 +257,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
                "%i instead !",
                oC, bias->rankOf(), bias->lengthOf());
 
-  if (isSameMode) {  // SAME
-    // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward
-    // pass
-    ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
+  if (isSameMode) {  // SAME - use deconv-specific padding calculation
+    ConvolutionUtils::calcPaddingDeconv2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
   }
 
   // ----- calculation of gradI -> pass it through conv2d_ff ----- //

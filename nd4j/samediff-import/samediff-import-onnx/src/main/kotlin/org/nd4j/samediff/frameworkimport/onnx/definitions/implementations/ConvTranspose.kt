@@ -70,8 +70,14 @@ class ConvTranspose : PreImportHook {
 
         // Get inputs
         val input = sd.getVariable(op.inputsToOp[0])
-        val weights = sd.getVariable(op.inputsToOp[1])
+        val origWeights = sd.getVariable(op.inputsToOp[1])
+        // ONNX weights: [C, M/group, kH, kW] -> SameDiff expects [kH, kW, oC, iC]
+        // Permute from [0,1,2,3] to [2,3,1,0]
+        val weights = sd.permute("${opName}_weightsPerm", origWeights, 2, 3, 1, 0)
         val bias = if (op.inputsToOp.size > 2) sd.getVariable(op.inputsToOp[2]) else null
+        
+        // Get original weights shape for kernel size inference
+        val origWeightsShape = origWeights.shape ?: throw IllegalStateException("ConvTranspose requires static weights shape")
 
         // Get attributes with defaults
         val autoPad = attributes.getOrDefault("auto_pad", "NOTSET") as? String ?: "NOTSET"
@@ -92,10 +98,10 @@ class ConvTranspose : PreImportHook {
         val pH = pads.getOrElse(0) { 0 }
         val pW = pads.getOrElse(1) { 0 }
 
-        // Get kernel shape (optional, can be inferred from weights)
+        // Get kernel shape from ONNX weights format [C, M/group, kH, kW]
         val kernelShape = getIntList(attributes, "kernel_shape", listOf())
-        val kH = kernelShape.getOrElse(0) { 0 }
-        val kW = kernelShape.getOrElse(1) { 0 }
+        val kH = if (kernelShape.isNotEmpty()) kernelShape[0] else origWeightsShape[2].toInt()
+        val kW = if (kernelShape.size > 1) kernelShape[1] else origWeightsShape[3].toInt()
 
         // Get output padding (default: [0, 0])
         val outputPadding = getIntList(attributes, "output_padding", listOf(0, 0))

@@ -323,7 +323,7 @@ public class Reshape extends DynamicCustomOp {
                 }
                 minusOneIdx = i;
             } else if (targetShape[i] == 0) {
-                // 0 means "keep the same as input"
+                // ONNX semantics: 0 means "keep the same as input"
                 if (i < inputShape.length) {
                     targetShape[i] = inputShape[i];
                 }

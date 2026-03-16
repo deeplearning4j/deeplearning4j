@@ -293,10 +293,11 @@ public class Shape {
         } else if(right.length == 1 && left.length > 1) {
             return left;
         }
-        if (containsZeros(left))
-            return left;
-        else if (containsZeros(right))
-            return right;
+        // Handle shapes with zeros - broadcast normally, treating 0 like 1 for broadcasting
+        // except when both dimensions are 0 (result is 0)
+        // - 0 with 0 = 0 (both empty)
+        // - 0 with 1 = 0 (empty dimension stays empty when broadcasting with singleton)
+        // - 0 with N>1 = N (empty dimension broadcasts to N)
 
         assertBroadcastable(left, right);
         if(Arrays.equals(left,right))
@@ -306,19 +307,27 @@ public class Shape {
         int leftIdx = left.length - 1;
         int rightIdx = right.length - 1;
         for(int i = n - 1; i >= 0; i--) {
-            if(leftIdx < 0) {
-                dims.add(right[rightIdx]);
-            }
-            else if(rightIdx < 0) {
-                dims.add(left[leftIdx]);
-            }
-            else if(left[leftIdx] != right[rightIdx] && right[rightIdx] == 1 || left[leftIdx] == 1) {
-                dims.add(Math.max(left[leftIdx],right[rightIdx]));
-            }
-            else if(left[leftIdx] == right[rightIdx]) {
-                dims.add(left[leftIdx]);
-            }
-            else {
+            long leftDim = leftIdx < 0 ? 1 : left[leftIdx];
+            long rightDim = rightIdx < 0 ? 1 : right[rightIdx];
+            
+            // Handle zero dimensions specially
+            if (leftDim == 0 && rightDim == 0) {
+                dims.add(0L);
+            } else if (leftDim == 0 && rightDim == 1) {
+                dims.add(0L);
+            } else if (rightDim == 0 && leftDim == 1) {
+                dims.add(0L);
+            } else if (leftDim == 0) {
+                // leftDim is 0, rightDim > 1: broadcast to rightDim
+                dims.add(rightDim);
+            } else if (rightDim == 0) {
+                // rightDim is 0, leftDim > 1: broadcast to leftDim
+                dims.add(leftDim);
+            } else if (leftDim != rightDim && (rightDim == 1 || leftDim == 1)) {
+                dims.add(Math.max(leftDim,rightDim));
+            } else if (leftDim == rightDim) {
+                dims.add(leftDim);
+            } else {
                 throw new IllegalArgumentException("Unable to broadcast dimension " + i + " due to shape mismatch. Right shape must be 1.");
             }
 

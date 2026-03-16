@@ -279,6 +279,52 @@ public class TestVLMDecodeQuality {
             }
         }
 
+        // Debug: trace KV cache flow for layer 0
+        // 1. What consumes past_key_values.0.key?
+        // 2. What feeds the MHA key input?
+        // 3. Where does present.0.key come from?
+        String pastKeyVar = "past_key_values.0.key";
+        for (Map.Entry<String, org.nd4j.autodiff.samediff.internal.SameDiffOp> entry : decoder.getOps().entrySet()) {
+            org.nd4j.autodiff.samediff.internal.SameDiffOp sdOp = entry.getValue();
+            if (sdOp.getInputsToOp() != null && sdOp.getInputsToOp().contains(pastKeyVar)) {
+                log.info("[TRACE] Op '{}' (opName={}) consumes {}", entry.getKey(),
+                    sdOp.getOp() != null ? sdOp.getOp().opName() : "null", pastKeyVar);
+                log.info("[TRACE]   inputs: {}", sdOp.getInputsToOp());
+                log.info("[TRACE]   outputs: {}", sdOp.getOutputsOfOp());
+            }
+        }
+        // Trace MHA layer 0 key input origin
+        for (Map.Entry<String, org.nd4j.autodiff.samediff.internal.SameDiffOp> entry : decoder.getOps().entrySet()) {
+            org.nd4j.autodiff.samediff.internal.SameDiffOp sdOp = entry.getValue();
+            if (sdOp.getOp() != null && "onnx_multi_head_attention".equals(sdOp.getOp().opName())
+                && entry.getKey().contains("layers.0")) {
+                log.info("[MHA-L0] inputs: {}", sdOp.getInputsToOp());
+                // Trace key input (index 1)
+                String keyInputName = sdOp.getInputsToOp().get(1);
+                // Find the op that produces this key input
+                for (Map.Entry<String, org.nd4j.autodiff.samediff.internal.SameDiffOp> e2 : decoder.getOps().entrySet()) {
+                    if (e2.getValue().getOutputsOfOp() != null && e2.getValue().getOutputsOfOp().contains(keyInputName)) {
+                        log.info("[MHA-L0] key '{}' produced by op '{}' (opName={})", keyInputName, e2.getKey(),
+                            e2.getValue().getOp() != null ? e2.getValue().getOp().opName() : "null");
+                        log.info("[MHA-L0]   producer inputs: {}", e2.getValue().getInputsToOp());
+                        // Trace one more level up
+                        if (e2.getValue().getInputsToOp() != null) {
+                            for (String inp : e2.getValue().getInputsToOp()) {
+                                for (Map.Entry<String, org.nd4j.autodiff.samediff.internal.SameDiffOp> e3 : decoder.getOps().entrySet()) {
+                                    if (e3.getValue().getOutputsOfOp() != null && e3.getValue().getOutputsOfOp().contains(inp)) {
+                                        log.info("[MHA-L0]     '{}' from op '{}' (opName={})", inp, e3.getKey(),
+                                            e3.getValue().getOp() != null ? e3.getValue().getOp().opName() : "null");
+                                        log.info("[MHA-L0]       inputs: {}", e3.getValue().getInputsToOp());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+        }
+
         Map<String, INDArray> result = decoder.output(inputs, allOutputs.toArray(new String[0]));
 
         // Extract first token
@@ -294,6 +340,10 @@ public class TestVLMDecodeQuality {
         Map<String, INDArray> kvCache = new HashMap<>();
         for (String kvName : kvOutputNames) {
             INDArray kv = result.get(kvName);
+            if (kvName.contains(".0")) {
+                log.info("  [DIAG] prefill present {}: shape={} isEmpty={}", kvName,
+                        java.util.Arrays.toString(kv.shape()), kv.isEmpty());
+            }
             String pastName = kvName.replace("present", "past_key_values");
             kvCache.put(pastName, kv.dup());
         }
@@ -319,6 +369,21 @@ public class TestVLMDecodeQuality {
                     decInputs.put(name, Nd4j.createFromArray(new long[]{pastLen}).reshape(1, 1));
                 } else if (name.startsWith("past_key_values.") && kvCache.containsKey(name)) {
                     decInputs.put(name, kvCache.get(name));
+                }
+            }
+
+            // Diagnostic: check which inputs are closed before execution
+            for (Map.Entry<String, INDArray> entry : decInputs.entrySet()) {
+                INDArray arr = entry.getValue();
+                if (arr.wasClosed()) {
+                    log.error("CLOSED INPUT BEFORE output(): {} shape={} id={}", entry.getKey(),
+                            java.util.Arrays.toString(arr.shape()), arr.getId());
+                }
+            }
+            // Check if any past_key_values inputs are missing from decInputs
+            for (String name : decoder.inputs()) {
+                if (name.startsWith("past_key_values.") && !decInputs.containsKey(name)) {
+                    log.error("MISSING KV INPUT: {} (not in kvCache)", name);
                 }
             }
 

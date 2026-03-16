@@ -142,23 +142,34 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   }
 
   // Handle -1 and 0 in shape specification.
-  // ND4J reshape treats 0 as a literal zero dimension, not "copy from input".
+  // ONNX semantics (default, allowzero=0): 0 means "copy from input dimension".
+  // This matches the behavior of the regular reshape op (processReshapeArgs).
   sd::LongType negativeOneCount = 0;
   sd::LongType negativeOneIndex = -1;
   sd::LongType totalElements = shape::length(inShape);
   sd::LongType knownDimProduct = 1;
   sd::LongType inputRank = shape::rank(inShape);
-  sd::LongType inputNonZeroProduct = 1;
 
-  for (sd::LongType i = 0; i < inputRank; i++) {
-    const auto inputDim = shape::shapeOf(inShape)[i];
-    if (inputDim > 0) {
-      inputNonZeroProduct *= inputDim;
+  // ONNX semantics: replace 0 with the corresponding input dimension.
+  // This is the default behavior (allowzero=0). When allowzero=1, the import
+  // hook handles it at the Kotlin level and never passes 0s to this op.
+  bool hasZeroDim = false;
+  for (size_t i = 0; i < newShape.size(); i++) {
+    if (newShape[i] == 0) {
+      if (i < static_cast<size_t>(inputRank)) {
+        sd::LongType inputDim = shape::shapeOf(inShape)[i];
+        newShape[i] = inputDim;
+        if (inputDim == 0) {
+          hasZeroDim = true;
+        }
+      } else {
+        // Position beyond input rank — keep as 0 (will produce empty output)
+        hasZeroDim = true;
+      }
     }
   }
 
   // Count -1s and calculate product of known non-zero dimensions.
-  bool hasZeroDim = false;
   for (size_t i = 0; i < newShape.size(); i++) {
     if (newShape[i] == -1) {
       negativeOneCount++;
@@ -185,17 +196,10 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   // Calculate the -1 dimension if present
   if (negativeOneCount == 1) {
-    if (hasZeroDim) {
-      if (knownDimProduct == 0 || inputNonZeroProduct % knownDimProduct != 0) {
-        std::string errorMessage = "Cannot reshape array with non-zero input dimensions product ";
-        errorMessage += std::to_string(inputNonZeroProduct);
-        errorMessage += " into shape with known non-zero dimensions product ";
-        errorMessage += std::to_string(knownDimProduct);
-        THROW_EXCEPTION(errorMessage.c_str());
-      }
-      newShape[negativeOneIndex] = inputNonZeroProduct / knownDimProduct;
-    } else if (totalElements == 0) {
+    if (totalElements == 0 || hasZeroDim) {
+      // Input is empty or has zero dims — inferred dim should be 0
       newShape[negativeOneIndex] = 0;
+      hasZeroDim = true;
     } else if (totalElements % knownDimProduct != 0) {
       std::string errorMessage = "Cannot reshape array of size ";
       errorMessage += std::to_string(totalElements);

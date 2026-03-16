@@ -65,33 +65,19 @@ class Hardmax : PreImportHook {
         val input = sd.getVariable(op.inputsToOp[0])
 
         // Get axis attribute (default: -1, meaning last axis)
-        val axis = (attributes.getOrDefault("axis", -1L) as Number).toLong()
-
-        // Get input shape for computing depth
-        val inputShape = sd.shape(input)
-        val inputRank = sd.rank(input)
+        val axis = (attributes.getOrDefault("axis", -1L) as Number).toInt()
 
         // Normalize negative axis
-        val normalizedAxis = if (axis < 0) {
-            sd.math.add("${opName}_normAxis",
-                sd.constant(axis),
-                inputRank.castTo(DataType.INT64))
-        } else {
-            sd.constant("${opName}_axis", axis)
-        }
-
-        // Compute argmax along the axis
-        val argmaxResult = sd.argmax("${opName}_argmax", input, false, axis)
-
-        // Get the depth (size of the axis dimension) - need static shape for oneHot
         val inputShapeArr = input.shape ?: throw IllegalStateException("Hardmax requires static input shape")
-        val normalizedAxisInt = if (axis < 0) (inputShapeArr.size + axis.toInt()) else axis.toInt()
-        val depthInt = inputShapeArr[normalizedAxisInt].toInt()
+        val normalizedAxis = if (axis < 0) inputShapeArr.size + axis else axis
+        val depth = inputShapeArr[normalizedAxis].toInt()
 
-        // Create one-hot encoding
-        // Note: oneHot places the new dimension at 'axis' position
-        val oneHot = sd.oneHot("${opName}_onehot", argmaxResult.castTo(DataType.INT64),
-            depthInt, axis.toInt(), 1.0, 0.0, input.dataType())
+        // Compute argmax along the axis - keepDims=false gives us indices
+        val argmaxResult = sd.argmax("${opName}_argmax", input, false, normalizedAxis.toLong())
+
+        // Create one-hot encoding - argmax result is now rank-1, oneHot will add dimension back
+        val oneHot = sd.oneHot("${opName}_onehot", argmaxResult.castTo(DataType.INT32),
+            depth, normalizedAxis, 1.0, 0.0, input.dataType())
 
         val output = oneHot.rename(outputNames[0])
 

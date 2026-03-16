@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.enums.PadMode
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -75,7 +76,19 @@ class Pad : PreImportHook {
         // Convert ONNX padding format to SameDiff format
         // ONNX: [begin_0, begin_1, ..., end_0, end_1, ...]
         // SameDiff: [[begin_0, end_0], [begin_1, end_1], ...]
-        val padsInt = pads.castTo(DataType.INT64)
+        val padsArr = pads.getArr()
+        require(padsArr != null) { "Pads must be constant for now" }
+        val inputShape = data.shape ?: throw IllegalStateException("Pad requires static input shape")
+        val rank = inputShape.size
+        
+        // Build pads matrix as LongArray then create INDArray
+        val padsData = LongArray(rank * 2)
+        for (i in 0 until rank) {
+            padsData[i * 2] = padsArr.getInt(i).toLong()                    // begin_i
+            padsData[i * 2 + 1] = padsArr.getInt(i + rank).toLong()         // end_i
+        }
+        val padsMatrix = Nd4j.createFromArray(*padsData).reshape(rank.toLong(), 2)
+        val padsMatrixVar = sd.constant(padsMatrix)
 
         // Determine padding mode
         val padMode = when (mode.lowercase()) {
@@ -88,14 +101,14 @@ class Pad : PreImportHook {
 
         // Get constant value (default 0)
         val padValueDouble = if (constantValue != null) {
-            // Try to get the constant value - for now use 0.0 as fallback
-            0.0
+            val cvArr = constantValue.getArr()
+            if (cvArr != null && cvArr.length() > 0) cvArr.getDouble(0) else 0.0
         } else {
             0.0
         }
 
         // Apply padding
-        val output = sd.nn.pad(outputNames[0], data, padsInt, padMode, padValueDouble)
+        val output = sd.nn.pad(outputNames[0], data, padsMatrixVar, padMode, padValueDouble)
 
         return mapOf(outputNames[0] to listOf(output))
     }

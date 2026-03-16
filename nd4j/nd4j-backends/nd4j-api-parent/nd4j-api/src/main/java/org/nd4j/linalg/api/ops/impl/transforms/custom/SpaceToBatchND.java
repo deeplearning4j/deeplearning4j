@@ -72,13 +72,23 @@ public class SpaceToBatchND extends DynamicCustomOp {
     public void configureFromArguments() {
         SDVariable[] args = args();
         if(args != null && args.length > 1) {
-            INDArray blocks = args[1].getArr();
-            if(blocks != null) {
-                this.blocks = blocks.toIntVector();
+            // args[0] = input, args[1] = block_shape, args[2] = paddings
+            INDArray blockShape = args[1].getArr();
+            if(blockShape != null) {
+                this.blocks = blockShape.toIntVector();
             }
             if(args.length > 2) {
-                INDArray crops = args[2].getArr();
-                this.padding = crops.toIntMatrix();
+                INDArray paddings = args[2].getArr();
+                if(paddings != null) {
+                    // paddings is [spatial_dims, 2] - convert to int[][]
+                    long[] paddingsFlat = paddings.toLongVector();
+                    int spatialDims = (int) paddings.size(0);
+                    this.padding = new int[spatialDims][2];
+                    for(int i = 0; i < spatialDims; i++) {
+                        this.padding[i][0] = (int)paddingsFlat[i * 2];
+                        this.padding[i][1] = (int)paddingsFlat[i * 2 + 1];
+                    }
+                }
             }
 
         }

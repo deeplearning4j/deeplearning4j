@@ -258,7 +258,9 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
 #ifdef __cpp_exceptions
   try {
     auto dtype = sd::DataTypeUtils::fromInt(dataType);
-    sd::LongType totalElementSize = elements == 0 ? sd::DataTypeUtils::sizeOf(dtype) : elements * sd::DataTypeUtils::sizeOf(dtype);
+    // FIX: When elements == 0, totalElementSize should be 0 (not sizeOf(dtype)).
+    // Zero-element arrays should not allocate any memory.
+    sd::LongType totalElementSize = elements * sd::DataTypeUtils::sizeOf(dtype);
     auto buffer = new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
 
     // Track allocation
@@ -280,7 +282,9 @@ OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool a
   }
 #else
   auto dtype = sd::DataTypeUtils::fromInt(dataType);
-  sd::LongType totalElementSize = elements == 0 ? sd::DataTypeUtils::sizeOf(dtype) : elements * sd::DataTypeUtils::sizeOf(dtype);
+  // FIX: When elements == 0, totalElementSize should be 0 (not sizeOf(dtype)).
+  // Zero-element arrays should not allocate any memory.
+  sd::LongType totalElementSize = elements * sd::DataTypeUtils::sizeOf(dtype);
   auto buffer = new sd::InteropDataBuffer(totalElementSize, dtype, allocateBoth);
 
   // Track allocation

@@ -48,32 +48,27 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
 
   std::vector<LongType> dimension = {classesDim};
 
-  // Compute softmax log
-  NDArray* maxAlongDim_ptr = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray maxAlongDim = *maxAlongDim_ptr;
-  delete maxAlongDim_ptr;
+  // Compute softmax log - keep all intermediate results alive
+  NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
+  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
+  NDArray* logExp = shiftedLogits->transform(transform::Exp);
+  NDArray* sumLogExp = logExp->reduceAlongDimension(reduce::Sum, &dimension, true);
+  NDArray* softmaxRatio = (*logExp) / (*sumLogExp);
+  NDArray* logSoftMax = softmaxRatio->transform(transform::Log);
+  NDArray* negLabels = new NDArray(-(*labels));
+  NDArray* product = (*negLabels) * (*logSoftMax);
   
-  NDArray* shiftedLogits_ptr = (*logits) - maxAlongDim;
-  NDArray* logExp_ptr = shiftedLogits_ptr->transform(transform::Exp);
-  delete shiftedLogits_ptr;
-  NDArray logExp = *logExp_ptr;
-  delete logExp_ptr;
+  product->reduceAlongDimension(reduce::Sum, output, &dimension);
   
-  NDArray* sumLogExp_ptr = logExp.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray sumLogExp = *sumLogExp_ptr;
-  delete sumLogExp_ptr;
-  
-  NDArray* softmaxRatio_ptr = logExp / sumLogExp;
-  NDArray* logSoftMax_ptr = softmaxRatio_ptr->transform(transform::Log);
-  delete softmaxRatio_ptr;
-  NDArray logSoftMax = *logSoftMax_ptr;
-  delete logSoftMax_ptr;
-
-  // Compute cross entropy: -labels * log(softmax)
-  NDArray negLabels = -(*labels);  // unary negation returns value
-  NDArray* product_ptr = negLabels * logSoftMax;
-  product_ptr->reduceAlongDimension(reduce::Sum, output, &dimension);
-  delete product_ptr;
+  // Clean up all intermediates at once
+  delete maxAlongDim;
+  delete shiftedLogits;
+  delete logExp;
+  delete sumLogExp;
+  delete softmaxRatio;
+  delete logSoftMax;
+  delete negLabels;
+  delete product;
 
   return Status::OK;
 }
@@ -128,43 +123,37 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
 
   std::vector<LongType> dimension = {classesDim};
 
-  // Compute softmax
-  NDArray* maxAlongDim_ptr = logits->reduceAlongDimension(reduce::Max, &dimension, true);
-  NDArray maxAlongDim = *maxAlongDim_ptr;
-  delete maxAlongDim_ptr;
-  
-  NDArray* shiftedLogits_ptr = (*logits) - maxAlongDim;
-  NDArray* softmax_ptr = shiftedLogits_ptr->transform(transform::Exp);
-  delete shiftedLogits_ptr;
-  NDArray softmax = *softmax_ptr;
-  delete softmax_ptr;
-  
-  NDArray* sumSoftmax_ptr = softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray sumSoftmax = *sumSoftmax_ptr;
-  delete sumSoftmax_ptr;
-  
-  softmax /= sumSoftmax;
+  // Compute softmax - keep all intermediate results alive
+  NDArray* maxAlongDim = logits->reduceAlongDimension(reduce::Max, &dimension, true);
+  NDArray* shiftedLogits = (*logits) - (*maxAlongDim);
+  NDArray* softmax = shiftedLogits->transform(transform::Exp);
+  NDArray* sumSoftmax = softmax->reduceAlongDimension(reduce::Sum, &dimension, true);
+  (*softmax) /= (*sumSoftmax);
 
   // dEdp = softmax * sum_i(labels_i) - labels
-  // note the eps is to account for exact 0s in the log calculation being nan
-  NDArray* labelsPlusEps_ptr = (*labels) + 1e-6;
-  NDArray labelsPlusEps = *labelsPlusEps_ptr;
-  delete labelsPlusEps_ptr;
+  NDArray* labelsPlusEps = (*labels) + (double)1e-6;
+  NDArray* labelSum = labelsPlusEps->reduceAlongDimension(reduce::Sum, &dimension, true);
+  NDArray* softmaxTimesLabelSum = (*softmax) * (*labelSum);
+  NDArray* dLdpTemp = (*softmaxTimesLabelSum) - (*labels);
   
-  NDArray* labelSum_ptr = labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true);
-  NDArray labelSum = *labelSum_ptr;
-  delete labelSum_ptr;
-  
-  NDArray* softmaxTimesLabelSum_ptr = softmax * labelSum;
-  NDArray* dLdpTemp_ptr = (*softmaxTimesLabelSum_ptr) - labelsPlusEps;
-  delete softmaxTimesLabelSum_ptr;
-  dLdp->assign(dLdpTemp_ptr);
-  delete dLdpTemp_ptr;
-  
+  dLdp->assign(dLdpTemp);
+
   // dEdl = -log(softmax)
-  softmax.applyTransform(transform::Log, dLdl);
+  NDArray* logSoftmax = softmax->transform(transform::Log);
+  dLdl->assign(logSoftmax);
+  delete logSoftmax;
   dLdl->applyTransform(transform::Neg, dLdl);
   
+  // Clean up all intermediates at once
+  delete maxAlongDim;
+  delete shiftedLogits;
+  delete softmax;
+  delete sumSoftmax;
+  delete labelsPlusEps;
+  delete labelSum;
+  delete softmaxTimesLabelSum;
+  delete dLdpTemp;
+
   return Status::OK;
 }
 

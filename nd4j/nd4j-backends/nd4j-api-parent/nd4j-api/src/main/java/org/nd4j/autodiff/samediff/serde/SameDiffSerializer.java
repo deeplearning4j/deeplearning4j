@@ -2878,62 +2878,40 @@ public class SameDiffSerializer {
                         return 0; // Fail if extraction fails
                     }
 
-                    // *** ENHANCED BYTE CHECK ***
-                    ByteBuffer checkNioBuffer = dataBuffer.asNio(); // Get a fresh view for checking
-                    if (checkNioBuffer != null) {
-                        boolean checkIterationPassed = true; // Local check status
-                        int checkLength = nativeBytes.length;
-                        checkNioBuffer.order(ByteOrder.nativeOrder());
-                        checkNioBuffer.position((int) arrOffsetBytes); // Position to start of array data
-                        checkNioBuffer.limit((int) (arrOffsetBytes + checkLength)); // Limit to array data
+                    // Byte-by-byte verification: only in debug mode (extremely expensive for large models)
+                    if (Nd4j.getEnvironment().isDebug()) {
+                        ByteBuffer checkNioBuffer = dataBuffer.asNio();
+                        if (checkNioBuffer != null) {
+                            boolean checkIterationPassed = true;
+                            int checkLength = nativeBytes.length;
+                            checkNioBuffer.order(ByteOrder.nativeOrder());
+                            checkNioBuffer.position((int) arrOffsetBytes);
+                            checkNioBuffer.limit((int) (arrOffsetBytes + checkLength));
 
-                        log.info("SERIALIZE_CHECK [{}]: Performing byte-by-byte verification ({} bytes)...", varNameForLog, checkLength);
-                        for (int j = 0; j < checkLength; j++) {
-                            if (!checkNioBuffer.hasRemaining()) {
-                                log.error("SERIALIZE_CHECK [{}]: Check buffer ran out unexpectedly at byte {}/{}", varNameForLog, j, checkLength);
-                                checkIterationPassed = false; break;
+                            log.info("SERIALIZE_CHECK [{}]: Performing byte-by-byte verification ({} bytes)...", varNameForLog, checkLength);
+                            for (int j = 0; j < checkLength; j++) {
+                                if (!checkNioBuffer.hasRemaining()) {
+                                    log.error("SERIALIZE_CHECK [{}]: Check buffer ran out unexpectedly at byte {}/{}", varNameForLog, j, checkLength);
+                                    checkIterationPassed = false; break;
+                                }
+                                byte expectedByte = checkNioBuffer.get();
+                                if (nativeBytes[j] != expectedByte) {
+                                    log.error("SERIALIZE_CHECK [{}]: Byte mismatch at index {}! Expected:{}, Got:{}.",
+                                            varNameForLog, j, String.format("%02X", expectedByte), String.format("%02X", nativeBytes[j]));
+                                    checkIterationPassed = false;
+                                    break;
+                                }
                             }
-                            byte expectedByte = checkNioBuffer.get(); // Read expected byte
-                            if (nativeBytes[j] != expectedByte) { // Compare with extracted byte
-                                log.error("SERIALIZE_CHECK [{}]: Byte mismatch at index {}! Expected:{}, Got:{}. Stopping check.",
-                                        varNameForLog, j, String.format("%02X", expectedByte), String.format("%02X", nativeBytes[j]));
-                                checkIterationPassed = false;
-                                // Log context (optional, ensure bytesToHex exists and is safe)
-                                try {
-                                    int start = Math.max(0, j - 8);
-                                    int end = Math.min(checkLength, j + 8);
-                                    ByteBuffer contextBuffer = dataBuffer.asNio(); // Fresh buffer for context log
-                                    byte[] expectedContext = new byte[end - start];
-                                    if(contextBuffer != null) {
-                                        contextBuffer.order(ByteOrder.nativeOrder());
-                                        contextBuffer.position((int)arrOffsetBytes + start);
-                                        contextBuffer.limit((int)arrOffsetBytes + end);
-                                        contextBuffer.get(expectedContext);
-                                        log.error("SERIALIZE_CHECK [{}]: Context (Expected): {}", varNameForLog, bytesToHex(expectedContext, 0, expectedContext.length));
-                                    } else {
-                                        log.error("SERIALIZE_CHECK [{}]: Context (Expected): Could not get buffer view for context log.", varNameForLog);
-                                    }
-                                    log.error("SERIALIZE_CHECK [{}]: Context (Actual Extracted):   {}", varNameForLog, bytesToHex(nativeBytes, start, end - start));
-                                } catch (Exception logEx) { log.warn("SERIALIZE_CHECK [{}]: Error logging context.", varNameForLog, logEx); }
-                                break; // Stop check on first mismatch
+                            if (checkIterationPassed) {
+                                log.info("SERIALIZE_CHECK [{}]: Full native byte extraction check PASSED ({} bytes).", varNameForLog, checkLength);
+                            } else {
+                                throw new IllegalStateException(String.format(
+                                        "FATAL SERIALIZATION ERROR: Byte verification FAILED for array '%s'. " +
+                                                "Extracted bytes do not match original buffer contents.",
+                                        varNameForLog));
                             }
                         }
-                        if(checkIterationPassed) {
-                            log.info("SERIALIZE_CHECK [{}]: Full native byte extraction check PASSED ({} bytes).", varNameForLog, checkLength);
-                        } else {
-                            throw new IllegalStateException(String.format(
-                                    "FATAL SERIALIZATION ERROR: Byte verification FAILED for array '%s'. " +
-                                            "Extracted bytes do not match original buffer contents. " +
-                                            "This indicates MEMORY CORRUPTION or BUFFER INCONSISTENCY. " +
-                                            "TERMINATING PROCESS TO PREVENT DATA CORRUPTION.",
-                                    varNameForLog));
-                        }
-                    } else {
-                        log.warn("SERIALIZE_CHECK [{}]: Cannot perform full byte check because asNio() returned null for check. Proceeding without verification.", varNameForLog);
-                        // If verification is critical, you might want to return 0 here instead.
-                        // For now, proceeding but logging the warning.
                     }
-                    // *** END ENHANCED BYTE CHECK ***
 
                     // Insert into FlatBuffer only if bytes were prepared
                     if (nativeBytes.length > 0) {

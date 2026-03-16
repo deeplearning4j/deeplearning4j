@@ -34,17 +34,19 @@ package org.nd4j.enums;
 public enum ImageResizeMethod {
   ResizeBilinear(0),
 
-  ResizeBicubic(1),
+  ResizeNearest(1),
 
-  ResizeNearest(2),
+  ResizeBicubic(2),
 
-  ResizeGaussian(3),
+  ResizeArea(3),
 
-  ResizeLanczos5(4),
+  ResizeGaussian(4),
 
-  ResizeMitchellcubic(5),
+  ResizeLanczos3(5),
 
-  ResizeArea(6);
+  ResizeLanczos5(6),
+
+  ResizeMitchellcubic(7);
 
   private final int methodIndex;
 

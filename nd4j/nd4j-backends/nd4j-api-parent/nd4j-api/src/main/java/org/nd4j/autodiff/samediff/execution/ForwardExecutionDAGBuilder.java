@@ -488,6 +488,14 @@ public class ForwardExecutionDAGBuilder {
      * - ONNX: different naming patterns
      */
     private String findProducerOperation(String variableName) {
+        // Check for placeholder overrides first: if a variable was ARRAY but is now
+        // PLACEHOLDER (via addPlaceholderOverride), stop the walk here even though the
+        // cache still maps it to a producer op. This prunes the producing subgraph.
+        Variable overrideCheck = sameDiff.getVariables().get(variableName);
+        if (overrideCheck != null && overrideCheck.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
+            return null;
+        }
+
         // Fast path: direct cache lookup
         String producer = variableToProducerOpCache.get(variableName);
         if (producer != null) {

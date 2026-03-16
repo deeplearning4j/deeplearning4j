@@ -204,14 +204,18 @@ LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char o
     }
 
     ArrayOptions::resetFlags(shapeInfo);
+    
+    // IMPORTANT: Set ARRAY_EMPTY flag BEFORE updateStrides so strides are calculated correctly
+    if (empty) {
+      ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
+    }
+    
     shape::updateStrides(shapeInfo, order, false);
   }
 
   ArrayOptions::setDataType(shapeInfo, dataType);
 
-  if (empty) {
-    ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  }
+  // ARRAY_EMPTY already set above if needed
 
   return shapeInfo;
 }
@@ -259,14 +263,13 @@ LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char orde
 LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char order,
                                          const std::vector<LongType>& shapeOnly, memory::Workspace* workspace) {
   bool isEmpty = false;
-  //shape size 1 but 0 can be scalar
-  if(shapeOnly.size() > 1)
-    for(size_t i = 0; i < shapeOnly.size(); i++) {
-      if(shapeOnly[i] == 0) {
-        isEmpty = true;
-        break;
-      }
+  // Check if any dimension is 0 (which makes the array empty)
+  for(size_t i = 0; i < shapeOnly.size(); i++) {
+    if(shapeOnly[i] == 0) {
+      isEmpty = true;
+      break;
     }
+  }
   auto ret = createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace, isEmpty);
   if(isEmpty && !ArrayOptions::hasPropertyBitSet(ret, ARRAY_EMPTY)) {
     THROW_EXCEPTION("Shape builders: empty was specified was true but shape info returned false");

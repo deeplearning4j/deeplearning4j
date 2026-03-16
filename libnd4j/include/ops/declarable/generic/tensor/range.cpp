@@ -146,8 +146,8 @@ DECLARE_SHAPE_FN(range) {
       }
 
       if (limit == start) {
-        // Return [0] to match TF
-        std::vector<LongType> shape = {};
+        // Return empty 1D array [0] to match TF
+        std::vector<LongType> shape = {0};
         return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dtype, shape));
       }
 

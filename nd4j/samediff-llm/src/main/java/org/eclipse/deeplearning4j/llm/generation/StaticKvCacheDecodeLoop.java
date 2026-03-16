@@ -26,7 +26,6 @@ import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -182,10 +181,6 @@ public class StaticKvCacheDecodeLoop {
         INDArray reusableEmbeddings = null;  // [1, 1, hiddenSize]
         INDArray reusableInputIds = null;    // [1, 1]
 
-        // Custom attention bias for bypassing attn_mask_reformat (enables fixed-shape CUDA graphs)
-        Map<String, INDArray> customAttnBias = null;  // null = use view-based approach
-        INDArray attnBiasTemplate = null;  // pre-allocated [1,1,1,maxKvLen+1], updated in-place
-
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
         // Clear any pre-compiled DSP plan before the prefill step.
@@ -206,22 +201,21 @@ public class StaticKvCacheDecodeLoop {
             long stepStart = System.nanoTime();
             long currentSeqLen = currentEmbeddings.shape()[1];
 
+            // Always use view-based input construction (growing KV views + all-ones mask).
+            // Padded mode (full static KV + sparse mask) requires the DSP plan to be
+            // compiled with the padded shapes AND the MHA op to correctly handle sparse
+            // masks. Until that is validated end-to-end, view-based is the only correct path.
+            // TODO: Enable padded mode once MHA sparse mask handling is verified.
+            boolean dspActive = false;
+
             // Build input map (with reusable input cache for decode steps)
-            // Rebuild custom attn bias each step — the executor may close the previous one.
-            // The bias shape [1,1,1,maxKvLen+1] is constant, only values change (gap shrinks).
-            if (customAttnBias != null && step >= 1) {
-                INDArray freshBias = DecoderUtils.buildStaticKvAttnBias(maxKvLen, cachePos);
-                for (String key : customAttnBias.keySet()) {
-                    customAttnBias.put(key, freshBias);
-                }
-            }
             Map<String, INDArray> decoderInputMap = DecoderUtils.buildDecoderInputMap(
                     decoderInputNames, decoder,
                     currentEmbeddings, currentInputIds,
                     pastSeqLen, currentSeqLen,
                     staticKvBuffers, maxKvLen, cachePos,
                     usingStaticKv, resolvedHiddenSize,
-                    reusableInputs, customAttnBias);
+                    reusableInputs, dspActive);
 
             long tAfterInputBuild = System.nanoTime();
 
@@ -277,9 +271,30 @@ public class StaticKvCacheDecodeLoop {
 
             // KV cache update
             if (usingStaticKv) {
+                // Check if Triton dual-buffer mode handled the KV write (present_key/value
+                // outputs already have new entries at the correct position). This is active
+                // when the native plan uses TRITON mode with frozen shapes and attention ops
+                // are compiled with dual-buffer support.
+                boolean tritonDualBufferActive = false;
+                {
+                    InferenceSession sess = decoder.getOrCreateSession();
+                    DynamicShapePlanExecutor exec = sess.getDynamicShapePlanExecutor();
+                    tritonDualBufferActive = exec != null && exec.isShapesFrozen()
+                            && exec.getConfiguredGraphExecutionMode() ==
+                                    org.nd4j.autodiff.samediff.execution.GraphExecutionMode.TRITON;
+                }
+
                 if (kvScatterInCpp) {
                     // C++ frozen fast path handles scatter + position advance automatically
                     cachePos++;
+                } else if (tritonDualBufferActive) {
+                    // Triton fused attention kernel wrote current K/V to the present output
+                    // buffer at offset pastSeq via emitPresentKvWrite(). The static KV buffer's
+                    // GPU data is updated in-place by the kernel — no Java scatter needed.
+                    cachePos++;
+                    if (step < 5 || step % 50 == 0) {
+                        log.info("  [KV-TRITON] step={} Triton dual-buffer active, skipping Java scatter", step);
+                    }
                 } else {
                     // Java fallback: scatter new KV entries via view+assign
                     DecoderUtils.scatterNewKvEntries(staticKvBuffers, decoderOutputs,
@@ -289,7 +304,16 @@ public class StaticKvCacheDecodeLoop {
                 // Close present KV outputs — scatter already copied data into static buffers.
                 // Without this, 60 tensors × ~4.5MB = ~270MB leaked per step.
                 // Skip when C++ KV scatter is active — C++ manages these buffer lifecycles.
-                if (!kvScatterInCpp) {
+                // Also skip when native plan has frozen shapes — the plan's slotArrayCache_
+                // holds references to these arrays and closing them causes SIGSEGV/exceptions
+                // during CUDA graph capture ("DataBuffer released via close()").
+                boolean nativePlanFrozen = false;
+                {
+                    InferenceSession sess = decoder.getOrCreateSession();
+                    DynamicShapePlanExecutor exec = sess.getDynamicShapePlanExecutor();
+                    nativePlanFrozen = exec != null && exec.isShapesFrozen();
+                }
+                if (!kvScatterInCpp && !nativePlanFrozen) {
                     int kvClosed = 0;
                     long kvClosedBytes = 0;
                     int kvSkippedClosed = 0, kvSkippedNull = 0;
@@ -337,9 +361,9 @@ public class StaticKvCacheDecodeLoop {
                 // at the next execution step. The DSP will evict stale arrays naturally when
                 // shapes change (prefill [1,h,679,d] → decode [1,h,699,d]).
                 InferenceSession prefillSession = decoder.getOrCreateSession();
-                boolean dspActive = prefillSession.getDynamicShapePlanExecutor() != null
+                boolean prefillDspActive = prefillSession.getDynamicShapePlanExecutor() != null
                         && prefillSession.getDynamicShapePlanExecutor().getCurrentPlan() != null;
-                if (!dspActive) {
+                if (!prefillDspActive) {
                     for (String pn : kvNames.keyNames) {
                         INDArray pv = decoderOutputs.get(pn);
                         if (pv != null) { pv.setCloseable(true); pv.close(); }
@@ -350,79 +374,30 @@ public class StaticKvCacheDecodeLoop {
                     }
                 }
 
-                // Detect attn_mask_reformat subgraph outputs in the decoder graph.
-                // If found, we can pre-compute the attention bias in Java and pass the
-                // full static KV buffer (fixed shapes → CUDA graph capture). Without it,
-                // fall back to view-based approach (variable shapes, no CUDA graphs).
-                List<String> attnMaskVars = DecoderUtils.findAttnMaskReformatOutputs(decoder);
-                if (!attnMaskVars.isEmpty()) {
-                    // Custom bias mode: bypass attn_mask_reformat, use full static buffer
-                    attnBiasTemplate = DecoderUtils.buildStaticKvAttnBias(maxKvLen, cachePos);
-                    customAttnBias = new HashMap<>();
-                    for (String varName : attnMaskVars) {
-                        customAttnBias.put(varName, attnBiasTemplate);
-                    }
-                    log.info("  [BIAS-OVERRIDE] Detected {} attn_mask_reformat output(s): {}",
-                            attnMaskVars.size(), attnMaskVars);
-                    log.info("  [BIAS-OVERRIDE] Using pre-computed bias [1,1,1,{}] — full static KV, fixed shapes",
-                            maxKvLen + 1);
-
-                    // Clear the stale DSP plan (compiled with prefill shapes) so it recompiles
-                    // on step 1 with actual decode shapes. This is critical for Triton: the
-                    // compiler needs the real decode shapes (KV=[1,h,maxKvLen,d], mask=[1,maxKvLen+1])
-                    // to generate correct kernels. Without this, all slots are "dynamic" and
-                    // Triton won't compile anything → launches=0.
-                    {
-                        InferenceSession session = decoder.getOrCreateSession();
-                        DynamicShapePlanExecutor staleExec = session.getDynamicShapePlanExecutor();
-                        if (staleExec != null && staleExec.getCurrentPlan() != null) {
-                            // Preserve the configured execution mode (e.g., TRITON) so the
-                            // auto-recompiled plan uses the same mode. Without this, the
-                            // auto-compile defaults to AUTO and Triton kernels never launch.
-                            org.nd4j.autodiff.samediff.execution.GraphExecutionMode prevMode =
-                                    staleExec.getConfiguredGraphExecutionMode();
-                            if (prevMode != null) {
-                                decoder.setGraphExecutionMode(prevMode);
-                                log.info("  [BIAS-OVERRIDE] Preserved execution mode {} for recompilation", prevMode);
-                            }
-                            log.info("  [BIAS-OVERRIDE] Clearing stale DSP plan (prefill shapes) for decode recompilation");
-                            decoder.clearDynamicShapePlanCache();
-                            session.clearAllCaches();
-                        }
-                    }
-                    // NOTE: shapes will be frozen AFTER step 1 completes (see below).
-                    // Step 1 runs without frozen shapes to establish the decode shape profile.
-                    // C++ KV scatter is disabled for bias-override mode — Java scatter is used.
-                    log.info("  [Perf] Using Java-side KV scatter (bias-override mode)");
-                } else {
-                    // No attn_mask_reformat detected — fall back to view-based approach.
-                    // Shapes grow each step, no CUDA graph capture possible.
+                // Clear stale DSP plan (compiled with prefill shapes) so it recompiles
+                // on step 1 with actual decode shapes. When DSP is active, padded inputs
+                // with correct attention_mask let the model handle masking naturally.
+                {
                     InferenceSession decoderSession = decoder.getOrCreateSession();
                     DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
                     if (dspExec != null && dspExec.getCurrentPlan() != null) {
+                        org.nd4j.autodiff.samediff.execution.GraphExecutionMode prevMode =
+                                dspExec.getConfiguredGraphExecutionMode();
+                        if (prevMode != null) {
+                            decoder.setGraphExecutionMode(prevMode);
+                        }
+                        decoder.setDspAutoCompileEnabled(true);
+                        decoder.setDspNativeAutoCompileEnabled(true);
                         decoder.clearDynamicShapePlanCache();
                         decoderSession.clearAllCaches();
-                        log.info("  [KV-VIEW] Cleared DSP plan — shapes grow each step, cannot freeze");
+                        log.info("  Cleared stale DSP plan (prefill shapes), dspAutoCompile=true");
                     }
-                    log.info("  [KV-VIEW] No attn_mask_reformat detected — using view approach: past_kv=[0:cachePos], mask=all-ones");
                 }
             }
 
-            // After step 1 with bias override: freeze shapes now that decode shapes are established.
-            // Step 1 was the first decode step — the plan compiled during step 1 has the correct
-            // decode shapes (KV=[1,h,maxKvLen,d], mask=[1,maxKvLen+1], bias=[1,1,1,maxKvLen+1]).
-            // Freezing here means steps 2+ can benefit from CUDA graph capture and Triton kernels.
-            if (step == 1 && customAttnBias != null) {
-                InferenceSession decoderSession = decoder.getOrCreateSession();
-                DynamicShapePlanExecutor dspExec = decoderSession.getDynamicShapePlanExecutor();
-                boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
-                if (dspExec != null && !skipFreeze) {
-                    dspExec.setShapesFrozen(true);
-                    dspExec.setTraceEnabled(true);
-                    dspExec.setExecutionTimingEnabled(true);
-                    log.info("  [Perf] Shapes frozen after step 1 — decode shape profile established, fast path active");
-                }
-            }
+            // TODO: Shape freeze for padded mode — when padded inputs are validated,
+            // freeze shapes after step 1 so CUDA graph capture can kick in.
+            // Currently view-based (shapes grow each step), so no freeze.
 
             long tAfterKvUpdate = System.nanoTime();
 

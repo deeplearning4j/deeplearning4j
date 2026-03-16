@@ -268,6 +268,9 @@ public class OnnxOpTestHelper {
         result.modelFile = modelFile;
 
         // Prepare input map (only non-initializer inputs)
+        // Sync all arrays to host for ORT (which reads from CPU memory).
+        // On CUDA, Nd4j.rand() generates on GPU and the host buffer is stale.
+        Nd4j.getExecutioner().commit();
         Map<String, INDArray> inputMap = new LinkedHashMap<>();
         for (InputSpec input : inputs) {
             if (input.initializer == null) {

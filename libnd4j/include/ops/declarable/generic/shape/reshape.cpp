@@ -40,8 +40,12 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   }
 
   // Special case: empty.reshape(<other empty shape>) -> return empty
-  if (x->isEmpty()) {
-    REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
+  // Check both ARRAY_EMPTY flag and actual length to handle all empty array cases
+  bool xIsEmpty = x->isEmpty() || x->lengthOf() == 0;
+  bool zIsEmpty = z->isEmpty() || z->lengthOf() == 0;
+  if (xIsEmpty) {
+    // Both input and output should have 0 elements
+    REQUIRE_TRUE(zIsEmpty, 0, "Reshape: when input is empty, output must also be empty");
     return Status::OK;
   }
 
@@ -138,6 +142,15 @@ void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vec
   pos = -1;
   newShapeEmpty = false;
 
+  // Check if input has any zero dimensions (which makes it empty)
+  bool xHasZeroDim = false;
+  for (int i = 0; i < x->rankOf(); i++) {
+    if (x->sizeAt(i) == 0) {
+      xHasZeroDim = true;
+      break;
+    }
+  }
+
   for (size_t i = 0; i < reshapeArgs.size(); i++) {
     LongType dim = reshapeArgs[i];
     if (dim == -1) {
@@ -162,30 +175,38 @@ void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vec
       }
     } else {
       shapeNew.push_back(dim);
-      newShapeLen *= dim;
+      // If input has zero dimension, don't multiply into length (output will be empty)
+      if (!xHasZeroDim && dim > 0) {
+        newShapeLen *= dim;
+      }
     }
+  }
+
+  // If input has zero dimension, mark output as empty
+  if (xHasZeroDim) {
+    newShapeEmpty = true;
   }
 }
 
 void computeUnknownDimension(NDArray* x, std::vector<LongType>& shapeNew, int pos,
                              LongType newShapeLen, bool newShapeEmpty) {
   if (pos != -1) {
-    LongType xLen = x->lengthOf();
-    if (x->isEmpty()) {
-      xLen = 1;
-      // For empty shapes, calculate length considering non-zero dimensions
-      for (LongType i = 0; i < x->rankOf(); ++i)  // take into account possible empty shapes
-        if (x->sizeAt(i) > 0 || !newShapeEmpty) xLen *= x->sizeAt(i);
+    // If input is empty (has zero dimensions), the inferred dimension should be 1
+    // since 0 = 0 * 1 (any value works, but 1 is the canonical choice)
+    if (x->isEmpty() || x->lengthOf() == 0) {
+      shapeNew[pos] = 1;
+      return;
     }
 
+    LongType xLen = x->lengthOf();
     shapeNew[pos] = xLen / newShapeLen;
   }
 }
 
 LongType* handleEmptyShapeCase(NDArray* x, std::vector<LongType>& shapeNew, bool newShapeEmpty) {
-  if(newShapeEmpty) {
-    // shapeNew already has the computed dimensions including the -1 replacement
-    // Just ensure there are no remaining negative values (shouldn't happen)
+  // If newShapeEmpty is set (target shape has zeros), return empty shape with correct dimensions
+  if (newShapeEmpty) {
+    // Ensure all inferred dimensions (-1) are set to 1 for empty output
     for(size_t i = 0; i < shapeNew.size(); i++) {
       if(shapeNew[i] < 0)
         shapeNew[i] = 1;
@@ -320,11 +341,25 @@ DECLARE_SHAPE_FN(reshape) {
   }
 
   auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
-  if(!x->isScalar() && !x->isEmpty())
-  REQUIRE_TRUE(x->lengthOf() == len, 0,
-               "Reshape: lengths before and after reshape should match, but "
-               "got %lld vs %lld",
-               (long long)x->lengthOf(), (long long)len);
+  // Check if input has any zero dimensions (which makes it empty)
+  bool xHasZeroDim = false;
+  for (int i = 0; i < x->rankOf(); i++) {
+    if (x->sizeAt(i) == 0) {
+      xHasZeroDim = true;
+      break;
+    }
+  }
+  if(!x->isScalar() && !xHasZeroDim) {
+    REQUIRE_TRUE(x->lengthOf() == len, 0,
+                 "Reshape: lengths before and after reshape should match, but "
+                 "got %lld vs %lld",
+                 (long long)x->lengthOf(), (long long)len);
+  }
+
+  // If result should be empty, use emptyShapeInfoWithShape
+  if (len == 0 || xHasZeroDim) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), shapeNew));
+  }
 
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
 }

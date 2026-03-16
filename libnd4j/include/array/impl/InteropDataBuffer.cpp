@@ -185,20 +185,18 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
 
   _cachedLenInBytes = lenInBytes;
 
-  if (lenInBytes == 0) {
-    _dataBuffer.store(nullptr, std::memory_order_release);
-    this->_dataType = dtype;
-
-  } else {
-    //note this should be size in bytes hence why we multiply the number of elements by the size of the data type
-    DataBuffer* newBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
-    _dataBuffer.store(newBuffer, std::memory_order_release);
-    this->_dataType = dtype;
-    this->markOwner(true);
-    // Cache pointers for deallocation tracking
-    _cachedPrimaryPtr = newBuffer->primary();
-    _cachedSpecialPtr = newBuffer->special();
-  }
+  // FIX: Always create a DataBuffer, even for zero-length arrays.
+  // External data buffers (via dbCreateExternalDataBuffer) need a DataBuffer
+  // to manage external pointers set via setPrimary/setSpecial.
+  // The DataBuffer is created with lenInBytes=0 to avoid DEVICE allocation,
+  // and the actual length will be set by setPrimary/setSpecial.
+  DataBuffer* newBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
+  _dataBuffer.store(newBuffer, std::memory_order_release);
+  this->_dataType = dtype;
+  this->markOwner(true);
+  // Cache pointers for deallocation tracking
+  _cachedPrimaryPtr = newBuffer->primary();
+  _cachedSpecialPtr = newBuffer->special();
 }
 
 

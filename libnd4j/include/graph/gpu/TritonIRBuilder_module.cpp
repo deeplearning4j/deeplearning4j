@@ -921,6 +921,65 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   for (int si = startSlot; si <= endSlot; si++, catIdx++) {
     auto& slot = slots[si];
     auto cat = categories[catIdx];
+
+    // ── Comprehensive per-slot compile-time diagnostics (JIT path) ──
+    if (DSP_DIAG_ENABLED(COMPILE)) {
+      auto fmtShpJit = [](const std::vector<LongType>& s) -> std::string {
+        std::string r;
+        for (size_t i = 0; i < s.size(); i++) { if (i) r += ","; r += std::to_string(s[i]); }
+        return r.empty() ? "empty" : r;
+      };
+      DSP_DIAG(COMPILE, "JIT SLOT[%d] op='%s' cat=%d inputs=%d outputs=%d iArgs=%d tArgs=%d bArgs=%d "
+                "identity=%d view=%d fused=%d zeroOut=%d frozen=%d",
+                si, slot.opName.c_str(), static_cast<int>(cat),
+                slot.numInputs, slot.numOutputs,
+                slot.numIArgs, slot.numTArgs, slot.numBArgs,
+                slot.isIdentityOp ? 1 : 0, slot.isViewCapableOp ? 1 : 0,
+                slot.inPlaceFused ? 1 : 0, slot.needsZeroedOutput ? 1 : 0,
+                slot.frozenConstantSlot ? 1 : 0);
+      for (int inp = 0; inp < slot.numInputs; inp++) {
+        int srcIdx = slot.inputSourceIndices[inp];
+        auto srcShape = resolveShapeLocal(srcIdx);
+        const char* srcOp = "EXT";
+        if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].opName.c_str();
+        bool exists = false;
+        LongType len = -1;
+        if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
+          exists = true; len = outputSlots[srcIdx]->lengthOf();
+        } else if (srcIdx < 0) {
+          int ei = -(srcIdx + 1);
+          if (ei < numExternalInputs && externalInputs && externalInputs[ei]) {
+            exists = true; len = externalInputs[ei]->lengthOf();
+          }
+        }
+        DSP_DIAG(COMPILE, "  input[%d] src=%d op='%s' shape=[%s] exists=%d len=%lld",
+                  inp, srcIdx, srcOp, fmtShpJit(srcShape).c_str(),
+                  exists, (long long)len);
+      }
+      for (int outp = 0; outp < slot.numOutputs; outp++) {
+        int outIdx = slot.outputSlotIndices[outp];
+        auto outShape = resolveShapeLocal(outIdx);
+        DSP_DIAG(COMPILE, "  output[%d] slot=%d shape=[%s]",
+                  outp, outIdx, fmtShpJit(outShape).c_str());
+      }
+      if (slot.numIArgs > 0 && slot.iArgs) {
+        std::string iStr;
+        for (int a = 0; a < slot.numIArgs && a < 20; a++) {
+          if (a) iStr += ","; iStr += std::to_string(slot.iArgs[a]);
+        }
+        if (slot.numIArgs > 20) iStr += "...";
+        DSP_DIAG(COMPILE, "  iArgs=[%s] (%d)", iStr.c_str(), slot.numIArgs);
+      }
+      if (slot.numTArgs > 0 && slot.tArgs) {
+        char tBuf[256] = {0};
+        int toff = 0;
+        for (int a = 0; a < slot.numTArgs && a < 10 && toff < 240; a++) {
+          toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.tArgs[a]);
+        }
+        DSP_DIAG(COMPILE, "  tArgs=[%s] (%d)", tBuf, slot.numTArgs);
+      }
+    }
+
     auto it = opTable.find(slot.opName);
     if (it == opTable.end()) continue;
     const auto& mapping = it->second;
@@ -1614,39 +1673,12 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
 
         // onnx_multi_head_attention is a compound op: it takes 3D Q/K/V [B,S,H*D],
         // internally reshapes to 4D, concatenates past_key/past_value with current K/V,
-        // runs attention, then reshapes output back to 3D. The Triton fused attention
-        // kernel only handles the raw attention computation on already-projected 4D inputs.
-        // Emitting the reshape+concat as MLIR is complex, so fall back to C++ for this op.
-        NDArray* qArrCheck = resolveArr(qSrc);
-        bool qIs3D = (qArrCheck && qArrCheck->rankOf() == 3);
-        if (qIs3D) {
-          DSP_DIAG(JIT, "TritonIRBuilder: fused attention '%s' at slot %d has 3D Q [%lld,%lld,%lld] "
-                    "— compound op needs reshape+concat, falling back to C++",
-                    slot.opName, si,
-                    (long long)qArrCheck->sizeAt(0), (long long)qArrCheck->sizeAt(1),
-                    (long long)qArrCheck->sizeAt(2));
-          return result;  // result.valid = false → C++ fallback
-        }
-
-        // Check for past_key/past_value (inputs 4 and 5)
-        bool hasPastKv = false;
-        int pastKeySrc = -1, pastValueSrc = -1;
-        if (slot.numInputs > 4) {
-          pastKeySrc = slot.inputSourceIndices[4];
-          NDArray* pastKeyArr = resolveArr(pastKeySrc);
-          if (pastKeyArr && pastKeyArr->rankOf() == 4 && pastKeyArr->lengthOf() > 1) {
-            hasPastKv = true;
-          }
-        }
-        if (hasPastKv && slot.numInputs > 5) {
-          pastValueSrc = slot.inputSourceIndices[5];
-        }
-
-        int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
-        int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
-
+        // runs attention, then reshapes output back to 3D. When this op appears as a
+        // single-slot segment, we handle the 3D→4D reshape via dual-buffer mode:
+        // the Triton kernel reads past_key/past_value (4D BHSD) as the main K/V buffers
+        // and the current 3D K/V as secondary buffers with implicit reshape.
         NDArray* qArr = resolveArr(qSrc);
-        NDArray* effectiveKArr = resolveArr(effectiveKSrc);
+        bool qIs3D = (qArr && qArr->rankOf() == 3);
 
         // Extract attention dimensions
         int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 64;
@@ -1670,26 +1702,196 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             seqQ = static_cast<int>(qArr->sizeAt(2));
             headDim = static_cast<int>(qArr->sizeAt(3));
           }
-        }
-        // Extract KV head count from past_key (4D BHSD: [B, KvHeads, seqK, HD])
-        if (hasPastKv && effectiveKArr && effectiveKArr->rankOf() == 4) {
-          numKvHeads = static_cast<int>(effectiveKArr->sizeAt(1));
-          headDim = static_cast<int>(effectiveKArr->sizeAt(3));
-        }
-        if (numKvHeads <= 0) numKvHeads = numQHeads;
-        if (effectiveKArr && effectiveKArr->rankOf() >= 4) {
-          if (opUsesBSHD && !hasPastKv) {
-            // BSHD K/V: [batch, seqK, heads, headDim]
-            seqK = static_cast<int>(effectiveKArr->sizeAt(1));
-          } else {
-            // BHSD K/V: [batch, heads, seqK, headDim]
-            seqK = static_cast<int>(effectiveKArr->sizeAt(2));
-          }
-        } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
-          seqK = static_cast<int>(effectiveKArr->sizeAt(1));
+        } else if (qIs3D) {
+          // 3D Q: [B, seqQ, H*D] — compound attention (onnx_multi_head_attention)
+          batchSize = static_cast<int>(qArr->sizeAt(0));
+          seqQ = static_cast<int>(qArr->sizeAt(1));
+          int hidden = static_cast<int>(qArr->sizeAt(2));
+          // numQHeads from iArgs[0] (INT_ARG(0) in onnx_multi_head_attention)
+          numQHeads = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 1;
+          if (numQHeads <= 0) numQHeads = 1;
+          headDim = hidden / numQHeads;
+          qIsBSHD = true;
+          DSP_DIAG(JIT, "TritonIRBuilder: fused attention '%s' at slot %d has 3D Q [%lld,%lld,%lld] "
+                    "— compound op, numQHeads=%d (from iArgs[0]), headDim=%d, using dual-buffer mode",
+                    slot.opName, si,
+                    (long long)qArr->sizeAt(0), (long long)qArr->sizeAt(1),
+                    (long long)qArr->sizeAt(2), numQHeads, headDim);
         }
 
+        // Detect past_key/past_value by scanning ALL inputs for 4D KV-cache-like shapes.
+        // A past_key tensor is 4D BHSD: [batch, kvHeads, seqK, headDim] where headDim
+        // matches Q's headDim. This distinguishes it from attention masks [B,H,S,S].
+        bool hasPastKv = false;
+        int pastKeySrc = -1, pastValueSrc = -1;
+
+        for (int inp = 3; inp < slot.numInputs && !hasPastKv; inp++) {
+          int candidateSrc = slot.inputSourceIndices[inp];
+          NDArray* candidateArr = resolveArr(candidateSrc);
+          if (candidateArr && candidateArr->rankOf() == 4) {
+            int candidateHD = static_cast<int>(candidateArr->sizeAt(3));
+            int candidateKvH = static_cast<int>(candidateArr->sizeAt(1));
+            // GQA constraint: KV heads must divide Q heads evenly and be <= numQHeads
+            if (candidateHD == headDim && candidateKvH > 0 &&
+                candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
+              pastKeySrc = candidateSrc;
+              hasPastKv = true;
+              DSP_DIAG(JIT, "ATTN slot=%d found past_key at input[%d] src=%d shape=[%lld,%lld,%lld,%lld] headDim=%d",
+                        si, inp, candidateSrc,
+                        (long long)candidateArr->sizeAt(0), (long long)candidateArr->sizeAt(1),
+                        (long long)candidateArr->sizeAt(2), (long long)candidateArr->sizeAt(3), headDim);
+              if (inp + 1 < slot.numInputs) {
+                int pvCandidate = slot.inputSourceIndices[inp + 1];
+                NDArray* pvArr = resolveArr(pvCandidate);
+                if (pvArr && pvArr->rankOf() == 4 && static_cast<int>(pvArr->sizeAt(3)) == headDim) {
+                  pastValueSrc = pvCandidate;
+                }
+              }
+            }
+          }
+        }
+
+        if (!hasPastKv) {
+          DSP_DIAG(JIT, "ATTN slot=%d no past_key found (headDim=%d) in %d inputs",
+                    si, headDim, slot.numInputs);
+        }
+
+        // Determine if we need dual-buffer mode (3D Q with past_key)
+        bool useDualBuffer = (qIs3D && hasPastKv);
+        int pastSeqLen = 0, seqKVCur = 0;
+
+        // Use past_key as effective K source when available
+        int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
+        int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
+
+        NDArray* effectiveKArr = resolveArr(effectiveKSrc);
+
+        // Extract KV head count from effective K shape (4D BHSD: [B, KvHeads, seqK, HD])
+        if (effectiveKArr && effectiveKArr->rankOf() == 4) {
+          if (hasPastKv) {
+            numKvHeads = static_cast<int>(effectiveKArr->sizeAt(1));
+            headDim = static_cast<int>(effectiveKArr->sizeAt(3));
+          } else {
+            // No past KV — K shape is same layout as Q (BHSD or BSHD)
+            if (qIsBSHD) {
+              numKvHeads = static_cast<int>(effectiveKArr->sizeAt(2));
+            } else {
+              numKvHeads = static_cast<int>(effectiveKArr->sizeAt(1));
+            }
+          }
+        } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
+          // 3D key: [B, seqK, kvHeads*headDim] — infer from iArgs
+          if (slot.numIArgs > 0 && slot.iArgs) {
+            int totalQHeads = static_cast<int>(slot.iArgs[0]);
+            if (totalQHeads > 0) numKvHeads = totalQHeads;  // will be refined below
+          }
+        }
+        if (numKvHeads <= 0) numKvHeads = numQHeads;
+
+        if (useDualBuffer) {
+          // past_key shape is 4D BHSD: [B, kvH, pastSeq, D]
+          if (effectiveKArr && effectiveKArr->rankOf() == 4) {
+            pastSeqLen = static_cast<int>(effectiveKArr->sizeAt(2));
+          }
+          NDArray* curKArr = resolveArr(kSrc);
+          seqKVCur = (curKArr && curKArr->rankOf() == 3) ? static_cast<int>(curKArr->sizeAt(1)) : 1;
+          seqK = pastSeqLen + seqKVCur;
+          DSP_DIAG(JIT, "ATTN slot=%d dual-buffer: pastSeqLen=%d seqKVCur=%d seqK=%d numKvHeads=%d",
+                    si, pastSeqLen, seqKVCur, seqK, numKvHeads);
+        } else {
+          // seqK from effective K source
+          if (effectiveKArr && effectiveKArr->rankOf() >= 4) {
+            if (opUsesBSHD && !hasPastKv) {
+              // BSHD K/V: [batch, seqK, heads, headDim]
+              seqK = static_cast<int>(effectiveKArr->sizeAt(1));
+            } else {
+              // BHSD K/V: [batch, heads, seqK, headDim]
+              seqK = static_cast<int>(effectiveKArr->sizeAt(2));
+            }
+          } else if (effectiveKArr && effectiveKArr->rankOf() == 3) {
+            seqK = static_cast<int>(effectiveKArr->sizeAt(1));
+          }
+        }
+
+        // past_key is always 4D BHSD; current key follows Q layout
         bool kIsBSHD = hasPastKv ? false : qIsBSHD;
+
+        // seqK=0 means shapes are stale (cached from warmup).
+        // Try deriving seqK from actual external inputs (same strategies as sectioned path).
+        bool seqKDerivedFromExternalJit = false;
+        if (seqK <= 0) {
+          int derivedSeqK = 0;
+          int derivedKvHeads = 0;
+
+          // Strategy 1: Walk back from K source to find KV cache external inputs.
+          if (kSrc >= 0) {
+            for (int s = startSlot; s <= endSlot; s++) {
+              for (int o = 0; o < slots[s].numOutputs; o++) {
+                if (slots[s].outputSlotIndices[o] == kSrc) {
+                  for (int pi = 0; pi < slots[s].numInputs; pi++) {
+                    int psrc = slots[s].inputSourceIndices[pi];
+                    if (psrc < 0) {
+                      int extIdx = -(psrc + 1);
+                      if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
+                        auto& ext = *externalInputs[extIdx];
+                        if (ext.rankOf() == 4 && !ext.isEmpty() &&
+                            (ext.dataType() == FLOAT32 || ext.dataType() == HALF || ext.dataType() == BFLOAT16)) {
+                          int extSeqK = static_cast<int>(ext.sizeAt(2));
+                          int extHD = static_cast<int>(ext.sizeAt(3));
+                          int extKvH = static_cast<int>(ext.sizeAt(1));
+                          if (extHD == headDim && extSeqK > derivedSeqK &&
+                              extKvH > 0 && extKvH <= numQHeads && numQHeads % extKvH == 0) {
+                            derivedSeqK = extSeqK;
+                            derivedKvHeads = extKvH;
+                          }
+                        }
+                      }
+                    }
+                  }
+                  goto kProducerSearchDoneJit;
+                }
+              }
+            }
+          }
+          kProducerSearchDoneJit:
+
+          // Strategy 2: Scan ALL external inputs for 4D KV cache pattern.
+          if (derivedSeqK == 0 && externalInputs) {
+            for (int ei = 0; ei < numExternalInputs; ei++) {
+              if (!externalInputs[ei]) continue;
+              auto& ext = *externalInputs[ei];
+              if (ext.rankOf() != 4 || ext.isEmpty()) continue;
+              if (ext.dataType() != FLOAT32 && ext.dataType() != HALF && ext.dataType() != BFLOAT16) continue;
+              int extBatch = static_cast<int>(ext.sizeAt(0));
+              int extHD = static_cast<int>(ext.sizeAt(3));
+              int extSeqK = static_cast<int>(ext.sizeAt(2));
+              if (extBatch == batchSize && extHD == headDim && extSeqK > 0) {
+                int extHeads = static_cast<int>(ext.sizeAt(1));
+                if (extHeads > 0 && extHeads <= numQHeads && numQHeads % extHeads == 0 && extSeqK > derivedSeqK) {
+                  derivedSeqK = extSeqK;
+                  derivedKvHeads = extHeads;
+                }
+              }
+            }
+          }
+
+          if (derivedSeqK > 0) {
+            seqK = derivedSeqK + seqQ;
+            seqKDerivedFromExternalJit = true;
+            if (derivedKvHeads > 0 && derivedKvHeads != numKvHeads) {
+              DSP_DIAG(JIT, "ATTN slot=%d (JIT) correcting numKvHeads from %d to %d",
+                        si, numKvHeads, derivedKvHeads);
+              numKvHeads = derivedKvHeads;
+            }
+            DSP_DIAG(JIT, "ATTN slot=%d (JIT) derived seqK=%d from external inputs (pastSeqK=%d + seqQ=%d)",
+                      si, seqK, derivedSeqK, seqQ);
+          } else {
+            DSP_DIAG(COMPILE, "FUSED_ATTENTION at slot %d: seqK=%d — "
+                      "deferring to C++ native (shapes not yet resolved)", si, seqK);
+            return result;  // result.valid = false → C++ fallback
+          }
+        }
+
         float scale = 1.0f / std::sqrt(static_cast<float>(headDim));
         auto attnTile = chooseFusedAttentionTileConfig(
             batchSize, numQHeads, seqQ, seqK, headDim);
@@ -1706,9 +1908,21 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         int blockN = attnTile.blockN;
 
         auto qPtr = getSlotArgPtr(qSrc);
-        auto kPtr = getSlotArgPtr(effectiveKSrc);
-        auto vPtr = getSlotArgPtr(effectiveVSrc);
         auto outPtr = getSlotArgPtr(outSlot);
+
+        // For dual-buffer: kPtr/vPtr = past_key/past_value (BHSD), curKPtr/curVPtr = current key/value (BSHD)
+        mlir::Value kPtr, vPtr, curKPtr, curVPtr;
+        if (useDualBuffer) {
+          // past_key/value are the main K/V buffers (BHSD layout)
+          kPtr = getSlotArgPtr(pastKeySrc);
+          vPtr = getSlotArgPtr(pastValueSrc);
+          // current key/value are the secondary buffers (3D BSHD layout)
+          curKPtr = getSlotArgPtr(kSrc);
+          curVPtr = getSlotArgPtr(vSrc);
+        } else {
+          kPtr = getSlotArgPtr(effectiveKSrc);
+          vPtr = getSlotArgPtr(effectiveVSrc);
+        }
 
         // Resolve attention bias/mask (input[3]) if present and non-empty
         mlir::Value biasPtr;
@@ -1728,12 +1942,32 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           }
         }
 
+        // Validate K buffer is non-empty when seqK > 0.
+        // When K buffer is empty, the kernel would read from empty buffers causing
+        // illegal memory access (CUDA error 700). Always fall back to C++.
+        bool kBufferValidJit = true;
+        {
+          NDArray* effKArr = resolveArr(effectiveKSrc);
+          if ((!effKArr || effKArr->isEmpty() || effKArr->lengthOf() == 0) && seqK > 0) {
+            kBufferValidJit = false;
+            DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
+                      "effective K buffer (src=%d) is empty but seqK=%d%s",
+                      si, effectiveKSrc, seqK,
+                      seqKDerivedFromExternalJit ? " (seqK derived from external inputs)" : "");
+          }
+        }
+
+        if (!kBufferValidJit) {
+          DSP_DIAG(JIT, "ATTN slot=%d: K buffer invalid (JIT path), returning as non-compilable", si);
+          return result;  // result.valid = false → C++ fallback
+        }
+
         if (qPtr && kPtr && vPtr && outPtr) {
           emitFusedAttentionKernel(builder, loc, qPtr, kPtr, vPtr, outPtr,
                                    batchSize, numQHeads, numKvHeads, seqQ, seqK, headDim,
                                    scale, blockM, blockN, qIsBSHD, kIsBSHD,
                                    biasPtr, biasShape,
-                                   mlir::Value(), mlir::Value(), 0, 0);
+                                   curKPtr, curVPtr, pastSeqLen, seqKVCur);
 
           // output[0] = attention result
           DataType outDtype = FLOAT32;
@@ -1742,28 +1976,75 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           auto loaded = loadBackFromBuffer(outSlot, outDtype);
           if (loaded) ssaValues[outSlot] = loaded;
 
-          // output[1] = present_key (pass-through effective key)
-          if (slot.numOutputs >= 2) {
-            if (ssaValues.count(effectiveKSrc)) {
-              ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
-            } else {
-              DataType kDtype = FLOAT32;
-              NDArray* kArr2 = resolveArr(effectiveKSrc);
-              if (kArr2) kDtype = kArr2->dataType();
-              auto kLoaded = loadBackFromBuffer(effectiveKSrc, kDtype);
-              if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+          // output[1] = present_key, output[2] = present_value
+          if (useDualBuffer && slot.numOutputs >= 2) {
+            // Dual-buffer: present_key/value output may need write of current K/V
+            // at pastSeqLen offset. Check if the output buffer can hold it.
+            int presentKeySlot = slot.outputSlotIndices[1];
+            NDArray* pkOutArr = resolveArr(presentKeySlot);
+            int pkSeqCapacity = (pkOutArr && pkOutArr->rankOf() == 4) ? static_cast<int>(pkOutArr->sizeAt(2)) : 0;
+            int requiredSeq = pastSeqLen + seqKVCur;
+            bool pkFits = (pkSeqCapacity >= requiredSeq);
+            if (!pkFits) {
+              DSP_DIAG(JIT, "TritonIRBuilder: skipping present_key/value write at slot %d — "
+                        "output buffer seqDim=%d < required=%d (pastSeqLen=%d + seqKVCur=%d). "
+                        "Static KV cache detected; caller handles cache updates.",
+                        si, pkSeqCapacity, requiredSeq, pastSeqLen, seqKVCur);
             }
-          }
-          // output[2] = present_value (pass-through effective value)
-          if (slot.numOutputs >= 3) {
-            if (ssaValues.count(effectiveVSrc)) {
-              ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
-            } else {
-              DataType vDtype = FLOAT32;
-              NDArray* vArr2 = resolveArr(effectiveVSrc);
-              if (vArr2) vDtype = vArr2->dataType();
-              auto vLoaded = loadBackFromBuffer(effectiveVSrc, vDtype);
-              if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+            if (pkFits) {
+              auto presentKeyPtr = getSlotArgPtr(presentKeySlot);
+              if (presentKeyPtr && curKPtr) {
+                int totalSeq = pastSeqLen + seqKVCur;
+                emitPresentKvWrite(builder, loc, curKPtr, presentKeyPtr,
+                                   batchSize, numQHeads, numKvHeads,
+                                   pastSeqLen, seqKVCur, totalSeq, headDim);
+                DataType pkDtype = FLOAT32;
+                NDArray* pkArr = resolveArr(presentKeySlot);
+                if (pkArr) pkDtype = pkArr->dataType();
+                auto pkLoaded = loadBackFromBuffer(presentKeySlot, pkDtype);
+                if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
+              }
+            }
+            if (slot.numOutputs >= 3 && pkFits) {
+              int presentValSlot = slot.outputSlotIndices[2];
+              auto presentValPtr = getSlotArgPtr(presentValSlot);
+              if (presentValPtr && curVPtr) {
+                int totalSeq = pastSeqLen + seqKVCur;
+                emitPresentKvWrite(builder, loc, curVPtr, presentValPtr,
+                                   batchSize, numQHeads, numKvHeads,
+                                   pastSeqLen, seqKVCur, totalSeq, headDim);
+                DataType pvDtype = FLOAT32;
+                NDArray* pvArr = resolveArr(presentValSlot);
+                if (pvArr) pvDtype = pvArr->dataType();
+                auto pvLoaded = loadBackFromBuffer(presentValSlot, pvDtype);
+                if (pvLoaded) ssaValues[presentValSlot] = pvLoaded;
+              }
+            }
+          } else {
+            // Non-dual-buffer: pass-through effective key/value SSA
+            // output[1] = present_key (pass-through effective key)
+            if (slot.numOutputs >= 2) {
+              if (ssaValues.count(effectiveKSrc)) {
+                ssaValues[slot.outputSlotIndices[1]] = ssaValues[effectiveKSrc];
+              } else {
+                DataType kDtype = FLOAT32;
+                NDArray* kArr2 = resolveArr(effectiveKSrc);
+                if (kArr2) kDtype = kArr2->dataType();
+                auto kLoaded = loadBackFromBuffer(effectiveKSrc, kDtype);
+                if (kLoaded) ssaValues[slot.outputSlotIndices[1]] = kLoaded;
+              }
+            }
+            // output[2] = present_value (pass-through effective value)
+            if (slot.numOutputs >= 3) {
+              if (ssaValues.count(effectiveVSrc)) {
+                ssaValues[slot.outputSlotIndices[2]] = ssaValues[effectiveVSrc];
+              } else {
+                DataType vDtype = FLOAT32;
+                NDArray* vArr2 = resolveArr(effectiveVSrc);
+                if (vArr2) vDtype = vArr2->dataType();
+                auto vLoaded = loadBackFromBuffer(effectiveVSrc, vDtype);
+                if (vLoaded) ssaValues[slot.outputSlotIndices[2]] = vLoaded;
+              }
             }
           }
         } else {
@@ -3263,6 +3544,133 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
     // section-local and force cross-section values through explicit buffers.
     ssaValues.clear();
 
+    // ── Comprehensive per-section compile-time diagnostics ──
+    // Logs EVERY section with ALL slots, inputs, outputs, shapes, args.
+    // Zero cost when DSP_DIAG is disabled.
+    if (DSP_DIAG_ENABLED(COMPILE)) {
+      auto sectionTypeName = [](KernelSectionType t) -> const char* {
+        switch (t) {
+          case KernelSectionType::ELEMENTWISE: return "ELEMENTWISE";
+          case KernelSectionType::IDENTITY: return "IDENTITY";
+          case KernelSectionType::CONSTANT_GENERATION: return "CONSTANT_GENERATION";
+          case KernelSectionType::REDUCTION: return "REDUCTION";
+          case KernelSectionType::NORMALIZATION: return "NORMALIZATION";
+          case KernelSectionType::MATMUL: return "MATMUL";
+          case KernelSectionType::FUSED_ATTENTION: return "FUSED_ATTENTION";
+          case KernelSectionType::GATHER: return "GATHER";
+          case KernelSectionType::GATHER_ND: return "GATHER_ND";
+          case KernelSectionType::CONCAT: return "CONCAT";
+          case KernelSectionType::SPLIT: return "SPLIT";
+          case KernelSectionType::SPLIT_V: return "SPLIT_V";
+          case KernelSectionType::STACK: return "STACK";
+          case KernelSectionType::TILE: return "TILE";
+          case KernelSectionType::STRIDED_SLICE: return "STRIDED_SLICE";
+          case KernelSectionType::SCATTER_ND: return "SCATTER_ND";
+          case KernelSectionType::SCATTER_ND_UPDATE: return "SCATTER_ND_UPDATE";
+          case KernelSectionType::SHAPE_MANIPULATION: return "SHAPE_MANIPULATION";
+          case KernelSectionType::CONVOLUTION: return "CONVOLUTION";
+          default: return "UNKNOWN";
+        }
+      };
+      auto fmtShapeVec = [](const std::vector<LongType>& s) -> std::string {
+        std::string r;
+        for (size_t i = 0; i < s.size(); i++) { if (i) r += ","; r += std::to_string(s[i]); }
+        return r.empty() ? "empty" : r;
+      };
+
+      // Section header
+      DSP_DIAG(COMPILE, "SECTION[%d] type=%s slots=[%d-%d] grid=%d phase=%d",
+                static_cast<int>(secIdx), sectionTypeName(sec.type),
+                sec.startSlot, sec.endSlot, sec.gridRequirement,
+                useMultiPhaseLaunch ? sectionPhase[secIdx] : -1);
+
+      // Every slot in this section
+      for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+        auto& slot = slots[si];
+        DSP_DIAG(COMPILE, "  SLOT[%d] op='%s' inputs=%d outputs=%d iArgs=%d tArgs=%d bArgs=%d "
+                  "identity=%d view=%d fused=%d zeroOut=%d",
+                  si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
+                  slot.numIArgs, slot.numTArgs, slot.numBArgs,
+                  slot.isIdentityOp ? 1 : 0, slot.isViewCapableOp ? 1 : 0,
+                  slot.inPlaceFused ? 1 : 0, slot.needsZeroedOutput ? 1 : 0);
+
+        // Every input for this slot
+        for (int inp = 0; inp < slot.numInputs; inp++) {
+          int srcIdx = slot.inputSourceIndices[inp];
+          auto srcShape = resolveShape(srcIdx);
+          const char* srcOp = "EXT";
+          if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].opName.c_str();
+          bool exists = false;
+          LongType len = -1;
+          if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
+            exists = true; len = outputSlots[srcIdx]->lengthOf();
+          } else if (srcIdx < 0) {
+            int ei = -(srcIdx + 1);
+            if (ei < numExternalInputs && externalInputs && externalInputs[ei]) {
+              exists = true; len = externalInputs[ei]->lengthOf();
+            }
+          }
+          std::string cachedStr = "none";
+          auto cit = cachedShapeInfoMap.find(srcIdx);
+          if (cit != cachedShapeInfoMap.end() && cit->second) {
+            LongType cRank = shape::rank(cit->second);
+            cachedStr = "[";
+            for (int d = 0; d < cRank; d++) {
+              if (d) cachedStr += ",";
+              cachedStr += std::to_string(shape::shapeOf(cit->second)[d]);
+            }
+            cachedStr += "]";
+          }
+          DSP_DIAG(COMPILE, "    input[%d] src=%d op='%s' shape=[%s] exists=%d len=%lld cached=%s",
+                    inp, srcIdx, srcOp, fmtShapeVec(srcShape).c_str(),
+                    exists, (long long)len, cachedStr.c_str());
+        }
+
+        // Every output for this slot
+        for (int outp = 0; outp < slot.numOutputs; outp++) {
+          int outIdx = slot.outputSlotIndices[outp];
+          auto outShape = resolveShape(outIdx);
+          bool outExists = (outIdx >= 0 && outIdx < totalOutputSlots && outputSlots && outputSlots[outIdx]);
+          LongType outLen = outExists ? outputSlots[outIdx]->lengthOf() : -1;
+          DSP_DIAG(COMPILE, "    output[%d] slot=%d shape=[%s] exists=%d len=%lld",
+                    outp, outIdx, fmtShapeVec(outShape).c_str(),
+                    outExists, (long long)outLen);
+        }
+
+        // iArgs
+        if (slot.numIArgs > 0 && slot.iArgs) {
+          std::string iStr;
+          for (int a = 0; a < slot.numIArgs && a < 20; a++) {
+            if (a) iStr += ",";
+            iStr += std::to_string(slot.iArgs[a]);
+          }
+          if (slot.numIArgs > 20) iStr += "...";
+          DSP_DIAG(COMPILE, "    iArgs=[%s] (%d total)", iStr.c_str(), slot.numIArgs);
+        }
+
+        // tArgs
+        if (slot.numTArgs > 0 && slot.tArgs) {
+          char tBuf[512] = {0};
+          int toff = 0;
+          for (int a = 0; a < slot.numTArgs && a < 10 && toff < 480; a++) {
+            toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.tArgs[a]);
+          }
+          if (slot.numTArgs > 10) strncat(tBuf, "...", sizeof(tBuf) - strlen(tBuf) - 1);
+          DSP_DIAG(COMPILE, "    tArgs=[%s] (%d total)", tBuf, slot.numTArgs);
+        }
+
+        // bArgs
+        if (slot.numBArgs > 0 && slot.bArgs) {
+          std::string bStr;
+          for (int a = 0; a < slot.numBArgs && a < 10; a++) {
+            if (a) bStr += ",";
+            bStr += slot.bArgs[a] ? "true" : "false";
+          }
+          DSP_DIAG(COMPILE, "    bArgs=[%s] (%d total)", bStr.c_str(), slot.numBArgs);
+        }
+      }
+    }
+
     // Emit section body based on type
     switch (sec.type) {
       case KernelSectionType::ELEMENTWISE:
@@ -3960,29 +4368,8 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           int vSrc = isDpaV2Sec ? slot.inputSourceIndices[1] : slot.inputSourceIndices[2];
           int outSlot = slot.outputSlotIndices[0];
 
-          // Check for past_key/past_value (inputs 4 and 5)
-          bool hasPastKv = false;
-          int pastKeySrc = -1, pastValueSrc = -1;
-          bool pastKeyIsExternal = false;
-          if (slot.numInputs > 4) {
-            pastKeySrc = slot.inputSourceIndices[4];
-            pastKeyIsExternal = (pastKeySrc < 0);
-            auto pastKeyShape = resolveShape(pastKeySrc);
-            if (pastKeyShape.size() == 4 && shapeLength(pastKeyShape) > 1) {
-              hasPastKv = true;
-            }
-          }
-
-          if (hasPastKv && slot.numInputs > 5) {
-            pastValueSrc = slot.inputSourceIndices[5];
-          }
-
-          // Use past_key as effective K source when available (has full KV cache positions)
-          int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
-          int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
-
+          // ── Step 1: Extract Q shape to get headDim (needed for past_key detection) ──
           auto qShape = resolveShape(qSrc);
-          auto effectiveKShape = resolveShape(effectiveKSrc);
           int batchSize = 1, numQHeads = 1, numKvHeads = 0, seqQ = 1, seqK = 1, headDim = 1;
           bool isBSHD = false;
           bool opUsesBSHDSec = isDpaV2Sec;
@@ -3990,18 +4377,15 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           if (qShape.size() >= 4) {
             batchSize = static_cast<int>(qShape[0]);
             if (opUsesBSHDSec) {
-              // 4D BSHD: [batch, seqQ, numQHeads, headDim]
               seqQ = static_cast<int>(qShape[1]);
               numQHeads = static_cast<int>(qShape[2]);
               isBSHD = true;
             } else {
-              // 4D BHSD: [batch, numQHeads, seqQ, headDim]
               numQHeads = static_cast<int>(qShape[1]);
               seqQ = static_cast<int>(qShape[2]);
             }
             headDim = static_cast<int>(qShape[3]);
           } else if (qShape.size() == 3) {
-            // 3D BSHD: [batch, seqQ, numQHeads*headDim]
             batchSize = static_cast<int>(qShape[0]);
             seqQ = static_cast<int>(qShape[1]);
             int hidden = static_cast<int>(qShape[2]);
@@ -4010,10 +4394,160 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             headDim = hidden / numQHeads;
             isBSHD = true;
           }
-          // Extract KV head count from past_key shape (4D BHSD: [B,KvHeads,seqK,HD])
-          if (hasPastKv && effectiveKShape.size() == 4) {
-            numKvHeads = static_cast<int>(effectiveKShape[1]);
-            headDim = static_cast<int>(effectiveKShape[3]);
+
+          // ── Step 2: Detect past_key/past_value inputs ──
+          // Different attention op types have different input orderings:
+          //   ONNX MultiHeadAttention: Q,K,V,bias,key_mask,attn_bias,past_key,past_value
+          //   ONNX GroupQueryAttention: Q,K,V,past_key,past_value,seqlen_k,...
+          //   DPA v2: Q,V,K,...
+          // Instead of hardcoding positions, scan ALL inputs for 4D KV-cache-like shapes.
+          // A past_key tensor is 4D BHSD: [batch, kvHeads, seqK, headDim] where headDim
+          // matches Q's headDim. This distinguishes it from attention masks [B,H,S,S].
+          bool hasPastKv = false;
+          int pastKeySrc = -1, pastValueSrc = -1;
+          bool pastKeyIsExternal = false;
+
+          for (int inp = 3; inp < slot.numInputs && !hasPastKv; inp++) {
+            int candidateSrc = slot.inputSourceIndices[inp];
+            auto candidateShape = resolveShape(candidateSrc);
+            // Accept 4D KV cache shapes, including empty ones [B,H,0,D] at warmup.
+            // GQA constraint: KV heads must divide Q heads evenly and be <= numQHeads.
+            if (candidateShape.size() == 4) {
+              int candidateHD = static_cast<int>(candidateShape[3]);
+              int candidateKvH = static_cast<int>(candidateShape[1]);
+              if (candidateHD == headDim && candidateKvH > 0 &&
+                  candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
+                pastKeySrc = candidateSrc;
+                pastKeyIsExternal = (pastKeySrc < 0);
+                hasPastKv = true;
+                DSP_DIAG(COMPILE, "ATTN slot=%d found past_key at input[%d] src=%d shape=[%lld,%lld,%lld,%lld] headDim=%d",
+                          si, inp, candidateSrc,
+                          (long long)candidateShape[0], (long long)candidateShape[1],
+                          (long long)candidateShape[2], (long long)candidateShape[3], headDim);
+                if (inp + 1 < slot.numInputs) {
+                  int pvCandidate = slot.inputSourceIndices[inp + 1];
+                  auto pvShape = resolveShape(pvCandidate);
+                  if (pvShape.size() == 4 && static_cast<int>(pvShape[3]) == headDim) {
+                    pastValueSrc = pvCandidate;
+                  }
+                }
+              }
+            }
+          }
+
+          if (!hasPastKv) {
+            DSP_DIAG(COMPILE, "ATTN slot=%d no past_key found (headDim=%d) in %d inputs",
+                      si, headDim, slot.numInputs);
+          }
+
+          // Use past_key as effective K source when available
+          int effectiveKSrc = hasPastKv ? pastKeySrc : kSrc;
+          int effectiveVSrc = (hasPastKv && pastValueSrc >= 0) ? pastValueSrc : vSrc;
+
+          auto effectiveKShape = resolveShape(effectiveKSrc);
+
+          // ── Comprehensive attention compilation diagnostics ──
+          if (DSP_DIAG_ENABLED(COMPILE)) {
+            auto fmtShape = [](const std::vector<LongType>& s) -> std::string {
+              std::string r; for (size_t i = 0; i < s.size(); i++) { if (i) r += ","; r += std::to_string(s[i]); } return r.empty() ? "empty" : r;
+            };
+
+            // Summary line
+            DSP_DIAG(COMPILE, "ATTN slot=%d op='%s' qSrc=%d kSrc=%d vSrc=%d effectiveKSrc=%d effectiveVSrc=%d "
+                      "outSlot=%d hasPastKv=%d pastKeySrc=%d pastValueSrc=%d numInputs=%d numOutputs=%d",
+                      si, slot.opName.c_str(), qSrc, kSrc, vSrc, effectiveKSrc, effectiveVSrc,
+                      outSlot, hasPastKv, pastKeySrc, pastValueSrc,
+                      slot.numInputs, slot.numOutputs);
+
+            // Shapes: Q, K (raw), K (effective), V
+            auto kShapeDbg = resolveShape(kSrc);
+            auto vShapeDbg = resolveShape(vSrc);
+            DSP_DIAG(COMPILE, "ATTN slot=%d shapes: Q=[%s] K=[%s] effK=[%s] V=[%s]",
+                      si, fmtShape(qShape).c_str(), fmtShape(kShapeDbg).c_str(),
+                      fmtShape(effectiveKShape).c_str(), fmtShape(vShapeDbg).c_str());
+
+            // Every input: source index, shape, op name, whether slot array exists and its length
+            for (int inp = 0; inp < slot.numInputs; inp++) {
+              int srcIdx = slot.inputSourceIndices[inp];
+              auto srcShape = resolveShape(srcIdx);
+              const char* srcOp = "EXT";
+              if (srcIdx >= 0 && srcIdx < totalSlots) srcOp = slots[srcIdx].opName.c_str();
+              bool slotExists = false;
+              LongType slotLen = -1;
+              if (srcIdx >= 0 && srcIdx < totalOutputSlots && outputSlots && outputSlots[srcIdx]) {
+                slotExists = true;
+                slotLen = outputSlots[srcIdx]->lengthOf();
+              } else if (srcIdx < 0) {
+                int ei = -(srcIdx + 1);
+                if (ei < numExternalInputs && externalInputs && externalInputs[ei]) {
+                  slotExists = true;
+                  slotLen = externalInputs[ei]->lengthOf();
+                }
+              }
+              // Check cachedShapeInfoMap for this source
+              std::string cachedShapeStr = "none";
+              auto cit = cachedShapeInfoMap.find(srcIdx);
+              if (cit != cachedShapeInfoMap.end() && cit->second) {
+                LongType cRank = shape::rank(cit->second);
+                cachedShapeStr = "[";
+                for (int d = 0; d < cRank; d++) {
+                  if (d) cachedShapeStr += ",";
+                  cachedShapeStr += std::to_string(shape::shapeOf(cit->second)[d]);
+                }
+                cachedShapeStr += "]";
+              }
+              DSP_DIAG(COMPILE, "ATTN slot=%d   input[%d] src=%d op='%s' shape=[%s] exists=%d len=%lld cached=%s",
+                        si, inp, srcIdx, srcOp, fmtShape(srcShape).c_str(),
+                        slotExists, (long long)slotLen, cachedShapeStr.c_str());
+            }
+
+            // Every output slot
+            for (int outp = 0; outp < slot.numOutputs; outp++) {
+              int outIdx = slot.outputSlotIndices[outp];
+              auto outShape = resolveShape(outIdx);
+              DSP_DIAG(COMPILE, "ATTN slot=%d   output[%d] slot=%d shape=[%s]",
+                        si, outp, outIdx, fmtShape(outShape).c_str());
+            }
+
+            // iArgs and tArgs
+            if (slot.numIArgs > 0) {
+              std::string iStr;
+              for (int a = 0; a < slot.numIArgs && a < 16; a++) {
+                if (a) iStr += ",";
+                iStr += std::to_string(slot.iArgs[a]);
+              }
+              DSP_DIAG(COMPILE, "ATTN slot=%d   iArgs=[%s] (%d total)", si, iStr.c_str(), slot.numIArgs);
+            }
+            if (slot.numTArgs > 0) {
+              char tBuf[256] = {0};
+              int toff = 0;
+              for (int a = 0; a < slot.numTArgs && a < 8 && toff < 240; a++) {
+                toff += snprintf(tBuf + toff, sizeof(tBuf) - toff, "%s%.6g", a > 0 ? "," : "", slot.tArgs[a]);
+              }
+              DSP_DIAG(COMPILE, "ATTN slot=%d   tArgs=[%s] (%d total)", si, tBuf, slot.numTArgs);
+            }
+          }
+          // Extract KV head count from effective K shape (4D BHSD: [B,KvHeads,seqK,HD])
+          if (effectiveKShape.size() == 4) {
+            if (hasPastKv) {
+              numKvHeads = static_cast<int>(effectiveKShape[1]);
+              headDim = static_cast<int>(effectiveKShape[3]);
+            } else {
+              // No past KV — K shape is same layout as Q (BHSD or BSHD)
+              if (isBSHD) {
+                // BSHD: [B, seqK, heads, HD]
+                numKvHeads = static_cast<int>(effectiveKShape[2]);
+              } else {
+                // BHSD: [B, heads, seqK, HD]
+                numKvHeads = static_cast<int>(effectiveKShape[1]);
+              }
+            }
+          } else if (effectiveKShape.size() == 3) {
+            // 3D key: [B, seqK, kvHeads*headDim] — infer from iArgs
+            if (slot.numIArgs > 0 && slot.iArgs) {
+              int totalQHeads = static_cast<int>(slot.iArgs[0]);
+              if (totalQHeads > 0) numKvHeads = totalQHeads;  // will be refined below
+            }
           }
           // Default: MHA (KV heads = Q heads)
           if (numKvHeads <= 0) numKvHeads = numQHeads;
@@ -4040,6 +4574,131 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
           // past_key is always 4D BHSD; current key follows Q layout
           bool kIsBSHD = hasPastKv ? false : isBSHD;
+
+          // seqK=0 means slot output shapes are stale (cached from warmup before
+          // KV cache was populated).  Try deriving seqK from actual external inputs
+          // which Java passes with correct shapes.
+          bool seqKDerivedFromExternal = false;
+          if (seqK <= 0) {
+            int derivedSeqK = 0;
+            int derivedKvHeads = 0;
+            std::string derivedSource;
+
+            // Strategy 1: Walk back from K source to find KV cache external inputs.
+            // The K input often comes from a Concat(past_key, current_key) op.
+            // Find that concat's past_key external input and use its seqK.
+            if (kSrc >= 0) {
+              for (int s = 0; s < totalSlots; s++) {
+                for (int o = 0; o < slots[s].numOutputs; o++) {
+                  if (slots[s].outputSlotIndices[o] == kSrc) {
+                    // Found the producer of K. Check its inputs for external KV cache.
+                    for (int pi = 0; pi < slots[s].numInputs; pi++) {
+                      int psrc = slots[s].inputSourceIndices[pi];
+                      if (psrc < 0) {
+                        // External input — check if it looks like a KV cache
+                        int extIdx = -(psrc + 1);
+                        if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
+                          auto& ext = *externalInputs[extIdx];
+                          if (ext.rankOf() == 4 && !ext.isEmpty() &&
+                              (ext.dataType() == FLOAT32 || ext.dataType() == HALF || ext.dataType() == BFLOAT16)) {
+                            int extSeqK = static_cast<int>(ext.sizeAt(2));
+                            int extHD = static_cast<int>(ext.sizeAt(3));
+                            int extKvH = static_cast<int>(ext.sizeAt(1));
+                            // GQA constraint: KV heads must divide Q heads evenly
+                            if (extHD == headDim && extSeqK > derivedSeqK &&
+                                extKvH > 0 && extKvH <= numQHeads && numQHeads % extKvH == 0) {
+                              derivedSeqK = extSeqK;
+                              derivedKvHeads = extKvH;
+                              derivedSource = "K-producer-ext[" + std::to_string(extIdx) + "]";
+                            }
+                          }
+                        }
+                      } else {
+                        // Slot output — check resolved shape for 4D KV cache
+                        auto pshape = resolveShape(psrc);
+                        int candidateKvH = (pshape.size() == 4) ? static_cast<int>(pshape[1]) : 0;
+                        // GQA constraint: KV heads must divide Q heads evenly
+                        if (pshape.size() == 4 && pshape[3] == headDim && pshape[2] > 0 &&
+                            candidateKvH > 0 && candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
+                          int candidateSeqK = static_cast<int>(pshape[2]);
+                          if (candidateSeqK > derivedSeqK) {
+                            derivedSeqK = candidateSeqK;
+                            derivedKvHeads = candidateKvH;
+                            derivedSource = "K-producer-slot[" + std::to_string(psrc) + "]";
+                          }
+                        }
+                      }
+                    }
+                    goto kProducerSearchDone;
+                  }
+                }
+              }
+            }
+            kProducerSearchDone:
+
+            // Strategy 2: Scan ALL attention op inputs for 4D KV cache shapes.
+            // Covers cases where past_key is a direct input to the attention op.
+            if (derivedSeqK == 0) {
+              for (int inp = 0; inp < slot.numInputs; inp++) {
+                int src = slot.inputSourceIndices[inp];
+                auto shape = resolveShape(src);
+                int candidateKvH = (shape.size() == 4) ? static_cast<int>(shape[1]) : 0;
+                // GQA constraint: KV heads must divide Q heads evenly
+                if (shape.size() == 4 && shape[3] == headDim && shape[2] > 0 &&
+                    candidateKvH > 0 && candidateKvH <= numQHeads && numQHeads % candidateKvH == 0) {
+                  int candidateSeqK = static_cast<int>(shape[2]);
+                  if (candidateSeqK > derivedSeqK) {
+                    derivedSeqK = candidateSeqK;
+                    derivedKvHeads = candidateKvH;
+                    derivedSource = "attn-input[" + std::to_string(inp) + "]";
+                  }
+                }
+              }
+            }
+
+            // Strategy 3: Broad scan of ALL external inputs for 4D FP arrays
+            // matching KV cache pattern [batch, heads, seqK, headDim].
+            if (derivedSeqK == 0 && externalInputs) {
+              for (int ei = 0; ei < numExternalInputs; ei++) {
+                if (!externalInputs[ei]) continue;
+                auto& ext = *externalInputs[ei];
+                if (ext.rankOf() != 4 || ext.isEmpty()) continue;
+                if (ext.dataType() != FLOAT32 && ext.dataType() != HALF && ext.dataType() != BFLOAT16) continue;
+                int extBatch = static_cast<int>(ext.sizeAt(0));
+                int extHD = static_cast<int>(ext.sizeAt(3));
+                int extSeqK = static_cast<int>(ext.sizeAt(2));
+                // Match: same batch, same headDim, non-zero seqK, heads divides Q heads
+                if (extBatch == batchSize && extHD == headDim && extSeqK > 0) {
+                  int extHeads = static_cast<int>(ext.sizeAt(1));
+                  if (extHeads > 0 && extHeads <= numQHeads && numQHeads % extHeads == 0 && extSeqK > derivedSeqK) {
+                    derivedSeqK = extSeqK;
+                    derivedKvHeads = extHeads;
+                    derivedSource = "ext-scan[" + std::to_string(ei) + "]";
+                  }
+                }
+              }
+            }
+
+            if (derivedSeqK > 0) {
+              // For concat-based K (K source is a slot that concatenates past+current),
+              // the attention's total seqK = past_seqK + seqQ
+              seqK = derivedSeqK + seqQ;
+              seqKDerivedFromExternal = true;
+              // Also correct numKvHeads if we got it from a 4D KV cache shape
+              if (derivedKvHeads > 0 && derivedKvHeads != numKvHeads) {
+                DSP_DIAG(COMPILE, "ATTN slot=%d correcting numKvHeads from %d to %d (from %s)",
+                          si, numKvHeads, derivedKvHeads, derivedSource.c_str());
+                numKvHeads = derivedKvHeads;
+              }
+              DSP_DIAG(COMPILE, "ATTN slot=%d derived seqK=%d from %s (pastSeqK=%d + seqQ=%d, headDim=%d, numKvHeads=%d)",
+                        si, seqK, derivedSource.c_str(), derivedSeqK, seqQ, headDim, numKvHeads);
+            } else {
+              // Truly unresolvable — fall back to C++
+              DSP_DIAG(COMPILE, "ATTN slot=%d seqK=0 and no KV cache shapes found — deferring to C++ native", si);
+              result.valid = false;
+              return result;
+            }
+          }
 
           float scale = 1.0f / std::sqrt(static_cast<float>(std::max(headDim, 1)));
           auto attnTile = chooseFusedAttentionTileConfig(
@@ -4087,19 +4746,67 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           // Extract attention bias/mask from input[3] if available and non-scalar
           mlir::Value attnBiasPtr;
           std::vector<LongType> attnBiasShape;
-          DSP_DIAG(COMPILE, "TritonIRBuilder: attention slot=%d op=%s numInputs=%d numOutputs=%d "
-                    "seqQ=%d seqK=%d heads=%d/%d hd=%d hasPastKv=%d dualBuf=%d",
-                    si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
-                    seqQ, seqK, numQHeads, numKvHeads, headDim,
-                    hasPastKv ? 1 : 0, useDualBuffer ? 1 : 0);
+          {
+            auto fmtShp = [](const std::vector<LongType>& v) -> std::string {
+              std::string r; for (size_t i = 0; i < v.size(); i++) { if (i) r += ","; r += std::to_string(v[i]); } return r.empty() ? "empty" : r;
+            };
+            std::string idxStr;
+            for (int i = 0; i < slot.numInputs; i++) { if (i) idxStr += ","; idxStr += std::to_string(slot.inputSourceIndices[i]); }
+            DSP_DIAG(COMPILE, "TritonIRBuilder: attention slot=%d op=%s numInputs=%d numOutputs=%d "
+                      "seqQ=%d seqK=%d heads=%d/%d hd=%d hasPastKv=%d dualBuf=%d "
+                      "pastKeySrc=%d qShape=[%s] kShape=[%s] effectiveKShape=[%s] inputSrcs=[%s]",
+                      si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
+                      seqQ, seqK, numQHeads, numKvHeads, headDim,
+                      hasPastKv ? 1 : 0, useDualBuffer ? 1 : 0,
+                      pastKeySrc,
+                      fmtShp(qShape).c_str(), fmtShp(resolveShape(kSrc)).c_str(),
+                      fmtShp(effectiveKShape).c_str(), idxStr.c_str());
+          }
           if (slot.numInputs > 3) {
             int biasSrc = slot.inputSourceIndices[3];
             auto bShape = resolveShape(biasSrc);
             // Accept bias if rank >= 2 and non-scalar (rank 2 = [B, seqK] padding mask)
             if (bShape.size() >= 2 && shapeLength(bShape) > 1) {
-              attnBiasPtr = getSlotArgPtr(biasSrc);
-              attnBiasShape = bShape;
+              // Verify the bias buffer's seqK dimension matches the kernel's seqK.
+              // The bias shape may be stale from warmup (cached slot output) while
+              // seqK was derived from external inputs with current shapes.
+              // If biasSeqK < seqK, the kernel would read past the bias buffer → crash.
+              int biasSeqKDim = static_cast<int>(bShape[bShape.size() - 1]);
+              if (biasSeqKDim >= seqK) {
+                attnBiasPtr = getSlotArgPtr(biasSrc);
+                attnBiasShape = bShape;
+              } else {
+                DSP_DIAG(COMPILE, "TritonIRBuilder: skipping attention bias at slot %d — "
+                          "bias seqK=%d < kernel seqK=%d (stale shape from warmup)",
+                          si, biasSeqKDim, seqK);
+              }
             }
+          }
+
+          // Validate: the effective K buffer must have enough elements for the derived seqK.
+          // When the K buffer is empty (stale from warmup or genuinely empty), the kernel
+          // would read from empty buffers causing illegal memory access (CUDA error 700).
+          // Always fall back to C++ native execution in this case — even if seqK was derived
+          // from external inputs, the actual K/V slot data may still be empty at execution time.
+          bool kBufferValid = true;
+          {
+            auto effKShape = resolveShape(effectiveKSrc);
+            LongType effKLen = 1;
+            for (auto d : effKShape) effKLen *= d;
+            if (effKLen == 0 && seqK > 0) {
+              kBufferValid = false;
+              DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
+                        "effective K buffer (src=%d) is empty but seqK=%d%s. "
+                        "Falling back to C++ native.",
+                        si, effectiveKSrc, seqK,
+                        seqKDerivedFromExternal ? " (seqK derived from external inputs)" : "");
+            }
+          }
+
+          if (!kBufferValid) {
+            DSP_DIAG(COMPILE, "ATTN slot=%d: K buffer invalid, returning section as non-compilable", si);
+            result.valid = false;
+            return result;
           }
 
           if (qPtr && kPtr && vPtr && outPtr) {
@@ -4115,18 +4822,35 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
 
             // output[1] = present_key, output[2] = present_value
             if (useDualBuffer && slot.numOutputs >= 2) {
-              // Dual-buffer: write current K/V to present_key/value output at position pastSeq
+              // Dual-buffer: write current K/V to present_key/value output at position pastSeq.
+              // Guard: verify the present_key output buffer can hold pastSeqLen + seqKVCur positions.
+              // For static KV caches, the past_key buffer is pre-allocated to maxKvLen but the
+              // present_key output was allocated during warmup with a much smaller shape.
+              // Writing at pastSeqLen offset would be out-of-bounds. In static KV cache mode,
+              // the caller handles cache updates — skip the write.
               int presentKeySlot = slot.outputSlotIndices[1];
-              auto presentKeyPtr = getSlotArgPtr(presentKeySlot);
-              if (presentKeyPtr && curKPtr) {
-                int totalSeq = pastSeqLen + seqKVCur;
-                emitPresentKvWrite(builder, loc, curKPtr, presentKeyPtr,
-                                   batchSize, numQHeads, numKvHeads,
-                                   pastSeqLen, seqKVCur, totalSeq, headDim);
-                auto pkLoaded = loadBlock(presentKeySlot, resolveDtype(presentKeySlot));
-                if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
+              auto pkOutShape = resolveShape(presentKeySlot);
+              int pkSeqCapacity = (pkOutShape.size() == 4) ? static_cast<int>(pkOutShape[2]) : 0;
+              int requiredSeq = pastSeqLen + seqKVCur;
+              bool pkFits = (pkSeqCapacity >= requiredSeq);
+              if (!pkFits) {
+                DSP_DIAG(COMPILE, "TritonIRBuilder: skipping present_key/value write at slot %d — "
+                          "output buffer seqDim=%d < required=%d (pastSeqLen=%d + seqKVCur=%d). "
+                          "Static KV cache detected; caller handles cache updates.",
+                          si, pkSeqCapacity, requiredSeq, pastSeqLen, seqKVCur);
               }
-              if (slot.numOutputs >= 3) {
+              if (pkFits) {
+                auto presentKeyPtr = getSlotArgPtr(presentKeySlot);
+                if (presentKeyPtr && curKPtr) {
+                  int totalSeq = pastSeqLen + seqKVCur;
+                  emitPresentKvWrite(builder, loc, curKPtr, presentKeyPtr,
+                                     batchSize, numQHeads, numKvHeads,
+                                     pastSeqLen, seqKVCur, totalSeq, headDim);
+                  auto pkLoaded = loadBlock(presentKeySlot, resolveDtype(presentKeySlot));
+                  if (pkLoaded) ssaValues[presentKeySlot] = pkLoaded;
+                }
+              }
+              if (slot.numOutputs >= 3 && pkFits) {
                 int presentValSlot = slot.outputSlotIndices[2];
                 auto presentValPtr = getSlotArgPtr(presentValSlot);
                 if (presentValPtr && curVPtr) {
@@ -4159,7 +4883,14 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
           } else {
             std::string msg = "TritonIRBuilder::buildSectionedModule: attention at slot " + std::to_string(si) +
-                " — missing args. Cannot compile.";
+                " — missing args."
+                " qSrc=" + std::to_string(qSrc) + "(ptr=" + (qPtr ? "OK" : "NULL") + ")" +
+                " kSrc=" + std::to_string(kSrc) + " vSrc=" + std::to_string(vSrc) +
+                " outSlot=" + std::to_string(outSlot) + "(ptr=" + (outPtr ? "OK" : "NULL") + ")" +
+                " kPtr=" + (kPtr ? "OK" : "NULL") + " vPtr=" + (vPtr ? "OK" : "NULL") +
+                " hasPastKv=" + std::to_string(hasPastKv) + " dualBuf=" + std::to_string(useDualBuffer) +
+                " numArgs=" + std::to_string(result.args.size()) +
+                ". Cannot compile.";
             THROW_EXCEPTION(msg.c_str());
           }
         }

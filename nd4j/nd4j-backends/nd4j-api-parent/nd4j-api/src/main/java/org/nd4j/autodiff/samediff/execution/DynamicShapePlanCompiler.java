@@ -20,6 +20,8 @@
 
 package org.nd4j.autodiff.samediff.execution;
 
+import java.util.Arrays;
+
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -83,6 +85,18 @@ public class DynamicShapePlanCompiler {
             "unique",
             "split_v", "split",
             "gather", "reduce_sum", "reduce_mean"
+    );
+
+    /**
+     * Ops that produce view outputs (share input buffer, no data copy).
+     * The executor can skip output allocation for these and pass an empty placeholder.
+     * Matches C++ NativePlanCompiler's isViewCapableOp detection.
+     */
+    private static final Set<String> VIEW_CAPABLE_OPS = Set.of(
+            "reshape", "reshape_no_copy",
+            "expand_dims", "squeeze",
+            "permute",
+            "strided_slice"
     );
 
     /**
@@ -174,17 +188,20 @@ public class DynamicShapePlanCompiler {
         // External inputs = constants + variables + placeholders
         // They are referenced by negative indices: -(externalIndex + 1)
         List<String> externalInputKeys = new ArrayList<>();
+        List<Byte> externalInputSourceTypes = new ArrayList<>();
         Map<String, Integer> externalIndexMap = new HashMap<>();
 
         for (String constName : dag.getConstants()) {
             int idx = externalInputKeys.size();
             externalInputKeys.add(constName);
+            externalInputSourceTypes.add(DynamicShapeSlot.SOURCE_CONSTANT);
             externalIndexMap.put(constName, idx);
         }
         for (String varName : dag.getVariables()) {
             if (!externalIndexMap.containsKey(varName)) {
                 int idx = externalInputKeys.size();
                 externalInputKeys.add(varName);
+                externalInputSourceTypes.add(DynamicShapeSlot.SOURCE_VARIABLE);
                 externalIndexMap.put(varName, idx);
             }
         }
@@ -192,6 +209,7 @@ public class DynamicShapePlanCompiler {
             if (!externalIndexMap.containsKey(phName)) {
                 int idx = externalInputKeys.size();
                 externalInputKeys.add(phName);
+                externalInputSourceTypes.add(DynamicShapeSlot.SOURCE_PLACEHOLDER);
                 externalIndexMap.put(phName, idx);
             }
         }
@@ -229,47 +247,6 @@ public class DynamicShapePlanCompiler {
                 opName = "unknown";
             }
             String opNameLower = opName.toLowerCase(Locale.ROOT);
-
-            // Remap reshape → reshape_no_copy for zero-copy view support.
-            // reshape_no_copy's C++ shape function calls reshapeNoAlloc() to determine
-            // if the reshape can be done as a view (shared buffer) or needs a copy.
-            // It sets ARRAY_COPY_OFFSET_INPUT_0 for views, ARRAY_NEEDS_COPY for copies.
-            // The iArgs format differs: reshape has order first [-99, dims...],
-            // reshape_no_copy has dims first then order [...dims, -99].
-            long[] reshapeNoCopyIArgs = null;
-            if (opNameLower.equals("reshape") && op instanceof DynamicCustomOp) {
-                DynamicCustomOp dynOp = (DynamicCustomOp) op;
-                long[] origIArgs = dynOp.iArgs();
-                int numInputs = sdOp.getInputsToOp() != null ? sdOp.getInputsToOp().size() : 0;
-                if (numInputs > 1) {
-                    // Shape from input 1 (ONNX pattern). iArgs[0] is positive order char (99='c', 102='f').
-                    // Convert to reshape_no_copy format: iArgs[0] = negative marker (-99 or -102).
-                    if (origIArgs != null && origIArgs.length > 0) {
-                        reshapeNoCopyIArgs = origIArgs.clone();
-                        long orderChar = reshapeNoCopyIArgs[0];
-                        if (orderChar == 99 || orderChar == 'c') {
-                            reshapeNoCopyIArgs[0] = -99;  // RESHAPE_NO_COPY_C_ORDER_MARKER
-                        } else if (orderChar == 102 || orderChar == 'f') {
-                            reshapeNoCopyIArgs[0] = -102;  // RESHAPE_NO_COPY_F_ORDER_MARKER
-                        }
-                    } else {
-                        reshapeNoCopyIArgs = new long[]{-99};
-                    }
-                } else if (numInputs == 1 && origIArgs != null && origIArgs.length > 1) {
-                    // Shape from iArgs. reshape format: [-99, dim1, dim2, ...]
-                    // reshape_no_copy format: [dim1, dim2, ..., -99]
-                    long first = origIArgs[0];
-                    if (first == -99 || first == -102) {
-                        reshapeNoCopyIArgs = new long[origIArgs.length];
-                        System.arraycopy(origIArgs, 1, reshapeNoCopyIArgs, 0, origIArgs.length - 1);
-                        reshapeNoCopyIArgs[origIArgs.length - 1] = first;
-                    }
-                }
-                if (reshapeNoCopyIArgs != null) {
-                    opName = "reshape_no_copy";
-                    opNameLower = "reshape_no_copy";
-                }
-            }
 
             boolean isCustomOp = op instanceof CustomOp;
 
@@ -334,6 +311,24 @@ public class DynamicShapePlanCompiler {
 
                 Integer outputSlot = varToOutputSlot.get(inputVar);
                 if (outputSlot != null) {
+                    // Guard against self-reference: an op cannot use its own output as input.
+                    // This would create a circular dependency (slot N reads from outputSlot[N]).
+                    // Check if outputSlot belongs to this step's op outputs.
+                    boolean isSelfRef = false;
+                    List<String> myOutputs = node.getOutputVariables();
+                    for (String myOut : myOutputs) {
+                        Integer mySlot = varToOutputSlot.get(myOut);
+                        if (mySlot != null && mySlot.equals(outputSlot)) {
+                            isSelfRef = true;
+                            break;
+                        }
+                    }
+                    if (isSelfRef) {
+                        log.warn("DSP compile: self-reference detected at step {} (op {}): " +
+                                "input '{}' resolves to own output slot {}. Falling back to standard path.",
+                                stepIdx, opName, inputVar, outputSlot);
+                        return null;
+                    }
                     // This input comes from another op's output
                     inputSourceIndices[i] = outputSlot;
                     inputSourceTypes[i] = DynamicShapeSlot.SOURCE_OP_OUTPUT;
@@ -352,6 +347,22 @@ public class DynamicShapePlanCompiler {
                         externalIdx = externalIndexMap.get(baseName);
                         outputSlot = varToOutputSlot.get(baseName);
                         if (outputSlot != null) {
+                            // Self-reference guard for baseName fallback
+                            boolean isSelfRef2 = false;
+                            List<String> myOutputs2 = node.getOutputVariables();
+                            for (String myOut : myOutputs2) {
+                                Integer mySlot = varToOutputSlot.get(myOut);
+                                if (mySlot != null && mySlot.equals(outputSlot)) {
+                                    isSelfRef2 = true;
+                                    break;
+                                }
+                            }
+                            if (isSelfRef2) {
+                                log.warn("DSP compile: self-reference detected at step {} (op {}): " +
+                                        "input '{}' (baseName '{}') resolves to own output slot {}. Falling back.",
+                                        stepIdx, opName, inputVar, baseName, outputSlot);
+                                return null;
+                            }
                             inputSourceIndices[i] = outputSlot;
                             inputSourceTypes[i] = DynamicShapeSlot.SOURCE_OP_OUTPUT;
                             if (stepIdx > slotLastConsumerStep[outputSlot]) {
@@ -421,6 +432,16 @@ public class DynamicShapePlanCompiler {
                 bArgs = dynOp.bArgs();
                 dArgs = dynOp.dArgs();
                 sArgs = dynOp.sArgs();
+
+                // strided_slice: iArgs are [beginMask, ellipsisMask, endMask, newAxisMask, shrinkAxisMask].
+                // When begin/end/strides come as input tensors (numInputs > 1), the Java op may also
+                // store them in iArgs[5+]. The C++ op checks iArgs.size() > 5 to decide between
+                // static path (read from iArgs) vs dynamic path (read from input tensors).
+                // If we pass all iArgs, the C++ op takes the static path with potentially stale values.
+                // Cap to 5 mask values so the C++ op correctly reads from input tensors.
+                if ("strided_slice".equals(opNameLower) && iArgs.length > 5 && numInputs > 1) {
+                    iArgs = Arrays.copyOf(iArgs, 5);
+                }
             } else if (op instanceof BaseScalarOp) {
                 // Scalar ops store their scalar value separately (not as tArgs).
                 // The C++ custom op equivalents (e.g., relu) expect it as tArg[0].
@@ -488,16 +509,9 @@ public class DynamicShapePlanCompiler {
             // When false, only input shapes + dtypes are used, avoiding expensive CUDA D2H syncs.
             boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(opNameLower) || isDataDependent;
 
-            // Override iArgs and op for reshape → reshape_no_copy remapping.
-            // The slot's op must be a ReshapeNoCopy instance (not the original Reshape)
-            // so that fn.opHash() dispatches to the correct C++ shape/execute functions.
-            // The original Reshape op interprets iArgs differently (order-first vs order-last),
-            // causing -99 shape corruption when iArgs are in reshape_no_copy format.
+            boolean isViewCapable = VIEW_CAPABLE_OPS.contains(opNameLower);
+
             DifferentialFunction slotOp = op;
-            if (reshapeNoCopyIArgs != null) {
-                iArgs = reshapeNoCopyIArgs;
-                slotOp = new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy();
-            }
 
             // Pre-compute opName hash for shape key computation (avoids String.hashCode per step)
             long opNameHash = opName.hashCode() * 0x9E3779B97F4A7C15L;
@@ -524,6 +538,7 @@ public class DynamicShapePlanCompiler {
                     .isDataDependent(isDataDependent)
                     .requiresDynamicShapeInference(requiresDynamic)
                     .needsZeroedOutput(needsZeroedOutput)
+                    .viewCapableOp(isViewCapable)
                     .outputShapeDependsOnInputValues(shapeDependsOnValues)
                     .stepIndex(stepIdx)
                     .opNameHash(opNameHash)
@@ -735,6 +750,17 @@ public class DynamicShapePlanCompiler {
             log.info("Ops still needing zeroed output: {}", needsZeroedOutputOps);
         }
 
+        // Log view-capable ops (zero-allocation slots)
+        int viewCapableCount = 0;
+        Map<String, Integer> viewCapableOps = new java.util.TreeMap<>();
+        for (DynamicShapeSlot slot : slots) {
+            if (slot.isViewCapableOp()) {
+                viewCapableCount++;
+                viewCapableOps.merge(slot.getOpName(), 1, Integer::sum);
+            }
+        }
+        log.info("viewCapableOps: {} slots skip allocation (view of input): {}", viewCapableCount, viewCapableOps);
+
         // Log full op type histogram for kernel count analysis
         Map<String, Integer> allOpTypes = new java.util.TreeMap<>();
         allOpTypes.putAll(needsZeroedOutputOps);
@@ -743,12 +769,19 @@ public class DynamicShapePlanCompiler {
         }
         log.info("Op type histogram ({} total): {}", slots.length, allOpTypes);
 
+        // Build source types byte array from list
+        byte[] extSourceTypes = new byte[externalInputSourceTypes.size()];
+        for (int i = 0; i < extSourceTypes.length; i++) {
+            extSourceTypes[i] = externalInputSourceTypes.get(i);
+        }
+
         DynamicShapePlan plan = new DynamicShapePlan(
                 slots,
                 totalOutputSlots,
                 releaseAtStep,
                 opContextPool,
                 externalInputKeys.toArray(new String[0]),
+                extSourceTypes,
                 requestedOutputs,
                 outputNameToSlotIndex,
                 hasControlFlow,

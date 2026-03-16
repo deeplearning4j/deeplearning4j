@@ -68,20 +68,11 @@ class Bitshift : PreImportHook {
         // Get direction attribute
         val direction = (attributes["direction"] as? String)?.uppercase() ?: "LEFT"
 
-        // Implement bit shift using multiplication/division by powers of 2
-        // Left shift: X << Y = X * 2^Y
-        // Right shift: X >> Y = X / 2^Y (integer division)
-        val two = sd.constant("${opName}_two", 2.0)
-        val powerOf2 = sd.math.pow("${opName}_pow2", two, y.castTo(x.dataType()))
-
+        // Use SameDiff's bitwise operations
         val output = if (direction == "LEFT") {
-            // Left shift: multiply by 2^Y
-            val result = sd.math.mul("${opName}_shift", x.castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE), powerOf2)
-            result.castTo(x.dataType())
+            sd.bitwise().leftShift("${opName}_shift", x, y)
         } else {
-            // Right shift: divide by 2^Y (floor division for integers)
-            val divided = sd.math.div("${opName}_div", x.castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE), powerOf2)
-            sd.math.floor("${opName}_shift", divided).castTo(x.dataType())
+            sd.bitwise().bitShiftRight("${opName}_shift", x, y)
         }
 
         output.rename(outputNames[0])

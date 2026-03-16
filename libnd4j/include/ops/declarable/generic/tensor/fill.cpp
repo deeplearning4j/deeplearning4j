@@ -28,6 +28,13 @@
 namespace sd {
 namespace ops {
 
+// Helper template function to handle scalar fill value
+template <typename T>
+static void fillWithScalar(NDArray* output, NDArray* fillValue) {
+  auto scalar = fillValue->e<T>(0);
+  output->assign(scalar);
+}
+
 CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
   auto shapeArray = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
@@ -45,7 +52,13 @@ CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
   }
 
   if (w > 1) {
-    output->assign(INPUT_VARIABLE(1));
+    auto fillValue = INPUT_VARIABLE(1);
+    // If fill value is a scalar, use scalar broadcast assign
+    if (fillValue->isScalar()) {
+      BUILD_SINGLE_SELECTOR(output->dataType(), fillWithScalar, (output, fillValue), SD_COMMON_TYPES);
+    } else {
+      output->assign(fillValue);
+    }
   } else {
     if (t > 0) {
       output->assign(T_ARG(0));
@@ -103,15 +116,13 @@ DECLARE_SHAPE_FN(fill) {
     THROW_EXCEPTION("Fill: missing value to fill output array with");
 
   // Handle empty arrays (shape with zeros) - use the correct data type from value
-  if(len > 1 && hasZeros) {
+  // FIX: Always use the shape from shapeArray, even if totalLen is 0.
+  // The ARRAY_EMPTY flag indicates the array has zero elements, but the shape
+  // dimensions should still be preserved.
+  if (hasZeros || totalLen < 1) {
     RELEASE(newShape, block.getWorkspace());
     std::vector<LongType> shapeOnly = shapeArray->asVectorT<LongType>();
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dataType, shapeOnly));
-  }
-  if (totalLen < 1) {
-    RELEASE(newShape, block.getWorkspace());
-    std::vector<LongType> shape = {0};
-    return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(dataType, shape));
   }
 
   ShapeUtils::updateStridesAndType(newShape, dataType, 'c');

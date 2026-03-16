@@ -1194,6 +1194,15 @@ std::unordered_set<int> TritonGraphBackend::getGapSlots(const GraphSegment& seg,
   return gapSlots;
 }
 
+void TritonGraphBackend::clearFailedSegmentCache() {
+  std::lock_guard<std::mutex> lock(cacheMtx_);
+  if (!failedCache_.empty()) {
+    DSP_DIAG(COMPILE, "TritonGraphBackend::clearFailedSegmentCache: clearing %d failed entries",
+              static_cast<int>(failedCache_.size()));
+    failedCache_.clear();
+  }
+}
+
 void TritonGraphBackend::invalidateCache() {
   std::lock_guard<std::mutex> lock(cacheMtx_);
   for (auto& entry : cache_) {

@@ -62,21 +62,44 @@ DECLARE_SHAPE_FN(meshgrid) {
   bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
 
   int rank = block.width();
+  
+  // For meshgrid with 'xy' indexing (swapFirst2Dims=true):
+  // - output[0] has shape [len(input[1]), len(input[0]), 1, 1, ...]
+  // - output[1] has shape [len(input[1]), len(input[0]), 1, 1, ...]
+  // - output[i] for i>1 has shape [len(input[1]), len(input[0]), len(input[2]), ..., len(input[i]), ..., 1]
+  // Actually all outputs have the same shape in TF meshgrid
+  
+  // For 2 inputs with shapes [N] and [M]:
+  // - output[0] shape: [M, N]
+  // - output[1] shape: [M, N]
+  
+  // Get the length of each input (they should all be 1D for standard meshgrid)
+  std::vector<LongType> outputShape(rank);
+  for (int i = 0; i < rank; ++i) {
+    outputShape[i] = (LongType)shape::length(inputShape->at(i));
+  }
+  
+  // For 'xy' indexing with rank >= 2, swap first two dimensions
+  if (swapFirst2Dims && rank >= 2) {
+    math::sd_swap<LongType>(outputShape[0], outputShape[1]);
+  }
+  
   LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
-  for (int i = 1; i <= rank; ++i) outShapeInfo[i] = (LongType)shape::length(inputShape->at(i - 1));
-
-  if (swapFirst2Dims && rank > 1) math::sd_swap<LongType>(outShapeInfo[1], outShapeInfo[2]);
+  
+  for (int i = 0; i < rank; ++i) {
+    outShapeInfo[i + 1] = outputShape[i];
+  }
 
   auto in = inputShape->at(0);
   ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
   auto shapes = SHAPELIST();
   auto resultShape = CONSTANT(outShapeInfo);
-  shapes->push_back(resultShape);
-
-  for (int i = 2; i <= rank; ++i) {
+  
+  // All outputs have the same shape
+  for (int i = 0; i < rank; ++i) {
     shapes->push_back(resultShape);
   }
 

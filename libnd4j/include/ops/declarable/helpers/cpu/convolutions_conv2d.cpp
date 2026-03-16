@@ -47,30 +47,31 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   LongType oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
   LongType iH = ConvolutionUtils::inputHeight(input->shapeInfo(), isNCHW);
   LongType iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
-  LongType oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
-  LongType oW = ConvolutionUtils::calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
+  
+  // Get output dimensions from the already-allocated output array
+  // DO NOT recalculate - the shape function has already determined the correct output shape
+  LongType oH = ConvolutionUtils::outputHeight(output->shapeInfo(), isNCHW);
+  LongType oW = ConvolutionUtils::outputWidth(output->shapeInfo(), isNCHW);
 
-  // For SAME/CAUSAL padding modes, compute padding values.
-  // Without this, im2col with pH=0/pW=0 produces right-biased padding which
-  // gives different results from TF/Keras for odd kernel sizes (k=3, k=5, etc.).
-  // NOTE: Do NOT use calcPadding2D here — its "symmetry adjustment" can produce
-  // negative padding values for stride>1 cases. Compute directly using TF formula.
+  // For SAME/CAUSAL padding modes, recalculate padding values to match the output shape
+  // The output shape is already correct, we just need to compute the padding for im2col
   if (paddingMode == 1 || paddingMode == 2) {
+    // Calculate padding using TF formula, given the known output size
     const LongType eKH = (kH - 1) * dH + 1;
     const LongType eKW = (kW - 1) * dW + 1;
     LongType totalPadH = std::max((LongType)0, (oH - 1) * sH + eKH - iH);
     LongType totalPadW = std::max((LongType)0, (oW - 1) * sW + eKW - iW);
     if (paddingMode == 1) {
-      // SAME: centered padding, extra goes to bottom/right (TF convention)
+      // SAME: centered padding
       pH = totalPadH / 2;
       pW = totalPadW / 2;
     } else {
-      // CAUSAL: explicit left-only padding = (kernel-1) * dilation
-      // TF pads input with this many zeros on the left, then does valid conv
+      // CAUSAL: left-only padding
       pH = (kH - 1) * dH;
       pW = (kW - 1) * dW;
     }
   }
+  // For VALID mode, use the passed-in pH and pW values
 
   std::vector<LongType> wAxes;
   if (0 == wFormat)

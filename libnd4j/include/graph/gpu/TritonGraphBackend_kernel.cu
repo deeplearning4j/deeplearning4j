@@ -246,6 +246,118 @@ Status TritonGraphBackend::executeSingleKernel(CompiledKernel& compiled, NativeS
     bufferPtrs.push_back(sbuf);
   }
 
+  // ── Comprehensive kernel execution diagnostics ──
+  // Logs EVERY kernel's full state: args, shapes, pointers, dtypes, op names,
+  // grid/block config, iArgs/tArgs. Zero cost when DSP_DIAG is disabled.
+  if (DSP_DIAG_ENABLED(EXECUTE)) {
+    // Kernel identity and launch config
+    {
+      // Collect op names covered by this kernel
+      std::string opList;
+      for (int si = compiled.startSlot_; si <= compiled.endSlot_ && si >= 0; si++) {
+        if (!opList.empty()) opList += ",";
+        opList += slots[si].opName;
+        if (opList.size() > 200) { opList += "..."; break; }
+      }
+      DSP_DIAG(EXECUTE, "KERNEL_EXEC: slots[%d-%d] grid=(%u,%u,%u) block=(%u,%u,%u) "
+                "shmem=%u warps=%d numArgs=%d indirect=%d coop=%d ops=[%s]",
+                compiled.startSlot_, compiled.endSlot_,
+                compiled.gridX, compiled.gridY, compiled.gridZ,
+                compiled.blockX, compiled.blockY, compiled.blockZ,
+                compiled.sharedMemBytes, compiled.numWarps, numBufferArgs,
+                compiled.useIndirectArgs ? 1 : 0,
+                compiled.useCooperativeLaunch ? 1 : 0,
+                opList.c_str());
+    }
+
+    // Every arg: slot, isOutput, pointer, length, rank, shape, dtype, op name
+    for (int i = 0; i < numBufferArgs; i++) {
+      auto& am = compiled.argSlotMapping[i];
+      NDArray* dbgArr = nullptr;
+      if (am.slotIndex < 0) {
+        int ei = -(am.slotIndex + 1);
+        if (ei < numExternalInputs) dbgArr = externalInputs[ei];
+      } else if (am.slotIndex < totalOutputSlots) {
+        dbgArr = outputSlots[am.slotIndex];
+      }
+
+      // Format shape string
+      char shapeBuf[128] = {0};
+      int soff = 0;
+      if (dbgArr) {
+        for (int d = 0; d < dbgArr->rankOf() && soff < 120; d++) {
+          soff += snprintf(shapeBuf + soff, sizeof(shapeBuf) - soff,
+                           "%s%lld", d > 0 ? "," : "", (long long)dbgArr->sizeAt(d));
+        }
+      }
+
+      DSP_DIAG(EXECUTE, "  ARG[%d] slot=%d %s ptr=%p len=%lld rank=%d shape=[%s] "
+                "dtype=%d empty=%d compiledShape=[%s]",
+                i, am.slotIndex, am.isOutput ? "OUT" : "IN ",
+                bufferPtrs[i],
+                dbgArr ? (long long)dbgArr->lengthOf() : -1LL,
+                dbgArr ? dbgArr->rankOf() : -1,
+                shapeBuf,
+                dbgArr ? static_cast<int>(dbgArr->dataType()) : -1,
+                dbgArr ? (dbgArr->isEmpty() ? 1 : 0) : -1,
+                [&]() -> std::string {
+                  std::string s;
+                  for (size_t d = 0; d < am.shape.size(); d++) {
+                    if (d) s += ",";
+                    s += std::to_string(am.shape[d]);
+                  }
+                  return s.empty() ? "none" : s;
+                }().c_str());
+    }
+
+    // Per-slot detail: iArgs, tArgs, bArgs for each slot in the kernel range
+    for (int si = compiled.startSlot_; si <= compiled.endSlot_ && si >= 0; si++) {
+      auto& slot = slots[si];
+      // Only log slots that have interesting args
+      if (slot.numIArgs > 0 || slot.numTArgs > 0 || slot.numBArgs > 0) {
+        char iArgBuf[256] = {0};
+        int ioff = 0;
+        for (int a = 0; a < slot.numIArgs && a < 16 && ioff < 240; a++) {
+          ioff += snprintf(iArgBuf + ioff, sizeof(iArgBuf) - ioff,
+                           "%s%lld", a > 0 ? "," : "", (long long)slot.iArgs[a]);
+        }
+        char tArgBuf[256] = {0};
+        int toff = 0;
+        for (int a = 0; a < slot.numTArgs && a < 8 && toff < 240; a++) {
+          toff += snprintf(tArgBuf + toff, sizeof(tArgBuf) - toff,
+                           "%s%.4g", a > 0 ? "," : "", slot.tArgs[a]);
+        }
+        DSP_DIAG(EXECUTE, "  SLOT[%d] op='%s' inputs=%d outputs=%d "
+                  "iArgs=[%s](%d) tArgs=[%s](%d) bArgs=%d identity=%d view=%d fused=%d",
+                  si, slot.opName.c_str(), slot.numInputs, slot.numOutputs,
+                  iArgBuf, slot.numIArgs, tArgBuf, slot.numTArgs,
+                  slot.numBArgs, slot.isIdentityOp ? 1 : 0,
+                  slot.isViewCapableOp ? 1 : 0, slot.inPlaceFused ? 1 : 0);
+      }
+
+      // Log input wiring for every slot
+      if (slot.numInputs > 0) {
+        char wireBuf[512] = {0};
+        int woff = 0;
+        for (int inp = 0; inp < slot.numInputs && woff < 480; inp++) {
+          int srcIdx = slot.inputSourceIndices[inp];
+          NDArray* srcArr = nullptr;
+          if (srcIdx < 0) {
+            int ei = -(srcIdx + 1);
+            if (ei < numExternalInputs) srcArr = externalInputs[ei];
+          } else if (srcIdx < totalOutputSlots) {
+            srcArr = outputSlots[srcIdx];
+          }
+          woff += snprintf(wireBuf + woff, sizeof(wireBuf) - woff,
+                           "%sin[%d]=%d(len=%lld)", inp > 0 ? " " : "",
+                           inp, srcIdx,
+                           srcArr ? (long long)srcArr->lengthOf() : -1LL);
+        }
+        DSP_DIAG(EXECUTE, "  SLOT[%d] wiring: %s", si, wireBuf);
+      }
+    }
+  }
+
   // ── Buffer aliasing detection and resolution ──
   // When an output buffer pointer falls within any input buffer's address range,
   // the Triton kernel's stores can race with loads from the same memory.

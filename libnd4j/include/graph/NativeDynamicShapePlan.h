@@ -551,6 +551,10 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
     if (mode != GraphExecutionMode::GEM_SLOT_BY_SLOT) {
       gpuGraphCaptureEnabled_ = true;
     }
+    // Clear GPU backend failed-compilation cache so segments that failed with
+    // incomplete shapes (e.g., attention with seqK=0 before KV setup)
+    // can retry when called again with correct external input shapes.
+    clearGpuBackendFailedCache();
   }
   GraphExecutionMode getGraphExecutionMode() const { return graphExecutionMode_; }
 
@@ -870,6 +874,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   Status executeSegmentWithGpuGraph(GraphSegment& seg, NDArray** externalArrays,
                                     int numExt, void* stream);
   GraphBackend* getGpuGraphBackend();
+  void clearGpuBackendFailedCache();
 
   // CPU graph backend (oneDNN Graph or ACL Dynamic Fusion)
   GraphBackend* cpuGraphBackend_;

@@ -6272,6 +6272,10 @@ template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType 
 
 
 void NDArray::p(const sd::LongType i, NDArray *scalar) {
+  // If this array is empty, nothing to set - just return
+  if (_length == 0) {
+    return;
+  }
   if (scalar->lengthOf() > 1) {
     THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
   }

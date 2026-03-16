@@ -85,6 +85,13 @@ public class DynamicShapePlan implements Closeable {
      */
     private final String[] externalInputKeys;
 
+    /**
+     * Source type for each external input, parallel to {@code externalInputKeys}.
+     * Values: {@link DynamicShapeSlot#SOURCE_CONSTANT}, {@link DynamicShapeSlot#SOURCE_VARIABLE},
+     * {@link DynamicShapeSlot#SOURCE_PLACEHOLDER}.
+     */
+    @Getter private final byte[] externalInputSourceTypes;
+
     /** The set of output variable names this plan was compiled for. */
     private final Set<String> requestedOutputs;
 
@@ -147,6 +154,7 @@ public class DynamicShapePlan implements Closeable {
      */
     public DynamicShapePlan(DynamicShapeSlot[] slots, int totalOutputSlots, int[][] releaseAtStep,
                             OpContext[] opContextPool, String[] externalInputKeys,
+                            byte[] externalInputSourceTypes,
                             Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
                             boolean hasControlFlowOps, LoopRegion[] loopRegions,
                             int[] predecessorCounts, int[][] predecessors, int[][] successors,
@@ -156,6 +164,7 @@ public class DynamicShapePlan implements Closeable {
         this.releaseAtStep = releaseAtStep;
         this.opContextPool = opContextPool;
         this.externalInputKeys = externalInputKeys;
+        this.externalInputSourceTypes = externalInputSourceTypes;
         this.requestedOutputs = requestedOutputs;
         this.outputNameToSlotIndex = outputNameToSlotIndex;
         this.hasControlFlowOps = hasControlFlowOps;
@@ -175,6 +184,7 @@ public class DynamicShapePlan implements Closeable {
                             Set<String> requestedOutputs, Map<String, Integer> outputNameToSlotIndex,
                             boolean hasControlFlowOps) {
         this(slots, totalOutputSlots, releaseAtStep, opContextPool, externalInputKeys,
+                new byte[externalInputKeys.length],
                 requestedOutputs, outputNameToSlotIndex, hasControlFlowOps, null,
                 null, null, null, null, null);
     }

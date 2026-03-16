@@ -554,7 +554,8 @@ NativeDynamicShapePlan* NativeDynamicShapePlan::fromSerializedPlan(
     {
       auto normalized = normalizeOpName(slot.opName);
       slot.isViewCapableOp = (normalized == "reshape" || normalized == "reshape_no_copy" ||
-                              normalized == "expand_dims" || normalized == "squeeze");
+                              normalized == "expand_dims" || normalized == "squeeze" ||
+                              normalized == "permute" || normalized == "strided_slice");
     }
     // View-capable ops share input buffer → no zeroing needed
     if (slot.isViewCapableOp) slot.needsZeroedOutput = false;

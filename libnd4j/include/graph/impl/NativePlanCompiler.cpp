@@ -276,7 +276,8 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     {
       auto normalized = normalizeOpName(slot.opName);
       slot.isViewCapableOp = (normalized == "reshape" || normalized == "reshape_no_copy" ||
-                              normalized == "expand_dims" || normalized == "squeeze");
+                              normalized == "expand_dims" || normalized == "squeeze" ||
+                              normalized == "permute" || normalized == "strided_slice");
     }
     // View-capable ops share input buffer → no zeroing needed (would corrupt input data).
     // Non-view-capable data-movement ops still need zeroing for safety.
@@ -322,7 +323,41 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
 
       // Look up in output slot map or external
       auto slotIt = varToOutputSlot.find(inputName);
+      // If not found by exact name, try with baseName (strip :N suffix) — mirrors Java compiler logic
+      if (slotIt == varToOutputSlot.end()) {
+        auto colonPos = inputName.rfind(':');
+        if (colonPos != std::string::npos) {
+          std::string baseName = inputName.substr(0, colonPos);
+          slotIt = varToOutputSlot.find(baseName);
+        }
+      }
+      // Guard against self-reference: if resolved slot is one of THIS step's own outputs, treat as external
+      bool isSelfRef = false;
       if (slotIt != varToOutputSlot.end()) {
+        auto* myOutputNames = node->outputNames();
+        if (myOutputNames) {
+          for (unsigned int oi = 0; oi < myOutputNames->size(); oi++) {
+            std::string myOut = myOutputNames->Get(oi)->str();
+            auto myIt = varToOutputSlot.find(myOut);
+            if (myIt != varToOutputSlot.end() && myIt->second == slotIt->second) {
+              isSelfRef = true;
+              DSP_DIAG(COMPILE, "NativePlanCompiler: self-reference at step %d (op %s): input '%s' -> slot %d == own output '%s' slot %d",
+                       stepIdx, slot.opName.c_str(), inputName.c_str(), slotIt->second, myOut.c_str(), myIt->second);
+              break;
+            }
+          }
+        }
+        // Also check: if the input resolves to a slot produced by THIS step (same stepIdx), it's self-referential
+        if (!isSelfRef) {
+          int resolvedSlot = slotIt->second;
+          if (resolvedSlot >= 0 && resolvedSlot < (int)slotProducerStep.size() && slotProducerStep[resolvedSlot] == stepIdx) {
+            isSelfRef = true;
+            DSP_DIAG(COMPILE, "NativePlanCompiler: self-reference (producer match) at step %d (op %s): input '%s' -> slot %d produced at same step",
+                     stepIdx, slot.opName.c_str(), inputName.c_str(), resolvedSlot);
+          }
+        }
+      }
+      if (slotIt != varToOutputSlot.end() && !isSelfRef) {
         slot.inputSourceIndices[i] = slotIt->second;
         slot.inputSourceTypes[i] = SOURCE_OP_OUTPUT;
         if (stepIdx > slotLastConsumerStep[slotIt->second]) {
@@ -374,7 +409,18 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     } else {
       auto* extraInteger = node->extraInteger();
       if (extraInteger && extraInteger->size() > 0) {
-        slot.numIArgs = extraInteger->size();
+        int numToUse = extraInteger->size();
+        // strided_slice: iArgs are [begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask].
+        // begin/end/strides come as input tensors (inputs 1-3), NOT as iArgs.
+        // If extraInteger has more than 5 values, the op's `iArgs.size() > 5` check
+        // would incorrectly take the static path, interpreting garbage as slice indices.
+        // Cap to 5 mask values so the op correctly reads from input tensors.
+        if (slot.opName == "strided_slice" && numToUse > 5 && slot.numInputs > 1) {
+          DSP_DIAG(COMPILE, "NativePlanCompiler: strided_slice at step %d has %d iArgs but %d inputs — capping iArgs to 5 masks",
+                   stepIdx, numToUse, slot.numInputs);
+          numToUse = 5;
+        }
+        slot.numIArgs = numToUse;
         slot.iArgs = new LongType[slot.numIArgs];
         for (int i = 0; i < slot.numIArgs; i++) {
           slot.iArgs[i] = extraInteger->Get(i);

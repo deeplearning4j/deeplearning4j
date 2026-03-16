@@ -59,41 +59,33 @@ class GlobalLpPool : PreImportHook {
         dynamicVariables: Map<String, GeneratedMessageV3>
     ): Map<String, List<SDVariable>> {
         val opName = op.name
-        
+
         // Get input
         val input = sd.getVariable(op.inputsToOp[0])
-        
+
         // Get p attribute (default: 2)
         val p = (attributes.getOrDefault("p", 2L) as Number).toInt()
+
+        // For 4D input [N, C, H, W], reduce over dimensions 2 and 3 (H and W)
+        val inputShape = input.shape ?: throw IllegalStateException("GlobalLpPool requires static input shape")
+        val rank = inputShape.size
         
-        // Get spatial dimensions (all dimensions except batch and channel)
-        // For [N, C, D1, D2, ..., Dn], spatial dims are [2, 3, ..., rank-1]
-        val rankOf = sd.rank(input)
-        val range = sd.range(sd.constant(0), rankOf, sd.constant(1), DataType.INT64)
-        val sizes = sd.concat(0, sd.constant(2).castTo(DataType.INT64), sd.prod(range.shape()).sub(2.0).castTo(DataType.INT64))
-        val split = sd.splitV(range, sizes, 2, 0)
-        val spatialDims = split[1]
-        
-        // Compute Lp norm: (sum(|x|^p))^(1/p)
+        // Compute Lp norm: (sum(|x|^p))^(1/p) over spatial dimensions
+        // GlobalLpPool computes: (Σ|x_i|^p)^(1/p) over spatial dimensions
         val output = if (p == 1) {
-            // L1: sum of absolute values
-            sd.math.mean(outputNames[0], sd.math.abs(input), spatialDims, true)
+            // L1: sum of absolute values over spatial dims
+            sd.math.sum(outputNames[0], sd.math.abs(input), true, 2, 3)
         } else if (p == 2) {
-            // L2: sqrt of sum of squares (RMS with mean replaced by sum, then normalize)
-            val sumSquares = sd.math.sum("${opName}_sumSq", sd.math.square(input), spatialDims, true)
-            // Get count of spatial elements for proper Lp pooling
-            val inputShape = sd.shape(input)
-            val spatialSize = sd.prod(sd.gather(inputShape, spatialDims, 0))
-            val avgSquares = sd.math.div("${opName}_avgSq", sumSquares, spatialSize.castTo(sumSquares.dataType()))
-            sd.math.sqrt(outputNames[0], avgSquares)
+            // L2: sqrt of sum of squares
+            sd.math.sqrt(outputNames[0], sd.math.sum(sd.math.square(input), true, 2, 3))
         } else {
-            // General Lp: (mean(|x|^p))^(1/p)
+            // General Lp: (sum(|x|^p))^(1/p)
             val absInput = sd.math.abs(input)
             val powered = sd.math.pow("${opName}_pow", absInput, p.toDouble())
-            val meanPow = sd.math.mean("${opName}_mean", powered, spatialDims, true)
-            sd.math.pow(outputNames[0], meanPow, 1.0 / p)
+            val sumPow = sd.math.sum("${opName}_sum", powered, true, 2, 3)
+            sd.math.pow(outputNames[0], sumPow, 1.0 / p)
         }
-        
+
         return mapOf(outputNames[0] to listOf(output))
     }
 }

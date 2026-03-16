@@ -65,15 +65,10 @@ public class CheckNumerics extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        String str = attributesForNode.get("message").getS().toStringUtf8();
-        //No "string args" support in libnd4j custom ops -> make it a constant instead
-        String name = nodeDef.getName();
-        SDVariable msg = initWith.constant(name + "/message", Nd4j.scalar(str));
-        List<String> newInputs = new ArrayList<>(2);
-        newInputs.addAll(initWith.getOps().get(name).getInputsToOp());
-        newInputs.add(msg.name());
-        initWith.getOps().get(name).setInputsToOp(newInputs);
-        initWith.getVariables().get(msg.name()).setInputsForOp(Collections.singletonList(getOwnName()));    }
+        // TF CheckNumerics has a message attribute, but we don't need it for execution
+        // Just use the main input - message is just for error reporting which we handle differently
+        // No need to create a constant or add extra inputs
+    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){

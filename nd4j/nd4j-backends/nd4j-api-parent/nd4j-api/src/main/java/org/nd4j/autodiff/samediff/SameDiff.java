@@ -115,7 +115,7 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     protected static final String GRAD_FN_KEY = "grad";
 
     //Fields for graph structure and execution
-    //Use trie to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde, a trie also
+    //Use trie to guarantee Reiteration order based on order they were added. Used in inputs() and flatbuffers serde, a trie also
     // handles prefix lookups for ops when creating new ones and we need to determine prefixes
     @Getter
     private final PatriciaTrie<Variable> variables = new PatriciaTrie<>();
@@ -192,6 +192,12 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     // When forcing TRITON mode, optionally degrade to AUTO if Triton is unavailable.
     @Getter @Setter
     private boolean dspFallbackToAutoIfTritonUnavailable = true;
+
+    // Placeholder override support: allows intermediate ARRAY variables to be treated as
+    // PLACEHOLDERs for DSP compilation, pruning their producing subgraphs.
+    @Getter
+    private final Set<String> placeholderOverrides = new LinkedHashSet<>();
+    private final Map<String, VariableType> originalOverrideTypes = new LinkedHashMap<>();
 
     ///////////////////////////////////////
     //Fields related to training
@@ -4194,6 +4200,113 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      */
     public void clearDynamicShapePlanCache() {
         dynamicShapePlanCache.clear();
+    }
+
+    /**
+     * Mark an intermediate ARRAY variable as a placeholder override. This converts the variable's
+     * type to PLACEHOLDER, causing DSP compilation to treat it as an external input. The subgraph
+     * that originally produced this variable is automatically pruned from the plan (the backward
+     * walk stops at PLACEHOLDERs). At execution time, the override value must be provided in the
+     * placeholderArrays map.
+     *
+     * @param varName The name of the variable to override
+     * @throws IllegalArgumentException if the variable does not exist
+     */
+    public void addPlaceholderOverride(String varName) {
+        Preconditions.checkArgument(variables.containsKey(varName),
+                "Variable '%s' does not exist in this SameDiff instance", varName);
+        SDVariable sdVar = variables.get(varName).getVariable();
+        if (!placeholderOverrides.contains(varName)) {
+            originalOverrideTypes.put(varName, sdVar.getVariableType());
+            placeholderOverrides.add(varName);
+            sdVar.setVariableType(VariableType.PLACEHOLDER);
+            invalidateAllPlanCaches();
+        }
+    }
+
+    /**
+     * Remove a placeholder override, restoring the variable to its original type.
+     * Invalidates the cached DSP plan.
+     *
+     * @param varName The name of the variable to restore
+     */
+    public void removePlaceholderOverride(String varName) {
+        if (placeholderOverrides.remove(varName)) {
+            VariableType originalType = originalOverrideTypes.remove(varName);
+            if (originalType != null) {
+                SDVariable sdVar = variables.get(varName).getVariable();
+                if (sdVar != null) {
+                    sdVar.setVariableType(originalType);
+                }
+            }
+            invalidateAllPlanCaches();
+        }
+    }
+
+    /**
+     * Remove all placeholder overrides, restoring all variables to their original types.
+     * Invalidates the cached DSP plan.
+     */
+    public void clearPlaceholderOverrides() {
+        if (!placeholderOverrides.isEmpty()) {
+            for (String varName : new ArrayList<>(placeholderOverrides)) {
+                VariableType originalType = originalOverrideTypes.remove(varName);
+                if (originalType != null) {
+                    SDVariable sdVar = variables.get(varName).getVariable();
+                    if (sdVar != null) {
+                        sdVar.setVariableType(originalType);
+                    }
+                }
+            }
+            placeholderOverrides.clear();
+            invalidateAllPlanCaches();
+        }
+    }
+
+    /**
+     * Find variables produced by a given op type that are consumed by another op type.
+     * Pure graph-structural query — no name matching.
+     *
+     * @param producerOpType the opName of the producing op (e.g., "Tile")
+     * @param consumerOpType the opName of a consuming op (e.g., "onnx_multi_head_attention")
+     * @return list of variable names matching the pattern (empty if none found)
+     */
+    public List<String> findVariablesByOpPattern(String producerOpType, String consumerOpType) {
+        List<String> results = new ArrayList<>();
+        for (SameDiffOp sdOp : ops.values()) {
+            if (sdOp.getOp() == null || !producerOpType.equals(sdOp.getOp().opName())) {
+                continue;
+            }
+            List<String> outputs = sdOp.getOutputsOfOp();
+            if (outputs == null) continue;
+            for (String outputVar : outputs) {
+                Variable varInfo = variables.get(outputVar);
+                if (varInfo == null) continue;
+                List<String> consumers = varInfo.getInputsForOp();
+                if (consumers == null) continue;
+                for (String consumerOpName : consumers) {
+                    SameDiffOp consumerOp = ops.get(consumerOpName);
+                    if (consumerOp != null && consumerOp.getOp() != null
+                            && consumerOpType.equals(consumerOp.getOp().opName())) {
+                        results.add(outputVar);
+                        break; // found at least one consumer match, no need to check more
+                    }
+                }
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Invalidate all plan caches: SameDiff-level DSP plan cache AND per-session
+     * DAG/plan/constant caches. Call when graph structure changes (e.g., variable
+     * type changes from placeholder override).
+     */
+    private void invalidateAllPlanCaches() {
+        clearDynamicShapePlanCache();
+        for (InferenceSession session : sessions.values()) {
+            session.clearAllCaches();
+        }
     }
 
     /**

@@ -134,15 +134,17 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
                                           INDArray attnBias, INDArray pastKey, INDArray pastValue) {
         // Always build 6 inputs to maintain positional semantics for C++ op
         // Use scalar placeholder (not empty!) for missing optional inputs to avoid null buffer issues
+        // Empty arrays (e.g. [1,3,0,64] for initial KV cache) are treated as absent — the C++ op
+        // also converts empty inputs to nullptr, so this is consistent.
         INDArray placeholder = Nd4j.scalar(query.dataType(), 0.0f);
-        
+
         return new INDArray[] {
             query,
             key,
             value,
-            attnBias != null ? attnBias : placeholder,
-            pastKey != null ? pastKey : placeholder,
-            pastValue != null ? pastValue : placeholder
+            (attnBias != null && !attnBias.isEmpty()) ? attnBias : placeholder,
+            (pastKey != null && !pastKey.isEmpty()) ? pastKey : placeholder,
+            (pastValue != null && !pastValue.isEmpty()) ? pastValue : placeholder
         };
     }
 

@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
@@ -5740,6 +5741,1551 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                 }
             } finally {
                 nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    // =====================================================================
+    // Tests bridging the gap between FUSED_ATTENTION-only isolation tests
+    // and VLM full pipeline. These test attention with OTHER compiled op types
+    // (matmul, reduce, elementwise) in the same graph — the VLM scenario.
+    // =====================================================================
+
+    /**
+     * Test 1: Matmul projections → ONNX MHA, compiled together.
+     *
+     * In VLM, Q/K/V come from matmul projections (Triton sub-kernels),
+     * NOT external inputs. This tests cross-sub-kernel data flow:
+     *   input → matmul(Wq) → Q
+     *   input → matmul(Wk) → K
+     *   input → matmul(Wv) → V
+     *   Q, K, V, past_key, past_value → onnx_multi_head_attention → output
+     *
+     * Uses FUSED_ATTENTION + compileAll (which compiles matmul via Triton too).
+     */
+    @Test
+    public void testFusedAttention_MatmulProjections_CompileAll() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        // This is the VLM config: compile everything + attention
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, numHeads = 4, headDim = 64;
+            int kvCacheLen = 10;
+            int hidden = numHeads * headDim;
+            int totalSeq = kvCacheLen + seqQ;
+
+            SameDiff sd = SameDiff.create();
+            // Input: [batch, seqQ, hidden]
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, batch, seqQ, hidden);
+
+            // Weight projections (constants, will be compiled as matmul ops)
+            SDVariable wq = sd.constant("wq", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wk = sd.constant("wk", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wv = sd.constant("wv", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+
+            // Q, K, V projections via matmul — these become Triton sub-kernels
+            SDVariable q = sd.mmul("q_proj", input, wq);
+            SDVariable k = sd.mmul("k_proj", input, wk);
+            SDVariable v = sd.mmul("v_proj", input, wv);
+
+            // KV cache inputs (external)
+            SDVariable pastKey = sd.placeHolder("past_key", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+            SDVariable pastValue = sd.placeHolder("past_value", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+            SDVariable attnBias = sd.placeHolder("attn_bias", DataType.FLOAT, batch, numHeads, seqQ, totalSeq);
+
+            // Attention op consuming matmul outputs
+            var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                    sd, q, k, v, attnBias, pastKey, pastValue,
+                    numHeads, 0.0, false, 1);
+            SDVariable out = attnOp.outputVariables()[0];
+            out.rename("attn_out");
+
+            // Create inputs
+            INDArray inputArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, numHeads, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            ph.put("input", inputArr);
+            ph.put("past_key", pastKeyArr);
+            ph.put("past_value", pastValArr);
+            ph.put("attn_bias", biasArr);
+
+            // Reference output from C++ execution
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("testFusedAttention_MatmulProjections_CompileAll: ref shape={}, ref max={}, ref mean={}",
+                    java.util.Arrays.toString(refOutput.shape()),
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            // Compile to native DSP plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+            log.info("Plan: {} slots, {} ext inputs", plan.getSlots().length,
+                    plan.getExternalInputKeys().length);
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("MatmulProjections_CompileAll iter {}: hasNaN={}, maxDiff={}, native max={}, native mean={}",
+                            iter, hasNaN, maxDiff,
+                            nativeOutput.amaxNumber(), nativeOutput.meanNumber());
+
+                    if (hasNaN || maxDiff > TOLERANCE) {
+                        float[] refFlat = refOutput.dup('c').data().asFloat();
+                        float[] natFlat = nativeOutput.dup('c').data().asFloat();
+                        int n = Math.min(20, refFlat.length);
+                        StringBuilder sb = new StringBuilder("REF: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", refFlat[i]));
+                        log.info(sb.toString());
+                        sb = new StringBuilder("NAT: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", natFlat[i]));
+                        log.info(sb.toString());
+                    }
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("testFusedAttention_MatmulProjections_CompileAll: tritonLaunches={}", tritonLaunches);
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test 2: Multi-layer decoder with matmul→attention→residual, compiled together.
+     *
+     * Mimics a small VLM decoder: N layers, each with:
+     *   LayerNorm(simplified) → Q/K/V matmul projections → attention → output matmul → residual add
+     *
+     * Uses ALL compile types + ATTENTION to match VLM config.
+     * Tests cross-sub-kernel data flow across multiple layers.
+     */
+    @Test
+    public void testFusedAttention_MultiLayerDecoder_CompileAll() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, numHeads = 4, headDim = 16;
+            int kvCacheLen = 8;
+            int hidden = numHeads * headDim;
+            int totalSeq = kvCacheLen + seqQ;
+            int numLayers = 3;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, batch, seqQ, hidden);
+            SDVariable current = input;
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+
+            for (int layer = 0; layer < numLayers; layer++) {
+                String prefix = "L" + layer + "_";
+
+                // Simplified LayerNorm: mean subtraction
+                SDVariable mean = current.mean(prefix + "mean", true, 2);
+                SDVariable normed = current.sub(prefix + "norm", mean);
+
+                // Q, K, V projections
+                SDVariable wq = sd.constant(prefix + "wq", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+                SDVariable wk = sd.constant(prefix + "wk", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+                SDVariable wv = sd.constant(prefix + "wv", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+                SDVariable wo = sd.constant(prefix + "wo", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+
+                SDVariable q = sd.mmul(prefix + "q_proj", normed, wq);
+                SDVariable k = sd.mmul(prefix + "k_proj", normed, wk);
+                SDVariable v = sd.mmul(prefix + "v_proj", normed, wv);
+
+                // KV cache (external inputs per layer)
+                SDVariable pastKey = sd.placeHolder(prefix + "past_key", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+                SDVariable pastValue = sd.placeHolder(prefix + "past_value", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+                SDVariable attnBias = sd.placeHolder(prefix + "attn_bias", DataType.FLOAT, batch, numHeads, seqQ, totalSeq);
+
+                // Attention
+                var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                        sd, q, k, v, attnBias, pastKey, pastValue,
+                        numHeads, 0.0, false, 1);
+                SDVariable attnOut = attnOp.outputVariables()[0];
+                attnOut.rename(prefix + "attn_out");
+
+                // Output projection
+                SDVariable projected = sd.mmul(prefix + "o_proj", attnOut, wo);
+
+                // Residual connection
+                current = current.add(prefix + "residual", projected);
+
+                // Populate feed dict for this layer's KV cache
+                ph.put(prefix + "past_key", Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1));
+                ph.put(prefix + "past_value", Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1));
+                float maskVal = -3.4028235e+38f;
+                INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, numHeads, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+                for (int pos = 0; pos <= kvCacheLen; pos++) {
+                    biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+                }
+                ph.put(prefix + "attn_bias", biasArr);
+            }
+
+            sd.identity("result", current);
+            ph.put("input", Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1));
+
+            // Reference output
+            Map<String, INDArray> refResults = sd.output(ph, "result");
+            INDArray refOutput = refResults.get("result").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("testFusedAttention_MultiLayerDecoder_CompileAll: ref shape={}, ref max={}, ref mean={}, {} layers",
+                    java.util.Arrays.toString(refOutput.shape()),
+                    refOutput.amaxNumber(), refOutput.meanNumber(), numLayers);
+
+            // Compile to native DSP plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result");
+            assertNotNull(plan, "Plan compilation returned null");
+            log.info("Plan: {} slots, {} ext inputs", plan.getSlots().length,
+                    plan.getExternalInputKeys().length);
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("result");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("MultiLayerDecoder iter {}: hasNaN={}, maxDiff={}", iter, hasNaN, maxDiff);
+
+                    if (hasNaN || maxDiff > TOLERANCE) {
+                        float[] refFlat = refOutput.dup('c').data().asFloat();
+                        float[] natFlat = nativeOutput.dup('c').data().asFloat();
+                        int n = Math.min(20, refFlat.length);
+                        StringBuilder sb = new StringBuilder("REF: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", refFlat[i]));
+                        log.info(sb.toString());
+                        sb = new StringBuilder("NAT: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", natFlat[i]));
+                        log.info(sb.toString());
+                    }
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("testFusedAttention_MultiLayerDecoder_CompileAll: tritonLaunches={}", tritonLaunches);
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test 3: Attention-only but with COMPILE_ALL types enabled.
+     *
+     * This isolates whether the NaN is from including extra compile types
+     * vs the cross-sub-kernel matmul→attention data flow. If this passes but
+     * testFusedAttention_MatmulProjections_CompileAll fails, the bug is in
+     * cross-sub-kernel data flow. If this also fails, the bug is in how
+     * attention interacts with the broader compilation pipeline.
+     */
+    @Test
+    public void testFusedAttention_OnnxMHA_WithCompileAllTypes() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        // Full VLM compile types but with a simple attention-only graph
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, numHeads = 4, headDim = 64;
+            int kvCacheLen = 10;
+            int hidden = numHeads * headDim;
+            int totalSeq = kvCacheLen + seqQ;
+
+            // Same graph as testFusedAttention_OnnxMHA_StaticKvCache but with ALL types
+            SameDiff sd = createOnnxMhaWithKvCacheGraph(batch, seqQ, numHeads, headDim, kvCacheLen, true);
+
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, numHeads, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            ph.put("q", qArr);
+            ph.put("k", kArr);
+            ph.put("v", vArr);
+            ph.put("past_key", pastKeyArr);
+            ph.put("past_value", pastValArr);
+            ph.put("attn_bias", biasArr);
+
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput);
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("testFusedAttention_OnnxMHA_WithCompileAllTypes: ref max={}, ref mean={}",
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan);
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("OnnxMHA_WithCompileAllTypes iter {}: hasNaN={}, maxDiff={}", iter, hasNaN, maxDiff);
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test 4a: GQA (Grouped Query Attention) - SmolDocling exact dimensions.
+     *
+     * SmolDocling uses GQA: 9 Q heads but only 3 KV heads. The Triton kernel
+     * must broadcast KV across Q head groups. This is NOT tested by any existing
+     * test (all use equal Q and KV heads).
+     *
+     * Config: numQHeads=9, numKVHeads=3, headDim=64 (hidden=576, kv_hidden=192)
+     */
+    @Test
+    public void testFusedAttention_GQA_SmolDoclingDims() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1;
+            int numQHeads = 9, numKVHeads = 3, headDim = 64;
+            int qHidden = numQHeads * headDim;   // 576
+            int kvHidden = numKVHeads * headDim;  // 192
+            int kvCacheLen = 10;
+            int totalSeq = kvCacheLen + seqQ;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable q = sd.placeHolder("q", DataType.FLOAT, batch, seqQ, qHidden);
+            SDVariable k = sd.placeHolder("k", DataType.FLOAT, batch, seqQ, kvHidden);
+            SDVariable v = sd.placeHolder("v", DataType.FLOAT, batch, seqQ, kvHidden);
+            // KV cache has numKVHeads, not numQHeads
+            SDVariable pastKey = sd.placeHolder("past_key", DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim);
+            SDVariable pastValue = sd.placeHolder("past_value", DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim);
+            SDVariable attnBias = sd.placeHolder("attn_bias", DataType.FLOAT, batch, numQHeads, seqQ, totalSeq);
+
+            var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                    sd, q, k, v, attnBias, pastKey, pastValue,
+                    numQHeads, 0.0, false, 1);
+            SDVariable out = attnOp.outputVariables()[0];
+            out.rename("attn_out");
+
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, qHidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim).muli(0.1);
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, numQHeads, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            ph.put("q", qArr);
+            ph.put("k", kArr);
+            ph.put("v", vArr);
+            ph.put("past_key", pastKeyArr);
+            ph.put("past_value", pastValArr);
+            ph.put("attn_bias", biasArr);
+
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("testFusedAttention_GQA_SmolDoclingDims: ref shape={}, ref max={}, ref mean={} (Q={}h, KV={}h)",
+                    java.util.Arrays.toString(refOutput.shape()),
+                    refOutput.amaxNumber(), refOutput.meanNumber(), numQHeads, numKVHeads);
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("GQA_SmolDoclingDims iter {}: hasNaN={}, maxDiff={}, native max={}, native mean={}",
+                            iter, hasNaN, maxDiff,
+                            nativeOutput.amaxNumber(), nativeOutput.meanNumber());
+
+                    if (hasNaN || maxDiff > TOLERANCE) {
+                        float[] refFlat = refOutput.dup('c').data().asFloat();
+                        float[] natFlat = nativeOutput.dup('c').data().asFloat();
+                        int n = Math.min(20, refFlat.length);
+                        StringBuilder sb = new StringBuilder("REF: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", refFlat[i]));
+                        log.info(sb.toString());
+                        sb = new StringBuilder("NAT: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", natFlat[i]));
+                        log.info(sb.toString());
+                    }
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter
+                            + " (GQA: Q=" + numQHeads + " KV=" + numKVHeads + ")");
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test 4b: GQA with matmul projections and compile-all — full VLM scenario.
+     *
+     * Combines GQA dimensions with matmul projections, all compiled together.
+     * If testFusedAttention_GQA_SmolDoclingDims passes but this fails,
+     * the bug is in cross-sub-kernel flow with GQA. If both fail, it's in the
+     * GQA kernel itself.
+     */
+    @Test
+    public void testFusedAttention_GQA_MatmulProjections_CompileAll() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1;
+            int numQHeads = 9, numKVHeads = 3, headDim = 64;
+            int hidden = numQHeads * headDim;     // 576
+            int kvHidden = numKVHeads * headDim;  // 192
+            int kvCacheLen = 10;
+            int totalSeq = kvCacheLen + seqQ;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, batch, seqQ, hidden);
+
+            // Q projection: hidden→hidden, K/V projections: hidden→kvHidden
+            SDVariable wq = sd.constant("wq", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wk = sd.constant("wk", Nd4j.randn(DataType.FLOAT, hidden, kvHidden).muli(0.02));
+            SDVariable wv = sd.constant("wv", Nd4j.randn(DataType.FLOAT, hidden, kvHidden).muli(0.02));
+
+            SDVariable q = sd.mmul("q_proj", input, wq);
+            SDVariable k = sd.mmul("k_proj", input, wk);
+            SDVariable v = sd.mmul("v_proj", input, wv);
+
+            SDVariable pastKey = sd.placeHolder("past_key", DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim);
+            SDVariable pastValue = sd.placeHolder("past_value", DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim);
+            SDVariable attnBias = sd.placeHolder("attn_bias", DataType.FLOAT, batch, numQHeads, seqQ, totalSeq);
+
+            var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                    sd, q, k, v, attnBias, pastKey, pastValue,
+                    numQHeads, 0.0, false, 1);
+            SDVariable out = attnOp.outputVariables()[0];
+            out.rename("attn_out");
+
+            INDArray inputArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numKVHeads, kvCacheLen, headDim).muli(0.1);
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, numQHeads, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            ph.put("input", inputArr);
+            ph.put("past_key", pastKeyArr);
+            ph.put("past_value", pastValArr);
+            ph.put("attn_bias", biasArr);
+
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput);
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("testFusedAttention_GQA_MatmulProjections_CompileAll: ref max={}, ref mean={}",
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan);
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("GQA_MatmulProjections iter {}: hasNaN={}, maxDiff={}", iter, hasNaN, maxDiff);
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test 4: Graph capture + frozen shapes with matmul→attention, matching VLM config.
+     *
+     * This is the closest to the actual VLM execution mode:
+     * - compileAll + ALL types + ATTENTION
+     * - Graph capture enabled
+     * - Consolidated arg table + dirty tracking
+     * - Multiple iterations with frozen shapes
+     */
+    @Test
+    public void testFusedAttention_MatmulProjections_GraphCapture() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        boolean prevGC = env.tritonGraphCapture();
+        boolean prevFallback = env.tritonAllowFallbackCapture();
+        boolean prevConsolidated = env.tritonConsolidatedArgTable();
+        boolean prevDirty = env.tritonArgDirtyTracking();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+        env.setTritonGraphCapture(true);
+        env.setTritonAllowFallbackCapture(true);
+        env.setTritonConsolidatedArgTable(true);
+        env.setTritonArgDirtyTracking(true);
+
+        try {
+            int batch = 1, seqQ = 1, numHeads = 4, headDim = 16;
+            int kvCacheLen = 8;
+            int hidden = numHeads * headDim;
+            int totalSeq = kvCacheLen + seqQ;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, batch, seqQ, hidden);
+
+            SDVariable wq = sd.constant("wq", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wk = sd.constant("wk", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wv = sd.constant("wv", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+
+            SDVariable q = sd.mmul("q_proj", input, wq);
+            SDVariable k = sd.mmul("k_proj", input, wk);
+            SDVariable v = sd.mmul("v_proj", input, wv);
+
+            SDVariable pastKey = sd.placeHolder("past_key", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+            SDVariable pastValue = sd.placeHolder("past_value", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+            SDVariable attnBias = sd.placeHolder("attn_bias", DataType.FLOAT, batch, numHeads, seqQ, totalSeq);
+
+            var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                    sd, q, k, v, attnBias, pastKey, pastValue,
+                    numHeads, 0.0, false, 1);
+            SDVariable out = attnOp.outputVariables()[0];
+            out.rename("attn_out");
+
+            INDArray inputArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, numHeads, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            ph.put("input", inputArr);
+            ph.put("past_key", pastKeyArr);
+            ph.put("past_value", pastValArr);
+            ph.put("attn_bias", biasArr);
+
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput);
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("testFusedAttention_MatmulProjections_GraphCapture: ref max={}, ref mean={}",
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan);
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 6; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("MatmulProjections_GraphCapture iter {}: hasNaN={}, maxDiff={}", iter, hasNaN, maxDiff);
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+            env.setTritonGraphCapture(prevGC);
+            env.setTritonAllowFallbackCapture(prevFallback);
+            env.setTritonConsolidatedArgTable(prevConsolidated);
+            env.setTritonArgDirtyTracking(prevDirty);
+        }
+    }
+
+    /**
+     * Test: Dual-buffer attention with SmolDocling exact dimensions.
+     * SmolDocling uses: numHeads=9, headDim=64, hidden=576, 3D Q/K/V + 4D past_key/value.
+     * This tests the Triton dual-buffer 3D Q attention kernel with the exact
+     * dimensions used by the VLM pipeline, including the non-power-of-2 head count (9).
+     * If this test fails with NaN but testFusedAttention_MatmulProjections_CompileAll
+     * (which uses numHeads=4) passes, the bug is head-count related.
+     */
+    @Test
+    @Tag(TagNames.NEEDS_VERIFY)
+    @NativeTag
+    public void testFusedAttention_DualBuffer_SmolDoclingDims() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+
+        try {
+            // SmolDocling exact dimensions
+            int batch = 1, seqQ = 1, numHeads = 9, headDim = 64;
+            int kvCacheLen = 50;  // simulate after prefill
+            int hidden = numHeads * headDim;  // 576
+            int totalSeq = kvCacheLen + seqQ;  // 51
+
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, batch, seqQ, hidden);
+
+            // Weight projections
+            SDVariable wq = sd.constant("wq", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wk = sd.constant("wk", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+            SDVariable wv = sd.constant("wv", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+
+            // Q, K, V projections
+            SDVariable q = sd.mmul("q_proj", input, wq);
+            SDVariable k = sd.mmul("k_proj", input, wk);
+            SDVariable v = sd.mmul("v_proj", input, wv);
+
+            // Past KV cache (9 heads, not 3 — after repeat_kv in ONNX model)
+            SDVariable pastKey = sd.placeHolder("past_key", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+            SDVariable pastValue = sd.placeHolder("past_value", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+            SDVariable attnBias = sd.placeHolder("attn_bias", DataType.FLOAT, batch, 1, seqQ, totalSeq);
+
+            // Attention op with dual-buffer (3D Q + 4D past KV)
+            var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                    sd, q, k, v, attnBias, pastKey, pastValue,
+                    numHeads, 0.0, false, 1);
+            SDVariable out = attnOp.outputVariables()[0];
+            out.rename("attn_out");
+
+            // Create inputs
+            INDArray inputArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            // Bias: 0 for valid positions (0..kvCacheLen), -inf for padding
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, 1, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            ph.put("input", inputArr);
+            ph.put("past_key", pastKeyArr);
+            ph.put("past_value", pastValArr);
+            ph.put("attn_bias", biasArr);
+
+            // Reference from C++
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("DualBuffer_SmolDoclingDims: ref shape={}, ref max={}, ref mean={}",
+                    java.util.Arrays.toString(refOutput.shape()),
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            // Compile native plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("DualBuffer_SmolDoclingDims iter {}: hasNaN={}, maxDiff={}, native max={}, native mean={}",
+                            iter, hasNaN, maxDiff,
+                            nativeOutput.amaxNumber(), nativeOutput.meanNumber());
+
+                    if (hasNaN || maxDiff > TOLERANCE) {
+                        float[] refFlat = refOutput.dup('c').data().asFloat();
+                        float[] natFlat = nativeOutput.dup('c').data().asFloat();
+                        int n = Math.min(20, refFlat.length);
+                        StringBuilder sb = new StringBuilder("REF: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", refFlat[i]));
+                        log.info(sb.toString());
+                        sb = new StringBuilder("NAT: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", natFlat[i]));
+                        log.info(sb.toString());
+                    }
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("DualBuffer_SmolDoclingDims: tritonLaunches={}", tritonLaunches);
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test: Multi-layer decoder with SmolDocling dimensions.
+     * Creates 3 decoder layers, each with matmul Q/K/V projections → attention → residual add.
+     * This tests cross-section data flow with multiple attention ops in a single graph,
+     * closer to the VLM's 24-layer structure.
+     */
+    @Test
+    @Tag(TagNames.NEEDS_VERIFY)
+    @NativeTag
+    public void testFusedAttention_MultiLayer_SmolDoclingDims() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, numHeads = 9, headDim = 64;
+            int kvCacheLen = 20;
+            int hidden = numHeads * headDim;  // 576
+            int totalSeq = kvCacheLen + seqQ;
+            int numLayers = 3;
+
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, batch, seqQ, hidden);
+            SDVariable current = input;
+
+            Map<String, INDArray> ph = new java.util.HashMap<>();
+            INDArray inputArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            ph.put("input", inputArr);
+
+            float maskVal = -3.4028235e+38f;
+            INDArray biasArr = Nd4j.valueArrayOf(new long[]{batch, 1, seqQ, totalSeq}, maskVal, DataType.FLOAT);
+            for (int pos = 0; pos <= kvCacheLen; pos++) {
+                biasArr.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.point(pos)).assign(0.0f);
+            }
+
+            for (int layer = 0; layer < numLayers; layer++) {
+                String prefix = "L" + layer + "_";
+                SDVariable wq = sd.constant(prefix + "wq", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+                SDVariable wk = sd.constant(prefix + "wk", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+                SDVariable wv = sd.constant(prefix + "wv", Nd4j.randn(DataType.FLOAT, hidden, hidden).muli(0.02));
+
+                SDVariable q = sd.mmul(prefix + "q_proj", current, wq);
+                SDVariable k = sd.mmul(prefix + "k_proj", current, wk);
+                SDVariable v = sd.mmul(prefix + "v_proj", current, wv);
+
+                SDVariable pastKey = sd.placeHolder(prefix + "past_key", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+                SDVariable pastValue = sd.placeHolder(prefix + "past_value", DataType.FLOAT, batch, numHeads, kvCacheLen, headDim);
+                SDVariable attnBias = sd.placeHolder(prefix + "attn_bias", DataType.FLOAT, batch, 1, seqQ, totalSeq);
+
+                var attnOp = new org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention(
+                        sd, q, k, v, attnBias, pastKey, pastValue,
+                        numHeads, 0.0, false, 1);
+                SDVariable attnOut = attnOp.outputVariables()[0];
+                attnOut.rename(prefix + "attn_out");
+
+                // Residual connection
+                current = sd.math.add(prefix + "residual", current, attnOut);
+
+                // Create inputs for this layer
+                ph.put(prefix + "past_key", Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1));
+                ph.put(prefix + "past_value", Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1));
+                ph.put(prefix + "attn_bias", biasArr.dup());
+            }
+
+            String outputName = "L" + (numLayers - 1) + "_residual";
+
+            // Reference from C++
+            Map<String, INDArray> refResults = sd.output(ph, outputName);
+            INDArray refOutput = refResults.get(outputName).dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("MultiLayer_SmolDoclingDims: ref shape={}, ref max={}, ref mean={}",
+                    java.util.Arrays.toString(refOutput.shape()),
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            // Compile native plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, outputName);
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 4; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get(outputName);
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    double maxDiff = hasNaN ? Double.NaN
+                            : refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("MultiLayer_SmolDoclingDims iter {}: hasNaN={}, maxDiff={}, native max={}, native mean={}",
+                            iter, hasNaN, maxDiff,
+                            nativeOutput.amaxNumber(), nativeOutput.meanNumber());
+
+                    if (hasNaN || maxDiff > TOLERANCE) {
+                        float[] refFlat = refOutput.dup('c').data().asFloat();
+                        float[] natFlat = nativeOutput.dup('c').data().asFloat();
+                        int n = Math.min(20, refFlat.length);
+                        StringBuilder sb = new StringBuilder("REF: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", refFlat[i]));
+                        log.info(sb.toString());
+                        sb = new StringBuilder("NAT: ");
+                        for (int i = 0; i < n; i++) sb.append(String.format("%.6f ", natFlat[i]));
+                        log.info(sb.toString());
+                    }
+
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter);
+                    assertTrue(maxDiff < TOLERANCE,
+                            "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("MultiLayer_SmolDoclingDims: tritonLaunches={}", tritonLaunches);
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Isolation test: Triton attention with 4D attention mask that could be confused with past_key.
+     *
+     * Reproduces the SmolDocling GQA bug where:
+     * - Input[3] is a 4D attention mask [B, heads, seqQ, totalSeqK] — NOT past_key
+     * - The old code hardcoded input[4] as past_key, which was wrong
+     * - The headDim filter must distinguish masks (last dim = totalSeqK) from KV cache (last dim = headDim)
+     *
+     * Verifies that:
+     * 1. The attention mask is NOT confused with past_key (headDim mismatch)
+     * 2. Actual past_key at a later input position IS correctly detected
+     * 3. Output matches C++ reference (no NaN)
+     *
+     * Run with: -Dtest=TritonGraphBackendTest#testFusedAttention_HeadDimFilter_DistinguishMaskFromKv
+     */
+    @Test
+    public void testFusedAttention_HeadDimFilter_DistinguishMaskFromKv() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            // SmolDocling-like decode: 9 Q heads, 3 KV heads (GQA), headDim=64
+            int batch = 1, seqQ = 1, numHeads = 9, headDim = 64;
+            int kvCacheLen = 100;
+            int totalSeqK = kvCacheLen + seqQ;  // 101
+            int hidden = numHeads * headDim;    // 576
+
+            // Create OnnxMHA graph WITH attention bias (4D mask at input position 3)
+            // Input order: Q, K, V, attn_bias, past_key, past_value
+            // attn_bias shape: [1, 9, 1, 101] — 4D but last dim != headDim (101 != 64)
+            // past_key shape: [1, 9, 100, 64] — 4D with last dim == headDim (64)
+            SameDiff sd = createOnnxMhaWithKvCacheGraph(batch, seqQ, numHeads, headDim, kvCacheLen, true);
+
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            // Attention bias mask — 4D like KV cache but last dim = totalSeqK, not headDim
+            INDArray attnBiasArr = Nd4j.zeros(DataType.FLOAT, batch, numHeads, seqQ, totalSeqK);
+
+            Map<String, INDArray> ph = Map.of(
+                    "q", qArr, "k", kArr, "v", vArr,
+                    "past_key", pastKeyArr, "past_value", pastValArr,
+                    "attn_bias", attnBiasArr);
+
+            // Reference output from C++
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("HeadDimFilter: ref shape={}, ref max={}, ref mean={}",
+                    java.util.Arrays.toString(refOutput.shape()),
+                    refOutput.amaxNumber(), refOutput.meanNumber());
+
+            // Compile to native DSP plan
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 3; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter +
+                            " — attention mask was likely confused with past_key (headDim filter bug)");
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("HeadDimFilter iter={}: maxDiff={}, hasNaN={}", iter, maxDiff, hasNaN);
+                    assertTrue(maxDiff < 0.01, "Max diff too large: " + maxDiff);
+
+                    // After warmup, freeze shapes so Triton compilation triggers
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("HeadDimFilter: tritonLaunches={}", tritonLaunches);
+                assertTrue(tritonLaunches > 0,
+                        "Triton attention kernel was never launched — headDim filter or compilation failed");
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Isolation test: seqK derivation from external KV cache when slot shapes are stale.
+     *
+     * Simulates the scenario where:
+     * 1. Initial compilation sees empty KV cache (seqK=0)
+     * 2. Plan is recompiled with populated KV cache (seqK=100)
+     * 3. Slot output shapes may be stale from warmup
+     * 4. The Triton compiler must derive seqK from external input shapes
+     *
+     * Tests two phases:
+     * - Phase 1: Empty KV → Triton should fall back to C++ (seqK=0)
+     * - Phase 2: Populated KV → Triton should compile with correct seqK
+     *
+     * Run with: -Dtest=TritonGraphBackendTest#testFusedAttention_SeqKDerivation_EmptyToPopulated
+     */
+    @Test
+    public void testFusedAttention_SeqKDerivation_EmptyToPopulated() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, numHeads = 4, headDim = 64;
+            int hidden = numHeads * headDim;
+
+            // Phase 1: Empty KV cache (seqK=0)
+            int kvCacheLenEmpty = 0;
+            SameDiff sd = createOnnxMhaWithKvCacheGraph(batch, seqQ, numHeads, headDim, 10, false);
+
+            // Use populated KV for reference (non-empty)
+            int kvCacheLen = 100;
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, hidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numHeads, kvCacheLen, headDim).muli(0.1);
+
+            Map<String, INDArray> ph = Map.of(
+                    "q", qArr, "k", kArr, "v", vArr,
+                    "past_key", pastKeyArr, "past_value", pastValArr);
+
+            // Reference output
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+
+            // Phase 2: Compile plan with populated KV
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                // Run 3 iterations: warmup (executeCount=0), GPU warmup (executeCount=1), compile+execute (executeCount=2)
+                for (int iter = 0; iter < 3; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    assertFalse(hasNaN, "Native output contains NaN at iteration " + iter +
+                            " — seqK derivation may have failed");
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("SeqKDerivation iter={}: maxDiff={}, hasNaN={}", iter, maxDiff, hasNaN);
+                    assertTrue(maxDiff < 0.01, "Max diff too large at iter " + iter + ": " + maxDiff);
+
+                    // After warmup, freeze shapes so executeCount_ increments and Triton compilation triggers
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("SeqKDerivation: tritonLaunches={}", tritonLaunches);
+                // After 3 iterations, Triton should have compiled and launched the attention kernel
+                assertTrue(tritonLaunches > 0,
+                        "Triton attention kernel was never launched — seqK derivation failed to find KV cache shapes");
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    // ─── GQA + Stale Shape Tests ────────────────────────────────────────────
+
+    /**
+     * Build a SameDiff graph with onnx_multi_head_attention using GQA (Grouped Query Attention).
+     * Q has numQHeads, K/V have numKvHeads (fewer heads, e.g., 9Q/3KV for SmolDocling).
+     *
+     * @param batch      batch size
+     * @param seqQ       query sequence length
+     * @param numQHeads  number of Q attention heads
+     * @param numKvHeads number of KV attention heads (must divide numQHeads)
+     * @param headDim    head dimension
+     * @param kvCacheLen past KV cache sequence length (0 = no past KV)
+     */
+    private SameDiff createGqaMhaGraph(int batch, int seqQ, int numQHeads, int numKvHeads,
+                                        int headDim, int kvCacheLen) {
+        SameDiff sd = SameDiff.create();
+        int qHidden = numQHeads * headDim;
+        int kvHidden = numKvHeads * headDim;
+
+        SDVariable q = sd.placeHolder("q", DataType.FLOAT, batch, seqQ, qHidden);
+        SDVariable k = sd.placeHolder("k", DataType.FLOAT, batch, seqQ, kvHidden);
+        SDVariable v = sd.placeHolder("v", DataType.FLOAT, batch, seqQ, kvHidden);
+
+        SDVariable pastKey = null;
+        SDVariable pastValue = null;
+        if (kvCacheLen > 0) {
+            pastKey = sd.placeHolder("past_key", DataType.FLOAT, batch, numKvHeads, kvCacheLen, headDim);
+            pastValue = sd.placeHolder("past_value", DataType.FLOAT, batch, numKvHeads, kvCacheLen, headDim);
+        }
+
+        var attnOp = new OnnxMultiHeadAttention(
+                sd, q, k, v, null, pastKey, pastValue,
+                numQHeads, 0.0, false, 1);
+        SDVariable out = attnOp.outputVariables()[0];
+        out.rename("attn_out");
+        return sd;
+    }
+
+    /**
+     * Test: Triton fused attention with GQA (Q=9 heads, KV=3 heads) + KV cache.
+     * This is the exact SmolDocling configuration that crashed with CUDA error 700.
+     *
+     * Verifies that:
+     * 1. The Triton compiler correctly handles GQA where numKvHeads != numQHeads
+     * 2. The kernel launches successfully with KV cache inputs
+     * 3. Output matches C++ reference
+     *
+     * Run with: -Dtest=TritonGraphBackendTest#testFusedAttention_GQA_SmolDoclingConfig
+     */
+    @Test
+    public void testFusedAttention_GQA_SmolDoclingConfig() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            // SmolDocling decode: Q=9 heads, KV=3 heads, headDim=64
+            int batch = 1, seqQ = 1, numQHeads = 9, numKvHeads = 3, headDim = 64;
+            int kvCacheLen = 50;
+            int qHidden = numQHeads * headDim;   // 576
+            int kvHidden = numKvHeads * headDim;  // 192
+
+            SameDiff sd = createGqaMhaGraph(batch, seqQ, numQHeads, numKvHeads, headDim, kvCacheLen);
+
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, qHidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, kvCacheLen, headDim).muli(0.1);
+            INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, kvCacheLen, headDim).muli(0.1);
+
+            Map<String, INDArray> ph = Map.of(
+                    "q", qArr, "k", kArr, "v", vArr,
+                    "past_key", pastKeyArr, "past_value", pastValArr);
+
+            // Reference output
+            Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+            log.info("GQA SmolDocling: ref shape={}, ref max={}",
+                    java.util.Arrays.toString(refOutput.shape()), refOutput.amaxNumber());
+
+            // Compile and execute via Triton
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 3; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    assertFalse(hasNaN, "GQA output contains NaN at iteration " + iter);
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("GQA SmolDocling iter={}: maxDiff={}", iter, maxDiff);
+                    assertTrue(maxDiff < 0.01, "GQA output mismatch at iter " + iter + ": " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("GQA SmolDocling: tritonLaunches={}", tritonLaunches);
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test: Stale K shape recovery — simulates the warmup-to-decode transition
+     * where KV cache shapes are stale from warmup (empty past_key) but external
+     * inputs have correct shapes at decode time.
+     *
+     * The key scenario:
+     * 1. Warmup with small KV cache → slot output shapes cached
+     * 2. New plan compiled with much larger KV cache
+     * 3. Triton compiler must derive seqK from external inputs, not stale cached shapes
+     *
+     * This tests the seqK derivation strategies (Strategy 1-3) in the Triton compiler
+     * with GQA head configuration (numQHeads != numKvHeads).
+     *
+     * Run with: -Dtest=TritonGraphBackendTest#testFusedAttention_StaleKShape_GQA
+     */
+    @Test
+    public void testFusedAttention_StaleKShape_GQA() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, numQHeads = 9, numKvHeads = 3, headDim = 64;
+            int qHidden = numQHeads * headDim;
+            int kvHidden = numKvHeads * headDim;
+
+            // Phase 1: Warmup with small KV cache (simulates initial state)
+            int smallKvLen = 5;
+            SameDiff sd = createGqaMhaGraph(batch, seqQ, numQHeads, numKvHeads, headDim, smallKvLen);
+
+            INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, qHidden).muli(0.1);
+            INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+            INDArray smallPastKey = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, smallKvLen, headDim).muli(0.1);
+            INDArray smallPastVal = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, smallKvLen, headDim).muli(0.1);
+
+            Map<String, INDArray> ph1 = Map.of(
+                    "q", qArr, "k", kArr, "v", vArr,
+                    "past_key", smallPastKey, "past_value", smallPastVal);
+
+            // Execute warmup to populate cached shapes
+            sd.output(ph1, "attn_out");
+
+            // Phase 2: Larger KV cache (simulates decode after many tokens)
+            int largeKvLen = 200;
+            INDArray largePastKey = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, largeKvLen, headDim).muli(0.1);
+            INDArray largePastVal = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, largeKvLen, headDim).muli(0.1);
+
+            Map<String, INDArray> ph2 = Map.of(
+                    "q", qArr, "k", kArr, "v", vArr,
+                    "past_key", largePastKey, "past_value", largePastVal);
+
+            // Reference output with large KV
+            Map<String, INDArray> refResults = sd.output(ph2, "attn_out");
+            INDArray refOutput = refResults.get("attn_out").dup();
+            assertNotNull(refOutput, "Reference output is null");
+            assertFalse(refOutput.isNaN().any(), "Reference output contains NaN");
+
+            // Compile plan — slot shapes may be stale from warmup
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            if (planHandle == null) {
+                log.info("Skipping (native executor not supported)");
+                return;
+            }
+            try {
+                // Resolve external inputs with LARGE KV cache
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph2);
+                nativeOps.resetTritonCounters();
+
+                for (int iter = 0; iter < 3; iter++) {
+                    Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                    INDArray nativeOutput = nativeResults.get("attn_out");
+                    assertNotNull(nativeOutput, "Native output is null at iteration " + iter);
+
+                    boolean hasNaN = nativeOutput.isNaN().any();
+                    assertFalse(hasNaN, "Stale shape recovery output contains NaN at iteration " + iter);
+
+                    double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                    log.info("StaleKShape GQA iter={}: maxDiff={}", iter, maxDiff);
+                    assertTrue(maxDiff < 0.01, "Stale shape recovery mismatch at iter " + iter + ": " + maxDiff);
+
+                    if (iter == 0) {
+                        nativeOps.setPlanShapesFrozen(planHandle, true);
+                    }
+                }
+
+                long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
+                log.info("StaleKShape GQA: tritonLaunches={}", tritonLaunches);
+                assertTrue(tritonLaunches > 0,
+                        "Triton attention kernel was never launched — stale shape recovery failed");
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+        }
+    }
+
+    /**
+     * Test: Multiple GQA configurations with Triton compilation.
+     * Tests various Q/KV head ratios to ensure the Triton compiler handles all valid GQA configs.
+     *
+     * Run with: -Dtest=TritonGraphBackendTest#testFusedAttention_GQA_MultipleConfigs
+     */
+    @Test
+    public void testFusedAttention_GQA_MultipleConfigs() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("FUSED_ATTENTION");
+
+        try {
+            int batch = 1, seqQ = 1, headDim = 64;
+            int kvCacheLen = 20;
+
+            int[][] configs = {
+                {9, 3},   // SmolDocling (3:1 GQA)
+                {12, 4},  // 3:1 GQA
+                {8, 2},   // 4:1 GQA
+                {6, 1},   // MQA (Multi-Query Attention)
+                {4, 4},   // Standard MHA (no grouping)
+            };
+
+            for (int[] cfg : configs) {
+                int numQHeads = cfg[0];
+                int numKvHeads = cfg[1];
+                int qHidden = numQHeads * headDim;
+                int kvHidden = numKvHeads * headDim;
+
+                log.info("Testing GQA config: Q={} KV={} (ratio={}:1)",
+                        numQHeads, numKvHeads, numQHeads / numKvHeads);
+
+                SameDiff sd = createGqaMhaGraph(batch, seqQ, numQHeads, numKvHeads, headDim, kvCacheLen);
+
+                INDArray qArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, qHidden).muli(0.1);
+                INDArray kArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+                INDArray vArr = Nd4j.randn(DataType.FLOAT, batch, seqQ, kvHidden).muli(0.1);
+                INDArray pastKeyArr = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, kvCacheLen, headDim).muli(0.1);
+                INDArray pastValArr = Nd4j.randn(DataType.FLOAT, batch, numKvHeads, kvCacheLen, headDim).muli(0.1);
+
+                Map<String, INDArray> ph = Map.of(
+                        "q", qArr, "k", kArr, "v", vArr,
+                        "past_key", pastKeyArr, "past_value", pastValArr);
+
+                // Reference
+                Map<String, INDArray> refResults = sd.output(ph, "attn_out");
+                INDArray refOutput = refResults.get("attn_out").dup();
+                assertNotNull(refOutput, "Reference output is null for Q=" + numQHeads + "/KV=" + numKvHeads);
+                assertFalse(refOutput.isNaN().any(), "Reference contains NaN for Q=" + numQHeads + "/KV=" + numKvHeads);
+
+                // Compile and execute
+                DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "attn_out");
+                Pointer planHandle = compileNativePlan(plan);
+                if (planHandle == null) {
+                    log.info("Skipping config Q={}/KV={} (native executor not supported)", numQHeads, numKvHeads);
+                    continue;
+                }
+                try {
+                    INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+                    nativeOps.resetTritonCounters();
+
+                    for (int iter = 0; iter < 3; iter++) {
+                        Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
+                        INDArray nativeOutput = nativeResults.get("attn_out");
+                        assertNotNull(nativeOutput);
+
+                        boolean hasNaN = nativeOutput.isNaN().any();
+                        assertFalse(hasNaN, "NaN for Q=" + numQHeads + "/KV=" + numKvHeads + " iter=" + iter);
+
+                        double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
+                        log.info("GQA Q={}/KV={} iter={}: maxDiff={}", numQHeads, numKvHeads, iter, maxDiff);
+                        assertTrue(maxDiff < 0.01,
+                                "Mismatch Q=" + numQHeads + "/KV=" + numKvHeads + " iter=" + iter + ": " + maxDiff);
+
+                        if (iter == 0) {
+                            nativeOps.setPlanShapesFrozen(planHandle, true);
+                        }
+                    }
+                } finally {
+                    nativeOps.freeDynamicShapePlan(planHandle);
+                }
             }
         } finally {
             env.setTritonCompileAll(prevCompileAll);

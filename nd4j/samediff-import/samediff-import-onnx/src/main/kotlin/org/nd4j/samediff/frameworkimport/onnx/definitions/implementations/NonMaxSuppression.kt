@@ -67,59 +67,34 @@ class NonMaxSuppression : PreImportHook {
         val opName = op.name
 
         // Get inputs
-        val boxes = sd.getVariable(op.inputsToOp[0])   // [batch, spatial, 4]
-        val scores = sd.getVariable(op.inputsToOp[1])  // [batch, classes, spatial]
+        var boxes = sd.getVariable(op.inputsToOp[0])   // ONNX: [batch, num_boxes, 4]
+        var scores = sd.getVariable(op.inputsToOp[1])  // ONNX: [batch, num_classes, num_boxes]
+
+        // Native op expects 2D boxes [num_boxes, 4] and 1D scores [num_boxes]
+        // Squeeze batch dimension (assumes batch=1 for now)
+        boxes = sd.squeeze("${opName}_boxesSqueeze", boxes, 0)  // [num_boxes, 4]
+        
+        // Squeeze batch dimension first, then class dimension
+        scores = sd.squeeze("${opName}_scoresSqueeze1", scores, 0)  // [num_classes, num_boxes]
+        scores = sd.squeeze("${opName}_scoresSqueeze2", scores, 0)  // [num_boxes]
 
         val maxOutputBoxes = if (op.inputsToOp.size > 2 && op.inputsToOp[2].isNotEmpty())
-            sd.getVariable(op.inputsToOp[2]) else null
+            sd.getVariable(op.inputsToOp[2]) else sd.constant(0L)
         val iouThreshold = if (op.inputsToOp.size > 3 && op.inputsToOp[3].isNotEmpty())
-            sd.getVariable(op.inputsToOp[3]) else null
+            sd.getVariable(op.inputsToOp[3]) else sd.constant(0.5)
         val scoreThreshold = if (op.inputsToOp.size > 4 && op.inputsToOp[4].isNotEmpty())
-            sd.getVariable(op.inputsToOp[4]) else null
+            sd.getVariable(op.inputsToOp[4]) else sd.constant(0.0)
 
-        // Get center_point_box attribute (0=corner format, 1=center format)
-        val centerPointBox = (attributes.getOrDefault("center_point_box", 0L) as Number).toInt()
-
-        // Default values
-        val maxBoxes = maxOutputBoxes?.castTo(DataType.INT32) ?: sd.constant(0)
-        val iouThresh = iouThreshold?.castTo(DataType.FLOAT) ?: sd.constant(0.0f)
-        val scoreThresh = scoreThreshold?.castTo(DataType.FLOAT) ?: sd.constant(Float.NEGATIVE_INFINITY)
-
-        // Use SameDiff's non_max_suppression_v3
-        // Note: SameDiff NMS expects [batch, num_boxes, 4] for boxes
-        // and [batch, num_boxes] for scores (single class at a time)
-
-        // For multi-class NMS, we need to process each class separately
-        // This is a simplified implementation for single-class or first-class NMS
-        val scoresFirstClass = sd.stridedSlice("${opName}_scores_slice", scores,
-            longArrayOf(0, 0, 0), longArrayOf(Long.MAX_VALUE, 1, Long.MAX_VALUE), 1L, 1L, 1L)
-        val scoresSqueeezed = sd.squeeze("${opName}_scores_squeeze", scoresFirstClass, 1)
-
-        // Apply NMS with default values as primitives
-        val maxBoxesInt = 0  // Will be computed at runtime
-        val iouThreshFloat = 0.5
-        val scoreThreshFloat = Float.NEGATIVE_INFINITY.toDouble()
-
-        val selectedIndices = sd.image.nonMaxSuppression(
-            "${opName}_nms",
+        // Call native NMS op
+        val result = org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression(
+            sd,
             boxes,
-            scoresSqueeezed,
-            maxBoxesInt,
-            iouThreshFloat,
-            scoreThreshFloat
-        )
+            scores,
+            maxOutputBoxes,
+            iouThreshold,
+            scoreThreshold
+        ).outputVariable().rename(outputNames[0])
 
-        // Get shape for reshaping output
-        val selectedShape = sd.shape("${opName}_shape", selectedIndices)
-        val batchIndices = sd.zerosLike("${opName}_batch_idx", selectedIndices)
-        val classIndices = sd.zerosLike("${opName}_class_idx", selectedIndices)
-
-        val output = sd.stack("${opName}_stack", 1,
-            batchIndices.castTo(DataType.INT64),
-            classIndices.castTo(DataType.INT64),
-            selectedIndices.castTo(DataType.INT64)
-        ).rename(outputNames[0])
-
-        return mapOf(outputNames[0] to listOf(output))
+        return mapOf(outputNames[0] to listOf(result))
     }
 }

@@ -32,10 +32,21 @@ namespace ops {
 
 CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);
-  if (input->isEmpty()) return Status::OK;
-
   auto dim = INT_ARG(0);
   if (dim < 0) dim += input->rankOf();
+
+  // Handle empty input - create empty outputs with correct shapes
+  if (input->isEmpty() || input->lengthOf() == 0) {
+    LongType numOutputs = input->sizeAt(dim);
+    for (LongType i = 0; i < numOutputs; i++) {
+      auto output = OUTPUT_VARIABLE(i);
+      if (output != nullptr && (output->isEmpty() || output->lengthOf() == 0)) {
+        // Output is already empty, nothing to do
+        continue;
+      }
+    }
+    return Status::OK;
+  }
 
   REQUIRE_TRUE(dim < input->rankOf(), 0,
                "Unstack dimension should be lower then rank of input %i, but got dimension=%i !", input->rankOf(), dim);
@@ -60,36 +71,55 @@ DECLARE_SHAPE_FN(unstack) {
   REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension must be non-negative after normalization, but got %i!", dim);
   REQUIRE_TRUE(dim < shape::rank(inShapeInfo), 0,
                "UNSTACK op: dimension must be < rank (%i), but got %i!", shape::rank(inShapeInfo), dim);
+
+  // Calculate number of outputs from the unstack dimension
   const LongType numTads = block.numI() > 1 ? I_ARG(1) : shape::shapeOf(inShapeInfo)[dim];
-  if(!shape::isEmptyConst(inShapeInfo)) {
+
+  // Build output shape (input shape without the unstack dimension)
+  // IMPORTANT: Must read shape values directly and copy them, not use pointers that may become invalid
+  std::vector<LongType> outShape;
+  outShape.reserve(shape::rank(inShapeInfo) - 1);
+  auto* shapeOfInput = shape::shapeOf(inShapeInfo);
+  for (LongType i = 0; i < shape::rank(inShapeInfo); ++i) {
+    if (i != dim) {
+      outShape.push_back(shapeOfInput[i]);
+    }
+  }
+
+  // Check if input has any zero dimensions (which makes it empty)
+  bool inHasZeroDim = false;
+  for (int i = 0; i < shape::rank(inShapeInfo); i++) {
+    if (shapeOfInput[i] == 0) {
+      inHasZeroDim = true;
+      break;
+    }
+  }
+
+  // If input has zero dimensions, all outputs should be empty with ARRAY_EMPTY flag
+  if (inHasZeroDim || shape::isEmptyConst(inShapeInfo) || ArrayOptions::arrayType(inShapeInfo) == EMPTY) {
+    auto result = SHAPELIST();
+    for (LongType i = 0; i < numTads; ++i) {
+      // Create shape info directly - don't use caching to avoid issues with shared buffers
+      LongType* outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c', outShape.size(), outShape.data(), nullptr, true);
+      result->push_back(outShapeInfo);
+    }
+    // Handle edge case: if numTads is 0, still create one output
+    if (numTads < 1) {
+      LongType* outShapeInfo = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c', outShape.size(), outShape.data(), nullptr, true);
+      result->push_back(outShapeInfo);
+    }
+    return result;
+  }
+
+  if(!inHasZeroDim && !shape::isEmptyConst(inShapeInfo)) {
     REQUIRE_TRUE(dim < inShapeInfo[0], 0,
                  "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShapeInfo[0],
                  dim);
     REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
-
-  }
-
-
-
-
-
-  if (ArrayOptions::arrayType(inShapeInfo) == EMPTY) {
-    std::vector<LongType> outShape;
-    for (LongType i = 0; i < shape::rank(inShapeInfo); ++i)
-      if (i != dim) outShape.push_back(shape::shapeOf(inShapeInfo)[i]);
-
-    auto result = SHAPELIST();
-    for (LongType i = 0; i < numTads; ++i)
-      result->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShapeInfo),outShape));
-    if(numTads < 1) {
-      result->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShapeInfo),outShape));
-    }
-
-    return result;
   }
 
   std::vector<LongType> dimVec = {dim};
-  std::vector<LongType> *dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], 1,dimVec.data());
+  std::vector<LongType> *dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], 1, dimVec.data());
 
   if (dims->size() == 0 && shape::rank(inShapeInfo) == 1) {  // split vector into lengthOf scalars
     auto result = SHAPELIST();

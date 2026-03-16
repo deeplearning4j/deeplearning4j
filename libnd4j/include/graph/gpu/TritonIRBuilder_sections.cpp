@@ -1434,7 +1434,7 @@ void TritonIRBuilder::emitMatmulSection(mlir::OpBuilder& builder, mlir::Location
   int blockM = section.blockM, blockN = section.blockN, blockK = section.blockK;
 
   if (M == 0 || N == 0 || K == 0) {
-    sd_printf("TritonIRBuilder::emitMatmulSection: invalid dimensions M=%d N=%d K=%d\n", M, N, K);
+    DSP_DIAG(COMPILE, "TritonIRBuilder::emitMatmulSection: invalid dimensions M=%d N=%d K=%d", M, N, K);
     return;
   }
 

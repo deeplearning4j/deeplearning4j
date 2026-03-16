@@ -163,6 +163,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     // When setCloseable(false) is called, we must propagate to the DataBuffer to prevent
     // DeallocatorService from freeing the underlying OpaqueDataBuffer.
     protected transient boolean closeable = true;
+    // Tracks whether setCloseable(false) actually changed the data buffer's constant state.
+    // When true, setCloseable(true) should undo the change. When false, the buffer was
+    // already constant before setCloseable(false) and should NOT be un-constant-ified.
+    protected transient boolean constantSetByCloseable = false;
     protected transient boolean released = false;
 
 
@@ -2070,6 +2074,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         WorkspaceUtils.assertValidArray(this, "Cannot duplicate INDArray");
         logBeforeViewCreationIfNeccessary();
 
+        if(isEmpty())
+            return Nd4j.emptyWithShape(this.shape(), this.dataType());
+
         DataBuffer localData = this.data;
         if (localData == null) {
             return this;
@@ -2081,8 +2088,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             logViewCreationIfNeccessary();
             return ret;
         }
-        if(isEmpty())
-            return this;
 
         Nd4j.getCompressor().autoDecompress(this);
 
@@ -6598,12 +6603,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // buffer constant would poison the parent's closeable() check too.
             if (!isView()) {
                 DataBuffer dataBuffer = data();
-                if (dataBuffer != null) {
-                    dataBuffer.setConstant(true);
+                if (dataBuffer != null && !dataBuffer.wasClosed()) {
+                    // Only change constant state if the buffer wasn't already constant.
+                    // Tracking this prevents setCloseable(true) from destroying the
+                    // constant protection on buffers that were constant before we touched them
+                    // (e.g., empty/zero-length buffers, shared constant buffers).
+                    if (!dataBuffer.isConstant()) {
+                        dataBuffer.setConstant(true);
+                        constantSetByCloseable = true;
+                    }
                 }
 
                 DataBuffer shapeBuffer = shapeInfoDataBuffer();
-                if (shapeBuffer != null) {
+                if (shapeBuffer != null && !shapeBuffer.wasClosed()) {
                     shapeBuffer.setConstant(true);
                 }
             }
@@ -6614,9 +6626,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             // for constant buffers). This leads to massive GPU memory leaks in decode loops where
             // KV cache arrays are passed as SameDiff placeholders (which sets closeable=false)
             // and then need to be freed when replaced by new values.
-            DataBuffer dataBuffer = data();
-            if (dataBuffer != null) {
-                dataBuffer.setConstant(false);
+            // ONLY undo if WE set it constant — don't destroy pre-existing constant protection.
+            if (constantSetByCloseable) {
+                DataBuffer dataBuffer = data();
+                if (dataBuffer != null && !dataBuffer.wasClosed()) {
+                    dataBuffer.setConstant(false);
+                }
+                constantSetByCloseable = false;
             }
         }
     }
