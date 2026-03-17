@@ -132,6 +132,8 @@ LongType NativeDynamicShapePlan::computeSegmentShapeKey(
           seg.startSlot, seg.endSlot);
       DSP_DIAG(COMPILE, "SymbolicShapes: seg[%d-%d] using range-based key=%lld",
                seg.startSlot, seg.endSlot, rangeKey);
+      // Cache the key for subsequent calls (when shapesFrozen_ is enabled)
+      seg.cachedShapeKey = rangeKey;
       return rangeKey;
     }
     // Fall through to standard path during warmup
