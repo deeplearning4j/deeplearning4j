@@ -108,6 +108,13 @@ class TritonGraphBackend : public GraphBackend {
                                    NDArray** outputSlots, int totalOutputSlots,
                                    void* execStream = nullptr);
 
+  /**
+   * Copy consolidated arg table from host pinned buffer to device.
+   * Called after refreshArgTablesForReplay to update device before graph replay.
+   * This replaces ~N per-kernel cudaMemcpyAsync calls with ONE consolidated copy.
+   */
+  void copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream);
+
   // Get the set of slot indices NOT covered by any sub-kernel (gap/fallback slots).
   // Used by batch-zero to only zero gap op outputs (Triton sub-kernel outputs are
   // NOT zeroed — they're fully written by the Triton kernel).

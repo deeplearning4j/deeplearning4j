@@ -1083,6 +1083,53 @@ Status TritonGraphBackend::refreshArgTablesForReplay(
   return Status::OK;
 }
 
+void TritonGraphBackend::copyConsolidatedArgTableToDevice(GraphSegment& seg, void* stream) {
+  int currentDevice = -1;
+  cudaGetDevice(&currentDevice);
+
+  auto& refreshEnv = Environment::getInstance();
+  SegmentCacheKey key{seg.startSlot, seg.endSlot, seg.shapeKey, currentDevice,
+                      refreshEnv.tritonCompileAll(),
+                      std::hash<std::string>()(refreshEnv.tritonExcludeOps())};
+
+  CompiledSegment* compiledSeg = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(cacheMtx_);
+    auto it = cache_.find(key);
+    if (it == cache_.end()) {
+      // No compiled segment - nothing to copy
+      return;
+    }
+    compiledSeg = &it->second;
+  }
+
+  // Do consolidated H2D copy if available
+  if (compiledSeg->useConsolidatedArgTable &&
+      compiledSeg->consolidatedArgTableHostPinned &&
+      compiledSeg->consolidatedArgTableDevice &&
+      compiledSeg->consolidatedArgTableBytes > 0) {
+    
+    auto memcpyErr = cudaMemcpyAsync(
+        compiledSeg->consolidatedArgTableDevice,
+        compiledSeg->consolidatedArgTableHostPinned,
+        compiledSeg->consolidatedArgTableBytes,
+        cudaMemcpyHostToDevice,
+        static_cast<cudaStream_t>(stream));
+    
+    if (memcpyErr != cudaSuccess) {
+      DSP_DIAG(MEMORY, "TritonGraphBackend: consolidated arg table H2D failed (%zu bytes): %s",
+                compiledSeg->consolidatedArgTableBytes, cudaGetErrorString(memcpyErr));
+      cudaGetLastError();
+    } else {
+      DSP_DIAG(EXECUTE, "TritonGraphBackend: consolidated arg table H2D: 1 copy of %zu bytes "
+                   "(replaces %d per-kernel copies) for seg[%d-%d]",
+                   compiledSeg->consolidatedArgTableBytes,
+                   static_cast<int>(compiledSeg->subKernels.size()),
+                   seg.startSlot, seg.endSlot);
+    }
+  }
+}
+
 }  // namespace graph
 }  // namespace sd
 

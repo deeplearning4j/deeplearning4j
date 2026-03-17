@@ -991,6 +991,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                                                  outputSlots_, totalOutputSlots_,
                                                  stream);
       }
+      
+      // CRITICAL FIX: After refreshing arg tables on host, copy to device BEFORE graph launch.
+      // The captured graph has arg table addresses baked in - we just need to update the content.
+      // This consolidated copy replaces ~N per-kernel cudaMemcpyAsync calls with ONE copy.
+      if (tritonBackend != nullptr) {
+        tritonBackend->copyConsolidatedArgTableToDevice(seg, stream);
+      }
+      
       for (auto& [extIdx, origArr] : savedForArgRefresh) {
         externalArrays[extIdx] = origArr;
       }
