@@ -99,6 +99,57 @@ public class FusedRoPE extends DynamicCustomOp {
         this(input, null, ROPE_TYPE_STANDARD, 0, 10000.0, 1.0);
     }
 
+    /**
+     * Create a fused RoPE operation with pre-computed cos/sin caches.
+     * This eliminates the need for split/concat decomposition in the graph.
+     *
+     * @param sd The SameDiff instance
+     * @param input Input tensor [batch, seq_len, num_heads, head_dim]
+     * @param cosValues Pre-computed cosine values [batch, seq_len, half_head_dim]
+     * @param sinValues Pre-computed sine values [batch, seq_len, half_head_dim]
+     * @param ropeType RoPE variant (0=standard, 1=neox, 2=gptj)
+     */
+    public FusedRoPE(SameDiff sd, SDVariable input, SDVariable cosValues, SDVariable sinValues, int ropeType) {
+        super(null, sd, new SDVariable[]{input, cosValues, sinValues}, false);
+        this.ropeType = ropeType;
+        this.positionOffset = 0;
+        this.freqBase = 10000.0;
+        this.freqScale = 1.0;
+        addIArgument(ropeType);
+    }
+
+    /**
+     * Create a fused RoPE operation with pre-computed cos/sin caches (INDArray variant).
+     */
+    public FusedRoPE(INDArray input, INDArray cosValues, INDArray sinValues, INDArray output, int ropeType) {
+        super(new INDArray[]{input, cosValues, sinValues}, output != null ? new INDArray[]{output} : null);
+        this.ropeType = ropeType;
+        this.positionOffset = 0;
+        this.freqBase = 10000.0;
+        this.freqScale = 1.0;
+        addIArgument(ropeType);
+    }
+
+    public FusedRoPE(SameDiff sd, SDVariable input, SDVariable ropeCache, int startPosition) {
+        super(null, sd, new SDVariable[]{input, ropeCache}, false);
+        this.ropeType = ROPE_TYPE_STANDARD;
+        this.positionOffset = startPosition;
+        this.freqBase = 10000.0;
+        this.freqScale = 1.0;
+        addIArgument(ropeType, positionOffset);
+        addTArgument(freqBase, freqScale);
+    }
+
+    public FusedRoPE(INDArray input, INDArray ropeCache, int startPosition) {
+        super(new INDArray[]{input, ropeCache}, null);
+        this.ropeType = ROPE_TYPE_STANDARD;
+        this.positionOffset = startPosition;
+        this.freqBase = 10000.0;
+        this.freqScale = 1.0;
+        addIArgument(ropeType, positionOffset);
+        addTArgument(freqBase, freqScale);
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();

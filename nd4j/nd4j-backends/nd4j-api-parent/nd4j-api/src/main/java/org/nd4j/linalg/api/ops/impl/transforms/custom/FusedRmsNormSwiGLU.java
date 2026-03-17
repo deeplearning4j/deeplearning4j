@@ -81,6 +81,11 @@ public class FusedRmsNormSwiGLU extends DynamicCustomOp {
     }
 
     public FusedRmsNormSwiGLU(INDArray input, INDArray gamma, INDArray wGate, INDArray wUp,
+                              double epsilon) {
+        this(input, gamma, wGate, wUp, null, epsilon);
+    }
+
+    public FusedRmsNormSwiGLU(INDArray input, INDArray gamma, INDArray wGate, INDArray wUp,
                               INDArray output, double epsilon) {
         super(new INDArray[]{input, gamma, wGate, wUp}, output != null ? new INDArray[]{output} : null);
         this.epsilon = epsilon;

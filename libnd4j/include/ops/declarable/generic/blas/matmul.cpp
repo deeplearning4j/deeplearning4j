@@ -327,8 +327,44 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   }
 
   matmul op;
-  op.execute({eps, y}, {dldx}, {alpha, beta}, {transZ, !transY, transX}, {});
-  op.execute({x, eps}, {dldy}, {alpha, beta}, {!transX, transZ, transY}, {});
+  // Forward: Z = (X^T if transX else X) * (Y^T if transY else Y)
+  // Backward gradients using chain rule:
+  // For Z = A * B where A = (X^T if transX else X), B = (Y^T if transY else Y):
+  //   dL/dA = eps * B^T, dL/dB = A^T * eps
+  // Then convert to dL/dX and dL/dY based on transpositions
+  
+  // Case analysis for dL/dX:
+  // transX=true:  A=X^T, dL/dX = (dL/dA)^T = (eps * B^T)^T = B * eps^T
+  // transX=false: A=X,  dL/dX = dL/dA = eps * B^T
+  
+  // Case analysis for dL/dY:
+  // transY=true:  B=Y^T, dL/dY = (dL/dB)^T = (A^T * eps)^T = eps^T * A
+  // transY=false: B=Y,  dL/dY = dL/dB = A^T * eps
+
+  if (transX) {
+    // dL/dX = B * eps^T where B = (Y^T if transY else Y)
+    // If transY: B=Y^T, dL/dX = Y^T * eps^T = matmul(y, eps, 0, 1, 0)
+    // If !transY: B=Y, dL/dX = Y * eps^T = matmul(y, eps, 0, 1, 0)
+    // Either way: matmul(y, eps, transX=0, transY=1, transZ=0)
+    op.execute({y, eps}, {dldx}, {alpha, beta}, {0, 1, 0}, {});
+  } else {
+    // dL/dX = eps * B^T where B = (Y^T if transY else Y)
+    // If transY: B=Y^T, dL/dX = eps * Y = matmul(eps, y, 0, 0, 0)
+    // If !transY: B=Y, dL/dX = eps * Y^T = matmul(eps, y, 0, 1, 0)
+    op.execute({eps, y}, {dldx}, {alpha, beta}, {0, transY ? 0 : 1, 0}, {});
+  }
+  
+  if (transY) {
+    // dL/dY = eps^T * A where A = (X^T if transX else X)
+    // If transX: A=X^T, dL/dY = eps^T * X^T = matmul(eps, x, 1, 1, 0)
+    // If !transX: A=X, dL/dY = eps^T * X = matmul(eps, x, 1, 0, 0)
+    op.execute({eps, x}, {dldy}, {alpha, beta}, {1, transX ? 1 : 0, 0}, {});
+  } else {
+    // dL/dY = A^T * eps where A = (X^T if transX else X)
+    // If transX: A=X^T, dL/dY = X * eps = matmul(x, eps, 0, 0, 0)
+    // If !transX: A=X, dL/dY = X^T * eps = matmul(x, eps, 1, 0, 0)
+    op.execute({x, eps}, {dldy}, {alpha, beta}, {transX ? 0 : 1, 0, 0}, {});
+  }
 
   return Status::OK;
 }

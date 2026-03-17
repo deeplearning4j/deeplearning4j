@@ -103,7 +103,8 @@ public class TestSmolDoclingOptimizedPipeline {
     //
     // NEVER compile MATMUL (cuBLAS 2.8x faster), NEVER include SPLIT/CONCAT without compileAll
     // Flash attention (+ATTENTION) gives +30% decode speed with CUDA graph capture
-    // dspCastElimination and dspFp16Compute are neutral-to-negative with CUDA graphs
+    // dspCastElimination is neutral with CUDA graphs
+    // FP16: use nd4j.optimizer.fp16=true (pre-cast weights at load) NOT dspFp16Compute (runtime double-cast)
 
     private static final String FULL_TRITON_TYPES =
             "ELEMENTWISE,REDUCTION,NORMALIZATION,GATHER,STACK,ATTENTION";
@@ -145,6 +146,15 @@ public class TestSmolDoclingOptimizedPipeline {
                     .maxTokens(10).minDiversityPct(0));
         }
 
+        // DIAGNOSTIC: Triton WITHOUT graph capture + VERIFY — compares each Triton section vs slot-by-slot
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_VERIFY")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonVerifyKernels(true)
+                    .maxTokens(3).minDiversityPct(0));
+        }
+
         // DIAGNOSTIC: Triton + GC but WITHOUT ATTENTION — isolates attention compilation
         if (triton) {
             configs.add(BenchmarkConfig.create("DIAG_Triton_gc_noATTN")
@@ -173,6 +183,51 @@ public class TestSmolDoclingOptimizedPipeline {
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .maxTokens(10).minDiversityPct(0));
         }
+
+        // BINARY SEARCH: Isolate which Triton op type causes wrong output
+        // Triton no GC, ATTENTION only (no COMPILE_ALL_TYPES)
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_ATTN_only")
+                    .tritonIncludeTypes("ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+        // Triton no GC, NO attention (COMPILE_ALL_TYPES only)
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_noATTN")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES)
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+        // Triton no GC, GATHER only
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_GATHER_only")
+                    .tritonIncludeTypes("GATHER")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+        // Triton no GC, CONST_GEN only
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_CONSTGEN_only")
+                    .tritonIncludeTypes("CONST_GEN")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+        // Triton no GC, CONCAT+SPLIT+STACK only
+        if (triton) {
+            configs.add(BenchmarkConfig.create("DIAG_TRITON_noGC_CONCAT_SPLIT_STACK")
+                    .tritonIncludeTypes("CONCAT,SPLIT,STACK")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .maxTokens(10).minDiversityPct(0));
+        }
+
+        // NON-TRITON DSP modes: isolate whether bug is Triton-specific or DSP mode related
+        configs.add(BenchmarkConfig.create("DIAG_CUDA_GRAPHS_noTriton")
+                .executionMode(GraphExecutionMode.CUDA_GRAPHS)
+                .maxTokens(10).minDiversityPct(0));
+        configs.add(BenchmarkConfig.create("DIAG_AUTO_noTriton")
+                .executionMode(GraphExecutionMode.AUTO)
+                .maxTokens(10).minDiversityPct(0));
 
         // Only include other configs when explicitly requested via vlm.test.configs=ALL
         String filterProp = System.getProperty("vlm.test.configs");
@@ -470,8 +525,19 @@ public class TestSmolDoclingOptimizedPipeline {
 
     @BeforeAll
     public static void setup() {
-        if (System.getProperty("nd4j.optimizer.enabled") == null) {
+        // Maven surefire sets undefined ${...} properties to empty string, not null.
+        // Check for both null and empty to ensure defaults apply.
+        String optEnabled = System.getProperty("nd4j.optimizer.enabled");
+        if (optEnabled == null || optEnabled.isEmpty()) {
             System.setProperty("nd4j.optimizer.enabled", "true");
+        }
+        // Pre-cast FP32 weight constants to FP16 at model load time via optimizer.
+        // This halves weight memory bandwidth and avoids the runtime per-matmul double-cast
+        // that dspFp16Compute uses. MmulHelper's mixed-type path handles HALF×FLOAT
+        // automatically, casting only the FP32 activation (1 cast vs 2).
+        String fp16Prop = System.getProperty("nd4j.optimizer.fp16");
+        if (fp16Prop == null || fp16Prop.isEmpty()) {
+            System.setProperty("nd4j.optimizer.fp16", "true");
         }
         System.setProperty("nd4j.optimizer.logApplied", "true");
 
@@ -750,7 +816,7 @@ public class TestSmolDoclingOptimizedPipeline {
         assertNotNull(imageInput, "Image preprocessing returned null");
         assertFalse(imageInput.wasClosed(), "Image tensor closed after preprocessing");
 
-        // Vision encoder
+        // Vision encoder - process each frame sequentially
         long visionStart = System.currentTimeMillis();
         log.info("Running vision encoder on {} frames...", ctx.visionFrames);
         List<String> visionInputNames = visionEncoder.inputs();
@@ -765,19 +831,6 @@ public class TestSmolDoclingOptimizedPipeline {
                     NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
             INDArray singleFrame = frameSlice.reshape(1, 1, 3, targetSize, targetSize).dup();
 
-            // DIAGNOSTIC: check pixel values are non-zero
-            if (frameIdx == 0) {
-                double minVal = singleFrame.minNumber().doubleValue();
-                double maxVal = singleFrame.maxNumber().doubleValue();
-                double meanVal = singleFrame.meanNumber().doubleValue();
-                long zeroCount = singleFrame.eq(0.0).castTo(org.nd4j.linalg.api.buffer.DataType.INT64).sumNumber().longValue();
-                long totalElements = singleFrame.length();
-                log.info("DIAG pixel_values: shape={}, dtype={}, min={}, max={}, mean={}, zeroCount={}/{} ({}%)",
-                        java.util.Arrays.toString(singleFrame.shape()), singleFrame.dataType(),
-                        minVal, maxVal, meanVal, zeroCount, totalElements,
-                        (100.0 * zeroCount / totalElements));
-            }
-
             Map<String, INDArray> visionInputMap = new HashMap<>();
             for (String inputName : visionInputNames) {
                 if (inputName.equals("pixel_values")) {
@@ -789,99 +842,7 @@ public class TestSmolDoclingOptimizedPipeline {
                 }
             }
 
-            // DIAGNOSTIC: Check shape variable before execution
-            if (frameIdx == 0) {
-                for (String vname : new String[]{"/Concat_output_0", "/Concat_output_0_"}) {
-                    if (visionEncoder.hasVariable(vname)) {
-                        INDArray arr = visionEncoder.getArrForVarName(vname);
-                        if (arr != null) {
-                            Nd4j.getAffinityManager().ensureLocation(arr, org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
-                            log.info("DIAG {}: shape={}, dtype={}, values={}", vname, java.util.Arrays.toString(arr.shape()),
-                                    arr.dataType(), arr.data().asLong());
-                        } else {
-                            log.info("DIAG {}: has variable but arr is null", vname);
-                        }
-                    }
-                }
-            }
-            Map<String, INDArray> visionOutputs;
-            try {
-                // First, try to compute intermediate outputs to diagnose the Where → Create chain
-                if (frameIdx == 0) {
-                    try {
-                        // Request just the Where output to see what it computes
-                        String[] diagOutputs = {"/vision_model/embeddings/Where_output_0"};
-                        // Also check if concat variable exists
-                        for (String diagVar : new String[]{
-                                "/ReduceSum_output_0",
-                                "/Equal_1_output_0",
-                                "/Not_output_0",
-                                "/GatherND_output_0",
-                                "/vision_model/embeddings/Shape_output_0",
-                                "/vision_model/embeddings/Gather_output_0",
-                                "/vision_model/embeddings/Concat_2_output_0",
-                                "/vision_model/embeddings/Equal_output_0",
-                                "/vision_model/embeddings/Where_output_0"}) {
-                            if (visionEncoder.hasVariable(diagVar)) {
-                                try {
-                                    Map<String, INDArray> diagResult = visionEncoder.output(
-                                            visionInputMap, diagVar);
-                                    INDArray val = diagResult.get(diagVar);
-                                    if (val != null) {
-                                        Nd4j.getAffinityManager().ensureLocation(val,
-                                                org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
-                                        log.info("DIAG COMPUTED {}: shape={}, dtype={}, values={}",
-                                                diagVar, java.util.Arrays.toString(val.shape()),
-                                                val.dataType(),
-                                                val.length() <= 20 ? val.toString() : "len=" + val.length());
-                                    }
-                                } catch (Exception diagEx) {
-                                    log.info("DIAG COMPUTED {} FAILED: {}", diagVar, diagEx.getMessage());
-                                }
-                            }
-                        }
-                    } catch (Exception diagEx) {
-                        log.info("DIAG intermediate computation failed: {}", diagEx.getMessage());
-                    }
-                }
-                visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
-            } catch (Exception e) {
-                // Dump intermediate variables for debugging
-                log.error("Vision encoder failed on frame {}, dumping intermediates:", frameIdx);
-                String[] diagVars = {
-                    "/Equal_output_0", "/Cast_output_0", "/ReduceSum_output_0",
-                    "/Equal_1_output_0", "/Not_output_0", "/NonZero_output_0",
-                    "/Transpose_output_0", "/Reshape_output_0", "/GatherND_output_0",
-                    "/vision_model/embeddings/Shape_output_0",
-                    "/vision_model/embeddings/Gather_output_0",
-                    "/vision_model/embeddings/Unsqueeze_2_output_0",
-                    "/vision_model/embeddings/Constant_14_output_0",
-                    "/vision_model/embeddings/Reshape_1_output_0",
-                    "/vision_model/embeddings/Mul_1_output_0",
-                    "/vision_model/embeddings/Equal_output_0",
-                    "/vision_model/embeddings/ConstantOfShape_output_0",
-                    "/vision_model/embeddings/Where_output_0"
-                };
-                for (String vname : diagVars) {
-                    if (visionEncoder.hasVariable(vname)) {
-                        INDArray arr = visionEncoder.getArrForVarName(vname);
-                        if (arr != null) {
-                            try {
-                                Nd4j.getAffinityManager().ensureLocation(arr, org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
-                                String vals = arr.length() <= 20 ? arr.toString() : "len=" + arr.length();
-                                log.error("  DIAG {}: shape={}, dtype={}, values={}", vname,
-                                    java.util.Arrays.toString(arr.shape()), arr.dataType(), vals);
-                            } catch (Exception ex) {
-                                log.error("  DIAG {}: shape={}, dtype={}, ERROR reading: {}", vname,
-                                    java.util.Arrays.toString(arr.shape()), arr.dataType(), ex.getMessage());
-                            }
-                        } else {
-                            log.error("  DIAG {}: arr is null (not yet computed?)", vname);
-                        }
-                    }
-                }
-                throw e;
-            }
+            Map<String, INDArray> visionOutputs = visionEncoder.output(visionInputMap, visionOutputNames);
             assertNotNull(visionOutputs, "Vision encoder output null for frame " + frameIdx);
             assertFalse(visionOutputs.isEmpty(), "Vision encoder output empty for frame " + frameIdx);
 
@@ -899,11 +860,13 @@ public class TestSmolDoclingOptimizedPipeline {
                 if (arr != null && arr.closeable() && !arr.wasClosed()) arr.close();
             }
             singleFrame.close();
-            visionEncoder.clearPlaceholders(false);
-            visionEncoder.clearOpInputs();
-            visionEncoder.resetSession();
-            Nd4j.getExecutioner().commit();
         }
+
+        // Clean up vision encoder
+        visionEncoder.clearPlaceholders(false);
+        visionEncoder.clearOpInputs();
+        visionEncoder.resetSession();
+        Nd4j.getExecutioner().commit();
 
         assertEquals(ctx.visionFrames, frameEmbeddings.size(),
                 "Frame embedding count mismatch: expected " + ctx.visionFrames);

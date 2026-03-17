@@ -293,6 +293,16 @@ class SD_LIB_EXPORT FlashAttentionHelper {
                         NDArray* attentionBias);
 
   /**
+   * Decode-optimized forward path for seqQ=1 (autoregressive generation).
+   * Uses cuBLAS batched GEMV for Q@K^T and attn@V with FP16 TensorCore.
+   * For M=1 decode, this achieves ~2x throughput vs the fused kernel.
+   */
+  static void forward4DDecode(NDArray* query, NDArray* key, NDArray* value,
+                              NDArray* output, float scale, bool isCausal,
+                              LaunchContext* context, NDArray* attentionBias,
+                              NDArray* softmaxLse);
+
+  /**
    * Backward implementation for 3D tensors
    */
   static void backward3D(NDArray* gradOutput, NDArray* query, NDArray* key, NDArray* value,

@@ -79,7 +79,31 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     public OnnxMultiHeadAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
                                   SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
                                   int numHeads, double scale, boolean useCausalMask, int numOutputs) {
-        super(null, sd, buildInputs(sd, query, key, value, attnBias, pastKey, pastValue), false);
+        super(null, sd, buildInputs(sd, query, key, value, attnBias, pastKey, pastValue, null), false);
+        this.numHeads = numHeads;
+        this.scale = scale;
+        this.useCausalMask = useCausalMask;
+        Preconditions.checkArgument(numOutputs >= 1 && numOutputs <= 3,
+                "numOutputs must be in [1, 3], got %s", numOutputs);
+        this.numOutputs = numOutputs;
+        addIArgument(numHeads);
+        addIArgument(useCausalMask ? 1 : 0);
+        addTArgument(scale);
+    }
+
+    /**
+     * SameDiff constructor with cache_position for in-place KV write mode.
+     * When cachePosition is non-null, the op writes current K/V at that position
+     * in past_key/past_value (in-place) instead of concatenating. This fixes causal
+     * mask alignment for padded KV buffers.
+     *
+     * @param cachePosition Optional cache position [1] INT64 scalar, or null for standard concat
+     */
+    public OnnxMultiHeadAttention(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
+                                  SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
+                                  SDVariable cachePosition,
+                                  int numHeads, double scale, boolean useCausalMask, int numOutputs) {
+        super(null, sd, buildInputs(sd, query, key, value, attnBias, pastKey, pastValue, cachePosition), false);
         this.numHeads = numHeads;
         this.scale = scale;
         this.useCausalMask = useCausalMask;
@@ -119,7 +143,8 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
     }
 
     private static SDVariable[] buildInputs(SameDiff sd, SDVariable query, SDVariable key, SDVariable value,
-                                            SDVariable attnBias, SDVariable pastKey, SDVariable pastValue) {
+                                            SDVariable attnBias, SDVariable pastKey, SDVariable pastValue,
+                                            SDVariable cachePosition) {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(query);
         inputs.add(key);
@@ -127,25 +152,37 @@ public class OnnxMultiHeadAttention extends DynamicCustomOp {
         inputs.add(attnBias != null ? attnBias : sd.constant(Nd4j.empty(query.dataType())));
         inputs.add(pastKey != null ? pastKey : sd.constant(Nd4j.empty(query.dataType())));
         inputs.add(pastValue != null ? pastValue : sd.constant(Nd4j.empty(query.dataType())));
+        if (cachePosition != null) {
+            inputs.add(cachePosition);
+        }
         return inputs.toArray(new SDVariable[0]);
     }
 
     private static INDArray[] buildInputs(INDArray query, INDArray key, INDArray value,
                                           INDArray attnBias, INDArray pastKey, INDArray pastValue) {
-        // Always build 6 inputs to maintain positional semantics for C++ op
+        return buildInputs(query, key, value, attnBias, pastKey, pastValue, null);
+    }
+
+    private static INDArray[] buildInputs(INDArray query, INDArray key, INDArray value,
+                                          INDArray attnBias, INDArray pastKey, INDArray pastValue,
+                                          INDArray cachePosition) {
+        // Always build at least 6 inputs to maintain positional semantics for C++ op
         // Use scalar placeholder (not empty!) for missing optional inputs to avoid null buffer issues
         // Empty arrays (e.g. [1,3,0,64] for initial KV cache) are treated as absent — the C++ op
         // also converts empty inputs to nullptr, so this is consistent.
         INDArray placeholder = Nd4j.scalar(query.dataType(), 0.0f);
 
-        return new INDArray[] {
-            query,
-            key,
-            value,
-            (attnBias != null && !attnBias.isEmpty()) ? attnBias : placeholder,
-            (pastKey != null && !pastKey.isEmpty()) ? pastKey : placeholder,
-            (pastValue != null && !pastValue.isEmpty()) ? pastValue : placeholder
-        };
+        List<INDArray> inputs = new ArrayList<>();
+        inputs.add(query);
+        inputs.add(key);
+        inputs.add(value);
+        inputs.add((attnBias != null && !attnBias.isEmpty()) ? attnBias : placeholder);
+        inputs.add((pastKey != null && !pastKey.isEmpty()) ? pastKey : placeholder);
+        inputs.add((pastValue != null && !pastValue.isEmpty()) ? pastValue : placeholder);
+        if (cachePosition != null) {
+            inputs.add(cachePosition);
+        }
+        return inputs.toArray(new INDArray[0]);
     }
 
     @Override

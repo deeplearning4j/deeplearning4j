@@ -106,6 +106,22 @@ public class RowParallelLinear extends DynamicCustomOp {
     }
 
     /**
+     * SameDiff convenience constructor without bias.
+     */
+    public RowParallelLinear(SameDiff sameDiff, SDVariable inputShard, SDVariable weightShard,
+                             int tpRank, int tpSize, boolean reduceOutput) {
+        this(sameDiff, inputShard, weightShard, null, tpSize, tpRank, reduceOutput ? 1 : 0);
+    }
+
+    /**
+     * INDArray convenience constructor without bias.
+     */
+    public RowParallelLinear(INDArray inputShard, INDArray weightShard,
+                             int tpRank, int tpSize, boolean reduceOutput) {
+        this(inputShard, weightShard, null, null, tpSize, tpRank, reduceOutput ? 1 : 0);
+    }
+
+    /**
      * INDArray constructor (no output pre-allocation).
      */
     public RowParallelLinear(INDArray inputShard, INDArray weightShard, INDArray bias,

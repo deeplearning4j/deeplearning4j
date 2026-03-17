@@ -176,7 +176,7 @@ public class TransferLearning {
      *
      * @return A LoraConfig builder with sensible defaults
      */
-    public static LoraConfig.LoraConfigBuilder loraConfigBuilder() {
+    public static LoraConfig.LoraConfigBuilder<?, ?> loraConfigBuilder() {
         return PeftModelFactory.loraConfigBuilder();
     }
 

@@ -80,11 +80,18 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   std::vector<LongType> outputPermute = {0,3,1,2};
   if (!isNCHW) output = output->permute(outputPermute, false, false);  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
+  // colPermut is the permutation to apply to tensorDot2 output
+  // tensorDot2 produces [non-contracted weight dims..., non-contracted input dims...]
+  // For deconv2d:
+  //   wFormat=0: weights[kH,kW,oC,iC], after contraction: [kH,kW,oC,bS,iH,iW] (NHWC) or [kH,kW,oC,bS,iH,iW] (NCHW)
+  //   wFormat=1: weights[oC,iC,kH,kW], after contraction: [oC,kH,kW,bS,iH,iW]
+  //   wFormat=2: weights[oC,kH,kW,iC], after contraction: [oC,kH,kW,bS,iH,iW]
+  // We want: [bS,oC,kH,kW,iH,iW] for col2im
   std::vector<LongType> colPermut;
-  if (1 == wFormat)
-    colPermut = {1, 2, 3, 0, 4, 5};
+  if (0 == wFormat)
+    colPermut = {3, 2, 0, 1, 4, 5};  // [kH,kW,oC,bS,iH,iW] -> [bS,oC,kH,kW,iH,iW]
   else
-    colPermut = {2, 3, 1, 0, 4, 5};
+    colPermut = {3, 0, 1, 2, 4, 5};  // [oC,kH,kW,bS,iH,iW] -> [bS,oC,kH,kW,iH,iW]
 
   if (isSameMode)  // Use deconv-specific padding calculation for SAME mode
     ConvolutionUtils::calcPaddingDeconv2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
@@ -93,12 +100,27 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   NDArray columns(input->ordering(), colShape, input->dataType(), block.launchContext());
 
   //----- calculation of output -----//
-  // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
-  // NHWC: [iC, oC, kH, kW] x [bS, iH, iW, iC] = [oC, kH, kW, bS, iH, iW]
-  // NHWC: [iC, kH, kW, oC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
-  std::vector<LongType> firstDims = {indWiC};
-  std::vector<LongType> secondDims = {indIOioC};
-  sd::MmulHelper::tensorDot(weights, input, &columns, firstDims, secondDims, colPermut);
+  // Use tensorDot (same as tensormmul op) with manual permutation
+  // Contract weights[indWiC] with input[indIOioC]
+  std::vector<LongType> axes_a = {indWiC};
+  std::vector<LongType> axes_b = {indIOioC};
+  std::vector<LongType> empty;
+  
+  // Create temp output for tensorDot result (before final permutation)
+  // tensorDot produces [non-contracted weight dims..., non-contracted input dims...]
+  // For wFormat=0, NCHW: [kH,kW,oC,bS,iH,iW]
+  std::vector<LongType> tempShape = {kH, kW, oC, bS, iH, iW};
+  NDArray tempResult('c', tempShape, columns.dataType(), block.launchContext());
+  
+  sd::MmulHelper::tensorDot(weights, input, &tempResult, axes_a, axes_b, empty);
+  
+  // Now permute from [kH,kW,oC,bS,iH,iW] to [bS,oC,kH,kW,iH,iW]
+  std::vector<LongType> finalPermute = {3, 2, 0, 1, 4, 5};
+  NDArray* tempPermuted = tempResult.permute(finalPermute, false, false);
+  columns.assign(tempPermuted);
+  
+  delete tempPermuted;
+  
   LaunchContext* ctx = block.launchContext();
   helpers::col2im(*ctx, &columns, output, sH, sW, pH, pW, oH, oW, dH,
                   dW);  // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]

@@ -323,15 +323,9 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                 log.info("Iteration {}: max diff = {}", iter, maxDiff);
 
                 long launchesNow = nativeOps.getTritonKernelLaunchCount();
-                if (launchesNow > 0 && iter >= 2) {
-                    // Triton iteration: log but don't fail on correctness
-                    if (maxDiff >= TOLERANCE) {
-                        log.warn("testMatmulAddReluChain iter {}: Triton output differs (maxDiff={})", iter, maxDiff);
-                    }
-                } else {
-                    assertTrue(maxDiff < TOLERANCE,
-                               "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
-                }
+                assertTrue(maxDiff < TOLERANCE,
+                           "testMatmulAddReluChain iter " + iter + ": max diff = " + maxDiff +
+                           (launchesNow > 0 && iter >= 2 ? " (Triton kernel)" : " (slot-by-slot)"));
 
                 // After warmup, freeze shapes so Triton compilation triggers
                 if (iter == 0) {
@@ -388,14 +382,9 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                 log.info("ElementWise iteration {}: max diff = {}", iter, maxDiff);
 
                 long launchesNow = nativeOps.getTritonKernelLaunchCount();
-                if (launchesNow > 0 && iter >= 2) {
-                    if (maxDiff >= TOLERANCE) {
-                        log.warn("testElementWiseFusion iter {}: Triton output differs (maxDiff={})", iter, maxDiff);
-                    }
-                } else {
-                    assertTrue(maxDiff < TOLERANCE,
-                               "Output mismatch at iteration " + iter + ": max diff = " + maxDiff);
-                }
+                assertTrue(maxDiff < TOLERANCE,
+                           "testElementWiseFusion iter " + iter + ": max diff = " + maxDiff +
+                           (launchesNow > 0 && iter >= 2 ? " (Triton kernel)" : " (slot-by-slot)"));
 
                 // After warmup, freeze shapes so Triton compilation triggers
                 if (iter == 0) {
@@ -466,9 +455,8 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
 
             double maxDiff = refOutput2.sub(nativeOutput2).amaxNumber().doubleValue();
             log.info("Cache reuse test: max diff = {}", maxDiff);
-            if (maxDiff >= TOLERANCE) {
-                log.warn("testCacheReuse: Triton cached kernel output differs (maxDiff={})", maxDiff);
-            }
+            assertTrue(maxDiff < TOLERANCE,
+                       "testCacheReuse: Triton cached kernel output differs (maxDiff=" + maxDiff + ")");
 
             long tritonLaunches = nativeOps.getTritonKernelLaunchCount();
             log.info("testCacheReuse: Triton kernel launches = {}", tritonLaunches);
@@ -980,47 +968,35 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                 double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
                 log.info("{} iter {}: maxDiff={}", testName, iter, maxDiff);
 
-                // Iters 0-1 are slot-by-slot: must be correct.
-                // Iter 2+ may use Triton kernel: log correctness but don't fail
-                // (Triton kernel correctness is validated separately).
                 long launchesNow = nativeOps.getTritonKernelLaunchCount();
                 boolean tritonUsedThisIter = (launchesNow > launchesBefore);
                 if (tritonUsedThisIter) {
-                    if (maxDiff >= TOLERANCE) {
-                        log.warn("{} iter {}: Triton kernel output differs from reference (maxDiff={})",
-                                 testName, iter, maxDiff);
-                        // Dump first differences for debugging
-                        INDArray diff = refOutput.sub(nativeOutput);
-                        long len = Math.min(refOutput.length(), 64);
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("  ref=[");
-                        for (long e = 0; e < len; e++) {
-                            if (e > 0) sb.append(", ");
-                            sb.append(String.format("%.6f", refOutput.getFloat(e)));
-                        }
-                        sb.append("]");
-                        log.warn(sb.toString());
-                        sb = new StringBuilder();
-                        sb.append("  nat=[");
-                        for (long e = 0; e < len; e++) {
-                            if (e > 0) sb.append(", ");
-                            sb.append(String.format("%.6f", nativeOutput.getFloat(e)));
-                        }
-                        sb.append("]");
-                        log.warn(sb.toString());
-                        sb = new StringBuilder();
-                        sb.append("  dif=[");
-                        for (long e = 0; e < len; e++) {
-                            if (e > 0) sb.append(", ");
-                            sb.append(String.format("%.6f", diff.getFloat(e)));
-                        }
-                        sb.append("]");
-                        log.warn(sb.toString());
-                    }
-                    launchesBefore = launchesNow;  // reset for next iter
-                } else {
-                    assertTrue(maxDiff < TOLERANCE, testName + ": maxDiff=" + maxDiff + " at iter " + iter);
+                    launchesBefore = launchesNow;
                 }
+                if (maxDiff >= TOLERANCE) {
+                    // Dump differences for debugging before failing
+                    INDArray diff = refOutput.sub(nativeOutput);
+                    long len = Math.min(refOutput.length(), 64);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("  ref=[");
+                    for (long e = 0; e < len; e++) {
+                        if (e > 0) sb.append(", ");
+                        sb.append(String.format("%.6f", refOutput.getFloat(e)));
+                    }
+                    sb.append("]");
+                    log.error(sb.toString());
+                    sb = new StringBuilder();
+                    sb.append("  nat=[");
+                    for (long e = 0; e < len; e++) {
+                        if (e > 0) sb.append(", ");
+                        sb.append(String.format("%.6f", nativeOutput.getFloat(e)));
+                    }
+                    sb.append("]");
+                    log.error(sb.toString());
+                }
+                assertTrue(maxDiff < TOLERANCE, testName + " iter " + iter +
+                           ": maxDiff=" + maxDiff +
+                           (tritonUsedThisIter ? " (Triton kernel)" : " (slot-by-slot)"));
 
                 // After warmup (iter 0), freeze shapes so Triton compilation triggers on iter 1
                 if (iter == 0) {
@@ -3217,16 +3193,11 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
                             boolean isTritonIter = (config.mode == GraphExecutionMode.TRITON && iter >= 2);
                             double tol = isTritonIter ? 0.01 : TOLERANCE;
 
-                            // Unfrozen re-execution has known cache corruption on iter 1+
-                            boolean strictCheck = config.freezeShapes || iter == 0;
-                            if (strictCheck && maxDiff >= tol) {
+                            if (maxDiff >= tol) {
                                 String msg = testId + " iter " + iter + ": maxDiff=" + maxDiff;
                                 log.error("FAIL: {}", msg);
                                 failureReport.append(msg).append("\n");
                                 failures++;
-                            } else if (!strictCheck && maxDiff >= tol) {
-                                log.warn("{} iter {}: KNOWN BUG unfrozen cache corruption maxDiff={}",
-                                         testId, iter, maxDiff);
                             }
 
                             if (config.freezeShapes && iter == 0) {

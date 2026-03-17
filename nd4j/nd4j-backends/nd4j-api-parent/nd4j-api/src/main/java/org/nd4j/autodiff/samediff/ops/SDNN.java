@@ -60,6 +60,68 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.<br>
+   *
+   * @param scores Attention scores [batch, num_heads, seq_len, kv_len] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @return output Scores with ALiBi position bias applied (NUMERIC type)
+   */
+  public SDVariable applyAlibi(SDVariable scores, int numHeads) {
+    SDValidation.validateNumerical("applyAlibi", "scores", scores);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi(sd,scores, numHeads).outputVariable();
+  }
+
+  /**
+   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param scores Attention scores [batch, num_heads, seq_len, kv_len] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @return output Scores with ALiBi position bias applied (NUMERIC type)
+   */
+  public SDVariable applyAlibi(String name, SDVariable scores, int numHeads) {
+    SDValidation.validateNumerical("applyAlibi", "scores", scores);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi(sd,scores, numHeads).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Activation-aware Weight Quantization (AWQ) matrix multiplication.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weightPacked AWQ-packed weight (NUMERIC type)
+   * @param weightScale Weight quantization scales (NUMERIC type)
+   * @param groupSize Quantization group size
+   * @return output Dequantized matmul result (NUMERIC type)
+   */
+  public SDVariable awqMatmul(SDVariable input, SDVariable weightPacked, SDVariable weightScale,
+      int groupSize) {
+    SDValidation.validateNumerical("awqMatmul", "input", input);
+    SDValidation.validateNumerical("awqMatmul", "weightPacked", weightPacked);
+    SDValidation.validateNumerical("awqMatmul", "weightScale", weightScale);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul(sd,input, weightPacked, weightScale, groupSize).outputVariable();
+  }
+
+  /**
+   * Activation-aware Weight Quantization (AWQ) matrix multiplication.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param weightPacked AWQ-packed weight (NUMERIC type)
+   * @param weightScale Weight quantization scales (NUMERIC type)
+   * @param groupSize Quantization group size
+   * @return output Dequantized matmul result (NUMERIC type)
+   */
+  public SDVariable awqMatmul(String name, SDVariable input, SDVariable weightPacked,
+      SDVariable weightScale, int groupSize) {
+    SDValidation.validateNumerical("awqMatmul", "input", input);
+    SDValidation.validateNumerical("awqMatmul", "weightPacked", weightPacked);
+    SDValidation.validateNumerical("awqMatmul", "weightScale", weightScale);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul(sd,input, weightPacked, weightScale, groupSize).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Neural network batch normalization operation.<br>
    * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a><br>
    *
@@ -217,6 +279,44 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Column-parallel linear layer for tensor parallelism.<br>
+   * Splits weight columns across tensor parallel ranks.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param gatherOutput Whether to all-gather output
+   * @return output Column-parallel linear output (NUMERIC type)
+   */
+  public SDVariable columnParallelLinear(SDVariable input, SDVariable weight, int tpRank,
+      int tpSize, boolean gatherOutput) {
+    SDValidation.validateNumerical("columnParallelLinear", "input", input);
+    SDValidation.validateNumerical("columnParallelLinear", "weight", weight);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear(sd,input, weight, tpRank, tpSize, gatherOutput).outputVariable();
+  }
+
+  /**
+   * Column-parallel linear layer for tensor parallelism.<br>
+   * Splits weight columns across tensor parallel ranks.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param gatherOutput Whether to all-gather output
+   * @return output Column-parallel linear output (NUMERIC type)
+   */
+  public SDVariable columnParallelLinear(String name, SDVariable input, SDVariable weight,
+      int tpRank, int tpSize, boolean gatherOutput) {
+    SDValidation.validateNumerical("columnParallelLinear", "input", input);
+    SDValidation.validateNumerical("columnParallelLinear", "weight", weight);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear(sd,input, weight, tpRank, tpSize, gatherOutput).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
    * <br>
    * Performs greedy (best path) decoding on CTC output. Used in:<br>
@@ -341,6 +441,92 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(sd,logits, sequenceLength, mergeRepeated, blankIndex).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Decoder-optimized masked multi-head attention.<br>
+   * Optimized for autoregressive decoding with incremental KV cache.<br>
+   *
+   * @param query Query tensor (NUMERIC type)
+   * @param key Key tensor (NUMERIC type)
+   * @param value Value tensor (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param isCausal Whether to apply causal mask
+   * @return output Attention output (NUMERIC type)
+   */
+  public SDVariable decoderMaskedMha(SDVariable query, SDVariable key, SDVariable value,
+      int numHeads, boolean isCausal) {
+    SDValidation.validateNumerical("decoderMaskedMha", "query", query);
+    SDValidation.validateNumerical("decoderMaskedMha", "key", key);
+    SDValidation.validateNumerical("decoderMaskedMha", "value", value);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha(sd,query, key, value, numHeads, isCausal).outputVariable();
+  }
+
+  /**
+   * Decoder-optimized masked multi-head attention.<br>
+   * Optimized for autoregressive decoding with incremental KV cache.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor (NUMERIC type)
+   * @param key Key tensor (NUMERIC type)
+   * @param value Value tensor (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param isCausal Whether to apply causal mask
+   * @return output Attention output (NUMERIC type)
+   */
+  public SDVariable decoderMaskedMha(String name, SDVariable query, SDVariable key,
+      SDVariable value, int numHeads, boolean isCausal) {
+    SDValidation.validateNumerical("decoderMaskedMha", "query", query);
+    SDValidation.validateNumerical("decoderMaskedMha", "key", key);
+    SDValidation.validateNumerical("decoderMaskedMha", "value", value);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha(sd,query, key, value, numHeads, isCausal).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.<br>
+   * Decomposes weight into magnitude and direction, applies LoRA to direction only.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param magnitude Per-output magnitude [out_features] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @return output DoRA result with weight-decomposed adaptation (NUMERIC type)
+   */
+  public SDVariable doraMatMul(SDVariable input, SDVariable weight, SDVariable loraA,
+      SDVariable loraB, SDVariable magnitude, double scaling) {
+    SDValidation.validateNumerical("doraMatMul", "input", input);
+    SDValidation.validateNumerical("doraMatMul", "weight", weight);
+    SDValidation.validateNumerical("doraMatMul", "loraA", loraA);
+    SDValidation.validateNumerical("doraMatMul", "loraB", loraB);
+    SDValidation.validateNumerical("doraMatMul", "magnitude", magnitude);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul(sd,input, weight, loraA, loraB, magnitude, scaling).outputVariable();
+  }
+
+  /**
+   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.<br>
+   * Decomposes weight into magnitude and direction, applies LoRA to direction only.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param magnitude Per-output magnitude [out_features] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @return output DoRA result with weight-decomposed adaptation (NUMERIC type)
+   */
+  public SDVariable doraMatMul(String name, SDVariable input, SDVariable weight, SDVariable loraA,
+      SDVariable loraB, SDVariable magnitude, double scaling) {
+    SDValidation.validateNumerical("doraMatMul", "input", input);
+    SDValidation.validateNumerical("doraMatMul", "weight", weight);
+    SDValidation.validateNumerical("doraMatMul", "loraA", loraA);
+    SDValidation.validateNumerical("doraMatMul", "loraB", loraB);
+    SDValidation.validateNumerical("doraMatMul", "magnitude", magnitude);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul(sd,input, weight, loraA, loraB, magnitude, scaling).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
@@ -832,6 +1018,81 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * FP8 matrix multiplication with per-tensor scaling.<br>
+   *
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @param scaleA Scale for matrix A (NUMERIC type)
+   * @param scaleB Scale for matrix B (NUMERIC type)
+   * @return output Scaled FP8 matmul result (NUMERIC type)
+   */
+  public SDVariable fp8Matmul(SDVariable a, SDVariable b, SDVariable scaleA, SDVariable scaleB) {
+    SDValidation.validateNumerical("fp8Matmul", "a", a);
+    SDValidation.validateNumerical("fp8Matmul", "b", b);
+    SDValidation.validateNumerical("fp8Matmul", "scaleA", scaleA);
+    SDValidation.validateNumerical("fp8Matmul", "scaleB", scaleB);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul(sd,a, b, scaleA, scaleB).outputVariable();
+  }
+
+  /**
+   * FP8 matrix multiplication with per-tensor scaling.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @param scaleA Scale for matrix A (NUMERIC type)
+   * @param scaleB Scale for matrix B (NUMERIC type)
+   * @return output Scaled FP8 matmul result (NUMERIC type)
+   */
+  public SDVariable fp8Matmul(String name, SDVariable a, SDVariable b, SDVariable scaleA,
+      SDVariable scaleB) {
+    SDValidation.validateNumerical("fp8Matmul", "a", a);
+    SDValidation.validateNumerical("fp8Matmul", "b", b);
+    SDValidation.validateNumerical("fp8Matmul", "scaleA", scaleA);
+    SDValidation.validateNumerical("fp8Matmul", "scaleB", scaleB);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul(sd,a, b, scaleA, scaleB).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused bias addition, dropout, and residual connection in a single kernel.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param bias Bias tensor (NUMERIC type)
+   * @param residual Residual connection tensor (NUMERIC type)
+   * @param dropoutProb Dropout probability
+   * @param training Whether in training mode
+   * @return output dropout(input + bias) + residual (NUMERIC type)
+   */
+  public SDVariable fusedBiasDropoutResidual(SDVariable input, SDVariable bias, SDVariable residual,
+      double dropoutProb, boolean training) {
+    SDValidation.validateNumerical("fusedBiasDropoutResidual", "input", input);
+    SDValidation.validateNumerical("fusedBiasDropoutResidual", "bias", bias);
+    SDValidation.validateNumerical("fusedBiasDropoutResidual", "residual", residual);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual(sd,input, bias, residual, dropoutProb, training).outputVariable();
+  }
+
+  /**
+   * Fused bias addition, dropout, and residual connection in a single kernel.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param bias Bias tensor (NUMERIC type)
+   * @param residual Residual connection tensor (NUMERIC type)
+   * @param dropoutProb Dropout probability
+   * @param training Whether in training mode
+   * @return output dropout(input + bias) + residual (NUMERIC type)
+   */
+  public SDVariable fusedBiasDropoutResidual(String name, SDVariable input, SDVariable bias,
+      SDVariable residual, double dropoutProb, boolean training) {
+    SDValidation.validateNumerical("fusedBiasDropoutResidual", "input", input);
+    SDValidation.validateNumerical("fusedBiasDropoutResidual", "bias", bias);
+    SDValidation.validateNumerical("fusedBiasDropoutResidual", "residual", residual);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual(sd,input, bias, residual, dropoutProb, training).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Executes a fused chain of element-wise operations in a single kernel pass.<br>
    * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
    *
@@ -870,6 +1131,206 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Fused Gaussian Error Linear Unit (GELU) activation function.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output GELU(x) (NUMERIC type)
+   */
+  public SDVariable fusedGelu(SDVariable input) {
+    SDValidation.validateNumerical("fusedGelu", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU(sd,input).outputVariable();
+  }
+
+  /**
+   * Fused Gaussian Error Linear Unit (GELU) activation function.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @return output GELU(x) (NUMERIC type)
+   */
+  public SDVariable fusedGelu(String name, SDVariable input) {
+    SDValidation.validateNumerical("fusedGelu", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU(sd,input).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @return output SwiGLU(input @ wGate, input @ wUp) (NUMERIC type)
+   */
+  public SDVariable fusedGemmSwiglu(SDVariable input, SDVariable wGate, SDVariable wUp) {
+    SDValidation.validateNumerical("fusedGemmSwiglu", "input", input);
+    SDValidation.validateNumerical("fusedGemmSwiglu", "wGate", wGate);
+    SDValidation.validateNumerical("fusedGemmSwiglu", "wUp", wUp);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu(sd,input, wGate, wUp).outputVariable();
+  }
+
+  /**
+   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @return output SwiGLU(input @ wGate, input @ wUp) (NUMERIC type)
+   */
+  public SDVariable fusedGemmSwiglu(String name, SDVariable input, SDVariable wGate,
+      SDVariable wUp) {
+    SDValidation.validateNumerical("fusedGemmSwiglu", "input", input);
+    SDValidation.validateNumerical("fusedGemmSwiglu", "wGate", wGate);
+    SDValidation.validateNumerical("fusedGemmSwiglu", "wUp", wUp);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu(sd,input, wGate, wUp).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Scale parameter (NUMERIC type)
+   * @param beta Bias parameter (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Layer-normalized output (NUMERIC type)
+   */
+  public SDVariable fusedLayerNorm(SDVariable input, SDVariable gamma, SDVariable beta,
+      double epsilon) {
+    SDValidation.validateNumerical("fusedLayerNorm", "input", input);
+    SDValidation.validateNumerical("fusedLayerNorm", "gamma", gamma);
+    SDValidation.validateNumerical("fusedLayerNorm", "beta", beta);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm(sd,input, gamma, beta, epsilon).outputVariable();
+  }
+
+  /**
+   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Scale parameter (NUMERIC type)
+   * @param beta Bias parameter (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Layer-normalized output (NUMERIC type)
+   */
+  public SDVariable fusedLayerNorm(String name, SDVariable input, SDVariable gamma, SDVariable beta,
+      double epsilon) {
+    SDValidation.validateNumerical("fusedLayerNorm", "input", input);
+    SDValidation.validateNumerical("fusedLayerNorm", "gamma", gamma);
+    SDValidation.validateNumerical("fusedLayerNorm", "beta", beta);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm(sd,input, gamma, beta, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused normalization + quantization in a single kernel.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Norm scale parameter (NUMERIC type)
+   * @param epsilon Epsilon for normalization
+   * @param quantType Quantization type
+   * @return output Normalized and quantized output (NUMERIC type)
+   */
+  public SDVariable fusedNormQuantize(SDVariable input, SDVariable gamma, double epsilon,
+      int quantType) {
+    SDValidation.validateNumerical("fusedNormQuantize", "input", input);
+    SDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(sd,input, gamma, epsilon, quantType).outputVariable();
+  }
+
+  /**
+   * Fused normalization + quantization in a single kernel.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Norm scale parameter (NUMERIC type)
+   * @param epsilon Epsilon for normalization
+   * @param quantType Quantization type
+   * @return output Normalized and quantized output (NUMERIC type)
+   */
+  public SDVariable fusedNormQuantize(String name, SDVariable input, SDVariable gamma,
+      double epsilon, int quantType) {
+    SDValidation.validateNumerical("fusedNormQuantize", "input", input);
+    SDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(sd,input, gamma, epsilon, quantType).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation<br>
+   * into a single kernel for better memory efficiency.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma RMS norm scale (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of fused RMSNorm + SwiGLU (NUMERIC type)
+   */
+  public SDVariable fusedRmsNormSwiglu(SDVariable input, SDVariable gamma, SDVariable wGate,
+      SDVariable wUp, double epsilon) {
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "input", input);
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "gamma", gamma);
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "wGate", wGate);
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "wUp", wUp);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU(sd,input, gamma, wGate, wUp, epsilon).outputVariable();
+  }
+
+  /**
+   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation<br>
+   * into a single kernel for better memory efficiency.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma RMS norm scale (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of fused RMSNorm + SwiGLU (NUMERIC type)
+   */
+  public SDVariable fusedRmsNormSwiglu(String name, SDVariable input, SDVariable gamma,
+      SDVariable wGate, SDVariable wUp, double epsilon) {
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "input", input);
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "gamma", gamma);
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "wGate", wGate);
+    SDValidation.validateNumerical("fusedRmsNormSwiglu", "wUp", wUp);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU(sd,input, gamma, wGate, wUp, epsilon).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused Rotary Position Embedding using precomputed cache.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
+   * @param startPosition Start position for RoPE application
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public SDVariable fusedRoPE(SDVariable input, SDVariable ropeCache, int startPosition) {
+    SDValidation.validateNumerical("fusedRoPE", "input", input);
+    SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, startPosition).outputVariable();
+  }
+
+  /**
+   * Fused Rotary Position Embedding using precomputed cache.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
+   * @param startPosition Start position for RoPE application
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public SDVariable fusedRoPE(String name, SDVariable input, SDVariable ropeCache,
+      int startPosition) {
+    SDValidation.validateNumerical("fusedRoPE", "input", input);
+    SDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(sd,input, ropeCache, startPosition).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units<br>
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
    * This method uses the sigmoid approximation<br>
@@ -894,6 +1355,62 @@ public class SDNN extends SDOps {
   public SDVariable gelu(String name, SDVariable x) {
     SDValidation.validateNumerical("gelu", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * GPU-accelerated top-K sampling for autoregressive text generation.<br>
+   *
+   * @param logits Logit scores (NUMERIC type)
+   * @param k Number of top candidates
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public SDVariable gpuTopKSample(SDVariable logits, int k, double temperature) {
+    SDValidation.validateNumerical("gpuTopKSample", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample(sd,logits, k, temperature).outputVariable();
+  }
+
+  /**
+   * GPU-accelerated top-K sampling for autoregressive text generation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param logits Logit scores (NUMERIC type)
+   * @param k Number of top candidates
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public SDVariable gpuTopKSample(String name, SDVariable logits, int k, double temperature) {
+    SDValidation.validateNumerical("gpuTopKSample", "logits", logits);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample(sd,logits, k, temperature).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.<br>
+   *
+   * @param logits Logit scores (NUMERIC type)
+   * @param p Cumulative probability threshold (nucleus)
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public SDVariable gpuTopPSample(SDVariable logits, double p, double temperature) {
+    SDValidation.validateNumerical("gpuTopPSample", "logits", logits);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample(sd,logits, p, temperature).outputVariable();
+  }
+
+  /**
+   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param logits Logit scores (NUMERIC type)
+   * @param p Cumulative probability threshold (nucleus)
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public SDVariable gpuTopPSample(String name, SDVariable logits, double p, double temperature) {
+    SDValidation.validateNumerical("gpuTopPSample", "logits", logits);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample(sd,logits, p, temperature).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1044,6 +1561,65 @@ public class SDNN extends SDOps {
   public SDVariable hardTanhDerivative(String name, SDVariable x) {
     SDValidation.validateNumerical("hardTanhDerivative", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Dequantizes quantized KV cache tensors back to floating point.<br>
+   *
+   * @param input Quantized key or value tensor (NUMERIC type)
+   * @param scale Quantization scales (NUMERIC type)
+   * @param quantType Quantization type
+   * @return output Dequantized tensor (NUMERIC type)
+   */
+  public SDVariable kvCacheDequantize(SDVariable input, SDVariable scale, int quantType) {
+    SDValidation.validateNumerical("kvCacheDequantize", "input", input);
+    SDValidation.validateNumerical("kvCacheDequantize", "scale", scale);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize(sd,input, scale, quantType).outputVariable();
+  }
+
+  /**
+   * Dequantizes quantized KV cache tensors back to floating point.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Quantized key or value tensor (NUMERIC type)
+   * @param scale Quantization scales (NUMERIC type)
+   * @param quantType Quantization type
+   * @return output Dequantized tensor (NUMERIC type)
+   */
+  public SDVariable kvCacheDequantize(String name, SDVariable input, SDVariable scale,
+      int quantType) {
+    SDValidation.validateNumerical("kvCacheDequantize", "input", input);
+    SDValidation.validateNumerical("kvCacheDequantize", "scale", scale);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize(sd,input, scale, quantType).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Quantizes KV cache tensors for memory-efficient inference.<br>
+   *
+   * @param input Key or value tensor to quantize (NUMERIC type)
+   * @param quantType Quantization type
+   * @param groupSize Group size for quantization
+   * @return output Quantized tensor (NUMERIC type)
+   */
+  public SDVariable kvCacheQuantize(SDVariable input, int quantType, int groupSize) {
+    SDValidation.validateNumerical("kvCacheQuantize", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize(sd,input, quantType, groupSize).outputVariable();
+  }
+
+  /**
+   * Quantizes KV cache tensors for memory-efficient inference.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Key or value tensor to quantize (NUMERIC type)
+   * @param quantType Quantization type
+   * @param groupSize Group size for quantization
+   * @return output Quantized tensor (NUMERIC type)
+   */
+  public SDVariable kvCacheQuantize(String name, SDVariable input, int quantType, int groupSize) {
+    SDValidation.validateNumerical("kvCacheQuantize", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize(sd,input, quantType, groupSize).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1435,6 +2011,30 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.<br>
+   *
+   * @param input Source tensor (NUMERIC type)
+   * @return output Contiguous copy of input (NUMERIC type)
+   */
+  public SDVariable linearCopy(SDVariable input) {
+    SDValidation.validateNumerical("linearCopy", "input", input);
+    return new org.nd4j.linalg.api.ops.custom.LinearCopy(sd,input).outputVariable();
+  }
+
+  /**
+   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Source tensor (NUMERIC type)
+   * @return output Contiguous copy of input (NUMERIC type)
+   */
+  public SDVariable linearCopy(String name, SDVariable input) {
+    SDValidation.validateNumerical("linearCopy", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.LinearCopy(sd,input).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))<br>
    *
    * @param x Input variable (NUMERIC type)
@@ -1505,6 +2105,182 @@ public class SDNN extends SDOps {
   public SDVariable logSoftmax(String name, SDVariable x, int dimension) {
     SDValidation.validateNumerical("logSoftmax", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(sd,x, dimension).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.<br>
+   * Uses Hadamard product of two low-rank matrices as the adapter.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lohaA1 First Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB1 First Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param lohaA2 Second Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB2 Second Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoHa result (NUMERIC type)
+   */
+  public SDVariable lohaMatMul(SDVariable input, SDVariable weight, SDVariable lohaA1,
+      SDVariable lohaB1, SDVariable lohaA2, SDVariable lohaB2, double scaling,
+      boolean transposeWeight) {
+    SDValidation.validateNumerical("lohaMatMul", "input", input);
+    SDValidation.validateNumerical("lohaMatMul", "weight", weight);
+    SDValidation.validateNumerical("lohaMatMul", "lohaA1", lohaA1);
+    SDValidation.validateNumerical("lohaMatMul", "lohaB1", lohaB1);
+    SDValidation.validateNumerical("lohaMatMul", "lohaA2", lohaA2);
+    SDValidation.validateNumerical("lohaMatMul", "lohaB2", lohaB2);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul(sd,input, weight, lohaA1, lohaB1, lohaA2, lohaB2, scaling, transposeWeight).outputVariable();
+  }
+
+  /**
+   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.<br>
+   * Uses Hadamard product of two low-rank matrices as the adapter.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lohaA1 First Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB1 First Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param lohaA2 Second Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB2 Second Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoHa result (NUMERIC type)
+   */
+  public SDVariable lohaMatMul(String name, SDVariable input, SDVariable weight, SDVariable lohaA1,
+      SDVariable lohaB1, SDVariable lohaA2, SDVariable lohaB2, double scaling,
+      boolean transposeWeight) {
+    SDValidation.validateNumerical("lohaMatMul", "input", input);
+    SDValidation.validateNumerical("lohaMatMul", "weight", weight);
+    SDValidation.validateNumerical("lohaMatMul", "lohaA1", lohaA1);
+    SDValidation.validateNumerical("lohaMatMul", "lohaB1", lohaB1);
+    SDValidation.validateNumerical("lohaMatMul", "lohaA2", lohaA2);
+    SDValidation.validateNumerical("lohaMatMul", "lohaB2", lohaB2);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul(sd,input, weight, lohaA1, lohaB1, lohaA2, lohaB2, scaling, transposeWeight).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.<br>
+   * Uses Kronecker product of matrices as the adapter.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lokrC Kronecker factor C [f1, f2] (NUMERIC type)
+   * @param lokrA Kronecker factor A [dim, d2] (NUMERIC type)
+   * @param lokrB Kronecker factor B [d1, dim] (NUMERIC type)
+   * @param factor1 First Kronecker factor dimension
+   * @param factor2 Second Kronecker factor dimension
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoKr result (NUMERIC type)
+   */
+  public SDVariable lokrMatMul(SDVariable input, SDVariable weight, SDVariable lokrC,
+      SDVariable lokrA, SDVariable lokrB, int factor1, int factor2, double scaling,
+      boolean transposeWeight) {
+    SDValidation.validateNumerical("lokrMatMul", "input", input);
+    SDValidation.validateNumerical("lokrMatMul", "weight", weight);
+    SDValidation.validateNumerical("lokrMatMul", "lokrC", lokrC);
+    SDValidation.validateNumerical("lokrMatMul", "lokrA", lokrA);
+    SDValidation.validateNumerical("lokrMatMul", "lokrB", lokrB);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul(sd,input, weight, lokrC, lokrA, lokrB, factor1, factor2, scaling, transposeWeight).outputVariable();
+  }
+
+  /**
+   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.<br>
+   * Uses Kronecker product of matrices as the adapter.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lokrC Kronecker factor C [f1, f2] (NUMERIC type)
+   * @param lokrA Kronecker factor A [dim, d2] (NUMERIC type)
+   * @param lokrB Kronecker factor B [d1, dim] (NUMERIC type)
+   * @param factor1 First Kronecker factor dimension
+   * @param factor2 Second Kronecker factor dimension
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoKr result (NUMERIC type)
+   */
+  public SDVariable lokrMatMul(String name, SDVariable input, SDVariable weight, SDVariable lokrC,
+      SDVariable lokrA, SDVariable lokrB, int factor1, int factor2, double scaling,
+      boolean transposeWeight) {
+    SDValidation.validateNumerical("lokrMatMul", "input", input);
+    SDValidation.validateNumerical("lokrMatMul", "weight", weight);
+    SDValidation.validateNumerical("lokrMatMul", "lokrC", lokrC);
+    SDValidation.validateNumerical("lokrMatMul", "lokrA", lokrA);
+    SDValidation.validateNumerical("lokrMatMul", "lokrB", lokrB);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul(sd,input, weight, lokrC, lokrA, lokrB, factor1, factor2, scaling, transposeWeight).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Low-Rank Adaptation (LoRA) fused matrix multiplication.<br>
+   * Computes base weight matmul + low-rank adapter in a single operation.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output Result: input @ weight^T + scaling * input @ loraA^T @ loraB^T (NUMERIC type)
+   */
+  public SDVariable loraMatMul(SDVariable input, SDVariable weight, SDVariable loraA,
+      SDVariable loraB, double scaling, boolean transposeWeight) {
+    SDValidation.validateNumerical("loraMatMul", "input", input);
+    SDValidation.validateNumerical("loraMatMul", "weight", weight);
+    SDValidation.validateNumerical("loraMatMul", "loraA", loraA);
+    SDValidation.validateNumerical("loraMatMul", "loraB", loraB);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul(sd,input, weight, loraA, loraB, scaling, transposeWeight).outputVariable();
+  }
+
+  /**
+   * Low-Rank Adaptation (LoRA) fused matrix multiplication.<br>
+   * Computes base weight matmul + low-rank adapter in a single operation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output Result: input @ weight^T + scaling * input @ loraA^T @ loraB^T (NUMERIC type)
+   */
+  public SDVariable loraMatMul(String name, SDVariable input, SDVariable weight, SDVariable loraA,
+      SDVariable loraB, double scaling, boolean transposeWeight) {
+    SDValidation.validateNumerical("loraMatMul", "input", input);
+    SDValidation.validateNumerical("loraMatMul", "weight", weight);
+    SDValidation.validateNumerical("loraMatMul", "loraA", loraA);
+    SDValidation.validateNumerical("loraMatMul", "loraB", loraB);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul(sd,input, weight, loraA, loraB, scaling, transposeWeight).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output Mean of squared values (NUMERIC type)
+   */
+  public SDVariable meanSquare(SDVariable input) {
+    SDValidation.validateNumerical("meanSquare", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare(sd,input).outputVariable();
+  }
+
+  /**
+   * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @return output Mean of squared values (NUMERIC type)
+   */
+  public SDVariable meanSquare(String name, SDVariable input) {
+    SDValidation.validateNumerical("meanSquare", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare(sd,input).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1675,6 +2451,77 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Multi-head Latent Attention (MLA) from DeepSeek-V2.<br>
+   * Uses low-rank KV compression for efficient long-context inference.<br>
+   *
+   * @param input Input hidden states (NUMERIC type)
+   * @param kvDownProj KV down-projection weight (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param latentDim Latent dimension for compressed KV
+   * @return output Attention output (NUMERIC type)
+   */
+  public SDVariable mlaAttention(SDVariable input, SDVariable kvDownProj, int numHeads,
+      int latentDim) {
+    SDValidation.validateNumerical("mlaAttention", "input", input);
+    SDValidation.validateNumerical("mlaAttention", "kvDownProj", kvDownProj);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention(sd,input, kvDownProj, numHeads, latentDim).outputVariable();
+  }
+
+  /**
+   * Multi-head Latent Attention (MLA) from DeepSeek-V2.<br>
+   * Uses low-rank KV compression for efficient long-context inference.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input hidden states (NUMERIC type)
+   * @param kvDownProj KV down-projection weight (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param latentDim Latent dimension for compressed KV
+   * @return output Attention output (NUMERIC type)
+   */
+  public SDVariable mlaAttention(String name, SDVariable input, SDVariable kvDownProj, int numHeads,
+      int latentDim) {
+    SDValidation.validateNumerical("mlaAttention", "input", input);
+    SDValidation.validateNumerical("mlaAttention", "kvDownProj", kvDownProj);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention(sd,input, kvDownProj, numHeads, latentDim).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Mixture of Experts (MoE) gating/routing function.<br>
+   * Selects top-K experts and computes routing weights.<br>
+   *
+   * @param input Input hidden states (NUMERIC type)
+   * @param gateWeights Router gate weights (NUMERIC type)
+   * @param numExperts Number of experts
+   * @param topK Top-K experts to select
+   * @return output Gating weights and expert indices (NUMERIC type)
+   */
+  public SDVariable moeGate(SDVariable input, SDVariable gateWeights, int numExperts, int topK) {
+    SDValidation.validateNumerical("moeGate", "input", input);
+    SDValidation.validateNumerical("moeGate", "gateWeights", gateWeights);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate(sd,input, gateWeights, numExperts, topK).outputVariable();
+  }
+
+  /**
+   * Mixture of Experts (MoE) gating/routing function.<br>
+   * Selects top-K experts and computes routing weights.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input hidden states (NUMERIC type)
+   * @param gateWeights Router gate weights (NUMERIC type)
+   * @param numExperts Number of experts
+   * @param topK Top-K experts to select
+   * @return output Gating weights and expert indices (NUMERIC type)
+   */
+  public SDVariable moeGate(String name, SDVariable input, SDVariable gateWeights, int numExperts,
+      int topK) {
+    SDValidation.validateNumerical("moeGate", "input", input);
+    SDValidation.validateNumerical("moeGate", "gateWeights", gateWeights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate(sd,input, gateWeights, numExperts, topK).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * This performs multi-headed dot product attention on the given timeseries input<br>
    * out = concat(head_1, head_2, ..., head_n) * Wo<br>
    * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
@@ -1749,6 +2596,50 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("multiHeadDotProductAttention", "Wo", Wo);
     SDValidation.validateNumerical("multiHeadDotProductAttention", "mask", mask);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(sd,queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param baseWeight Base weight matrix (NUMERIC type)
+   * @param loraAWeights Stacked LoRA A weights (NUMERIC type)
+   * @param loraBWeights Stacked LoRA B weights (NUMERIC type)
+   * @param adapterIds Adapter selection indices (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @return output Result with per-sample adapter selection (NUMERIC type)
+   */
+  public SDVariable multiLoraMatmul(SDVariable input, SDVariable baseWeight,
+      SDVariable loraAWeights, SDVariable loraBWeights, SDVariable adapterIds, double scaling) {
+    SDValidation.validateNumerical("multiLoraMatmul", "input", input);
+    SDValidation.validateNumerical("multiLoraMatmul", "baseWeight", baseWeight);
+    SDValidation.validateNumerical("multiLoraMatmul", "loraAWeights", loraAWeights);
+    SDValidation.validateNumerical("multiLoraMatmul", "loraBWeights", loraBWeights);
+    SDValidation.validateNumerical("multiLoraMatmul", "adapterIds", adapterIds);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul(sd,input, baseWeight, loraAWeights, loraBWeights, adapterIds, scaling).outputVariable();
+  }
+
+  /**
+   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param baseWeight Base weight matrix (NUMERIC type)
+   * @param loraAWeights Stacked LoRA A weights (NUMERIC type)
+   * @param loraBWeights Stacked LoRA B weights (NUMERIC type)
+   * @param adapterIds Adapter selection indices (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @return output Result with per-sample adapter selection (NUMERIC type)
+   */
+  public SDVariable multiLoraMatmul(String name, SDVariable input, SDVariable baseWeight,
+      SDVariable loraAWeights, SDVariable loraBWeights, SDVariable adapterIds, double scaling) {
+    SDValidation.validateNumerical("multiLoraMatmul", "input", input);
+    SDValidation.validateNumerical("multiLoraMatmul", "baseWeight", baseWeight);
+    SDValidation.validateNumerical("multiLoraMatmul", "loraAWeights", loraAWeights);
+    SDValidation.validateNumerical("multiLoraMatmul", "loraBWeights", loraBWeights);
+    SDValidation.validateNumerical("multiLoraMatmul", "adapterIds", adapterIds);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul(sd,input, baseWeight, loraAWeights, loraBWeights, adapterIds, scaling).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1886,6 +2777,34 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.PRelu(sd,input, alpha, sharedAxes).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.<br>
+   *
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @return output Matrix product (NUMERIC type)
+   */
+  public SDVariable quantizedMatmul(SDVariable a, SDVariable b) {
+    SDValidation.validateNumerical("quantizedMatmul", "a", a);
+    SDValidation.validateNumerical("quantizedMatmul", "b", b);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul(sd,a, b).outputVariable();
+  }
+
+  /**
+   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @return output Matrix product (NUMERIC type)
+   */
+  public SDVariable quantizedMatmul(String name, SDVariable a, SDVariable b) {
+    SDValidation.validateNumerical("quantizedMatmul", "a", a);
+    SDValidation.validateNumerical("quantizedMatmul", "b", b);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul(sd,a, b).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2115,6 +3034,36 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Reshapes a tensor without copying data. Returns a view if possible.<br>
+   * If the reshape cannot be done without copying, this op will fail.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param shape Target shape (NUMERIC type)
+   * @return output Reshaped view (no data copy) (NUMERIC type)
+   */
+  public SDVariable reshapeNoCopy(SDVariable input, SDVariable shape) {
+    SDValidation.validateNumerical("reshapeNoCopy", "input", input);
+    SDValidation.validateNumerical("reshapeNoCopy", "shape", shape);
+    return new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(sd,input, shape).outputVariable();
+  }
+
+  /**
+   * Reshapes a tensor without copying data. Returns a view if possible.<br>
+   * If the reshape cannot be done without copying, this op will fail.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param shape Target shape (NUMERIC type)
+   * @return output Reshaped view (no data copy) (NUMERIC type)
+   */
+  public SDVariable reshapeNoCopy(String name, SDVariable input, SDVariable shape) {
+    SDValidation.validateNumerical("reshapeNoCopy", "input", input);
+    SDValidation.validateNumerical("reshapeNoCopy", "shape", shape);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(sd,input, shape).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Root Mean Square Layer Normalization (RMSNorm):<br>
    * <br>
    * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
@@ -2255,6 +3204,106 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
+   * Encodes position information by rotating pairs of dimensions in the input.<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param mode RoPE mode (default 0)
+   * @param nPast Number of past tokens (default 0)
+   * @param nDims Dimension subset for rotation (default last dim)
+   * @param freqBase Frequency base (default 10000.0)
+   * @param freqScale Frequency scale (default 1.0)
+   * @return output Output with rotary position embeddings applied (NUMERIC type)
+   */
+  public SDVariable rope(SDVariable input, int mode, int nPast, int nDims, double freqBase,
+      double freqScale) {
+    SDValidation.validateNumerical("rope", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE(sd,input, mode, nPast, nDims, freqBase, freqScale).outputVariable();
+  }
+
+  /**
+   * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
+   * Encodes position information by rotating pairs of dimensions in the input.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param mode RoPE mode (default 0)
+   * @param nPast Number of past tokens (default 0)
+   * @param nDims Dimension subset for rotation (default last dim)
+   * @param freqBase Frequency base (default 10000.0)
+   * @param freqScale Frequency scale (default 1.0)
+   * @return output Output with rotary position embeddings applied (NUMERIC type)
+   */
+  public SDVariable rope(String name, SDVariable input, int mode, int nPast, int nDims,
+      double freqBase, double freqScale) {
+    SDValidation.validateNumerical("rope", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE(sd,input, mode, nPast, nDims, freqBase, freqScale).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Row-parallel linear layer for tensor parallelism.<br>
+   * Splits weight rows across tensor parallel ranks.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param reduceOutput Whether to all-reduce output
+   * @return output Row-parallel linear output (NUMERIC type)
+   */
+  public SDVariable rowParallelLinear(SDVariable input, SDVariable weight, int tpRank, int tpSize,
+      boolean reduceOutput) {
+    SDValidation.validateNumerical("rowParallelLinear", "input", input);
+    SDValidation.validateNumerical("rowParallelLinear", "weight", weight);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear(sd,input, weight, tpRank, tpSize, reduceOutput).outputVariable();
+  }
+
+  /**
+   * Row-parallel linear layer for tensor parallelism.<br>
+   * Splits weight rows across tensor parallel ranks.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param reduceOutput Whether to all-reduce output
+   * @return output Row-parallel linear output (NUMERIC type)
+   */
+  public SDVariable rowParallelLinear(String name, SDVariable input, SDVariable weight, int tpRank,
+      int tpSize, boolean reduceOutput) {
+    SDValidation.validateNumerical("rowParallelLinear", "input", input);
+    SDValidation.validateNumerical("rowParallelLinear", "weight", weight);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear(sd,input, weight, tpRank, tpSize, reduceOutput).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Selective scan operation for state space models (Mamba architecture).<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output Selective scan output (NUMERIC type)
+   */
+  public SDVariable selectiveScan(SDVariable input) {
+    SDValidation.validateNumerical("selectiveScan", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,input).outputVariable();
+  }
+
+  /**
+   * Selective scan operation for state space models (Mamba architecture).<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @return output Selective scan output (NUMERIC type)
+   */
+  public SDVariable selectiveScan(String name, SDVariable input) {
+    SDValidation.validateNumerical("selectiveScan", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(sd,input).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a><br>
    * <br>
    * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
@@ -2337,6 +3386,32 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.<br>
+   * Computes f(x) = x * sigmoid(x).<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output SiLU(x) = x * sigmoid(x) (NUMERIC type)
+   */
+  public SDVariable silu(SDVariable input) {
+    SDValidation.validateNumerical("silu", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(sd,input).outputVariable();
+  }
+
+  /**
+   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.<br>
+   * Computes f(x) = x * sigmoid(x).<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @return output SiLU(x) = x * sigmoid(x) (NUMERIC type)
+   */
+  public SDVariable silu(String name, SDVariable input) {
+    SDValidation.validateNumerical("silu", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(sd,input).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Sliding Window Attention - Efficient attention for long sequences.<br>
    * <br>
    * Each token only attends to a fixed window of previous tokens, enabling<br>
@@ -2399,6 +3474,34 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("slidingWindowAttention", "key", key);
     SDValidation.validateNumerical("slidingWindowAttention", "value", value);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(sd,query, key, value, windowSize, numHeads, numKvHeads, scale).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * SmoothQuant: migrates quantization difficulty from activations to weights.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param smoothScale Smooth quantization scale (NUMERIC type)
+   * @return output Smoothly quantized output (NUMERIC type)
+   */
+  public SDVariable smoothQuant(SDVariable input, SDVariable smoothScale) {
+    SDValidation.validateNumerical("smoothQuant", "input", input);
+    SDValidation.validateNumerical("smoothQuant", "smoothScale", smoothScale);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant(sd,input, smoothScale).outputVariable();
+  }
+
+  /**
+   * SmoothQuant: migrates quantization difficulty from activations to weights.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param smoothScale Smooth quantization scale (NUMERIC type)
+   * @return output Smoothly quantized output (NUMERIC type)
+   */
+  public SDVariable smoothQuant(String name, SDVariable input, SDVariable smoothScale) {
+    SDValidation.validateNumerical("smoothQuant", "input", input);
+    SDValidation.validateNumerical("smoothQuant", "smoothScale", smoothScale);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant(sd,input, smoothScale).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2547,6 +3650,36 @@ public class SDNN extends SDOps {
   public SDVariable swish(String name, SDVariable x) {
     SDValidation.validateNumerical("swish", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.Swish(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.<br>
+   * Used in SwiGLU and similar gated architectures.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gate Gate tensor (NUMERIC type)
+   * @return output swish(input) * gate (NUMERIC type)
+   */
+  public SDVariable swishMul(SDVariable input, SDVariable gate) {
+    SDValidation.validateNumerical("swishMul", "input", input);
+    SDValidation.validateNumerical("swishMul", "gate", gate);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul(sd,input, gate).outputVariable();
+  }
+
+  /**
+   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.<br>
+   * Used in SwiGLU and similar gated architectures.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param gate Gate tensor (NUMERIC type)
+   * @return output swish(input) * gate (NUMERIC type)
+   */
+  public SDVariable swishMul(String name, SDVariable input, SDVariable gate) {
+    SDValidation.validateNumerical("swishMul", "input", input);
+    SDValidation.validateNumerical("swishMul", "gate", gate);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul(sd,input, gate).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

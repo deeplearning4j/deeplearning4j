@@ -289,7 +289,7 @@ public class PeftModelFactory {
     /**
      * Create a LoRA configuration builder with sensible defaults.
      */
-    public static LoraConfig.LoraConfigBuilder loraConfigBuilder() {
+    public static LoraConfig.LoraConfigBuilder<?, ?> loraConfigBuilder() {
         return LoraConfig.builder()
             .r(16)
             .loraAlpha(32)

@@ -194,6 +194,25 @@ SD_LIB_HIDDEN void fusedRmsNormSwiGLUBackward(
  * @param ropeType RoPE variant type
  * @param context Launch context
  */
+/**
+ * Fused RoPE with pre-computed cos/sin (cached variant)
+ * Used when cos/sin are provided externally (e.g., from ONNX RotaryEmbedding).
+ *
+ * @param input Input tensor [batch, seq_len, num_heads, head_dim]
+ * @param cosValues Pre-computed cosine [batch, seq_len, half_head_dim]
+ * @param sinValues Pre-computed sine [batch, seq_len, half_head_dim]
+ * @param output Output tensor [batch, seq_len, num_heads, head_dim]
+ * @param ropeType 0=standard, 1=neox, 2=gptj
+ * @param context Launch context
+ */
+SD_LIB_HIDDEN void fusedRoPECached(
+    NDArray* input,
+    NDArray* cosValues,
+    NDArray* sinValues,
+    NDArray* output,
+    int ropeType,
+    LaunchContext* context);
+
 SD_LIB_HIDDEN void fusedRoPEBackward(
     NDArray* gradOut,
     NDArray* gradIn,

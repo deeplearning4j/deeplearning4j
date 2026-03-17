@@ -47,17 +47,22 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
     return Status::OK;
   }
 
+  // View path: if Java initializeOutputs already set up z as a view of x's buffer
+  // (shared DataBuffer with permuted strides), the view is correct — nothing to do.
+  if (x->dataBuffer() == z->dataBuffer()) {
+    return Status::OK;
+  }
+
+  std::vector<LongType> permutationVector;
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
     NDArray *t = x->transpose();
     z->assign(t);
-    // FIXED: transpose() returns a view - only delete if not a view
     if (t != nullptr && !t->isView()) {
       delete t;
     }
     return Status::OK;
   }
 
-  std::vector<LongType> permutationVector;
   if (block.width() > 1) {
     // Read permutation indices directly from synced host buffer to avoid e<T>() bugs on CUDA.
     auto* permArr = INPUT_VARIABLE(1);
@@ -81,10 +86,19 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
     permutationVector = *block.getIArguments();
   }
 
-  // Handle empty permutation vector - just copy input to output
-  if (permutationVector.empty()) {
-    z->assign(x);
-    return Status::OK;
+  // Check for identity permutation [0,1,2,...]
+  if (permutationVector.size() == static_cast<size_t>(x->rankOf())) {
+    bool isIdentity = true;
+    for (size_t i = 0; i < permutationVector.size(); i++) {
+      if (permutationVector[i] != static_cast<LongType>(i)) {
+        isIdentity = false;
+        break;
+      }
+    }
+    if (isIdentity) {
+      z->assign(x);
+      return Status::OK;
+    }
   }
 
   // Handle dynamic shape mismatch: if permutation vector size doesn't match input rank,

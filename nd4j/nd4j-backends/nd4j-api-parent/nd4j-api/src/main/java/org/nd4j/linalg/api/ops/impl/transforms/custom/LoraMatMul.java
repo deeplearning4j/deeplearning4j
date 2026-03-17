@@ -79,6 +79,26 @@ public class LoraMatMul extends DynamicCustomOp {
         addBArgument(transposeWeight);
     }
 
+    public LoraMatMul(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
+                      @NonNull SDVariable weight, @NonNull SDVariable loraA,
+                      @NonNull SDVariable loraB, double scaling, boolean transposeWeight) {
+        super(null, sameDiff, new SDVariable[]{input, weight, loraA, loraB}, false);
+        this.scaling = scaling;
+        this.transposeWeight = transposeWeight;
+        addTArgument(scaling, dropout);
+        addBArgument(transposeWeight);
+    }
+
+    public LoraMatMul(@NonNull INDArray input, @NonNull INDArray weight,
+                      @NonNull INDArray loraA, @NonNull INDArray loraB,
+                      double scaling, boolean transposeWeight) {
+        super(null, new INDArray[]{input, weight, loraA, loraB}, null);
+        this.scaling = scaling;
+        this.transposeWeight = transposeWeight;
+        addTArgument(scaling, dropout);
+        addBArgument(transposeWeight);
+    }
+
     public LoraMatMul(@NonNull INDArray input, @NonNull INDArray weight,
                       @NonNull INDArray loraA, @NonNull INDArray loraB,
                       double scaling, INDArray output) {

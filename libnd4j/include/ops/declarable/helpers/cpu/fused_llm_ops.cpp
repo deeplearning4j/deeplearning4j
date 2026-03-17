@@ -211,6 +211,68 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// Fused RoPE with pre-computed cos/sin (cached variant)
+//////////////////////////////////////////////////////////////////////////////
+
+void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
+                     NDArray* output, int ropeType, LaunchContext* context) {
+  auto batch = input->sizeAt(0);
+  auto seqLen = input->sizeAt(1);
+  auto numHeads = input->sizeAt(2);
+  auto headDim = input->sizeAt(3);
+  auto halfDim = headDim / 2;
+
+  output->assign(input);
+
+  // Determine cos/sin indexing based on rank
+  auto cosRank = cosValues->rankOf();
+
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto b = start; b < stop; b++) {
+      for (LongType s = 0; s < seqLen; s++) {
+        for (LongType h = 0; h < numHeads; h++) {
+          for (LongType i = 0; i < halfDim; i++) {
+            // Get cos/sin values - handle different input ranks
+            float cosVal, sinVal;
+            if (cosRank == 2) {
+              cosVal = cosValues->e<float>(s * halfDim + i);
+              sinVal = sinValues->e<float>(s * halfDim + i);
+            } else if (cosRank == 3) {
+              cosVal = cosValues->e<float>((b * seqLen + s) * halfDim + i);
+              sinVal = sinValues->e<float>((b * seqLen + s) * halfDim + i);
+            } else {
+              // rank 4: [B, S, 1, halfDim]
+              cosVal = cosValues->e<float>(((b * seqLen + s) * 1) * halfDim + i);
+              sinVal = sinValues->e<float>(((b * seqLen + s) * 1) * halfDim + i);
+            }
+
+            LongType idx1, idx2;
+            if (ropeType == 0) {
+              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
+              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + halfDim;
+            } else if (ropeType == 1) {
+              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i * 2;
+              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i * 2 + 1;
+            } else {
+              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
+              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + halfDim;
+            }
+
+            float x1 = input->e<float>(idx1);
+            float x2 = input->e<float>(idx2);
+
+            output->p(idx1, x1 * cosVal - x2 * sinVal);
+            output->p(idx2, x1 * sinVal + x2 * cosVal);
+          }
+        }
+      }
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, batch);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Fused Bias + Dropout + Residual
 //////////////////////////////////////////////////////////////////////////////
 

@@ -92,6 +92,14 @@ public class MultiLoraMatmul extends DynamicCustomOp {
     }
 
     /**
+     * INDArray convenience constructor without output.
+     */
+    public MultiLoraMatmul(INDArray input, INDArray baseWeight, INDArray loraA, INDArray loraB,
+                           INDArray adapterIds, double alpha) {
+        this(input, baseWeight, loraA, loraB, adapterIds, null, (float) alpha);
+    }
+
+    /**
      * INDArray constructor.
      */
     public MultiLoraMatmul(INDArray input, INDArray baseWeight, INDArray loraA, INDArray loraB,

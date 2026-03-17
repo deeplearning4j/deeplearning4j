@@ -120,6 +120,22 @@ public class MoeGate extends DynamicCustomOp {
         addTArgument((double) auxLossCoeff);
     }
 
+    public MoeGate(SameDiff sd, SDVariable input, SDVariable gateWeights, int numExperts, int topK) {
+        super(null, sd, new SDVariable[]{input, gateWeights}, false);
+        this.topK = topK;
+        this.numExperts = numExperts;
+        addIArgument((long) topK, (long) numExperts);
+        addTArgument((double) this.auxLossCoeff);
+    }
+
+    public MoeGate(INDArray input, INDArray gateWeights, int numExperts, int topK) {
+        super(new INDArray[]{input, gateWeights}, null);
+        this.topK = topK;
+        this.numExperts = numExperts;
+        addIArgument((long) topK, (long) numExperts);
+        addTArgument((double) this.auxLossCoeff);
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();

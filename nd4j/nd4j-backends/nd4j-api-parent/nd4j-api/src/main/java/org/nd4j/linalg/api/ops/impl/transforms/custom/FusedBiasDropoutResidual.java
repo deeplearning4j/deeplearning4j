@@ -75,6 +75,16 @@ public class FusedBiasDropoutResidual extends DynamicCustomOp {
         this(sameDiff, input, bias, residual, 0.0, 0, false);
     }
 
+    public FusedBiasDropoutResidual(SameDiff sd, SDVariable input, SDVariable bias, SDVariable residual,
+                                    double dropoutProb, boolean training) {
+        this(sd, input, bias, residual, dropoutProb, 0, training);
+    }
+
+    public FusedBiasDropoutResidual(INDArray input, INDArray bias, INDArray residual,
+                                    double dropoutProb, boolean training) {
+        this(input, bias, residual, null, dropoutProb, 0, training);
+    }
+
     public FusedBiasDropoutResidual(INDArray input, INDArray bias, INDArray residual, INDArray output,
                                     double dropoutProb, long seed, boolean training) {
         super(new INDArray[]{input, bias, residual}, output != null ? new INDArray[]{output} : null);

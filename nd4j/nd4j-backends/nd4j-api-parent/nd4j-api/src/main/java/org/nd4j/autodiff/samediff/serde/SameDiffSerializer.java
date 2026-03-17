@@ -2480,6 +2480,11 @@ public class SameDiffSerializer {
                 dtype = DataType.FLOAT;
             byte dtypeByte = FlatBuffersMapper.getDataTypeAsByte(dtype);
             long[] shape = variable.getShape();
+            // Fall back to actual array shape if SDVariable metadata doesn't have it
+            // (e.g., after optimizer replaces array data without updating variable metadata)
+            if (shape == null && variable.getArr() != null && !variable.getArr().isEmpty()) {
+                shape = variable.getArr().shape();
+            }
             if (shape != null) shapeOffset = FlatVariable.createShapeVector(bufferBuilder, shape);
 
             // Serialize inline data only for variables marked for small inline inclusion

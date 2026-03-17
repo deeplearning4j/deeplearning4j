@@ -106,6 +106,22 @@ public class ColumnParallelLinear extends DynamicCustomOp {
     }
 
     /**
+     * SameDiff convenience constructor without bias.
+     */
+    public ColumnParallelLinear(SameDiff sameDiff, SDVariable input, SDVariable weightShard,
+                                int tpRank, int tpSize, boolean gatherOutput) {
+        this(sameDiff, input, weightShard, null, tpSize, tpRank, gatherOutput ? 1 : 0);
+    }
+
+    /**
+     * INDArray convenience constructor without bias.
+     */
+    public ColumnParallelLinear(INDArray input, INDArray weightShard,
+                                int tpRank, int tpSize, boolean gatherOutput) {
+        this(input, weightShard, null, null, tpSize, tpRank, gatherOutput ? 1 : 0);
+    }
+
+    /**
      * INDArray constructor (no output pre-allocation).
      */
     public ColumnParallelLinear(INDArray input, INDArray weightShard, INDArray biasShard,

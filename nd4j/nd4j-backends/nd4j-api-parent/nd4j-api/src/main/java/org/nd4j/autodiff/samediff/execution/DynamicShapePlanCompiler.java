@@ -544,6 +544,35 @@ public class DynamicShapePlanCompiler {
                     .opNameHash(opNameHash)
                     .inputArraysBuffer(new org.nd4j.linalg.api.ndarray.INDArray[numInputs])
                     .build();
+
+            // Attention op diagnostics: log all inputs with their sources, types, and shapes
+            if ("onnx_multi_head_attention".equals(opNameLower) || "dot_product_attention_v2".equals(opNameLower)) {
+                log.info("ATTN_OP_COMPILE: step={} op={} slot={} numInputs={} numOutputs={}",
+                        stepIdx, opName, stepIdx, numInputs, numOutputs);
+                for (int i = 0; i < numInputs; i++) {
+                    int srcIdx = inputSourceIndices[i];
+                    String srcType = inputSourceTypes[i] == DynamicShapeSlot.SOURCE_OP_OUTPUT ? "OP_OUTPUT" :
+                            inputSourceTypes[i] == DynamicShapeSlot.SOURCE_CONSTANT ? "CONSTANT" :
+                            inputSourceTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE ? "VARIABLE" :
+                            inputSourceTypes[i] == DynamicShapeSlot.SOURCE_PLACEHOLDER ? "PLACEHOLDER" : "UNKNOWN";
+                    String extName = "";
+                    String shapeStr = "?";
+                    if (srcIdx < 0) {
+                        int extIdx = -(srcIdx + 1);
+                        extName = extIdx < externalInputKeys.size() ? externalInputKeys.get(extIdx) : "OUT_OF_RANGE";
+                        // Try to get the actual array shape
+                        INDArray arr = sd.getArrForVarName(extName);
+                        if (arr == null) {
+                            // Try with :0 suffix stripped
+                            String base = extName.contains(":") ? extName.substring(0, extName.lastIndexOf(':')) : extName;
+                            arr = sd.getArrForVarName(base);
+                        }
+                        shapeStr = arr != null ? Arrays.toString(arr.shape()) + " len=" + arr.length() : "NULL";
+                    }
+                    log.info("ATTN_OP_COMPILE:   input[{}] var='{}' srcIdx={} srcType={} extName='{}' shape={}",
+                            i, inputVarNames[i], srcIdx, srcType, extName, shapeStr);
+                }
+            }
         }
 
         // Step 5: Mark output slots that are final outputs as never releasable
@@ -741,6 +770,42 @@ public class DynamicShapePlanCompiler {
 
         log.debug("DynamicShapePlan compiled: {} ops, {} output slots, {} external inputs, {} final outputs, {} root slots",
                 slots.length, totalOutputSlots, externalInputKeys.size(), requestedOutputs.size(), rootSlots.length);
+
+        // Log external input discovery for frozen tracking / lineage diagnostics
+        int placeholderCount = 0, constantCount = 0, variableCount = 0;
+        for (int i = 0; i < externalInputKeys.size(); i++) {
+            byte srcType = externalInputSourceTypes.get(i);
+            if (srcType == DynamicShapeSlot.SOURCE_PLACEHOLDER) placeholderCount++;
+            else if (srcType == DynamicShapeSlot.SOURCE_CONSTANT) constantCount++;
+            else if (srcType == DynamicShapeSlot.SOURCE_VARIABLE) variableCount++;
+        }
+        log.info("EXT_INPUT_DISCOVER: {} total ({} constants, {} variables, {} placeholders)",
+                externalInputKeys.size(), constantCount, variableCount, placeholderCount);
+        // Log placeholder names (these are the dynamic inputs that change per step)
+        for (int i = 0; i < externalInputKeys.size(); i++) {
+            if (externalInputSourceTypes.get(i) == DynamicShapeSlot.SOURCE_PLACEHOLDER) {
+                log.info("EXT_INPUT_DISCOVER: placeholder idx={} name=\"{}\"", i, externalInputKeys.get(i));
+            }
+        }
+        // Log CONSTANT and VARIABLE ext inputs that have empty/null arrays (these are problematic
+        // for attention ops where inputs 4-5 should be past_key/past_value but are empty constants)
+        for (int i = 0; i < externalInputKeys.size(); i++) {
+            byte srcType = externalInputSourceTypes.get(i);
+            if (srcType == DynamicShapeSlot.SOURCE_CONSTANT || srcType == DynamicShapeSlot.SOURCE_VARIABLE) {
+                String extName = externalInputKeys.get(i);
+                INDArray arr = sd.getArrForVarName(extName);
+                if (arr == null) {
+                    String base = extName.contains(":") ? extName.substring(0, extName.lastIndexOf(':')) : extName;
+                    arr = sd.getArrForVarName(base);
+                }
+                if (arr == null || arr.isEmpty() || arr.length() == 0) {
+                    String typeStr = srcType == DynamicShapeSlot.SOURCE_CONSTANT ? "CONSTANT" : "VARIABLE";
+                    log.info("EXT_INPUT_DISCOVER: EMPTY_{} idx={} name=\"{}\" shape={}",
+                            typeStr, i, extName,
+                            arr != null ? java.util.Arrays.toString(arr.shape()) : "[]");
+                }
+            }
+        }
 
         // Log needsZeroedOutput diagnostics
         int totalNeedsZeroed = needsZeroedOutputOps.values().stream().mapToInt(Integer::intValue).sum();

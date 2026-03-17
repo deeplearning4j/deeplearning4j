@@ -317,6 +317,61 @@ __global__ void fusedRoPEBackwardKernel(
 }
 
 //////////////////////////////////////////////////////////////////////////////
+// Fused RoPE with pre-computed cos/sin (cached variant)
+//////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+SD_KERNEL void fusedRoPECachedKernel(
+    const T* __restrict__ input,
+    const T* __restrict__ cosValues,
+    const T* __restrict__ sinValues,
+    T* __restrict__ output,
+    const LongType batch,
+    const LongType seqLen,
+    const LongType numHeads,
+    const LongType headDim,
+    const LongType cosStride0,
+    const LongType cosStride1,
+    const LongType cosStride2,
+    const int ropeType) {
+
+  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType halfDim = headDim / 2;
+  const LongType totalPairs = batch * seqLen * numHeads * halfDim;
+  if (idx >= totalPairs) return;
+
+  const LongType pairIdx = idx % halfDim;
+  LongType rem = idx / halfDim;
+  const LongType h = rem % numHeads;
+  rem /= numHeads;
+  const LongType s = rem % seqLen;
+  const LongType b = rem / seqLen;
+
+  // Index into cos/sin using their actual strides (handles 2D, 3D, or 4D with broadcast)
+  const LongType csIdx = b * cosStride0 + s * cosStride1 + pairIdx * cosStride2;
+  float cosVal = static_cast<float>(cosValues[csIdx]);
+  float sinVal = static_cast<float>(sinValues[csIdx]);
+
+  LongType idx1, idx2;
+  if (ropeType == 0) {  // Standard (LLaMA)
+    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx;
+    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx + halfDim;
+  } else if (ropeType == 1) {  // NeoX
+    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx * 2;
+    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx * 2 + 1;
+  } else {  // GPT-J
+    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx;
+    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx + halfDim;
+  }
+
+  float x1 = static_cast<float>(input[idx1]);
+  float x2 = static_cast<float>(input[idx2]);
+
+  output[idx1] = static_cast<T>(x1 * cosVal - x2 * sinVal);
+  output[idx2] = static_cast<T>(x1 * sinVal + x2 * cosVal);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Fused Bias + Dropout + Residual Kernel
 //////////////////////////////////////////////////////////////////////////////
 
@@ -666,6 +721,74 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
   }
 
   NDArray::registerSpecialUse({output}, {input});
+}
+
+void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
+                     NDArray* output, int ropeType, LaunchContext* context) {
+  auto batch = input->sizeAt(0);
+  auto seqLen = input->sizeAt(1);
+  auto numHeads = input->sizeAt(2);
+  auto headDim = input->sizeAt(3);
+
+  // cos/sin can be 2D [S, halfDim], 3D [B, S, halfDim], or 4D [B, S, 1, halfDim]
+  // Compute strides for the batch, seq, and halfDim dimensions
+  auto cosRank = cosValues->rankOf();
+  LongType cosStride0 = 0;  // batch stride
+  LongType cosStride1 = 0;  // seq stride
+  LongType cosStride2 = 1;  // halfDim stride (innermost)
+  if (cosRank == 2) {
+    // [S, halfDim] - no batch dim, broadcast across batch
+    cosStride0 = 0;
+    cosStride1 = cosValues->strideAt(0);
+    cosStride2 = cosValues->strideAt(1);
+  } else if (cosRank == 3) {
+    // [B, S, halfDim]
+    cosStride0 = cosValues->strideAt(0);
+    cosStride1 = cosValues->strideAt(1);
+    cosStride2 = cosValues->strideAt(2);
+  } else if (cosRank == 4) {
+    // [B, S, 1, halfDim] - skip the broadcast head dim
+    cosStride0 = cosValues->strideAt(0);
+    cosStride1 = cosValues->strideAt(1);
+    cosStride2 = cosValues->strideAt(3);
+  }
+
+  NDArray::prepareSpecialUse({output}, {input, cosValues, sinValues});
+  auto stream = context->getCudaStream();
+  auto dtype = input->dataType();
+
+  LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+  dim3 launchDims = getLaunchDims("fusedRopeCached");
+  int threadsPerBlock = launchDims.y;
+  int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
+
+  if (dtype == DataType::FLOAT32) {
+    fusedRoPECachedKernel<float><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const float*>(input->specialBuffer()),
+        reinterpret_cast<const float*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float*>(sinValues->specialBuffer()),
+        reinterpret_cast<float*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else if (dtype == DataType::DOUBLE) {
+    fusedRoPECachedKernel<double><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const double*>(cosValues->specialBuffer()),
+        reinterpret_cast<const double*>(sinValues->specialBuffer()),
+        reinterpret_cast<double*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else if (dtype == DataType::HALF) {
+    fusedRoPECachedKernel<float16><<<numBlocks, threadsPerBlock, 0, *stream>>>(
+        reinterpret_cast<const float16*>(input->specialBuffer()),
+        reinterpret_cast<const float16*>(cosValues->specialBuffer()),
+        reinterpret_cast<const float16*>(sinValues->specialBuffer()),
+        reinterpret_cast<float16*>(output->specialBuffer()),
+        batch, seqLen, numHeads, headDim, cosStride0, cosStride1, cosStride2, ropeType);
+  } else {
+    THROW_EXCEPTION("fusedRoPECached: Unsupported data type");
+  }
+
+  DebugHelper::checkGlobalErrorCode("fusedRoPECachedKernel failed");
+  NDArray::registerSpecialUse({output}, {input, cosValues, sinValues});
 }
 
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,

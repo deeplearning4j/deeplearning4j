@@ -46,6 +46,8 @@ public class BenchmarkConfigApplier {
 
     /**
      * Reset all cached state in a model between benchmark configurations.
+     * NOTE: Does NOT invalidate Triton disk cache - that persists across runs.
+     * Only clears DSP plan cache which must be recompiled for each config.
      */
     public static void resetModelState(SameDiff model) {
         model.resetSession();
@@ -53,9 +55,15 @@ public class BenchmarkConfigApplier {
         model.clearOpInputs();
         model.clearDynamicShapePlanCache();
 
+        // NOTE: We do NOT call invalidateTritonCache() here because:
+        // 1. Triton PTX kernels are cached to disk (~/.nd4j/triton_cache/)
+        // 2. CUDA graphs are cached in-memory (CudaGraphScheduler._graphCache)
+        // 3. Both should persist across benchmark configs for the same model
+        // 4. invalidateTritonCache() would force re-compilation, defeating the cache
+        
+        // Only reset Triton counters for clean metrics
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         if (nativeOps.isTritonAvailable()) {
-            nativeOps.invalidateTritonCache();
             nativeOps.resetTritonCounters();
         }
     }
@@ -131,10 +139,13 @@ public class BenchmarkConfigApplier {
 
         applyTritonProfile(config.getTritonProfile());
 
-        // Enable DSP diagnostics for graph capture configs
+        // Enable DSP diagnostics for graph capture configs.
+        // EXECUTE is NOT auto-enabled — it triggers per-step cudaStreamSynchronize
+        // for argmax logging (~5ms penalty per decode step). Enable explicitly via
+        // -Dnd4j.dsp.diagnostics=EXECUTE when needed for debugging.
         if (config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS) {
             DspDiagnostics.enableCategories(
-                    DspDiagnostics.COMPILE | DspDiagnostics.EXECUTE | DspDiagnostics.FALLBACK |
+                    DspDiagnostics.COMPILE | DspDiagnostics.FALLBACK |
                     DspDiagnostics.BACKEND | DspDiagnostics.MEMORY);
             DspDiagnostics.setLevel(DspDiagnostics.LEVEL_FULL);
         }

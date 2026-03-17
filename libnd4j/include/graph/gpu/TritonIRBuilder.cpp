@@ -274,6 +274,12 @@ static std::unordered_map<std::string, TritonOpMapping> buildOpTable() {
   table["normalize_moments"]    = {"normalize_moments",    TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};
   table["NormalizeMoments"]     = {"NormalizeMoments",     TritonOpCategory::NORMALIZATION, "custom.normalize_moments", true};
 
+  // Rotary position embedding ops
+  table["fused_rope"]           = {"fused_rope",           TritonOpCategory::ROPE, "custom.rope",     true};
+  table["FusedRope"]            = {"FusedRope",            TritonOpCategory::ROPE, "custom.rope",     true};
+  table["rope"]                 = {"rope",                 TritonOpCategory::ROPE, "custom.rope",     true};
+  table["Rope"]                 = {"Rope",                 TritonOpCategory::ROPE, "custom.rope",     true};
+
   // Shape manipulation (logical transforms, no data movement in Triton IR)
   table["reshape"]       = {"reshape",       TritonOpCategory::SHAPE_MANIPULATION, "custom.reshape",     true};
   table["Reshape"]       = {"Reshape",       TritonOpCategory::SHAPE_MANIPULATION, "custom.reshape",     true};

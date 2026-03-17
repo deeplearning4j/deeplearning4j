@@ -185,6 +185,24 @@ public class MLAAttention extends DynamicCustomOp {
         addArgs();
     }
 
+    public MLAAttention(SameDiff sd, SDVariable input, SDVariable kvDownProj, int numHeads, int latentDim) {
+        super(null, sd, new SDVariable[]{input, kvDownProj}, false);
+        this.numHeads = numHeads;
+        this.latentDim = latentDim;
+        addIArgument((long) numHeads, (long) this.numKvHeads, (long) this.headDim,
+                     (long) latentDim, (long) this.ropeHeadDim, (long) this.seqLen);
+        addTArgument((double) this.attScale);
+    }
+
+    public MLAAttention(INDArray input, INDArray kvDownProj, int numHeads, int latentDim) {
+        super(new INDArray[]{input, kvDownProj}, null);
+        this.numHeads = numHeads;
+        this.latentDim = latentDim;
+        addIArgument((long) numHeads, (long) this.numKvHeads, (long) this.headDim,
+                     (long) latentDim, (long) this.ropeHeadDim, (long) this.seqLen);
+        addTArgument((double) this.attScale);
+    }
+
     private void addArgs() {
         addIArgument((long) numHeads, (long) numKvHeads, (long) headDim,
                      (long) latentDim, (long) ropeHeadDim, (long) seqLen);

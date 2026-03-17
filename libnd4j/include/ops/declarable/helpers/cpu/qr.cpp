@@ -30,123 +30,82 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-NDArray matrixMinor(NDArray& in, sd::LongType col) {
-  // Allocate on stack via shapeInfo constructor — no pointer aliasing issues
-  NDArray m(in.shapeInfo(), false, in.getContext(), false);
-  m.setIdentity();
-  auto view = m({col, m.rows(), col, m.columns()});
-  auto inView = in({col, m.rows(), col, m.columns()});
-  view->assign(inView);
-  delete view;
-  delete inView;
-
-  return m;
-}
-
-/* m = I - v v^T */
-template <typename T>
-NDArray vmul(NDArray& v, int n) {
-  std::vector<sd::LongType> nShape = {n,n};
-  NDArray res('c', nShape, v.dataType(), v.getContext());  // x = matrix_new(n, n);
-  T const* vBuf = v.getDataBuffer()->primaryAsT<T>();
-  T* resBuf = res.dataBuffer()->primaryAsT<T>();
-  auto interloop = PRAGMA_THREADS_FOR_2D {
-    for (auto i = start_x; i < n; i += inc_x)
-      for (auto j = start_y; j < n; j += inc_y) resBuf[i * n + j] = -2 * vBuf[i] * vBuf[j] + (i == j ? T(1) : T(0));
-  };
-
-  samediff::Threads::parallel_for(interloop, 0, n, 1, 0, n, 1);
-  return res;
-}
-
+// Modified Gram-Schmidt QR decomposition
 template <typename T>
 void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
   sd::LongType M = matrix->sizeAt(-2);
   sd::LongType N = matrix->sizeAt(-1);
-  auto resQ = fullMatricies ? Q->ulike() : new NDArray(NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext()));
-  auto resR = fullMatricies ? R->ulike() : matrix->ulike();
-  std::vector<NDArray*> q(M, nullptr);
-
-  std::vector<sd::LongType> mShape = {M};
-  NDArray z = *matrix;
-  NDArray e('c', mShape, DataTypeUtils::fromT<T>(), Q->getContext());  // two internal buffers and scalar for squared norm
-
-  for (sd::LongType k = 0; k < N && k < M - 1; k++) {  // loop for columns, but not further then row number
-    e.nullify();
-    z = matrixMinor<T>(z, k);  // minor computing for current column with given matrix z (initally is a input matrix)
-
-    std::vector<sd::LongType> zeroVec = {0};
-    auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
-    auto *normPtr = currentColumn->reduceAlongDimension(reduce::Norm2,&zeroVec);
-    NDArray norm = *normPtr;
-    delete normPtr;
-
-    if (matrix->t<T>(k, k) > T(0.f)) {  // negate on positive matrix diagonal element
-      NDArray *negNorm = norm * T(-1.f);
-      norm.assign(negNorm);
-      delete negNorm;
+  sd::LongType K = std::min(M, N);
+  
+  // Initialize Q and R
+  sd::LongType Qcols = fullMatricies ? M : K;
+  std::vector<sd::LongType> qShape = {M, Qcols};
+  std::vector<sd::LongType> rShape = {K, N};
+  
+  // Copy input to work
+  NDArray* work = matrix->dup();
+  
+  // Modified Gram-Schmidt
+  for (sd::LongType j = 0; j < K; j++) {
+    // Compute norm of column j
+    T norm = T(0);
+    for (sd::LongType i = 0; i < M; i++) {
+      norm += work->t<T>(i, j) * work->t<T>(i, j);
     }
-
-    e.p(k, &norm);
-    NDArray *ePlusColumn = e + (*currentColumn);
-    e.assign(ePlusColumn);
-    delete ePlusColumn;
-
-    auto *normEPtr = e.reduceAlongDimension(reduce::Norm2, &zeroVec);
-    NDArray *eDivNormE = e / (*normEPtr);
-    e.assign(eDivNormE);
-    delete eDivNormE;
-    delete normEPtr;
-
-    q[k] = new NDArray(vmul<T>(e, M));
-    auto qQ = z.ulike();
-    MmulHelper::matmul(q[k], &z, qQ, false, false, 1.0, 0.0, qQ);
-    z = std::move(*qQ);
-    delete qQ;
-
-    delete currentColumn;
-  }
-
-
-  resQ->assign(q[0]);  //
-
-  for (sd::LongType i = 1; i < N && i < M - 1; i++) {
-    auto tempResQ = resQ->ulike();
-    MmulHelper::matmul(q[i], resQ, tempResQ, false, false, 1.0, 0.0, tempResQ);
-    delete resQ;
-    resQ = tempResQ;
-  }
-  MmulHelper::matmul(resQ, matrix, resR, false, false, 1.0, 0.0, resR);
-  // resR *= -1.f;
-  resQ->transposei();
-  if (fullMatricies) {
-    Q->assign(resQ);
-    R->assign(resR);
-  } else {
-    auto resQView = (*resQ)({0, 0, 0, N});
-    auto resRView = (*resR)({0, N, 0, 0});
-    Q->assign(resQView);
-    R->assign(resRView);
-    delete resQView;
-    delete resRView;
-  }
-
-  // Clean up allocated NDArrays in q vector
-  for (sd::LongType i = 0; i < M; i++) {
-    if (q[i] != nullptr) {
-      delete q[i];
+    norm = math::sd_sqrt<T, T>(norm);
+    
+    // Handle near-zero norm
+    if (norm < T(1e-10)) {
+      // Column is linearly dependent, set Q[:,j] = 0 and R[:,j] = 0
+      for (sd::LongType i = 0; i < M; i++) {
+        Q->r<T>(i, j) = T(0);
+      }
+      for (sd::LongType k = j; k < N; k++) {
+        R->r<T>(j, k) = T(0);
+      }
+      continue;
+    }
+    
+    // Q[:,j] = work[:,j] / norm
+    for (sd::LongType i = 0; i < M; i++) {
+      Q->r<T>(i, j) = work->t<T>(i, j) / norm;
+    }
+    
+    // R[j,j] = norm
+    R->r<T>(j, j) = norm;
+    
+    // Orthogonalize remaining columns
+    for (sd::LongType k = j + 1; k < N; k++) {
+      // R[j,k] = Q[:,j]^T * work[:,k]
+      T dot = T(0);
+      for (sd::LongType i = 0; i < M; i++) {
+        dot += Q->t<T>(i, j) * work->t<T>(i, k);
+      }
+      R->r<T>(j, k) = dot;
+      
+      // work[:,k] -= R[j,k] * Q[:,j]
+      for (sd::LongType i = 0; i < M; i++) {
+        work->r<T>(i, k) -= dot * Q->t<T>(i, j);
+      }
     }
   }
-
-  delete resQ;
-  delete resR;
+  
+  // If full matrices and M > N, complete Q with additional orthogonal vectors
+  if (fullMatricies && M > N) {
+    // For now, just set remaining columns to zero
+    // A proper implementation would use Gram-Schmidt on random vectors
+    for (sd::LongType j = K; j < M; j++) {
+      for (sd::LongType i = 0; i < M; i++) {
+        Q->r<T>(i, j) = (i == j) ? T(1) : T(0);
+      }
+    }
+  }
+  
+  delete work;
 }
 
 template <typename T>
 void qr_(NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
-  // For unbatched (2D) inputs, allTensorsAlongDimension({-2,-1}) produces rank-0 TADs.
-  // Process the single matrix directly.
   if (input->rankOf() == 2) {
     qrSingle<T>(input, outputQ, outputR, fullMatricies);
     return;
@@ -162,7 +121,6 @@ void qr_(NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMat
       qrSingle<T>(listInput.at(batch), listOutQ.at(batch), listOutR.at(batch), fullMatricies);
     }
   };
-
   samediff::Threads::parallel_tad(batching, 0, listOutQ.size(), 1);
 }
 

@@ -296,6 +296,18 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
                                                 SDVariable valueMask,
                                                 SDVariable keyCache,
                                                 SDVariable valueCache) {
+        return inputsWithCache(sd, queries, values, keys, queryMask, valueMask, keyCache, valueCache, null);
+    }
+
+    private static SDVariable[] inputsWithCache(SameDiff sd,
+                                                SDVariable queries,
+                                                SDVariable values,
+                                                SDVariable keys,
+                                                SDVariable queryMask,
+                                                SDVariable valueMask,
+                                                SDVariable keyCache,
+                                                SDVariable valueCache,
+                                                SDVariable cachePosition) {
         List<SDVariable> inputs = new ArrayList<>();
         inputs.add(queries);
         inputs.add(values);
@@ -307,6 +319,9 @@ public class DotProductAttentionV2 extends DynamicCustomOp {
         }
         if (valueCache != null) {
             inputs.add(valueCache);
+        }
+        if (cachePosition != null) {
+            inputs.add(cachePosition);
         }
         return inputs.toArray(new SDVariable[inputs.size()]);
     }

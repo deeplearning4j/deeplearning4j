@@ -118,6 +118,28 @@ public class DecoderMaskedMha extends DynamicCustomOp {
     }
 
     /**
+     * SameDiff convenience constructor with query/key/value inputs.
+     */
+    public DecoderMaskedMha(SameDiff sameDiff, SDVariable query, SDVariable key, SDVariable value,
+                            int numHeads, boolean isCausal) {
+        super(null, sameDiff, new SDVariable[]{query, key, value}, false);
+        this.numHeads = numHeads;
+        addIArgument((long) numHeads, (long) numKvHeads, (long) headDim, isCausal ? 1L : 0L, (long) ropeBase);
+        addTArgument((double) maskFilterValue);
+    }
+
+    /**
+     * INDArray convenience constructor with query/key/value inputs.
+     */
+    public DecoderMaskedMha(INDArray query, INDArray key, INDArray value,
+                            int numHeads, boolean isCausal) {
+        super(null, new INDArray[]{query, key, value}, null);
+        this.numHeads = numHeads;
+        addIArgument((long) numHeads, (long) numKvHeads, (long) headDim, isCausal ? 1L : 0L, (long) ropeBase);
+        addTArgument((double) maskFilterValue);
+    }
+
+    /**
      * INDArray constructor.
      */
     public DecoderMaskedMha(INDArray hiddenStates, INDArray qkvWeight, INDArray outWeight,

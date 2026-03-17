@@ -84,8 +84,33 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
 
 #if defined(SD_CUDA)
   // CUDA fast path: fused kernel for last-dimension normalization
-  if (lastDimNorm && isContiguous && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous) {
-    helpers::layerNormCuda(input, gain, bias, output, longAxis, 1e-5f, block.launchContext());
+  // If input is non-contiguous (e.g. from permute view), dup to contiguous first —
+  // one cudaMemcpy is far cheaper than 8 separate decomposed kernel launches
+  if (lastDimNorm && (isFloat || isDouble || isHalf) && gainContiguous && biasContiguous) {
+    NDArray* inputToUse = input;
+    NDArray* contiguousInput = nullptr;
+    NDArray* outputToUse = output;
+    NDArray* contiguousOutput = nullptr;
+
+    if (!inputContiguous) {
+      contiguousInput = new NDArray(input->dup('c'));
+      inputToUse = contiguousInput;
+    }
+    if (!outputContiguous) {
+      contiguousOutput = new NDArray(output->dup('c'));
+      outputToUse = contiguousOutput;
+    }
+
+    helpers::layerNormCuda(inputToUse, gain, bias, outputToUse, longAxis, 1e-5f, block.launchContext());
+
+    if (contiguousOutput != nullptr) {
+      output->assign(outputToUse);
+      delete contiguousOutput;
+    }
+    if (contiguousInput != nullptr) {
+      delete contiguousInput;
+    }
+
     return sd::Status::OK;
   }
 #endif

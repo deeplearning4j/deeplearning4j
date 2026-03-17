@@ -467,6 +467,53 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   void resetKvCachePosition(int newPos);
 
   /**
+   * Configure decode input indices for direct device-side updates.
+   * Call once after plan compilation. The plan will use these indices
+   * to update input_ids, position_ids, and attention_mask directly on
+   * device memory — no JNI putScalar or host↔device round-trips.
+   *
+   * @param inputIdsExtIdx    External input index for input_ids (or -1 if N/A)
+   * @param positionIdsExtIdx External input index for position_ids (or -1 if N/A)
+   * @param attentionMaskExtIdx External input index for attention_mask (or -1 if N/A)
+   * @param maxKvLen          Maximum KV cache length (attention mask width minus 1)
+   */
+  void configureDecodeInputs(int inputIdsExtIdx, int positionIdsExtIdx,
+                              int attentionMaskExtIdx, int maxKvLen);
+
+  /**
+   * Update decode inputs directly on device. Single call replaces 3+ putScalar calls.
+   * Writes tokenId → input_ids[0,0], cachePos → position_ids[0,0],
+   * and sets attention_mask[0, cachePos-1] = 1 on the GPU.
+   *
+   * @param externalInputs  External input array (same as passed to execute())
+   * @param numExt          Number of external inputs
+   * @param tokenId         The next token ID to write into input_ids
+   * @param cachePos        Current cache position (for position_ids and mask update)
+   * @param stream          CUDA stream for async writes
+   */
+  void updateDecodeInputs(NDArray** externalInputs, int numExt,
+                           long long tokenId, int cachePos, void* stream);
+
+  /**
+   * Set the next decode token and cache position for automatic device-side update.
+   * Call before execute(). If decode inputs are configured, execute() will
+   * write these values directly to device memory before graph replay.
+   *
+   * @param tokenId   Next token ID
+   * @param cachePos  Current cache position
+   */
+  void setNextDecodeToken(long long tokenId, int cachePos) {
+    pendingTokenId_ = tokenId;
+    pendingCachePos_ = cachePos;
+    hasPendingDecodeUpdate_ = true;
+  }
+
+  /**
+   * Check if decode inputs have been configured.
+   */
+  bool isDecodeInputsConfigured() const { return decodeInputIdsExtIdx_ >= 0 || decodeAttentionMaskExtIdx_ >= 0; }
+
+  /**
    * Get the number of external inputs expected by this plan.
    */
   int getNumExternalInputs() const { return numExternalInputs_; }
@@ -577,9 +624,27 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       // Merge segments now that value-dep-shape ops are safe to capture
       // (their input values never change → output shapes are constant).
       int oldSegCount = (int)segments_.size();
-      rebuildSegmentsForFrozenShapes();
-      DSP_DIAG(SEGMENT, "setShapesFrozen: merged %d -> %d segments",
-                oldSegCount, (int)segments_.size());
+      
+      // CRITICAL FIX: Preserve Triton kernel cache before rebuilding segments.
+      // The Triton cache is keyed by segment boundaries (startSlot, endSlot).
+      // When segments are merged, the boundaries change and cache lookups fail.
+      // Solution: Skip rebuild if we already have a single merged segment.
+      if (oldSegCount > 1) {
+        rebuildSegmentsForFrozenShapes();
+        DSP_DIAG(SEGMENT, "setShapesFrozen: merged %d -> %d segments",
+                  oldSegCount, (int)segments_.size());
+      } else {
+        DSP_DIAG(SEGMENT, "setShapesFrozen: skipping rebuild (already %d segment)",
+                  oldSegCount);
+      }
+      
+      DSP_DIAG(EXECUTE, "FROZEN_TRANSITION: unfrozen → FROZEN, executeCount reset, %d segments, %d slots, %d extInputs",
+                (int)segments_.size(), numSlots_, numExternalInputs_);
+      // Log all external input names for discovery
+      for (int i = 0; i < numExternalInputs_ && i < (int)externalInputNames_.size(); i++) {
+        DSP_DIAG(EXECUTE, "EXT_INPUT_DISCOVER: idx=%d key=\"%s\"",
+                  i, externalInputNames_[i].c_str());
+      }
       // Clear stale cast cache entries from prefill phase so warmup
       // repopulates with correctly-sized decode buffers
       MmulHelper::clearCastCache();
@@ -798,6 +863,15 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   int kvCacheMaxLen_;             // Maximum length of static KV buffers (dim along seqDim)
   int kvCacheNumMappings_;
   KvCacheMapping* kvCacheMappings_;  // Array of output→input mappings (owned)
+
+  // ── Decode input direct-update ───────────────────────────────────────
+  int decodeInputIdsExtIdx_ = -1;
+  int decodePositionIdsExtIdx_ = -1;
+  int decodeAttentionMaskExtIdx_ = -1;
+  int decodeMaxKvLen_ = 0;
+  long long pendingTokenId_ = 0;
+  int pendingCachePos_ = 0;
+  bool hasPendingDecodeUpdate_ = false;
 
   // Internal methods
   void scatterKvEntries(NDArray** externalInputs, int numExt, void* stream);

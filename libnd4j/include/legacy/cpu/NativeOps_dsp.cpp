@@ -226,6 +226,22 @@ void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos) {
   plan->resetKvCachePosition(newPos);
 }
 
+void configurePlanDecodeInputs(
+    sd::Pointer planHandle,
+    int inputIdsExtIdx, int positionIdsExtIdx,
+    int attentionMaskExtIdx, int maxKvLen) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->configureDecodeInputs(inputIdsExtIdx, positionIdsExtIdx,
+                               attentionMaskExtIdx, maxKvLen);
+}
+
+void setPlanNextDecodeToken(sd::Pointer planHandle, sd::LongType tokenId, int cachePos) {
+  if (planHandle == nullptr) return;
+  auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
+  plan->setNextDecodeToken(tokenId, cachePos);
+}
+
 // ─── Model loading ───────────────────────────────────────────────────────────
 
 sd::Pointer loadModelFromFile(const char* filePath) {

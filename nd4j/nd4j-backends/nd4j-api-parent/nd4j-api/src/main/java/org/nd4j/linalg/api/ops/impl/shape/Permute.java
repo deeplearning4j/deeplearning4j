@@ -26,6 +26,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 
@@ -115,6 +117,57 @@ public class Permute extends Transpose {
     @Override
     public void setPropertiesForFunction(Map<String, Object> properties) {
 
+    }
+
+    @Override
+    public boolean initializeOutputs(OpContext ctx) {
+        configureFromArguments();
+
+        List<INDArray> inputs = inputArguments();
+        if (inputs == null || inputs.isEmpty()) {
+            return super.initializeOutputs(ctx);
+        }
+
+        INDArray input = inputs.get(0);
+        if (input == null || input.isEmpty()) {
+            return super.initializeOutputs(ctx);
+        }
+
+        int rank = input.rank();
+
+        // Determine permutation: from iArgs, permuteDims field, or default reverse
+        long[] perm = null;
+        if (!iArguments.isEmpty()) {
+            perm = Longs.toArray(iArguments);
+        } else if (permuteDims != null && permuteDims.length > 0) {
+            perm = permuteDims;
+        }
+
+        if (perm == null || perm.length != rank) {
+            // Plain transpose (reverse dims) or rank mismatch — fall back to C++
+            return super.initializeOutputs(ctx);
+        }
+
+        // Validate permutation
+        for (long p : perm) {
+            if (p < 0 || p >= rank) {
+                return super.initializeOutputs(ctx);
+            }
+        }
+
+        // Build output shape and strides by permuting input's strides
+        long[] outShape = new long[rank];
+        long[] outStrides = new long[rank];
+        for (int i = 0; i < rank; i++) {
+            int srcAxis = (int) perm[i];
+            outShape[i] = input.size(srcAxis);
+            outStrides[i] = input.stride(srcAxis);
+        }
+
+        // Create view sharing the input's data buffer with permuted strides
+        INDArray view = Nd4j.create(input.data(), outShape, outStrides, input.offset(), input.ordering());
+        addOutputArgument(view);
+        return false;  // tells framework: output already set, don't allocate
     }
 
     @Override

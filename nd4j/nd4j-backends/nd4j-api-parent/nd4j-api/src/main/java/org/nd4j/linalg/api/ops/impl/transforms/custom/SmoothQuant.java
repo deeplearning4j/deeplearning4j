@@ -124,6 +124,16 @@ public class SmoothQuant extends DynamicCustomOp {
         addIArgument(transposeWeight ? 1L : 0L);
     }
 
+    public SmoothQuant(SameDiff sd, SDVariable input, SDVariable smoothScale) {
+        super(null, sd, new SDVariable[]{input, smoothScale}, false);
+        addIArgument(transposeWeight ? 1L : 0L);
+    }
+
+    public SmoothQuant(INDArray input, INDArray smoothScale) {
+        super(new INDArray[]{input, smoothScale}, null);
+        addIArgument(transposeWeight ? 1L : 0L);
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();

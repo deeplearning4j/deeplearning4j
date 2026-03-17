@@ -114,6 +114,14 @@ public class Fp8Matmul extends DynamicCustomOp {
     }
 
     /**
+     * INDArray convenience constructor with defaults.
+     */
+    public Fp8Matmul(INDArray a, INDArray b, INDArray scaleA, INDArray scaleB) {
+        super(null, new INDArray[]{a, b, scaleA, scaleB}, null);
+        addIArgument((long) fp8Format, transposeA ? 1L : 0L, transposeB ? 1L : 0L);
+    }
+
+    /**
      * INDArray constructor.
      */
     public Fp8Matmul(INDArray a, INDArray b, INDArray scaleA, INDArray scaleB,

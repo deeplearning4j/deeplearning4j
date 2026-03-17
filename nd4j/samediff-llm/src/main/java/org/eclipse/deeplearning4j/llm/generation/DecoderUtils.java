@@ -23,10 +23,12 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
@@ -344,6 +346,10 @@ public class DecoderUtils {
             long maxKvLen,
             long cachePos) {
 
+        // Collect all valid pairs for batched native scatter
+        List<INDArray> staticList = new ArrayList<>();
+        List<INDArray> presentList = new ArrayList<>();
+
         List<String> allPresentNames = new ArrayList<>();
         allPresentNames.addAll(presentKeyNames);
         allPresentNames.addAll(presentValueNames);
@@ -355,18 +361,18 @@ public class DecoderUtils {
             String pastInputName = presentName.replace("present", "past_key_values");
             INDArray staticBuf = staticKvBuffers.get(pastInputName);
             if (staticBuf != null) {
-                // Java view+assign: lightweight NDArrayIndex operations, faster than native KvScatter
-                // op dispatch overhead for 60 individual tensor copies
-                long lastPos = presentKv.size(2) - 1;
-                INDArray newSlice = presentKv.get(
-                        NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.point(lastPos), NDArrayIndex.all());
-                INDArray targetSlice = staticBuf.get(
-                        NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.point(cachePos), NDArrayIndex.all());
-                targetSlice.assign(newSlice);
+                staticList.add(staticBuf);
+                presentList.add(presentKv);
             }
         }
+
+        if (staticList.isEmpty()) return;
+
+        // Single native op call for all pairs — one JNI round-trip + one kernel launch
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter(
+                staticList.toArray(new INDArray[0]),
+                presentList.toArray(new INDArray[0]),
+                cachePos));
     }
 
     /**
@@ -420,6 +426,25 @@ public class DecoderUtils {
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
             boolean dspActive) {
+        return buildDecoderInputMap(decoderInputNames, decoder, embeddings, inputIds,
+                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
+                usingStaticKv, hiddenSize, reusableInputs, dspActive, false);
+    }
+
+    /**
+     * Build the complete decoder input map with optional native decode input handling.
+     *
+     * @param nativeDecodeInputs when true, C++ handles input_ids/position_ids/attention_mask updates
+     *                           on device — skip Java-side putScalar mutations for these.
+     */
+    public static Map<String, INDArray> buildDecoderInputMap(
+            List<String> decoderInputNames, SameDiff decoder,
+            INDArray embeddings, INDArray inputIds,
+            long pastSeqLen, long currentSeqLen,
+            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
+            boolean usingStaticKv, long hiddenSize,
+            Map<String, INDArray> reusableInputs,
+            boolean dspActive, boolean nativeDecodeInputs) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
         boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
@@ -431,20 +456,27 @@ public class DecoderUtils {
                 decoderInputMap.put(inputName, embeddings);
             } else if (inputName.equals("attention_mask")) {
                 if (usePadded) {
-                    // Padded mode: sparse mask [1, maxKvLen + currentSeqLen]
-                    // 1s at valid past positions and current token, 0s at padding
+                    // Padded mode with in-place KV write: shapes must match the model's
+                    // attn_mask_reformat subgraph which derives KV length from
+                    // past_key_shape[2] + current_key_shape[1] = maxKvLen + currentSeqLen.
+                    // The in-place write ensures current K is at cachePos (visible to causal mask),
+                    // while the concat'd copy at maxKvLen is masked (maxKvLen > cachePos).
                     long totalSeqLen = maxKvLen + currentSeqLen;
                     if (canReuse && reusableInputs.containsKey("attention_mask")) {
                         INDArray mask = reusableInputs.get("attention_mask");
-                        if (cachePos > 0) {
-                            mask.putScalar(0, cachePos - 1, 1);
+                        if (cachePos >= 0 && !nativeDecodeInputs) {
+                            // Mark current position as valid (C++ handles when nativeDecodeInputs=true)
+                            mask.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(cachePos)},
+                                    Nd4j.scalar(DataType.LONG, 1));
                         }
                         decoderInputMap.put(inputName, mask);
                     } else {
                         INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-                        if (cachePos > 0) {
-                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
+                        // Set 1s at positions 0..cachePos (inclusive) + the current token position at the end
+                        if (cachePos >= 0) {
+                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos + 1)).assign(1);
                         }
+                        // Also set the last position (the concat'd current token)
                         mask.putScalar(0, totalSeqLen - 1, 1);
                         decoderInputMap.put(inputName, mask);
                         if (canReuse) reusableInputs.put("attention_mask", mask);
@@ -459,7 +491,7 @@ public class DecoderUtils {
                 }
             } else if (inputName.equals("_causal_mask")) {
                 if (usePadded) {
-                    // Padded mode: causal mask matches full buffer size
+                    // Padded mode: causal mask matches concat shape (maxKvLen + currentSeqLen)
                     if (canReuse && reusableInputs.containsKey("_causal_mask")) {
                         decoderInputMap.put(inputName, reusableInputs.get("_causal_mask"));
                     } else {
@@ -483,7 +515,10 @@ public class DecoderUtils {
             } else if (inputName.equals("position_ids")) {
                 if (canReuse && reusableInputs.containsKey("position_ids")) {
                     INDArray posIds = reusableInputs.get("position_ids");
-                    posIds.putScalar(0, 0, pastSeqLen);
+                    if (!nativeDecodeInputs) {
+                        // C++ handles this when nativeDecodeInputs=true
+                        posIds.assign(Nd4j.scalar(DataType.LONG, pastSeqLen));
+                    }
                     decoderInputMap.put(inputName, posIds);
                 } else {
                     INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)

@@ -378,6 +378,7 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.impl.shape.ReductionShape.class,
                 org.nd4j.linalg.api.ops.impl.shape.Repeat.class,
                 org.nd4j.linalg.api.ops.impl.shape.Reshape.class,
+                org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy.class,
                 org.nd4j.linalg.api.ops.impl.shape.SequenceMask.class,
                 org.nd4j.linalg.api.ops.impl.shape.Shape.class,
                 org.nd4j.linalg.api.ops.impl.shape.ShapeN.class,
@@ -736,7 +737,105 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.custom.Lstsq.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Einsum.class,
                 org.nd4j.linalg.api.ops.impl.transforms.custom.Qr.class,
-                org.nd4j.linalg.api.ops.custom.Logdet.class
+                org.nd4j.linalg.api.ops.custom.Logdet.class,
+                // LLM / attention ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FlashAttentionBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GroupedQueryAttentionBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.WindowedAttention.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RelativePositionBias.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.OnnxMultiHeadAttention.class,
+                // Norm ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RmsNormBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNormBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLUBp.class,
+                // RoPE ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPEBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPEBp.class,
+                // Activation ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELUBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLUBp.class,
+                // KV cache ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheUpdate.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KvScatter.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize.class,
+                // LoRA / adapter ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul.class,
+                // Quantization ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul.class,
+                // Parallel / distributed ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear.class,
+                // MoE ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MixtureOfExperts.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate.class,
+                // Fused ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedElementwiseChain.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu.class,
+                // Loss ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquareBp.class,
+                // SSM ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan.class,
+                // Sampling ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample.class,
+                // Shape ops
+                org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy.class,
+                org.nd4j.linalg.api.ops.impl.shape.SetShape.class,
+                org.nd4j.linalg.api.ops.impl.shape.CreateView.class,
+                org.nd4j.linalg.api.ops.impl.shape.OnesAs.class,
+                // Misc ops
+                org.nd4j.linalg.api.ops.custom.LinearCopy.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder.class,
+                org.nd4j.linalg.api.ops.custom.Eig.class,
+                org.nd4j.linalg.api.ops.impl.transforms.floating.SqrtM.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanAnd.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanOr.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.BooleanXor.class,
+                org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayRemove.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusBBp.class,
+                // RoPE ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.RoPEBp.class,
+                // SiLU ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.SiLUBp.class,
+                // Quantization
+                org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul.class,
+                // Adapter backward ops
+                org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMulBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMulBp.class
         ));
 
         System.out.println("Created fn classes");

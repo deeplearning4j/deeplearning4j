@@ -137,6 +137,66 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
     }
   }
 
+  // In-place KV cache write: when cache_position (input 7) is present along with
+  // keyCache (input 5) and valueCache (input 6), write current K/V at that position
+  // in the cache buffers and use the full buffers for attention.
+  auto cachePosInput = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
+  if (cachePosInput != nullptr && cachePosInput->isEmpty()) cachePosInput = nullptr;
+
+  bool useInPlaceKv = false;
+  NDArray* keyCache = nullptr;
+  NDArray* valueCache = nullptr;
+
+  if (extraInput != nullptr && !extraInput->isEmpty() &&
+      extraInput2 != nullptr && !extraInput2->isEmpty()) {
+    keyCache = extraInput;
+    valueCache = extraInput2;
+    useInPlaceKv = (cachePosInput != nullptr);
+  }
+
+  if (useInPlaceKv) {
+    LongType cachePosVal = cachePosInput->e<LongType>(0);
+    LongType maxSeq = keyCache->sizeAt(isRank4 ? 1 : 1);  // seq dim is always 1 for both rank 3 and 4
+
+    REQUIRE_TRUE(cachePosVal >= 0 && cachePosVal < maxSeq, 0,
+                 "dot_product_attention_v2: cache_position %lld must be in [0, %lld)",
+                 (long long)cachePosVal, (long long)maxSeq);
+
+    // Write current K/V at cache_position in the buffers (in-place)
+    if (isRank4) {
+      // BSHD: keyCache[batch, maxSeq, heads, dim], keys[batch, 1, heads, dim]
+      auto batch = keys->sizeAt(0);
+      auto numKvHeads = keys->sizeAt(2);
+      auto headDim = keys->sizeAt(3);
+      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, numKvHeads, 0, headDim};
+      auto* kSlice = (*keyCache)(writeIdx);
+      auto* vSlice = (*valueCache)(writeIdx);
+      kSlice->assign(keys);
+      vSlice->assign(values);
+      kSlice->syncToDevice();
+      vSlice->syncToDevice();
+      delete kSlice;
+      delete vSlice;
+    } else {
+      // BSF: keyCache[batch, maxSeq, features], keys[batch, 1, features]
+      auto batch = keys->sizeAt(0);
+      auto features = keys->sizeAt(2);
+      std::vector<LongType> writeIdx = {0, batch, cachePosVal, cachePosVal + 1, 0, features};
+      auto* kSlice = (*keyCache)(writeIdx);
+      auto* vSlice = (*valueCache)(writeIdx);
+      kSlice->assign(keys);
+      vSlice->assign(values);
+      kSlice->syncToDevice();
+      vSlice->syncToDevice();
+      delete kSlice;
+      delete vSlice;
+    }
+
+    // Use full cache buffers as K/V for attention
+    keys = keyCache;
+    values = valueCache;
+  }
+
   // Get arguments - T_ARG order: scale, dropout
   auto scale = block.numT() > 0 ? T_ARG(0) : 1.0;
   auto dropout = block.numT() > 1 ? T_ARG(1) : 0.0;
@@ -250,6 +310,7 @@ DECLARE_TYPES(dot_product_attention_v2) {
       ->setAllowedInputTypes(4, {ALL_FLOATS, ALL_INTS, BOOL})  // valueMask (optional)
       ->setAllowedInputTypes(5, {ALL_FLOATS, ALL_INTS, BOOL})  // attentionBias/keyCache (optional)
       ->setAllowedInputTypes(6, {ALL_FLOATS, ALL_INTS, BOOL})  // valueCache (optional)
+      ->setAllowedInputTypes(7, {ALL_INTS})                    // cache_position (optional)
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -260,6 +321,11 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
   auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
 
   auto dropout = block.numT() > 1 ? block.getTArguments()->at(1) : 0.0;
+
+  // Check for in-place KV cache mode: when cache_position (input 7) is present
+  // with keyCache (input 5) and valueCache (input 6), Tv = cache seq dim
+  bool hasInPlaceKv = (block.width() > 7);
+  auto keyCacheShape = (block.width() > 5 && !INPUT_VARIABLE(5)->isEmpty()) ? INPUT_VARIABLE(5) : nullptr;
 
   // For rank 4: [batch, seq_len, numHeads, headDim] (BSHD)
   // For rank 3: [batch, seq_len, features]
@@ -273,32 +339,29 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
     sd::LongType tq = queries->sizeAt(1);
     sd::LongType numHeads = queries->sizeAt(2);
     sd::LongType headDim = queries->sizeAt(3);
-    sd::LongType tv = values->sizeAt(1);
+    sd::LongType tv = (hasInPlaceKv && keyCacheShape != nullptr)
+                       ? keyCacheShape->sizeAt(1) : values->sizeAt(1);
 
     // Output shape: [batch, Tq, numHeads, headDim] (same as query)
     outShape = {batchSize, tq, numHeads, headDim};
     // Attention scores shape: [batch, numHeads, Tq, Tv] (per-head scores)
     scoresShape = {batchSize, numHeads, tq, tv};
   } else if(queries->rankOf() == 3) {
-    // Rank 3: [batch, Tq, dim] @ [batch, Tv, dim]^T -> [batch, Tq, Tv] -> softmax -> @ [batch, Tv, dim] -> [batch, Tq, dim]
     sd::LongType batchSize = queries->sizeAt(0);
-    sd::LongType tq = queries->sizeAt(1);  // query sequence length
-    sd::LongType tv = values->sizeAt(1);   // value sequence length
-    sd::LongType dim = values->sizeAt(2);  // feature dimension
+    sd::LongType tq = queries->sizeAt(1);
+    sd::LongType tv = (hasInPlaceKv && keyCacheShape != nullptr)
+                       ? keyCacheShape->sizeAt(1) : values->sizeAt(1);
+    sd::LongType dim = values->sizeAt(2);
 
-    // Output shape: [batch, Tq, dim]
     outShape = {batchSize, tq, dim};
-    // Attention scores shape: [batch, Tq, Tv]
     scoresShape = {batchSize, tq, tv};
   } else {
-    // Rank 2: [Tq, dim] @ [Tv, dim]^T -> [Tq, Tv] -> softmax -> @ [Tv, dim] -> [Tq, dim]
-    sd::LongType tq = queries->sizeAt(0);  // query sequence length
-    sd::LongType tv = values->sizeAt(0);   // value sequence length
-    sd::LongType dim = values->sizeAt(1);  // feature dimension
+    sd::LongType tq = queries->sizeAt(0);
+    sd::LongType tv = (hasInPlaceKv && keyCacheShape != nullptr)
+                       ? keyCacheShape->sizeAt(0) : values->sizeAt(0);
+    sd::LongType dim = values->sizeAt(1);
 
-    // Output shape: [Tq, dim]
     outShape = {tq, dim};
-    // Attention scores shape: [Tq, Tv]
     scoresShape = {tq, tv};
   }
 

@@ -54,9 +54,13 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
      * Optimizer that quantizes FP32 constant and variable arrays to FP16 or BF16.
      * This provides ~2x memory reduction for model weights with minimal accuracy loss.
      *
-     * Gated by one of:
-     * - {@code -Dnd4j.optimizer.fp16=true}
+     * FP16 quantization is ON by default. Disable with:
+     * - {@code -Dnd4j.optimizer.fp16=false}
+     *
+     * BF16 is opt-in (requires hardware support):
      * - {@code -Dnd4j.optimizer.bf16=true}
+     *
+     * Only one mode can be active. BF16 takes precedence if both are set.
      *
      * Runs once on the first op encountered (quantizes all constants/variables at once).
      */
@@ -68,16 +72,15 @@ public class QuantizationOptimizations extends BaseOptimizerSet {
         public boolean checkAndApply(SameDiff sd, OptimizationHelper helper, SameDiffOp op,
                                      ArrayHolder constantArrays, ArrayHolder variablesArrays) {
             if (applied) return false;
-            boolean fp16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.fp16"));
+            // FP16 defaults to ON; disable with -Dnd4j.optimizer.fp16=false
+            String fp16Prop = System.getProperty("nd4j.optimizer.fp16");
+            boolean fp16Enabled = fp16Prop == null || !"false".equalsIgnoreCase(fp16Prop.trim());
             boolean bf16Enabled = "true".equalsIgnoreCase(System.getProperty("nd4j.optimizer.bf16"));
             if (!fp16Enabled && !bf16Enabled) {
                 applied = true;
                 return false;
             }
-            if (fp16Enabled && bf16Enabled) {
-                throw new IllegalStateException("Only one low-precision optimizer mode may be enabled at a time: " +
-                        "set either nd4j.optimizer.fp16=true or nd4j.optimizer.bf16=true");
-            }
+            // BF16 is opt-in and takes precedence over FP16 default
             applied = true;
             DataType targetType = bf16Enabled ? DataType.BFLOAT16 : DataType.HALF;
             String modeName = targetType == DataType.BFLOAT16 ? "BF16" : "FP16";

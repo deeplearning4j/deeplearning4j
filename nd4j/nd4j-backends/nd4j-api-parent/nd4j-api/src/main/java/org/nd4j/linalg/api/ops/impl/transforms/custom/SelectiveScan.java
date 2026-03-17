@@ -91,6 +91,14 @@ public class SelectiveScan extends DynamicCustomOp {
                 output != null ? new INDArray[]{output} : null);
     }
 
+    public SelectiveScan(SameDiff sd, SDVariable input) {
+        super(null, sd, new SDVariable[]{input}, false);
+    }
+
+    public SelectiveScan(INDArray input) {
+        super(new INDArray[]{input}, null);
+    }
+
     @Override
     public String opName() {
         return "selective_scan";

@@ -516,6 +516,32 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
             arg.dtype = ArrayOptions::dataType(cit->second);
             LongType rank = shape::rank(cit->second);
             for (int d = 0; d < rank; d++) arg.shape.push_back(shape::shapeOf(cit->second)[d]);
+          } else {
+            // No live array and no cached shape — resolve dtype/shape from the producing op.
+            // This happens when the output slot belongs to a view-capable op (reshape,
+            // strided_slice, etc.) that doesn't pre-allocate its output. The producing op
+            // (e.g. cast) needs the correct dtype to generate proper store instructions.
+            auto producerCat = getOpCategory(slots[i].opName);
+            if (producerCat == TritonOpCategory::CAST && slots[i].numIArgs > 0 && slots[i].iArgs) {
+              // Cast ops store target dtype in iArgs[0]
+              arg.dtype = static_cast<DataType>(slots[i].iArgs[0]);
+              DSP_DIAG(COMPILE, "TritonIRBuilder: output slot %d dtype resolved from cast iArgs[0]=%lld → dtype=%d",
+                       outIdx, (long long)slots[i].iArgs[0], (int)arg.dtype);
+            } else {
+              // For non-cast ops, output dtype matches the primary input's dtype
+              if (slots[i].numInputs > 0) {
+                int inputSrc = slots[i].inputSourceIndices[0];
+                arg.dtype = resolveDtypeLocal(inputSrc);
+              }
+            }
+            // Derive shape from the primary input (most ops preserve shape)
+            if (arg.shape.empty() && slots[i].numInputs > 0) {
+              int inputSrc = slots[i].inputSourceIndices[0];
+              auto inputShape = resolveShapeLocal(inputSrc);
+              if (!inputShape.empty()) {
+                arg.shape = inputShape;
+              }
+            }
           }
         }
         outputArgs.push_back(arg);
@@ -1185,14 +1211,25 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
                   slot.opName.c_str(), si);
         continue;
       }
-      // Determine target type from the output slot's dtype (dArgs[0])
+      // Determine target type from the output slot's dtype.
+      // Priority: dArgs[0] > iArgs[0] > output slot dtype.
+      // Cast ops in libnd4j store the target dtype in iArgs[0] as an integer.
+      // dArgs (extraTypes) may or may not be populated depending on the model format.
+      // resolveDtypeLocal is the last resort but can return FLOAT32 (wrong) when
+      // the output slot belongs to a view-capable op with no pre-allocated array.
       DataType targetDtype = FLOAT32;  // default
       if (slot.numDArgs > 0 && slot.dArgs) {
         targetDtype = slot.dArgs[0];
+      } else if (slot.numIArgs > 0 && slot.iArgs) {
+        // Cast ops store the target dtype in iArgs[0]
+        targetDtype = static_cast<DataType>(slot.iArgs[0]);
       } else if (slot.numOutputs > 0) {
         int outIdx = slot.outputSlotIndices[0];
         targetDtype = resolveDtypeLocal(outIdx);
       }
+      DSP_DIAG_SLOT(COMPILE, si, "TritonIRBuilder: cast at slot %d: numDArgs=%d numIArgs=%d targetDtype=%d (%s)",
+                si, slot.numDArgs, slot.numIArgs, (int)targetDtype,
+                DataTypeUtils::asString(targetDtype).c_str());
       auto targetElemType = getMLIRType(builder, targetDtype);
       auto opResult = castTo(builder, loc, inputIt->second, targetElemType);
       for (int o = 0; o < slot.numOutputs; o++) {
@@ -2126,6 +2163,97 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
           DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for shape op '%s' at slot %d (src=%d)",
                     slot.opName.c_str(), si, inputSrc);
         }
+      }
+
+    } else if (cat == TritonOpCategory::ROPE) {
+      // ─── ROPE: paired elementwise rotation with precomputed cos/sin ───
+      if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
+        int inputSrc = slot.inputSourceIndices[0];
+        int cosSrc = slot.inputSourceIndices[1];
+        int sinSrc = slot.inputSourceIndices[2];
+        int outSlot = slot.outputSlotIndices[0];
+
+        auto inPtr = getSlotArgPtr(inputSrc);
+        auto cosArgPtr = getSlotArgPtr(cosSrc);
+        auto sinArgPtr = getSlotArgPtr(sinSrc);
+        auto outPtr = getSlotArgPtr(outSlot);
+        NDArray* inArr = resolveArr(inputSrc);
+        NDArray* cosArr = resolveArr(cosSrc);
+        NDArray* outArr = resolveArr(outSlot);
+
+        if (inPtr && cosArgPtr && sinArgPtr && outPtr && inArr && cosArr && outArr) {
+          std::vector<LongType> inShape, cosShapeVec;
+          for (int d = 0; d < inArr->rankOf(); d++) inShape.push_back(inArr->sizeAt(d));
+          for (int d = 0; d < cosArr->rankOf(); d++) cosShapeVec.push_back(cosArr->sizeAt(d));
+          int nElements = static_cast<int>(outArr->lengthOf());
+          int ropeType = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+
+          // Extract headDim and numHeads from input shape [B, S, H, D]
+          int inputRank = static_cast<int>(inShape.size());
+          int headDim = (inputRank > 0) ? static_cast<int>(inShape[inputRank - 1]) : 0;
+          int numHeads = (inputRank >= 3) ? static_cast<int>(inShape[inputRank - 2]) : 1;
+
+          // Try SSA register-level path: requires blockSize divisible by headDim
+          // and all elements in block from same seq position (blockSize <= numHeads * headDim)
+          auto ssaIt = ssaValues.find(inputSrc);
+          bool canUseSSA = ssaIt != ssaValues.end()
+                           && headDim > 0 && (headDim % 2 == 0)
+                           && (blockSize % headDim == 0)
+                           && (blockSize <= numHeads * headDim);
+
+          if (canUseSSA) {
+            // Register-based ROPE — no store/reload needed
+            auto result = emitRoPESSA(builder, loc, ssaIt->second,
+                                       cosArgPtr, sinArgPtr, pid, blockSize,
+                                       headDim, numHeads, cosShapeVec, nElements);
+            result = emulateNativePrecision(result, si);
+            for (int o = 0; o < slot.numOutputs; o++)
+              ssaValues[slot.outputSlotIndices[o]] = result;
+          } else {
+            // Fallback: pointer-based emitter (flush SSA → global memory → reload)
+            auto maybeStoreSSA = [&](int srcIdx) {
+              auto ssaIt2 = ssaValues.find(srcIdx);
+              if (ssaIt2 != ssaValues.end()) {
+                auto argPtr = getSlotArgPtr(srcIdx);
+                if (argPtr) {
+                  auto ptrType = mlir::cast<mlir::triton::PointerType>(argPtr.getType());
+                  auto elemType = ptrType.getPointeeType();
+                  auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+                  auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, argPtr);
+                  auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, offsets);
+                  auto storeVal = castTo(builder, loc, ssaIt2->second, elemType);
+                  builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, mask,
+                      mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+                }
+              }
+            };
+            maybeStoreSSA(inputSrc);
+
+            emitRoPESection(builder, loc, pid, blockSize,
+                            inPtr, cosArgPtr, sinArgPtr, outPtr,
+                            inShape, cosShapeVec, ropeType, nElements);
+
+            auto loaded = loadBackFromBuffer(outSlot, outArr->dataType());
+            if (loaded) {
+              loaded = emulateNativePrecision(loaded, si);
+              for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = loaded;
+            }
+          }
+        } else {
+          std::string msg = "TritonIRBuilder: ROPE '" + slot.opName + "' at slot " + std::to_string(si) +
+              " — missing kernel arg ptrs/arrays. Cannot compile.";
+          THROW_EXCEPTION(msg.c_str());
+        }
+      } else if (slot.numInputs == 1 && slot.numOutputs >= 1) {
+        // Non-cached ROPE (computes sin/cos internally) — pass through as identity for now
+        int inputSrc = slot.inputSourceIndices[0];
+        auto inputIt = ssaValues.find(inputSrc);
+        if (inputIt != ssaValues.end()) {
+          for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = inputIt->second;
+        }
+      } else {
+        DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: ROPE '%s' at slot %d — insufficient inputs(%d)",
+                  slot.opName.c_str(), si, slot.numInputs);
       }
 
     } else if (cat == TritonOpCategory::DATA_MOVEMENT) {
@@ -3108,6 +3236,24 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             arg.dtype = ArrayOptions::dataType(cit->second);
             LongType rank = shape::rank(cit->second);
             for (int d = 0; d < rank; d++) arg.shape.push_back(shape::shapeOf(cit->second)[d]);
+          } else {
+            // No live array and no cached shape — resolve from producing op
+            auto producerCat = getOpCategory(slots[i].opName);
+            if (producerCat == TritonOpCategory::CAST && slots[i].numIArgs > 0 && slots[i].iArgs) {
+              arg.dtype = static_cast<DataType>(slots[i].iArgs[0]);
+            } else {
+              if (slots[i].numInputs > 0) {
+                int inputSrc = slots[i].inputSourceIndices[0];
+                arg.dtype = resolveDtype(inputSrc);
+              }
+            }
+            if (arg.shape.empty() && slots[i].numInputs > 0) {
+              int inputSrc = slots[i].inputSourceIndices[0];
+              auto inputShape = resolveShape(inputSrc);
+              if (!inputShape.empty()) {
+                arg.shape = inputShape;
+              }
+            }
           }
         }
         outputArgs.push_back(arg);
@@ -3830,6 +3976,9 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             DataType targetDtype = FLOAT32;
             if (slot.numDArgs > 0 && slot.dArgs) {
               targetDtype = slot.dArgs[0];
+            } else if (slot.numIArgs > 0 && slot.iArgs) {
+              // Cast ops store target dtype in iArgs[0]
+              targetDtype = static_cast<DataType>(slot.iArgs[0]);
             } else if (slot.numOutputs > 0) {
               int outIdx = slot.outputSlotIndices[0];
               targetDtype = resolveDtype(outIdx);
@@ -4059,6 +4208,88 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);
             }
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+          } else if (cat == TritonOpCategory::ROPE) {
+            // ─── ROPE: paired elementwise rotation ───
+            if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
+              int inputSrc2 = slot.inputSourceIndices[0];
+              int cosSrc = slot.inputSourceIndices[1];
+              int sinSrc = slot.inputSourceIndices[2];
+              int outSlot2 = slot.outputSlotIndices[0];
+
+              auto inPtr2 = getSlotArgPtr(inputSrc2);
+              auto cosPtr2 = getSlotArgPtr(cosSrc);
+              auto sinPtr2 = getSlotArgPtr(sinSrc);
+              auto outPtr2 = getSlotArgPtr(outSlot2);
+
+              NDArray* inArr2 = resolveArr(inputSrc2);
+              NDArray* cosArr2 = resolveArr(cosSrc);
+              NDArray* outArr2 = resolveArr(outSlot2);
+
+              if (inPtr2 && cosPtr2 && sinPtr2 && outPtr2 && inArr2 && cosArr2 && outArr2) {
+                std::vector<LongType> inShapeVec, cosShapeVec2;
+                for (int d = 0; d < inArr2->rankOf(); d++) inShapeVec.push_back(inArr2->sizeAt(d));
+                for (int d = 0; d < cosArr2->rankOf(); d++) cosShapeVec2.push_back(cosArr2->sizeAt(d));
+                int nElems = static_cast<int>(outArr2->lengthOf());
+
+                // Extract headDim and numHeads from input shape
+                int inputRank2 = static_cast<int>(inShapeVec.size());
+                int headDim2 = (inputRank2 > 0) ? static_cast<int>(inShapeVec[inputRank2 - 1]) : 0;
+                int numHeads2 = (inputRank2 >= 3) ? static_cast<int>(inShapeVec[inputRank2 - 2]) : 1;
+
+                // Try SSA register-level path
+                auto ssaIt2 = ssaValues.find(inputSrc2);
+                bool canUseSSA2 = ssaIt2 != ssaValues.end()
+                                  && headDim2 > 0 && (headDim2 % 2 == 0)
+                                  && (blockSize % headDim2 == 0)
+                                  && (blockSize <= numHeads2 * headDim2);
+
+                if (canUseSSA2) {
+                  // Register-based ROPE — no store/reload needed
+                  auto result2 = emitRoPESSA(builder, loc, ssaIt2->second,
+                                              cosPtr2, sinPtr2, pid, blockSize,
+                                              headDim2, numHeads2, cosShapeVec2, nElems);
+                  for (int o = 0; o < slot.numOutputs; o++)
+                    ssaValues[slot.outputSlotIndices[o]] = result2;
+                } else {
+                  // Fallback: pointer-based emitter
+                  auto maybeStoreSSA = [&](int srcIdx) {
+                    auto ssaIt3 = ssaValues.find(srcIdx);
+                    auto argIt2 = slotToArgIdx.find(srcIdx);
+                    if (ssaIt3 != ssaValues.end() && argIt2 != slotToArgIdx.end()) {
+                      auto funcArg2 = getBufferArg(argIt2->second);
+                      auto ptrType2 = mlir::cast<mlir::triton::PointerType>(funcArg2.getType());
+                      auto elemType2 = ptrType2.getPointeeType();
+                      auto ptrTensorType2 = mlir::RankedTensorType::get({blockSize}, ptrType2);
+                      auto splatPtr2 = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType2, funcArg2);
+                      auto ptrs2 = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType2, splatPtr2, offsets);
+                      auto storeVal2 = castTo(builder, loc, ssaIt3->second, elemType2);
+                      builder.create<mlir::triton::StoreOp>(loc, ptrs2, storeVal2, mask,
+                          mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+                    }
+                  };
+                  maybeStoreSSA(inputSrc2);
+
+                  int ropeType2 = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : 0;
+                  emitRoPESection(builder, loc, pid, blockSize,
+                                  inPtr2, cosPtr2, sinPtr2, outPtr2,
+                                  inShapeVec, cosShapeVec2, ropeType2, nElems);
+
+                  // Reload result from buffer to SSA
+                  auto outArgIt2 = slotToArgIdx.find(outSlot2);
+                  if (outArgIt2 != slotToArgIdx.end()) {
+                    auto outFuncArg = getBufferArg(outArgIt2->second);
+                    auto outPtrType2 = mlir::cast<mlir::triton::PointerType>(outFuncArg.getType());
+                    auto outPtrTensorType2 = mlir::RankedTensorType::get({blockSize}, outPtrType2);
+                    auto splatOutPtr2 = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType2, outFuncArg);
+                    auto outPtrs2 = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType2, splatOutPtr2, offsets);
+                    auto reloaded = builder.create<mlir::triton::LoadOp>(loc,
+                        outPtrs2.getResult(), mask.getResult(), mlir::Value(),
+                        mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+                    for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = reloaded;
+                  }
+                }
+              }
+            }
           } else if (cat == TritonOpCategory::CONSTANT_GENERATION) {
             // Constant generation ops produce values independent of input data.
             // Must emit proper constants — NOT forward input SSA values.
@@ -5720,6 +5951,25 @@ TritonIRModule TritonIRBuilder::buildMatmulModule(NativeSlot* slots, int startSl
           arg.dtype = outputSlots[outIdx]->dataType();
           auto& arr = *outputSlots[outIdx];
           for (int d = 0; d < arr.rankOf(); d++) arg.shape.push_back(arr.sizeAt(d));
+        } else {
+          // No live array — resolve from producing op (same logic as buildModule)
+          auto producerCat = getOpCategory(slots[i].opName);
+          if (producerCat == TritonOpCategory::CAST && slots[i].numIArgs > 0 && slots[i].iArgs) {
+            arg.dtype = static_cast<DataType>(slots[i].iArgs[0]);
+          } else if (slots[i].numInputs > 0) {
+            int inputSrc = slots[i].inputSourceIndices[0];
+            NDArray* inputArr = resolveArray(inputSrc);
+            if (inputArr) arg.dtype = inputArr->dataType();
+          }
+          if (arg.shape.empty() && slots[i].numInputs > 0) {
+            int inputSrc = slots[i].inputSourceIndices[0];
+            NDArray* inputArr = resolveArray(inputSrc);
+            if (inputArr) {
+              for (int d = 0; d < inputArr->rankOf(); d++) {
+                arg.shape.push_back(inputArr->sizeAt(d));
+              }
+            }
+          }
         }
         outputArgs.push_back(arg);
       }

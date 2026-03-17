@@ -34,25 +34,65 @@ namespace ops {
 // IArg 0: cachePos
 // Output 0: same shape as input 0
 CUSTOM_OP_IMPL(kv_scatter, 2, 1, false, 0, 1) {
-  auto present = INPUT_VARIABLE(1);
-  auto output = OUTPUT_VARIABLE(0);
   auto cachePos = INT_ARG(0);
+  auto numInputs = block.width();
 
-  REQUIRE_TRUE(present->rankOf() == 4, 0,
-               "kv_scatter: present must be rank 4, got %d", present->rankOf());
-  REQUIRE_TRUE(output->rankOf() == 4, 0,
-               "kv_scatter: output must be rank 4, got %d", output->rankOf());
-  REQUIRE_TRUE(present->sizeAt(0) == output->sizeAt(0), 0,
-               "kv_scatter: batch mismatch");
-  REQUIRE_TRUE(present->sizeAt(1) == output->sizeAt(1), 0,
-               "kv_scatter: heads mismatch");
-  REQUIRE_TRUE(present->sizeAt(3) == output->sizeAt(3), 0,
-               "kv_scatter: dim mismatch");
-  REQUIRE_TRUE(cachePos >= 0 && cachePos < output->sizeAt(2), 0,
-               "kv_scatter: cachePos %lld out of range [0, %lld)",
-               (long long)cachePos, (long long)output->sizeAt(2));
+  if (numInputs == 2) {
+    // Single-pair mode: input 0 = static buffer, input 1 = present
+    auto present = INPUT_VARIABLE(1);
+    auto output = OUTPUT_VARIABLE(0);
 
-  helpers::kvScatter(present, output, cachePos, block.launchContext());
+    REQUIRE_TRUE(present->rankOf() == 4, 0,
+                 "kv_scatter: present must be rank 4, got %d", present->rankOf());
+    REQUIRE_TRUE(output->rankOf() == 4, 0,
+                 "kv_scatter: output must be rank 4, got %d", output->rankOf());
+    REQUIRE_TRUE(present->sizeAt(0) == output->sizeAt(0), 0,
+                 "kv_scatter: batch mismatch");
+    REQUIRE_TRUE(present->sizeAt(1) == output->sizeAt(1), 0,
+                 "kv_scatter: heads mismatch");
+    REQUIRE_TRUE(present->sizeAt(3) == output->sizeAt(3), 0,
+                 "kv_scatter: dim mismatch");
+    REQUIRE_TRUE(cachePos >= 0 && cachePos < output->sizeAt(2), 0,
+                 "kv_scatter: cachePos %lld out of range [0, %lld)",
+                 (long long)cachePos, (long long)output->sizeAt(2));
+
+    helpers::kvScatter(present, output, cachePos, block.launchContext());
+  } else {
+    // Batched mode: inputs are (static0, present0, static1, present1, ...)
+    REQUIRE_TRUE(numInputs >= 4 && numInputs % 2 == 0, 0,
+                 "kv_scatter batched: need even number of inputs >= 4, got %d", numInputs);
+
+    int numPairs = numInputs / 2;
+    std::vector<helpers::KvScatterEntry> entries(numPairs);
+    DataType dtype = INPUT_VARIABLE(0)->dataType();
+
+    for (int i = 0; i < numPairs; i++) {
+      auto staticBuf = INPUT_VARIABLE(2 * i);
+      auto present = INPUT_VARIABLE(2 * i + 1);
+
+      REQUIRE_TRUE(present->rankOf() == 4 && staticBuf->rankOf() == 4, 0,
+                   "kv_scatter batched: pair %d must be rank 4", i);
+
+      NDArray::prepareSpecialUse({staticBuf}, {present});
+
+      entries[i].srcPtr = present->specialBuffer();
+      entries[i].dstPtr = staticBuf->specialBuffer();
+      entries[i].heads = present->sizeAt(1);
+      entries[i].srcSeqLen = present->sizeAt(2);
+      entries[i].dstSeqLen = staticBuf->sizeAt(2);
+      entries[i].dim = present->sizeAt(3);
+      entries[i].lastPos = present->sizeAt(2) - 1;
+      entries[i].cachePos = cachePos;
+    }
+
+    helpers::kvScatterBatched(entries.data(), numPairs, dtype, block.launchContext());
+
+    for (int i = 0; i < numPairs; i++) {
+      auto staticBuf = INPUT_VARIABLE(2 * i);
+      auto present = INPUT_VARIABLE(2 * i + 1);
+      NDArray::registerSpecialUse({staticBuf}, {present});
+    }
+  }
 
   return sd::Status::OK;
 }

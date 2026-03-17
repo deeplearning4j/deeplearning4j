@@ -37,12 +37,19 @@ namespace ops {
  * ONNX MultiHeadAttention - for pre-projected queries, keys, values
  *
  * Inputs:
- *   0: query        [batch, seqQ, hidden] - already projected
- *   1: key          [batch, seqKV, hidden] - already projected  
- *   2: value        [batch, seqKV, hidden] - already projected
- *   3: attn_bias    [batch, numHeads, seqQ, seqKV] or broadcastable (optional, can be empty)
- *   4: past_key     [batch, numHeads, pastSeq, headDim] (optional, can be empty)
- *   5: past_value   [batch, numHeads, pastSeq, headDim] (optional, can be empty)
+ *   0: query          [batch, seqQ, hidden] - already projected
+ *   1: key            [batch, seqKV, hidden] - already projected
+ *   2: value          [batch, seqKV, hidden] - already projected
+ *   3: attn_bias      [batch, numHeads, seqQ, seqKV] or broadcastable (optional, can be empty)
+ *   4: past_key       [batch, numHeads, pastSeq, headDim] (optional, can be empty)
+ *   5: past_value     [batch, numHeads, pastSeq, headDim] (optional, can be empty)
+ *   6: cache_position [1] INT64 scalar (optional) - when present, enables in-place KV write mode:
+ *        writes current K/V at this position in past_key/past_value (in-place),
+ *        uses past_key/past_value as the full KV sequence (no concatenation).
+ *        This fixes causal mask alignment: the model's causal mask uses position_ids
+ *        to determine visibility, so current K must be at the same position as position_ids.
+ *        Without this, concat places current K at pastSeq which is > position_ids, causing
+ *        the causal mask to mask out the current token's own key.
  *
  * Int args:
  *   0: numHeads
@@ -64,12 +71,16 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   NDArray* attnBias = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
   NDArray* pastKey = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;
   NDArray* pastValue = block.width() > 5 ? INPUT_VARIABLE(5) : nullptr;
-  
+  NDArray* cachePosInput = block.width() > 6 ? INPUT_VARIABLE(6) : nullptr;
+
   // Handle empty arrays and scalar placeholders as nullptr
   // Scalars (rank 0 or length <= 1) are used as placeholders for missing optional inputs
   if (attnBias != nullptr && (attnBias->isEmpty() || attnBias->rankOf() == 0 || attnBias->lengthOf() <= 1)) attnBias = nullptr;
   if (pastKey != nullptr && (pastKey->isEmpty() || pastKey->rankOf() == 0 || pastKey->lengthOf() <= 1)) pastKey = nullptr;
   if (pastValue != nullptr && (pastValue->isEmpty() || pastValue->rankOf() == 0 || pastValue->lengthOf() <= 1)) pastValue = nullptr;
+  // cache_position must be a non-empty scalar or 1-element tensor with value >= 0
+  if (cachePosInput != nullptr && (cachePosInput->isEmpty() || cachePosInput->lengthOf() <= 0)) cachePosInput = nullptr;
+  bool useInPlaceKv = (cachePosInput != nullptr && pastKey != nullptr && pastValue != nullptr);
   
   auto output = OUTPUT_VARIABLE(0);
 
@@ -140,7 +151,15 @@ CUSTOM_OP_IMPL(onnx_multi_head_attention, 3, -1, false, -2, 2) {
   bool ownKVFinal = false;  // Whether we own kFinal/vFinal memory
   LongType totalSeqKV = seqKV;
   
-  if (pastKey != nullptr && pastValue != nullptr) {
+  // Skip past_key concat when the upstream graph already handled it.
+  // Detection: if past_key's head count (axis 1) doesn't match numKvHeads derived from
+  // the key input, then GQA repeat was applied upstream and past_key is in raw format.
+  // Also skip if K already includes past positions (seqKV > seqQ).
+  auto pastKvHeadCount = (pastKey != nullptr) ? pastKey->sizeAt(1) : numKvHeads;
+  bool pastAlreadyConcat = (pastKey != nullptr && pastKvHeadCount != numKvHeads);
+
+  if (pastKey != nullptr && pastValue != nullptr && !pastAlreadyConcat) {
+    // Standard concat mode: concatenate past + current KV
     // Past is [batch, numKvHeads, pastSeq, headDim] (BHSD format from ONNX)
     // Need to permute to [batch, pastSeq, numKvHeads, headDim] (BSHD) for concat
     auto pastSeq = pastKey->sizeAt(2);
@@ -310,6 +329,7 @@ DECLARE_TYPES(onnx_multi_head_attention) {
       ->setAllowedInputTypes(3, {ALL_FLOATS, ALL_INTS, BOOL})  // attn_bias (optional)
       ->setAllowedInputTypes(4, {ALL_FLOATS})   // past_key (optional)
       ->setAllowedInputTypes(5, {ALL_FLOATS})   // past_value (optional)
+      ->setAllowedInputTypes(6, {ALL_INTS})     // cache_position (optional, INT64 scalar)
       ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -334,6 +354,9 @@ DECLARE_SHAPE_FN(onnx_multi_head_attention) {
   LongType numKvHeads = (headDim > 0) ? (kvHidden / headDim) : numHeads;
 
   // Check for past key/value to determine total sequence length
+  // Always use concat shape (pastSeq + seqKV) even with in-place KV write,
+  // because the model's attn_mask_reformat subgraph derives shapes from
+  // past_key_shape[2] + current_key_shape[1] and expects consistent dimensions.
   LongType totalSeqKV = seqKV;
   if (inputShape->size() > 4) {
     auto pastKeyShape = inputShape->at(4);

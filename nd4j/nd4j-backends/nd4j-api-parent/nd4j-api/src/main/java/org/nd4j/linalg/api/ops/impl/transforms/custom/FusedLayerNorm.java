@@ -58,15 +58,15 @@ public class FusedLayerNorm extends DynamicCustomOp {
         this(sameDiff, input, gain, null, epsilon);
     }
 
+    public FusedLayerNorm(INDArray input, INDArray gain, INDArray bias, double epsilon) {
+        this(input, gain, bias, null, epsilon);
+    }
+
     public FusedLayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray output, double epsilon) {
         super(bias != null ? new INDArray[]{input, gain, bias} : new INDArray[]{input, gain},
               output != null ? new INDArray[]{output} : null);
         this.epsilon = epsilon;
         addTArgument(epsilon);
-    }
-
-    public FusedLayerNorm(INDArray input, INDArray gain, INDArray output, double epsilon) {
-        this(input, gain, null, output, epsilon);
     }
 
     @Override

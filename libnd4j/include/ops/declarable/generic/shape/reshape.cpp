@@ -34,6 +34,22 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
+  // OPTIMIZATION: Identity reshape - skip if shapes are identical.
+  // For decode (seq_len=1), many reshapes are [1,1,D] → [1,D] or similar no-ops.
+  if (x->rankOf() == z->rankOf()) {
+    bool sameShape = true;
+    for (int i = 0; i < x->rankOf(); i++) {
+      if (x->sizeAt(i) != z->sizeAt(i)) {
+        sameShape = false;
+        break;
+      }
+    }
+    if (sameShape) {
+      z->assign(x);
+      return Status::OK;
+    }
+  }
+
   // Fast path: if same buffer, this is just a view change - nothing to copy
   if (x->dataBuffer() == z->dataBuffer()) {
     return Status::OK;

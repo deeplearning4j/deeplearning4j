@@ -1647,6 +1647,7 @@
                         <ND4J_DSP_BATCH_ZERO_VERBOSE>${nd4j.dsp.batchZeroVerbose}</ND4J_DSP_BATCH_ZERO_VERBOSE>
                         <ND4J_DSP_CAST_SINK_MATMUL>${nd4j.dsp.castSinkMatmul}</ND4J_DSP_CAST_SINK_MATMUL>
                         <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
+                        <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->
@@ -1667,6 +1668,10 @@
                         <!-- VLM optimizer and cache configuration -->
                         <vlm.model.cache.disable>${vlm.model.cache.disable}</vlm.model.cache.disable>
                         <nd4j.optimizer.enabled>${nd4j.optimizer.enabled}</nd4j.optimizer.enabled>
+                        <nd4j.optimizer.fp16>${nd4j.optimizer.fp16}</nd4j.optimizer.fp16>
+                        <!-- DSP debug properties -->
+                        <nd4j.dsp.native.dumpOutputs>${nd4j.dsp.native.dumpOutputs}</nd4j.dsp.native.dumpOutputs>
+                        <nd4j.dsp.java.dumpOutputs>${nd4j.dsp.java.dumpOutputs}</nd4j.dsp.java.dumpOutputs>
                     </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>

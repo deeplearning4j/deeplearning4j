@@ -85,6 +85,17 @@ bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
       "cast",
       // Clip — elementwise
       "clipbyvalue",
+      // Normalization ops — write every output element
+      "rms_norm", "layer_norm", "fused_layer_norm", "batchnorm", "fused_rope",
+      // Attention ops — fully compute attention output
+      "onnx_multi_head_attention", "dot_product_attention_v2",
+      "flash_attention", "multi_head_dot_product_attention",
+      // Data movement — copies every element to a NEW buffer (not views)
+      "assign",
+      // Activation functions (additional)
+      "silu", "fused_gelu",
+      // Token sampling — writes output token
+      "token_sample",
   };
   return FULLY_WRITING_OPS.count(normalizeOpName(opName)) > 0;
 }

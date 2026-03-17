@@ -138,6 +138,24 @@ public class FusedNormQuantize extends DynamicCustomOp {
         addTArgument((double) epsilon);
     }
 
+    public FusedNormQuantize(SameDiff sd, SDVariable input, SDVariable gamma, double epsilon, int quantType) {
+        super(null, sd, new SDVariable[]{input, gamma}, false);
+        this.normType = NORM_RMSNORM;
+        this.quantType = quantType;
+        this.epsilon = (float) epsilon;
+        addIArgument((long) this.normType, (long) this.quantType);
+        addTArgument(epsilon);
+    }
+
+    public FusedNormQuantize(INDArray input, INDArray gamma, double epsilon, int quantType) {
+        super(new INDArray[]{input, gamma}, null);
+        this.normType = NORM_RMSNORM;
+        this.quantType = quantType;
+        this.epsilon = (float) epsilon;
+        addIArgument((long) this.normType, (long) this.quantType);
+        addTArgument(epsilon);
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();

@@ -1071,4 +1071,504 @@ fun NN() = Namespace("NN") {
             """.trimIndent()
         }
     }
+
+    Op("rope") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "RoPE"
+        Input(NUMERIC, "input") { description = "Input tensor [batch, seq_len, num_heads, head_dim]" }
+        Arg(INT, "mode") { description = "RoPE mode (default 0)" }
+        Arg(INT, "nPast") { description = "Number of past tokens (default 0)" }
+        Arg(INT, "nDims") { description = "Dimension subset for rotation (default last dim)" }
+        Arg(FLOATING_POINT, "freqBase") { description = "Frequency base (default 10000.0)" }
+        Arg(FLOATING_POINT, "freqScale") { description = "Frequency scale (default 1.0)" }
+        Output(NUMERIC, "output") { description = "Output with rotary position embeddings applied" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Applies Rotary Position Embedding (RoPE) to the input tensor.
+                Encodes position information by rotating pairs of dimensions in the input.
+            """.trimIndent()
+        }
+    }
+
+    Op("silu") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "SiLU"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Output(NUMERIC, "output") { description = "SiLU(x) = x * sigmoid(x)" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                SiLU (Sigmoid Linear Unit) activation function, also known as Swish.
+                Computes f(x) = x * sigmoid(x).
+            """.trimIndent()
+        }
+    }
+
+    Op("applyAlibi") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "ApplyAlibi"
+        Input(NUMERIC, "scores") { description = "Attention scores [batch, num_heads, seq_len, kv_len]" }
+        Arg(INT, "numHeads") { description = "Number of attention heads" }
+        Output(NUMERIC, "output") { description = "Scores with ALiBi position bias applied" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.
+            """.trimIndent()
+        }
+    }
+
+    Op("quantizedMatmul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "QuantizedMatmul"
+        Input(NUMERIC, "a") { description = "First matrix" }
+        Input(NUMERIC, "b") { description = "Second matrix" }
+        Output(NUMERIC, "output") { description = "Matrix product" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Quantized matrix multiplication. Supports mixed precision (float/int) inputs.
+            """.trimIndent()
+        }
+    }
+
+    Op("loraMatMul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "LoraMatMul"
+        Input(NUMERIC, "input") { description = "Input [batch, in_features]" }
+        Input(NUMERIC, "weight") { description = "Base weight [out_features, in_features]" }
+        Input(NUMERIC, "loraA") { description = "LoRA down-projection [r, in_features]" }
+        Input(NUMERIC, "loraB") { description = "LoRA up-projection [out_features, r]" }
+        Arg(FLOATING_POINT, "scaling") { description = "LoRA scaling factor (default 1.0)" }
+        Arg(BOOL, "transposeWeight") { description = "Whether to transpose weight (default true)" }
+        Output(NUMERIC, "output") { description = "Result: input @ weight^T + scaling * input @ loraA^T @ loraB^T" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Low-Rank Adaptation (LoRA) fused matrix multiplication.
+                Computes base weight matmul + low-rank adapter in a single operation.
+            """.trimIndent()
+        }
+    }
+
+    Op("doraMatMul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "DoraMatMul"
+        Input(NUMERIC, "input") { description = "Input [batch, in_features]" }
+        Input(NUMERIC, "weight") { description = "Base weight [out_features, in_features]" }
+        Input(NUMERIC, "loraA") { description = "LoRA down-projection [r, in_features]" }
+        Input(NUMERIC, "loraB") { description = "LoRA up-projection [out_features, r]" }
+        Input(NUMERIC, "magnitude") { description = "Per-output magnitude [out_features]" }
+        Arg(FLOATING_POINT, "scaling") { description = "LoRA scaling factor (default 1.0)" }
+        Output(NUMERIC, "output") { description = "DoRA result with weight-decomposed adaptation" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.
+                Decomposes weight into magnitude and direction, applies LoRA to direction only.
+            """.trimIndent()
+        }
+    }
+
+    Op("lohaMatMul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "LohaMatMul"
+        Input(NUMERIC, "input") { description = "Input [batch, in_features]" }
+        Input(NUMERIC, "weight") { description = "Base weight [out_features, in_features]" }
+        Input(NUMERIC, "lohaA1") { description = "First Hadamard factor A [dim, in_features]" }
+        Input(NUMERIC, "lohaB1") { description = "First Hadamard factor B [out_features, dim]" }
+        Input(NUMERIC, "lohaA2") { description = "Second Hadamard factor A [dim, in_features]" }
+        Input(NUMERIC, "lohaB2") { description = "Second Hadamard factor B [out_features, dim]" }
+        Arg(FLOATING_POINT, "scaling") { description = "Scaling factor (default 1.0)" }
+        Arg(BOOL, "transposeWeight") { description = "Whether to transpose weight (default true)" }
+        Output(NUMERIC, "output") { description = "LoHa result" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Low-Rank Hadamard Product (LoHa) fused matrix multiplication.
+                Uses Hadamard product of two low-rank matrices as the adapter.
+            """.trimIndent()
+        }
+    }
+
+    Op("lokrMatMul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "LokrMatMul"
+        Input(NUMERIC, "input") { description = "Input [batch, in_features]" }
+        Input(NUMERIC, "weight") { description = "Base weight [out_features, in_features]" }
+        Input(NUMERIC, "lokrC") { description = "Kronecker factor C [f1, f2]" }
+        Input(NUMERIC, "lokrA") { description = "Kronecker factor A [dim, d2]" }
+        Input(NUMERIC, "lokrB") { description = "Kronecker factor B [d1, dim]" }
+        Arg(INT, "factor1") { description = "First Kronecker factor dimension" }
+        Arg(INT, "factor2") { description = "Second Kronecker factor dimension" }
+        Arg(FLOATING_POINT, "scaling") { description = "Scaling factor (default 1.0)" }
+        Arg(BOOL, "transposeWeight") { description = "Whether to transpose weight (default true)" }
+        Output(NUMERIC, "output") { description = "LoKr result" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Low-Rank Kronecker Product (LoKr) fused matrix multiplication.
+                Uses Kronecker product of matrices as the adapter.
+            """.trimIndent()
+        }
+    }
+
+    Op("multiLoraMatmul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MultiLoraMatmul"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "baseWeight") { description = "Base weight matrix" }
+        Input(NUMERIC, "loraAWeights") { description = "Stacked LoRA A weights" }
+        Input(NUMERIC, "loraBWeights") { description = "Stacked LoRA B weights" }
+        Input(NUMERIC, "adapterIds") { description = "Adapter selection indices" }
+        Arg(FLOATING_POINT, "scaling") { description = "LoRA scaling factor" }
+        Output(NUMERIC, "output") { description = "Result with per-sample adapter selection" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.
+            """.trimIndent()
+        }
+    }
+
+    Op("kvCacheQuantize") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "KVCacheQuantize"
+        Input(NUMERIC, "input") { description = "Key or value tensor to quantize" }
+        Arg(INT, "quantType") { description = "Quantization type" }
+        Arg(INT, "groupSize") { description = "Group size for quantization" }
+        Output(NUMERIC, "output") { description = "Quantized tensor" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Quantizes KV cache tensors for memory-efficient inference.
+            """.trimIndent()
+        }
+    }
+
+    Op("kvCacheDequantize") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "KVCacheDequantize"
+        Input(NUMERIC, "input") { description = "Quantized key or value tensor" }
+        Input(NUMERIC, "scale") { description = "Quantization scales" }
+        Arg(INT, "quantType") { description = "Quantization type" }
+        Output(NUMERIC, "output") { description = "Dequantized tensor" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Dequantizes quantized KV cache tensors back to floating point.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedRmsNormSwiglu") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedRmsNormSwiGLU"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "gamma") { description = "RMS norm scale" }
+        Input(NUMERIC, "wGate") { description = "Gate projection weight" }
+        Input(NUMERIC, "wUp") { description = "Up projection weight" }
+        Arg(FLOATING_POINT, "epsilon") { description = "Epsilon for numerical stability" }
+        Output(NUMERIC, "output") { description = "Result of fused RMSNorm + SwiGLU" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation
+                into a single kernel for better memory efficiency.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedRoPE") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedRoPE"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "ropeCache") { description = "Precomputed RoPE cache (cos/sin)" }
+        Arg(INT, "startPosition") { description = "Start position for RoPE application" }
+        Output(NUMERIC, "output") { description = "Input with RoPE applied" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused Rotary Position Embedding using precomputed cache.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedLayerNorm") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedLayerNorm"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "gamma") { description = "Scale parameter" }
+        Input(NUMERIC, "beta") { description = "Bias parameter" }
+        Arg(FLOATING_POINT, "epsilon") { description = "Epsilon for numerical stability" }
+        Output(NUMERIC, "output") { description = "Layer-normalized output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedGelu") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedGELU"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Output(NUMERIC, "output") { description = "GELU(x)" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused Gaussian Error Linear Unit (GELU) activation function.
+            """.trimIndent()
+        }
+    }
+
+    Op("swishMul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "SwishMul"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "gate") { description = "Gate tensor" }
+        Output(NUMERIC, "output") { description = "swish(input) * gate" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused Swish-Mul: computes swish(input) * gate in a single kernel.
+                Used in SwiGLU and similar gated architectures.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedGemmSwiglu") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedGemmSwiglu"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "wGate") { description = "Gate projection weight" }
+        Input(NUMERIC, "wUp") { description = "Up projection weight" }
+        Output(NUMERIC, "output") { description = "SwiGLU(input @ wGate, input @ wUp)" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedBiasDropoutResidual") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedBiasDropoutResidual"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "bias") { description = "Bias tensor" }
+        Input(NUMERIC, "residual") { description = "Residual connection tensor" }
+        Arg(FLOATING_POINT, "dropoutProb") { description = "Dropout probability" }
+        Arg(BOOL, "training") { description = "Whether in training mode" }
+        Output(NUMERIC, "output") { description = "dropout(input + bias) + residual" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused bias addition, dropout, and residual connection in a single kernel.
+            """.trimIndent()
+        }
+    }
+
+    Op("columnParallelLinear") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "ColumnParallelLinear"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "weight") { description = "Weight matrix" }
+        Arg(INT, "tpRank") { description = "Tensor parallel rank" }
+        Arg(INT, "tpSize") { description = "Tensor parallel world size" }
+        Arg(BOOL, "gatherOutput") { description = "Whether to all-gather output" }
+        Output(NUMERIC, "output") { description = "Column-parallel linear output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Column-parallel linear layer for tensor parallelism.
+                Splits weight columns across tensor parallel ranks.
+            """.trimIndent()
+        }
+    }
+
+    Op("rowParallelLinear") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "RowParallelLinear"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "weight") { description = "Weight matrix" }
+        Arg(INT, "tpRank") { description = "Tensor parallel rank" }
+        Arg(INT, "tpSize") { description = "Tensor parallel world size" }
+        Arg(BOOL, "reduceOutput") { description = "Whether to all-reduce output" }
+        Output(NUMERIC, "output") { description = "Row-parallel linear output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Row-parallel linear layer for tensor parallelism.
+                Splits weight rows across tensor parallel ranks.
+            """.trimIndent()
+        }
+    }
+
+    Op("moeGate") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MoeGate"
+        Input(NUMERIC, "input") { description = "Input hidden states" }
+        Input(NUMERIC, "gateWeights") { description = "Router gate weights" }
+        Arg(INT, "numExperts") { description = "Number of experts" }
+        Arg(INT, "topK") { description = "Top-K experts to select" }
+        Output(NUMERIC, "output") { description = "Gating weights and expert indices" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Mixture of Experts (MoE) gating/routing function.
+                Selects top-K experts and computes routing weights.
+            """.trimIndent()
+        }
+    }
+
+    Op("smoothQuant") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "SmoothQuant"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "smoothScale") { description = "Smooth quantization scale" }
+        Output(NUMERIC, "output") { description = "Smoothly quantized output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                SmoothQuant: migrates quantization difficulty from activations to weights.
+            """.trimIndent()
+        }
+    }
+
+    Op("selectiveScan") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "SelectiveScan"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Output(NUMERIC, "output") { description = "Selective scan output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Selective scan operation for state space models (Mamba architecture).
+            """.trimIndent()
+        }
+    }
+
+    Op("gpuTopKSample") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GpuTopKSample"
+        Input(NUMERIC, "logits") { description = "Logit scores" }
+        Arg(INT, "k") { description = "Number of top candidates" }
+        Arg(FLOATING_POINT, "temperature") { description = "Sampling temperature" }
+        Output(NUMERIC, "output") { description = "Sampled token indices" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                GPU-accelerated top-K sampling for autoregressive text generation.
+            """.trimIndent()
+        }
+    }
+
+    Op("gpuTopPSample") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GpuTopPSample"
+        Input(NUMERIC, "logits") { description = "Logit scores" }
+        Arg(FLOATING_POINT, "p") { description = "Cumulative probability threshold (nucleus)" }
+        Arg(FLOATING_POINT, "temperature") { description = "Sampling temperature" }
+        Output(NUMERIC, "output") { description = "Sampled token indices" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.
+            """.trimIndent()
+        }
+    }
+
+    Op("meanSquare") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MeanSquare"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Output(NUMERIC, "output") { description = "Mean of squared values" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Computes the mean of squared values. Used in RMSNorm and similar operations.
+            """.trimIndent()
+        }
+    }
+
+    Op("decoderMaskedMha") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "DecoderMaskedMha"
+        Input(NUMERIC, "query") { description = "Query tensor" }
+        Input(NUMERIC, "key") { description = "Key tensor" }
+        Input(NUMERIC, "value") { description = "Value tensor" }
+        Arg(INT, "numHeads") { description = "Number of attention heads" }
+        Arg(BOOL, "isCausal") { description = "Whether to apply causal mask" }
+        Output(NUMERIC, "output") { description = "Attention output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Decoder-optimized masked multi-head attention.
+                Optimized for autoregressive decoding with incremental KV cache.
+            """.trimIndent()
+        }
+    }
+
+    Op("mlaAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "MLAAttention"
+        Input(NUMERIC, "input") { description = "Input hidden states" }
+        Input(NUMERIC, "kvDownProj") { description = "KV down-projection weight" }
+        Arg(INT, "numHeads") { description = "Number of attention heads" }
+        Arg(INT, "latentDim") { description = "Latent dimension for compressed KV" }
+        Output(NUMERIC, "output") { description = "Attention output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Multi-head Latent Attention (MLA) from DeepSeek-V2.
+                Uses low-rank KV compression for efficient long-context inference.
+            """.trimIndent()
+        }
+    }
+
+    Op("awqMatmul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "AwqMatmul"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "weightPacked") { description = "AWQ-packed weight" }
+        Input(NUMERIC, "weightScale") { description = "Weight quantization scales" }
+        Arg(INT, "groupSize") { description = "Quantization group size" }
+        Output(NUMERIC, "output") { description = "Dequantized matmul result" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Activation-aware Weight Quantization (AWQ) matrix multiplication.
+            """.trimIndent()
+        }
+    }
+
+    Op("fp8Matmul") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "Fp8Matmul"
+        Input(NUMERIC, "a") { description = "First matrix" }
+        Input(NUMERIC, "b") { description = "Second matrix" }
+        Input(NUMERIC, "scaleA") { description = "Scale for matrix A" }
+        Input(NUMERIC, "scaleB") { description = "Scale for matrix B" }
+        Output(NUMERIC, "output") { description = "Scaled FP8 matmul result" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                FP8 matrix multiplication with per-tensor scaling.
+            """.trimIndent()
+        }
+    }
+
+    Op("fusedNormQuantize") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "FusedNormQuantize"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "gamma") { description = "Norm scale parameter" }
+        Arg(FLOATING_POINT, "epsilon") { description = "Epsilon for normalization" }
+        Arg(INT, "quantType") { description = "Quantization type" }
+        Output(NUMERIC, "output") { description = "Normalized and quantized output" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Fused normalization + quantization in a single kernel.
+            """.trimIndent()
+        }
+    }
+
+    Op("linearCopy") {
+        javaPackage = "org.nd4j.linalg.api.ops.custom"
+        javaOpClass = "LinearCopy"
+        Input(NUMERIC, "input") { description = "Source tensor" }
+        Output(NUMERIC, "output") { description = "Contiguous copy of input" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Creates a contiguous copy of the input tensor with linear (row-major) memory layout.
+            """.trimIndent()
+        }
+    }
+
+    Op("reshapeNoCopy") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "ReshapeNoCopy"
+        Input(NUMERIC, "input") { description = "Input tensor" }
+        Input(NUMERIC, "shape") { description = "Target shape" }
+        Output(NUMERIC, "output") { description = "Reshaped view (no data copy)" }
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+                Reshapes a tensor without copying data. Returns a view if possible.
+                If the reshape cannot be done without copying, this op will fail.
+            """.trimIndent()
+        }
+    }
 }

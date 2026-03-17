@@ -14,6 +14,21 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
+  // OPTIMIZATION: Identity reshape - skip if shapes are identical.
+  // For decode (seq_len=1), many reshapes are [1,1,D] → [1,D] or similar no-ops.
+  if (input->rankOf() == output->rankOf()) {
+    bool sameShape = true;
+    for (int i = 0; i < input->rankOf(); i++) {
+      if (input->sizeAt(i) != output->sizeAt(i)) {
+        sameShape = false;
+        break;
+      }
+    }
+    if (sameShape) {
+      return Status::OK;
+    }
+  }
+
   // Handle empty arrays - nothing to copy
   if (input->isEmpty() || input->lengthOf() == 0 || output->isEmpty() || output->lengthOf() == 0) {
     return Status::OK;

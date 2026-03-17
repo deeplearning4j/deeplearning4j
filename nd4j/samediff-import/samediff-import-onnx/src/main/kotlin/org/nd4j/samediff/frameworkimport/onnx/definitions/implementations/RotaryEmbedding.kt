@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
@@ -86,100 +87,43 @@ class RotaryEmbedding : PreImportHook {
 
         // Gather cos and sin values based on position_ids
         // cos_cache/sin_cache shape is [max_seq, head_dim/2] per ONNX RotaryEmbedding spec
-        // The rotation operates on pairs of elements, so cos/sin have half the head dimension.
         var cos = sd.gather(cosCache, positionIds, 0)
         var sin = sd.gather(sinCache, positionIds, 0)
         // After gather: [batch, seq, half_head_dim] e.g. [1, 283, 32]
 
-        // Get half_head_dim from cos_cache shape.
-        // Prefer static extraction at import time when cosCache has a known shape,
-        // falling back to dynamic computation only if shape is unknown.
+        // Determine the actual head dimension from cos_cache
         val cosArr = sd.getArrForVarName(cosCache.name())
-        val halfHeadDimVar: SDVariable
         val actualHeadDimVar: SDVariable
-        println("RotaryEmbedding: cosCache='${cosCache.name()}', type=${cosCache.variableType}, cosArr=${cosArr != null}, numHeads=$numHeads")
         if (cosArr != null) {
-            // cosCache is a constant with known shape — extract last dimension statically
             val halfHeadDim = cosArr.shape()[cosArr.rank() - 1]
-            println("RotaryEmbedding: STATIC path - halfHeadDim=$halfHeadDim, actualHeadDim=${halfHeadDim * 2}")
-            halfHeadDimVar = sd.constant(Nd4j.scalar(halfHeadDim))
             actualHeadDimVar = sd.constant(Nd4j.scalar(halfHeadDim * 2))
         } else {
-            println("RotaryEmbedding: DYNAMIC path for halfHeadDim (cosCache not a constant)")
-            // cosCache shape unknown at import — compute dynamically
             val cosShapeVar = sd.shape(cosCache)
             val cosRankVar = sd.rank(cosCache)
-            halfHeadDimVar = sd.gatherNd(cosShapeVar, sd.expandDims(sd.math.sub(cosRankVar, sd.constant(1)), 0))
-            val twoConst = sd.constant(Nd4j.scalar(2L))
-            actualHeadDimVar = sd.math.mul(halfHeadDimVar, twoConst)
+            val halfHeadDimVar = sd.gatherNd(cosShapeVar, sd.expandDims(sd.math.sub(cosRankVar, sd.constant(1)), 0))
+            actualHeadDimVar = sd.math.mul(halfHeadDimVar, sd.constant(Nd4j.scalar(2L)))
         }
 
-        // Get input shape dynamically (batch and seq are always dynamic)
+        // Get input shape dynamically
         val inputShapeVar = sd.shape(input)
-
-        // Save original shape for reshaping back later
         val originalInputShapeVar = inputShapeVar
 
         val idx0 = sd.constant(Nd4j.scalar(0L))
         val idx1 = sd.constant(Nd4j.scalar(1L))
-
         val batchSize = sd.gather(inputShapeVar, idx0, 0)
         val seqLen = sd.gather(inputShapeVar, idx1, 0)
 
         // Reshape input to 4D: [batch, seq, num_heads, actual_head_dim]
-        // Use -1 for num_heads so reshape infers it automatically.
-        // This handles both 3D [batch, seq, hidden] and 4D [batch, seq, num_heads, head_dim]
-        // inputs without fragile conditional arithmetic.
         val negOne = sd.constant(Nd4j.scalar(-1L))
         val targetShape = sd.stack(0, batchSize, seqLen, negOne, actualHeadDimVar)
-        println("RotaryEmbedding: using reshape with -1 for num_heads inference, actualHeadDim from static=$actualHeadDimVar")
-
-        // Reshape input to 4D with correct head structure
         val workingInput = sd.reshape(input, targetShape)
 
-        // Expand cos/sin for broadcasting: [batch, seq, half_dim] -> [batch, seq, 1, half_dim]
-        cos = sd.expandDims(cos, 2)
-        sin = sd.expandDims(sin, 2)
+        // Determine ropeType: 0=standard (non-interleaved), 1=NeoX (interleaved)
+        val ropeType = if (interleaved) FusedRoPE.ROPE_TYPE_NEOX else FusedRoPE.ROPE_TYPE_STANDARD
 
-        var result: SDVariable
-        if (interleaved) {
-            // Interleaved mode: pairs (x0,x1), (x2,x3), ...
-            // Reshape to [..., half_dim, 2], extract even/odd, rotate, interleave back
-            val xShape = sd.shape(workingInput)
-            val allButLast = sd.stridedSlice(xShape,
-                sd.constant(Nd4j.createFromArray(0L)),
-                sd.constant(Nd4j.createFromArray(-1L)),
-                sd.constant(Nd4j.createFromArray(1L)))
-            val reshapeTarget = sd.concat(0, allButLast,
-                sd.expandDims(halfHeadDimVar, 0),
-                sd.constant(Nd4j.createFromArray(2L)))
-            val reshaped = sd.reshape(workingInput, reshapeTarget)
-            val splitParts = sd.split(reshaped, 2, -1)
-            val even = sd.squeeze(splitParts[0], -1)  // x0, x2, x4, ...
-            val odd = sd.squeeze(splitParts[1], -1)   // x1, x3, x5, ...
-
-            val y0 = sd.math.sub(sd.math.mul(even, cos), sd.math.mul(odd, sin))
-            val y1 = sd.math.add(sd.math.mul(even, sin), sd.math.mul(odd, cos))
-
-            // Interleave back: stack on last dim then reshape
-            val stacked = sd.stack(-1, y0, y1)  // [..., half_dim, 2]
-            result = sd.reshape(stacked, xShape)
-        } else {
-            // Non-interleaved mode: split into first/second half
-            // x1 = input[..., :half_dim], x2 = input[..., half_dim:]
-            val splitParts = sd.split(workingInput, 2, -1)
-            val x1 = splitParts[0]  // [batch, seq, num_heads, half_head_dim]
-            val x2 = splitParts[1]  // [batch, seq, num_heads, half_head_dim]
-
-            // Apply rotation per the ONNX RotaryEmbedding spec:
-            //   y1 = x1 * cos - x2 * sin
-            //   y2 = x1 * sin + x2 * cos
-            val y1 = sd.math.sub(sd.math.mul(x1, cos), sd.math.mul(x2, sin))
-            val y2 = sd.math.add(sd.math.mul(x1, sin), sd.math.mul(x2, cos))
-
-            // Concatenate halves back: [batch, seq, num_heads, head_dim]
-            result = sd.concat(-1, y1, y2)
-        }
+        // Use fused_rope op with pre-computed cos/sin — single CUDA kernel
+        // replaces split + 4*mul + sub + add + concat (10 ops → 1 op)
+        var result = FusedRoPE(sd, workingInput, cos, sin, ropeType).outputVariable()
 
         // Apply scaling
         if (scale != 1.0) {

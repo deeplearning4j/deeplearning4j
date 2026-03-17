@@ -70,6 +70,28 @@ public class KvScatter extends DynamicCustomOp {
     }
 
     /**
+     * Batched INDArray constructor. Scatters multiple KV pairs in a single kernel launch.
+     * Arrays are interleaved: static0, present0, static1, present1, ...
+     *
+     * @param staticBuffers array of static KV cache buffers [batch, heads, maxKvLen, dim]
+     * @param presents      array of present KV tensors [batch, heads, seqLen, dim]
+     * @param cachePos      position in static buffer to write to
+     */
+    public KvScatter(INDArray[] staticBuffers, INDArray[] presents, long cachePos) {
+        super(null, interleaveArrays(staticBuffers, presents), null);
+        addIArgument(cachePos);
+    }
+
+    private static INDArray[] interleaveArrays(INDArray[] a, INDArray[] b) {
+        INDArray[] result = new INDArray[a.length + b.length];
+        for (int i = 0; i < a.length; i++) {
+            result[2 * i] = a[i];
+            result[2 * i + 1] = b[i];
+        }
+        return result;
+    }
+
+    /**
      * SameDiff constructor.
      */
     public KvScatter(SameDiff sameDiff, SDVariable staticBuffer, SDVariable present,

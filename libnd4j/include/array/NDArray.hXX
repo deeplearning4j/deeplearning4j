@@ -3328,51 +3328,61 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
 
   } else {
     // Fast path: use memcpy when both arrays are contiguous with same type, length, and order
+    bool sameType = (thisArray->dataType() == other->dataType());
+    bool sameLength = (thisArray->lengthOf() == other->lengthOf());
     bool sameOrder = (shape::order(thisArray->shapeInfo()) == shape::order(other->shapeInfo()));
-    bool neitherIsView = !thisArray->isView() && !other->isView();
-    bool sourceDataOnHost = thisArray->isActualOnHostSide();
-    bool canUseMemcpy = (thisArray->dataType() == other->dataType()) &&
-                        (thisArray->lengthOf() == other->lengthOf()) &&
-                        sameOrder &&
-                        neitherIsView &&
-                        sourceDataOnHost &&
-                        isContiguousLayout(thisArray->shapeInfo()) &&
-                        isContiguousLayout(other->shapeInfo());
+    bool srcContiguous = isContiguousLayout(thisArray->shapeInfo());
+    bool dstContiguous = isContiguousLayout(other->shapeInfo());
+    bool canUseFastCopy = sameType && sameLength && sameOrder && srcContiguous && dstContiguous;
 
-    if (canUseMemcpy) {
-      // Direct memcpy - much faster for contiguous arrays with same order
+#if defined(SD_CUDA)
+    // CUDA D2D fast path: use cudaMemcpyAsync DeviceToDevice when both arrays
+    // have contiguous data on device. This runs on DMA copy engines, freeing
+    // SMs for compute kernels. Works for views too since specialBuffer()
+    // already includes the view offset.
+    if (canUseFastCopy) {
+      void* srcSpecial = thisArray->specialBuffer();
+      void* dstSpecial = other->specialBuffer();
+      if (srcSpecial != nullptr && dstSpecial != nullptr &&
+          thisArray->isActualOnDeviceSide()) {
+        size_t bytes = thisArray->lengthOf() * thisArray->sizeOfT();
+        // Use the capture stream during CUDA graph capture, else context stream
+        cudaStream_t stream = nullptr;
+        if (thisArray->getContext() != nullptr && thisArray->getContext()->getCudaStream() != nullptr) {
+          stream = *(thisArray->getContext()->getCudaStream());
+        }
+        if (stream == nullptr) {
+          stream = cudaStreamPerThread;
+        }
+        cudaMemcpyAsync(dstSpecial, srcSpecial, bytes, cudaMemcpyDeviceToDevice, stream);
+        other->tickWriteDevice();
+        return;
+      }
+    }
+#endif
+
+    // Host memcpy fast path (CPU or when device buffers unavailable)
+    if (canUseFastCopy && thisArray->isActualOnHostSide() && !thisArray->isView() && !other->isView()) {
       std::memcpy(other->buffer(), thisArray->buffer(), thisArray->lengthOf() * thisArray->sizeOfT());
-      // Mark host buffer as written
       other->tickWriteHost();
-      // Sync to device for CUDA backends. Without this, subsequent ops
-      // reading from device (via specialBuffer()) will see uninitialized/zero data.
-      // On CPU this is a no-op.
       other->syncToDevice();
       return;
     }
 
-    // FIX: prepareSpecialUse takes (writeList, readList)
-    // We are reading from thisArray (source) and writing to other (destination)
+    // General path: use Assign kernel (handles non-contiguous layouts, different strides)
     NDArray::prepareSpecialUse({other}, {thisArray});
-
-    // FIX: Use source's shapeInfo for reading (thisArray->shapeInfo()) and
-    // destination's shapeInfo for writing (other->shapeInfo()).
-    // The old code used otherShapeInfo (source's possibly-reshaped shapeInfo) for
-    // the destination, causing data to be written to wrong locations when source
-    // and destination have different strides (e.g., permute/transpose operations).
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
                                           thisArray->buffer(),
-                                          thisArray->shapeInfo(),     // Source's shapeInfo for reading
+                                          thisArray->shapeInfo(),
                                           thisArray->specialBuffer(),
                                           thisArray->specialShapeInfo(),
                                           other->buffer(),
-                                          other->shapeInfo(),         // Destination's actual shapeInfo for writing
+                                          other->shapeInfo(),
                                           other->specialBuffer(),
                                           other->specialShapeInfo(),
                                           nullptr,
                                           allowParallelism);
-    // FIX: registerSpecialUse takes (writeList, readList)
     NDArray::registerSpecialUse({other}, {thisArray});
   }
 }

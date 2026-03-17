@@ -85,6 +85,28 @@ public class LohaMatMul extends DynamicCustomOp {
         addBArgument(transposeWeight);
     }
 
+    public LohaMatMul(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
+                      @NonNull SDVariable weight, @NonNull SDVariable lohaA1,
+                      @NonNull SDVariable lohaB1, @NonNull SDVariable lohaA2,
+                      @NonNull SDVariable lohaB2, double scaling, boolean transposeWeight) {
+        super(null, sameDiff, new SDVariable[]{input, weight, lohaA1, lohaB1, lohaA2, lohaB2}, false);
+        this.scaling = scaling;
+        this.transposeWeight = transposeWeight;
+        addTArgument(scaling, dropout);
+        addBArgument(transposeWeight);
+    }
+
+    public LohaMatMul(@NonNull INDArray input, @NonNull INDArray weight,
+                      @NonNull INDArray lohaA1, @NonNull INDArray lohaB1,
+                      @NonNull INDArray lohaA2, @NonNull INDArray lohaB2,
+                      double scaling, boolean transposeWeight) {
+        super(null, new INDArray[]{input, weight, lohaA1, lohaB1, lohaA2, lohaB2}, null);
+        this.scaling = scaling;
+        this.transposeWeight = transposeWeight;
+        addTArgument(scaling, dropout);
+        addBArgument(transposeWeight);
+    }
+
     public LohaMatMul(@NonNull INDArray input, @NonNull INDArray weight,
                       @NonNull INDArray lohaA1, @NonNull INDArray lohaB1,
                       @NonNull INDArray lohaA2, @NonNull INDArray lohaB2,

@@ -1506,6 +1506,31 @@ public interface NativeOps {
  }
 
  /**
+  * Configure decode input indices for direct device-side updates.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param inputIdsExtIdx external input index for input_ids (-1 if N/A)
+  * @param positionIdsExtIdx external input index for position_ids (-1 if N/A)
+  * @param attentionMaskExtIdx external input index for attention_mask (-1 if N/A)
+  * @param maxKvLen maximum KV cache length
+  */
+ default void configurePlanDecodeInputs(Pointer planHandle,
+                                         int inputIdsExtIdx, int positionIdsExtIdx,
+                                         int attentionMaskExtIdx, int maxKvLen) {
+     throw new UnsupportedOperationException("configurePlanDecodeInputs not implemented in this backend");
+ }
+
+ /**
+  * Set next decode token and cache position. Call before executeDynamicShapePlan().
+  * execute() will write these values directly to device memory before graph replay.
+  * @param planHandle handle from compileDynamicShapePlan()
+  * @param tokenId next token ID
+  * @param cachePos current cache position
+  */
+ default void setPlanNextDecodeToken(Pointer planHandle, long tokenId, int cachePos) {
+     throw new UnsupportedOperationException("setPlanNextDecodeToken not implemented in this backend");
+ }
+
+ /**
   * Load a model from an SDZ or SDNB file entirely in C++.
   * @param filePath path to the .sdz or .sdnb file
   * @return opaque handle to the loaded model, or null on failure

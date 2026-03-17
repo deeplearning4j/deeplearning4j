@@ -28,20 +28,19 @@ namespace helpers {
 
 template <typename T>
 static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
-  ResultSet arrs = output->allTensorsAlongDimension({1});
+  // Initialize output to zero
+  output->nullify();
+  
   int lLen = labels->lengthOf();
 
-  auto func = PRAGMA_THREADS_FOR {
-    for (sd::LongType j = start; j < stop; j++) {
-      auto label = labels->e<sd::LongType>(j);
-      auto pred = predictions->e<sd::LongType>(j);
-      T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
-      T curr = arrs.at(label)->e<T>(pred);
-      arrs.at(label)->p<T>(pred, curr + value);
-    }
-  };
-
-  samediff::Threads::parallel_for(func, 0, lLen);
+  // Sequential loop to avoid race conditions when updating same cell
+  for (sd::LongType j = 0; j < lLen; j++) {
+    auto label = labels->e<sd::LongType>(j);
+    auto pred = predictions->e<sd::LongType>(j);
+    T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
+    T curr = output->e<T>(label, pred);
+    output->p<T>(label, pred, curr + value);
+  }
 }
 
 void confusionFunctor(sd::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,

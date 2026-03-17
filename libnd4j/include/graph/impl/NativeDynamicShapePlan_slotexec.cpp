@@ -618,18 +618,51 @@ Status NativeDynamicShapePlan::executeSlot(
       }
     }
 
-    // Nullify output arrays before re-execution
+    // Nullify output arrays before re-execution.
+    // Skip outputs that share a data buffer with any input — those are views,
+    // and zeroing them would corrupt the input data.
     if (!slot.inPlaceFused) {
       auto& ctxOuts = ctx.fastpath_out();
+      auto& ctxIns = ctx.fastpath_in();
       for (int i = 0; i < static_cast<int>(ctxOuts.size()); i++) {
         if (ctxOuts[i] == nullptr) continue;
         int si = (i < slot.numOutputs) ? slot.outputSlotIndices[i] : -1;
         if (si >= 0 && si < totalOutputSlots_ && slotIsViewProducer_[si]) continue;
+
+        // Check if this output shares a buffer with any input — if so it's a view
+        auto* outBuf = ctxOuts[i]->dataBuffer();
+        bool isView = false;
+        if (outBuf != nullptr) {
+          for (int j = 0; j < static_cast<int>(ctxIns.size()); j++) {
+            if (ctxIns[j] != nullptr && ctxIns[j]->dataBuffer() == outBuf) {
+              isView = true;
+              break;
+            }
+          }
+        }
+        if (isView) continue;
+
         if (isBatchZeroRegistering() && ctxOuts[i]->specialBuffer() != nullptr) {
           registerBatchZeroBuffer(ctxOuts[i]->specialBuffer(),
                                   ctxOuts[i]->dataBuffer()->getLenInBytes());
         }
         ctxOuts[i]->nullify();
+      }
+    }
+
+    // Log attention op inputs for frozen tracking / lineage debugging
+    if (DspDiagnostics::getInstance().isEnabled(DSP_DIAG_EXECUTE)) {
+      const char* opName = slot.op->getOpName()->c_str();
+      if (strcmp(opName, "onnx_multi_head_attention") == 0 || strcmp(opName, "dot_product_attention_v2") == 0) {
+        int nIn = (int)ctx.fastpath_in().size();
+        DSP_DIAG(EXECUTE, "ATTN_OP_INPUTS: %s step=%d slot=%d numInputs=%d planInputs=%d",
+                 opName, executeCount_, stepIdx, nIn, slot.numInputs);
+        if (nIn > 6) {
+          NDArray* cachePos = ctx.fastpath_in()[6];
+          DSP_DIAG(EXECUTE, "ATTN_OP_CACHE_POS: input[6]=%p type=%d val=%lld",
+                   cachePos, cachePos ? (int)cachePos->dataType() : -1,
+                   (cachePos && cachePos->lengthOf() > 0) ? cachePos->e<sd::LongType>(0) : -999);
+        }
       }
     }
 

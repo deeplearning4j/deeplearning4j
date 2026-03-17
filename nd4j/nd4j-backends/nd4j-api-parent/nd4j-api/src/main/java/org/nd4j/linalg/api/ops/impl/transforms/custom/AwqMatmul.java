@@ -97,6 +97,25 @@ public class AwqMatmul extends DynamicCustomOp {
     }
 
     /**
+     * SameDiff convenience constructor (no zeros, default numBits).
+     */
+    public AwqMatmul(SameDiff sameDiff, SDVariable input, SDVariable weightPacked,
+                     SDVariable scales, int groupSize) {
+        super(null, sameDiff, new SDVariable[]{input, weightPacked, scales}, false);
+        this.groupSize = groupSize;
+        addIArgument((long) groupSize, (long) numBits);
+    }
+
+    /**
+     * INDArray convenience constructor (no zeros, default numBits).
+     */
+    public AwqMatmul(INDArray input, INDArray weightPacked, INDArray scales, int groupSize) {
+        super(null, new INDArray[]{input, weightPacked, scales}, null);
+        this.groupSize = groupSize;
+        addIArgument((long) groupSize, (long) numBits);
+    }
+
+    /**
      * INDArray constructor.
      */
     public AwqMatmul(INDArray input, INDArray weightPacked, INDArray scales, INDArray zeros,

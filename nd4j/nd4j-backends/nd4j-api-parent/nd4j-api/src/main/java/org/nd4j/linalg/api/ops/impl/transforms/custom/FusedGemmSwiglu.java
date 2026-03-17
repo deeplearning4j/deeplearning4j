@@ -61,6 +61,13 @@ public class FusedGemmSwiglu extends DynamicCustomOp {
     }
 
     /**
+     * INDArray convenience constructor without output.
+     */
+    public FusedGemmSwiglu(INDArray input, INDArray wGate, INDArray wUp) {
+        this(input, wGate, wUp, null);
+    }
+
+    /**
      * INDArray constructor.
      */
     public FusedGemmSwiglu(INDArray input, INDArray wGate, INDArray wUp, INDArray output) {

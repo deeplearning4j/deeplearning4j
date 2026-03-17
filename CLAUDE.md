@@ -193,6 +193,16 @@ When debugging double-frees, use-after-free, or shutdown crashes:
 - Verify that deallocation ordering respects object lifetimes.
 - Check that `setCloseable(false)` / `setConstant(true)` poisoning is properly undone.
 
+### DSP Development Rules
+
+**NEVER fall back to slot-by-slot execution.** If DSP (DynamicShapePlan) has a bug or a kernel fails, fix the root cause. Falling back to slot-by-slot is a workaround -- it hides the real problem and forfeits the performance gains DSP exists to provide.
+
+**NEVER skip kernels.** If a Triton kernel or any DSP kernel crashes, produces wrong results, or fails to compile, fix the kernel. Do NOT skip it, stub it out, or route around it. Every kernel must have a working baseline. ALL Triton kernels need a working baseline -- no exceptions.
+
+**FIX bugs encountered during profiling.** When profiling DSP performance and you encounter a crash, wrong result, or other bug along the way, **fix it immediately** (dispatch a subagent if needed). Do NOT defer, skip, or work around it. Profiling is not an excuse to ignore correctness.
+
+**Maximize configuration optionality.** The goal is to be able to blend different execution configurations (graph replay, slot-based, Triton-compiled, cuBLAS fallback, etc.) for optimal performance. Skipping kernels or falling back to slot-by-slot destroys this optionality. Every execution path must work correctly so configurations can be mixed freely.
+
 ### DSP Diagnostics
 
 When debugging DSP (DynamicShapePlan) related issues, **always use DSP diagnostics**. Enable via `-Dnd4j.dsp.diagnostics=<level>` (e.g., `MEMORY`, `EXECUTION`, `ALL`). DSP diagnostics provide structured, reusable tracing for plan compilation, slot execution, memory allocation, and kernel launches. **Do NOT add ad-hoc printf/logging for DSP debugging** -- use the existing diagnostic infrastructure.

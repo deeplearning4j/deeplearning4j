@@ -481,8 +481,8 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  // FP16 compute: auto-cast both-FP32 matmul inputs to HALF for TensorCore throughput.
  // cublasSgemmEx handles HALF×HALF→FLOAT32 with FP32 accumulation (~2x throughput on sm_60+).
- if (aType == FLOAT32 && bType == FLOAT32 && cType == FLOAT32 && major >= 6
-     && Environment::getInstance().dspFp16Compute()) {
+ // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
+ if (aType == FLOAT32 && bType == FLOAT32 && cType == FLOAT32 && major >= 6) {
    if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
        && tl_castIdxB < tl_castCacheB.size()) {
      NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
@@ -695,8 +695,10 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  NDArray* effA = const_cast<NDArray*>(A);
  NDArray* effX = const_cast<NDArray*>(X);
 
- if (aType == FLOAT32 && xType == FLOAT32 && yType == FLOAT32 && major >= 6
-     && Environment::getInstance().dspFp16Compute()) {
+ // FP16 GEMV: auto-cast FP32 matrix-vector multiply inputs to HALF for bandwidth reduction.
+ // For M=1 GEMVs (decode-phase matmuls), memory bandwidth is the bottleneck — HALF halves traffic.
+ // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
+ if (aType == FLOAT32 && xType == FLOAT32 && yType == FLOAT32 && major >= 6) {
    if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
        && tl_castIdxB < tl_castCacheB.size()) {
      // During graph capture: reuse persistent HALF buffers

@@ -560,6 +560,27 @@ class TritonIRBuilder {
                                            const std::vector<int>& permutation,
                                            int nElements);
 
+  // RoPE: paired elementwise rotation using precomputed cos/sin caches
+  static void emitRoPESection(mlir::OpBuilder& builder, mlir::Location loc,
+                              mlir::Value pid, int blockSize,
+                              mlir::Value inputPtr, mlir::Value cosPtr, mlir::Value sinPtr,
+                              mlir::Value outputPtr,
+                              const std::vector<LongType>& inputShape,
+                              const std::vector<LongType>& cosShape,
+                              int ropeType, int nElements);
+
+  // RoPE SSA: register-level rotation using tt.reshape/tt.trans/tt.split/tt.join.
+  // Operates on SSA tensors directly — no store/reload round-trip to global memory.
+  // Only cos/sin require pointer loads (2 memory ops vs 7 in pointer-based path).
+  // Preconditions: blockSize % headDim == 0 AND blockSize <= numHeads * headDim.
+  static mlir::Value emitRoPESSA(mlir::OpBuilder& builder, mlir::Location loc,
+                                  mlir::Value inputSSA,
+                                  mlir::Value cosPtr, mlir::Value sinPtr,
+                                  mlir::Value pid, int blockSize,
+                                  int headDim, int numHeads,
+                                  const std::vector<LongType>& cosShape,
+                                  int nElements);
+
   // Per-element fallback: matmul/attention via scalar K-loop (no tt.dot, no grid sync)
   static void emitPerElementMatmul(mlir::OpBuilder& builder, mlir::Location loc,
                                    mlir::Value pid, int blockSize,

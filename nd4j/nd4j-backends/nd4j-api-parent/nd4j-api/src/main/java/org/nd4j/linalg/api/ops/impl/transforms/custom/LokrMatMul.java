@@ -95,6 +95,34 @@ public class LokrMatMul extends DynamicCustomOp {
         addBArgument(transposeWeight);
     }
 
+    public LokrMatMul(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
+                      @NonNull SDVariable weight, @NonNull SDVariable lokrC,
+                      @NonNull SDVariable lokrA, @NonNull SDVariable lokrB,
+                      int factor1, int factor2, double scaling, boolean transposeWeight) {
+        super(null, sameDiff, new SDVariable[]{input, weight, lokrC, lokrA, lokrB}, false);
+        this.scaling = scaling;
+        this.factor1 = factor1;
+        this.factor2 = factor2;
+        this.transposeWeight = transposeWeight;
+        addTArgument(scaling, dropout);
+        addIArgument(factor1, factor2);
+        addBArgument(transposeWeight);
+    }
+
+    public LokrMatMul(@NonNull INDArray input, @NonNull INDArray weight,
+                      @NonNull INDArray lokrC, @NonNull INDArray lokrA,
+                      @NonNull INDArray lokrB, int factor1, int factor2,
+                      double scaling, boolean transposeWeight) {
+        super(null, new INDArray[]{input, weight, lokrC, lokrA, lokrB}, null);
+        this.scaling = scaling;
+        this.factor1 = factor1;
+        this.factor2 = factor2;
+        this.transposeWeight = transposeWeight;
+        addTArgument(scaling, dropout);
+        addIArgument(factor1, factor2);
+        addBArgument(transposeWeight);
+    }
+
     public LokrMatMul(@NonNull INDArray input, @NonNull INDArray weight,
                       @NonNull INDArray lokrC, @NonNull INDArray lokrA,
                       @NonNull INDArray lokrB, double scaling,

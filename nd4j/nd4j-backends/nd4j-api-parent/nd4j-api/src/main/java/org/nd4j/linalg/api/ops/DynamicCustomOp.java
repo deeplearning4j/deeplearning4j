@@ -1708,6 +1708,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public Map<String, Object> propertiesForFunction() {
         OpNamespace.OpDescriptor opDescriptor = OpDescriptorHolder.descriptorForOpName(opName());
         Map<String,Object> ret = new LinkedHashMap<>();
+        if (opDescriptor == null) {
+            log.warn("No op descriptor found for op '{}' (class: {}), returning empty properties",
+                    opName(), getClass().getName());
+            return ret;
+        }
         Map<String,Object> fieldBackedProperties = null;
         for(OpNamespace.ArgDescriptor argDescriptor : opDescriptor.getArgDescriptorList()) {
             switch(argDescriptor.getArgType()) {

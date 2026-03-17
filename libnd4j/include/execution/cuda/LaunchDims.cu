@@ -175,6 +175,7 @@ std::unordered_map<std::string, dim3> algoDimMap = {
     {"solve", {dim3(GRID_SIZE_SOLVE, BLOCK_SIZE_SOLVE, SHARED_MEM_SIZE_SOLVE)}},
     {"softmax", {dim3(GRID_SIZE_SOFTMAX, BLOCK_SIZE_SOFTMAX, SHARED_MEM_SIZE_SOFTMAX)}},
     {"kv_scatter", {dim3(GRID_SIZE_KV_SCATTER, BLOCK_SIZE_KV_SCATTER, SHARED_MEM_SIZE_KV_SCATTER)}},
+    {"fusedRopeCached", {dim3(GRID_SIZE_FUSED_ROPE_CACHED, BLOCK_SIZE_FUSED_ROPE_CACHED, SHARED_MEM_SIZE_FUSED_ROPE_CACHED)}},
 
 };
 
@@ -349,6 +350,7 @@ std::unordered_map<std::string, std::vector<std::string>> algoDimMapString = {
     {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
     {"softmax", {"GRID_SIZE_SOFTMAX", "BLOCK_SIZE_SOFTMAX", "SHARED_MEM_SIZE_SOFTMAX"}},
     {"kv_scatter", {"GRID_SIZE_KV_SCATTER", "BLOCK_SIZE_KV_SCATTER", "SHARED_MEM_SIZE_KV_SCATTER"}},
+    {"fusedRopeCached", {"GRID_SIZE_FUSED_ROPE_CACHED", "BLOCK_SIZE_FUSED_ROPE_CACHED", "SHARED_MEM_SIZE_FUSED_ROPE_CACHED"}},
 
 };
 
@@ -517,8 +519,22 @@ dim3 getReduceAllDims(int xLength) {
 }
 
 dim3 getReduceDims(int xLength) {
-  auto blockWidth = 256;
+  // Adaptive thread count: for small reductions, use fewer threads to avoid
+  // warp divergence and unnecessary __syncthreads() overhead.
+  // Round up to next power of 2, clamp to [32, 256].
+  int blockWidth;
+  if (xLength <= 32) {
+    blockWidth = 32;
+  } else if (xLength <= 64) {
+    blockWidth = 64;
+  } else if (xLength <= 128) {
+    blockWidth = 128;
+  } else {
+    blockWidth = 256;
+  }
   auto numBlocks = sd::CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+  // Shared memory: kernel uses __shared__ sPartials[SD_CUDA_BLOCK_SIZE] (static, 256 elements).
+  // Pass 8192 to match original for compatibility with any dynamic shared memory users.
   dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 8192);
   return launchDims;
 }

@@ -89,6 +89,16 @@ public class KVCacheQuantize extends DynamicCustomOp {
         addIArgument(quantFormat);
     }
 
+    public KVCacheQuantize(SameDiff sd, SDVariable input, int quantType, int groupSize) {
+        super(null, sd, new SDVariable[]{input}, false);
+        addIArgument(quantType, groupSize);
+    }
+
+    public KVCacheQuantize(INDArray input, int quantType, int groupSize) {
+        super(new INDArray[]{input}, null);
+        addIArgument(quantType, groupSize);
+    }
+
     @Override
     public String opName() {
         return "kv_cache_quantize";

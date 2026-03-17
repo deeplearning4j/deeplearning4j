@@ -1535,6 +1535,46 @@ SD_LIB_EXPORT int advancePlanKvCachePosition(sd::Pointer planHandle);
 SD_LIB_EXPORT void resetPlanKvCachePosition(sd::Pointer planHandle, int newPos);
 
 /**
+ * Configure decode input indices for direct device-side updates.
+ * Call once after plan compilation. Maps external input names to indices
+ * so execute() can write directly to device memory when setNextDecodeToken() is called.
+ *
+ * @param planHandle           Handle from compileDynamicShapePlan()
+ * @param inputIdsExtIdx       External input index for input_ids (-1 if N/A)
+ * @param positionIdsExtIdx    External input index for position_ids (-1 if N/A)
+ * @param attentionMaskExtIdx  External input index for attention_mask (-1 if N/A)
+ * @param maxKvLen             Maximum KV cache length
+ */
+SD_LIB_EXPORT void configurePlanDecodeInputs(
+    sd::Pointer planHandle,
+    int inputIdsExtIdx, int positionIdsExtIdx,
+    int attentionMaskExtIdx, int maxKvLen);
+
+/**
+ * Update decode inputs directly on device. Replaces Java-side putScalar calls.
+ * Writes tokenId → input_ids, cachePos → position_ids, mask[cachePos-1] = 1.
+ * Single JNI call, zero host↔device round-trips.
+ *
+ * @param planHandle       Handle from compileDynamicShapePlan()
+ * @param externalInputs   Pointer to external input NDArray* array
+ * @param numExternalInputs Number of external inputs
+ * @param tokenId          Next token ID to write
+ * @param cachePos         Current cache position
+ * @param stream           CUDA stream
+ */
+/**
+ * Set next decode token and cache position. Call before executeDynamicShapePlan().
+ * execute() will write these values directly to device memory before graph replay.
+ *
+ * @param planHandle  Handle from compileDynamicShapePlan()
+ * @param tokenId     Next token ID
+ * @param cachePos    Current cache position
+ */
+SD_LIB_EXPORT void setPlanNextDecodeToken(
+    sd::Pointer planHandle, sd::LongType tokenId, int cachePos);
+
+
+/**
  * Load a model from an SDZ (ZIP) or SDNB file entirely in C++.
  *
  * @param filePath  Path to the .sdz or .sdnb file

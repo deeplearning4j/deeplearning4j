@@ -57,6 +57,57 @@ public class NDNN {
   }
 
   /**
+   * Applies Attention with Linear Biases (ALiBi) position encoding to attention scores.<br>
+   *
+   * @param scores Attention scores [batch, num_heads, seq_len, kv_len] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @return output Scores with ALiBi position bias applied (NUMERIC type)
+   */
+  public INDArray applyAlibi(INDArray scores, int numHeads) {
+    NDValidation.validateNumerical("applyAlibi", "scores", scores);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ApplyAlibi(scores, numHeads));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Activation-aware Weight Quantization (AWQ) matrix multiplication.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weightPacked AWQ-packed weight (NUMERIC type)
+   * @param weightScale Weight quantization scales (NUMERIC type)
+   * @param groupSize Quantization group size
+   * @return output Dequantized matmul result (NUMERIC type)
+   */
+  public INDArray awqMatmul(INDArray input, INDArray weightPacked, INDArray weightScale,
+      int groupSize) {
+    NDValidation.validateNumerical("awqMatmul", "input", input);
+    NDValidation.validateNumerical("awqMatmul", "weightPacked", weightPacked);
+    NDValidation.validateNumerical("awqMatmul", "weightScale", weightScale);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.AwqMatmul(input, weightPacked, weightScale, groupSize));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Neural network batch normalization operation.<br>
    * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a><br>
    *
@@ -175,6 +226,35 @@ public class NDNN {
   }
 
   /**
+   * Column-parallel linear layer for tensor parallelism.<br>
+   * Splits weight columns across tensor parallel ranks.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param gatherOutput Whether to all-gather output
+   * @return output Column-parallel linear output (NUMERIC type)
+   */
+  public INDArray columnParallelLinear(INDArray input, INDArray weight, int tpRank, int tpSize,
+      boolean gatherOutput) {
+    NDValidation.validateNumerical("columnParallelLinear", "input", input);
+    NDValidation.validateNumerical("columnParallelLinear", "weight", weight);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ColumnParallelLinear(input, weight, tpRank, tpSize, gatherOutput));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * CTC Greedy Decoder - Connectionist Temporal Classification decoding.<br>
    * <br>
    * Performs greedy (best path) decoding on CTC output. Used in:<br>
@@ -233,6 +313,69 @@ public class NDNN {
     NDValidation.validateNumerical("ctcGreedyDecoder", "logits", logits);
     NDValidation.validateNumerical("ctcGreedyDecoder", "sequenceLength", sequenceLength);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CTCGreedyDecoder(logits, sequenceLength, mergeRepeated, blankIndex));
+  }
+
+  /**
+   * Decoder-optimized masked multi-head attention.<br>
+   * Optimized for autoregressive decoding with incremental KV cache.<br>
+   *
+   * @param query Query tensor (NUMERIC type)
+   * @param key Key tensor (NUMERIC type)
+   * @param value Value tensor (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param isCausal Whether to apply causal mask
+   * @return output Attention output (NUMERIC type)
+   */
+  public INDArray decoderMaskedMha(INDArray query, INDArray key, INDArray value, int numHeads,
+      boolean isCausal) {
+    NDValidation.validateNumerical("decoderMaskedMha", "query", query);
+    NDValidation.validateNumerical("decoderMaskedMha", "key", key);
+    NDValidation.validateNumerical("decoderMaskedMha", "value", value);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DecoderMaskedMha(query, key, value, numHeads, isCausal));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Weight-Decomposed Low-Rank Adaptation (DoRA) fused matrix multiplication.<br>
+   * Decomposes weight into magnitude and direction, applies LoRA to direction only.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param magnitude Per-output magnitude [out_features] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @return output DoRA result with weight-decomposed adaptation (NUMERIC type)
+   */
+  public INDArray doraMatMul(INDArray input, INDArray weight, INDArray loraA, INDArray loraB,
+      INDArray magnitude, double scaling) {
+    NDValidation.validateNumerical("doraMatMul", "input", input);
+    NDValidation.validateNumerical("doraMatMul", "weight", weight);
+    NDValidation.validateNumerical("doraMatMul", "loraA", loraA);
+    NDValidation.validateNumerical("doraMatMul", "loraB", loraB);
+    NDValidation.validateNumerical("doraMatMul", "magnitude", magnitude);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DoraMatMul(input, weight, loraA, loraB, magnitude, scaling));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -569,6 +712,63 @@ public class NDNN {
   }
 
   /**
+   * FP8 matrix multiplication with per-tensor scaling.<br>
+   *
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @param scaleA Scale for matrix A (NUMERIC type)
+   * @param scaleB Scale for matrix B (NUMERIC type)
+   * @return output Scaled FP8 matmul result (NUMERIC type)
+   */
+  public INDArray fp8Matmul(INDArray a, INDArray b, INDArray scaleA, INDArray scaleB) {
+    NDValidation.validateNumerical("fp8Matmul", "a", a);
+    NDValidation.validateNumerical("fp8Matmul", "b", b);
+    NDValidation.validateNumerical("fp8Matmul", "scaleA", scaleA);
+    NDValidation.validateNumerical("fp8Matmul", "scaleB", scaleB);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Fp8Matmul(a, b, scaleA, scaleB));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused bias addition, dropout, and residual connection in a single kernel.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param bias Bias tensor (NUMERIC type)
+   * @param residual Residual connection tensor (NUMERIC type)
+   * @param dropoutProb Dropout probability
+   * @param training Whether in training mode
+   * @return output dropout(input + bias) + residual (NUMERIC type)
+   */
+  public INDArray fusedBiasDropoutResidual(INDArray input, INDArray bias, INDArray residual,
+      double dropoutProb, boolean training) {
+    NDValidation.validateNumerical("fusedBiasDropoutResidual", "input", input);
+    NDValidation.validateNumerical("fusedBiasDropoutResidual", "bias", bias);
+    NDValidation.validateNumerical("fusedBiasDropoutResidual", "residual", residual);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedBiasDropoutResidual(input, bias, residual, dropoutProb, training));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Executes a fused chain of element-wise operations in a single kernel pass.<br>
    * Intermediate values stay in registers instead of global memory. Replaces N separate kernel launches with 1.<br>
    *
@@ -597,6 +797,163 @@ public class NDNN {
   }
 
   /**
+   * Fused Gaussian Error Linear Unit (GELU) activation function.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output GELU(x) (NUMERIC type)
+   */
+  public INDArray fusedGelu(INDArray input) {
+    NDValidation.validateNumerical("fusedGelu", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGELU(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused GEMM + SwiGLU: combines two matrix multiplications with gated activation.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @return output SwiGLU(input @ wGate, input @ wUp) (NUMERIC type)
+   */
+  public INDArray fusedGemmSwiglu(INDArray input, INDArray wGate, INDArray wUp) {
+    NDValidation.validateNumerical("fusedGemmSwiglu", "input", input);
+    NDValidation.validateNumerical("fusedGemmSwiglu", "wGate", wGate);
+    NDValidation.validateNumerical("fusedGemmSwiglu", "wUp", wUp);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedGemmSwiglu(input, wGate, wUp));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused layer normalization. Computes mean, variance, normalize, scale and shift in one pass.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Scale parameter (NUMERIC type)
+   * @param beta Bias parameter (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Layer-normalized output (NUMERIC type)
+   */
+  public INDArray fusedLayerNorm(INDArray input, INDArray gamma, INDArray beta, double epsilon) {
+    NDValidation.validateNumerical("fusedLayerNorm", "input", input);
+    NDValidation.validateNumerical("fusedLayerNorm", "gamma", gamma);
+    NDValidation.validateNumerical("fusedLayerNorm", "beta", beta);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedLayerNorm(input, gamma, beta, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused normalization + quantization in a single kernel.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma Norm scale parameter (NUMERIC type)
+   * @param epsilon Epsilon for normalization
+   * @param quantType Quantization type
+   * @return output Normalized and quantized output (NUMERIC type)
+   */
+  public INDArray fusedNormQuantize(INDArray input, INDArray gamma, double epsilon, int quantType) {
+    NDValidation.validateNumerical("fusedNormQuantize", "input", input);
+    NDValidation.validateNumerical("fusedNormQuantize", "gamma", gamma);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedNormQuantize(input, gamma, epsilon, quantType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused RMSNorm + SwiGLU activation. Combines normalization and gated activation<br>
+   * into a single kernel for better memory efficiency.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gamma RMS norm scale (NUMERIC type)
+   * @param wGate Gate projection weight (NUMERIC type)
+   * @param wUp Up projection weight (NUMERIC type)
+   * @param epsilon Epsilon for numerical stability
+   * @return output Result of fused RMSNorm + SwiGLU (NUMERIC type)
+   */
+  public INDArray fusedRmsNormSwiglu(INDArray input, INDArray gamma, INDArray wGate, INDArray wUp,
+      double epsilon) {
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "input", input);
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "gamma", gamma);
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "wGate", wGate);
+    NDValidation.validateNumerical("fusedRmsNormSwiglu", "wUp", wUp);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRmsNormSwiGLU(input, gamma, wGate, wUp, epsilon));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Fused Rotary Position Embedding using precomputed cache.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param ropeCache Precomputed RoPE cache (cos/sin) (NUMERIC type)
+   * @param startPosition Start position for RoPE application
+   * @return output Input with RoPE applied (NUMERIC type)
+   */
+  public INDArray fusedRoPE(INDArray input, INDArray ropeCache, int startPosition) {
+    NDValidation.validateNumerical("fusedRoPE", "input", input);
+    NDValidation.validateNumerical("fusedRoPE", "ropeCache", ropeCache);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.FusedRoPE(input, ropeCache, startPosition));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * GELU activation function - Gaussian Error Linear Units<br>
    * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
    * This method uses the sigmoid approximation<br>
@@ -607,6 +964,54 @@ public class NDNN {
   public INDArray gelu(INDArray x) {
     NDValidation.validateNumerical("gelu", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.GELU(x));
+  }
+
+  /**
+   * GPU-accelerated top-K sampling for autoregressive text generation.<br>
+   *
+   * @param logits Logit scores (NUMERIC type)
+   * @param k Number of top candidates
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public INDArray gpuTopKSample(INDArray logits, int k, double temperature) {
+    NDValidation.validateNumerical("gpuTopKSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopKSample(logits, k, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * GPU-accelerated nucleus (top-P) sampling for autoregressive text generation.<br>
+   *
+   * @param logits Logit scores (NUMERIC type)
+   * @param p Cumulative probability threshold (nucleus)
+   * @param temperature Sampling temperature
+   * @return output Sampled token indices (NUMERIC type)
+   */
+  public INDArray gpuTopPSample(INDArray logits, double p, double temperature) {
+    NDValidation.validateNumerical("gpuTopPSample", "logits", logits);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GpuTopPSample(logits, p, temperature));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -689,6 +1094,55 @@ public class NDNN {
   public INDArray hardTanhDerivative(INDArray x) {
     NDValidation.validateNumerical("hardTanhDerivative", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative(x));
+  }
+
+  /**
+   * Dequantizes quantized KV cache tensors back to floating point.<br>
+   *
+   * @param input Quantized key or value tensor (NUMERIC type)
+   * @param scale Quantization scales (NUMERIC type)
+   * @param quantType Quantization type
+   * @return output Dequantized tensor (NUMERIC type)
+   */
+  public INDArray kvCacheDequantize(INDArray input, INDArray scale, int quantType) {
+    NDValidation.validateNumerical("kvCacheDequantize", "input", input);
+    NDValidation.validateNumerical("kvCacheDequantize", "scale", scale);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheDequantize(input, scale, quantType));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Quantizes KV cache tensors for memory-efficient inference.<br>
+   *
+   * @param input Key or value tensor to quantize (NUMERIC type)
+   * @param quantType Quantization type
+   * @param groupSize Group size for quantization
+   * @return output Quantized tensor (NUMERIC type)
+   */
+  public INDArray kvCacheQuantize(INDArray input, int quantType, int groupSize) {
+    NDValidation.validateNumerical("kvCacheQuantize", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.KVCacheQuantize(input, quantType, groupSize));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -941,6 +1395,28 @@ public class NDNN {
   }
 
   /**
+   * Creates a contiguous copy of the input tensor with linear (row-major) memory layout.<br>
+   *
+   * @param input Source tensor (NUMERIC type)
+   * @return output Contiguous copy of input (NUMERIC type)
+   */
+  public INDArray linearCopy(INDArray input) {
+    NDValidation.validateNumerical("linearCopy", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.custom.LinearCopy(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Element-wise sigmoid function: out[i] = log(sigmoid(in[i]))<br>
    *
    * @param x Input variable (NUMERIC type)
@@ -983,6 +1459,132 @@ public class NDNN {
   public INDArray logSoftmax(INDArray x, int dimension) {
     NDValidation.validateNumerical("logSoftmax", "x", x);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax(x, dimension));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Low-Rank Hadamard Product (LoHa) fused matrix multiplication.<br>
+   * Uses Hadamard product of two low-rank matrices as the adapter.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lohaA1 First Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB1 First Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param lohaA2 Second Hadamard factor A [dim, in_features] (NUMERIC type)
+   * @param lohaB2 Second Hadamard factor B [out_features, dim] (NUMERIC type)
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoHa result (NUMERIC type)
+   */
+  public INDArray lohaMatMul(INDArray input, INDArray weight, INDArray lohaA1, INDArray lohaB1,
+      INDArray lohaA2, INDArray lohaB2, double scaling, boolean transposeWeight) {
+    NDValidation.validateNumerical("lohaMatMul", "input", input);
+    NDValidation.validateNumerical("lohaMatMul", "weight", weight);
+    NDValidation.validateNumerical("lohaMatMul", "lohaA1", lohaA1);
+    NDValidation.validateNumerical("lohaMatMul", "lohaB1", lohaB1);
+    NDValidation.validateNumerical("lohaMatMul", "lohaA2", lohaA2);
+    NDValidation.validateNumerical("lohaMatMul", "lohaB2", lohaB2);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LohaMatMul(input, weight, lohaA1, lohaB1, lohaA2, lohaB2, scaling, transposeWeight));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Low-Rank Kronecker Product (LoKr) fused matrix multiplication.<br>
+   * Uses Kronecker product of matrices as the adapter.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param lokrC Kronecker factor C [f1, f2] (NUMERIC type)
+   * @param lokrA Kronecker factor A [dim, d2] (NUMERIC type)
+   * @param lokrB Kronecker factor B [d1, dim] (NUMERIC type)
+   * @param factor1 First Kronecker factor dimension
+   * @param factor2 Second Kronecker factor dimension
+   * @param scaling Scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output LoKr result (NUMERIC type)
+   */
+  public INDArray lokrMatMul(INDArray input, INDArray weight, INDArray lokrC, INDArray lokrA,
+      INDArray lokrB, int factor1, int factor2, double scaling, boolean transposeWeight) {
+    NDValidation.validateNumerical("lokrMatMul", "input", input);
+    NDValidation.validateNumerical("lokrMatMul", "weight", weight);
+    NDValidation.validateNumerical("lokrMatMul", "lokrC", lokrC);
+    NDValidation.validateNumerical("lokrMatMul", "lokrA", lokrA);
+    NDValidation.validateNumerical("lokrMatMul", "lokrB", lokrB);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LokrMatMul(input, weight, lokrC, lokrA, lokrB, factor1, factor2, scaling, transposeWeight));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Low-Rank Adaptation (LoRA) fused matrix multiplication.<br>
+   * Computes base weight matmul + low-rank adapter in a single operation.<br>
+   *
+   * @param input Input [batch, in_features] (NUMERIC type)
+   * @param weight Base weight [out_features, in_features] (NUMERIC type)
+   * @param loraA LoRA down-projection [r, in_features] (NUMERIC type)
+   * @param loraB LoRA up-projection [out_features, r] (NUMERIC type)
+   * @param scaling LoRA scaling factor (default 1.0)
+   * @param transposeWeight Whether to transpose weight (default true)
+   * @return output Result: input @ weight^T + scaling * input @ loraA^T @ loraB^T (NUMERIC type)
+   */
+  public INDArray loraMatMul(INDArray input, INDArray weight, INDArray loraA, INDArray loraB,
+      double scaling, boolean transposeWeight) {
+    NDValidation.validateNumerical("loraMatMul", "input", input);
+    NDValidation.validateNumerical("loraMatMul", "weight", weight);
+    NDValidation.validateNumerical("loraMatMul", "loraA", loraA);
+    NDValidation.validateNumerical("loraMatMul", "loraB", loraB);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LoraMatMul(input, weight, loraA, loraB, scaling, transposeWeight));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Computes the mean of squared values. Used in RMSNorm and similar operations.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output Mean of squared values (NUMERIC type)
+   */
+  public INDArray meanSquare(INDArray input) {
+    NDValidation.validateNumerical("meanSquare", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MeanSquare(input));
     try {
       return __tmp[0];
     } finally {
@@ -1078,6 +1680,60 @@ public class NDNN {
   }
 
   /**
+   * Multi-head Latent Attention (MLA) from DeepSeek-V2.<br>
+   * Uses low-rank KV compression for efficient long-context inference.<br>
+   *
+   * @param input Input hidden states (NUMERIC type)
+   * @param kvDownProj KV down-projection weight (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param latentDim Latent dimension for compressed KV
+   * @return output Attention output (NUMERIC type)
+   */
+  public INDArray mlaAttention(INDArray input, INDArray kvDownProj, int numHeads, int latentDim) {
+    NDValidation.validateNumerical("mlaAttention", "input", input);
+    NDValidation.validateNumerical("mlaAttention", "kvDownProj", kvDownProj);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MLAAttention(input, kvDownProj, numHeads, latentDim));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Mixture of Experts (MoE) gating/routing function.<br>
+   * Selects top-K experts and computes routing weights.<br>
+   *
+   * @param input Input hidden states (NUMERIC type)
+   * @param gateWeights Router gate weights (NUMERIC type)
+   * @param numExperts Number of experts
+   * @param topK Top-K experts to select
+   * @return output Gating weights and expert indices (NUMERIC type)
+   */
+  public INDArray moeGate(INDArray input, INDArray gateWeights, int numExperts, int topK) {
+    NDValidation.validateNumerical("moeGate", "input", input);
+    NDValidation.validateNumerical("moeGate", "gateWeights", gateWeights);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MoeGate(input, gateWeights, numExperts, topK));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * This performs multi-headed dot product attention on the given timeseries input<br>
    * out = concat(head_1, head_2, ..., head_n) * Wo<br>
    * head_i = dot_product_attention(Wq_i*q, Wk_i*k, Wv_i*v)<br>
@@ -1112,6 +1768,38 @@ public class NDNN {
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wo", Wo);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "mask", mask);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Multi-adapter LoRA matrix multiplication. Selects different LoRA adapters per batch element.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param baseWeight Base weight matrix (NUMERIC type)
+   * @param loraAWeights Stacked LoRA A weights (NUMERIC type)
+   * @param loraBWeights Stacked LoRA B weights (NUMERIC type)
+   * @param adapterIds Adapter selection indices (NUMERIC type)
+   * @param scaling LoRA scaling factor
+   * @return output Result with per-sample adapter selection (NUMERIC type)
+   */
+  public INDArray multiLoraMatmul(INDArray input, INDArray baseWeight, INDArray loraAWeights,
+      INDArray loraBWeights, INDArray adapterIds, double scaling) {
+    NDValidation.validateNumerical("multiLoraMatmul", "input", input);
+    NDValidation.validateNumerical("multiLoraMatmul", "baseWeight", baseWeight);
+    NDValidation.validateNumerical("multiLoraMatmul", "loraAWeights", loraAWeights);
+    NDValidation.validateNumerical("multiLoraMatmul", "loraBWeights", loraBWeights);
+    NDValidation.validateNumerical("multiLoraMatmul", "adapterIds", adapterIds);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiLoraMatmul(input, baseWeight, loraAWeights, loraBWeights, adapterIds, scaling));
     try {
       return __tmp[0];
     } finally {
@@ -1209,6 +1897,30 @@ public class NDNN {
     NDValidation.validateNumerical("prelu", "alpha", alpha);
     Preconditions.checkArgument(sharedAxes.length >= 1, "sharedAxes has incorrect size/length. Expected: sharedAxes.length >= 1, got %s", sharedAxes.length);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.PRelu(input, alpha, sharedAxes));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Quantized matrix multiplication. Supports mixed precision (float/int) inputs.<br>
+   *
+   * @param a First matrix (NUMERIC type)
+   * @param b Second matrix (NUMERIC type)
+   * @return output Matrix product (NUMERIC type)
+   */
+  public INDArray quantizedMatmul(INDArray a, INDArray b) {
+    NDValidation.validateNumerical("quantizedMatmul", "a", a);
+    NDValidation.validateNumerical("quantizedMatmul", "b", b);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.QuantizedMatmul(a, b));
     try {
       return __tmp[0];
     } finally {
@@ -1363,6 +2075,31 @@ public class NDNN {
   }
 
   /**
+   * Reshapes a tensor without copying data. Returns a view if possible.<br>
+   * If the reshape cannot be done without copying, this op will fail.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param shape Target shape (NUMERIC type)
+   * @return output Reshaped view (no data copy) (NUMERIC type)
+   */
+  public INDArray reshapeNoCopy(INDArray input, INDArray shape) {
+    NDValidation.validateNumerical("reshapeNoCopy", "input", input);
+    NDValidation.validateNumerical("reshapeNoCopy", "shape", shape);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy(input, shape));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Root Mean Square Layer Normalization (RMSNorm):<br>
    * <br>
    * output = input * rsqrt(mean(input^2, axis=-1) + epsilon) * gamma<br>
@@ -1473,6 +2210,86 @@ public class NDNN {
   }
 
   /**
+   * Applies Rotary Position Embedding (RoPE) to the input tensor.<br>
+   * Encodes position information by rotating pairs of dimensions in the input.<br>
+   *
+   * @param input Input tensor [batch, seq_len, num_heads, head_dim] (NUMERIC type)
+   * @param mode RoPE mode (default 0)
+   * @param nPast Number of past tokens (default 0)
+   * @param nDims Dimension subset for rotation (default last dim)
+   * @param freqBase Frequency base (default 10000.0)
+   * @param freqScale Frequency scale (default 1.0)
+   * @return output Output with rotary position embeddings applied (NUMERIC type)
+   */
+  public INDArray rope(INDArray input, int mode, int nPast, int nDims, double freqBase,
+      double freqScale) {
+    NDValidation.validateNumerical("rope", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RoPE(input, mode, nPast, nDims, freqBase, freqScale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Row-parallel linear layer for tensor parallelism.<br>
+   * Splits weight rows across tensor parallel ranks.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param weight Weight matrix (NUMERIC type)
+   * @param tpRank Tensor parallel rank
+   * @param tpSize Tensor parallel world size
+   * @param reduceOutput Whether to all-reduce output
+   * @return output Row-parallel linear output (NUMERIC type)
+   */
+  public INDArray rowParallelLinear(INDArray input, INDArray weight, int tpRank, int tpSize,
+      boolean reduceOutput) {
+    NDValidation.validateNumerical("rowParallelLinear", "input", input);
+    NDValidation.validateNumerical("rowParallelLinear", "weight", weight);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RowParallelLinear(input, weight, tpRank, tpSize, reduceOutput));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Selective scan operation for state space models (Mamba architecture).<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output Selective scan output (NUMERIC type)
+   */
+  public INDArray selectiveScan(INDArray input) {
+    NDValidation.validateNumerical("selectiveScan", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SelectiveScan(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a><br>
    * <br>
    * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
@@ -1522,6 +2339,29 @@ public class NDNN {
   }
 
   /**
+   * SiLU (Sigmoid Linear Unit) activation function, also known as Swish.<br>
+   * Computes f(x) = x * sigmoid(x).<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @return output SiLU(x) = x * sigmoid(x) (NUMERIC type)
+   */
+  public INDArray silu(INDArray input) {
+    NDValidation.validateNumerical("silu", "input", input);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SiLU(input));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Sliding Window Attention - Efficient attention for long sequences.<br>
    * <br>
    * Each token only attends to a fixed window of previous tokens, enabling<br>
@@ -1551,6 +2391,30 @@ public class NDNN {
     NDValidation.validateNumerical("slidingWindowAttention", "key", key);
     NDValidation.validateNumerical("slidingWindowAttention", "value", value);
     INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SlidingWindowAttention(query, key, value, windowSize, numHeads, numKvHeads, scale));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * SmoothQuant: migrates quantization difficulty from activations to weights.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param smoothScale Smooth quantization scale (NUMERIC type)
+   * @return output Smoothly quantized output (NUMERIC type)
+   */
+  public INDArray smoothQuant(INDArray input, INDArray smoothScale) {
+    NDValidation.validateNumerical("smoothQuant", "input", input);
+    NDValidation.validateNumerical("smoothQuant", "smoothScale", smoothScale);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SmoothQuant(input, smoothScale));
     try {
       return __tmp[0];
     } finally {
@@ -1652,6 +2516,31 @@ public class NDNN {
   public INDArray swish(INDArray x) {
     NDValidation.validateNumerical("swish", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Swish(x));
+  }
+
+  /**
+   * Fused Swish-Mul: computes swish(input) * gate in a single kernel.<br>
+   * Used in SwiGLU and similar gated architectures.<br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param gate Gate tensor (NUMERIC type)
+   * @return output swish(input) * gate (NUMERIC type)
+   */
+  public INDArray swishMul(INDArray input, INDArray gate) {
+    NDValidation.validateNumerical("swishMul", "input", input);
+    NDValidation.validateNumerical("swishMul", "gate", gate);
+    INDArray[] __tmp = Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SwishMul(input, gate));
+    try {
+      return __tmp[0];
+    } finally {
+      if(__tmp != null) {
+        for(int __i = 1; __i < __tmp.length; __i++) {
+          if(__tmp[__i] != null) {
+            __tmp[__i].close();
+          }
+        }
+      }
+    }
   }
 
   /**

@@ -794,6 +794,20 @@ Status NativeDynamicShapePlan::execute(
 
   DspDiagnostics::getInstance().beginStep(executeCount_);
 
+  // CRITICAL FIX: Set tl_dspExecutionStream at the start of EVERY DSP execution.
+  // This allows syncToSpecial() to use async H2D copies on the DSP stream instead
+  // of falling back to stream 0 with full cudaStreamSynchronize.
+  // Without this, we get 657k sync calls per decode step.
+  // 
+  // Multi-device safety: tl_dspExecutionStream is thread-local, and each thread
+  // executes on a single device at a time. The stream comes from the LaunchContext
+  // which is device-specific, so this is safe for multi-device execution.
+#ifdef SD_CUDA
+  if (stream != nullptr) {
+    tl_dspExecutionStream = *static_cast<cudaStream_t*>(stream);
+  }
+#endif
+
   DSP_DIAG(EXECUTE, "step %d: frozen=%d segs=%d graphCapture=%d ext=%d",
            executeCount_, static_cast<int>(shapesFrozen_),
            static_cast<int>(segments_.size()),
@@ -846,6 +860,14 @@ Status NativeDynamicShapePlan::execute(
                  extAddr, totalOutputSlots_);
       }
     }
+  }
+
+  // Apply pending decode input updates directly on device (if configured).
+  // This replaces Java-side putScalar calls for input_ids, position_ids, attention_mask.
+  if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
+    updateDecodeInputs(externalInputs, numExternalInputs,
+                        pendingTokenId_, pendingCachePos_, stream);
+    hasPendingDecodeUpdate_ = false;
   }
 
   // Frozen graph fast path: if shapes are frozen and a single captured GPU graph
@@ -1051,6 +1073,11 @@ Status NativeDynamicShapePlan::execute(
 
   DspDiagnostics::getInstance().endStep(executeCount_);
 
+  // Clear tl_dspExecutionStream at end of execution
+#ifdef SD_CUDA
+  tl_dspExecutionStream = nullptr;
+#endif
+
   return Status::OK;
 }
 
@@ -1183,6 +1210,83 @@ int NativeDynamicShapePlan::advanceKvCachePosition() {
 
 void NativeDynamicShapePlan::resetKvCachePosition(int newPos) {
   kvCachePosition_ = newPos;
+}
+
+void NativeDynamicShapePlan::configureDecodeInputs(
+    int inputIdsExtIdx, int positionIdsExtIdx,
+    int attentionMaskExtIdx, int maxKvLen) {
+  decodeInputIdsExtIdx_ = inputIdsExtIdx;
+  decodePositionIdsExtIdx_ = positionIdsExtIdx;
+  decodeAttentionMaskExtIdx_ = attentionMaskExtIdx;
+  decodeMaxKvLen_ = maxKvLen;
+  DSP_DIAG(EXECUTE, "Decode inputs configured: inputIds=%d posIds=%d attnMask=%d maxKvLen=%d",
+           inputIdsExtIdx, positionIdsExtIdx, attentionMaskExtIdx, maxKvLen);
+}
+
+void NativeDynamicShapePlan::updateDecodeInputs(
+    NDArray** externalInputs, int numExt,
+    long long tokenId, int cachePos, void* stream) {
+  // Direct device writes via cudaMemcpyAsync — zero JNI indexer overhead,
+  // correct actuality flags, single stream for ordering with graph replay.
+  // Note: for non-pinned H2D, cudaMemcpyAsync stages data before returning,
+  // so stack-local source values are safe.
+#ifdef SD_CUDA
+  cudaStream_t cudaStr = stream ? *static_cast<cudaStream_t*>(stream) : static_cast<cudaStream_t>(nullptr);
+
+  DSP_DIAG(EXECUTE, "updateDecodeInputs: ENTER tokenId=%lld cachePos=%d numExt=%d idsIdx=%d posIdx=%d maskIdx=%d",
+           tokenId, cachePos, numExt, decodeInputIdsExtIdx_, decodePositionIdsExtIdx_, decodeAttentionMaskExtIdx_);
+
+  // input_ids[0] = tokenId
+  if (decodeInputIdsExtIdx_ >= 0 && decodeInputIdsExtIdx_ < numExt) {
+    NDArray* ids = externalInputs[decodeInputIdsExtIdx_];
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: ids NDArray=%p specialBuf=%p len=%lld",
+             ids, ids ? ids->specialBuffer() : nullptr, ids ? (long long)ids->lengthOf() : -1);
+    if (ids != nullptr && ids->specialBuffer() != nullptr) {
+      LongType val = static_cast<LongType>(tokenId);
+      cudaMemcpyAsync(ids->specialBuffer(), &val, sizeof(LongType),
+                      cudaMemcpyHostToDevice, cudaStr);
+      ids->dataBuffer()->writeSpecial();
+    }
+  }
+
+  // position_ids[0] = cachePos
+  if (decodePositionIdsExtIdx_ >= 0 && decodePositionIdsExtIdx_ < numExt) {
+    NDArray* pos = externalInputs[decodePositionIdsExtIdx_];
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: pos NDArray=%p specialBuf=%p len=%lld",
+             pos, pos ? pos->specialBuffer() : nullptr, pos ? (long long)pos->lengthOf() : -1);
+    if (pos != nullptr && pos->specialBuffer() != nullptr) {
+      LongType val = static_cast<LongType>(cachePos);
+      cudaMemcpyAsync(pos->specialBuffer(), &val, sizeof(LongType),
+                      cudaMemcpyHostToDevice, cudaStr);
+      pos->dataBuffer()->writeSpecial();
+    }
+  }
+
+  // attention_mask[cachePos - 1] = 1  (if cachePos > 0)
+  if (decodeAttentionMaskExtIdx_ >= 0 && decodeAttentionMaskExtIdx_ < numExt && cachePos > 0) {
+    NDArray* mask = externalInputs[decodeAttentionMaskExtIdx_];
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d offset=%d",
+             mask, mask ? mask->specialBuffer() : nullptr, mask ? (long long)mask->lengthOf() : -1,
+             cachePos, cachePos - 1);
+    if (mask != nullptr && mask->specialBuffer() != nullptr) {
+      LongType one = 1;
+      auto maskLen = mask->lengthOf();
+      if ((cachePos - 1) < maskLen) {
+        auto* dst = static_cast<LongType*>(mask->specialBuffer()) + (cachePos - 1);
+        DSP_DIAG(EXECUTE, "updateDecodeInputs: mask dst=%p (base=%p + %d * %d)",
+                 dst, mask->specialBuffer(), cachePos - 1, (int)sizeof(LongType));
+        cudaMemcpyAsync(dst, &one, sizeof(LongType),
+                        cudaMemcpyHostToDevice, cudaStr);
+        mask->dataBuffer()->writeSpecial();
+      } else {
+        DSP_DIAG(EXECUTE, "updateDecodeInputs: SKIP attn_mask write cachePos=%d maskLen=%lld (OOB)",
+                 cachePos, (long long)maskLen);
+      }
+    }
+  }
+
+  DSP_DIAG(EXECUTE, "updateDecodeInputs: tokenId=%lld cachePos=%d", tokenId, cachePos);
+#endif
 }
 
 void NativeDynamicShapePlan::setOutputSlotMaxSizes(const int* slotIndices, const LongType* maxSizes, int numSlots) {
@@ -1539,6 +1643,31 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
   // the cache when pre-allocating output arrays (prevents memory leaks).
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
+  }
+
+  // CRITICAL FIX: When shapes are frozen, skip symbolic shape warmup.
+  // Frozen shapes are constant, so symbolic shape ranges are unnecessary.
+  // Use standard FNV-1a shape key which will be stable.
+  if (Environment::getInstance().dspSymbolicShapes()) {
+    int warmup = Environment::getInstance().dspSymbolicShapeWarmup();
+    // Free old profiles before rebuild
+    for (auto& seg : segments_) {
+      if (seg.symbolicRangeData != nullptr) {
+        freeSegmentShapeProfile(static_cast<SegmentShapeProfile*>(seg.symbolicRangeData));
+        seg.symbolicRangeData = nullptr;
+      }
+    }
+    
+    // After rebuildSegmentsForFrozenShapes(), segments are merged.
+    // For frozen shapes, skip symbolic shape entirely - use standard FNV-1a key.
+    for (auto& seg : segments_) {
+      seg.symbolicShapeEnabled = false;  // Disable symbolic shapes for frozen decode
+      seg.symbolicWarmupRemaining = 0;
+      seg.symbolicRangeData = nullptr;
+    }
+    
+    DSP_DIAG(SEGMENT, "Disabled symbolic shapes for %d frozen segments (using FNV-1a key)",
+             (int)segments_.size());
   }
 
   // PRE-WARMUP: Disable in-place fusion for ops that consume frozen constant outputs.

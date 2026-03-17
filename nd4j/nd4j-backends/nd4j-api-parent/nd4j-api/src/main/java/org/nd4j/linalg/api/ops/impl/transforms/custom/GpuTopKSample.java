@@ -141,6 +141,14 @@ public class GpuTopKSample extends DynamicCustomOp {
         addTArgument(temperature);
     }
 
+    public GpuTopKSample(SameDiff sd, SDVariable logits, int k, double temperature) {
+        this(sd, logits, k, temperature, 0L);
+    }
+
+    public GpuTopKSample(INDArray logits, int k, double temperature) {
+        this(logits, k, temperature, 0L);
+    }
+
     @Override
     public void configureFromArguments() {
         super.configureFromArguments();

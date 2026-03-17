@@ -353,9 +353,17 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  Only these need syncToSpecial on the frozen fast path. Constants never change. */
     private boolean[] inputIsPlaceholder;
 
+    /** Cached indices of placeholder inputs. Built on first frozen call to avoid
+     *  iterating all 1332 external inputs every step. Only ~3 are placeholders
+     *  (input_ids, attention_mask, position_ids). Saves ~0.5-1ms per step. */
+    private int[] placeholderIndices;
+
     /** True once dummy outputs have been set on the context for frozen execution.
      *  After the first frozen call, C++ manages its own output slots — skip dummy setup. */
     private boolean frozenOutputsInitialized;
+
+    /** Cached requested output names list — avoids allocating a new ArrayList per step. */
+    private List<String> cachedRequestedOutputNames;
 
     /** Count of frozen executeNative() calls. Used to force full input re-set on the
      *  first few calls (warmup + Triton compile) to prevent stale OpaqueNDArray pointers. */
@@ -522,6 +530,63 @@ public class DynamicShapePlanExecutor implements Closeable {
         return nativePlanHandle;
     }
 
+    // ── Decode input direct-update (zero putScalar) ──────────────────────
+
+    private boolean decodeInputsConfigured = false;
+
+    /**
+     * Configure decode input indices for direct device-side updates.
+     * Call once after plan compilation. After this, {@link #updateDecodeInputs}
+     * writes input_ids, position_ids, and attention_mask directly on device
+     * memory — no JNI putScalar, no host↔device round-trips.
+     *
+     * @param plan      The compiled plan (for external input name→index mapping)
+     * @param maxKvLen  Maximum KV cache length
+     */
+    public void configureDecodeInputs(DynamicShapePlan plan, int maxKvLen) {
+        if (nativePlanHandle == null || nativePlanHandle.isNull()) {
+            log.warn("configureDecodeInputs: native plan not yet compiled, skipping");
+            return;
+        }
+        String[] extKeys = plan.getExternalInputKeys();
+        int inputIdsIdx = -1, posIdsIdx = -1, attnMaskIdx = -1;
+        for (int i = 0; i < extKeys.length; i++) {
+            switch (extKeys[i]) {
+                case "input_ids":      inputIdsIdx = i; break;
+                case "position_ids":   posIdsIdx = i; break;
+                case "attention_mask": attnMaskIdx = i; break;
+            }
+        }
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.configurePlanDecodeInputs(nativePlanHandle,
+                inputIdsIdx, posIdsIdx, attnMaskIdx, maxKvLen);
+        decodeInputsConfigured = true;
+        log.info("Decode inputs configured: inputIds={} posIds={} attnMask={} maxKvLen={}",
+                inputIdsIdx, posIdsIdx, attnMaskIdx, maxKvLen);
+    }
+
+    /**
+     * Set the next decode token and cache position. Call before execute().
+     * The C++ execute() will write tokenId → input_ids, cachePos → position_ids,
+     * and attention_mask[cachePos-1] = 1 directly on device memory.
+     * Single JNI call, zero host↔device round-trips.
+     *
+     * @param tokenId   Next token ID
+     * @param cachePos  Current cache position
+     */
+    public void setNextDecodeToken(long tokenId, int cachePos) {
+        if (!decodeInputsConfigured || nativePlanHandle == null) return;
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps.setPlanNextDecodeToken(nativePlanHandle, tokenId, cachePos);
+    }
+
+    /**
+     * Check if decode inputs have been configured.
+     */
+    public boolean isDecodeInputsConfigured() {
+        return decodeInputsConfigured;
+    }
+
     /**
      * Enable/disable "shapes frozen" mode on the native plan.
      * When frozen, shape inference and cache clearing are skipped between executions.
@@ -530,13 +595,21 @@ public class DynamicShapePlanExecutor implements Closeable {
      * the cache; subsequent executions skip shape work entirely.
      */
     public void setShapesFrozen(boolean frozen) {
+        boolean wasFrozen = this.shapesFrozen;
         this.shapesFrozen = frozen;
+        if (frozen && !wasFrozen) {
+            log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={})",
+                    nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java");
+        } else if (!frozen && wasFrozen) {
+            log.info("FROZEN_TRANSITION: FROZEN → unfrozen (caches cleared)");
+        }
         if (!frozen) {
             zeroCopyOutputCache = null;
             cachedInputOpaques = null;
             cachedInputArrays = null;
             contextInputRefs = null;
             inputIsPlaceholder = null;
+            placeholderIndices = null;
             frozenOutputsInitialized = false;
             frozenCallCount = 0;
             cachedExecStream = null;
@@ -4253,18 +4326,36 @@ public class DynamicShapePlanExecutor implements Closeable {
                     ext1331.isAttached());
         }
 
-        // ATTN_DIAG: Print past_key_values external inputs to diagnose rank-0 issue
-        for (int i = 0; i < extKeys.length; i++) {
-            if (extKeys[i].contains("past_key_values")) {
-                INDArray arr = extInputs[i];
-                log.info("ATTN_DIAG_JAVA: extIdx={} name='{}' rank={} shape={} empty={} length={} dtype={}",
-                        i, extKeys[i],
-                        arr != null ? arr.rank() : -1,
-                        arr != null ? java.util.Arrays.toString(arr.shape()) : "null",
-                        arr != null ? arr.isEmpty() : true,
-                        arr != null ? arr.length() : 0,
-                        arr != null ? arr.dataType() : "null");
+        // ATTN_DIAG + EXT_INPUT_WRITE diagnostics — only when debug is enabled
+        if (log.isDebugEnabled()) {
+            for (int i = 0; i < extKeys.length; i++) {
+                if (extKeys[i].contains("past_key_values")) {
+                    INDArray arr = extInputs[i];
+                    log.debug("ATTN_DIAG_JAVA: extIdx={} name='{}' rank={} shape={} empty={} length={} dtype={}",
+                            i, extKeys[i],
+                            arr != null ? arr.rank() : -1,
+                            arr != null ? java.util.Arrays.toString(arr.shape()) : "null",
+                            arr != null ? arr.isEmpty() : true,
+                            arr != null ? arr.length() : 0,
+                            arr != null ? arr.dataType() : "null");
+                }
             }
+
+            int nullCount = 0, emptyCount = 0, dataCount = 0;
+            for (int i = 0; i < extInputs.length; i++) {
+                INDArray arr = extInputs[i];
+                if (arr == null) {
+                    nullCount++;
+                    log.debug("EXT_INPUT_WRITE: idx={} name='{}' shape=null empty=true written=false", i, extKeys[i]);
+                } else if (arr.isEmpty() || arr.length() == 0) {
+                    emptyCount++;
+                    log.debug("EXT_INPUT_WRITE: idx={} name='{}' shape={} empty=true written=false",
+                            i, extKeys[i], java.util.Arrays.toString(arr.shape()));
+                } else {
+                    dataCount++;
+                }
+            }
+            log.debug("EXT_INPUT_WRITE_SUMMARY: total={} null={} empty={} withData={}", extInputs.length, nullCount, emptyCount, dataCount);
         }
 
         // Reuse OpaqueContext across calls to avoid JNI create/delete overhead.
@@ -4287,42 +4378,68 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Fast path: only re-set inputs where the INDArray identity changed.
                 // For same-identity placeholder inputs (modified via putScalar), sync to device.
                 // Constants/variables are never modified on host — skip sync entirely.
-                for (int i = 0; i < extInputs.length; i++) {
-                    // Check both identity AND DataBuffer validity. An external input can be
-                    // the same Java object but have its DataBuffer freed between steps (e.g.,
-                    // when setCloseable(true) + close() is called on a KV output that shares
-                    // a DataBuffer with a past_key_values input, or when deferredClose evicts it).
-                    // In that case, re-resolve from SameDiff to get a fresh DataBuffer.
-                    boolean staleBuffer = false;
-                    if (extInputs[i] != null) {
-                        DataBuffer db = extInputs[i].data();
-                        if (db == null || db.wasClosed()) {
-                            staleBuffer = true;
-                            // Re-resolve from SameDiff to get a fresh array
-                            SDVariable var = sd.getVariable(extKeys[i]);
-                            if (var != null && (var.getVariableType() == VariableType.CONSTANT
-                                    || var.getVariableType() == VariableType.VARIABLE)) {
-                                extInputs[i] = var.getArr();
-                            }
-                        }
+                
+                // Build placeholderIndices on first frozen call (saves ~0.5-1ms per step)
+                if (placeholderIndices == null && inputIsPlaceholder != null) {
+                    int count = 0;
+                    for (boolean b : inputIsPlaceholder) if (b) count++;
+                    placeholderIndices = new int[count];
+                    int idx = 0;
+                    for (int i = 0; i < inputIsPlaceholder.length; i++) {
+                        if (inputIsPlaceholder[i]) placeholderIndices[idx++] = i;
                     }
-                    if (extInputs[i] != cachedInputArrays[i] || staleBuffer) {
-                        // New array reference or stale buffer — full fromINDArray + setGraphContextInputArray
-                        OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
-                        nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
-                        cachedInputOpaques[i] = opaqueIn;
-                        cachedInputArrays[i] = extInputs[i];
-                    } else if (inputIsPlaceholder != null && inputIsPlaceholder[i]) {
-                        // Same array, but it's a placeholder that may have been modified on host
-                        INDArray arr = extInputs[i];
-                        if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
+                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})", 
+                            count, extInputs.length);
+                }
+                
+                // Frozen fast path: only iterate placeholder indices (not all 1332 inputs)
+                if (placeholderIndices != null) {
+                    for (int pi : placeholderIndices) {
+                        INDArray arr = extInputs[pi];
+                        if (arr != cachedInputArrays[pi]) {
+                            // Placeholder array identity changed — re-set input (rare)
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(arr);
+                            nativeOps.setGraphContextInputArray(opContext, pi, opaqueIn);
+                            cachedInputOpaques[pi] = opaqueIn;
+                            cachedInputArrays[pi] = arr;
+                        } else if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
+                            // Same array, sync to device (placeholder may have been modified on host)
                             OpaqueDataBuffer odb = arr.data().opaqueBuffer();
                             if (odb != null && !odb.isNull()) {
                                 odb.syncToSpecial();
                             }
                         }
                     }
-                    // else: constant/variable — no sync needed
+                } else {
+                    // Fallback: full iteration (should not happen after first frozen call)
+                    for (int i = 0; i < extInputs.length; i++) {
+                        boolean staleBuffer = false;
+                        if (extInputs[i] != null) {
+                            DataBuffer db = extInputs[i].data();
+                            if (db == null || db.wasClosed()) {
+                                staleBuffer = true;
+                                SDVariable var = sd.getVariable(extKeys[i]);
+                                if (var != null && (var.getVariableType() == VariableType.CONSTANT
+                                        || var.getVariableType() == VariableType.VARIABLE)) {
+                                    extInputs[i] = var.getArr();
+                                }
+                            }
+                        }
+                        if (extInputs[i] != cachedInputArrays[i] || staleBuffer) {
+                            OpaqueNDArray opaqueIn = OpaqueNDArray.fromINDArray(extInputs[i]);
+                            nativeOps.setGraphContextInputArray(opContext, i, opaqueIn);
+                            cachedInputOpaques[i] = opaqueIn;
+                            cachedInputArrays[i] = extInputs[i];
+                        } else if (inputIsPlaceholder != null && inputIsPlaceholder[i]) {
+                            INDArray arr = extInputs[i];
+                            if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
+                                OpaqueDataBuffer odb = arr.data().opaqueBuffer();
+                                if (odb != null && !odb.isNull()) {
+                                    odb.syncToSpecial();
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 // First call or non-frozen: set all inputs and keep strong refs.
@@ -4343,12 +4460,23 @@ public class DynamicShapePlanExecutor implements Closeable {
                     cachedInputArrays = new INDArray[extInputs.length];
                     System.arraycopy(extInputs, 0, cachedInputArrays, 0, extInputs.length);
                     inputIsPlaceholder = new boolean[extInputs.length];
+                    // Build placeholderIndices for fast path on subsequent calls
+                    int placeholderCount = 0;
                     for (int i = 0; i < extInputs.length; i++) {
                         cachedInputOpaques[i] = OpaqueNDArray.fromINDArray(extInputs[i]);
                         // Mark as placeholder if it came from the placeholderArrays map
                         inputIsPlaceholder[i] = placeholderArrays != null
                                 && placeholderArrays.containsKey(extKeys[i]);
+                        if (inputIsPlaceholder[i]) placeholderCount++;
                     }
+                    // Build placeholderIndices array for fast path
+                    placeholderIndices = new int[placeholderCount];
+                    int idx = 0;
+                    for (int i = 0; i < extInputs.length; i++) {
+                        if (inputIsPlaceholder[i]) placeholderIndices[idx++] = i;
+                    }
+                    log.info("FROZEN_INPUT_OPT: built placeholderIndices[{}] (extInputs={})", 
+                            placeholderCount, extInputs.length);
                 }
             }
 
@@ -4412,15 +4540,22 @@ public class DynamicShapePlanExecutor implements Closeable {
                         ": " + (errMsg != null ? errMsg : "unknown error"));
             }
 
-            // Clear stale error from internal DSP events (e.g., graph capture failure
-            // that was handled gracefully via slot-by-slot fallback). Without this,
-            // subsequent standalone ops read the stale error via lastErrorCode().
-            nativeOps.clearLastError();
+            // NOTE: No need to clearLastError() on success path — error was already
+            // cleared on line 4538 when status != 0. If status == 0, there's no error.
+            // Removing this unconditional JNI call saves ~1-2us per step.
 
             // Extract output arrays from context.
             // C++ wrote NDArray* pointers back into the context's output slots.
             long copyStart = System.nanoTime();
-            List<String> requestedOutputs = new ArrayList<>(plan.getRequestedOutputs());
+            List<String> requestedOutputs;
+            if (cachedRequestedOutputNames != null) {
+                requestedOutputs = cachedRequestedOutputNames;
+            } else {
+                requestedOutputs = new ArrayList<>(plan.getRequestedOutputs());
+                if (shapesFrozen) {
+                    cachedRequestedOutputNames = requestedOutputs;
+                }
+            }
 
             // Frozen fast path: reuse pre-allocated destination arrays (skip allocation,
             // only copy non-KV outputs). When kvCacheRetentionConfigured, C++ handles

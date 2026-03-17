@@ -165,7 +165,8 @@ public class ParseOpFile {
                 List<OpNamespace.ArgDescriptor> deduped = new ArrayList<>(dedupByName.values());
                 Collections.sort(deduped, Comparator.comparing(inputArg -> inputArg.getArgIndex()));
 
-                // Re-index contiguously starting from 0
+                // Preserve original arg indices — re-indexing breaks ONNX import
+                // mappings that depend on specific arg positions.
                 for(int j = 0; j < deduped.size(); j++) {
                     OpNamespace.ArgDescriptor currDescriptor = deduped.get(j);
                     boolean isArrayArg = false;
@@ -175,14 +176,9 @@ public class ParseOpFile {
                         finalName = finalName.replaceAll("\\[.*\\]","").replace("*","");
                     }
 
-                    if(currDescriptor.getArgIndex() != j) {
-                        System.err.println("Op name " + opList.getName() + " re-indexing " + entry.getKey()
-                                + " arg '" + finalName + "' from index " + currDescriptor.getArgIndex() + " to " + j);
-                    }
-
                     OpNamespace.ArgDescriptor.Builder newDescriptor = OpNamespace.ArgDescriptor.newBuilder()
                             .setName(finalName)
-                            .setArgIndex(j)
+                            .setArgIndex(currDescriptor.getArgIndex())
                             .setIsArray(isArrayArg)
                             .setArgType(currDescriptor.getArgType())
                             .setConvertBoolToInt(currDescriptor.getConvertBoolToInt());

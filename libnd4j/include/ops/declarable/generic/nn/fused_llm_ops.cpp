@@ -139,12 +139,20 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     int ropeType = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-    int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
-    float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
-    float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
-    helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
-                        block.launchContext());
+    if (block.width() >= 3) {
+        // Cached path: cos and sin provided as inputs 1 and 2
+        auto cosValues = INPUT_VARIABLE(1);
+        auto sinValues = INPUT_VARIABLE(2);
+        helpers::fusedRoPECached(input, cosValues, sinValues, output, ropeType,
+                                  block.launchContext());
+    } else {
+        int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+        float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
+        float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
+        helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
+                            block.launchContext());
+    }
 
     return Status::OK;
 }

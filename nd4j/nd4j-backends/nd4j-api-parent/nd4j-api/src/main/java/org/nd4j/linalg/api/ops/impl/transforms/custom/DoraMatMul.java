@@ -100,6 +100,12 @@ public class DoraMatMul extends DynamicCustomOp {
 
     public DoraMatMul(@NonNull INDArray input, @NonNull INDArray weight,
                       @NonNull INDArray loraA, @NonNull INDArray loraB,
+                      @NonNull INDArray magnitude, double scaling) {
+        this(input, weight, loraA, loraB, magnitude, scaling, null);
+    }
+
+    public DoraMatMul(@NonNull INDArray input, @NonNull INDArray weight,
+                      @NonNull INDArray loraA, @NonNull INDArray loraB,
                       @NonNull INDArray magnitude, double scaling, INDArray output) {
         super(null, new INDArray[]{input, weight, loraA, loraB, magnitude},
               output == null ? null : new INDArray[]{output});

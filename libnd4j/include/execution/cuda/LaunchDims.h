@@ -754,6 +754,10 @@ int getEnvVariable(const std::string& varName, int defaultValue);
 #define BLOCK_SIZE_SOFTMAX_LARGE getEnvVariable("BLOCK_SIZE_SOFTMAX_LARGE", 512)
 #define SHARED_MEM_SIZE_SOFTMAX getEnvVariable("SHARED_MEM_SIZE_SOFTMAX", 256)
 
+#define GRID_SIZE_FUSED_ROPE_CACHED getEnvVariable("GRID_SIZE_FUSED_ROPE_CACHED", 256)
+#define BLOCK_SIZE_FUSED_ROPE_CACHED getEnvVariable("BLOCK_SIZE_FUSED_ROPE_CACHED", 256)
+#define SHARED_MEM_SIZE_FUSED_ROPE_CACHED getEnvVariable("SHARED_MEM_SIZE_FUSED_ROPE_CACHED", 0)
+
 dim3 getSoftmaxDims(sd::LongType numTads, sd::LongType tadLen);
 
 dim3 getLupDims(int batchSize);

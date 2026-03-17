@@ -661,8 +661,11 @@ DECLARE_SHAPE_FN(strided_slice) {
     return SHAPELIST(newShape);
   }
 
-  std::vector<LongType> retShape{0};
-  auto result2 = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape), retShape);
+  // indices is empty - result is a scalar (rank 0)
+  // Preserve input dtype for the output shape
+  auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inputShape->at(0));
+  std::vector<LongType> retShape;  // Empty vector for rank 0 scalar
+  auto result2 = ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(retDtype, retShape);
   return SHAPELIST(result2);
 }
 
@@ -801,7 +804,7 @@ DECLARE_SHAPE_FN(strided_slice_bp) {
   return SHAPELIST(CONSTANT(inShape));
 }
 
-DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(ANY); }
+DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(ANY); }
 
 DECLARE_TYPES(strided_slice_bp) {
   getOpDescriptor()->setAllowedInputTypes(ANY);

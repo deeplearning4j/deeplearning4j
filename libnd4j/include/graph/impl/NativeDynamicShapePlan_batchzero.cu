@@ -182,6 +182,9 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
       continue;  // Don't fall through to collect head's own outputs
     }
 
+    // Skip view-capable ops — they share input's buffer, zeroing would corrupt data
+    if (slot.isViewCapableOp) continue;
+
     for (int o = 0; o < slot.numOutputs; o++) {
       int outIdx = slot.outputSlotIndices[o];
       if (outIdx < 0 || outIdx >= totalOutputSlots_) continue;

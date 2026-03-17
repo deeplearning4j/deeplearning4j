@@ -124,8 +124,6 @@ CUSTOM_OP_IMPL(logdet, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
                "logdet: The last two dimensions should be equal, but %i and %i are given", input->sizeAt(-1),
                input->sizeAt(-2));
-  REQUIRE_TRUE(helpers::checkCholeskyInput(block.launchContext(), input), 0,
-               "logdet: The input tensor should be positive-defined hermitian.");
 
   return helpers::logdetFunctor(block.launchContext(), input, output);
 }

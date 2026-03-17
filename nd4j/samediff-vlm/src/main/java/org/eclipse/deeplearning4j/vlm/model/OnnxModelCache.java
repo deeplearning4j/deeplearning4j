@@ -67,14 +67,25 @@ public class OnnxModelCache {
     public static final String DISABLE_CACHE_PROPERTY = "vlm.model.cache.disable";
 
     /**
-     * System property to enable graph optimization after loading.
-     * Set to "true" to run GraphOptimizer (constant folding, identity removal,
-     * attention fusion, etc.). Optimized graphs are cached separately as .opt.sdz files.
+     * System property to control graph optimization after loading.
+     * Defaults to ON (true). Set to "false" to disable GraphOptimizer
+     * (constant folding, identity removal, attention fusion, FP16 pre-cast, etc.).
+     * Optimized graphs are cached separately as .opt.sdz files.
      */
     public static final String OPTIMIZER_ENABLED_PROPERTY = "nd4j.optimizer.enabled";
 
     private OnnxModelCache() {
         // utility class
+    }
+
+    /**
+     * Check if the optimizer is enabled. Defaults to true unless
+     * explicitly set to "false" via system property.
+     */
+    private static boolean isOptimizerEnabled() {
+        String prop = System.getProperty(OPTIMIZER_ENABLED_PROPERTY);
+        // Default to true — only disable if explicitly set to "false"
+        return prop == null || !"false".equalsIgnoreCase(prop.trim());
     }
 
     /**
@@ -98,7 +109,7 @@ public class OnnxModelCache {
         File sdzFile = getSdzCacheFile(onnxFile);
         boolean cacheDisabled = Boolean.getBoolean(DISABLE_CACHE_PROPERTY);
 
-        boolean optimizerEnabled = Boolean.getBoolean(OPTIMIZER_ENABLED_PROPERTY);
+        boolean optimizerEnabled = isOptimizerEnabled();
 
         // Check for cached optimized SDZ first (if optimizer is enabled)
         if (optimizerEnabled && !cacheDisabled) {
@@ -251,7 +262,7 @@ public class OnnxModelCache {
         if (!cacheDisabled) {
             for (String path : onnxFilePaths) {
                 File onnxFile = new File(path);
-                boolean optimizerEnabled = Boolean.getBoolean(OPTIMIZER_ENABLED_PROPERTY);
+                boolean optimizerEnabled = isOptimizerEnabled();
                 File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
                 File sdzFile = getSdzCacheFile(onnxFile);
                 boolean hasCachedOpt = optimizerEnabled && optSdzFile.exists() &&
