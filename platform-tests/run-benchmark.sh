@@ -8,21 +8,22 @@
 # │  FP16 weight pre-cast:  ON  (default, disable: --no-fp16)         │
 # │  GraphOptimizer:        ON  (default, disable: --no-optimizer)     │
 # │  Clear decoder cache:   ON  (default, disable: --no-clear-decoder) │
-# │  Config:                TRITON_compileAll_best_ATTN_gc_argOpt_     │
-# │                         batchOps                                    │
+# │  Config:                TRITON_compileAll_best_ATTN_NORM_gc_argOpt_│
+# │                         batchGemmOnly_warps2_stages1_default        │
 # │  Max tokens:            250                                         │
 # │                                                                     │
-# │  Best measured:         ~40 tok/s (FP32, pre-FP16 optimizer)       │
-# │  Expected with FP16:   TBD (pending first successful FP16 run)     │
+# │  Best measured:         ~66+ tok/s late steady-state decode         │
+# │  Expected with FP16:    keep validating via this script             │
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # Usage: ./run-benchmark.sh [OPTIONS]
 #
 # Execution options:
 #   --debug           Enable DSP diagnostics, CUDA driver log, verbose tracing
+#   --op-timing       Enable decode-only native op timing and export CSV per config
 #   --tokens N        Override max decode tokens (default: 250)
 #   --config NAME     Override benchmark config name
-#                     (default: TRITON_compileAll_best_ATTN_gc_argOpt_batchOps)
+#                     (default: TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_default)
 #
 # Optimizer options:
 #   --fp16            Enable FP16 weight pre-casting via GraphOptimizer (DEFAULT: ON)
@@ -42,6 +43,7 @@
 #   ./run-benchmark.sh --tokens 100              # Quick 100-token run
 #   ./run-benchmark.sh --no-clear-decoder         # Keep cached decoder (skip re-import)
 #   ./run-benchmark.sh --debug                    # Full DSP diagnostics + CUDA driver log
+#   ./run-benchmark.sh --op-timing                # Decode-only op timing CSV + hotspot table
 #   ./run-benchmark.sh --no-fp16                  # FP32 weights (baseline comparison)
 #   ./run-benchmark.sh --no-optimizer             # No optimization at all
 set -euo pipefail
@@ -60,8 +62,9 @@ MODEL_CACHE="$HOME/.cache/dl4j-vlm-models"
 # Defaults
 DEBUG_MODE=false
 NSYS_MODE=false
+OP_TIMING=false
 MAX_TOKENS=250
-CONFIG="TRITON_compileAll_best_ATTN_gc_argOpt_batchOps"
+CONFIG="TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_default"
 FP16=true
 NO_OPTIMIZER=false
 OPTIMIZER_LOG=false
@@ -77,6 +80,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --nsys)
             NSYS_MODE=true
+            shift
+            ;;
+        --op-timing)
+            OP_TIMING=true
             shift
             ;;
         --tokens)
@@ -117,7 +124,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--tokens N] [--config NAME]"
+            echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--tokens N] [--config NAME]"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
             exit 1
@@ -146,6 +153,7 @@ $NO_OPTIMIZER && echo "  Optimizer: DISABLED"
 $OPTIMIZER_LOG && echo "  Optimizer: logging applied transforms"
 $DEBUG_MODE   && echo "  Mode:   DEBUG (DSP diagnostics + CUDA driver log)"
 $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
+$OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
@@ -187,12 +195,21 @@ if $DEBUG_MODE; then
     export CUDA_LOG_FILE="$CUDA_LOG"
 fi
 
+if $OP_TIMING; then
+    OP_TIMING_DIR="$SCRIPT_DIR/op-timing"
+    mkdir -p "$OP_TIMING_DIR"
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTiming=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingTopN=16"
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingCsvDir=$OP_TIMING_DIR"
+fi
+
 $MVN test \
   -Dtest="${TEST_CLASS}#${TEST_METHOD}" \
   -Dvlm.test.maxTokens="$MAX_TOKENS" \
   -Dvlm.test.pdf.path=pathfinder-mythic.pdf \
   -Dvlm.test.pdf.page=10 \
   -Dvlm.test.configs="$CONFIG" \
+  -Dlibnd4j.triton=ON \
   -Dbackend.artifactId=nd4j-cuda-12.9 \
   $EXTRA_ARGS \
   2>&1 | tee "$LOG_FILE"
@@ -213,6 +230,12 @@ if [ $BUILD_RESULT -ne 0 ]; then
         echo "  CUDA driver log (last 20 lines):"
         tail -20 "$CUDA_LOG"
     fi
+    exit 1
+fi
+
+if grep -q "Filtered to 0 configs via vlm.test.configs" "$LOG_FILE"; then
+    echo "  STATUS: FAILED (requested config resolved to 0 benchmark configs)"
+    grep "Filtered to 0 configs via vlm.test.configs" "$LOG_FILE"
     exit 1
 fi
 

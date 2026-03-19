@@ -141,7 +141,7 @@ void OpTimingTracker::flush() {
 
       // Verify constructor worked - callCount should be 0
       if (newStats.callCount != 0) {
-        std::cerr << "CRITICAL: AggregatedOpStats constructor failed! callCount="
+        std::cerr << " AggregatedOpStats constructor failed! callCount="
                   << newStats.callCount << " (should be 0)" << std::endl;
       }
 
@@ -153,7 +153,7 @@ void OpTimingTracker::flush() {
 
       // Verify after emplace - the value in the map should also be 0
       if (it->second.callCount != 0) {
-        std::cerr << "CRITICAL: AggregatedOpStats corrupted after emplace! callCount="
+        std::cerr << " AggregatedOpStats corrupted after emplace! callCount="
                   << it->second.callCount << " for op " << it->second.opName
                   << " wasInserted=" << result.second << std::endl;
       }
@@ -165,7 +165,7 @@ void OpTimingTracker::flush() {
 
     // Verify record() only incremented by 1
     if (it->second.callCount != beforeCount + 1 && it->second.callCount > 0) {
-      std::cerr << "CRITICAL: record() corrupted callCount! before=" << beforeCount
+      std::cerr << " record() corrupted callCount! before=" << beforeCount
                 << " after=" << it->second.callCount << " for op " << it->second.opName << std::endl;
     }
 

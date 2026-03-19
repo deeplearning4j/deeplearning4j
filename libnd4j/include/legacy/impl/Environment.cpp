@@ -1222,6 +1222,14 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
    setTritonIncludeTypes(std::string(tritonIncludeTypesVar));
  }
 
+ // Triton segment fusion optimization flags (temporary for testing)
+ { int v = readBoolEnv("ND4J_TRITON_FUSE_IDENTITY_SHAPES");       if (v >= 0) setTritonFuseIdentityShapes(v); }
+ { int v = readBoolEnv("ND4J_TRITON_FUSE_CAST_CHAINS");           if (v >= 0) setTritonFuseCastChains(v); }
+ { int v = readBoolEnv("ND4J_TRITON_FUSE_TRIVIAL_GATHER");        if (v >= 0) setTritonFuseTrivialGather(v); }
+ { int v = readBoolEnv("ND4J_TRITON_SPECIALIZE_PERMUTE_SEQ1");    if (v >= 0) setTritonSpecializePermuteSeq1(v); }
+ { int v = readBoolEnv("ND4J_TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS"); if (v >= 0) setTritonEliminateConcatSplitPairs(v); }
+ { int v = readBoolEnv("ND4J_TRITON_FUSED_MATMUL");               if (v >= 0) setTritonFusedMatmul(v); }
+
  const char* tritonSkipKernelsVar = std::getenv("ND4J_TRITON_SKIP_KERNELS");
  if (tritonSkipKernelsVar != nullptr) {
    std::string val(tritonSkipKernelsVar);

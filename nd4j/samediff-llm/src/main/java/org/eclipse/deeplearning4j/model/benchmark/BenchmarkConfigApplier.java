@@ -99,6 +99,10 @@ public class BenchmarkConfigApplier {
         env.setTritonDumpGraphDot(false);
         env.setTritonAllowFallbackCapture(false);
 
+        // Apply the named profile first, then let explicit config fields override it.
+        // This keeps profile defaults useful without silently discarding per-config tuning.
+        applyTritonProfile(config.getTritonProfile());
+
         if (config.isTriton()) {
             env.setTritonIncludeTypes(config.getTritonIncludeTypes());
             env.setTritonSectionFusion(config.isTritonSectionFusion());
@@ -125,6 +129,16 @@ public class BenchmarkConfigApplier {
             if (config.getTritonMaxSubsegmentOps() > 0) env.setTritonMaxSubsegmentOps(config.getTritonMaxSubsegmentOps());
             if (config.getTritonMaxSubsegmentSections() > 0) env.setTritonMaxSubsegmentSections(config.getTritonMaxSubsegmentSections());
             if (config.getTritonBuildThreads() > 0) env.setTritonBuildThreads(config.getTritonBuildThreads());
+            
+            // Triton segment fusion optimization flags
+            env.setTritonFuseIdentityShapes(config.isTritonFuseIdentityShapes());
+            env.setTritonFuseCastChains(config.isTritonFuseCastChains());
+            env.setTritonFuseTrivialGather(config.isTritonFuseTrivialGather());
+            env.setTritonSpecializePermuteSeq1(config.isTritonSpecializePermuteSeq1());
+            env.setTritonEliminateConcatSplitPairs(config.isTritonEliminateConcatSplitPairs());
+            env.setTritonFusedMatmul(config.isTritonFusedMatmul());
+            env.setTritonFusionScoring(config.isTritonFusionScoring());
+            env.setTritonFusionMinScore(config.getTritonFusionMinScore());
         }
 
         // DSP optimization flags
@@ -136,8 +150,6 @@ public class BenchmarkConfigApplier {
         env.setDspBatchZero(config.isDspBatchZero());
         env.setDspBatchZeroKernel(config.isDspBatchZeroKernel());
         env.setDspBatchedGemm(config.isDspBatchedGemm());
-
-        applyTritonProfile(config.getTritonProfile());
 
         // Enable DSP diagnostics for graph capture configs.
         // EXECUTE is NOT auto-enabled — it triggers per-step cudaStreamSynchronize
@@ -158,9 +170,9 @@ public class BenchmarkConfigApplier {
                 config.isTritonGraphCapture(), config.isTritonConsolidatedArgTable(),
                 config.isTritonArgDirtyTracking(), config.isTritonCooperativeLaunch(),
                 config.isTritonCompileAll(), config.isTritonSkipKernels(), config.isTritonVerifyKernels(),
-                config.isTritonEnableFpFusion(), config.getTritonNumWarps(), config.getTritonNumStages(),
-                config.getTritonNumCTAs(), config.getTritonMaxNreg(), config.getTritonMaxSubsegmentOps(),
-                config.getTritonMaxSubsegmentSections(), config.getTritonProfile(), config.getCaptureMinExec());
+                env.tritonEnableFpFusion(), env.tritonNumWarps(), env.tritonNumStages(),
+                env.tritonNumCTAs(), env.tritonMaxNreg(), env.tritonMaxSubsegmentOps(),
+                env.tritonMaxSubsegmentSections(), config.getTritonProfile(), config.getCaptureMinExec());
 
         // Verify critical flags were applied correctly
         if (config.isTriton()) {
@@ -182,6 +194,65 @@ public class BenchmarkConfigApplier {
                     "tritonSkipKernels not applied");
             verify(config.isTritonVerifyKernels() == env.tritonVerifyKernels(),
                     "tritonVerifyKernels not applied");
+            if (config.getTritonCoopTargetBlocks() > 0) {
+                verify(config.getTritonCoopTargetBlocks() == env.tritonCoopTargetBlocks(),
+                        "tritonCoopTargetBlocks not applied");
+            }
+            if (config.getTritonNumWarps() > 0) {
+                verify(config.getTritonNumWarps() == env.tritonNumWarps(),
+                        "tritonNumWarps not applied");
+            }
+            if (config.getTritonNumStages() > 0) {
+                verify(config.getTritonNumStages() == env.tritonNumStages(),
+                        "tritonNumStages not applied");
+            }
+            if (config.getTritonNumCTAs() > 0) {
+                verify(config.getTritonNumCTAs() == env.tritonNumCTAs(),
+                        "tritonNumCTAs not applied");
+            }
+            if (config.getTritonMaxNreg() > 0) {
+                verify(config.getTritonMaxNreg() == env.tritonMaxNreg(),
+                        "tritonMaxNreg not applied");
+            }
+            if (config.getTritonMaxSubsegmentOps() > 0) {
+                verify(config.getTritonMaxSubsegmentOps() == env.tritonMaxSubsegmentOps(),
+                        "tritonMaxSubsegmentOps not applied");
+            }
+            if (config.getTritonMaxSubsegmentSections() > 0) {
+                verify(config.getTritonMaxSubsegmentSections() == env.tritonMaxSubsegmentSections(),
+                        "tritonMaxSubsegmentSections not applied");
+            }
+            if (config.getTritonBuildThreads() > 0) {
+                verify(config.getTritonBuildThreads() == env.tritonBuildThreads(),
+                        "tritonBuildThreads not applied");
+            }
+            // Triton segment fusion flags verification
+            verify(config.isTritonFuseIdentityShapes() == env.tritonFuseIdentityShapes(),
+                    "tritonFuseIdentityShapes not applied");
+            verify(config.isTritonFuseCastChains() == env.tritonFuseCastChains(),
+                    "tritonFuseCastChains not applied");
+            verify(config.isTritonFuseTrivialGather() == env.tritonFuseTrivialGather(),
+                    "tritonFuseTrivialGather not applied");
+            verify(config.isTritonSpecializePermuteSeq1() == env.tritonSpecializePermuteSeq1(),
+                    "tritonSpecializePermuteSeq1 not applied");
+            verify(config.isTritonEliminateConcatSplitPairs() == env.tritonEliminateConcatSplitPairs(),
+                    "tritonEliminateConcatSplitPairs not applied");
+            verify(config.isTritonFusedMatmul() == env.tritonFusedMatmul(),
+                    "tritonFusedMatmul not applied");
+            verify(config.isTritonFusionScoring() == env.tritonFusionScoring(),
+                    "tritonFusionScoring not applied");
+            verify(config.getTritonFusionMinScore() == env.tritonFusionMinScore(),
+                    "tritonFusionMinScore not applied");
+            verify(config.isTritonFuseIdentityShapes() == env.tritonFuseIdentityShapes(),
+                    "tritonFuseIdentityShapes not applied");
+            verify(config.isTritonFuseCastChains() == env.tritonFuseCastChains(),
+                    "tritonFuseCastChains not applied");
+            verify(config.isTritonFuseTrivialGather() == env.tritonFuseTrivialGather(),
+                    "tritonFuseTrivialGather not applied");
+            verify(config.isTritonSpecializePermuteSeq1() == env.tritonSpecializePermuteSeq1(),
+                    "tritonSpecializePermuteSeq1 not applied");
+            verify(config.isTritonEliminateConcatSplitPairs() == env.tritonEliminateConcatSplitPairs(),
+                    "tritonEliminateConcatSplitPairs not applied");
         } else {
             verify("".equals(env.tritonIncludeTypes()),
                     "tritonIncludeTypes should be empty for non-Triton config");

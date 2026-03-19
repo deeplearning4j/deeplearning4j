@@ -289,7 +289,9 @@ class TritonGraphBackend : public GraphBackend {
   // Maximum number of ops that can be compiled into a single Triton kernel.
   // Larger segments exceed register limits (441K virtual regs for 3840 ops).
   // Segments exceeding this are split into sub-segments automatically.
-  static constexpr int MAX_COMPILABLE_OPS = 512;
+  // Increased from 512 to 768 to reduce kernel launch overhead while staying
+  // within register pressure limits for most decoder models.
+  static constexpr int MAX_COMPILABLE_OPS = 768;
 
   // Maximum number of sub-kernels to compile in parallel.
   // Limited to avoid excessive memory usage during LLVM compilation.

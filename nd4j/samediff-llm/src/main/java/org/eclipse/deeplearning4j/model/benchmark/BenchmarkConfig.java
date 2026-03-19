@@ -68,6 +68,18 @@ public class BenchmarkConfig {
     int tritonBuildThreads = -1;
     String tritonProfile = "BALANCED";
 
+    // Triton segment fusion optimization flags (temporary for testing)
+    boolean tritonFuseIdentityShapes = true;
+    boolean tritonFuseCastChains = true;
+    boolean tritonFuseTrivialGather = true;
+    boolean tritonSpecializePermuteSeq1 = true;
+    boolean tritonEliminateConcatSplitPairs = true;
+    boolean tritonFusedMatmul = false;  // HIGH RISK - disabled by default
+    
+    // Triton fusion scoring
+    boolean tritonFusionScoring = true;
+    float tritonFusionMinScore = 5.0f;
+
     // DSP flags
     boolean dspCastElimination;
     boolean dspCastSinkMatmul;
@@ -118,6 +130,17 @@ public class BenchmarkConfig {
     public BenchmarkConfig tritonAllowFallbackCapture(boolean b) { this.tritonAllowFallbackCapture = b; return this; }
     public BenchmarkConfig tritonBuildThreads(int n) { this.tritonBuildThreads = n; return this; }
     public BenchmarkConfig tritonProfile(String p) { this.tritonProfile = p; return this; }
+    
+    // Triton segment fusion flags
+    public BenchmarkConfig tritonFuseIdentityShapes(boolean b) { this.tritonFuseIdentityShapes = b; return this; }
+    public BenchmarkConfig tritonFuseCastChains(boolean b) { this.tritonFuseCastChains = b; return this; }
+    public BenchmarkConfig tritonFuseTrivialGather(boolean b) { this.tritonFuseTrivialGather = b; return this; }
+    public BenchmarkConfig tritonSpecializePermuteSeq1(boolean b) { this.tritonSpecializePermuteSeq1 = b; return this; }
+    public BenchmarkConfig tritonEliminateConcatSplitPairs(boolean b) { this.tritonEliminateConcatSplitPairs = b; return this; }
+    public BenchmarkConfig tritonFusedMatmul(boolean b) { this.tritonFusedMatmul = b; return this; }
+    public BenchmarkConfig tritonFusionScoring(boolean b) { this.tritonFusionScoring = b; return this; }
+    public BenchmarkConfig tritonFusionMinScore(float f) { this.tritonFusionMinScore = f; return this; }
+    
     public BenchmarkConfig captureMinExec(int n) { this.captureMinExec = n; return this; }
     public BenchmarkConfig maxTokens(int n) { this.maxTokens = n; return this; }
     public BenchmarkConfig minDiversityPct(double d) { this.minDiversityPct = d; return this; }
@@ -158,6 +181,17 @@ public class BenchmarkConfig {
     public boolean isTritonAllowFallbackCapture() { return tritonAllowFallbackCapture; }
     public int getTritonBuildThreads() { return tritonBuildThreads; }
     public String getTritonProfile() { return tritonProfile; }
+    
+    // Triton segment fusion getters
+    public boolean isTritonFuseIdentityShapes() { return tritonFuseIdentityShapes; }
+    public boolean isTritonFuseCastChains() { return tritonFuseCastChains; }
+    public boolean isTritonFuseTrivialGather() { return tritonFuseTrivialGather; }
+    public boolean isTritonSpecializePermuteSeq1() { return tritonSpecializePermuteSeq1; }
+    public boolean isTritonEliminateConcatSplitPairs() { return tritonEliminateConcatSplitPairs; }
+    public boolean isTritonFusedMatmul() { return tritonFusedMatmul; }
+    public boolean isTritonFusionScoring() { return tritonFusionScoring; }
+    public float getTritonFusionMinScore() { return tritonFusionMinScore; }
+    
     public int getCaptureMinExec() { return captureMinExec; }
     public int getMaxTokens() { return maxTokens; }
     public double getMinDiversityPct() { return minDiversityPct; }

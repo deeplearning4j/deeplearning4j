@@ -727,6 +727,13 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
 
   // 2b: Load inputs — tt.load for each external input arg
+  // For segments with normalization ops, skip preloading external inputs.
+  // Normalization handlers will load them directly with actual tensor shapes
+  // (preloading flattens to blockSize which breaks reduction semantics).
+  bool skipExternalPreload = hasNormalization;
+  DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: skipExternalPreload=%d hasNormalization=%d inputArgs.size=%d",
+            skipExternalPreload ? 1 : 0, hasNormalization ? 1 : 0, (int)inputArgs.size());
+  
   // Compute max output element count and reference shape for broadcasting detection
   LongType maxOutputElements = 0;
   std::vector<LongType> refOutputShape;  // Shape with most elements (used as broadcast reference)
@@ -739,7 +746,7 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
     }
   }
   // Fallback: if output shapes are unavailable (empty), use max input element count/shape
-  if (maxOutputElements <= 1) {
+  if (maxOutputElements <= 1 && !skipExternalPreload) {
     for (auto& iarg : inputArgs) {
       LongType iElems = 1;
       for (auto d : iarg.shape) iElems *= d;
@@ -751,6 +758,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   }
   for (int a = 0; a < static_cast<int>(inputArgs.size()); a++) {
     auto& arg = inputArgs[a];
+    
+    // Skip preloading for ALL inputs in normalization segments
+    // (normalization handlers will load them directly with proper masking)
+    if (skipExternalPreload) {
+      DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: SKIPPING preload for normalization input arg %d slotIndex=%d",
+                a, arg.slotIndex);
+      continue;
+    }
+    
     auto funcArg = getBufferArg(a);  // tt.ptr<elemType>
 
     auto elemType = getMLIRType(builder, arg.dtype);
@@ -1570,40 +1586,224 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       }
 
     } else if (cat == TritonOpCategory::NORMALIZATION) {
-      // Normalization: load input from SSA, call emitNormalizationOp, store result
+      // Normalization: load input with actual shape (not flattened), call emitNormalizationOp
       if (slot.numInputs < 1) {
         DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: normalization op '%s' at slot %d has no inputs",
                   slot.opName.c_str(), si);
         continue;
       }
       int inputSrc = slot.inputSourceIndices[0];
-      auto inputIt = ssaValues.find(inputSrc);
-      if (inputIt == ssaValues.end()) {
-        DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing SSA value for normalization op '%s' at slot %d",
-                  slot.opName.c_str(), si);
+      mlir::Value inputValue;
+      mlir::RankedTensorType inputTensorType;
+      
+      // Get actual input shape for proper normalization semantics
+      auto inputShape = resolveShapeLocal(inputSrc);
+      if (inputShape.empty()) {
+        DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: cannot resolve shape for normalization input at slot %d", si);
         continue;
       }
-      // In the 1D kernel skeleton, all tensors are rank-1 (tensor<BLOCK>).
-      // Always normalize along axis 0 — the only axis in the 1D tensor.
-      int axis = 0;
+      
+      // Compute total elements in the actual tensor
+      int64_t actualNumElements = 1;
+      std::vector<int64_t> actualShape64;
+      for (auto d : inputShape) {
+        actualShape64.push_back(static_cast<int64_t>(d));
+        actualNumElements *= static_cast<int64_t>(d);
+      }
+      
+      // For rms_norm, compute logical row length (last dimension) for correct reduction
+      int64_t logicalRowLen = actualShape64.back();
+      int64_t numRows = actualNumElements / logicalRowLen;
+      // Pad row length to next power of 2 for Triton make_range requirement
+      int64_t paddedRowLen = 1;
+      while (paddedRowLen < logicalRowLen) paddedRowLen *= 2;
+
+      // For normalization, ALWAYS load external inputs directly from buffer with actual shape
+      // (SSA values from preloading are flattened to blockSize, which breaks reduction semantics)
+      
+      if (inputSrc < 0) {
+        // External input - load with ACTUAL shape, not flattened (bypass SSA cache)
+        int extIdx = -(inputSrc + 1);
+        if (extIdx >= numExternalInputs || !externalInputs[extIdx]) {
+          DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing external input %d for normalization op '%s' at slot %d",
+                    extIdx, slot.opName.c_str(), si);
+          continue;
+        }
+        // Find the arg for this external input
+        auto extArgIt = std::find_if(result.args.begin(), result.args.end(),
+            [inputSrc](const TritonKernelArg& arg) {
+                return arg.slotIndex == inputSrc && !arg.isOutput;
+            });
+        if (extArgIt == result.args.end()) {
+          DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: external input %d not in result.args for normalization op '%s' at slot %d",
+                    inputSrc, slot.opName.c_str(), si);
+          continue;
+        }
+        int argIdx = extArgIt - result.args.begin();
+        auto bufferArg = getBufferArg(argIdx);
+        if (!bufferArg) {
+          DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: null bufferArg for external input %d in normalization op '%s' at slot %d",
+                    inputSrc, slot.opName.c_str(), si);
+          continue;
+        }
+        // Load with padded tensor shape (power of 2 for Triton make_range)
+        auto elemType = getMLIRType(builder, externalInputs[extIdx]->dataType());
+        auto ptrType = mlir::cast<mlir::triton::PointerType>(bufferArg.getType());
+
+        // Create offsets for padded row size (power of 2)
+        auto paddedRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+            mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+        auto paddedPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
+        auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, paddedPtrTensorType, bufferArg);
+        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, paddedPtrTensorType, splatPtr, paddedRange);
+
+        // Create mask for actual row length (not padded)
+        auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+        auto splatRowLen = builder.create<mlir::triton::SplatOp>(loc, 
+            mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), rowLenConst);
+        auto fullMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, paddedRange, splatRowLen);
+
+        inputValue = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), fullMask,
+            builder.create<mlir::triton::SplatOp>(loc, 
+                mlir::RankedTensorType::get({paddedRowLen}, elemType),
+                builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0))).getResult(),
+            mlir::triton::CacheModifier::NONE,
+            mlir::triton::EvictionPolicy::NORMAL, false);
+        inputTensorType = mlir::RankedTensorType::get({paddedRowLen}, elemType);
+        
+        // Update SSA cache with correctly-shaped value for downstream consumers
+        ssaValues[inputSrc] = inputValue;
+      } else {
+        // Internal cross-section input - load directly from its kernel arg buffer.
+        // Preloading is disabled for normalization leaves, so this value may not
+        // exist in ssaValues even though it is present as an input arg.
+        // Find the buffer arg for this internal input
+        auto intArgIt = std::find_if(result.args.begin(), result.args.end(),
+            [inputSrc](const TritonKernelArg& arg) {
+                return arg.slotIndex == inputSrc && !arg.isOutput;
+            });
+        if (intArgIt == result.args.end()) {
+          DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: missing buffer arg for normalization internal input %d", inputSrc);
+          continue;
+        }
+        int intArgIdx = intArgIt - result.args.begin();
+        auto intBufferArg = getBufferArg(intArgIdx);
+        if (!intBufferArg) {
+          DSP_DIAG_SLOT(FALLBACK, si, "TritonIRBuilder: null bufferArg for normalization internal input %d", inputSrc);
+          continue;
+        }
+        // Load with padded tensor shape (power of 2 for Triton make_range)
+        auto ptrType = mlir::cast<mlir::triton::PointerType>(intBufferArg.getType());
+        auto elemType = ptrType.getPointeeType();
+
+        // Create offsets for padded row size (power of 2)
+        auto paddedRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+            mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+        auto paddedPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
+        auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, paddedPtrTensorType, intBufferArg);
+        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, paddedPtrTensorType, splatPtr, paddedRange);
+
+        // Create mask for actual row length (not padded)
+        auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+        auto splatRowLen = builder.create<mlir::triton::SplatOp>(loc, 
+            mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), rowLenConst);
+        auto fullMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, paddedRange, splatRowLen);
+
+        inputValue = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), fullMask,
+            builder.create<mlir::triton::SplatOp>(loc, 
+                mlir::RankedTensorType::get({paddedRowLen}, elemType),
+                builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0))).getResult(),
+            mlir::triton::CacheModifier::NONE,
+            mlir::triton::EvictionPolicy::NORMAL, false);
+        inputTensorType = mlir::RankedTensorType::get({paddedRowLen}, elemType);
+        
+        // Update SSA cache with correctly-shaped value
+        ssaValues[inputSrc] = inputValue;
+      }
+
+      // Compute normalization axis (last dimension)
+      int axis = inputTensorType.getRank() - 1;
+      if (axis < 0) axis = 0;
 
       auto outSlotIdx = slot.outputSlotIndices[0];
       mlir::RankedTensorType outputType;
       {
         auto outShape = resolveShapeLocal(outSlotIdx);
         if (!outShape.empty()) {
-          auto elemType = getElementType(inputIt->second);
+          auto elemType = getElementType(inputValue);
           std::vector<int64_t> outShape64;
           for (auto d : outShape) outShape64.push_back(static_cast<int64_t>(d));
           outputType = mlir::RankedTensorType::get(outShape64, elemType);
         }
       }
       std::string normKey = normalizeOpToken(slot.opName);
+      // For normalization side inputs (gamma, beta), ALWAYS load external inputs directly
+      // (SSA values from preloading are flattened to blockSize, which breaks reduction semantics)
       auto getNormInput = [&](int inputPos) -> mlir::Value {
         if (inputPos >= slot.numInputs) return mlir::Value();
         int src = slot.inputSourceIndices[inputPos];
+
+        // For external inputs, load directly with padded shape (power of 2)
+        if (src < 0) {
+          int extIdx = -(src + 1);
+          if (extIdx < numExternalInputs && externalInputs && externalInputs[extIdx]) {
+            auto extArgIt = std::find_if(result.args.begin(), result.args.end(),
+                [src](const TritonKernelArg& arg) {
+                    return arg.slotIndex == src;
+                });
+            if (extArgIt != result.args.end()) {
+              int argIdx = extArgIt - result.args.begin();
+              auto bufferArg = getBufferArg(argIdx);
+              if (!bufferArg) return mlir::Value();
+
+              // Get actual shape for this input
+              auto sideShape = resolveShapeLocal(src);
+              if (sideShape.empty()) return mlir::Value();
+
+              int64_t sideNumElements = 1;
+              std::vector<int64_t> sideShape64;
+              for (auto d : sideShape) {
+                sideShape64.push_back(static_cast<int64_t>(d));
+                sideNumElements *= static_cast<int64_t>(d);
+              }
+              
+              // Pad to power of 2 for Triton make_range
+              int64_t sidePaddedLen = 1;
+              while (sidePaddedLen < sideNumElements) sidePaddedLen *= 2;
+
+              auto elemType = getMLIRType(builder, externalInputs[extIdx]->dataType());
+              auto ptrType = mlir::cast<mlir::triton::PointerType>(bufferArg.getType());
+
+              auto sideRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+                  mlir::RankedTensorType::get({sidePaddedLen}, builder.getI32Type()), 0, sidePaddedLen);
+              auto sidePtrTensorType = mlir::RankedTensorType::get({sidePaddedLen}, ptrType);
+              auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, sidePtrTensorType, bufferArg);
+              auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, sidePtrTensorType, splatPtr, sideRange);
+
+              // Create mask for actual size
+              auto sideLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, sideNumElements, 32);
+              auto splatSideLen = builder.create<mlir::triton::SplatOp>(loc,
+                  mlir::RankedTensorType::get({sidePaddedLen}, builder.getI32Type()), sideLenConst);
+              auto sideMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, sideRange, splatSideLen);
+
+              auto loaded = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), sideMask,
+                  builder.create<mlir::triton::SplatOp>(loc, 
+                      mlir::RankedTensorType::get({sidePaddedLen}, elemType),
+                      builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0))).getResult(),
+                  mlir::triton::CacheModifier::NONE,
+                  mlir::triton::EvictionPolicy::NORMAL, false);
+              // Update SSA cache with correctly-shaped value
+              ssaValues[src] = loaded;
+              return loaded;
+            }
+          }
+          return mlir::Value();
+        }
+        
+        // Internal SSA input - use cached value
         auto it = ssaValues.find(src);
-        return (it != ssaValues.end()) ? it->second : mlir::Value();
+        if (it != ssaValues.end()) return it->second;
+        return mlir::Value();
       };
 
       mlir::Value scaleVal, biasVal, meanVal, varianceVal;
@@ -1620,8 +1820,10 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // Read epsilon from tArgs (first float argument), default 1e-5 if not set
       float epsilon = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-5f;
 
-      auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputIt->second, axis, outputType,
-                                          scaleVal, biasVal, meanVal, varianceVal, epsilon);
+      // Pass logical row length to emitNormalizationOp for correct reduction
+      // (tensor may be padded to power of 2, but we divide by logical width)
+      auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputValue, axis, outputType,
+                                          scaleVal, biasVal, meanVal, varianceVal, epsilon, logicalRowLen);
       // Safety: if normalization somehow returns a scalar, splat it back to tensor
       if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
         auto splatElemType = opResult.getType();
@@ -1629,6 +1831,8 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);
       }
       opResult = emulateNativePrecision(opResult, si);
+      // Store result in SSA for downstream consumers
+      // Generic store loop at end of buildModule will handle actual storage
       for (int o = 0; o < slot.numOutputs; o++) {
         ssaValues[slot.outputSlotIndices[o]] = opResult;
       }
@@ -1982,15 +2186,43 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Validate K buffer is non-empty when seqK > 0.
         // When K buffer is empty, the kernel would read from empty buffers causing
         // illegal memory access (CUDA error 700). Always fall back to C++.
+        //
+        // For dual-buffer mode (static KV cache), the past_key buffer is pre-allocated
+        // to max sequence length and reused across decode steps. In this case, we check
+        // the buffer shape/capacity rather than content length, since the buffer may
+        // contain stale data from previous steps but is still valid for attention.
         bool kBufferValidJit = true;
         {
           NDArray* effKArr = resolveArr(effectiveKSrc);
-          if ((!effKArr || effKArr->isEmpty() || effKArr->lengthOf() == 0) && seqK > 0) {
+          if (!effKArr && seqK > 0) {
             kBufferValidJit = false;
             DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
-                      "effective K buffer (src=%d) is empty but seqK=%d%s",
+                      "effective K buffer (src=%d) is null but seqK=%d%s",
                       si, effectiveKSrc, seqK,
                       seqKDerivedFromExternalJit ? " (seqK derived from external inputs)" : "");
+          } else if (effKArr && seqK > 0) {
+            // For dual-buffer mode (static KV cache), check shape capacity not content
+            if (useDualBuffer) {
+              // past_key is 4D BHSD: [B, KvHeads, maxSeqLen, headDim]
+              // Valid if rank == 4 and seq dimension (dim 2) > 0
+              bool shapeValid = (effKArr->rankOf() == 4 && effKArr->sizeAt(2) > 0);
+              if (!shapeValid) {
+                kBufferValidJit = false;
+                DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
+                          "past_key buffer (src=%d) has invalid shape: rank=%d, seqDim=%d (expected 4D BHSD with seqDim>0)",
+                          si, effectiveKSrc, effKArr->rankOf(),
+                          effKArr->rankOf() >= 3 ? static_cast<int>(effKArr->sizeAt(2)) : -1);
+              }
+            } else {
+              // Non-dual-buffer: check content length (original behavior)
+              if (effKArr->isEmpty() || effKArr->lengthOf() == 0) {
+                kBufferValidJit = false;
+                DSP_DIAG(JIT, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d (JIT path) — "
+                          "effective K buffer (src=%d) is empty but seqK=%d%s",
+                          si, effectiveKSrc, seqK,
+                          seqKDerivedFromExternalJit ? " (seqK derived from external inputs)" : "");
+              }
+            }
           }
         }
 
@@ -3515,6 +3747,25 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
       return static_cast<int>(std::max<LongType>(1, blocks64));
     }
 
+    if (sec.type == KernelSectionType::NORMALIZATION) {
+      LongType numRows = 0;
+      for (int si = sec.startSlot; si <= sec.endSlot && numRows <= 0; si++) {
+        if (slots[si].numInputs < 1) continue;
+        auto inputShape = resolveShape(slots[si].inputSourceIndices[0]);
+        LongType totalElements = shapeLength(inputShape);
+        LongType logicalRowLen = inputShape.empty() ? 0 : inputShape.back();
+        if (totalElements > 0 && logicalRowLen > 0) {
+          numRows = std::max<LongType>(1, (totalElements + logicalRowLen - 1) / logicalRowLen);
+        }
+      }
+      if (numRows > static_cast<LongType>(2147483647)) {
+        numRows = static_cast<LongType>(2147483647);
+      }
+      if (numRows > 0) {
+        return static_cast<int>(numRows);
+      }
+    }
+
     LongType maxElements = sectionMaxElements(sec);
     if (maxElements <= 0) {
       return std::max(1, sec.gridRequirement);
@@ -3570,6 +3821,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
   // ── Step 5: SSA value map and arg lookup ──
   std::unordered_map<int, mlir::Value> ssaValues;
   std::unordered_map<int, int> slotToArgIdx;
+  std::unordered_set<int> customStoredOutputs;
   for (int a = 0; a < static_cast<int>(result.args.size()); a++) {
     slotToArgIdx[result.args[a].slotIndex] = a;
   }
@@ -3870,36 +4122,39 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
         auto mask = builder.create<mlir::arith::CmpIOp>(
             loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
-        for (int si = sec.startSlot; si <= sec.endSlot; si++) {
-          for (int inp = 0; inp < slots[si].numInputs; inp++) {
-            int srcIdx = slots[si].inputSourceIndices[inp];
-            if (ssaValues.count(srcIdx)) continue;
-            auto argIt = slotToArgIdx.find(srcIdx);
-            if (argIt == slotToArgIdx.end()) continue;
-            auto funcArg = getBufferArg(argIt->second);
-            auto& argDesc = result.args[argIt->second];
-            // Derive pointer type from actual function arg (avoids dtype mismatch)
-            auto ptrType = mlir::cast<mlir::triton::PointerType>(funcArg.getType());
-            auto elemType = ptrType.getPointeeType();
-            auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
+        bool skipGenericPreload = (sec.type == KernelSectionType::NORMALIZATION);
+        if (!skipGenericPreload) {
+          for (int si = sec.startSlot; si <= sec.endSlot; si++) {
+            for (int inp = 0; inp < slots[si].numInputs; inp++) {
+              int srcIdx = slots[si].inputSourceIndices[inp];
+              if (ssaValues.count(srcIdx)) continue;
+              auto argIt = slotToArgIdx.find(srcIdx);
+              if (argIt == slotToArgIdx.end()) continue;
+              auto funcArg = getBufferArg(argIt->second);
+              auto& argDesc = result.args[argIt->second];
+              // Derive pointer type from actual function arg (avoids dtype mismatch)
+              auto ptrType = mlir::cast<mlir::triton::PointerType>(funcArg.getType());
+              auto elemType = ptrType.getPointeeType();
+              auto ptrTensorType = mlir::RankedTensorType::get({blockSize}, ptrType);
 
-            // Broadcast indexing: if input is smaller than max output, use modular offsets
-            LongType inputElements = 1;
-            for (auto d : argDesc.shape) inputElements *= d;
-            mlir::Value loadOffsets = offsets;
-            if (inputElements > 0 && inputElements < secMaxOutputElements) {
-              auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
-                  loc, static_cast<int>(inputElements), 32);
-              auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
-              loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+              // Broadcast indexing: if input is smaller than max output, use modular offsets
+              LongType inputElements = 1;
+              for (auto d : argDesc.shape) inputElements *= d;
+              mlir::Value loadOffsets = offsets;
+              if (inputElements > 0 && inputElements < secMaxOutputElements) {
+                auto inputSizeConst = builder.create<mlir::arith::ConstantIntOp>(
+                    loc, static_cast<int>(inputElements), 32);
+                auto splatInputSize = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, inputSizeConst);
+                loadOffsets = builder.create<mlir::arith::RemUIOp>(loc, offsets, splatInputSize);
+              }
+
+              auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
+              auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, loadOffsets);
+              auto loaded = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), mask.getResult(),
+                  mlir::Value(), mlir::triton::CacheModifier::NONE,
+                  mlir::triton::EvictionPolicy::NORMAL, false);
+              ssaValues[srcIdx] = loaded;
             }
-
-            auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, funcArg);
-            auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, loadOffsets);
-            auto loaded = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), mask.getResult(),
-                mlir::Value(), mlir::triton::CacheModifier::NONE,
-                mlir::triton::EvictionPolicy::NORMAL, false);
-            ssaValues[srcIdx] = loaded;
           }
         }
 
@@ -4157,36 +4412,107 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
           } else if (cat == TritonOpCategory::NORMALIZATION) {
+            // Normalization uses one program per logical row so RMS/softmax/layer-norm
+            // operate over the last dimension instead of flattening the whole tensor.
             if (slot.numInputs < 1) continue;
-            auto inputIt = ssaValues.find(slot.inputSourceIndices[0]);
-            if (inputIt == ssaValues.end()) continue;
-            // Read normalization axis from iArgs (same pattern as reduction)
-            int axis = (slot.numIArgs > 0 && slot.iArgs) ? static_cast<int>(slot.iArgs[0]) : -1;
-            // Handle negative axis
-            if (auto tensorTy = mlir::dyn_cast<mlir::RankedTensorType>(inputIt->second.getType())) {
-              int inputRank = static_cast<int>(tensorTy.getRank());
-              if (axis < 0) axis += inputRank;
-              if (axis < 0 || axis >= inputRank) axis = inputRank - 1;
-            } else {
-              if (axis < 0) axis = 0;
-            }
-            auto outSlotIdx = slot.outputSlotIndices[0];
-            mlir::RankedTensorType outputType;
-            {
-              auto outShape = resolveShape(outSlotIdx);
-              if (!outShape.empty()) {
-                auto elemType = getElementType(inputIt->second);
-                std::vector<int64_t> outShape64;
-                for (auto d : outShape) outShape64.push_back(static_cast<int64_t>(d));
-                outputType = mlir::RankedTensorType::get(outShape64, elemType);
+            int inputSrc = slot.inputSourceIndices[0];
+            auto inputShape = resolveShape(inputSrc);
+            if (inputShape.empty()) continue;
+
+            int64_t actualNumElements = shapeLength(inputShape);
+            int64_t logicalRowLen = inputShape.back();
+            if (actualNumElements <= 0 || logicalRowLen <= 0) continue;
+
+            int64_t numRows = std::max<int64_t>(1, (actualNumElements + logicalRowLen - 1) / logicalRowLen);
+            int64_t paddedRowLen = 1;
+            while (paddedRowLen < logicalRowLen) paddedRowLen <<= 1;
+
+            auto rowIdxType = builder.getI32Type();
+            auto rowRangeType = mlir::RankedTensorType::get({paddedRowLen}, rowIdxType);
+            auto rowMaskType = mlir::RankedTensorType::get({paddedRowLen}, builder.getI1Type());
+            auto rowBase = builder.create<mlir::arith::MulIOp>(
+                loc, pid, builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32));
+
+            auto loadRowFromBuffer = [&](mlir::Value bufferArg,
+                                         mlir::Type elemType,
+                                         mlir::Value baseOffset,
+                                         int64_t logicalLen) -> mlir::Value {
+              int64_t paddedLen = 1;
+              while (paddedLen < logicalLen) paddedLen <<= 1;
+
+              auto ptrType = mlir::cast<mlir::triton::PointerType>(bufferArg.getType());
+              auto idxTensorType = mlir::RankedTensorType::get({paddedLen}, rowIdxType);
+              auto ptrTensorType = mlir::RankedTensorType::get({paddedLen}, ptrType);
+              auto dataTensorType = mlir::RankedTensorType::get({paddedLen}, elemType);
+
+              auto range = builder.create<mlir::triton::MakeRangeOp>(loc, idxTensorType, 0, paddedLen);
+              auto baseSplat = builder.create<mlir::triton::SplatOp>(loc, idxTensorType, baseOffset);
+              auto vecOffsets = builder.create<mlir::arith::AddIOp>(loc, baseSplat, range);
+
+              auto lenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalLen, 32);
+              auto lenSplat = builder.create<mlir::triton::SplatOp>(loc, idxTensorType, lenConst);
+              auto localMask = builder.create<mlir::arith::CmpIOp>(
+                  loc, mlir::arith::CmpIPredicate::slt, range, lenSplat);
+
+              auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, bufferArg);
+              auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatPtr, vecOffsets);
+              auto zero = builder.create<mlir::arith::ConstantOp>(
+                  loc, builder.getFloatAttr(elemType, 0.0));
+              auto zeroTensor = builder.create<mlir::triton::SplatOp>(loc, dataTensorType, zero);
+              return builder.create<mlir::triton::LoadOp>(
+                  loc, ptrs.getResult(), localMask.getResult(), zeroTensor.getResult(),
+                  mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL, false);
+            };
+
+            auto loadNormInput = [&](int src, bool rowWise) -> mlir::Value {
+              auto ssaIt = ssaValues.find(src);
+              if (ssaIt != ssaValues.end()) {
+                return ssaIt->second;
               }
+
+              auto argIt = slotToArgIdx.find(src);
+              if (argIt == slotToArgIdx.end()) return mlir::Value();
+              auto bufferArg = getBufferArg(argIt->second);
+              if (!bufferArg) return mlir::Value();
+
+              DataType dtype = resolveDtype(src);
+              auto elemType = getMLIRType(builder, dtype);
+              auto sideShape = resolveShape(src);
+              if (sideShape.empty()) return mlir::Value();
+
+              int64_t logicalLen = rowWise ? logicalRowLen : shapeLength(sideShape);
+              if (logicalLen <= 0) return mlir::Value();
+
+              mlir::Value baseOffset = rowBase;
+              if (!rowWise) {
+                baseOffset = builder.create<mlir::arith::ConstantIntOp>(loc, 0, 32).getResult();
+              }
+              return loadRowFromBuffer(bufferArg, elemType, baseOffset, logicalLen);
+            };
+
+            auto numRowsConst = builder.create<mlir::arith::ConstantIntOp>(loc, numRows, 32);
+            auto rowActive = builder.create<mlir::arith::CmpIOp>(
+                loc, mlir::arith::CmpIPredicate::slt, pid, numRowsConst);
+            auto rowIf = builder.create<mlir::scf::IfOp>(loc, rowActive, /*withElseRegion=*/false);
+            builder.setInsertionPointToStart(&rowIf.getThenRegion().front());
+
+            mlir::Value inputValue = loadNormInput(inputSrc, true);
+            if (!inputValue) {
+              builder.create<mlir::scf::YieldOp>(loc);
+              builder.setInsertionPointAfter(rowIf);
+              continue;
             }
+
+            auto inputTensorType = mlir::cast<mlir::RankedTensorType>(inputValue.getType());
+            int axis = inputTensorType.getRank() - 1;
+            if (axis < 0) axis = 0;
+            auto outSlotIdx = slot.outputSlotIndices[0];
+
             std::string normKey = normalizeOpToken(slot.opName);
             auto getNormInput = [&](int inputPos) -> mlir::Value {
               if (inputPos >= slot.numInputs) return mlir::Value();
               int src = slot.inputSourceIndices[inputPos];
-              auto it = ssaValues.find(src);
-              return (it != ssaValues.end()) ? it->second : mlir::Value();
+              return loadNormInput(src, false);
             };
 
             mlir::Value scaleVal, biasVal, meanVal, varianceVal;
@@ -4201,13 +4527,39 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
             }
 
             float epsilon2 = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1e-5f;
-            auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputIt->second, axis, outputType,
-                                                scaleVal, biasVal, meanVal, varianceVal, epsilon2);
+            auto opResult = emitNormalizationOp(builder, loc, slot.opName, inputValue, axis,
+                                                inputTensorType, scaleVal, biasVal,
+                                                meanVal, varianceVal, epsilon2, logicalRowLen);
             if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
-              auto splatTensorType = mlir::RankedTensorType::get({blockSize}, opResult.getType());
+              auto splatTensorType = mlir::RankedTensorType::get({paddedRowLen}, opResult.getType());
               opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);
             }
+
+            auto outArgIt = slotToArgIdx.find(outSlotIdx);
+            if (outArgIt != slotToArgIdx.end()) {
+              auto outFuncArg = getBufferArg(outArgIt->second);
+              auto outPtrType = mlir::cast<mlir::triton::PointerType>(outFuncArg.getType());
+              auto outElemType = outPtrType.getPointeeType();
+              auto outPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, outPtrType);
+              auto rowRange = builder.create<mlir::triton::MakeRangeOp>(loc, rowRangeType, 0, paddedRowLen);
+              auto rowBaseSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowBase);
+              auto rowOffsets = builder.create<mlir::arith::AddIOp>(loc, rowBaseSplat, rowRange);
+              auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+              auto rowLenSplat = builder.create<mlir::triton::SplatOp>(loc, rowRangeType, rowLenConst);
+              auto rowMask = builder.create<mlir::arith::CmpIOp>(
+                  loc, mlir::arith::CmpIPredicate::slt, rowRange, rowLenSplat);
+              auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, outPtrTensorType, outFuncArg);
+              auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, outPtrTensorType, splatPtr, rowOffsets);
+              mlir::Value storeVal = castTo(builder, loc, opResult, outElemType);
+              builder.create<mlir::triton::StoreOp>(loc, ptrs, storeVal, rowMask,
+                  mlir::triton::CacheModifier::NONE,
+                  mlir::triton::EvictionPolicy::NORMAL);
+              customStoredOutputs.insert(outSlotIdx);
+            }
+
             for (int o = 0; o < slot.numOutputs; o++) ssaValues[slot.outputSlotIndices[o]] = opResult;
+            builder.create<mlir::scf::YieldOp>(loc);
+            builder.setInsertionPointAfter(rowIf);
           } else if (cat == TritonOpCategory::ROPE) {
             // ─── ROPE: paired elementwise rotation ───
             if (slot.numInputs >= 3 && slot.numOutputs >= 1) {
@@ -4424,6 +4776,7 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           for (int o = 0; o < slots[si].numOutputs; o++) {
             int outIdx = slots[si].outputSlotIndices[o];
             if (!externalOutputs.count(outIdx)) continue;
+            if (customStoredOutputs.count(outIdx)) continue;
             auto ssaIt = ssaValues.find(outIdx);
             if (ssaIt == ssaValues.end()) continue;
             auto argIt = slotToArgIdx.find(outIdx);
@@ -5019,18 +5372,47 @@ TritonIRModule TritonIRBuilder::buildSectionedModule(
           // would read from empty buffers causing illegal memory access (CUDA error 700).
           // Always fall back to C++ native execution in this case — even if seqK was derived
           // from external inputs, the actual K/V slot data may still be empty at execution time.
+          //
+          // For dual-buffer mode (static KV cache), the past_key buffer is pre-allocated
+          // to max sequence length and reused across decode steps. In this case, we check
+          // the buffer shape/capacity rather than total length, since the buffer may
+          // contain stale data from previous steps but is still valid for attention.
           bool kBufferValid = true;
           {
             auto effKShape = resolveShape(effectiveKSrc);
-            LongType effKLen = 1;
-            for (auto d : effKShape) effKLen *= d;
-            if (effKLen == 0 && seqK > 0) {
+            if (effKShape.empty() && seqK > 0) {
               kBufferValid = false;
               DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
-                        "effective K buffer (src=%d) is empty but seqK=%d%s. "
+                        "effective K buffer (src=%d) shape is empty but seqK=%d%s. "
                         "Falling back to C++ native.",
                         si, effectiveKSrc, seqK,
                         seqKDerivedFromExternal ? " (seqK derived from external inputs)" : "");
+            } else if (!effKShape.empty() && seqK > 0) {
+              // For dual-buffer mode (static KV cache), check shape capacity not total length
+              if (useDualBuffer) {
+                // past_key is 4D BHSD: [B, KvHeads, maxSeqLen, headDim]
+                // Valid if rank == 4 and seq dimension (dim 2) > 0
+                bool shapeValid = (effKShape.size() == 4 && effKShape[2] > 0);
+                if (!shapeValid) {
+                  kBufferValid = false;
+                  DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
+                            "past_key buffer (src=%d) has invalid shape: rank=%zu, seqDim=%d (expected 4D BHSD with seqDim>0)",
+                            si, effectiveKSrc, effKShape.size(),
+                            effKShape.size() >= 3 ? static_cast<int>(effKShape[2]) : -1);
+                }
+              } else {
+                // Non-dual-buffer: check total length (original behavior)
+                LongType effKLen = 1;
+                for (auto d : effKShape) effKLen *= d;
+                if (effKLen == 0) {
+                  kBufferValid = false;
+                  DSP_DIAG(COMPILE, "TritonIRBuilder: skipping FUSED_ATTENTION at slot %d — "
+                            "effective K buffer (src=%d) is empty but seqK=%d%s. "
+                            "Falling back to C++ native.",
+                            si, effectiveKSrc, seqK,
+                            seqKDerivedFromExternal ? " (seqK derived from external inputs)" : "");
+                }
+              }
             }
           }
 

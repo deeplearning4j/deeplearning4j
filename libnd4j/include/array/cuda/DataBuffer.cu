@@ -737,7 +737,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // - Use the captured stream instead of stream 0 (default stream syncs with captured stream)
   // - Skip cudaStreamSynchronize (explicit sync breaks capture)
   //
-  // CRITICAL: Allocate a PINNED HOST COPY of the data and use it as the H2D source.
+  //  Allocate a PINNED HOST COPY of the data and use it as the H2D source.
   // The original _primaryBuffer may be freed after capture (e.g., for temporary axis/dimension
   // parameter arrays in gap op Contexts). The CUDA graph's H2D memcpy node bakes the source
   // address — if that address points to freed memory, graph replay reads garbage data.
@@ -777,7 +777,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // If special buffer exists but is undersized, reallocate to prevent overrun
   if (_specialBuffer != nullptr && _specialAllocBytes > 0 && _specialAllocBytes < getLenInBytes()) {
     if (_isOwnerSpecial) {
-      // CRITICAL: Get device ID BEFORE releasing - buffer may be on different device due to failover
+      //  Get device ID BEFORE releasing - buffer may be on different device due to failover
       auto bufferDeviceId = _specialDeviceId.load();
       if (bufferDeviceId < 0) {
         bufferDeviceId = _deviceId.load();
@@ -968,7 +968,7 @@ void DataBuffer::freeGpuOnStream(void* stream) {
   // same stream, the pool can immediately reuse freed memory for new allocations
   // on that stream without cross-stream synchronization.
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
-    // CRITICAL: Use _specialDeviceId to get the device where buffer was actually allocated
+    //  Use _specialDeviceId to get the device where buffer was actually allocated
     // This may differ from _deviceId due to failover during OOM
     auto bufferDeviceId = _specialDeviceId.load();
     if (bufferDeviceId < 0) {

@@ -245,44 +245,48 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   const int limit = (sharedMemLimitBytes > 0) ? sharedMemLimitBytes : queryCudaSharedMemLimitBytes();
   AttentionTileChoice choice;
 
-  // Start with preferred tile sizes based on sequence lengths
-  int preferredM = (seqQ <= 32) ? 32 : ((seqQ <= 64) ? 64 : 128);
-  int preferredN = (seqK <= 32) ? 32 : ((seqK <= 64) ? 64 : 128);
-  preferredM = clampPow2(preferredM, 32, 128);
-  preferredN = clampPow2(preferredN, 32, 128);
+  // DECODE OPTIMIZATION: For seqQ=1 (single-token decode), use minimal blockM
+  // to avoid wasting compute on masked-out positions. Standard flash attention
+  // uses blockM=32-128, but decode only needs blockM=1-8.
+  if (seqQ <= 4) {
+    // Decode or very short prefix: blockM matches actual seqQ, blockN based on seqK
+    choice.blockM = (seqQ <= 1) ? 1 : ((seqQ <= 2) ? 2 : 4);
+    choice.blockN = (seqK <= 32) ? 32 : ((seqK <= 64) ? 64 : 128);
+  } else {
+    // Prefill or longer sequences: standard tile selection
+    int preferredM = (seqQ <= 32) ? 32 : ((seqQ <= 64) ? 64 : 128);
+    int preferredN = (seqK <= 32) ? 32 : ((seqK <= 64) ? 64 : 128);
+    preferredM = clampPow2(preferredM, 32, 128);
+    preferredN = clampPow2(preferredN, 32, 128);
+    choice.blockM = preferredM;
+    choice.blockN = preferredN;
+  }
 
-  // Try preferred tile sizes
-  choice.blockM = preferredM;
-  choice.blockN = preferredN;
+  // Check shared memory and scale down if needed
   int chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, choice.blockN);
-
   if (chosenBytes > limit) {
-    // Scale down: try smaller tiles until we fit
+    // Scale down blockN first (blockM is already minimal for decode)
     bool found = false;
-    for (int m = preferredM; m >= 32; m /= 2) {
-      for (int n = preferredN; n >= 32; n /= 2) {
-        int bytes = estimateFusedAttentionSharedMemBytes(headDim, m, n);
-        if (bytes <= limit) {
-          choice.blockM = m;
-          choice.blockN = n;
-          chosenBytes = bytes;
-          found = true;
-          break;
-        }
+    for (int n = choice.blockN; n >= 16; n /= 2) {
+      int bytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, n);
+      if (bytes <= limit) {
+        choice.blockN = n;
+        chosenBytes = bytes;
+        found = true;
+        break;
       }
-      if (found) break;
     }
     if (!found) {
       // Minimum possible tiles
-      choice.blockM = 32;
-      choice.blockN = 32;
+      choice.blockM = std::min(choice.blockM, 16);
+      choice.blockN = 16;
       chosenBytes = estimateFusedAttentionSharedMemBytes(headDim, choice.blockM, choice.blockN);
     }
   }
 
   choice.estimatedSharedMemBytes = chosenBytes;
   choice.fitsSharedMem = (chosenBytes <= limit);
-  choice.adjustedForSharedMem = (choice.blockM != preferredM || choice.blockN != preferredN);
+  choice.adjustedForSharedMem = true;  // Always report as adjusted for decode path
   choice.sharedMemLimitBytes = limit;
   return choice;
 }

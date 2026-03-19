@@ -10,7 +10,7 @@
 
 Require `-Pcuda -Dlibnd4j.chip=cuda`:
 ```bash
-mvn -Pcuda -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
+mvn -Pcuda -Dlibnd4j.triton=ON -Dlibnd4j.chip=cuda -Dlibnd4j.buildthreads=12 \
   -Dlibnd4j.log=libnd4j-build.log \
   -pl libnd4j,:nd4j-cuda-12.9 \
   clean install -DskipTests 2>&1 | tee cuda-build-output.log

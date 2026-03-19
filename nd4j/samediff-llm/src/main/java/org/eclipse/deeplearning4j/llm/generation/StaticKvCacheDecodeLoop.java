@@ -146,11 +146,14 @@ public class StaticKvCacheDecodeLoop {
             log.warn("  Could not extract embedding table, falling back to SameDiff.output() per token");
         }
 
-        // Build output name list
-        List<String> allOutputNames = new ArrayList<>();
-        allOutputNames.add(logitsOutputName);
-        allOutputNames.addAll(kvNames.keyNames);
-        allOutputNames.addAll(kvNames.valueNames);
+        // Prefill needs logits + present KV outputs. Once native KV retention is enabled,
+        // decode can request logits only while C++ scatters present KV internally.
+        List<String> fullOutputNameList = new ArrayList<>();
+        fullOutputNameList.add(logitsOutputName);
+        fullOutputNameList.addAll(kvNames.keyNames);
+        fullOutputNameList.addAll(kvNames.valueNames);
+        String[] fullOutputNames = fullOutputNameList.toArray(new String[0]);
+        String[] logitsOnlyOutputNames = new String[]{logitsOutputName};
 
         // State
         List<Integer> generatedTokens = new ArrayList<>();
@@ -167,6 +170,8 @@ public class StaticKvCacheDecodeLoop {
         long totalInputBuildNs = 0, totalDecoderNs = 0, totalLogitsDupNs = 0;
         long totalKvUpdateNs = 0, totalSamplingNs = 0;
         int detailSteps = 0;
+        long lateSteadyTotalNs = 0;
+        int lateSteadySteps = 0;
 
         // Static KV cache state
         Map<String, INDArray> staticKvBuffers = null;
@@ -211,15 +216,17 @@ public class StaticKvCacheDecodeLoop {
             }
 
             // Run decoder — use fast path when shapes are frozen (skips setCloseable overhead)
+            String[] requestedOutputNames = (usingStaticKv && kvScatterInCpp)
+                    ? logitsOnlyOutputNames : fullOutputNames;
             Map<String, INDArray> decoderOutputs;
             boolean useDirect = usingStaticKv && step >= 2
                     && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
             if (useDirect) {
                 decoderOutputs = decoder.outputDirect(
-                        decoderInputMap, allOutputNames.toArray(new String[0]));
+                        decoderInputMap, requestedOutputNames);
             } else {
                 decoderOutputs = decoder.output(
-                        decoderInputMap, allOutputNames.toArray(new String[0]));
+                        decoderInputMap, requestedOutputNames);
             }
 
             long tAfterDecoder = System.nanoTime();
@@ -347,12 +354,17 @@ public class StaticKvCacheDecodeLoop {
                             decoder.associateArrayWithVariable(e.getValue(), pastName);
                         }
                     }
-                    // Clear old plan and recompile with correct KV shapes
+                    // Clear old plan and recompile with correct KV shapes.
+                    // If native KV retention is enabled, decode only needs logits as a
+                    // final output; present KV tensors stay internal to the native plan.
+                    boolean cppKvEnabled = !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
+                    String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
                     decoder.clearDynamicShapePlanCache();
                     decoderSession.clearAllCaches();
                     dspExec = null;  // old executor invalidated
-                    log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={})", maxKvLen);
-                    decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE);
+                    log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
+                            maxKvLen, Arrays.toString(recompileOutputs));
+                    decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
                     // Re-fetch executor after recompilation
                     decoderSession = decoder.getOrCreateSession();
                     dspExec = decoderSession.getDynamicShapePlanExecutor();
@@ -365,10 +377,10 @@ public class StaticKvCacheDecodeLoop {
                         dspExec.setShapesFrozen(true);
                         dspExec.setTraceEnabled(true);
                         dspExec.setExecutionTimingEnabled(true);
+                        decoderDspExec = dspExec;
                         log.info("  [Perf] Shapes frozen AFTER recompile (stable Triton cache keys)");
 
                         // Configure C++ KV scatter: present outputs → static input buffers
-                        boolean cppKvEnabled = !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
                         DynamicShapePlan plan = cppKvEnabled ? dspExec.getCurrentPlan() : null;
                         if (plan != null) {
                             List<String> presentNames = new ArrayList<>();
@@ -378,11 +390,18 @@ public class StaticKvCacheDecodeLoop {
                             for (String pn : presentNames) {
                                 pastNames.add(pn.replace("present", "past_key_values"));
                             }
-                            dspExec.configureKvCacheRetention(plan, presentNames, pastNames,
-                                    (int) maxKvLen, (int) cachePos);
-                            kvScatterInCpp = true;
-                            log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}",
-                                    presentNames.size(), cachePos);
+                            boolean kvConfigured = dspExec.configureKvCacheRetention(
+                                    plan, presentNames, pastNames, (int) maxKvLen, (int) cachePos);
+                            if (kvConfigured) {
+                                kvScatterInCpp = true;
+                                log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}, decodeOutputs=logits-only",
+                                        presentNames.size(), cachePos);
+                            } else {
+                                decoderDspExec = null;
+                                decoder.clearDynamicShapePlanCache();
+                                decoderSession.clearAllCaches();
+                                log.warn("  [Perf] C++ KV scatter setup failed, falling back to Java KV scatter");
+                            }
                         }
                     }
                 }
@@ -438,6 +457,10 @@ public class StaticKvCacheDecodeLoop {
                 totalKvUpdateNs   += tAfterKvUpdate - tAfterLogitsDup;
                 totalSamplingNs   += stepElapsedNs - (tAfterKvUpdate - stepStart);
                 detailSteps++;
+            }
+            if (step >= 20) {
+                lateSteadyTotalNs += stepElapsedNs;
+                lateSteadySteps++;
             }
 
             if (step == 0) {
@@ -600,6 +623,15 @@ public class StaticKvCacheDecodeLoop {
         double avgDecodeMs = decodeTokens > 0
                 ? stepTimesMs.stream().mapToLong(Long::longValue).average().orElse(0) : 0;
         double decodeTokensPerSec = avgDecodeMs > 0 ? 1000.0 / avgDecodeMs : 0;
+        double steadyStateAvgMs = detailSteps > 0
+                ? (totalInputBuildNs + totalDecoderNs + totalLogitsDupNs + totalKvUpdateNs + totalSamplingNs)
+                    / (double) detailSteps / 1_000_000.0
+                : 0;
+        double steadyStateTokensPerSec = steadyStateAvgMs > 0 ? 1000.0 / steadyStateAvgMs : 0;
+        double lateSteadyAvgMs = lateSteadySteps > 0
+                ? lateSteadyTotalNs / (double) lateSteadySteps / 1_000_000.0
+                : 0;
+        double lateSteadyTokensPerSec = lateSteadyAvgMs > 0 ? 1000.0 / lateSteadyAvgMs : 0;
         long p50Ms = decodeTokens > 0 ? percentile(stepTimesMs, 50) : 0;
         long p90Ms = decodeTokens > 0 ? percentile(stepTimesMs, 90) : 0;
         long p99Ms = decodeTokens > 0 ? percentile(stepTimesMs, 99) : 0;
@@ -613,17 +645,31 @@ public class StaticKvCacheDecodeLoop {
         log.info("  Decode tokens:     {} (excluding prefill)", decodeTokens);
         log.info("  Avg decode time:   {}ms/token", String.format("%.1f", avgDecodeMs));
         log.info("  Decode throughput: {} tok/s", String.format("%.2f", decodeTokensPerSec));
+        if (steadyStateTokensPerSec > 0) {
+            log.info("  Steady-state:      {} tok/s (steps 3+)", String.format("%.2f", steadyStateTokensPerSec));
+        }
+        if (lateSteadyTokensPerSec > 0) {
+            log.info("  Late steady-state: {} tok/s (steps 20+)", String.format("%.2f", lateSteadyTokensPerSec));
+        }
         log.info("  Latency P50/P90/P99: {}ms / {}ms / {}ms", p50Ms, p90Ms, p99Ms);
         log.info("  Total decode time: {}ms ({} tokens)", totalDecodeMs, generatedTokens.size());
         log.info("========================================");
 
-        if (finishReason == GenerationResult.FinishReason.EOS) {
-            return GenerationResult.eos(generatedText, tokenIds, promptTokenIds.length,
-                    prefillTimeMs, totalDecodeMs);
-        } else {
-            return GenerationResult.maxTokens(generatedText, tokenIds, promptTokenIds.length,
-                    prefillTimeMs, totalDecodeMs);
-        }
+        int generated = tokenIds.length;
+        return GenerationResult.builder()
+                .text(generatedText)
+                .tokenIds(tokenIds)
+                .generatedTokenCount(generated)
+                .promptTokenCount(promptTokenIds.length)
+                .totalTokenCount(promptTokenIds.length + generated)
+                .finishReason(finishReason)
+                .firstTokenLatencyMs(prefillTimeMs)
+                .generationTimeMs(totalDecodeMs)
+                .tokensPerSecond(totalDecodeMs > 0 ? (generated * 1000.0 / totalDecodeMs) : 0)
+                .decodeTokensPerSecond(decodeTokensPerSec)
+                .steadyStateTokensPerSecond(steadyStateTokensPerSec)
+                .lateSteadyStateTokensPerSecond(lateSteadyTokensPerSec)
+                .build();
     }
 
     private void logDiagnostics(int step, Map<String, INDArray> decoderInputMap) {

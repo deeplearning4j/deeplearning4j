@@ -180,6 +180,14 @@ class SD_LIB_EXPORT Environment {
   // ops listed in the exclusion list. Default false = only ELEMENTWISE/IDENTITY compiled.
   std::atomic<bool> _tritonCompileAll{false};
 
+  // Triton segment fusion optimizations (temporary flags for testing)
+  std::atomic<bool> _tritonFuseIdentityShapes{true};     // Fuse identity reshape/expand_dims/squeeze into element-wise
+  std::atomic<bool> _tritonFuseCastChains{true};         // Fuse consecutive cast ops into single cast
+  std::atomic<bool> _tritonFuseTrivialGather{true};      // Fuse trivial (identity/offset) gather with element-wise
+  std::atomic<bool> _tritonSpecializePermuteSeq1{true};  // Treat identity permute patterns as no-op for seq=1
+  std::atomic<bool> _tritonEliminateConcatSplitPairs{true}; // Eliminate concat→split or split→concat pairs
+  std::atomic<bool> _tritonFusedMatmul{false};           // Fuse matmul→bias→activation (HIGH RISK - disabled by default)
+
   // Comma-separated list of nd4j op names to EXCLUDE from Triton compilation.
   // These ops fall back to cuBLAS/native execution. Typical exclusions:
   //   "matmul,mmul,tensormmul" — keep GEMMs on cuBLAS (usually faster)
@@ -220,11 +228,11 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspCastSinkMatmul{false};       // sink FP16→FP32 casts through matmul ops
   std::atomic<bool> _tritonConsolidatedArgTable{false}; // consolidate arg tables into single H2D copy
   std::atomic<bool> _tritonArgDirtyTracking{false};  // skip arg table refresh for static-only sub-kernels
-  std::atomic<bool> _tritonSectionFusion{false};     // merge non-EW sections into mega-kernels
+  std::atomic<bool> _tritonSectionFusion{true};      // ND4J_TRITON_SECTION_FUSION — merge consecutive same-type sections
 
   // Fusion scoring: cost-model-based section merge decisions
   std::atomic<bool> _tritonFusionScoring{true};      // ND4J_TRITON_FUSION_SCORING — use cost model for section merges
-  std::atomic<float> _tritonFusionMinScore{1.0f};    // ND4J_TRITON_FUSION_MIN_SCORE — minimum score to merge sections
+  std::atomic<float> _tritonFusionMinScore{5.0f};    // ND4J_TRITON_FUSION_MIN_SCORE — minimum score to merge sections (higher = more selective)
 
   // Symbolic shape ranges: avoid recompilation when dimensions change within observed bounds
   std::atomic<bool> _dspSymbolicShapes{true};         // ND4J_DSP_SYMBOLIC_SHAPES — enable range-based shape keys
@@ -602,6 +610,20 @@ class SD_LIB_EXPORT Environment {
   std::string tritonExcludeOps() const { return _tritonExcludeOps; }
   void setTritonExcludeOps(const std::string& ops) { _tritonExcludeOps = ops; }
   bool isTritonExcludedOp(const std::string& opName) const;
+
+  // Triton segment fusion optimization flags (temporary for testing)
+  bool tritonFuseIdentityShapes() { return _tritonFuseIdentityShapes.load(); }
+  void setTritonFuseIdentityShapes(bool v) { _tritonFuseIdentityShapes.store(v); }
+  bool tritonFuseCastChains() { return _tritonFuseCastChains.load(); }
+  void setTritonFuseCastChains(bool v) { _tritonFuseCastChains.store(v); }
+  bool tritonFuseTrivialGather() { return _tritonFuseTrivialGather.load(); }
+  void setTritonFuseTrivialGather(bool v) { _tritonFuseTrivialGather.store(v); }
+  bool tritonSpecializePermuteSeq1() { return _tritonSpecializePermuteSeq1.load(); }
+  void setTritonSpecializePermuteSeq1(bool v) { _tritonSpecializePermuteSeq1.store(v); }
+  bool tritonEliminateConcatSplitPairs() { return _tritonEliminateConcatSplitPairs.load(); }
+  void setTritonEliminateConcatSplitPairs(bool v) { _tritonEliminateConcatSplitPairs.store(v); }
+  bool tritonFusedMatmul() { return _tritonFusedMatmul.load(); }
+  void setTritonFusedMatmul(bool v) { _tritonFusedMatmul.store(v); }
 
   std::string tritonIncludeTypes() const { return _tritonIncludeTypes; }
   void setTritonIncludeTypes(const std::string& types) { _tritonIncludeTypes = types; }

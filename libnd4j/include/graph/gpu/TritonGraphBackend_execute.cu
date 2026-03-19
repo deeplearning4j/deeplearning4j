@@ -367,7 +367,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     // ── Phase 1: Prepare pass — pre-allocate outputs + sync inputs ──
     // This ensures all arrays have valid specialBuffer() pointers before
     // we populate the consolidated arg table.
-    // CRITICAL: During CUDA graph capture, skip pre-allocation and input syncing.
+    //  During CUDA graph capture, skip pre-allocation and input syncing.
     // The pre-capture warmup execution already allocated all outputs and synced
     // all inputs. Allocating during capture creates MemAlloc graph nodes with
     // addresses that become stale on replay. Input syncing is also unnecessary
@@ -432,7 +432,7 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
     // Synchronize the execution stream to ensure all prior allocations
     // (via CudaMemoryPool / cudaMallocAsync) and data transfers are
     // complete before reading specialBuffer() pointers.
-    // CRITICAL: cudaStreamSynchronize is ILLEGAL during stream capture —
+    //  cudaStreamSynchronize is ILLEGAL during stream capture —
     // it returns cudaErrorStreamCaptureUnsupported and invalidates the capture,
     // causing all subsequent CUDA operations to fail with "operation failed
     // due to a previous error during capture". During capture, output arrays

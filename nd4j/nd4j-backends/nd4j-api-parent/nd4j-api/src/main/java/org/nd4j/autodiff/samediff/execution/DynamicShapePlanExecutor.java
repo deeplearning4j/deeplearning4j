@@ -447,44 +447,87 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
     }
 
+    private static final int DIRECT_SLOT_MAPPING_OFFSET = 2;
+
+    private static int encodeDirectOutputSlot(int slotIdx) {
+        return -(slotIdx + DIRECT_SLOT_MAPPING_OFFSET);
+    }
+
+    private static int findExternalInputIndex(String[] extKeys, String inputName) {
+        for (int i = 0; i < extKeys.length; i++) {
+            if (extKeys[i].equals(inputName)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int findOutputSlotIndex(DynamicShapePlan plan, String outputName) {
+        Integer requestedSlot = plan.getOutputNameToSlotIndex().get(outputName);
+        if (requestedSlot != null) {
+            return requestedSlot;
+        }
+
+        for (DynamicShapeSlot slot : plan.getSlots()) {
+            String[] outputVarNames = slot.getOutputVarNames();
+            int[] outputSlotIndices = slot.getOutputSlotIndices();
+            if (outputVarNames == null || outputSlotIndices == null) {
+                continue;
+            }
+            int limit = Math.min(outputVarNames.length, outputSlotIndices.length);
+            for (int i = 0; i < limit; i++) {
+                if (outputName.equals(outputVarNames[i])) {
+                    return outputSlotIndices[i];
+                }
+            }
+        }
+
+        return -1;
+    }
+
     /**
      * Configure KV cache retention in the native C++ plan.
      * After this call, executeNative() skips copying KV outputs back to Java;
      * C++ scatters new KV entries into static input buffers internally.
      *
-     * @param plan             the current compiled plan
+     * <p>The mapping is resolved by output variable name, not only by requested output
+     * index, so decode can request logits only while still retaining present KV slots.</p>
+     *
+     * @param plan               the current compiled plan
      * @param presentOutputNames ordered list of present KV output names
-     * @param pastInputNames   ordered list of corresponding past_key_values input names
-     * @param maxKvLen         static KV buffer size along sequence dimension
-     * @param initialPos       initial cache position (prefillLen)
+     * @param pastInputNames     ordered list of corresponding past_key_values input names
+     * @param maxKvLen           static KV buffer size along sequence dimension
+     * @param initialPos         initial cache position (prefillLen)
+     * @return true if retention was configured successfully
      */
-    public void configureKvCacheRetention(DynamicShapePlan plan,
-                                          List<String> presentOutputNames,
-                                          List<String> pastInputNames,
-                                          int maxKvLen, int initialPos) {
+    public boolean configureKvCacheRetention(DynamicShapePlan plan,
+                                             List<String> presentOutputNames,
+                                             List<String> pastInputNames,
+                                             int maxKvLen, int initialPos) {
         if (nativePlanHandle == null || nativePlanHandle.isNull()) {
             log.warn("configureKvCacheRetention: native plan not yet compiled, skipping");
-            return;
+            return false;
+        }
+        if (presentOutputNames.size() != pastInputNames.size()) {
+            throw new IllegalArgumentException("presentOutputNames and pastInputNames must have the same size");
         }
 
         String[] extKeys = plan.getExternalInputKeys();
-        List<String> reqOutputs = new ArrayList<>(plan.getRequestedOutputs());
-
         int numMappings = presentOutputNames.size();
         int[] mappings = new int[numMappings * 3];
         for (int i = 0; i < numMappings; i++) {
-            // Find present output index in requested outputs
-            int presentIdx = reqOutputs.indexOf(presentOutputNames.get(i));
-            // Find past input index in external inputs
+            String presentName = presentOutputNames.get(i);
             String pastName = pastInputNames.get(i);
-            int pastExtIdx = -1;
-            for (int j = 0; j < extKeys.length; j++) {
-                if (extKeys[j].equals(pastName)) {
-                    pastExtIdx = j;
-                    break;
-                }
+
+            int presentSlotIdx = findOutputSlotIndex(plan, presentName);
+            int pastExtIdx = findExternalInputIndex(extKeys, pastName);
+            if (presentSlotIdx < 0 || pastExtIdx < 0) {
+                log.warn("configureKvCacheRetention: unresolved mapping present='{}' slot={} past='{}' extIdx={}",
+                        presentName, presentSlotIdx, pastName, pastExtIdx);
+                return false;
             }
-            mappings[i * 3] = presentIdx;
+
+            mappings[i * 3] = encodeDirectOutputSlot(presentSlotIdx);
             mappings[i * 3 + 1] = pastExtIdx;
             mappings[i * 3 + 2] = 2;  // seqDim is always 2 for [B,H,S,D]
         }
@@ -500,8 +543,9 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         this.kvCacheRetentionConfigured = true;
         this.kvRetentionOutputNames = new HashSet<>(presentOutputNames);
-        log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}, skip {} outputs",
+        log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}, retainedOutputs={}",
                 numMappings, maxKvLen, initialPos, kvRetentionOutputNames.size());
+        return true;
     }
 
     /**

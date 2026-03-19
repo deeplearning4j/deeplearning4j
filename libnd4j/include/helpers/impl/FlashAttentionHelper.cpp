@@ -300,7 +300,7 @@ void FlashAttentionHelper::forward4D(
       return;
     }
     
-    // Use workspace for permuted arrays - CRITICAL: this eliminates malloc/free per call
+    // Use workspace for permuted arrays -  this eliminates malloc/free per call
     std::vector<LongType> qPermShape = {batch, numHeads, seqLenQ, headDim};
     std::vector<LongType> kvPermShape = {batch, numKvHeads, seqLenKV, headDim};
     std::vector<LongType> permOrder = {0, 2, 1, 3};
@@ -332,7 +332,7 @@ void FlashAttentionHelper::forward4D(
     NDArray* outFlat = workspace->getBuffer("forward4d_outFlat", shape3D_Q, query->dataType(), context);
 
     // Prepare attention bias if present - broadcast+reshape to [batch*heads, seqQ, seqKV]
-    // CRITICAL: The fused CUDA kernel templates on query dtype (float32/float64/half).
+    //  The fused CUDA kernel templates on query dtype (float32/float64/half).
     // If the bias is a different dtype (e.g. LONG from ONNX mask), we MUST cast it
     // to match the query type, otherwise the kernel reads raw bytes as wrong type.
     NDArray* biasFlat = nullptr;

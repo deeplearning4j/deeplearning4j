@@ -1166,6 +1166,42 @@ public class CudaEnvironment implements Environment {
         e.setTritonIncludeTypes(types);
     }
 
+    // Triton fusion scoring
+    @Override
+    public boolean tritonFusionScoring() { return e.tritonFusionScoring(); }
+    @Override
+    public void setTritonFusionScoring(boolean v) { e.setTritonFusionScoring(v); }
+    @Override
+    public float tritonFusionMinScore() { return e.tritonFusionMinScore(); }
+    @Override
+    public void setTritonFusionMinScore(float f) { e.setTritonFusionMinScore(f); }
+
+    // Triton segment fusion flags
+    @Override
+    public boolean tritonFuseIdentityShapes() { return e.tritonFuseIdentityShapes(); }
+    @Override
+    public void setTritonFuseIdentityShapes(boolean v) { e.setTritonFuseIdentityShapes(v); }
+    @Override
+    public boolean tritonFuseCastChains() { return e.tritonFuseCastChains(); }
+    @Override
+    public void setTritonFuseCastChains(boolean v) { e.setTritonFuseCastChains(v); }
+    @Override
+    public boolean tritonFuseTrivialGather() { return e.tritonFuseTrivialGather(); }
+    @Override
+    public void setTritonFuseTrivialGather(boolean v) { e.setTritonFuseTrivialGather(v); }
+    @Override
+    public boolean tritonSpecializePermuteSeq1() { return e.tritonSpecializePermuteSeq1(); }
+    @Override
+    public void setTritonSpecializePermuteSeq1(boolean v) { e.setTritonSpecializePermuteSeq1(v); }
+    @Override
+    public boolean tritonEliminateConcatSplitPairs() { return e.tritonEliminateConcatSplitPairs(); }
+    @Override
+    public void setTritonEliminateConcatSplitPairs(boolean v) { e.setTritonEliminateConcatSplitPairs(v); }
+    @Override
+    public boolean tritonFusedMatmul() { return e.tritonFusedMatmul(); }
+    @Override
+    public void setTritonFusedMatmul(boolean v) { e.setTritonFusedMatmul(v); }
+
     // DSP batch-zero flags
     @Override
     public boolean dspBatchZero() { return e.dspBatchZero(); }

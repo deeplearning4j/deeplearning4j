@@ -244,7 +244,7 @@ namespace sd {
               oss << getDataTypeName(availableTypes[i]);
             }
         } else {
-            oss << "\nCRITICAL: No data types are available in this build!";
+            oss << "\n No data types are available in this build!";
             oss << "\nThis indicates a serious build configuration problem.";
 
             // Debug information to help diagnose the issue
@@ -333,7 +333,7 @@ namespace sd {
             }
             oss << "\n";
         } else {
-            oss << "CRITICAL: No types compiled!\n";
+            oss << " No types compiled!\n";
             oss << "This indicates a build configuration error.\n";
 
             // Show active defines for debugging

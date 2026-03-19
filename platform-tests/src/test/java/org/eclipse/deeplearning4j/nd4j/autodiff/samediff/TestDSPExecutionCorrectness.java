@@ -948,6 +948,24 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Same-shape permute where non-singleton axes really move.
+     * [2, 3, 2] -> permute [2,1,0] -> [2, 3, 2]
+     * The old identity-shape shortcut could misclassify this as a no-op just
+     * because the input and output shapes match.
+     */
+    @Test
+    @DisplayName("Triton: same-shape permute is not identity")
+    public void testTritonPermuteSameShapeNonIdentity() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 3, 2);
+        SDVariable permuted = sd.permute("permuted", x, 2, 1, 0);
+        SDVariable out = permuted.mul("out", sd.constant("scale", Nd4j.scalar(1.0f)));
+
+        INDArray input = Nd4j.randn(DataType.FLOAT, 2, 3, 2);
+        runTritonComparisonTest("permuteSameShapeNonIdentity", sd, Map.of("x", input), "out");
+    }
+
+    /**
      * 3D permute — simpler case to verify basic permute reindexing.
      * [4, 8, 16] → permute [2, 0, 1] → [16, 4, 8]
      */

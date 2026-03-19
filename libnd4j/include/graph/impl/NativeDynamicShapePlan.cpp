@@ -1181,10 +1181,17 @@ void NativeDynamicShapePlan::configureKvCacheRetention(
   if (numMappings > 0 && mappings != nullptr) {
     kvCacheMappings_ = new KvCacheMapping[numMappings];
     for (int i = 0; i < numMappings; i++) {
-      // Java passes requested output index; convert to absolute slot index
-      int reqOutputIdx = mappings[i * 3];
-      int slotIdx = (reqOutputIdx >= 0 && reqOutputIdx < numRequestedOutputs_)
-                    ? requestedOutputSlotIndices_[reqOutputIdx] : -1;
+      // Java passes either:
+      //   >= 0 : requested output index
+      //   <= -2: direct absolute slot index encoded as -(slotIdx + 2)
+      int outputRef = mappings[i * 3];
+      int slotIdx = -1;
+      if (outputRef <= -2) {
+        slotIdx = -outputRef - 2;
+        if (slotIdx < 0 || slotIdx >= totalOutputSlots_) slotIdx = -1;
+      } else if (outputRef >= 0 && outputRef < numRequestedOutputs_) {
+        slotIdx = requestedOutputSlotIndices_[outputRef];
+      }
       kvCacheMappings_[i].presentOutputSlotIdx = slotIdx;
       kvCacheMappings_[i].pastInputExternalIdx = mappings[i * 3 + 1];
       kvCacheMappings_[i].seqDim = mappings[i * 3 + 2];

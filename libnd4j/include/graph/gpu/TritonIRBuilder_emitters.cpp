@@ -751,7 +751,8 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
                                                  mlir::Value biasInput,
                                                  mlir::Value meanInput,
                                                  mlir::Value varianceInput,
-                                                 float epsilon) {
+                                                 float epsilon,
+                                                 int64_t logicalReductionSize) {
   std::string opKey = normalizeOpToken(opName);
 
   // Promote primary input to float for math-heavy normalization arithmetic.
@@ -768,7 +769,8 @@ mlir::Value TritonIRBuilder::emitNormalizationOp(mlir::OpBuilder& builder, mlir:
   int64_t normRank = tensorTy.getRank();
   if (axis < 0) axis += static_cast<int>(normRank);
   if (axis < 0 || axis >= static_cast<int>(normRank)) axis = 0;
-  int64_t reductionSize = tensorTy.getShape()[axis];
+  // Use logical reduction size (may differ from tensor shape if padded)
+  int64_t reductionSize = logicalReductionSize > 0 ? logicalReductionSize : tensorTy.getShape()[axis];
   if (reductionSize <= 0) reductionSize = 1;
 
   auto makeReduce = [&](mlir::Value src, int reduceAxis, auto combinerFn) -> mlir::Value {

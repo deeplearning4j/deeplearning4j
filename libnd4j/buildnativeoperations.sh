@@ -1216,7 +1216,7 @@ start_oom_monitor() {
     ) &
 
     OOM_MONITOR_PID=$!
-    local monitor_info="threshold: ${threshold}%, CRITICAL: ${critical_threshold}%, interval: ${interval}s"
+    local monitor_info="threshold: ${threshold}%,  ${critical_threshold}%, interval: ${interval}s"
     if [[ "$process_max_mb" -gt 0 ]]; then
         monitor_info="${monitor_info}, process limit: ${process_max_mb}MB"
     fi

@@ -1157,6 +1157,64 @@ public interface Environment {
 
     default void setTritonExcludeOps(String ops) {}
 
+    // ============== Triton Segment Fusion Flags (Temporary Testing) ==============
+
+    /**
+     * Fuse identity reshape/expand_dims/squeeze into element-wise sections.
+     * Reduces section count by ~200-300 for typical decoder models.
+     * Controlled by ND4J_TRITON_FUSE_IDENTITY_SHAPES env var.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonFuseIdentityShapes() { return true; }
+    default void setTritonFuseIdentityShapes(boolean v) {}
+
+    /**
+     * Fuse consecutive cast ops into single cast kernel.
+     * Reduces section count by ~50-100 when cast chains present.
+     * Controlled by ND4J_TRITON_FUSE_CAST_CHAINS env var.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonFuseCastChains() { return true; }
+    default void setTritonFuseCastChains(boolean v) {}
+
+    /**
+     * Fuse trivial (identity/offset) gather with following element-wise ops.
+     * Reduces section count by ~100-200 for seq=1 decode patterns.
+     * Controlled by ND4J_TRITON_FUSE_TRIVIAL_GATHER env var.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonFuseTrivialGather() { return true; }
+    default void setTritonFuseTrivialGather(boolean v) {}
+
+    /**
+     * Treat identity permute patterns as no-op for seq=1 decode.
+     * Reduces section count by ~60-100 for typical attention patterns.
+     * Controlled by ND4J_TRITON_SPECIALIZE_PERMUTE_SEQ1 env var.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonSpecializePermuteSeq1() { return true; }
+    default void setTritonSpecializePermuteSeq1(boolean v) {}
+
+    /**
+     * Eliminate concat→split or split→concat pairs (canceling patterns).
+     * Reduces section count by ~50-100 when patterns detected.
+     * Controlled by ND4J_TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS env var.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonEliminateConcatSplitPairs() { return true; }
+    default void setTritonEliminateConcatSplitPairs(boolean v) {}
+
+    /**
+     * Fuse matmul→bias→activation patterns (HIGH RISK - accuracy issues possible).
+     * Disabled by default. Enable only for testing.
+     * Controlled by ND4J_TRITON_FUSED_MATMUL env var.
+     * @return true if enabled (default: false)
+     */
+    default boolean tritonFusedMatmul() { return false; }
+    default void setTritonFusedMatmul(boolean v) {}
+
+    // ============== Triton Include Types ==============
+
     /**
      * When tritonCompileAll=true, only compile these section types (plus ELEMENTWISE/IDENTITY).
      * Comma-separated: "CONST_GEN,SHAPE_MANIP,GATHER,CONCAT,SPLIT,STACK,REDUCTION,ATTENTION,MATMUL"

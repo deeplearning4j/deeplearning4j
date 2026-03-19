@@ -230,6 +230,131 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     return cat == TritonOpCategory::SHAPE_MANIPULATION;
   };
 
+  auto shapeInfoToVector = [](const LongType* shapeInfo) -> std::vector<LongType> {
+    std::vector<LongType> shapeVec;
+    if (shapeInfo == nullptr) return shapeVec;
+    int rank = shape::rank(shapeInfo);
+    shapeVec.reserve(rank);
+    const LongType* dims = shape::shapeOf(shapeInfo);
+    for (int d = 0; d < rank; d++) {
+      shapeVec.push_back(dims[d]);
+    }
+    return shapeVec;
+  };
+
+  auto resolveShapeVector = [&](int srcIdx) -> std::vector<LongType> {
+    NDArray* arr = resolveArray(srcIdx);
+    if (arr != nullptr) {
+      std::vector<LongType> shapeVec;
+      shapeVec.reserve(arr->rankOf());
+      for (int d = 0; d < arr->rankOf(); d++) {
+        shapeVec.push_back(arr->sizeAt(d));
+      }
+      return shapeVec;
+    }
+
+    if (srcIdx >= 0) {
+      for (int s = startSlot; s <= endSlot; s++) {
+        auto& producerSlot = slots[s];
+        if (!producerSlot.shapeCacheValid || producerSlot.cachedOutputShapes.empty()) continue;
+        for (int o = 0; o < producerSlot.numOutputs; o++) {
+          if (o >= static_cast<int>(producerSlot.cachedOutputShapes.size())) break;
+          if (producerSlot.outputSlotIndices[o] == srcIdx) {
+            return shapeInfoToVector(producerSlot.cachedOutputShapes[o]);
+          }
+        }
+      }
+    }
+
+    return {};
+  };
+
+  auto getPermutationForSlot = [](const NativeSlot& slot, const std::string& opLower,
+                                  int rank) -> std::vector<int> {
+    std::vector<int> permutation;
+    if (slot.numIArgs > 0 && slot.iArgs != nullptr) {
+      permutation.reserve(slot.numIArgs);
+      for (int d = 0; d < slot.numIArgs; d++) {
+        permutation.push_back(static_cast<int>(slot.iArgs[d]));
+      }
+    }
+    if (permutation.empty() && opLower == "transpose") {
+      permutation.reserve(rank);
+      for (int d = rank - 1; d >= 0; d--) {
+        permutation.push_back(d);
+      }
+    }
+    return permutation;
+  };
+
+  auto isLayoutIdentityPermute = [](const std::vector<LongType>& inputShape,
+                                    const std::vector<int>& permutation) -> bool {
+    if (inputShape.empty() || inputShape.size() != permutation.size()) return false;
+
+    int nextPermIdx = 0;
+    for (int inputDim = 0; inputDim < static_cast<int>(inputShape.size()); inputDim++) {
+      if (inputShape[inputDim] == 1) continue;
+      while (nextPermIdx < static_cast<int>(permutation.size()) &&
+             inputShape[permutation[nextPermIdx]] == 1) {
+        nextPermIdx++;
+      }
+      if (nextPermIdx >= static_cast<int>(permutation.size()) ||
+          permutation[nextPermIdx] != inputDim) {
+        return false;
+      }
+      nextPermIdx++;
+    }
+    return true;
+  };
+
+  // Helper: detect whether a shape manipulation op is an IDENTITY (true no-op).
+  // reshape/squeeze/expand_dims are identity only when their logical shape is unchanged.
+  // permute/transpose are identity only when they move singleton dimensions and preserve
+  // the relative order of all non-singleton axes (the seq=1 decode fast path).
+  auto isIdentityShapeOp = [&](const NativeSlot& slot) -> bool {
+    if (!sd::Environment::getInstance().tritonFuseIdentityShapes()) return false;
+    auto cat = getOpCategory(slot.opName);
+    if (cat != TritonOpCategory::SHAPE_MANIPULATION) return false;
+
+    if (slot.numInputs <= 0 || slot.numOutputs <= 0) return false;
+    int inputSrcIdx = slot.inputSourceIndices[0];
+    std::vector<LongType> inputShape = resolveShapeVector(inputSrcIdx);
+    std::vector<LongType> outputShape = resolveShapeVector(slot.outputSlotIndices[0]);
+    if (outputShape.empty() && slot.shapeCacheValid && !slot.cachedOutputShapes.empty()) {
+      outputShape = shapeInfoToVector(slot.cachedOutputShapes[0]);
+    }
+    if (inputShape.empty() || outputShape.empty() || inputShape.size() != outputShape.size()) {
+      return false;
+    }
+
+    std::string opLower = slot.opName;
+    std::transform(opLower.begin(), opLower.end(), opLower.begin(), ::tolower);
+    bool isPermuteLike = (opLower == "permute" || opLower == "transpose");
+
+    if (!isPermuteLike) {
+      return inputShape == outputShape;
+    }
+
+    std::vector<int> permutation = getPermutationForSlot(slot, opLower,
+                                                         static_cast<int>(inputShape.size()));
+    if (permutation.size() != inputShape.size()) return false;
+
+    bool exactIdentity = true;
+    for (int d = 0; d < static_cast<int>(permutation.size()); d++) {
+      if (permutation[d] != d) {
+        exactIdentity = false;
+        break;
+      }
+    }
+    if (exactIdentity) return true;
+
+    if (!sd::Environment::getInstance().tritonSpecializePermuteSeq1()) {
+      return false;
+    }
+
+    return isLayoutIdentityPermute(inputShape, permutation);
+  };
+
   // Check if the very first op is a shape manipulation op
   if (isShapeManipOp(slots[startSlot])) {
     currentSectionHasShapeOp = true;
@@ -239,55 +364,101 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     auto cat = getOpCategory(slots[i].opName);
     auto sectionType = categoryToSectionType(cat, slots[i].opName);
 
-    // ALL shape manipulation ops get their own section so they run via
-    // native fallback (alwaysFallback=true in SectionTypeConfig.h).
+    // Check if this is a shape manipulation op
     bool isShapeOp = (sectionType == KernelSectionType::SHAPE_MANIPULATION);
+    
+    // Check if it's an IDENTITY shape op (true no-op, SSA forward only)
+    bool isIdentityShape = isIdentityShapeOp(slots[i]);
+    
+    // Identity shape ops are treated as element-wise for section merging purposes
+    if (isIdentityShape) {
+      sectionType = KernelSectionType::ELEMENTWISE;
+      isShapeOp = false;
+    }
 
     bool startNewSection = false;
 
     if (i == startSlot) {
       // First op — always part of current section
       startNewSection = false;
-    } else if (isShapeOp || currentSectionHasShapeOp) {
-      // Shape manipulation ops always get their own isolated section.
+    } else if (isShapeOp && !isIdentityShape) {
+      // Non-identity shape manipulation ops always get their own isolated section.
       // Both starting a shape op AND the op after a shape op section must break.
       // Permute/transpose require non-linear index reindexing; reshape/squeeze/
       // expand_dims cause zero-output bugs when SSA-forwarded in Triton kernels
       // due to buffer pointer resolution issues with ND4J view-based DataBuffers.
       // All shape ops run via native fallback (alwaysFallback=true).
       startNewSection = true;
-    } else if (sectionType == KernelSectionType::MATMUL ||
-               sectionType == KernelSectionType::FUSED_ATTENTION ||
-               sectionType == KernelSectionType::CONVOLUTION) {
-      // Non-element-wise ops always get their own section
-      startNewSection = true;
-    } else if (currentSection.type == KernelSectionType::MATMUL ||
-               currentSection.type == KernelSectionType::FUSED_ATTENTION ||
-               currentSection.type == KernelSectionType::CONVOLUTION) {
-      // After a non-element-wise section, start a new one
-      startNewSection = true;
-    } else if (!canMergeWithElementwise(currentSection.type)) {
-      // Non-mergeable section types can still absorb consecutive ops of the SAME type.
-      // This reduces section/barrier count without changing per-op emission semantics.
-      startNewSection = (sectionType != currentSection.type);
-    } else if (!canMergeWithElementwise(sectionType) && currentSection.type != sectionType) {
-      // Data movement ops that don't merge with element-wise
-      startNewSection = true;
-    } else if (canMergeWithElementwise(currentSection.type) && canMergeWithElementwise(sectionType)) {
-      // Both are element-wise compatible — check element count compatibility.
-      // The 1D kernel uses a single n_elements for the grid and mask.
-      // Ops with different output element counts cannot share the same grid:
-      // - If n_elements is too small, larger outputs get partially written (stale data)
-      // - If n_elements is too large, smaller outputs get buffer overflows
-      // Identity ops don't change element count, so they're always safe to merge.
-      // Shape manipulation ops (reshape, squeeze, expand_dims, permute) are now
-      // excluded from ELEMENTWISE sections entirely — they run via native fallback.
-      LongType opElements = getOutputElements(i);
-      if (opElements > 0 && currentSectionElements > 0 && opElements != currentSectionElements) {
-        // Element count changed — must start new section
-        // Exception: scalar ops (1 element) are broadcast-compatible with any size
-        if (opElements != 1 && currentSectionElements != 1) {
-          startNewSection = true;
+      currentSectionHasShapeOp = true;
+    } else if (isIdentityShape) {
+      // Identity shape ops (reshape where input shape == output shape) are no-ops.
+      // They can be fused into element-wise sections WITHOUT data movement.
+      // The Triton kernel just forwards the SSA value, no actual reshape happens.
+      // This is safe because:
+      // 1. Element count doesn't change (identity by definition)
+      // 2. No data movement needed (same buffer, just different view metadata)
+      // 3. SSA forwarding handles it correctly (no buffer pointer issues)
+      // Continue with current section, don't start new one
+      startNewSection = false;
+    } else {
+      // Check for cast chain: consecutive cast ops can fuse into single kernel
+      // Controlled by tritonFuseCastChains flag (default: true).
+      bool isCastChain = false;
+      if (sd::Environment::getInstance().tritonFuseCastChains()) {
+        auto currentCat = getOpCategory(slots[i].opName);
+        bool currentIsCast = (currentCat == TritonOpCategory::CAST);
+        bool sectionIsCast = (currentSection.type == KernelSectionType::ELEMENTWISE && currentSection.numOps > 0);
+        // Check if previous op in section was also a cast
+        if (currentIsCast && sectionIsCast && currentSection.numOps > 0) {
+          int prevSlot = i - 1;
+          if (prevSlot >= startSlot) {
+            auto prevCat = getOpCategory(slots[prevSlot].opName);
+            if (prevCat == TritonOpCategory::CAST) {
+              isCastChain = true;
+            }
+          }
+        }
+      }
+      
+      if (isCastChain) {
+        // Cast chain continuation: consecutive cast ops fuse into single kernel.
+        // This is safe because cast doesn't change element count.
+        // The fused cast kernel does direct dtype conversion (A→C) instead of
+        // intermediate (A→B→C), saving kernel launch overhead.
+        startNewSection = false;
+      } else if (sectionType == KernelSectionType::MATMUL ||
+                 sectionType == KernelSectionType::FUSED_ATTENTION ||
+                 sectionType == KernelSectionType::CONVOLUTION) {
+        // Non-element-wise ops always get their own section
+        startNewSection = true;
+      } else if (currentSection.type == KernelSectionType::MATMUL ||
+                 currentSection.type == KernelSectionType::FUSED_ATTENTION ||
+                 currentSection.type == KernelSectionType::CONVOLUTION) {
+        // After a non-element-wise section, start a new one
+        startNewSection = true;
+      } else if (!canMergeWithElementwise(currentSection.type)) {
+        // Non-mergeable section types can still absorb consecutive ops of the SAME type.
+        // This reduces section/barrier count without changing per-op emission semantics.
+        startNewSection = (sectionType != currentSection.type);
+      } else if (!canMergeWithElementwise(sectionType) && currentSection.type != sectionType) {
+        // Data movement ops that don't merge with element-wise
+        startNewSection = true;
+      } else if (canMergeWithElementwise(currentSection.type) && canMergeWithElementwise(sectionType)) {
+        // Both are element-wise compatible — check element count compatibility.
+        // The 1D kernel uses a single n_elements for the grid and mask.
+        // Ops with different output element counts cannot share the same grid:
+        // - If n_elements is too small, larger outputs get partially written (stale data)
+        // - If n_elements is too large, smaller outputs get buffer overflows
+        // Identity ops don't change element count, so they're always safe to merge.
+        // Shape manipulation ops (reshape, squeeze, expand_dims, permute) are now
+        // excluded from ELEMENTWISE sections entirely — they run via native fallback.
+        LongType opElements = getOutputElements(i);
+        if (opElements > 0 && currentSectionElements > 0 && opElements != currentSectionElements) {
+          // Element count changed — must start new section
+          // Exception: scalar ops (1 element) are broadcast-compatible with any size
+          if (opElements != 1 && currentSectionElements != 1) {
+            startNewSection = true;
+          }
         }
       }
     }
@@ -486,6 +657,40 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     sections.push_back(currentSection);
   }
 
+  // Post-processing: merge consecutive sections of the same type.
+  // This catches cases where section identification was overly conservative
+  // but adjacent sections could safely merge (same grid type, compatible element counts).
+  // Controlled by tritonSectionFusion flag.
+  if (sd::Environment::getInstance().tritonSectionFusion() && sections.size() > 1) {
+    std::vector<KernelSection> merged;
+    merged.reserve(sections.size());
+    
+    KernelSection* current = nullptr;
+    for (auto& sec : sections) {
+      if (current == nullptr) {
+        merged.push_back(sec);
+        current = &merged.back();
+      } else if (current->type == sec.type &&
+                 current->matmulM == sec.matmulM &&
+                 current->matmulN == sec.matmulN &&
+                 current->matmulK == sec.matmulK) {
+        // Same type and compatible special params — merge by extending end slot
+        current->endSlot = sec.endSlot;
+        current->numOps += sec.numOps;
+        // Grid requirement will be recomputed below
+      } else {
+        merged.push_back(sec);
+        current = &merged.back();
+      }
+    }
+    
+    if (merged.size() < sections.size()) {
+      DSP_DIAG(COMPILE, "TritonIRBuilder::identifySections: post-merge reduced %zu sections to %zu",
+               sections.size(), merged.size());
+      sections = std::move(merged);
+    }
+  }
+
   // Compute grid requirement for each section
   int defaultBlockSize = 1024;
   for (auto& sec : sections) {
@@ -577,7 +782,7 @@ void TritonIRBuilder::emitGridSync(mlir::OpBuilder& builder, mlir::Location loc,
       "  bar.sync 0;\n"
       "  mov.u32 %r_tid, %tid.x;\n"
       "  setp.eq.u32 %p_t0, %r_tid, 0;\n"
-      // CRITICAL: Initialize %p_loop to false for ALL threads.
+      //  Initialize %p_loop to false for ALL threads.
       // PTX registers are NOT zero-initialized (per PTX ISA spec).
       // Without this, non-thread-0 threads have undefined %p_loop,
       // and if it's stale-true they enter an infinite spin loop

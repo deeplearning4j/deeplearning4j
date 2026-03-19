@@ -21,6 +21,7 @@
 #if HAVE_TRITON
 
 #include <graph/gpu/FusionScoring.h>
+#include <graph/gpu/SectionTypeConfig.h>
 #include <graph/gpu/TritonIRBuilder.h>
 #include <graph/NativeDynamicShapePlan.h>
 #include <array/DataType.h>
@@ -35,38 +36,7 @@ namespace graph {
 // Grid type classification — sections with different grid types cannot be fused
 // because they require different launch configurations.
 static int gridTypeForSection(const KernelSection& sec) {
-  switch (sec.type) {
-    case KernelSectionType::ELEMENTWISE:
-    case KernelSectionType::IDENTITY:
-      return 0;  // 1D linear grid
-    case KernelSectionType::REDUCTION:
-    case KernelSectionType::NORMALIZATION:
-      return 1;  // Reduction grid (row-major, per-row threads)
-    case KernelSectionType::GATHER:
-    case KernelSectionType::GATHER_ND:
-    case KernelSectionType::SCATTER_ND:
-    case KernelSectionType::SCATTER_ND_UPDATE:
-      return 2;  // Indexed access grid
-    case KernelSectionType::CONCAT:
-    case KernelSectionType::SPLIT:
-    case KernelSectionType::SPLIT_V:
-    case KernelSectionType::STACK:
-      return 3;  // Data movement grid
-    case KernelSectionType::MATMUL:
-      return 4;  // 2D tiled grid
-    case KernelSectionType::FUSED_ATTENTION:
-      return 5;  // Multi-dim attention grid
-    case KernelSectionType::STRIDED_SLICE:
-    case KernelSectionType::TILE:
-      return 6;  // Strided access grid
-    case KernelSectionType::SHAPE_MANIPULATION:
-    case KernelSectionType::CONSTANT_GENERATION:
-      return 7;  // Host/metadata ops
-    case KernelSectionType::CONVOLUTION:
-      return 8;  // Convolution grid
-    default:
-      return -1;
-  }
+  return static_cast<int>(getSectionTypeConfig(sec.type).gridType);
 }
 
 // Estimate shared memory usage per section (heuristic based on type + ops).

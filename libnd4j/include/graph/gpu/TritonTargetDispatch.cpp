@@ -42,7 +42,7 @@
 
 // ─── Platform GPU headers ───────────────────────────────────────────────────
 //
-// CRITICAL: Under ZLUDA builds, SD_CUDA is defined even though the real GPU
+//  Under ZLUDA builds, SD_CUDA is defined even though the real GPU
 // may be AMD (HIP) or Intel (Level Zero). ZLUDA intercepts CUDA API calls
 // and translates them, but it expects PTX for cuModuleLoadDataEx.
 //

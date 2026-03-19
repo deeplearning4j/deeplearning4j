@@ -418,7 +418,8 @@ class TritonIRBuilder {
                                          mlir::Value biasInput,
                                          mlir::Value meanInput,
                                          mlir::Value varianceInput,
-                                         float epsilon = 1e-5f);
+                                         float epsilon = 1e-5f,
+                                         int64_t logicalReductionSize = -1);
 
   // ── Kernel patterns (TritonIRBuilder_kernels.cpp) ──
 

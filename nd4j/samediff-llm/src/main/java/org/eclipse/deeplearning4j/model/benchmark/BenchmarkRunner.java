@@ -23,10 +23,19 @@ package org.eclipse.deeplearning4j.model.benchmark;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.deeplearning4j.llm.generation.GenerationResult;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
+import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
+import org.nd4j.autodiff.samediff.execution.PlanIntrospection;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.bytedeco.javacpp.Pointer;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +50,32 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class BenchmarkRunner {
+    private static final String OP_TIMING_ENABLED_PROPERTY = "vlm.benchmark.opTiming";
+    private static final String OP_TIMING_DETAILED_PROPERTY = "vlm.benchmark.opTimingDetailed";
+    private static final String OP_TIMING_TOP_N_PROPERTY = "vlm.benchmark.opTimingTopN";
+    private static final String OP_TIMING_CSV_DIR_PROPERTY = "vlm.benchmark.opTimingCsvDir";
+
+    private static class PlanMetrics {
+        private final String compactSummary;
+        private final String detailLog;
+        private final String primaryLabel;
+        private final int primaryCapturedSegments;
+        private final int primaryTotalSegments;
+        private final int primaryHostOnlyOps;
+        private final Boolean primaryCaptureValid;
+
+        private PlanMetrics(String compactSummary, String detailLog, String primaryLabel,
+                            int primaryCapturedSegments, int primaryTotalSegments,
+                            int primaryHostOnlyOps, Boolean primaryCaptureValid) {
+            this.compactSummary = compactSummary;
+            this.detailLog = detailLog;
+            this.primaryLabel = primaryLabel;
+            this.primaryCapturedSegments = primaryCapturedSegments;
+            this.primaryTotalSegments = primaryTotalSegments;
+            this.primaryHostOnlyOps = primaryHostOnlyOps;
+            this.primaryCaptureValid = primaryCaptureValid;
+        }
+    }
 
     /**
      * Function that performs model inference given a config.
@@ -70,13 +105,14 @@ public class BenchmarkRunner {
      * Run a single benchmark configuration.
      *
      * @param config      the configuration to test
+     * @param modelNames  stable names for models, used in diagnostics
      * @param models      models to reset between configs
      * @param compileFn   function to compile models for this config
      * @param decodeFn    function to run inference
      * @param validateFn  function to validate results
      * @return the benchmark result
      */
-    public static BenchmarkResult runSingle(BenchmarkConfig config, List<SameDiff> models,
+    public static BenchmarkResult runSingle(BenchmarkConfig config, List<String> modelNames, List<SameDiff> models,
                                              CompileFunction compileFn,
                                              DecodeFunction decodeFn,
                                              ValidateFunction validateFn) {
@@ -100,9 +136,17 @@ public class BenchmarkRunner {
             compileFn.compile(config);
             cr.setCompileMs(System.currentTimeMillis() - compileStart);
 
+            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
             // 4. Decode
+            beginDecodeOpTiming(nativeOps);
+            GenerationResult result;
             long decodeStart = System.currentTimeMillis();
-            GenerationResult result = decodeFn.decode(config);
+            try {
+                result = decodeFn.decode(config);
+            } finally {
+                finishDecodeOpTiming(config, nativeOps);
+            }
             cr.setDecodeMs(System.currentTimeMillis() - decodeStart);
 
             // Record decode metrics
@@ -114,20 +158,29 @@ public class BenchmarkRunner {
             }
             cr.setTokenCount(result.getGeneratedTokenCount());
             cr.setTokPerSec(result.getTokensPerSecond());
+            cr.setDecodeTokPerSec(result.getDecodeTokensPerSecond());
+            cr.setSteadyTokPerSec(result.getSteadyStateTokensPerSecond());
+            cr.setLateSteadyTokPerSec(result.getLateSteadyStateTokensPerSecond());
             cr.setFirstTokenMs(result.getFirstTokenLatencyMs());
             cr.setFinishReason(result.getFinishReason());
             cr.setGeneratedText(result.getText());
 
             // Record Triton counters
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             if (nativeOps.isTritonAvailable()) {
                 cr.setTritonLaunches(nativeOps.getTritonKernelLaunchCount());
                 cr.setTritonCacheHits(nativeOps.getTritonCacheHitCount());
             }
 
-            log.info("  {} -> {} tokens, {} tok/s (firstToken={}ms), finish={}, text: '{}'",
+            PlanMetrics planMetrics = collectPlanMetrics(config, modelNames, models, nativeOps);
+            cr.setPlanMetricsSummary(planMetrics.compactSummary);
+            if (!planMetrics.detailLog.isEmpty()) {
+                log.info("  DSP plan diagnostics:\n{}", planMetrics.detailLog);
+            }
+            assertPrimaryCaptureIfRequired(config, planMetrics);
+
+            log.info("  {} -> {} tokens, {} (firstToken={}ms), finish={}, text: '{}'",
                     config.getName(), cr.getTokenCount(),
-                    String.format("%.2f", cr.getTokPerSec()),
+                    formatThroughput(cr),
                     cr.getFirstTokenMs(), cr.getFinishReason(),
                     result.getText().substring(0, Math.min(100, result.getText().length())));
 
@@ -150,6 +203,7 @@ public class BenchmarkRunner {
      * Run a matrix of benchmark configurations.
      *
      * @param configs        configurations to test
+     * @param modelNames     stable names for models, used in diagnostics
      * @param models         models to reset between configs
      * @param compileFn      function to compile models
      * @param decodeFn       function to run inference
@@ -158,6 +212,7 @@ public class BenchmarkRunner {
      * @return list of results, one per config
      */
     public static List<BenchmarkResult> runMatrix(List<BenchmarkConfig> configs,
+                                                   List<String> modelNames,
                                                    List<SameDiff> models,
                                                    CompileFunction compileFn,
                                                    DecodeFunction decodeFn,
@@ -180,7 +235,7 @@ public class BenchmarkRunner {
             log.info("[{}/{}] CONFIG: {}", i + 1, filtered.size(), config);
             log.info("============================================================");
 
-            BenchmarkResult cr = runSingle(config, models, compileFn, decodeFn, validateFn);
+            BenchmarkResult cr = runSingle(config, modelNames, models, compileFn, decodeFn, validateFn);
             results.add(cr);
             if (!cr.isPassed()) failures++;
             log.info("  {}", cr.summary());
@@ -211,12 +266,13 @@ public class BenchmarkRunner {
         String fastestConfig = "", slowestConfig = "";
         for (BenchmarkResult cr : results) {
             if (!cr.isPassed()) continue;
-            if (cr.getTokPerSec() > maxTokPerSec) { maxTokPerSec = cr.getTokPerSec(); fastestConfig = cr.getConfigName(); }
-            if (cr.getTokPerSec() < minTokPerSec) { minTokPerSec = cr.getTokPerSec(); slowestConfig = cr.getConfigName(); }
+            double effectiveTokPerSec = effectiveTokPerSec(cr);
+            if (effectiveTokPerSec > maxTokPerSec) { maxTokPerSec = effectiveTokPerSec; fastestConfig = cr.getConfigName(); }
+            if (effectiveTokPerSec < minTokPerSec) { minTokPerSec = effectiveTokPerSec; slowestConfig = cr.getConfigName(); }
             if (cr.getCompileMs() > maxCompileMs) maxCompileMs = cr.getCompileMs();
         }
         if (maxTokPerSec > 0) {
-            log.info("Performance range: {} tok/s ({}) to {} tok/s ({}), max compile={}ms",
+            log.info("Performance range (late steady-state when available): {} tok/s ({}) to {} tok/s ({}), max compile={}ms",
                     String.format("%.2f", minTokPerSec), slowestConfig,
                     String.format("%.2f", maxTokPerSec), fastestConfig, maxCompileMs);
         }
@@ -250,5 +306,232 @@ public class BenchmarkRunner {
             throw new IllegalArgumentException("No configs matched filter: " + pattern);
         }
         return filtered;
+    }
+
+    private static PlanMetrics collectPlanMetrics(BenchmarkConfig config, List<String> modelNames,
+                                                  List<SameDiff> models, NativeOps nativeOps) {
+        String primaryCompact = "";
+        StringBuilder details = new StringBuilder();
+        String primaryLabel = "";
+        int primaryCapturedSegments = -1;
+        int primaryTotalSegments = -1;
+        int primaryHostOnlyOps = -1;
+        Boolean primaryCaptureValid = null;
+
+        for (int i = 0; i < models.size(); i++) {
+            SameDiff model = models.get(i);
+            String label = resolveModelLabel(modelNames, i);
+
+            InferenceSession session = model.getOrCreateSession();
+            if (session == null) continue;
+
+            DynamicShapePlanExecutor executor = session.getDynamicShapePlanExecutor();
+            if (executor == null) continue;
+
+            Pointer handle = executor.getNativePlanHandle();
+            if (handle == null || handle.isNull()) continue;
+
+            int totalSegments = nativeOps.getPlanNumSegments(handle);
+            if (totalSegments < 0) continue;
+
+            int capturedSegments = nativeOps.getPlanNumCapturedGraphSegments(handle);
+            int totalReplays = nativeOps.getPlanTotalGraphReplays(handle);
+            int hostOnlyOps = nativeOps.getPlanNumHostOnlyOps(handle);
+            String hostOnlyNames = safeTrim(nativeOps.getPlanHostOnlyOpNames(handle));
+            String captureStats = sanitizeCaptureStats(nativeOps.getPlanCaptureStats(handle));
+
+            boolean captureExpected = expectsGraphCapture(config);
+            Boolean captureValid = null;
+            if (captureExpected && capturedSegments > 0) {
+                captureValid = nativeOps.validatePlanCapturedGraph(handle);
+            }
+
+            StringBuilder compactEntry = new StringBuilder()
+                    .append(label)
+                    .append("{")
+                    .append(capturedSegments).append("/").append(totalSegments).append(" cap,")
+                    .append(totalReplays).append(" replay,")
+                    .append(hostOnlyOps).append(" host");
+            if (captureValid != null) {
+                compactEntry.append(",").append(captureValid ? "valid" : "INVALID");
+            }
+            if (!captureStats.isEmpty()) {
+                compactEntry.append(",").append(captureStats);
+            }
+            compactEntry.append("}");
+            if (i == 0) {
+                primaryCompact = compactEntry.toString();
+                primaryLabel = label;
+                primaryCapturedSegments = capturedSegments;
+                primaryTotalSegments = totalSegments;
+                primaryHostOnlyOps = hostOnlyOps;
+                primaryCaptureValid = captureValid;
+            }
+
+            details.append("  ")
+                    .append(label)
+                    .append(": segments=").append(totalSegments)
+                    .append(", captured=").append(capturedSegments)
+                    .append(", replays=").append(totalReplays)
+                    .append(", hostOnly=").append(hostOnlyOps);
+            if (captureValid != null) {
+                details.append(", captureValid=").append(captureValid);
+            }
+            if (!captureStats.isEmpty()) {
+                details.append(", stats=").append(captureStats);
+            }
+            details.append("\n");
+
+            if (hostOnlyOps > 0 && !hostOnlyNames.isEmpty()) {
+                details.append("    hostOnlyOps: ").append(hostOnlyNames).append("\n");
+            }
+
+            String replaySummary = safeTrim(PlanIntrospection.formatReplaySummary(handle));
+            if (!replaySummary.isEmpty()) {
+                for (String line : replaySummary.split("\\R")) {
+                    details.append("    ").append(line).append("\n");
+                }
+            }
+        }
+
+        return new PlanMetrics(primaryCompact, trimTrailingNewline(details), primaryLabel,
+                primaryCapturedSegments, primaryTotalSegments, primaryHostOnlyOps, primaryCaptureValid);
+    }
+
+    private static boolean expectsGraphCapture(BenchmarkConfig config) {
+        return config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS;
+    }
+
+    private static String resolveModelLabel(List<String> modelNames, int index) {
+        if (modelNames != null && index < modelNames.size()) {
+            String label = modelNames.get(index);
+            if (label != null && !label.isEmpty()) {
+                return label;
+            }
+        }
+        return "model" + index;
+    }
+
+    private static String sanitizeCaptureStats(String captureStats) {
+        String trimmed = safeTrim(captureStats);
+        return trimmed.replace('|', ',');
+    }
+
+    private static String safeTrim(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static String trimTrailingNewline(StringBuilder sb) {
+        int length = sb.length();
+        if (length > 0 && sb.charAt(length - 1) == '\n') {
+            sb.setLength(length - 1);
+        }
+        return sb.toString();
+    }
+
+    private static void assertPrimaryCaptureIfRequired(BenchmarkConfig config, PlanMetrics planMetrics) {
+        if (!expectsGraphCapture(config)) {
+            return;
+        }
+        if (planMetrics.primaryTotalSegments <= 0) {
+            throw new IllegalStateException("Expected graph capture on primary model but no primary plan segments were found");
+        }
+        if (planMetrics.primaryCapturedSegments <= 0) {
+            throw new IllegalStateException(String.format(
+                    "Expected graph capture on primary model '%s' but capturedSegments=%d/%d",
+                    planMetrics.primaryLabel, planMetrics.primaryCapturedSegments, planMetrics.primaryTotalSegments));
+        }
+        if (planMetrics.primaryHostOnlyOps > 0) {
+            throw new IllegalStateException(String.format(
+                    "Primary model '%s' has %d host-only ops in captured graph",
+                    planMetrics.primaryLabel, planMetrics.primaryHostOnlyOps));
+        }
+        if (planMetrics.primaryCaptureValid != null && !planMetrics.primaryCaptureValid) {
+            throw new IllegalStateException(String.format(
+                    "Captured graph validation failed for primary model '%s'",
+                    planMetrics.primaryLabel));
+        }
+    }
+
+    private static double effectiveTokPerSec(BenchmarkResult result) {
+        if (result.getLateSteadyTokPerSec() > 0) {
+            return result.getLateSteadyTokPerSec();
+        }
+        if (result.getSteadyTokPerSec() > 0) {
+            return result.getSteadyTokPerSec();
+        }
+        if (result.getDecodeTokPerSec() > 0) {
+            return result.getDecodeTokPerSec();
+        }
+        return result.getTokPerSec();
+    }
+
+    private static String formatThroughput(BenchmarkResult result) {
+        StringBuilder sb = new StringBuilder(String.format("overall=%.2f tok/s", result.getTokPerSec()));
+        if (result.getDecodeTokPerSec() > 0) {
+            sb.append(String.format(", decode=%.2f tok/s", result.getDecodeTokPerSec()));
+        }
+        if (result.getSteadyTokPerSec() > 0) {
+            sb.append(String.format(", steady=%.2f tok/s", result.getSteadyTokPerSec()));
+        }
+        if (result.getLateSteadyTokPerSec() > 0) {
+            sb.append(String.format(", lateSteady=%.2f tok/s", result.getLateSteadyTokPerSec()));
+        }
+        return sb.toString();
+    }
+
+    private static void beginDecodeOpTiming(NativeOps nativeOps) {
+        if (!isDecodeOpTimingEnabled()) {
+            return;
+        }
+        nativeOps.setOpTimingEnabled(0, 0);
+        nativeOps.resetOpTiming();
+        nativeOps.setOpTimingEnabled(1, isDecodeOpTimingDetailed() ? 1 : 0);
+    }
+
+    private static void finishDecodeOpTiming(BenchmarkConfig config, NativeOps nativeOps) {
+        if (!isDecodeOpTimingEnabled()) {
+            return;
+        }
+
+        try {
+            nativeOps.flushOpTiming();
+
+            int topN = Integer.getInteger(OP_TIMING_TOP_N_PROPERTY, 12);
+            if (topN > 0) {
+                log.info("  Decode op timing hotspots for {}", config.getName());
+                nativeOps.printOpTimingStats(topN);
+            }
+
+            String csvDir = System.getProperty(OP_TIMING_CSV_DIR_PROPERTY);
+            if (csvDir != null && !csvDir.isBlank()) {
+                Path outputDir = Paths.get(csvDir);
+                Files.createDirectories(outputDir);
+                Path csvPath = outputDir.resolve(sanitizeFileName(config.getName()) + ".csv");
+                int exported = nativeOps.exportOpTimingCSV(csvPath.toString());
+                if (exported != 0) {
+                    log.info("  Decode op timing CSV: {}", csvPath);
+                } else {
+                    log.warn("  Decode op timing CSV export failed: {}", csvPath);
+                }
+            }
+        } catch (IOException e) {
+            log.warn("  Failed to write decode op timing CSV for {}", config.getName(), e);
+        } finally {
+            nativeOps.setOpTimingEnabled(0, 0);
+            nativeOps.resetOpTiming();
+        }
+    }
+
+    private static boolean isDecodeOpTimingEnabled() {
+        return Boolean.parseBoolean(System.getProperty(OP_TIMING_ENABLED_PROPERTY, "false"));
+    }
+
+    private static boolean isDecodeOpTimingDetailed() {
+        return Boolean.parseBoolean(System.getProperty(OP_TIMING_DETAILED_PROPERTY, "false"));
+    }
+
+    private static String sanitizeFileName(String value) {
+        return value.replaceAll("[^A-Za-z0-9._-]+", "_");
     }
 }

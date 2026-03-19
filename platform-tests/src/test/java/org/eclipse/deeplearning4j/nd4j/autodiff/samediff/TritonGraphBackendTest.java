@@ -96,6 +96,8 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     }
 
     // ─── Helper methods ──────────────────────────────────────────────────────
+    // Note: Basic helper methods moved to TritonTestUtils for reuse across test classes.
+    // This class retains specialized versions with Triton counter checking and iteration.
 
     private Pointer compileNativePlan(DynamicShapePlan plan) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -663,6 +665,26 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Test: a non-zero-offset strided_slice view feeding Triton elementwise ops.
+     * If Triton passes the base specialBuffer() instead of the view-adjusted device
+     * pointer, the downstream add/mul chain reads the wrong slice and diverges.
+     */
+    @Test
+    public void testTritonOffsetViewConsumer() {
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("input", DataType.FLOAT, 1, 8);
+        SDVariable sliced = sd.stridedSlice("sliced", x,
+                new long[]{0, 2}, new long[]{1, 6}, new long[]{1, 1});  // view of input[0,2:6]
+        SDVariable shifted = sliced.add("shifted",
+                sd.constant("bias", Nd4j.createFromArray(new float[][]{{10f, 20f, 30f, 40f}})));
+        SDVariable result = shifted.mul("result",
+                sd.constant("scale", Nd4j.createFromArray(new float[][]{{1f, 2f, 3f, 4f}})));
+
+        INDArray input = Nd4j.createFromArray(new float[][]{{1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f}});
+        runStrictTritonOpTest("testTritonOffsetViewConsumer", sd, Map.of("input", input), "result");
+    }
+
+    /**
      * Test: reshape op — reshapes a 2D tensor to a different 2D shape.
      * x=[4,8] -> reshape(2,16) -> result=[2,16]
      */
@@ -898,124 +920,12 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
     // ─── VLM op coverage tests ──────────────────────────────────────────────
 
     // Helper: build graph, get reference output, compile native plan, execute, compare.
+    // Uses TritonTestUtils for common functionality.
     private void runOpTest(String testName, SameDiff sd, Map<String, INDArray> ph, String outputName) {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        Map<String, INDArray> ref = sd.output(ph, outputName);
-        INDArray refOutput = ref.get(outputName);
-        assertNotNull(refOutput, testName + ": reference output is null");
-
-        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, outputName);
-        assertNotNull(plan, testName + ": plan is null");
-        Pointer planHandle = compileNativePlan(plan);
-        if (planHandle == null) { log.info("Skipping {} (native executor not supported)", testName); return; }
-        try {
-            INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
-
-            // Diagnostic: print external input keys and first values
-            String[] extKeys = plan.getExternalInputKeys();
-            log.info("{}: {} external inputs, keys={}", testName, extInputs.length, java.util.Arrays.toString(extKeys));
-            for (int ei = 0; ei < extInputs.length; ei++) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("  ext[").append(ei).append("] key=").append(extKeys[ei])
-                  .append(" shape=").append(java.util.Arrays.toString(extInputs[ei].shape()))
-                  .append(" first4=[");
-                long len = Math.min(4, extInputs[ei].length());
-                for (long e = 0; e < len; e++) {
-                    if (e > 0) sb.append(", ");
-                    sb.append(String.format("%.6f", extInputs[ei].getFloat(e)));
-                }
-                sb.append("]");
-                log.info(sb.toString());
-            }
-            // Print reference output first values
-            {
-                StringBuilder sb = new StringBuilder("  refOutput first4=[");
-                long len = Math.min(4, refOutput.length());
-                for (long e = 0; e < len; e++) {
-                    if (e > 0) sb.append(", ");
-                    sb.append(String.format("%.6f", refOutput.getFloat(e)));
-                }
-                sb.append("] order=").append(refOutput.ordering())
-                  .append(" strides=").append(java.util.Arrays.toString(refOutput.stride()))
-                  .append(" shape=").append(java.util.Arrays.toString(refOutput.shape()));
-                log.info(sb.toString());
-            }
-            // Manual verification: compute (x+y)*x - y directly with Nd4j ops
-            if (ph.containsKey("x") && ph.containsKey("y")) {
-                INDArray xArr = ph.get("x");
-                INDArray yArr = ph.get("y");
-                INDArray manual = xArr.add(yArr).mul(xArr).sub(yArr);
-                StringBuilder sb = new StringBuilder("  manual first4=[");
-                long len = Math.min(4, manual.length());
-                for (long e = 0; e < len; e++) {
-                    if (e > 0) sb.append(", ");
-                    sb.append(String.format("%.6f", manual.getFloat(e)));
-                }
-                sb.append("]");
-                log.info(sb.toString());
-                double manualRefDiff = refOutput.sub(manual).amaxNumber().doubleValue();
-                log.info("  manual vs ref maxDiff={}", manualRefDiff);
-            }
-
-            // Reset Triton counters before execution
-            nativeOps.resetTritonCounters();
-            long launchesBefore = nativeOps.getTritonKernelLaunchCount();
-
-            for (int iter = 0; iter < 3; iter++) {
-                Map<String, INDArray> nativeResults = executeNativePlan(planHandle, plan, extInputs);
-                INDArray nativeOutput = nativeResults.get(outputName);
-                assertNotNull(nativeOutput, testName + ": null at iter " + iter);
-                double maxDiff = refOutput.sub(nativeOutput).amaxNumber().doubleValue();
-                log.info("{} iter {}: maxDiff={}", testName, iter, maxDiff);
-
-                long launchesNow = nativeOps.getTritonKernelLaunchCount();
-                boolean tritonUsedThisIter = (launchesNow > launchesBefore);
-                if (tritonUsedThisIter) {
-                    launchesBefore = launchesNow;
-                }
-                if (maxDiff >= TOLERANCE) {
-                    // Dump differences for debugging before failing
-                    INDArray diff = refOutput.sub(nativeOutput);
-                    long len = Math.min(refOutput.length(), 64);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("  ref=[");
-                    for (long e = 0; e < len; e++) {
-                        if (e > 0) sb.append(", ");
-                        sb.append(String.format("%.6f", refOutput.getFloat(e)));
-                    }
-                    sb.append("]");
-                    log.error(sb.toString());
-                    sb = new StringBuilder();
-                    sb.append("  nat=[");
-                    for (long e = 0; e < len; e++) {
-                        if (e > 0) sb.append(", ");
-                        sb.append(String.format("%.6f", nativeOutput.getFloat(e)));
-                    }
-                    sb.append("]");
-                    log.error(sb.toString());
-                }
-                assertTrue(maxDiff < TOLERANCE, testName + " iter " + iter +
-                           ": maxDiff=" + maxDiff +
-                           (tritonUsedThisIter ? " (Triton kernel)" : " (slot-by-slot)"));
-
-                // After warmup (iter 0), freeze shapes so Triton compilation triggers on iter 1
-                if (iter == 0) {
-                    nativeOps.setPlanShapesFrozen(planHandle, true);
-                }
-            }
-
-            // Check Triton invocation (warn if not used — some segments fall back to CUDA graphs)
-            long launchesAfter = nativeOps.getTritonKernelLaunchCount();
-            long cacheHitsAfter = nativeOps.getTritonCacheHitCount();
-            log.info("{}: Triton kernel launches = {}, cache hits = {}", testName, launchesAfter, cacheHitsAfter);
-            if (launchesAfter == 0) {
-                log.warn("{}: Triton was NOT used (0 kernel launches) — segment may have fallen back to CUDA graphs",
-                         testName);
-            }
-        } finally {
-            nativeOps.freeDynamicShapePlan(planHandle);
-        }
+        TritonTestUtils.runOpTest(testName, sd, ph, outputName);
     }
+
+    // ─── Graph builders ──────────────────────────────────────────────────────
 
     private void runStrictTritonOpTest(String testName, SameDiff sd, Map<String, INDArray> ph, String outputName) {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
@@ -1547,6 +1457,91 @@ public class TritonGraphBackendTest extends BaseNd4jTestWithBackends {
 
         INDArray aArr = Nd4j.randn(DataType.FLOAT, 4, 16);
         runOpTest("testTritonStack", sd, Map.of("a", aArr), "result");
+    }
+
+    @Test
+    public void testTritonGatherStackElementwiseSingleRange() {
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        var env = Nd4j.getEnvironment();
+
+        boolean prevCompileAll = env.tritonCompileAll();
+        String prevIncludeTypes = env.tritonIncludeTypes();
+        boolean prevSectionFusion = env.tritonSectionFusion();
+        boolean prevFusionScoring = env.tritonFusionScoring();
+        float prevFusionMinScore = env.tritonFusionMinScore();
+        boolean prevGraphCapture = env.tritonGraphCapture();
+
+        env.setTritonCompileAll(true);
+        env.setTritonIncludeTypes("GATHER,STACK");
+        env.setTritonSectionFusion(true);
+        env.setTritonFusionScoring(true);
+        env.setTritonFusionMinScore(5.0f);
+        env.setTritonGraphCapture(false);
+
+        try {
+            SameDiff sd = SameDiff.create();
+            SDVariable input = sd.placeHolder("input", DataType.FLOAT, 16, 8);
+            SDVariable gathered = sd.gather("gather1", input, new int[]{0, 3, 7, 1}, 0);
+            SDVariable shifted = gathered.add("shifted",
+                    sd.constant("bias", Nd4j.linspace(1, 8, 8, DataType.FLOAT).reshape(1, 8)));
+            SDVariable scaled = gathered.mul("scaled",
+                    sd.constant("scale", Nd4j.valueArrayOf(new long[]{1, 8}, 0.5f, DataType.FLOAT)));
+            SDVariable stacked = sd.stack("stacked", 0, shifted, scaled);
+            sd.nn.relu("result", stacked, 0.0);
+
+            INDArray inputArr = Nd4j.randn(DataType.FLOAT, 16, 8);
+            Map<String, INDArray> ph = Map.of("input", inputArr);
+            INDArray refOutput = sd.output(ph, "result").get("result");
+            assertNotNull(refOutput, "Reference output is null");
+
+            DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result");
+            assertNotNull(plan, "Plan compilation returned null");
+
+            Pointer planHandle = compileNativePlan(plan);
+            Assumptions.assumeTrue(planHandle != null, "Native executor unavailable");
+            try {
+                INDArray[] extInputs = resolveExternalInputs(plan, sd, ph);
+
+                nativeOps.invalidateTritonCache();
+                nativeOps.resetTritonCounters();
+
+                Map<String, INDArray> warmup = executeNativePlan(planHandle, plan, extInputs);
+                INDArray warmupOutput = warmup.get("result");
+                assertNotNull(warmupOutput, "Warmup output is null");
+                assertTrue(refOutput.sub(warmupOutput).amaxNumber().doubleValue() < TOLERANCE,
+                        "Warmup output mismatch");
+
+                nativeOps.setPlanShapesFrozen(planHandle, true);
+
+                Map<String, INDArray> frozenWarmup = executeNativePlan(planHandle, plan, extInputs);
+                INDArray frozenWarmupOutput = frozenWarmup.get("result");
+                assertNotNull(frozenWarmupOutput, "Frozen warmup output is null");
+                assertTrue(refOutput.sub(frozenWarmupOutput).amaxNumber().doubleValue() < TOLERANCE,
+                        "Frozen warmup output mismatch");
+
+                nativeOps.resetTritonCounters();
+
+                Map<String, INDArray> compiled = executeNativePlan(planHandle, plan, extInputs);
+                INDArray compiledOutput = compiled.get("result");
+                assertNotNull(compiledOutput, "Compiled output is null");
+                double maxDiff = refOutput.sub(compiledOutput).amaxNumber().doubleValue();
+                assertTrue(maxDiff < TOLERANCE,
+                        "Compiled output mismatch: max diff = " + maxDiff);
+
+                long launches = nativeOps.getTritonKernelLaunchCount();
+                assertEquals(1L, launches,
+                        "Expected a single Triton launch for gather+elementwise+stack fusion");
+            } finally {
+                nativeOps.freeDynamicShapePlan(planHandle);
+            }
+        } finally {
+            env.setTritonCompileAll(prevCompileAll);
+            env.setTritonIncludeTypes(prevIncludeTypes);
+            env.setTritonSectionFusion(prevSectionFusion);
+            env.setTritonFusionScoring(prevFusionScoring);
+            env.setTritonFusionMinScore(prevFusionMinScore);
+            env.setTritonGraphCapture(prevGraphCapture);
+        }
     }
 
     @Test

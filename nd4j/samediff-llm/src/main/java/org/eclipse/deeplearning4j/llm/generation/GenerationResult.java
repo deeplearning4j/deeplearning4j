@@ -84,6 +84,27 @@ public class GenerationResult {
     private final double tokensPerSecond;
 
     /**
+     * Decode-only throughput excluding prefill (step 0), in tokens per second.
+     */
+    private final double decodeTokensPerSecond;
+
+    /**
+     * Steady-state throughput after warmup/capture settling, in tokens per second.
+     *
+     * <p>For {@link StaticKvCacheDecodeLoop}, this is the average over fast-path
+     * decode steps 3+.</p>
+     */
+    private final double steadyStateTokensPerSecond;
+
+    /**
+     * Late steady-state throughput after replay has fully settled, in tokens per second.
+     *
+     * <p>For {@link StaticKvCacheDecodeLoop}, this is the average over decode
+     * steps 20+ when available.</p>
+     */
+    private final double lateSteadyStateTokensPerSecond;
+
+    /**
      * Log probabilities for each generated token (if requested).
      */
     private final List<Double> logProbs;

@@ -781,8 +781,66 @@ public class ND4JSystemProperties {
      */
     public static final String TRITON_EXCLUDE_OPS = "nd4j.triton.excludeOps";
 
+    // ============== Triton Segment Fusion Flags (Temporary Testing) ==============
+
     /**
-     * Applicability: DSP FusionPass<br>
+     * Applicability: Triton section identification<br>
+     * Description: Fuse identity reshape/expand_dims/squeeze into element-wise sections.
+     * Reduces section count by ~200-300 for typical decoder models.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_FUSE_IDENTITY_SHAPES = "nd4j.triton.fuseIdentityShapes";
+
+    /**
+     * Applicability: Triton section identification<br>
+     * Description: Fuse consecutive cast ops into single cast kernel.
+     * Reduces section count by ~50-100 when cast chains present.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_FUSE_CAST_CHAINS = "nd4j.triton.fuseCastChains";
+
+    /**
+     * Applicability: Triton section identification (seq=1 decode)<br>
+     * Description: Fuse trivial (identity/offset) gather with following element-wise ops.
+     * Reduces section count by ~100-200 for seq=1 decode patterns.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_FUSE_TRIVIAL_GATHER = "nd4j.triton.fuseTrivialGather";
+
+    /**
+     * Applicability: Triton section identification (seq=1 decode)<br>
+     * Description: Treat identity permute patterns as no-op for seq=1 decode.
+     * Reduces section count by ~60-100 for typical attention patterns.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_SPECIALIZE_PERMUTE_SEQ1 = "nd4j.triton.specializePermuteSeq1";
+
+    /**
+     * Applicability: Triton section identification<br>
+     * Description: Eliminate concat→split or split→concat pairs (canceling patterns).
+     * Reduces section count by ~50-100 when patterns detected.
+     * <p>
+     * Default: true
+     */
+    public static final String TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS = "nd4j.triton.eliminateConcatSplitPairs";
+
+    /**
+     * Applicability: Triton section identification (HIGH RISK)<br>
+     * Description: Fuse matmul→bias→activation patterns. Disabled by default due to accuracy risk.
+     * Enable only for testing.
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_FUSED_MATMUL = "nd4j.triton.fusedMatmul";
+
+    // ============== DSP Optimization Flags ==============
+
+    /**
+     * Applicability: DSP frozen-shapes segment building<br>
      * Description: Enable cast elimination pass that removes redundant FP16↔FP32 cast pairs.
      * <p>
      * Default: false

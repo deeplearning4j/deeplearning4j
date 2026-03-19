@@ -371,7 +371,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
               poolUsed / (1024*1024), poolReserved / (1024*1024),
               (poolReserved > poolUsed ? (poolReserved - poolUsed) : 0) / (1024*1024));
 
-    // CRITICAL: Do NOT fall back to cudaMalloc here. Direct cudaMalloc allocations
+    //  Do NOT fall back to cudaMalloc here. Direct cudaMalloc allocations
     // bypass pool stats (cudaMemPoolAttrUsedMemCurrent won't track them), causing
     // getStats() to underreport memory usage. Go straight to allocateFailover()
     // which does trimPool + retry in a controlled way.
@@ -807,7 +807,7 @@ void CudaMemoryPool::trimPoolOnStream(int deviceId, cudaStream_t stream) {
     }
   }
 
-  // CRITICAL: Also drain ALL dirty streams tracked by free(). Without this,
+  //  Also drain ALL dirty streams tracked by free(). Without this,
   // cudaFreeAsync calls from previous execution streams (which change each chunk
   // when ContextBuffers reinitializes) remain unsynced. The pool can't reuse their
   // memory for new allocations on stream 0, causing OOM despite having enough total

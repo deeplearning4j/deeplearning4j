@@ -38,7 +38,7 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
   _workspace = nullptr;
   _variableSpace = variableSpace;
   _rng = nullptr;
-  _context = nullptr;  // CRITICAL: must initialize before any vector operations
+  _context = nullptr;  //  must initialize before any vector operations
 
   // Pre-reserve space for vectors to prevent reallocation during ops.
   // Without reserve, push_back triggers reallocation which has been observed to corrupt memory
@@ -167,7 +167,7 @@ Context::~Context() {
   OpContextLifecycleTracker::getInstance().recordDeallocation(this);
 #endif
 
-  // CRITICAL: Capture _context value BEFORE any vector operations.
+  //  Capture _context value BEFORE any vector operations.
   // There's evidence of memory corruption where _context gets corrupted to point
   // to addresses related to vector internal storage. By capturing early, we can
   // detect if corruption happened during vector operations.

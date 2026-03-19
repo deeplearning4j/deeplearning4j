@@ -42,12 +42,18 @@ public class BenchmarkResult {
     // Decode metrics
     private int tokenCount;
     private double tokPerSec;
+    private double decodeTokPerSec;
+    private double steadyTokPerSec;
+    private double lateSteadyTokPerSec;
     private long firstTokenMs;
     private GenerationResult.FinishReason finishReason;
 
     // Triton counters
     private long tritonLaunches;
     private long tritonCacheHits;
+
+    // DSP / CUDA graph observability
+    private String planMetricsSummary;
 
     // Full result
     private String generatedText;
@@ -73,6 +79,12 @@ public class BenchmarkResult {
     public void setTokenCount(int tokenCount) { this.tokenCount = tokenCount; }
     public double getTokPerSec() { return tokPerSec; }
     public void setTokPerSec(double tokPerSec) { this.tokPerSec = tokPerSec; }
+    public double getDecodeTokPerSec() { return decodeTokPerSec; }
+    public void setDecodeTokPerSec(double decodeTokPerSec) { this.decodeTokPerSec = decodeTokPerSec; }
+    public double getSteadyTokPerSec() { return steadyTokPerSec; }
+    public void setSteadyTokPerSec(double steadyTokPerSec) { this.steadyTokPerSec = steadyTokPerSec; }
+    public double getLateSteadyTokPerSec() { return lateSteadyTokPerSec; }
+    public void setLateSteadyTokPerSec(double lateSteadyTokPerSec) { this.lateSteadyTokPerSec = lateSteadyTokPerSec; }
     public long getFirstTokenMs() { return firstTokenMs; }
     public void setFirstTokenMs(long firstTokenMs) { this.firstTokenMs = firstTokenMs; }
     public GenerationResult.FinishReason getFinishReason() { return finishReason; }
@@ -81,14 +93,30 @@ public class BenchmarkResult {
     public void setTritonLaunches(long tritonLaunches) { this.tritonLaunches = tritonLaunches; }
     public long getTritonCacheHits() { return tritonCacheHits; }
     public void setTritonCacheHits(long tritonCacheHits) { this.tritonCacheHits = tritonCacheHits; }
+    public String getPlanMetricsSummary() { return planMetricsSummary; }
+    public void setPlanMetricsSummary(String planMetricsSummary) { this.planMetricsSummary = planMetricsSummary; }
     public String getGeneratedText() { return generatedText; }
     public void setGeneratedText(String generatedText) { this.generatedText = generatedText; }
 
     public String summary() {
         if (!passed) return String.format("[FAIL] %s: %s", configName, failureMessage);
-        return String.format("[PASS] %s: %d tokens, %.2f tok/s, firstToken=%dms | reset=%dms compile=%dms decode=%dms validate=%dms | triton: launches=%d hits=%d",
-                configName, tokenCount, tokPerSec, firstTokenMs,
+        StringBuilder throughput = new StringBuilder(String.format("overall=%.2f tok/s", tokPerSec));
+        if (decodeTokPerSec > 0) {
+            throughput.append(String.format(", decode=%.2f tok/s", decodeTokPerSec));
+        }
+        if (steadyTokPerSec > 0) {
+            throughput.append(String.format(", steady=%.2f tok/s", steadyTokPerSec));
+        }
+        if (lateSteadyTokPerSec > 0) {
+            throughput.append(String.format(", lateSteady=%.2f tok/s", lateSteadyTokPerSec));
+        }
+        String base = String.format("[PASS] %s: %d tokens, %s, firstToken=%dms | reset=%dms compile=%dms decode=%dms validate=%dms | triton: launches=%d hits=%d",
+                configName, tokenCount, throughput, firstTokenMs,
                 resetMs, compileMs, decodeMs, validateMs,
                 tritonLaunches, tritonCacheHits);
+        if (planMetricsSummary == null || planMetricsSummary.isEmpty()) {
+            return base;
+        }
+        return base + " | plan: " + planMetricsSummary;
     }
 }

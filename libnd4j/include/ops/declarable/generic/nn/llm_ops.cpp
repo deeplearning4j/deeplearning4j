@@ -67,30 +67,66 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
                                  shape::strideDescendingCAscendingF(gamma->shapeInfo());
 
 #if defined(SD_CUDA)
-    // CUDA fast path: fused kernel
-    if (isContiguous && (isFloat || isDouble || isHalf) && gammaContiguous) {
-        helpers::rmsNormCuda(input, gamma, output, eps, block.launchContext());
+    // CUDA fast path: fused kernel — dup non-contiguous inputs to avoid
+    // the general fallback which generates 7 native kernel launches per call
+    if ((isFloat || isDouble || isHalf) && gammaContiguous) {
+        const NDArray* inputToUse = input;
+        NDArray* contiguousInput = nullptr;
+        NDArray* contiguousOutput = nullptr;
+
+        if (!inputContiguous) {
+            contiguousInput = new NDArray(input->dup('c'));
+            inputToUse = contiguousInput;
+        }
+        NDArray* outputToUse = output;
+        if (!outputContiguous) {
+            contiguousOutput = new NDArray(output->dup('c'));
+            outputToUse = contiguousOutput;
+        }
+
+        helpers::rmsNormCuda(inputToUse, gamma, outputToUse, eps, block.launchContext());
+
+        if (contiguousOutput != nullptr) {
+            output->assign(contiguousOutput);
+            delete contiguousOutput;
+        }
+        if (contiguousInput != nullptr) {
+            delete contiguousInput;
+        }
         return Status::OK;
-    }
-    // Log fallback reason on first call
-    static bool logged = false;
-    if (!logged) {
-        sd_printf("rms_norm FALLBACK: contiguous=%d float=%d double=%d half=%d gammaContig=%d shape=%s\n",
-                  isContiguous, isFloat, isDouble, isHalf, gammaContiguous,
-                  ShapeUtils::shapeAsString(input->shapeInfo()).c_str());
-        logged = true;
     }
 #endif
 
 #if !defined(SD_CUDA)
-    // CPU fast path: fused 2-pass implementation via helper
-    if (isContiguous && (isFloat || isDouble) && gammaContiguous) {
-        helpers::rmsNormCpu(input, gamma, output, eps);
+    // CPU fast path: fused 2-pass implementation via helper — dup non-contiguous
+    if ((isFloat || isDouble) && gammaContiguous) {
+        const NDArray* inputToUse = input;
+        NDArray* contiguousInput = nullptr;
+        if (!inputContiguous) {
+            contiguousInput = new NDArray(input->dup('c'));
+            inputToUse = contiguousInput;
+        }
+        NDArray* outputToUse = output;
+        NDArray* contiguousOutput = nullptr;
+        if (!outputContiguous) {
+            contiguousOutput = new NDArray(output->dup('c'));
+            outputToUse = contiguousOutput;
+        }
+
+        helpers::rmsNormCpu(inputToUse, gamma, outputToUse, eps);
+
+        if (contiguousOutput != nullptr) {
+            output->assign(contiguousOutput);
+            delete contiguousOutput;
+        }
+        if (contiguousInput != nullptr) {
+            delete contiguousInput;
+        }
         return Status::OK;
     }
 #endif
 
-    // General fallback path for non-contiguous data
+    // General fallback path for unsupported dtypes
     std::vector<LongType> axis = {input->rankOf() - 1};
     NDArray* squared = (*input) * (*input);
     NDArray* meanSquared = squared->reduceAlongDimension(reduce::Mean, &axis, true);

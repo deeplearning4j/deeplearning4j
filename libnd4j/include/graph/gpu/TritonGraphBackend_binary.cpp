@@ -47,6 +47,60 @@ namespace graph {
 
 using namespace triton_internal;
 
+// Utility: get platform-independent temp directory
+static std::string getTempDir() {
+  // Try environment variables first (works on Linux, macOS, Windows)
+  const char* tempEnv = std::getenv("TMPDIR");
+  if (!tempEnv) tempEnv = std::getenv("TMP");
+  if (!tempEnv) tempEnv = std::getenv("TEMP");
+  if (!tempEnv) tempEnv = std::getenv("USERPROFILE");  // Windows fallback
+  
+  if (tempEnv && strlen(tempEnv) > 0) {
+    std::string path(tempEnv);
+    // Ensure path ends with separator
+    if (path.back() != '/' && path.back() != '\\') {
+#ifdef _WIN32
+      path += '\\';
+#else
+      path += '/';
+#endif
+    }
+    return path;
+  }
+  
+  // Default fallbacks
+#ifdef _WIN32
+  return "C:\\temp\\";
+#else
+  return "/tmp/";
+#endif
+}
+
+// Utility: report MLIR verification failure with error message
+static void reportMLIRVerificationFailure(mlir::ModuleOp mod, int startSlot, int endSlot, const std::string& context = "") {
+  std::string irDump;
+  llvm::raw_string_ostream os(irDump);
+  mod->print(os, mlir::OpPrintingFlags().enableDebugInfo());
+  
+  // Build platform-independent temp file path
+  std::string tempDir = getTempDir();
+  std::string failPath = tempDir + "triton_ir_verify_fail_" + 
+                         std::to_string(startSlot) + "_" + std::to_string(endSlot) + ".mlir";
+  
+  FILE* f = fopen(failPath.c_str(), "w");
+  if (f) { 
+    fprintf(f, "%s", irDump.c_str()); 
+    fclose(f);
+    DSP_DIAG(COMPILE, "TritonGraphBackend: MLIR verification FAILED for [%d-%d]. IR dumped to %s (%d bytes)%s",
+              startSlot, endSlot, failPath.c_str(), static_cast<int>(irDump.size()),
+              context.empty() ? "" : (" " + context).c_str());
+  } else {
+    DSP_DIAG(COMPILE, "TritonGraphBackend: MLIR verification FAILED for [%d-%d]%s (could not write IR dump)",
+              startSlot, endSlot, 
+              context.empty() ? "" : (" " + context).c_str());
+  }
+}
+
 TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
     NativeSlot* slots, int startSlot, int endSlot,
     LongType segmentShapeKey,
@@ -117,14 +171,7 @@ TritonGraphBackend::CompiledKernel TritonGraphBackend::compileToGpuBinary(
   {
     auto* mod = static_cast<mlir::ModuleOp*>(irModule.mlirModule);
     if (mlir::failed(mlir::verify(*mod))) {
-      std::string irDump;
-      llvm::raw_string_ostream os(irDump);
-      mod->print(os, mlir::OpPrintingFlags().enableDebugInfo());
-      FILE* f = fopen("/tmp/triton_ir_verify_fail.mlir", "w");
-      if (f) { fprintf(f, "%s", irDump.c_str()); fclose(f); }
-      DSP_DIAG(COMPILE, "TritonGraphBackend: MLIR verification FAILED for [%d-%d]. "
-                "IR dumped to /tmp/triton_ir_verify_fail.mlir (%d bytes)",
-                startSlot, endSlot, static_cast<int>(irDump.size()));
+      reportMLIRVerificationFailure(*mod, startSlot, endSlot);
       cleanupModule();
       return result;
     }

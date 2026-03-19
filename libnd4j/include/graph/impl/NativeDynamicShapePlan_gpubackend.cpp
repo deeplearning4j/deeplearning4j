@@ -398,7 +398,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // First restore from slotArrayCache_, then allocate any remaining nulls
   // using cached shape info from warmup.
   //
-  // CRITICAL: This MUST happen BEFORE compilation. The compiler resolves
+  //  This MUST happen BEFORE compilation. The compiler resolves
   // arg mappings from outputSlots_ — if intermediate slots are null (released
   // after warmup), the compiler omits them from the arg table, producing
   // sub-kernels with missing inputs that read stale/garbage data on first
@@ -410,7 +410,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   // DataBuffer while slotArrayCache_ still holds the NDArray*. Validate the
   // DataBuffer before reusing — invalidate entries pointing to freed buffers.
   //
-  // CRITICAL: If any output slot within the segment is allocated at a NEW address
+  //  If any output slot within the segment is allocated at a NEW address
   // (different from capture time), the cached CUDA graph becomes invalid. Triton
   // arg tables are refreshed with new addresses, but native ops (cuBLAS matmul)
   // have addresses baked into the graph. This address inconsistency causes the
@@ -1796,7 +1796,7 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                   "zeroing will happen outside graph before replay",
                   static_cast<int>(batchZeroEntries_.size()));
 
-        // CRITICAL: Mark ALL output slot DataBuffers as device-actual (sAct=1)
+        //  Mark ALL output slot DataBuffers as device-actual (sAct=1)
         // after batch-zero.  Batch-zero zeroes device memory directly via a GPU
         // kernel, bypassing NDArray's actuality tracking.  Without this,
         // DataBuffer::syncToSpecial() inside native gap ops sees sAct=0 (stale
