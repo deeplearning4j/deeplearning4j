@@ -9,11 +9,11 @@
 # │  GraphOptimizer:        ON  (default, disable: --no-optimizer)     │
 # │  Clear decoder cache:   ON  (default, disable: --no-clear-decoder) │
 # │  Config:                TRITON_compileAll_best_ATTN_NORM_gc_argOpt_│
-# │                         batchGemmOnly_warps2_stages1_default        │
+# │                         batchGemmOnly_warps4_stages2_default        │
 # │  Max tokens:            250                                         │
 # │                                                                     │
-# │  Best measured:         ~66+ tok/s late steady-state decode         │
-# │  Expected with FP16:    keep validating via this script             │
+# │  Best measured:         ~85.9 tok/s late steady-state decode        │
+# │  Expected with FP16:    mythic passage + section header present     │
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # Usage: ./run-benchmark.sh [OPTIONS]
@@ -21,9 +21,17 @@
 # Execution options:
 #   --debug           Enable DSP diagnostics, CUDA driver log, verbose tracing
 #   --op-timing       Enable decode-only native op timing and export CSV per config
+#   --op-timing-detailed
+#                     Enable per-phase op timing breakdown data
+#   --op-breakdown OPS
+#                     Print per-op timing breakdowns for comma-separated op names
+#                     (requires --op-timing)
+#   --op-histogram OPS
+#                     Print per-op timing histograms for comma-separated op names
+#                     (requires --op-timing)
 #   --tokens N        Override max decode tokens (default: 250)
 #   --config NAME     Override benchmark config name
-#                     (default: TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_default)
+#                     (default: TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_default)
 #
 # Optimizer options:
 #   --fp16            Enable FP16 weight pre-casting via GraphOptimizer (DEFAULT: ON)
@@ -63,8 +71,11 @@ MODEL_CACHE="$HOME/.cache/dl4j-vlm-models"
 DEBUG_MODE=false
 NSYS_MODE=false
 OP_TIMING=false
+OP_TIMING_DETAILED=false
+OP_BREAKDOWN_OPS=""
+OP_HISTOGRAM_OPS=""
 MAX_TOKENS=250
-CONFIG="TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_default"
+CONFIG="TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_default"
 FP16=true
 NO_OPTIMIZER=false
 OPTIMIZER_LOG=false
@@ -85,6 +96,21 @@ while [[ $# -gt 0 ]]; do
         --op-timing)
             OP_TIMING=true
             shift
+            ;;
+        --op-timing-detailed)
+            OP_TIMING=true
+            OP_TIMING_DETAILED=true
+            shift
+            ;;
+        --op-breakdown)
+            OP_TIMING=true
+            OP_BREAKDOWN_OPS="$2"
+            shift 2
+            ;;
+        --op-histogram)
+            OP_TIMING=true
+            OP_HISTOGRAM_OPS="$2"
+            shift 2
             ;;
         --tokens)
             MAX_TOKENS="$2"
@@ -124,7 +150,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--tokens N] [--config NAME]"
+            echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--op-timing-detailed]"
+            echo "       [--op-breakdown OPS] [--op-histogram OPS] [--tokens N] [--config NAME]"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
             exit 1
@@ -154,6 +181,9 @@ $OPTIMIZER_LOG && echo "  Optimizer: logging applied transforms"
 $DEBUG_MODE   && echo "  Mode:   DEBUG (DSP diagnostics + CUDA driver log)"
 $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
+$OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
+[ -n "$OP_BREAKDOWN_OPS" ] && echo "  Op breakdowns: $OP_BREAKDOWN_OPS"
+[ -n "$OP_HISTOGRAM_OPS" ] && echo "  Op histograms: $OP_HISTOGRAM_OPS"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
 
@@ -201,6 +231,15 @@ if $OP_TIMING; then
     EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTiming=true"
     EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingTopN=16"
     EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingCsvDir=$OP_TIMING_DIR"
+    if $OP_TIMING_DETAILED; then
+        EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingDetailed=true"
+    fi
+    if [ -n "$OP_BREAKDOWN_OPS" ]; then
+        EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingBreakdownOps=$OP_BREAKDOWN_OPS"
+    fi
+    if [ -n "$OP_HISTOGRAM_OPS" ]; then
+        EXTRA_ARGS="$EXTRA_ARGS -Dvlm.benchmark.opTimingHistogramOps=$OP_HISTOGRAM_OPS"
+    fi
 fi
 
 $MVN test \
@@ -237,6 +276,15 @@ if grep -q "Filtered to 0 configs via vlm.test.configs" "$LOG_FILE"; then
     echo "  STATUS: FAILED (requested config resolved to 0 benchmark configs)"
     grep "Filtered to 0 configs via vlm.test.configs" "$LOG_FILE"
     exit 1
+fi
+
+if [ "$MAX_TOKENS" -ge 200 ]; then
+    if ! grep -q "CREATING A MYTHIC CHARACTER" "$LOG_FILE" && \
+       ! grep -q "mythic heroes" "$LOG_FILE" && \
+       ! grep -q "hytic heroes" "$LOG_FILE"; then
+        echo "  STATUS: FAILED (expected mythic passage not found in benchmark output)"
+        exit 1
+    fi
 fi
 
 # Extract metrics from surefire output or XML

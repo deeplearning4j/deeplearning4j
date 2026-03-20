@@ -3312,15 +3312,24 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
       return;
     }
 
+#if defined(SD_CUDA)
+    const bool cudaDeviceOnlyAssign = thisArray->specialBuffer() != nullptr && other->specialBuffer() != nullptr;
+    const void* srcHost = cudaDeviceOnlyAssign ? nullptr : thisArray->buffer();
+    void* dstHost = cudaDeviceOnlyAssign ? nullptr : other->buffer();
+#else
+    const void* srcHost = thisArray->buffer();
+    void* dstHost = other->buffer();
+#endif
+
     // FIX: prepareSpecialUse takes (writeList, readList)
     // We are reading from thisArray (source) and writing to other (destination)
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
-                                    other->buffer(), other->shapeInfo(),
+                                    dstHost, other->shapeInfo(),
                                     other->specialBuffer(), other->specialShapeInfo(),
-                                    other->buffer(), other->shapeInfo(),
+                                    dstHost, other->shapeInfo(),
                                     other->specialBuffer(), other->specialShapeInfo(),
-                                    thisArray->buffer(), thisArray->shapeInfo(),
+                                    srcHost, thisArray->shapeInfo(),
                                     thisArray->specialBuffer(), thisArray->specialShapeInfo(),
                                     nullptr, allowParallelism);
     // FIX: registerSpecialUse takes (writeList, readList)
@@ -3370,14 +3379,22 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     }
 
     // General path: use Assign kernel (handles non-contiguous layouts, different strides)
+#if defined(SD_CUDA)
+    const bool cudaDeviceOnlyAssign = thisArray->specialBuffer() != nullptr && other->specialBuffer() != nullptr;
+    const void* srcHost = cudaDeviceOnlyAssign ? nullptr : thisArray->buffer();
+    void* dstHost = cudaDeviceOnlyAssign ? nullptr : other->buffer();
+#else
+    const void* srcHost = thisArray->buffer();
+    void* dstHost = other->buffer();
+#endif
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
-                                          thisArray->buffer(),
+                                          srcHost,
                                           thisArray->shapeInfo(),
                                           thisArray->specialBuffer(),
                                           thisArray->specialShapeInfo(),
-                                          other->buffer(),
+                                          dstHost,
                                           other->shapeInfo(),
                                           other->specialBuffer(),
                                           other->specialShapeInfo(),
@@ -3782,8 +3799,16 @@ NDArray * NDArray::asT()  {
                            : new NDArray(ordering(), shapeCopy, DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareSpecialUse({result}, {this});
-  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(),
+#if defined(SD_CUDA)
+  const bool cudaDeviceOnlyCast = specialBuffer() != nullptr && result->specialBuffer() != nullptr;
+  const void* srcHost = cudaDeviceOnlyCast ? nullptr : buffer();
+  void* dstHost = cudaDeviceOnlyCast ? nullptr : result->buffer();
+#else
+  const void* srcHost = buffer();
+  void* dstHost = result->buffer();
+#endif
+  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, srcHost, shapeInfo(), specialBuffer(),
+                                        specialShapeInfo(), dstHost, result->shapeInfo(), result->specialBuffer(),
                                         result->specialShapeInfo(), nullptr, false);
   registerSpecialUse({result}, {this});
 

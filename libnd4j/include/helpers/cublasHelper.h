@@ -48,6 +48,11 @@ class SD_LIB_EXPORT CublasHelper {
 
   void* handle();
   void* handle(int deviceId);
+
+  // cuBLAS Lt (Library) API for optimized GEMM
+  // Thread-local, created on-demand per device
+  void* ltHandle();
+  void* ltHandle(int deviceId);
 };
 }  // namespace sd
 

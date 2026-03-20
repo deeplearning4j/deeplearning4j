@@ -146,11 +146,32 @@ float scoreSectionFusion(
   int combinedOps = sectionA.numOps + sectionB.numOps;
   float regPenalty = std::max(0.0f, (combinedOps - 256) * 0.1f);
 
-  float totalScore = memScore * 10.0f + launchScore - regPenalty;
+  // 6. Attention neighborhood bonus — prefer fusing around attention ops
+  // GATHER/CONCAT/STACK adjacent to ATTENTION get a significant score boost
+  // to reduce section fragmentation in decode attention patterns.
+  float attnBonus = 0.0f;
+  if (sd::Environment::getInstance().tritonFuseAttentionNeighborhoods()) {
+    bool aIsAttnAdj = (sectionA.type == KernelSectionType::GATHER ||
+                       sectionA.type == KernelSectionType::GATHER_ND ||
+                       sectionA.type == KernelSectionType::CONCAT ||
+                       sectionA.type == KernelSectionType::STACK);
+    bool bIsAttnAdj = (sectionB.type == KernelSectionType::GATHER ||
+                       sectionB.type == KernelSectionType::GATHER_ND ||
+                       sectionB.type == KernelSectionType::CONCAT ||
+                       sectionB.type == KernelSectionType::STACK);
+    // Check if either section is near an attention op (within 5 slots)
+    bool nearAttnA = false, nearAttnB = false;
+    // Simple heuristic: if section has attention-adjacent type, assume it's near attention
+    if (aIsAttnAdj || bIsAttnAdj) {
+      attnBonus = 50.0f;  // Significant bonus to prefer attention neighborhood fusion
+    }
+  }
 
-  DSP_DIAG(FUSION, "FusionScoring: [%d-%d]+[%d-%d] memMB=%.2f launch=%.1f regPen=%.1f -> score=%.2f",
+  float totalScore = memScore * 10.0f + launchScore - regPenalty + attnBonus;
+
+  DSP_DIAG(FUSION, "FusionScoring: [%d-%d]+[%d-%d] memMB=%.2f launch=%.1f regPen=%.1f attnBonus=%.1f -> score=%.2f",
            sectionA.startSlot, sectionA.endSlot, sectionB.startSlot, sectionB.endSlot,
-           memScore, launchScore, regPenalty, totalScore);
+           memScore, launchScore, regPenalty, attnBonus, totalScore);
 
   return totalScore;
 }

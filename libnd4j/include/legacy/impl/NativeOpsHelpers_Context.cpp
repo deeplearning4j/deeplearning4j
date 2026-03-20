@@ -85,6 +85,7 @@ extern std::mutex g_dataBufferMutex;
 #endif
 #include <array/DataType.h>
 #include <array/DataTypeUtils.h>
+#include <algorithm>
 
 
 
@@ -128,6 +129,33 @@ sd::LongType iArgumentAtNative(OpaqueContext* ptr, int idx) {
   return ptr->getIArguments()->at(idx);
 
 }
+
+namespace {
+
+constexpr sd::LongType kShapeValueSyncMaxElements = 4096;
+
+std::string normalizeShapeOpName(const std::string& opName) {
+  std::string normalized = opName;
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return normalized;
+}
+
+bool requiresFullShapeValueSync(const std::string& opName) {
+  const auto normalized = normalizeShapeOpName(opName);
+  return normalized == "where" || normalized == "unique";
+}
+
+bool shouldSyncInputForShape(const std::string& opName, const sd::NDArray* array) {
+  if (array == nullptr || array->isEmpty()) return false;
+  if (requiresFullShapeValueSync(opName)) return true;
+
+  // Shape functions typically inspect only small scalar/index/shape tensors.
+  // Skipping forceSyncToHost() for large data inputs avoids replay-time D2H traffic.
+  return array->isScalar() || array->lengthOf() <= kShapeValueSyncMaxElements;
+}
+
+}  // namespace
 
 sd::LongType numDNative(OpaqueContext* ptr) {
   if(ptr == nullptr)
@@ -372,6 +400,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #ifdef __cpp_exceptions
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    const std::string opName = op->getOpName() == nullptr ? "" : *op->getOpName();
 
 #if defined(SD_GCC_FUNCTRACE)
     // Set op name BEFORE calculateOutputShape so shape allocations are tagged
@@ -390,13 +419,9 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
-      // IMPORTANT: Force sync all input arrays to host before shape calculation.
-      // Shape functions may read scalar values from inputs (e.g., create, concat axis).
-      // Use forceSyncToHost() to bypass counter-based checks and always sync from device.
-      // This is necessary because counter tracking can be unreliable when arrays flow
-      // between ops that write to host vs device, especially after execCustomOp2 calls
-      // tickWriteDevice() on all outputs regardless of where the op actually wrote.
-      context->array(e)->forceSyncToHost();
+      if (shouldSyncInputForShape(opName, context->array(e))) {
+        context->array(e)->forceSyncToHost();
+      }
       inShapes.push_back(context->array(e)->shapeInfo());
     }
 
@@ -416,6 +441,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
   }
 #else
   auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+  const std::string opName = op->getOpName() == nullptr ? "" : *op->getOpName();
 
 #if defined(SD_GCC_FUNCTRACE)
   // Set op name BEFORE calculateOutputShape so shape allocations are tagged
@@ -435,13 +461,9 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
       safeSetErrorContext(1, errorMessage.c_str());
       return nullptr;
     }
-    // IMPORTANT: Force sync all input arrays to host before shape calculation.
-    // Shape functions may read scalar values from inputs (e.g., create, concat axis).
-    // Use forceSyncToHost() to bypass counter-based checks and always sync from device.
-    // This is necessary because counter tracking can be unreliable when arrays flow
-    // between ops that write to host vs device, especially after execCustomOp2 calls
-    // tickWriteDevice() on all outputs regardless of where the op actually wrote.
-    context->array(e)->forceSyncToHost();
+    if (shouldSyncInputForShape(opName, context->array(e))) {
+      context->array(e)->forceSyncToHost();
+    }
     inShapes.push_back(context->array(e)->shapeInfo());
   }
 
@@ -641,4 +663,3 @@ void printOpTrace() {
 std::vector<ExecTrace*> * listOpTraces() {
   return sd::ops::OpRegistrator::getInstance().execTrace();
 }
-

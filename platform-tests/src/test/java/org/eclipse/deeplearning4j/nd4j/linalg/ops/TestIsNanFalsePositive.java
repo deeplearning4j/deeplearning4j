@@ -20,6 +20,7 @@
 package org.eclipse.deeplearning4j.nd4j.linalg.ops;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
@@ -506,6 +507,46 @@ public class TestIsNanFalsePositive extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    @DisplayName("decoder row-vector matmul matches manual reference on CUDA")
+    public void testMixedPrecisionDecoderRowVectorMatmul() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray activations = Nd4j.randn(DataType.FLOAT, 1, 576).mul(0.1);
+        INDArray weights = Nd4j.randn(DataType.FLOAT, 576, 4096).mul(0.02);
+
+        INDArray actual = activations.mmul(weights);
+        double maxDiff = maxAbsDiff(actual, manualRowVectorMatmul(activations, weights));
+
+        log.info("Row-vector matmul: shape={}, maxDiff={}", Arrays.toString(actual.shape()), maxDiff);
+
+        assertArrayEquals(new long[]{1, 4096}, actual.shape(), "Unexpected output shape");
+        assertEquals(DataType.FLOAT, actual.dataType(), "Matmul output should stay FLOAT");
+        assertTrue(maxDiff < 1e-4, "Row-vector matmul maxDiff too large: " + maxDiff);
+        verifyNoFalsePositive(actual, "row-vector matmul [1,4096]");
+    }
+
+    @Test
+    @DisplayName("matrix-column matmul matches manual reference on CUDA")
+    public void testMixedPrecisionMatrixColumnMatmul() {
+        Assumptions.assumeTrue(isCudaBackend(), "Test requires CUDA backend");
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray activations = Nd4j.randn(DataType.FLOAT, 128, 576).mul(0.1);
+        INDArray weights = Nd4j.randn(DataType.FLOAT, 576, 1).mul(0.02);
+
+        INDArray actual = activations.mmul(weights);
+        double maxDiff = maxAbsDiff(actual, manualMatrixColumnMatmul(activations, weights));
+
+        log.info("Matrix-column matmul: shape={}, maxDiff={}", Arrays.toString(actual.shape()), maxDiff);
+
+        assertArrayEquals(new long[]{128, 1}, actual.shape(), "Unexpected output shape");
+        assertEquals(DataType.FLOAT, actual.dataType(), "Matmul output should stay FLOAT");
+        assertTrue(maxDiff < 1e-4, "Matrix-column matmul maxDiff too large: " + maxDiff);
+        verifyNoFalsePositive(actual, "matrix-column matmul [128,1]");
+    }
+
+    @Test
     @DisplayName("isNaN().any() should be false after chained ops")
     public void testIsNanAfterChainedOps() {
         // Chain of ops that mimics decoder execution
@@ -669,5 +710,55 @@ public class TestIsNanFalsePositive extends BaseNd4jTestWithBackends {
         assertEquals(0, nanCount, label + ": manual scan should find 0 NaN");
         assertEquals(0, infCount, label + ": manual scan should find 0 Inf");
         assertFalse(anyNaN, label + ": isNaN().any() should be false when no NaN exists");
+    }
+
+    private boolean isCudaBackend() {
+        return Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda");
+    }
+
+    private double maxAbsDiff(INDArray actual, float[] expected) {
+        float[] actualValues = actual.dup('c').reshape(actual.length()).toFloatVector();
+        assertEquals(expected.length, actualValues.length, "Length mismatch");
+
+        double maxDiff = 0.0;
+        for (int i = 0; i < expected.length; i++) {
+            maxDiff = Math.max(maxDiff, Math.abs(actualValues[i] - expected[i]));
+        }
+        return maxDiff;
+    }
+
+    private float[] manualRowVectorMatmul(INDArray activations, INDArray weights) {
+        float[] activationValues = activations.dup('c').reshape(activations.length()).toFloatVector();
+        float[] weightValues = weights.dup('c').reshape(weights.length()).toFloatVector();
+        int k = (int) activations.size(1);
+        int n = (int) weights.size(1);
+        float[] out = new float[n];
+
+        for (int col = 0; col < n; col++) {
+            double sum = 0.0;
+            for (int i = 0; i < k; i++) {
+                sum += activationValues[i] * weightValues[i * n + col];
+            }
+            out[col] = (float) sum;
+        }
+        return out;
+    }
+
+    private float[] manualMatrixColumnMatmul(INDArray activations, INDArray weights) {
+        float[] activationValues = activations.dup('c').reshape(activations.length()).toFloatVector();
+        float[] weightValues = weights.dup('c').reshape(weights.length()).toFloatVector();
+        int m = (int) activations.size(0);
+        int k = (int) activations.size(1);
+        float[] out = new float[m];
+
+        for (int row = 0; row < m; row++) {
+            double sum = 0.0;
+            int rowOffset = row * k;
+            for (int i = 0; i < k; i++) {
+                sum += activationValues[rowOffset + i] * weightValues[i];
+            }
+            out[row] = (float) sum;
+        }
+        return out;
     }
 }

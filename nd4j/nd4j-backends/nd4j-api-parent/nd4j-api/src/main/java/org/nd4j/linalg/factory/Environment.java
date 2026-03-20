@@ -1213,6 +1213,16 @@ public interface Environment {
     default boolean tritonFusedMatmul() { return false; }
     default void setTritonFusedMatmul(boolean v) {}
 
+    /**
+     * Fuse GATHER/CONCAT/STACK ops around attention neighborhoods.
+     * Reduces section fragmentation around flash attention by merging
+     * attention-adjacent data movement ops into larger Triton ranges.
+     * Controlled by ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS env var.
+     * @return true if enabled (default: true)
+     */
+    default boolean tritonFuseAttentionNeighborhoods() { return true; }
+    default void setTritonFuseAttentionNeighborhoods(boolean v) {}
+
     // ============== Triton Include Types ==============
 
     /**

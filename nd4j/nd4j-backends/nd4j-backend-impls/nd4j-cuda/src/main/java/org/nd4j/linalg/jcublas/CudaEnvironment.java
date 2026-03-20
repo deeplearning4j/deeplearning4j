@@ -1201,6 +1201,10 @@ public class CudaEnvironment implements Environment {
     public boolean tritonFusedMatmul() { return e.tritonFusedMatmul(); }
     @Override
     public void setTritonFusedMatmul(boolean v) { e.setTritonFusedMatmul(v); }
+    @Override
+    public boolean tritonFuseAttentionNeighborhoods() { return e.tritonFuseAttentionNeighborhoods(); }
+    @Override
+    public void setTritonFuseAttentionNeighborhoods(boolean v) { e.setTritonFuseAttentionNeighborhoods(v); }
 
     // DSP batch-zero flags
     @Override

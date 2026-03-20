@@ -188,6 +188,25 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
     }
   };
 
+  // Helper: check if a section type can merge with attention-adjacent ops.
+  // When tritonFuseAttentionNeighborhoods is enabled, GATHER, GATHER_ND, STACK,
+  // and CONCAT can merge with element-wise ops in attention neighborhoods to
+  // reduce section fragmentation around flash attention.
+  auto canMergeWithAttentionNeighborhood = [](KernelSectionType type) -> bool {
+    if (!sd::Environment::getInstance().tritonFuseAttentionNeighborhoods()) {
+      return false;
+    }
+    switch (type) {
+      case KernelSectionType::GATHER:
+      case KernelSectionType::GATHER_ND:
+      case KernelSectionType::STACK:
+      case KernelSectionType::CONCAT:
+        return true;
+      default:
+        return false;
+    }
+  };
+
   // Helper: compute total output elements for an op's first output
   auto getOutputElements = [&](int slotIdx) -> LongType {
     if (slotIdx < 0 || slotIdx > endSlot) return 0;
@@ -436,15 +455,17 @@ std::vector<KernelSection> TritonIRBuilder::identifySections(
                  currentSection.type == KernelSectionType::CONVOLUTION) {
         // After a non-element-wise section, start a new one
         startNewSection = true;
-      } else if (!canMergeWithElementwise(currentSection.type)) {
+      } else if (!canMergeWithElementwise(currentSection.type) && !canMergeWithAttentionNeighborhood(currentSection.type)) {
         // Non-mergeable section types can still absorb consecutive ops of the SAME type.
         // This reduces section/barrier count without changing per-op emission semantics.
         startNewSection = (sectionType != currentSection.type);
-      } else if (!canMergeWithElementwise(sectionType) && currentSection.type != sectionType) {
+      } else if (!canMergeWithElementwise(sectionType) && !canMergeWithAttentionNeighborhood(sectionType) && currentSection.type != sectionType) {
         // Data movement ops that don't merge with element-wise
+        // Exception: attention-adjacent ops (GATHER, CONCAT, STACK) can merge when flag is enabled
         startNewSection = true;
-      } else if (canMergeWithElementwise(currentSection.type) && canMergeWithElementwise(sectionType)) {
-        // Both are element-wise compatible — check element count compatibility.
+      } else if ((canMergeWithElementwise(currentSection.type) || canMergeWithAttentionNeighborhood(currentSection.type)) &&
+                 (canMergeWithElementwise(sectionType) || canMergeWithAttentionNeighborhood(sectionType))) {
+        // Both are element-wise compatible or attention-adjacent — check element count compatibility.
         // The 1D kernel uses a single n_elements for the grid and mask.
         // Ops with different output element counts cannot share the same grid:
         // - If n_elements is too small, larger outputs get partially written (stale data)

@@ -21,6 +21,7 @@
 //
 
 #include <cublas_v2.h>
+#include <cublasLt.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
@@ -107,7 +108,7 @@ CublasHelper::CublasHelper() {
 CublasHelper::~CublasHelper() {
   auto numDevices = AffinityManager::numberOfDevices();
 
- // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
+  // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
 }
 
 CublasHelper& CublasHelper::getInstance() {
@@ -153,5 +154,52 @@ void* CublasHelper::handle(int deviceId) {
     throw cuda_exception::build("cuBLAS handle is null for device - initialization may have failed", deviceId);
   }
   return handle;
+}
+
+// cuBLAS Lt handle: created on-demand per thread/device
+// Returns nullptr if Lt is not available (fallback to standard cuBLAS)
+void* CublasHelper::ltHandle() {
+  // Thread-local Lt handle cache - plain thread_local, not static thread_local
+  // to avoid initialization order issues in shared libraries
+  thread_local cublasLtHandle_t tl_ltHandle = nullptr;
+  thread_local int tl_deviceId = -1;
+  thread_local bool tl_available = true;
+  
+  // Check if already initialized for current device
+  int currentDevice = AffinityManager::currentDeviceId();
+  if (tl_deviceId == currentDevice && tl_ltHandle != nullptr) {
+    return tl_available ? reinterpret_cast<void*>(&tl_ltHandle) : nullptr;
+  }
+  
+  // Device changed or not initialized - create/replace Lt handle
+  if (tl_ltHandle != nullptr) {
+    cublasLtDestroy(tl_ltHandle);
+    tl_ltHandle = nullptr;
+  }
+  
+  if (!tl_available) {
+    return nullptr;  // Lt not available on this system
+  }
+  
+  tl_deviceId = currentDevice;
+  
+  cublasLtHandle_t ltHandle;
+  auto status = cublasLtCreate(&ltHandle);
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    tl_available = false;
+    return nullptr;
+  }
+  
+  tl_ltHandle = ltHandle;
+  return reinterpret_cast<void*>(&tl_ltHandle);
+}
+
+void* CublasHelper::ltHandle(int deviceId) {
+  // For explicit device request, save and restore current device
+  int savedDevice = AffinityManager::currentDeviceId();
+  AffinityManager::setCurrentNativeDevice(deviceId);
+  void* result = ltHandle();
+  AffinityManager::setCurrentNativeDevice(savedDevice);
+  return result;
 }
 }  // namespace sd

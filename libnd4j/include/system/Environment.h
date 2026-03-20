@@ -187,6 +187,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _tritonSpecializePermuteSeq1{true};  // Treat identity permute patterns as no-op for seq=1
   std::atomic<bool> _tritonEliminateConcatSplitPairs{true}; // Eliminate concat→split or split→concat pairs
   std::atomic<bool> _tritonFusedMatmul{false};           // Fuse matmul→bias→activation (HIGH RISK - disabled by default)
+  std::atomic<bool> _tritonFuseAttentionNeighborhoods{true}; // Fuse GATHER/CONCAT/STACK around attention ops
 
   // Comma-separated list of nd4j op names to EXCLUDE from Triton compilation.
   // These ops fall back to cuBLAS/native execution. Typical exclusions:
@@ -624,6 +625,8 @@ class SD_LIB_EXPORT Environment {
   void setTritonEliminateConcatSplitPairs(bool v) { _tritonEliminateConcatSplitPairs.store(v); }
   bool tritonFusedMatmul() { return _tritonFusedMatmul.load(); }
   void setTritonFusedMatmul(bool v) { _tritonFusedMatmul.store(v); }
+  bool tritonFuseAttentionNeighborhoods() { return _tritonFuseAttentionNeighborhoods.load(); }
+  void setTritonFuseAttentionNeighborhoods(bool v) { _tritonFuseAttentionNeighborhoods.store(v); }
 
   std::string tritonIncludeTypes() const { return _tritonIncludeTypes; }
   void setTritonIncludeTypes(const std::string& types) { _tritonIncludeTypes = types; }

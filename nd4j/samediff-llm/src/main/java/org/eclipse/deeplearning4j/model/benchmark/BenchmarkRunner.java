@@ -54,6 +54,8 @@ public class BenchmarkRunner {
     private static final String OP_TIMING_DETAILED_PROPERTY = "vlm.benchmark.opTimingDetailed";
     private static final String OP_TIMING_TOP_N_PROPERTY = "vlm.benchmark.opTimingTopN";
     private static final String OP_TIMING_CSV_DIR_PROPERTY = "vlm.benchmark.opTimingCsvDir";
+    private static final String OP_TIMING_BREAKDOWN_OPS_PROPERTY = "vlm.benchmark.opTimingBreakdownOps";
+    private static final String OP_TIMING_HISTOGRAM_OPS_PROPERTY = "vlm.benchmark.opTimingHistogramOps";
 
     private static class PlanMetrics {
         private final String compactSummary;
@@ -503,6 +505,16 @@ public class BenchmarkRunner {
                 nativeOps.printOpTimingStats(topN);
             }
 
+            for (String opName : getOpTimingListProperty(OP_TIMING_BREAKDOWN_OPS_PROPERTY)) {
+                log.info("  Decode op timing breakdown for {} [{}]", config.getName(), opName);
+                nativeOps.printOpTimingBreakdown(opName);
+            }
+
+            for (String opName : getOpTimingListProperty(OP_TIMING_HISTOGRAM_OPS_PROPERTY)) {
+                log.info("  Decode op timing histogram for {} [{}]", config.getName(), opName);
+                nativeOps.printOpTimingHistogram(opName);
+            }
+
             String csvDir = System.getProperty(OP_TIMING_CSV_DIR_PROPERTY);
             if (csvDir != null && !csvDir.isBlank()) {
                 Path outputDir = Paths.get(csvDir);
@@ -529,6 +541,17 @@ public class BenchmarkRunner {
 
     private static boolean isDecodeOpTimingDetailed() {
         return Boolean.parseBoolean(System.getProperty(OP_TIMING_DETAILED_PROPERTY, "false"));
+    }
+
+    private static List<String> getOpTimingListProperty(String propertyName) {
+        String value = System.getProperty(propertyName);
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return List.of(value.split(",")).stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
     }
 
     private static String sanitizeFileName(String value) {

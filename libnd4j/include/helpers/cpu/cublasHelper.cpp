@@ -26,7 +26,17 @@ static void* handle_() { return nullptr; }
 
 static void destroyHandle_(void* handle) {}
 
-CublasHelper::CublasHelper() {}
+CublasHelper::CublasHelper() {
+  auto numDevices = 1;
+  _cache.resize(numDevices);
+  _solvers.resize(numDevices);
+  _cudnn.resize(numDevices);
+  for (int e = 0; e < numDevices; e++) {
+    _cache[e] = handle_();
+    _solvers[e] = handle_();
+    _cudnn[e] = nullptr;
+  }
+}
 
 CublasHelper::~CublasHelper() {}
 
@@ -37,7 +47,13 @@ CublasHelper& CublasHelper::getInstance() {
 
 void* CublasHelper::handle() { return nullptr; }
 
-void* CublasHelper::solver() { return nullptr; }
+void* CublasHelper::ltHandle() { return nullptr; }
 
 void* CublasHelper::handle(int deviceId) { return nullptr; }
+
+void* CublasHelper::ltHandle(int deviceId) { return nullptr; }
+
+void* CublasHelper::solver() { return nullptr; }
+
+void* CublasHelper::cudnn() { return nullptr; }
 }  // namespace sd

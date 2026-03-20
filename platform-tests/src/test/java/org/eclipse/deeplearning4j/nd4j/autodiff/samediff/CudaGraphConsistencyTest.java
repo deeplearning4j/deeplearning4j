@@ -407,6 +407,26 @@ public class CudaGraphConsistencyTest extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Build a graph where reshape output shape is driven by a device-produced
+     * shape tensor. This exercises the native calculateOutputShapes2() path for
+     * reshape without requiring the large data input itself to be synced back.
+     */
+    private static SameDiff createShapeDrivenReshapeGraph() {
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, -1, -1);
+
+        // Force the reshape data input to be produced by device compute.
+        SDVariable shifted = input.add("shifted", 1.0);
+
+        SDVariable shape = sd.shape("shape_out", input);
+        SDVariable swapIdx = sd.constant("swap_idx", Nd4j.createFromArray(1L, 0L));
+        SDVariable swappedShape = sd.gather("swapped_shape", shape, swapIdx, 0);
+        SDVariable reshaped = sd.reshape("reshaped", shifted, swappedShape);
+        reshaped.rename("result");
+        return sd;
+    }
+
+    /**
      * Build a multi-output graph with 12+ ops where intermediate results
      * are all requested as outputs.
      */
@@ -476,6 +496,43 @@ public class CudaGraphConsistencyTest extends BaseNd4jTestWithBackends {
         // so gather reads stale device zeros.
         // The graph has enough ops (12+) to trigger capture.
         assertCudaGraphConsistency(sd, ph, "gather_out", "shape_out", "compute_result");
+    }
+
+    @Test
+    public void testNativePlanShapeDrivenReshapeRemainsCorrect() {
+        SameDiff sd = createShapeDrivenReshapeGraph();
+        DynamicShapePlan plan = NativeExecutorTestUtils.compilePlan(sd, "result", "swapped_shape");
+        Pointer handle = compileNativePlan(plan);
+        if (handle == null || handle.isNull()) {
+            plan.close();
+            return;
+        }
+
+        try {
+            DynamicShapeSlot reshapeSlot = Arrays.stream(plan.getSlots())
+                    .filter(slot -> "reshape".equals(slot.getOpName()) || "reshape_no_copy".equals(slot.getOpName()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("Missing reshape slot in dynamic plan"));
+            assertTrue(reshapeSlot.isOutputShapeDependsOnInputValues(),
+                    "reshape slot must use calculateOutputShapes2() for dynamic shape inputs");
+
+            INDArray first = Nd4j.linspace(1.0, 64L * 128L, 64L * 128L, DataType.FLOAT).reshape(64, 128);
+            INDArray second = Nd4j.linspace(1.0, 32L * 256L, 32L * 256L, DataType.FLOAT).reshape(32, 256);
+
+            for (INDArray input : List.of(first, second)) {
+                Map<String, INDArray> placeholders = Map.of("input", input);
+                Map<String, INDArray> expected = sd.output(placeholders, "result", "swapped_shape");
+                Map<String, INDArray> actual = executeNativePlan(handle, plan, resolveExternalInputs(plan, sd, placeholders));
+
+                NativeExecutorTestUtils.assertArrayEquals(expected.get("swapped_shape"), actual.get("swapped_shape"),
+                        TOLERANCE, "Dynamic reshape shape tensor mismatch for input " + Arrays.toString(input.shape()));
+                NativeExecutorTestUtils.assertArrayEquals(expected.get("result"), actual.get("result"),
+                        TOLERANCE, "Dynamic reshape result mismatch for input " + Arrays.toString(input.shape()));
+            }
+        } finally {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDynamicShapePlan(handle);
+            plan.close();
+        }
     }
 
     // ─── Test: multi-output graph (12 ops, multiple outputs requested) ───────

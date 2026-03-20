@@ -23,6 +23,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include <cublas_v2.h>
+#include <cublasLt.h>
 #include <cuda_fp16.h>
 #include <exceptions/cuda_exception.h>
 #include <helpers/PointersManager.h>
@@ -30,8 +31,10 @@
 #include <ops/specials_cuda.h>
 
 #include <numeric>
+#include <unordered_map>
 
 #include "../MmulHelper.h"
+#include "../cublasHelper.h"
 #include "execution/cuda/LaunchDims.h"
 
 // Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
@@ -62,10 +65,63 @@ static thread_local std::vector<NDArray*> tl_castCacheA;
 static thread_local std::vector<NDArray*> tl_castCacheB;
 static thread_local size_t tl_castIdxA = 0;
 static thread_local size_t tl_castIdxB = 0;
+static thread_local std::unordered_map<const NDArray*, NDArray*> tl_captureCastReuseA;
+static thread_local std::unordered_map<const NDArray*, NDArray*> tl_captureCastReuseB;
+static thread_local const NDArray* tl_lastCaptureCastSourceA = nullptr;
+static thread_local const NDArray* tl_lastCaptureCastSourceB = nullptr;
+static thread_local NDArray* tl_lastCaptureCastArrayA = nullptr;
+static thread_local NDArray* tl_lastCaptureCastArrayB = nullptr;
+
+// cuBLAS Lt algorithm cache key: uniquely identifies a GEMM configuration
+struct LtMatmulCacheKey {
+  int deviceId;
+  int M, N, K;
+  cudaDataType aType, bType, cType;
+  cublasOperation_t transA, transB;
+
+  bool operator==(const LtMatmulCacheKey& other) const {
+    return deviceId == other.deviceId && M == other.M && N == other.N && K == other.K &&
+           aType == other.aType && bType == other.bType && cType == other.cType &&
+           transA == other.transA && transB == other.transB;
+  }
+};
+
+// Hash function for LtMatmulCacheKey
+struct LtMatmulCacheKeyHash {
+  std::size_t operator()(const LtMatmulCacheKey& key) const {
+    std::size_t h = 0;
+    h ^= std::hash<int>{}(key.deviceId) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.M) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.N) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.K) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.aType) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.bType) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.cType) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.transA) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    h ^= std::hash<int>{}(key.transB) + 0x9e3779b9 + (h << 6) + (h >> 2);
+    return h;
+  }
+};
+
+// Cached cuBLAS Lt algorithm descriptor
+struct LtMatmulAlgoCacheEntry {
+  cublasLtMatmulAlgo_t algo;
+  size_t workspaceSize;
+};
+
+// Thread-local cuBLAS Lt algorithm cache
+static thread_local std::unordered_map<LtMatmulCacheKey, LtMatmulAlgoCacheEntry, LtMatmulCacheKeyHash> tl_ltAlgoCache;
 
 void MmulHelper::resetCastCacheIndices() {
   tl_castIdxA = 0;
   tl_castIdxB = 0;
+  tl_captureCastReuseA.clear();
+  tl_captureCastReuseB.clear();
+  tl_lastCaptureCastSourceA = nullptr;
+  tl_lastCaptureCastSourceB = nullptr;
+  tl_lastCaptureCastArrayA = nullptr;
+  tl_lastCaptureCastArrayB = nullptr;
+  tl_ltAlgoCache.clear();
 }
 
 void MmulHelper::clearCastCache() {
@@ -75,6 +131,185 @@ void MmulHelper::clearCastCache() {
   tl_castCacheB.clear();
   tl_castIdxA = 0;
   tl_castIdxB = 0;
+  tl_captureCastReuseA.clear();
+  tl_captureCastReuseB.clear();
+  tl_lastCaptureCastSourceA = nullptr;
+  tl_lastCaptureCastSourceB = nullptr;
+  tl_lastCaptureCastArrayA = nullptr;
+  tl_lastCaptureCastArrayB = nullptr;
+  tl_ltAlgoCache.clear();
+}
+
+// cuBLAS Lt matmul for decoder logits projection: [1,K] x [K,N] -> [1,N]
+// Narrow fast path targeting large N (vocab projection) with mixed precision.
+// Returns true if Lt matmul was executed, false to fall back to standard cuBLAS.
+static bool tryLtMatmul(NDArray* A, NDArray* B, NDArray* C, double alpha, double beta,
+                       NDArray* pA, NDArray* pB, NDArray* pC,
+                       int M, int N, int K,
+                       bool transA, bool transB,
+                       cudaDataType aType, cudaDataType bType, cudaDataType cType) {
+  // Tight gating: only for decoder row-vector logits projection
+  if (M != 1) return false;
+  if (cType != CUDA_R_32F) return false;
+  if (bType != CUDA_R_16F) return false;
+  if (aType != CUDA_R_32F && aType != CUDA_R_16F) return false;
+  if (N < 16384) return false;  // Only for large vocab projections
+  if (transA || !transB) return false;  // Expect row-major [1,K] x [K,N]
+
+  // Get cuBLAS Lt handle
+  auto ltHandlePtr = CublasHelper::getInstance().ltHandle();
+  if (ltHandlePtr == nullptr) return false;
+  auto ltHandle = reinterpret_cast<cublasLtHandle_t*>(ltHandlePtr);
+  auto stream = A->getContext()->getCudaStream();
+
+  // Build cache key
+  LtMatmulCacheKey key;
+  key.deviceId = AffinityManager::currentDeviceId();
+  key.M = M;
+  key.N = N;
+  key.K = K;
+  key.aType = aType;
+  key.bType = bType;
+  key.cType = cType;
+  key.transA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  key.transB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+  // Look up cached algorithm
+  auto cacheIt = tl_ltAlgoCache.find(key);
+  cublasLtMatmulAlgo_t algo;
+  size_t workspaceSize = 0;
+
+  if (cacheIt != tl_ltAlgoCache.end()) {
+    // Use cached algorithm
+    algo = cacheIt->second.algo;
+    workspaceSize = cacheIt->second.workspaceSize;
+  } else if (tl_graphExecutionActive) {
+    // During capture without cached algo: fall back to standard cuBLAS
+    return false;
+  } else {
+    // Warmup: get heuristic algorithm
+    cublasLtMatmulDesc_t operationDesc = nullptr;
+    cublasLtMatmulPreference_t preference = nullptr;
+    cublasLtMatrixLayout_t Adesc = nullptr, Bdesc = nullptr, Cdesc = nullptr;
+    int resultsReturned = 0;
+    cublasLtMatmulHeuristicResult_t heuristicResults[1];
+
+    // For row-major C = A * B, use cuBLAS Lt column-major with:
+    // C^T = B^T * A^T, so we swap operands
+    cublasStatus_t status = cublasLtMatmulDescCreate(&operationDesc, CUBLAS_COMPUTE_32F, CUDA_R_32F);
+    if (status == CUBLAS_STATUS_SUCCESS) {
+      // We interpret row-major buffers as column-major transposes:
+      //   B[K,N] row-major -> [N,K] column-major = B^T
+      //   A[1,K] row-major -> [K,1] column-major = A^T
+      // Then C^T = B^T * A^T, so both Lt operands stay non-transposed.
+      cublasOperation_t opTransA = CUBLAS_OP_N;
+      cublasOperation_t opTransB = CUBLAS_OP_N;
+      status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSA, &opTransA, sizeof(opTransA));
+      if (status == CUBLAS_STATUS_SUCCESS) {
+        status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSB, &opTransB, sizeof(opTransB));
+      }
+
+      // Layouts for column-major interpretation of row-major data:
+      // B is [K,N] row-major -> treat as [N,K] column-major with ld=N
+      // A is [1,K] row-major -> treat as [K,1] column-major with ld=K
+      // C is [1,N] row-major -> treat as [N,1] column-major with ld=N
+      if (status == CUBLAS_STATUS_SUCCESS) {
+        status = cublasLtMatrixLayoutCreate(&Bdesc, bType, N, K, (int64_t)N);
+      }
+      if (status == CUBLAS_STATUS_SUCCESS) {
+        status = cublasLtMatrixLayoutCreate(&Adesc, aType, K, M, (int64_t)K);
+        if (status == CUBLAS_STATUS_SUCCESS) {
+          status = cublasLtMatrixLayoutCreate(&Cdesc, cType, N, M, (int64_t)N);
+          if (status == CUBLAS_STATUS_SUCCESS) {
+            status = cublasLtMatmulPreferenceCreate(&preference);
+            if (status == CUBLAS_STATUS_SUCCESS) {
+              size_t maxWorkspace = tl_cublasWorkspaceSize;
+              status = cublasLtMatmulPreferenceSetAttribute(preference, CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,
+                                                            &maxWorkspace, sizeof(maxWorkspace));
+              
+              if (status == CUBLAS_STATUS_SUCCESS) {
+                // Note: B is first operand (as A in col-major), A is second operand (as B in col-major)
+                status = cublasLtMatmulAlgoGetHeuristic(*ltHandle, operationDesc, Bdesc, Adesc, Cdesc, Cdesc,
+                                                        preference, 1, heuristicResults, &resultsReturned);
+              }
+              cublasLtMatmulPreferenceDestroy(preference);
+            }
+            cublasLtMatrixLayoutDestroy(Cdesc);
+          }
+          cublasLtMatrixLayoutDestroy(Adesc);
+        }
+        cublasLtMatrixLayoutDestroy(Bdesc);
+      }
+      cublasLtMatmulDescDestroy(operationDesc);
+    }
+
+    if (status != CUBLAS_STATUS_SUCCESS || resultsReturned == 0) {
+      // Heuristic failed: fall back to standard cuBLAS
+      return false;
+    }
+
+    // Cache the best algorithm
+    algo = heuristicResults[0].algo;
+    workspaceSize = heuristicResults[0].workspaceSize;
+    tl_ltAlgoCache[key] = {algo, workspaceSize};
+  }
+
+  // Execute Lt matmul
+  cublasLtMatmulDesc_t operationDesc = nullptr;
+  cublasLtMatrixLayout_t Adesc = nullptr, Bdesc = nullptr, Cdesc = nullptr;
+  bool success = false;
+
+  cublasStatus_t status = cublasLtMatmulDescCreate(&operationDesc, CUBLAS_COMPUTE_32F, CUDA_R_32F);
+  if (status == CUBLAS_STATUS_SUCCESS) {
+    cublasOperation_t opTransA = CUBLAS_OP_N;
+    cublasOperation_t opTransB = CUBLAS_OP_N;
+    status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSA, &opTransA, sizeof(opTransA));
+    if (status == CUBLAS_STATUS_SUCCESS) {
+      status = cublasLtMatmulDescSetAttribute(operationDesc, CUBLASLT_MATMUL_DESC_TRANSB, &opTransB, sizeof(opTransB));
+    }
+
+    if (status == CUBLAS_STATUS_SUCCESS) {
+      status = cublasLtMatrixLayoutCreate(&Bdesc, bType, N, K, (int64_t)N);
+    }
+    if (status == CUBLAS_STATUS_SUCCESS) {
+      status = cublasLtMatrixLayoutCreate(&Adesc, aType, K, M, (int64_t)K);
+      if (status == CUBLAS_STATUS_SUCCESS) {
+        status = cublasLtMatrixLayoutCreate(&Cdesc, cType, N, M, (int64_t)N);
+        if (status == CUBLAS_STATUS_SUCCESS) {
+          float alphaF = static_cast<float>(alpha);
+          float betaF = static_cast<float>(beta);
+
+          void* workspace = nullptr;
+          size_t actualWorkspaceSize = 0;
+          if (workspaceSize > 0 && tl_cublasWorkspacePtr != nullptr && workspaceSize <= tl_cublasWorkspaceSize) {
+            workspace = tl_cublasWorkspacePtr;
+            actualWorkspaceSize = workspaceSize;
+          }
+
+          // B first (as A in col-major), A second (as B in col-major)
+          status = cublasLtMatmul(*ltHandle, operationDesc, &alphaF,
+                                  pB->specialBuffer(), Bdesc,
+                                  pA->specialBuffer(), Adesc,
+                                  &betaF,
+                                  pC->specialBuffer(), Cdesc,
+                                  pC->specialBuffer(), Cdesc,
+                                  &algo,
+                                  workspace, actualWorkspaceSize,
+                                  *stream);
+
+          if (status == CUBLAS_STATUS_SUCCESS) {
+            success = true;
+          }
+          cublasLtMatrixLayoutDestroy(Cdesc);
+        }
+        cublasLtMatrixLayoutDestroy(Adesc);
+      }
+      cublasLtMatrixLayoutDestroy(Bdesc);
+    }
+    cublasLtMatmulDescDestroy(operationDesc);
+  }
+
+  return success;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -511,17 +746,27 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
  if (aType != bType && cType == FLOAT32 && major >= 6) {
    if (aType == FLOAT32 && bType == HALF) {
-     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+     const bool sameLogicalA =
+         tl_lastCaptureCastArrayA != nullptr && tl_lastCaptureCastSourceA == A;
+     if (tl_graphExecutionActive && sameLogicalA && tl_castIdxA < tl_castCacheA.size()) {
+       // q/k/v and gate/up projections commonly reuse the same row-vector activation
+       // back-to-back during decode. Reuse the already-cast HALF buffer and only
+       // advance the cache index so capture and replay consume buffers in the same order.
+       tl_castIdxA++;
+       effA = tl_lastCaptureCastArrayA;
+     } else if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
        // During capture: reuse persistent buffer, assign launches FLOAT→HALF kernel (captured)
        NDArray* cached = tl_castCacheA[tl_castIdxA++];
        cached->assign(effA);
+       tl_lastCaptureCastSourceA = A;
+       tl_lastCaptureCastArrayA = cached;
        effA = cached;
      } else {
-       // Non-capture or cache miss: allocate normally
        castA = effA->cast(HALF);
        effA = castA;
+       tl_lastCaptureCastSourceA = nullptr;
+       tl_lastCaptureCastArrayA = nullptr;
        if (!tl_graphExecutionActive) {
-         // Cache a persistent HALF buffer for future capture reuse
          auto* shapePtr = castA->getShapeAsVector();
          auto* persistent = new NDArray(castA->ordering(), *shapePtr, HALF, castA->getContext());
          delete shapePtr;
@@ -529,13 +774,22 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        }
      }
    } else if (aType == HALF && bType == FLOAT32) {
-     if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()) {
+     const bool sameLogicalB =
+         tl_lastCaptureCastArrayB != nullptr && tl_lastCaptureCastSourceB == B;
+     if (tl_graphExecutionActive && sameLogicalB && tl_castIdxB < tl_castCacheB.size()) {
+       tl_castIdxB++;
+       effB = tl_lastCaptureCastArrayB;
+     } else if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()) {
        NDArray* cached = tl_castCacheB[tl_castIdxB++];
        cached->assign(effB);
+       tl_lastCaptureCastSourceB = B;
+       tl_lastCaptureCastArrayB = cached;
        effB = cached;
      } else {
        castB = effB->cast(HALF);
        effB = castB;
+       tl_lastCaptureCastSourceB = nullptr;
+       tl_lastCaptureCastArrayB = nullptr;
        if (!tl_graphExecutionActive) {
          auto* shapePtr = castB->getShapeAsVector();
          auto* persistent = new NDArray(castB->ordering(), *shapePtr, HALF, castB->getContext());
@@ -616,8 +870,61 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
 
    NDArray::prepareSpecialUse({pC}, {pA, pB});
 
-   // choose appropriate cuda gemm api depending on data types
-   if (typeDouble) {
+   // cuBLAS Lt fast path for decoder logits projection [1,K] x [K,N] -> [1,N]
+   // Mixed precision: FLOAT32 x HALF -> FLOAT32 with large N (vocab)
+   const cudaDataType ltAType = effAType == HALF ? CUDA_R_16F : CUDA_R_32F;
+   const cudaDataType ltBType = effBType == HALF ? CUDA_R_16F : CUDA_R_32F;
+   const cudaDataType ltCType = CUDA_R_32F;
+
+   if (tryLtMatmul(effA, effB, C, alpha, beta, pA, pB, pC, M, N, K, transA, transB, ltAType, ltBType, ltCType)) {
+     NDArray::registerSpecialUse({pC}, {pA, pB});
+     if (C != pC) C->assign(pC);
+     for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
+     delete castA;
+     delete castB;
+     return C;
+   }
+
+   // Decode-phase projections are dominated by row-vector GEMMs [1,K] x [K,N].
+   // Map the row-major problem to cuBLAS's column-major view as [N,K] x [K,1] = [N,1]
+   // so the library can use a better algorithm than the generic m=1, n=N path.
+   const bool rowVectorFastPath =
+       M == 1 && !transA && transB &&
+       pA->ews() == 1 && pB->strideAt(1) == 1 && pC->ews() == 1;
+
+   if (rowVectorFastPath && (typeDouble || typeFloat || typeHalf || typeHalfFloat)) {
+     const int ldaFast = static_cast<int>(pB->strideAt(0));
+     const int ldbFast = K;
+     const int ldcFast = N;
+
+     if (typeDouble) {
+       status = cublasDgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &alpha,
+                            (double*)pB->specialBuffer(), ldaFast,
+                            (double*)pA->specialBuffer(), ldbFast,
+                            &beta, (double*)pC->specialBuffer(), ldcFast);
+     } else if (typeFloat) {
+       float alphaF(alpha), betaF(beta);
+       status = cublasSgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &alphaF,
+                            (float*)pB->specialBuffer(), ldaFast,
+                            (float*)pA->specialBuffer(), ldbFast,
+                            &betaF, (float*)pC->specialBuffer(), ldcFast);
+     } else if (typeHalf) {
+       float16 alphaH(alpha), betaH(beta);
+       status = cublasHgemm(*handle, CUBLAS_OP_N, CUBLAS_OP_N, N, 1, K, &alphaH.data,
+                            (__half*)pB->specialBuffer(), ldaFast,
+                            (__half*)pA->specialBuffer(), ldbFast,
+                            &betaH.data, (__half*)pC->specialBuffer(), ldcFast);
+     } else {
+       float alphaF(alpha), betaF(beta);
+       status = cublasGemmEx(*handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                             N, 1, K, &alphaF,
+                             pB->specialBuffer(), CUDA_R_16F, ldaFast,
+                             pA->specialBuffer(), CUDA_R_16F, ldbFast,
+                             &betaF,
+                             pC->specialBuffer(), CUDA_R_32F, ldcFast,
+                             CUBLAS_COMPUTE_32F, CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+     }
+   } else if (typeDouble) {
      status = cublasDgemm(*handle, transAblas, transBblas, M, N, K, &alpha, (double*)pA->specialBuffer(), lda,
                           (double*)pB->specialBuffer(), ldb, &beta, (double*)pC->specialBuffer(), ldc);
    } else if (typeFloat) {
@@ -931,6 +1238,7 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      // Reshape A to 2D [totalRows, K]
      std::vector<LongType> a2dShape = {totalRows, K};
      NDArray* a2d = A->reshape(A->ordering(), a2dShape, false);
+     NDArray* effA2d = a2d;
 
      // Reshape B to 2D if needed (should already be 2D for the common case)
      NDArray* b2d = const_cast<NDArray*>(B);
@@ -940,12 +1248,44 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        b2d = B->reshape(B->ordering(), b2dShape, false);
        bReshaped = true;
      }
+     NDArray* effB2d = b2d;
+
+     // During graph capture, decoder projections frequently reuse the same
+     // activation tensor across multiple matmuls (for example q/k/v and gate/up).
+     // Reuse the first casted HALF buffer for repeated sources, but still
+     // advance the cache index so warmup and capture consume buffers in the
+     // same order.
+     if (tl_graphExecutionActive) {
+       if (aType == FLOAT32 && bType == HALF) {
+         auto reuseIt = tl_captureCastReuseA.find(A);
+         if (reuseIt != tl_captureCastReuseA.end()) {
+           if (tl_castIdxA < tl_castCacheA.size()) tl_castIdxA++;
+           effA2d = reuseIt->second;
+         } else if (tl_castIdxA < tl_castCacheA.size()) {
+           NDArray* cached = tl_castCacheA[tl_castIdxA++];
+           cached->assign(a2d);
+           tl_captureCastReuseA.emplace(A, cached);
+           effA2d = cached;
+         }
+       } else if (aType == HALF && bType == FLOAT32) {
+         auto reuseIt = tl_captureCastReuseB.find(B);
+         if (reuseIt != tl_captureCastReuseB.end()) {
+           if (tl_castIdxB < tl_castCacheB.size()) tl_castIdxB++;
+           effB2d = reuseIt->second;
+         } else if (tl_castIdxB < tl_castCacheB.size()) {
+           NDArray* cached = tl_castCacheB[tl_castIdxB++];
+           cached->assign(b2d);
+           tl_captureCastReuseB.emplace(B, cached);
+           effB2d = cached;
+         }
+       }
+     }
 
      // Reshape C to 2D [totalRows, N]
      std::vector<LongType> c2dShape = {totalRows, N};
      NDArray* c2d = C->reshape(C->ordering(), c2dShape, false);
 
-     mmulMxM(a2d, b2d, c2d, alpha, beta, c2d->ordering());
+     mmulMxM(effA2d, effB2d, c2d, alpha, beta, c2d->ordering());
 
      delete a2d;
      if (bReshaped) delete b2d;

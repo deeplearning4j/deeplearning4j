@@ -134,16 +134,16 @@ public class TestSmolDoclingOptimizedPipeline {
         // This is the ONLY config that runs unless vlm.test.configs selects others.
         // Target: ≥90 tok/s steady-state decode with ≥50% token diversity.
         if (triton) {
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_default")
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_default")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
                     .tritonSectionFusion(true)
                     .tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
-                    .tritonFusionMinScore(4.0f)
-                    .tritonNumWarps(2).tritonNumStages(1)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
                     .dspBatchedGemm(true)
-                    .maxTokens(100).minDiversityPct(0));
+                    .maxTokens(100).minDiversityPct(40));
 
             // Warps/stages tuning experiments for 100 tok/s target
             configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages1")
@@ -153,6 +153,17 @@ public class TestSmolDoclingOptimizedPipeline {
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .tritonFusionMinScore(4.0f)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .dspBatchedGemm(true)
+                    .maxTokens(100).minDiversityPct(0));
+
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages1_noFusionScoring")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
                     .tritonNumWarps(4).tritonNumStages(1)
                     .dspBatchedGemm(true)
                     .maxTokens(100).minDiversityPct(0));
@@ -168,6 +179,28 @@ public class TestSmolDoclingOptimizedPipeline {
                     .dspBatchedGemm(true)
                     .maxTokens(100).minDiversityPct(0));
 
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_noFusionScoring")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
+                    .dspBatchedGemm(true)
+                    .maxTokens(100).minDiversityPct(0));
+
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_MATMUL_gc_argOpt_batchGemmOnly_warps4_stages2_noFusionScoring")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM_AND_MATMUL + ",ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
+                    .dspBatchedGemm(true)
+                    .maxTokens(100).minDiversityPct(0));
+
             configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages2")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
                     .tritonSectionFusion(true)
@@ -179,12 +212,34 @@ public class TestSmolDoclingOptimizedPipeline {
                     .dspBatchedGemm(true)
                     .maxTokens(100).minDiversityPct(0));
 
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages2_noFusionScoring")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(2).tritonNumStages(2)
+                    .dspBatchedGemm(true)
+                    .maxTokens(100).minDiversityPct(0));
+
             configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
                     .tritonSectionFusion(true)
                     .tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonNumWarps(2).tritonNumStages(1)
+                    .dspBatchedGemm(true)
+                    .maxTokens(100).minDiversityPct(0));
+
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps2_stages1_noFusionScoring")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
                     .tritonNumWarps(2).tritonNumStages(1)
                     .dspBatchedGemm(true)
                     .maxTokens(100).minDiversityPct(0));
