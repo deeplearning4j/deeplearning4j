@@ -755,6 +755,19 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     allocateSpecial();
     if (_specialBuffer == nullptr) return;
 
+    // If device data is already current, skip recording the H2D memcpy node.
+    // Capture buffers (for placeholder external inputs) have both host and device
+    // data initialized before capture. Recording a redundant H2D bakes a pinned
+    // workspace address into the graph. On replay, the D2D copy correctly updates
+    // the capture buffer with fresh data BEFORE graph launch, but then the graph's
+    // H2D node overwrites it with stale pinned-workspace data from capture time.
+    // Skipping the H2D when device is already current prevents this stale overwrite.
+    // Temporary arrays (axis/dimension parameters) have isSpecialActual()=false
+    // and still get the pinned workspace H2D treatment they need.
+    if (isSpecialActual()) {
+      return;
+    }
+
     // Use capture host workspace bump allocator for persistent pinned copy.
     // The H2D memcpy node bakes the source address — if _primaryBuffer is freed
     // after capture, graph replay reads garbage. The pinned copy in the workspace
