@@ -479,9 +479,10 @@ void* CudaMemoryPool::allocateFailover(size_t size, int currentDeviceId, int* ac
   }
 
   // Step 2: Try other GPU devices (peer first, then non-peer).
-  // Non-peer devices work because the caller gets actualDeviceId and higher-level code
-  // (DataBuffer::migrate, replicateToDevice) handles cross-device transfers via D2H+H2D.
-  // Peer devices are preferred (direct GPU-GPU access), non-peer next, pinned host last.
+  // Peer devices allow direct GPU-GPU access. Non-peer devices require staged
+  // D2H+H2D transfers — the higher-level migration code (DataBuffer::migrate,
+  // replicateToDevice) is responsible for using the correct copy path based on
+  // whether peer access is enabled between the source and target devices.
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
 

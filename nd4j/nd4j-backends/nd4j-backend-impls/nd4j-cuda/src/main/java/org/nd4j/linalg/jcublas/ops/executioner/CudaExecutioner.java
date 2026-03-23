@@ -321,7 +321,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numDevices = getDeviceCount();
         if (numDevices <= 1) return 0;
 
-        // Priority 1: Output device — preferred, but only if it has enough free memory.
+        // Priority 1: Output device — preferred, but only if it has enough free memory
+        // for both the migration of cross-device inputs AND execution workspace.
         // Outputs CAN be migrated (ensureDeviceCoherency handles output reallocation),
         // so if the output device is OOM we fall through to find a viable device.
         if (outputs != null) {
@@ -345,12 +346,25 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         bestBytes = outputDeviceBytes[d];
                     }
                 }
-                // Only use the output device if it has enough free memory for execution
+                // Calculate how much input data would need to migrate TO the output device
+                long inputMigrationBytes = 0;
+                if (inputs != null) {
+                    for (INDArray input : inputs) {
+                        if (input != null && input.data() != null) {
+                            int inputDev = AtomicAllocator.getInstance().getDeviceId(input);
+                            if (inputDev >= 0 && inputDev != bestDevice) {
+                                inputMigrationBytes += input.length() * input.data().getElementSize();
+                            }
+                        }
+                    }
+                }
+                // Only use the output device if it has enough free memory for
+                // input migration + execution workspace
                 long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(bestDevice);
-                if (freeMem >= MIN_FREE_MEMORY_FOR_TARGET) {
+                if (freeMem >= inputMigrationBytes + MIN_FREE_MEMORY_FOR_TARGET) {
                     return bestDevice;
                 }
-                // Output device is OOM — fall through to find a device with capacity
+                // Output device can't fit migration — fall through to find a device with capacity
             }
         }
 
@@ -398,17 +412,24 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        // Priority 3: Device with most free memory (capacity tiebreaker)
+        // Priority 3: Device with most free memory (capacity tiebreaker).
+        // Also requires MIN_FREE_MEMORY_FOR_TARGET — if all devices are too full,
+        // fall back to the current device (avoid migration-induced OOM).
         long bestFree = -1;
-        int bestDevice = 0;
+        int bestDevice = -1;
         for (int d = 0; d < numDevices; d++) {
             long freeMem = Nd4j.getNativeOps().getDeviceFreeMemory(d);
-            if (freeMem > bestFree) {
+            if (freeMem >= MIN_FREE_MEMORY_FOR_TARGET && freeMem > bestFree) {
                 bestFree = freeMem;
                 bestDevice = d;
             }
         }
-        return bestDevice;
+        if (bestDevice >= 0) {
+            return bestDevice;
+        }
+        // All devices below threshold — use current device to avoid migration
+        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        return Math.max(0, Math.min(currentDevice, numDevices - 1));
     }
 
     /** Get the number of CUDA devices (cached after first query). */

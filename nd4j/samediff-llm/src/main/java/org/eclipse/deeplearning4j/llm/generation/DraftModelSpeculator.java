@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -94,6 +95,9 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
     // Cached decoder input names (resolved once from the model)
     private List<String> decoderInputNames;
 
+    /** Device where the draft model's constants reside (detected lazily). */
+    private int draftModelDevice = -1;
+
     // Statistics
     private long totalDraftSteps;
     private long totalDraftTimeMs;
@@ -110,6 +114,7 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
      * @param vocabSize          vocabulary size of the draft model (for clamping out-of-range token IDs)
      * @param maxSpeculativeTokens maximum tokens to speculate per round (K)
      * @param maxDraftKvLen      maximum static KV cache length
+     * @param modelDeviceId      CUDA device where the draft model's constants reside (-1 for auto-detect)
      */
     public DraftModelSpeculator(
             String name,
@@ -120,7 +125,8 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
             long hiddenSize,
             long vocabSize,
             int maxSpeculativeTokens,
-            int maxDraftKvLen) {
+            int maxDraftKvLen,
+            int modelDeviceId) {
 
         if (maxSpeculativeTokens < 1) {
             throw new IllegalArgumentException("maxSpeculativeTokens must be >= 1, got " + maxSpeculativeTokens);
@@ -140,6 +146,24 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
         this.maxDraftKvLen = maxDraftKvLen;
         this.draftPastSeqLen = 0;
         this.checkpointPastSeqLen = 0;
+        this.draftModelDevice = modelDeviceId;
+    }
+
+    /**
+     * Convenience constructor that auto-detects the model's device.
+     */
+    public DraftModelSpeculator(
+            String name,
+            SameDiff draftModel,
+            Function<int[], INDArray> embedFunction,
+            Function<INDArray, Integer> decodeFunction,
+            ModelIOConfig ioConfig,
+            long hiddenSize,
+            long vocabSize,
+            int maxSpeculativeTokens,
+            int maxDraftKvLen) {
+        this(name, draftModel, embedFunction, decodeFunction, ioConfig,
+                hiddenSize, vocabSize, maxSpeculativeTokens, maxDraftKvLen, -1);
     }
 
     @Override
@@ -148,6 +172,29 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
             return new int[0];
         }
 
+        // Switch to the draft model's device so all arrays are created there.
+        // Without this, inputs land on device 0 (caller's device) and
+        // ensureDeviceCoherency migrates ALL draft model constants to device 0
+        // (~1.3GB/step leak that exhausts device 0 memory).
+        int callerDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        int targetDevice = getDraftModelDevice();
+        if (targetDevice >= 0 && targetDevice != callerDevice) {
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice,
+                    "DraftModelSpeculator", "speculate-colocate-with-model");
+        }
+
+        try {
+            return speculateOnDevice(generatedTokens);
+        } finally {
+            // Restore caller's device
+            if (targetDevice >= 0 && targetDevice != callerDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(callerDevice,
+                        "DraftModelSpeculator", "speculate-restore-caller-device");
+            }
+        }
+    }
+
+    private int[] speculateOnDevice(int[] generatedTokens) {
         // Rollback to checkpoint (previous round's speculation may have been partial)
         rollbackToCheckpoint();
 
@@ -468,5 +515,21 @@ public class DraftModelSpeculator implements Speculator, AutoCloseable {
             }
         }
         return maxIdx;
+    }
+
+    /**
+     * Detect which device the draft model's constants reside on.
+     * Cached after first call.
+     */
+    private int getDraftModelDevice() {
+        if (draftModelDevice >= 0) return draftModelDevice;
+        for (var v : draftModel.variables()) {
+            INDArray arr = draftModel.getArrForVarName(v.name());
+            if (arr != null && arr.data() != null) {
+                draftModelDevice = arr.data().targetDevice();
+                return draftModelDevice;
+            }
+        }
+        return -1;
     }
 }

@@ -89,6 +89,46 @@ SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   auto* streamPtr = LaunchContext::defaultContext()->getCudaStream();
   return (streamPtr != nullptr) ? *streamPtr : nullptr;
 }
+
+/**
+ * Check if an allocation that failed over to a different device landed on a non-peer device.
+ * If so, free the non-peer buffer and replace it with pinned host memory (UVA-accessible
+ * from all devices). Returns the effective device ID for the buffer.
+ *
+ * Non-peer device memory cannot be accessed by kernels on requestedDevice (CUDA error 700).
+ * Pinned host memory is slower (PCIe bandwidth) but universally accessible via UVA.
+ *
+ * @param buffer        Pointer to the allocated buffer (may be replaced)
+ * @param allocSize     Size of the allocation in bytes
+ * @param requestedDevice  The device the caller wanted the allocation on
+ * @param actualDevice     The device the allocation actually landed on
+ * @param caller        Name of the calling function for diagnostics
+ * @return The effective device ID (requestedDevice if pinned host was used, actualDevice if peer)
+ */
+int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, int actualDevice, const char* caller) {
+  if (actualDevice == requestedDevice) return actualDevice;
+  if (memory::CudaMemoryPool::getInstance().isPeerAccessEnabled(requestedDevice, actualDevice)) return actualDevice;
+
+  sd_printf("%s: Non-peer failover (device %d → %d) — switching to pinned host for kernel accessibility\n",
+            caller, requestedDevice, actualDevice);
+
+  // Free the non-peer device allocation
+  cudaSetDevice(actualDevice);
+  memory::CudaMemoryPool::getInstance().free(buffer, actualDevice, nullptr);
+  cudaSetDevice(requestedDevice);
+
+  // Allocate pinned host memory instead
+  void* pinnedPtr = nullptr;
+  cudaError_t err = cudaMallocHost(&pinnedPtr, allocSize);
+  if (err != cudaSuccess || pinnedPtr == nullptr) {
+    buffer = nullptr;
+    std::string msg = std::string(caller) + ": pinned host allocation also failed for " + std::to_string(allocSize) + " bytes";
+    THROW_EXCEPTION(msg.c_str());
+  }
+  memory::CudaMemoryPool::getInstance().registerHostAllocation(pinnedPtr, allocSize);
+  buffer = pinnedPtr;
+  return requestedDevice;
+}
 }  // namespace
 
 void DataBuffer::expand(const uint64_t size) {
@@ -113,6 +153,9 @@ void DataBuffer::expand(const uint64_t size) {
       if (newSpecialBuffer == nullptr) {
         THROW_EXCEPTION("[DEVICE] expand allocation failed");
       }
+      void* expandBuf = reinterpret_cast<void*>(newSpecialBuffer);
+      actualExpandDevice = handleNonPeerFailover(expandBuf, allocSize, currentDeviceId, actualExpandDevice, "DataBuffer::expand");
+      newSpecialBuffer = reinterpret_cast<int8_t*>(expandBuf);
     } else {
       size_t allocSize = size + 8;
       newSpecialBuffer = reinterpret_cast<int8_t*>(
@@ -524,6 +567,10 @@ void DataBuffer::allocateSpecial() {
       if (_specialBuffer == nullptr) {
         THROW_EXCEPTION("[DEVICE] allocation failed");
       }
+      // If failover landed on a non-peer device, switch to pinned host (UVA-accessible).
+      void* specialBuf = reinterpret_cast<void*>(_specialBuffer);
+      actualDevice = handleNonPeerFailover(specialBuf, allocSize, deviceId, actualDevice, "DataBuffer::allocateSpecial");
+      _specialBuffer = reinterpret_cast<int8_t*>(specialBuf);
     } else {
       size_t allocSize = getLenInBytes() + 8;
       _specialBuffer = reinterpret_cast<int8_t*>(
@@ -1440,6 +1487,11 @@ void DataBuffer::migrate() {
   if (targetDevice != currentDeviceId) {
     sd_printf("DataBuffer::migrate: Allocation failed over from device %d to device %d for %zu bytes\n",
               currentDeviceId, targetDevice, getLenInBytes());
+
+    // If failover landed on a non-peer device, switch to pinned host (UVA-accessible).
+    size_t migrateAllocSize = getLenInBytes() + 8;
+    targetDevice = handleNonPeerFailover(newBuffer, migrateAllocSize, currentDeviceId, targetDevice, "DataBuffer::migrate");
+    actualMigrateDevice = targetDevice;
   }
 
   if (_specialBuffer != nullptr) {

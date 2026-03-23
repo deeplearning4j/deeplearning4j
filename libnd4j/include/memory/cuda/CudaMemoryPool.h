@@ -88,6 +88,16 @@ class SD_LIB_EXPORT CudaMemoryPool {
   }
 
   /**
+   * Register an externally-allocated pinned host pointer so that free() uses cudaFreeHost.
+   * Used by DataBuffer::migrate when falling back to pinned host after non-peer failover.
+   */
+  void registerHostAllocation(void* ptr, size_t size) {
+    std::lock_guard<std::mutex> lock(fallbackAllocMutex_);
+    hostAllocations_[ptr] = size;
+    pinnedHostBytesUsed_.fetch_add(size);
+  }
+
+  /**
    * Initialize the memory pool for a specific device
    * Called automatically on first allocation, but can be called explicitly
    */

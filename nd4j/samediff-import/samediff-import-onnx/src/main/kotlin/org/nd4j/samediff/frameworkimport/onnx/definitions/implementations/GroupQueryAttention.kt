@@ -212,12 +212,13 @@ class GroupQueryAttention : PreImportHook {
         // Reshape to [batch, num_heads, seq, head_dim] using dynamic shape
         // batch and seq are dynamic, num_heads and head_dim are static
         val numTotalHeads = (kvNumHeads * numRepeats).toLong()
-        // Use -1 for batch to keep it dynamic, 0 won't work here since rank changes
-        // Build target shape dynamically: [batch, numTotalHeads, seq, head_dim]
-        val xShapeVar = sd.shape(x)
-        val batchVar = sd.reshape(sd.slice(xShapeVar, intArrayOf(0), 1), 1)
-        val seqVar = sd.reshape(sd.slice(xShapeVar, intArrayOf(2), 1), 1)
-        val headDimVar = sd.reshape(sd.slice(xShapeVar, intArrayOf(3), 1), 1)
+        // Extract shape from the tiled tensor itself (rank 5: [batch, kvNumHeads, numRepeats, seq, headDim])
+        // This is more reliable than reading from x, because tiled is in the main computation path
+        // and its shape is always correct after expandDims+tile.
+        val tiledShapeVar = sd.shape(tiled)
+        val batchVar = sd.reshape(sd.slice(tiledShapeVar, intArrayOf(0), 1), 1)
+        val seqVar = sd.reshape(sd.slice(tiledShapeVar, intArrayOf(3), 1), 1)
+        val headDimVar = sd.reshape(sd.slice(tiledShapeVar, intArrayOf(4), 1), 1)
         val targetShape = sd.concat(0, batchVar,
             sd.constant(org.nd4j.linalg.factory.Nd4j.createFromArray(numTotalHeads)),
             seqVar, headDimVar)

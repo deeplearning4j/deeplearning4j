@@ -87,6 +87,7 @@ public class TestSmolDoclingOptimizedPipeline {
         long hiddenSize;
         // Draft model for speculative decoding (lazily loaded)
         SameDiff draftDecoder;
+        int draftDeviceId = -1;
         long draftHiddenSize;
         // Pipeline setup timings
         long downloadMs;
@@ -1578,7 +1579,8 @@ public class TestSmolDoclingOptimizedPipeline {
                     draftHidden,
                     draftVocabSize,
                     maxSpecTokens,
-                    256);
+                    256,
+                    ctx.draftDeviceId);
         } catch (Exception e) {
             log.error("Failed to build draft model speculator, falling back to ngram", e);
             return null;
@@ -1619,6 +1621,7 @@ public class TestSmolDoclingOptimizedPipeline {
             DeviceMemoryManager.getInstance().switchDevice(origDevice, "loadDraftModel", "restore");
         }
 
+        ctx.draftDeviceId = draftDevice;
         long elapsed = System.currentTimeMillis() - startMs;
         log.info("  Draft model loaded in {}ms on device {}, ops={}", elapsed, draftDevice,
                 ctx.draftDecoder.ops().length);

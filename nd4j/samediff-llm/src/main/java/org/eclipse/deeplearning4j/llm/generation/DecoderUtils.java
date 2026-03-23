@@ -105,7 +105,7 @@ public class DecoderUtils {
         }
 
         // Create single mask pattern
-        INDArray singleMask = Nd4j.createFromArray(data).reshape(1, 1, currentSeqLen, totalSeqLen);
+        INDArray singleMask = Nd4j.create(data, new long[]{1, 1, currentSeqLen, totalSeqLen}, 'c');
 
         if (batchSize == 1) {
             log.info("Built causal mask: shape=[1, 1, {}, {}], pastSeqLen={}, dtype=FLOAT",
@@ -802,8 +802,7 @@ public class DecoderUtils {
                                 biasData[rowOffset + (int) maxKvLen + k] = MASK_FILL;
                             }
                         }
-                        INDArray bias = Nd4j.createFromArray(biasData)
-                                .reshape(1, 1, currentSeqLen, totalLen);
+                        INDArray bias = Nd4j.create(biasData, new long[]{1, 1, currentSeqLen, totalLen}, 'c');
                         decoderInputMap.put(inputName, bias);
                         if (canReuse) reusableInputs.put(inputName, bias);
                     }

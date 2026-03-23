@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -160,6 +161,15 @@ public class FrozenDecodeStep implements AutoCloseable {
     private void allocateBuffers() {
         long totalMaskLen = maxKvLen + seqLen;
 
+        // Detect the target model's device from its first constant array.
+        // This ensures our reusable buffers co-locate with the model weights,
+        // avoiding cross-device migration in ensureDeviceCoherency.
+        int modelDevice = detectModelDevice();
+        if (modelDevice >= 0) {
+            DeviceMemoryManager.getInstance().switchDevice(modelDevice,
+                    "FrozenDecodeStep", "allocateBuffers-colocate-with-model");
+        }
+
         reusableEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, seqLen, hiddenSize);
         reusableInputIds = Nd4j.zeros(DataType.LONG, 1, seqLen);
         reusableAttentionMask = Nd4j.zeros(DataType.LONG, 1, totalMaskLen);
@@ -172,8 +182,22 @@ public class FrozenDecodeStep implements AutoCloseable {
         reusableAttnBias = Nd4j.zeros(DataType.FLOAT, 1, 1, seqLen, totalMaskLen);
         reusablePositionIds = Nd4j.zeros(DataType.LONG, 1, seqLen);
 
-        log.info("  Allocated fixed-address buffers: embeds=[1,{},{}] mask=[1,{}] attnBias=[1,1,{},{}] posIds=[1,{}]",
-                seqLen, hiddenSize, totalMaskLen, seqLen, totalMaskLen, seqLen);
+        log.info("  Allocated fixed-address buffers on device {}: embeds=[1,{},{}] mask=[1,{}] attnBias=[1,1,{},{}] posIds=[1,{}]",
+                modelDevice, seqLen, hiddenSize, totalMaskLen, seqLen, totalMaskLen, seqLen);
+    }
+
+    /**
+     * Detect the CUDA device where the target model's constants are stored.
+     * Returns the device index, or -1 if unknown.
+     */
+    private int detectModelDevice() {
+        for (var v : decoder.variables()) {
+            INDArray arr = decoder.getArrForVarName(v.name());
+            if (arr != null && arr.data() != null) {
+                return arr.data().targetDevice();
+            }
+        }
+        return -1;
     }
 
     /**
@@ -480,7 +504,7 @@ public class FrozenDecodeStep implements AutoCloseable {
             }
         }
 
-        INDArray newBias = Nd4j.createFromArray(biasData).reshape(1, 1, seqLen, totalLen);
+        INDArray newBias = Nd4j.create(biasData, new long[]{1, 1, seqLen, totalLen}, 'c');
         reusableAttnBias.assign(newBias);
         newBias.close();
     }
