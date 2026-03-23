@@ -40,6 +40,7 @@ public class CapturingSlotInterceptor implements SlotOutputInterceptor {
 
     private final Map<Integer, Map<String, INDArray>> captured = new LinkedHashMap<>();
     private final Map<String, INDArray> byName = new LinkedHashMap<>();
+    private final Map<Integer, String> stepToOpName = new LinkedHashMap<>();
 
     private Set<String> filterVarNames;
     private int captureInterval = 1;
@@ -69,6 +70,7 @@ public class CapturingSlotInterceptor implements SlotOutputInterceptor {
         INDArray snapshot = output.dup();
         captured.computeIfAbsent(stepIdx, k -> new LinkedHashMap<>()).put(outputVarName, snapshot);
         byName.put(outputVarName, snapshot);
+        stepToOpName.put(stepIdx, opName);
     }
 
     /**
@@ -86,6 +88,13 @@ public class CapturingSlotInterceptor implements SlotOutputInterceptor {
     }
 
     /**
+     * Returns the op name for each captured step index.
+     */
+    public Map<Integer, String> getStepToOpName() {
+        return stepToOpName;
+    }
+
+    /**
      * Closes all captured arrays and clears internal state.
      */
     public void clear() {
@@ -96,5 +105,6 @@ public class CapturingSlotInterceptor implements SlotOutputInterceptor {
         }
         captured.clear();
         byName.clear();
+        stepToOpName.clear();
     }
 }

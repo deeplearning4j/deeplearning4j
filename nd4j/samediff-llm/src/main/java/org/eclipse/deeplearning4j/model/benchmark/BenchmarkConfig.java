@@ -61,6 +61,7 @@ public class BenchmarkConfig {
     int tritonNumStages = -1;
     int tritonNumCTAs = -1;
     int tritonMaxNreg = -1;
+    int tritonAttentionBlockN = -1;
     boolean tritonEnableFpFusion = true;
     int tritonMaxSubsegmentOps = -1;
     int tritonMaxSubsegmentSections = -1;
@@ -80,6 +81,10 @@ public class BenchmarkConfig {
     boolean tritonFusionScoring = true;
     float tritonFusionMinScore = 5.0f;
 
+    // cuBLAS flags
+    boolean cublasTf32;
+    boolean cublasCaptureWorkspace = true;  // default ON — prevents MemAlloc graph nodes
+
     // DSP flags
     boolean dspCastElimination;
     boolean dspCastSinkMatmul;
@@ -87,6 +92,10 @@ public class BenchmarkConfig {
     boolean dspBatchZero;
     boolean dspBatchZeroKernel;
     boolean dspBatchedGemm;
+
+    // Draft model speculation
+    boolean useDraftModel;
+    int draftModelK = 5;  // number of speculative tokens per step
 
     // Generation
     int captureMinExec = 1;
@@ -97,10 +106,35 @@ public class BenchmarkConfig {
     String[] expectedSubstrings;
     boolean expectStructuralTags = true;
 
+    // DSP accuracy validation
+    boolean validationMode;
+    ValidationConfig validationConfig;
+
     public static BenchmarkConfig create(String name) {
         BenchmarkConfig c = new BenchmarkConfig();
         c.name = name;
         return c;
+    }
+
+    /**
+     * Returns the best-known benchmark configuration for LLM decode.
+     * This is the single source of truth for optimal inference settings.
+     * Matches: warps4_stages1_tf32_default (~86 tok/s on RTX 4090).
+     *
+     * @see org.nd4j.linalg.factory.Environment#applyOptimalLLMConfig()
+     */
+    public static BenchmarkConfig optimal() {
+        return create("OPTIMAL")
+                .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                .tritonSectionFusion(true)
+                .tritonCompileAll(true)
+                .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                .tritonFusionScoring(false)
+                .tritonNumWarps(4).tritonNumStages(1)
+                .cublasTf32(true)
+                .dspBatchedGemm(true)
+                .maxTokens(250).minDiversityPct(40);
     }
 
     // Fluent setters
@@ -124,6 +158,7 @@ public class BenchmarkConfig {
     public BenchmarkConfig tritonNumStages(int n) { this.tritonNumStages = n; return this; }
     public BenchmarkConfig tritonNumCTAs(int n) { this.tritonNumCTAs = n; return this; }
     public BenchmarkConfig tritonMaxNreg(int n) { this.tritonMaxNreg = n; return this; }
+    public BenchmarkConfig tritonAttentionBlockN(int n) { this.tritonAttentionBlockN = n; return this; }
     public BenchmarkConfig tritonEnableFpFusion(boolean b) { this.tritonEnableFpFusion = b; return this; }
     public BenchmarkConfig tritonMaxSubsegmentOps(int n) { this.tritonMaxSubsegmentOps = n; return this; }
     public BenchmarkConfig tritonMaxSubsegmentSections(int n) { this.tritonMaxSubsegmentSections = n; return this; }
@@ -146,12 +181,18 @@ public class BenchmarkConfig {
     public BenchmarkConfig minDiversityPct(double d) { this.minDiversityPct = d; return this; }
     public BenchmarkConfig expectedSubstrings(String... s) { this.expectedSubstrings = s; return this; }
     public BenchmarkConfig expectStructuralTags(boolean b) { this.expectStructuralTags = b; return this; }
+    public BenchmarkConfig cublasTf32(boolean b) { this.cublasTf32 = b; return this; }
+    public BenchmarkConfig cublasCaptureWorkspace(boolean b) { this.cublasCaptureWorkspace = b; return this; }
     public BenchmarkConfig dspCastElimination(boolean b) { this.dspCastElimination = b; return this; }
     public BenchmarkConfig dspCastSinkMatmul(boolean b) { this.dspCastSinkMatmul = b; return this; }
     public BenchmarkConfig dspFp16Compute(boolean b) { this.dspFp16Compute = b; return this; }
     public BenchmarkConfig dspBatchZero(boolean b) { this.dspBatchZero = b; return this; }
     public BenchmarkConfig dspBatchZeroKernel(boolean b) { this.dspBatchZeroKernel = b; return this; }
     public BenchmarkConfig dspBatchedGemm(boolean b) { this.dspBatchedGemm = b; return this; }
+    public BenchmarkConfig useDraftModel(boolean b) { this.useDraftModel = b; return this; }
+    public BenchmarkConfig draftModelK(int n) { this.draftModelK = n; return this; }
+    public BenchmarkConfig validationMode(boolean b) { this.validationMode = b; return this; }
+    public BenchmarkConfig validationConfig(ValidationConfig c) { this.validationConfig = c; return this; }
 
     // Getters
     public String getName() { return name; }
@@ -175,6 +216,7 @@ public class BenchmarkConfig {
     public int getTritonNumStages() { return tritonNumStages; }
     public int getTritonNumCTAs() { return tritonNumCTAs; }
     public int getTritonMaxNreg() { return tritonMaxNreg; }
+    public int getTritonAttentionBlockN() { return tritonAttentionBlockN; }
     public boolean isTritonEnableFpFusion() { return tritonEnableFpFusion; }
     public int getTritonMaxSubsegmentOps() { return tritonMaxSubsegmentOps; }
     public int getTritonMaxSubsegmentSections() { return tritonMaxSubsegmentSections; }
@@ -197,12 +239,18 @@ public class BenchmarkConfig {
     public double getMinDiversityPct() { return minDiversityPct; }
     public String[] getExpectedSubstrings() { return expectedSubstrings; }
     public boolean isExpectStructuralTags() { return expectStructuralTags; }
+    public boolean isCublasTf32() { return cublasTf32; }
+    public boolean isCublasCaptureWorkspace() { return cublasCaptureWorkspace; }
     public boolean isDspCastElimination() { return dspCastElimination; }
     public boolean isDspCastSinkMatmul() { return dspCastSinkMatmul; }
     public boolean isDspFp16Compute() { return dspFp16Compute; }
     public boolean isDspBatchZero() { return dspBatchZero; }
     public boolean isDspBatchZeroKernel() { return dspBatchZeroKernel; }
     public boolean isDspBatchedGemm() { return dspBatchedGemm; }
+    public boolean isUseDraftModel() { return useDraftModel; }
+    public int getDraftModelK() { return draftModelK; }
+    public boolean isValidationMode() { return validationMode; }
+    public ValidationConfig getValidationConfig() { return validationConfig; }
 
     public boolean isTriton() {
         return !tritonIncludeTypes.isEmpty();
@@ -224,6 +272,7 @@ public class BenchmarkConfig {
         if (tritonNumWarps > 0) sb.append(" warps=").append(tritonNumWarps);
         if (tritonNumStages > 0) sb.append(" stages=").append(tritonNumStages);
         if (tritonMaxNreg > 0) sb.append(" maxNreg=").append(tritonMaxNreg);
+        if (tritonAttentionBlockN > 0) sb.append(" attnBlockN=").append(tritonAttentionBlockN);
         if (tritonMaxSubsegmentOps > 0) sb.append(" maxSubOps=").append(tritonMaxSubsegmentOps);
         if (tritonMaxSubsegmentSections > 0) sb.append(" maxSubSections=").append(tritonMaxSubsegmentSections);
         if (tritonAllowFallbackCapture) sb.append(" fallbackCapture");
@@ -233,6 +282,9 @@ public class BenchmarkConfig {
         if (dspBatchZero) sb.append(" batchZero");
         if (dspBatchZeroKernel) sb.append(" batchZeroKernel");
         if (dspBatchedGemm) sb.append(" batchedGemm");
+        if (cublasTf32) sb.append(" cublasTf32");
+        if (!cublasCaptureWorkspace) sb.append(" noWorkspace");
+        if (useDraftModel) sb.append(" draftModel(K=").append(draftModelK).append(")");
         sb.append(" tokens=").append(maxTokens);
         return sb.toString();
     }

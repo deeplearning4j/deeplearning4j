@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,28 +47,19 @@ import java.util.function.Function;
  * the effective throughput approaches {@code (K+1) / (draftTime + targetTime)} tokens per
  * unit time, versus {@code 1 / targetTime} without speculation.</p>
  *
- * <h3>Architecture</h3>
- * <pre>
- * Draft model (small, fast):
- *   for k = 1..K:
- *     token[k] = argmax(draftModel.forward(token[k-1]))
- *
- * Target model (large, accurate):
- *   logits[0..K] = targetModel.forward([token[0], ..., token[K]])
- *   accepted = verify(token[1..K], logits[0..K-1])
- * </pre>
- *
  * <h3>KV Cache Management</h3>
- * <p>The draft model maintains its own KV cache, separate from the target model.
- * On each speculation round, the draft KV cache is rolled back to the last verified
- * position to avoid accumulating unverified state.</p>
+ * <p>Uses pre-allocated static KV buffers with scatter-based writes instead of dup/close.
+ * Checkpoint and rollback are zero-copy via {@link SpeculativeKVCacheManager} -- only the
+ * cache position pointer is saved/restored, since positions beyond draftPastSeqLen are
+ * masked out by the attention mask and will be overwritten on the next append.</p>
  *
  * @author Eclipse Deeplearning4j Contributors
  * @see Speculator
+ * @see SpeculativeKVCacheManager
  * @see TreeAttentionVerifier
  */
 @Slf4j
-public class DraftModelSpeculator implements Speculator {
+public class DraftModelSpeculator implements Speculator, AutoCloseable {
 
     @Getter
     private final String name;
@@ -75,36 +67,32 @@ public class DraftModelSpeculator implements Speculator {
     @Getter
     private final int maxSpeculativeTokens;
 
-    /** The draft SameDiff model (smaller than target). */
     private final SameDiff draftModel;
-
-    /** Maps token IDs to embeddings: int[1] -> INDArray[1, 1, hiddenSize]. */
     private final Function<int[], INDArray> embedFunction;
-
-    /** Extracts the greedy next-token from logits: INDArray[1, 1, vocab] -> int. */
     private final Function<INDArray, Integer> decodeFunction;
-
-    /** Draft model decoder input variable names. */
-    private final List<String> decoderInputNames;
-
-    /** Logits output name in the draft model. */
-    private final String logitsOutputName;
-
-    /** KV cache output names for the draft model. */
-    private final DecoderUtils.KVCacheNames kvCacheNames;
-
-    /** Hidden size of the draft model. */
+    private final ModelIOConfig ioConfig;
     private final long hiddenSize;
+    private final long vocabSize;
 
-    /** Current draft model KV cache state. */
-    private Map<String, INDArray> draftKvCache;
+    /** Maximum draft KV cache sequence length. */
+    private final int maxDraftKvLen;
+
+    /** Pre-allocated static KV buffers, keyed by past_key_values.* input names. Reused across steps. */
+    private Map<String, INDArray> staticDraftKvBuffers;
+    private boolean staticKvInitialized;
 
     /** Draft model past sequence length (rolled back after each speculation round). */
     private long draftPastSeqLen;
 
-    /** Saved KV cache at the last verified position (for rollback). */
-    private Map<String, INDArray> checkpointKvCache;
+    /** Checkpoint position saved at last verified state. */
     private long checkpointPastSeqLen;
+
+    /** Zero-copy checkpoint/rollback manager for static KV caches. */
+    private final SpeculativeKVCacheManager specKvManager = new SpeculativeKVCacheManager();
+    private int activeCheckpointId = -1;
+
+    // Cached decoder input names (resolved once from the model)
+    private List<String> decoderInputNames;
 
     // Statistics
     private long totalDraftSteps;
@@ -117,38 +105,41 @@ public class DraftModelSpeculator implements Speculator {
      * @param draftModel         the draft SameDiff model
      * @param embedFunction      maps token ID array to embeddings [1, seqLen, hiddenSize]
      * @param decodeFunction     extracts greedy token from logits [1, 1, vocabSize]
-     * @param decoderInputNames  input variable names of the draft decoder
-     * @param logitsOutputName   logits output variable name
-     * @param kvCacheNames       KV cache output name pairs
+     * @param ioConfig           model I/O configuration (input names, output names, KV cache names)
      * @param hiddenSize         hidden dimension of the draft model
+     * @param vocabSize          vocabulary size of the draft model (for clamping out-of-range token IDs)
      * @param maxSpeculativeTokens maximum tokens to speculate per round (K)
+     * @param maxDraftKvLen      maximum static KV cache length
      */
     public DraftModelSpeculator(
             String name,
             SameDiff draftModel,
             Function<int[], INDArray> embedFunction,
             Function<INDArray, Integer> decodeFunction,
-            List<String> decoderInputNames,
-            String logitsOutputName,
-            DecoderUtils.KVCacheNames kvCacheNames,
+            ModelIOConfig ioConfig,
             long hiddenSize,
-            int maxSpeculativeTokens) {
+            long vocabSize,
+            int maxSpeculativeTokens,
+            int maxDraftKvLen) {
 
         if (maxSpeculativeTokens < 1) {
             throw new IllegalArgumentException("maxSpeculativeTokens must be >= 1, got " + maxSpeculativeTokens);
+        }
+        if (maxDraftKvLen < 1) {
+            throw new IllegalArgumentException("maxDraftKvLen must be >= 1, got " + maxDraftKvLen);
         }
 
         this.name = name;
         this.draftModel = draftModel;
         this.embedFunction = embedFunction;
         this.decodeFunction = decodeFunction;
-        this.decoderInputNames = decoderInputNames;
-        this.logitsOutputName = logitsOutputName;
-        this.kvCacheNames = kvCacheNames;
+        this.ioConfig = ioConfig;
         this.hiddenSize = hiddenSize;
+        this.vocabSize = vocabSize;
         this.maxSpeculativeTokens = maxSpeculativeTokens;
-        this.draftKvCache = new HashMap<>();
+        this.maxDraftKvLen = maxDraftKvLen;
         this.draftPastSeqLen = 0;
+        this.checkpointPastSeqLen = 0;
     }
 
     @Override
@@ -157,16 +148,16 @@ public class DraftModelSpeculator implements Speculator {
             return new int[0];
         }
 
-        // Rollback to checkpoint if we have one (previous round's speculation may have been partial)
+        // Rollback to checkpoint (previous round's speculation may have been partial)
         rollbackToCheckpoint();
 
-        int lastToken = generatedTokens[generatedTokens.length - 1];
+        // Clamp the seed token to draft vocab range
+        int lastToken = clampToken(generatedTokens[generatedTokens.length - 1]);
         int[] speculated = new int[maxSpeculativeTokens];
         int count = 0;
 
         long roundStartMs = System.currentTimeMillis();
 
-        // Run draft model autoregressively for K steps
         int currentToken = lastToken;
         for (int k = 0; k < maxSpeculativeTokens; k++) {
             try {
@@ -179,6 +170,9 @@ public class DraftModelSpeculator implements Speculator {
             }
         }
 
+        // Reset the draft model's InferenceSession to free all intermediate arrays.
+        draftModel.resetSession();
+
         long elapsed = System.currentTimeMillis() - roundStartMs;
         totalDraftSteps += count;
         totalDraftTimeMs += elapsed;
@@ -187,7 +181,6 @@ public class DraftModelSpeculator implements Speculator {
             return new int[0];
         }
 
-        // Trim to actual count
         if (count < maxSpeculativeTokens) {
             int[] trimmed = new int[count];
             System.arraycopy(speculated, 0, trimmed, 0, count);
@@ -200,12 +193,10 @@ public class DraftModelSpeculator implements Speculator {
     @Override
     public SpeculationResult verify(int[] speculativeTokens, INDArray logitsPerPosition) {
         if (speculativeTokens == null || speculativeTokens.length == 0) {
-            // No speculation -- just decode from logits
             int token = argmax(logitsPerPosition, 0);
             return new SpeculationResult(0, token);
         }
 
-        // Verify each speculative token against the target model's greedy prediction
         int accepted = 0;
         for (int i = 0; i < speculativeTokens.length; i++) {
             int modelToken = argmax(logitsPerPosition, i);
@@ -216,29 +207,31 @@ public class DraftModelSpeculator implements Speculator {
             }
         }
 
-        // Correction token is the target model's prediction at the first rejected position
         int correctionToken = argmax(logitsPerPosition, accepted);
 
-        // Rollback draft KV cache to the verified position
-        // accepted tokens were correct, so draft KV cache up to checkpoint + accepted is valid
-        // We'll trim on next speculate() call via rollbackToCheckpoint
         saveDraftCheckpoint(accepted);
 
         return new SpeculationResult(accepted, correctionToken);
     }
 
     /**
-     * Synchronize the draft model's KV cache with the target model's verified state.
+     * Synchronize the draft model's KV cache after the target model has verified tokens.
+     * Called by StaticKvCacheDecodeLoop after verification to save a checkpoint
+     * at the accepted position for rollback on the next speculation round.
      *
-     * <p>Call this after each verification round to ensure the draft model's context
-     * matches the target model's accepted prefix. This is important when the target
-     * model rejects speculative tokens -- the draft KV cache must be rolled back.</p>
+     * @param acceptedCount number of speculative tokens accepted by the target model
+     */
+    public void syncAfterVerification(int acceptedCount) {
+        saveDraftCheckpoint(acceptedCount);
+    }
+
+    /**
+     * Synchronize the draft model's KV cache with the target model's verified state.
      *
      * @param verifiedSeqLen the total sequence length accepted by the target model
      */
     public void syncToVerifiedPosition(long verifiedSeqLen) {
         this.checkpointPastSeqLen = verifiedSeqLen;
-        // KV cache trimming happens lazily in rollbackToCheckpoint
     }
 
     /**
@@ -246,55 +239,120 @@ public class DraftModelSpeculator implements Speculator {
      * Call when starting a new generation sequence.
      */
     public void reset() {
-        closeKvCache(draftKvCache);
-        closeKvCache(checkpointKvCache);
-        draftKvCache = new HashMap<>();
-        checkpointKvCache = null;
+        if (activeCheckpointId >= 0) {
+            specKvManager.discardCheckpoint(activeCheckpointId);
+            activeCheckpointId = -1;
+        }
         draftPastSeqLen = 0;
         checkpointPastSeqLen = 0;
     }
 
-    /**
-     * Get draft model performance statistics.
-     *
-     * @return formatted statistics string
-     */
     public String getStats() {
         double avgStepMs = totalDraftSteps > 0 ? (double) totalDraftTimeMs / totalDraftSteps : 0;
-        return String.format("DraftModelSpeculator[%s]: steps=%d, totalTime=%dms, avgStep=%.1fms",
-                name, totalDraftSteps, totalDraftTimeMs, avgStepMs);
+        return String.format("DraftModelSpeculator[%s]: steps=%d, totalTime=%dms, avgStep=%.1fms, %s",
+                name, totalDraftSteps, totalDraftTimeMs, avgStepMs, specKvManager.getStats());
+    }
+
+    @Override
+    public void close() {
+        if (staticDraftKvBuffers != null) {
+            for (INDArray buf : staticDraftKvBuffers.values()) {
+                if (buf != null && !buf.wasClosed()) {
+                    buf.close();
+                }
+            }
+            staticDraftKvBuffers = null;
+        }
+        staticKvInitialized = false;
+        if (activeCheckpointId >= 0) {
+            specKvManager.discardCheckpoint(activeCheckpointId);
+            activeCheckpointId = -1;
+        }
     }
 
     // ========== Internal Methods ==========
 
+    private int clampToken(int tokenId) {
+        if (vocabSize > 0 && tokenId >= vocabSize) {
+            tokenId = (int) (vocabSize - 1);
+        }
+        if (tokenId < 0) {
+            tokenId = 0;
+        }
+        return tokenId;
+    }
+
+    /** Resolve decoder input names from the model (cached). */
+    private List<String> getDecoderInputNames() {
+        if (decoderInputNames == null) {
+            decoderInputNames = draftModel.inputs();
+        }
+        return decoderInputNames;
+    }
+
+    /** Initialize pre-allocated static KV buffers for all layers. */
+    private void initStaticKvBuffers() {
+        staticDraftKvBuffers = new HashMap<>();
+
+        for (String inputName : getDecoderInputNames()) {
+            if (inputName.startsWith(ioConfig.getKvCachePrefix())) {
+                INDArray empty = DecoderUtils.createEmptyKvCache(draftModel, inputName, 1, hiddenSize);
+                long numHeads = empty.size(1);
+                long headDim = empty.size(3);
+                DataType kvType = empty.dataType();
+                empty.close();
+
+                staticDraftKvBuffers.put(inputName,
+                        Nd4j.zeros(kvType, 1, numHeads, maxDraftKvLen, headDim));
+            }
+        }
+
+        staticKvInitialized = true;
+        log.debug("Initialized {} static draft KV buffers with maxKvLen={}", staticDraftKvBuffers.size(), maxDraftKvLen);
+    }
+
     /**
      * Run one autoregressive step of the draft model.
-     *
-     * @param tokenId the input token ID
-     * @return the predicted next token ID (greedy)
      */
     private int draftModelStep(int tokenId) {
-        // Embed the token
-        INDArray embeddings = embedFunction.apply(new int[]{tokenId});
+        tokenId = clampToken(tokenId);
 
-        // Build decoder input map
+        if (!staticKvInitialized) {
+            initStaticKvBuffers();
+        }
+
+        List<String> inputNames = getDecoderInputNames();
+        boolean hasInputIds = ioConfig.hasInputIds(inputNames);
+        INDArray embeddings = hasInputIds ? null : embedFunction.apply(new int[]{tokenId});
+
         long currentSeqLen = 1;
         long totalSeqLen = currentSeqLen + draftPastSeqLen;
 
+        // Build decoder input map
+        List<INDArray> kvViewDups = new ArrayList<>();
         Map<String, INDArray> inputMap = new HashMap<>();
-        for (String inputName : decoderInputNames) {
-            if (inputName.equals("inputs_embeds")) {
+        for (String inputName : inputNames) {
+            if (ioConfig.isInputEmbeddings(inputName)) {
                 inputMap.put(inputName, embeddings);
-            } else if (inputName.equals("attention_mask")) {
+            } else if (ioConfig.isInputIds(inputName)) {
+                inputMap.put(inputName, Nd4j.createFromArray(new long[]{tokenId}).reshape(1, 1));
+            } else if (ioConfig.isAttentionMask(inputName)) {
                 inputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
-            } else if (inputName.equals("_causal_mask")) {
+            } else if (ioConfig.isCausalMask(inputName)) {
                 inputMap.put(inputName, DecoderUtils.buildCausalMask(1, currentSeqLen, totalSeqLen));
-            } else if (inputName.equals("position_ids")) {
+            } else if (ioConfig.isPositionIds(inputName)) {
                 inputMap.put(inputName, Nd4j.createFromArray(new long[]{draftPastSeqLen}).reshape(1, 1));
-            } else if (inputName.startsWith("past_key_values.")) {
-                String presentName = inputName.replace("past_key_values", "present");
-                if (draftKvCache.containsKey(presentName)) {
-                    inputMap.put(inputName, draftKvCache.get(presentName));
+            } else if (inputName.startsWith(ioConfig.getKvCachePrefix())) {
+                if (draftPastSeqLen > 0) {
+                    // Extract contiguous [0:draftPastSeqLen] from static buffer.
+                    // dup() required because the view's strides are non-contiguous
+                    // and attention kernels expect contiguous KV input.
+                    INDArray fullBuf = staticDraftKvBuffers.get(inputName);
+                    INDArray viewDup = fullBuf.get(
+                            NDArrayIndex.all(), NDArrayIndex.all(),
+                            NDArrayIndex.interval(0, draftPastSeqLen), NDArrayIndex.all()).dup();
+                    kvViewDups.add(viewDup);
+                    inputMap.put(inputName, viewDup);
                 } else {
                     inputMap.put(inputName, DecoderUtils.createEmptyKvCache(draftModel, inputName, 1, hiddenSize));
                 }
@@ -302,92 +360,93 @@ public class DraftModelSpeculator implements Speculator {
         }
 
         // Build output names: logits + KV cache
-        java.util.List<String> outputNames = new java.util.ArrayList<>();
-        outputNames.add(logitsOutputName);
-        outputNames.addAll(kvCacheNames.keyNames);
-        outputNames.addAll(kvCacheNames.valueNames);
+        List<String> outputNames = new ArrayList<>();
+        outputNames.add(ioConfig.getLogitsOutputName());
+        DecoderUtils.KVCacheNames kvNames = ioConfig.getKvCacheNames();
+        outputNames.addAll(kvNames.keyNames);
+        outputNames.addAll(kvNames.valueNames);
 
-        // Run draft model
+        // Run draft model (InferenceSession dups outputs)
         Map<String, INDArray> outputs = draftModel.output(inputMap, outputNames.toArray(new String[0]));
 
         // Extract logits and decode
-        INDArray logits = outputs.get(logitsOutputName);
+        INDArray logits = outputs.get(ioConfig.getLogitsOutputName());
         int nextToken = decodeFunction.apply(logits);
 
-        // Update draft KV cache
-        Map<String, INDArray> newKvCache = new HashMap<>();
-        for (String keyName : kvCacheNames.keyNames) {
-            INDArray kv = outputs.get(keyName);
-            if (kv != null) {
-                newKvCache.put(keyName, kv.dup());
-            }
-        }
-        for (String valName : kvCacheNames.valueNames) {
-            INDArray kv = outputs.get(valName);
-            if (kv != null) {
-                newKvCache.put(valName, kv.dup());
+        // Scatter the new KV entry from present outputs into static buffers at draftPastSeqLen.
+        // Present KV shape: [batch, heads, draftPastSeqLen+1, dim] (past concat new).
+        // The new entry is at the last position (index draftPastSeqLen).
+        DecoderUtils.scatterNewKvEntryAtPosition(
+                staticDraftKvBuffers, outputs,
+                kvNames.keyNames, kvNames.valueNames,
+                0, draftPastSeqLen, (int) draftPastSeqLen);
+
+        // Close duped output arrays from InferenceSession
+        for (INDArray arr : outputs.values()) {
+            if (arr != null && !arr.wasClosed()) {
+                arr.setCloseable(true);
+                if (arr.closeable()) {
+                    arr.close();
+                }
             }
         }
 
-        closeKvCache(draftKvCache);
-        draftKvCache = newKvCache;
+        // Close input arrays created for this step (not static KV buffers)
+        for (Map.Entry<String, INDArray> entry : inputMap.entrySet()) {
+            if (!entry.getKey().startsWith(ioConfig.getKvCachePrefix())) {
+                INDArray arr = entry.getValue();
+                if (arr != null && !arr.wasClosed()) {
+                    arr.setCloseable(true);
+                    arr.close();
+                }
+            }
+        }
+
+        // Close contiguous KV view dups used as inputs
+        for (INDArray dup : kvViewDups) {
+            if (dup != null && !dup.wasClosed()) {
+                dup.setCloseable(true);
+                dup.close();
+            }
+        }
+
         draftPastSeqLen++;
 
-        // Clean up non-KV outputs
         draftModel.clearPlaceholders(false);
 
         return nextToken;
     }
 
     /**
-     * Save the current draft KV cache as a checkpoint at the verified position.
+     * Save a zero-copy checkpoint of the current draft KV cache position.
+     * Always saves, even with 0 acceptance -- needed so rollback can reset
+     * draftPastSeqLen to discard rejected speculation positions.
      */
     private void saveDraftCheckpoint(int acceptedCount) {
-        closeKvCache(checkpointKvCache);
+        if (activeCheckpointId >= 0) {
+            specKvManager.discardCheckpoint(activeCheckpointId);
+            activeCheckpointId = -1;
+        }
 
-        if (acceptedCount > 0 && !draftKvCache.isEmpty()) {
-            checkpointKvCache = new HashMap<>();
-            long keepLen = checkpointPastSeqLen + acceptedCount;
-
-            for (Map.Entry<String, INDArray> entry : draftKvCache.entrySet()) {
-                INDArray kv = entry.getValue();
-                if (kv != null && kv.rank() >= 3) {
-                    long kvSeqLen = kv.size(2);
-                    if (keepLen < kvSeqLen) {
-                        checkpointKvCache.put(entry.getKey(), kv.get(
-                                NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.interval(0, keepLen), NDArrayIndex.all()
-                        ).dup());
-                    } else {
-                        checkpointKvCache.put(entry.getKey(), kv.dup());
-                    }
-                }
-            }
-            checkpointPastSeqLen = keepLen;
-        } else {
-            checkpointKvCache = null;
+        if (staticKvInitialized) {
+            long verifiedPos = checkpointPastSeqLen + acceptedCount;
+            activeCheckpointId = specKvManager.checkpoint(staticDraftKvBuffers, (int) verifiedPos);
+            checkpointPastSeqLen = verifiedPos;
         }
     }
 
     /**
      * Roll back the draft model's state to the last checkpoint.
+     * Zero-copy: only resets the position pointer.
      */
     private void rollbackToCheckpoint() {
-        if (checkpointKvCache != null) {
-            closeKvCache(draftKvCache);
-            draftKvCache = checkpointKvCache;
-            draftPastSeqLen = checkpointPastSeqLen;
-            checkpointKvCache = null;
+        if (activeCheckpointId >= 0) {
+            int pos = specKvManager.rollback(activeCheckpointId);
+            draftPastSeqLen = pos;
+            activeCheckpointId = -1;
         }
     }
 
-    /**
-     * Extract argmax token from logits at a given position.
-     *
-     * @param logits logits tensor, shape [positions, vocabSize] or [1, positions, vocabSize]
-     * @param position the position index
-     * @return the token ID with the highest logit
-     */
     private static int argmax(INDArray logits, int position) {
         INDArray posLogits;
         if (logits.rank() == 3) {
@@ -409,19 +468,5 @@ public class DraftModelSpeculator implements Speculator {
             }
         }
         return maxIdx;
-    }
-
-    /**
-     * Close and release all arrays in a KV cache map.
-     */
-    private static void closeKvCache(Map<String, INDArray> kvCache) {
-        if (kvCache == null) return;
-        for (INDArray arr : kvCache.values()) {
-            if (arr != null && !arr.wasClosed()) {
-                arr.setCloseable(true);
-                arr.close();
-            }
-        }
-        kvCache.clear();
     }
 }

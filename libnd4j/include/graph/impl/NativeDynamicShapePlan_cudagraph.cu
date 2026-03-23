@@ -789,6 +789,15 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                   captureBufferInitFailed = true;
                   break;
                 }
+                // Mark device as actual so syncToDevice() is a no-op during capture.
+                // Without this, the graph captures H2D memcpy nodes from stale host
+                // buffers that overwrite fresh D2D data on every replay.
+                capBuf->dataBuffer()->writeSpecial();
+              }
+              // Also mirror host buffer for ops that read from host during capture.
+              if (srcBytes > 0 && src->buffer() && capBuf->buffer()) {
+                std::memcpy(capBuf->buffer(), src->buffer(), srcBytes);
+                capBuf->dataBuffer()->readPrimary();
               }
             }
 
@@ -856,6 +865,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
                 captureBufferInitFailed = true;
                 break;
               }
+              // Mark device as actual — same fix as external input capture buffers.
+              capBuf->dataBuffer()->writeSpecial();
+            }
+            if (srcBytes > 0 && src->buffer() && capBuf->buffer()) {
+              std::memcpy(capBuf->buffer(), src->buffer(), srcBytes);
+              capBuf->dataBuffer()->readPrimary();
             }
           }
 

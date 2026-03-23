@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -112,8 +113,11 @@ public class DecoderUtils {
             return singleMask;
         }
 
-        // Tile for batch dimension
+        // Tile for batch dimension. Close singleMask after tiling since tile creates
+        // a new independent array and singleMask (a view of the 1D createFromArray result)
+        // would otherwise leak its underlying DataBuffer.
         INDArray mask = Nd4j.tile(singleMask, (int) batchSize, 1, 1, 1);
+        singleMask.close();
         log.info("Built batched causal mask: shape=[{}, 1, {}, {}], pastSeqLen={}, dtype=FLOAT",
                 batchSize, currentSeqLen, totalSeqLen, pastSeqLen);
         return mask;
@@ -151,7 +155,9 @@ public class DecoderUtils {
         }
 
         if (numHeads <= 0 || headDim <= 0) {
-            String presentName = inputName.replace("past_key_values", "present");
+            // Try to infer from the corresponding present output variable
+            ModelIOConfig defaultConfig = ModelIOConfig.builder().build();
+            String presentName = defaultConfig.inputToPresentName(inputName);
             SDVariable presentVar = decoder.getVariable(presentName);
             if (presentVar != null && presentVar.getShape() != null && presentVar.getShape().length >= 4) {
                 long[] shape = presentVar.getShape();
@@ -205,7 +211,9 @@ public class DecoderUtils {
         }
 
         if (numHeads <= 0 || headDim <= 0) {
-            String presentName = inputName.replace("past_key_values", "present");
+            // Try to infer from the corresponding present output variable
+            ModelIOConfig defaultConfig = ModelIOConfig.builder().build();
+            String presentName = defaultConfig.inputToPresentName(inputName);
             SDVariable presentVar = decoder.getVariable(presentName);
             if (presentVar != null && presentVar.getShape() != null && presentVar.getShape().length >= 4) {
                 long[] shape = presentVar.getShape();
@@ -284,6 +292,21 @@ public class DecoderUtils {
             List<String> presentKeyNames,
             List<String> presentValueNames,
             long maxKvLen) {
+        return padKvCacheToStaticSize(prefillOutputs, presentKeyNames, presentValueNames,
+                maxKvLen, ModelIOConfig.builder().build());
+    }
+
+    /**
+     * Pad KV cache tensors from prefill to a fixed static size, using ModelIOConfig for name mapping.
+     *
+     * @param ioConfig the model I/O configuration for present-to-past name mapping
+     */
+    public static Map<String, INDArray> padKvCacheToStaticSize(
+            Map<String, INDArray> prefillOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            ModelIOConfig ioConfig) {
 
         Map<String, INDArray> staticKvBuffers = new HashMap<>();
         List<String> allPresentNames = new ArrayList<>();
@@ -312,8 +335,8 @@ public class DecoderUtils {
                 destSlice.assign(prefillKv);
             }
 
-            // Map present name -> past_key_values input name
-            String pastInputName = presentName.replace("present", "past_key_values");
+            // Map present name -> past_key_values input name using ModelIOConfig
+            String pastInputName = ioConfig.presentToInputName(presentName);
             staticKvBuffers.put(pastInputName, staticBuf);
 
             log.info("  Static KV buffer '{}': [{},{},{},{}] (prefill={} padded to {})",
@@ -345,6 +368,22 @@ public class DecoderUtils {
             List<String> presentValueNames,
             long maxKvLen,
             long cachePos) {
+        scatterNewKvEntries(staticKvBuffers, decoderOutputs, presentKeyNames, presentValueNames,
+                maxKvLen, cachePos, ModelIOConfig.builder().build());
+    }
+
+    /**
+     * Scatter the new KV entry from decoder output into the static KV buffer at cachePos,
+     * using ModelIOConfig for present-to-past name mapping.
+     */
+    public static void scatterNewKvEntries(
+            Map<String, INDArray> staticKvBuffers,
+            Map<String, INDArray> decoderOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            long cachePos,
+            ModelIOConfig ioConfig) {
 
         // Collect all valid pairs for batched native scatter
         List<INDArray> staticList = new ArrayList<>();
@@ -358,7 +397,7 @@ public class DecoderUtils {
             INDArray presentKv = decoderOutputs.get(presentName);
             if (presentKv == null) continue;
 
-            String pastInputName = presentName.replace("present", "past_key_values");
+            String pastInputName = ioConfig.presentToInputName(presentName);
             INDArray staticBuf = staticKvBuffers.get(pastInputName);
             if (staticBuf != null) {
                 staticList.add(staticBuf);
@@ -373,6 +412,143 @@ public class DecoderUtils {
                 staticList.toArray(new INDArray[0]),
                 presentList.toArray(new INDArray[0]),
                 cachePos));
+    }
+
+    /**
+     * Scatter a specific source position from present KV outputs into the static KV buffer.
+     *
+     * Used for multi-token KV scatter in speculative decoding, where multiple positions
+     * from a single forward pass need to be scattered into the static KV cache.
+     *
+     * @param staticKvBuffers map of past_key_values input names to static buffers
+     * @param decoderOutputs map of decoder output names to tensors
+     * @param presentKeyNames list of present key output names
+     * @param presentValueNames list of present value output names
+     * @param maxKvLen the static KV length
+     * @param targetCachePos the position in the static buffer to write the entry
+     * @param sourcePosition which position in present KV [0..seqLen-1] to extract
+     */
+    public static void scatterNewKvEntryAtPosition(
+            Map<String, INDArray> staticKvBuffers,
+            Map<String, INDArray> decoderOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            long targetCachePos,
+            int sourcePosition) {
+        scatterNewKvEntryAtPosition(staticKvBuffers, decoderOutputs, presentKeyNames,
+                presentValueNames, maxKvLen, targetCachePos, sourcePosition,
+                ModelIOConfig.builder().build());
+    }
+
+    /**
+     * Scatter a specific source position from present KV outputs into the static KV buffer,
+     * using ModelIOConfig for present-to-past name mapping.
+     */
+    public static void scatterNewKvEntryAtPosition(
+            Map<String, INDArray> staticKvBuffers,
+            Map<String, INDArray> decoderOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            long targetCachePos,
+            int sourcePosition,
+            ModelIOConfig ioConfig) {
+
+        List<String> allPresentNames = new ArrayList<>();
+        allPresentNames.addAll(presentKeyNames);
+        allPresentNames.addAll(presentValueNames);
+
+        for (String presentName : allPresentNames) {
+            INDArray presentKv = decoderOutputs.get(presentName);
+            if (presentKv == null) continue;
+
+            String pastInputName = ioConfig.presentToInputName(presentName);
+            INDArray staticBuf = staticKvBuffers.get(pastInputName);
+            if (staticBuf == null) continue;
+
+            // Extract [batch, heads, 1, dim] at sourcePosition from present KV
+            INDArray sourceSlice = presentKv.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.point(sourcePosition), NDArrayIndex.all());
+
+            // Write into static buffer at targetCachePos
+            INDArray destSlice = staticBuf.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.point(targetCachePos), NDArrayIndex.all());
+            destSlice.assign(sourceSlice);
+        }
+    }
+
+    /**
+     * Scatter multiple accepted positions from a speculative decode step into the static KV cache.
+     *
+     * Combines multiple source positions from present KV outputs into consecutive
+     * target positions in the static KV buffer. More efficient than calling
+     * scatterNewKvEntryAtPosition in a loop when scattering contiguous ranges.
+     *
+     * @param staticKvBuffers map of past_key_values input names to static buffers
+     * @param decoderOutputs map of decoder output names to tensors
+     * @param presentKeyNames list of present key output names
+     * @param presentValueNames list of present value output names
+     * @param maxKvLen the static KV length
+     * @param baseCachePos starting position in the static buffer
+     * @param numPositions number of positions to scatter (0..numPositions-1 from present)
+     */
+    public static void scatterMultipleKvEntries(
+            Map<String, INDArray> staticKvBuffers,
+            Map<String, INDArray> decoderOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            long baseCachePos,
+            int numPositions) {
+        scatterMultipleKvEntries(staticKvBuffers, decoderOutputs, presentKeyNames,
+                presentValueNames, maxKvLen, baseCachePos, numPositions,
+                ModelIOConfig.builder().build());
+    }
+
+    /**
+     * Scatter multiple accepted positions from a speculative decode step into the static KV cache,
+     * using ModelIOConfig for present-to-past name mapping.
+     */
+    public static void scatterMultipleKvEntries(
+            Map<String, INDArray> staticKvBuffers,
+            Map<String, INDArray> decoderOutputs,
+            List<String> presentKeyNames,
+            List<String> presentValueNames,
+            long maxKvLen,
+            long baseCachePos,
+            int numPositions,
+            ModelIOConfig ioConfig) {
+
+        if (numPositions <= 0) return;
+
+        List<String> allPresentNames = new ArrayList<>();
+        allPresentNames.addAll(presentKeyNames);
+        allPresentNames.addAll(presentValueNames);
+
+        for (String presentName : allPresentNames) {
+            INDArray presentKv = decoderOutputs.get(presentName);
+            if (presentKv == null) continue;
+
+            String pastInputName = ioConfig.presentToInputName(presentName);
+            INDArray staticBuf = staticKvBuffers.get(pastInputName);
+            if (staticBuf == null) continue;
+
+            // Present KV shape: [1, heads, maxKvLen+seqLen, dim] = concat(past, new)
+            // New entries start at position maxKvLen in the present output
+            INDArray sourceSlice = presentKv.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(maxKvLen, maxKvLen + numPositions),
+                    NDArrayIndex.all());
+
+            INDArray destSlice = staticBuf.get(
+                    NDArrayIndex.all(), NDArrayIndex.all(),
+                    NDArrayIndex.interval(baseCachePos, baseCachePos + numPositions),
+                    NDArrayIndex.all());
+            destSlice.assign(sourceSlice);
+        }
     }
 
     /**
@@ -445,6 +621,46 @@ public class DecoderUtils {
             boolean usingStaticKv, long hiddenSize,
             Map<String, INDArray> reusableInputs,
             boolean dspActive, boolean nativeDecodeInputs) {
+        // Delegate to the ModelIOConfig-based implementation with default config
+        ModelIOConfig config = ModelIOConfig.builder().build();
+        return buildDecoderInputMap(config, decoderInputNames, decoder, embeddings, inputIds,
+                pastSeqLen, currentSeqLen, staticKvBuffers, maxKvLen, cachePos,
+                usingStaticKv, hiddenSize, reusableInputs, dspActive, nativeDecodeInputs);
+    }
+
+    /**
+     * Build the complete decoder input map using a {@link ModelIOConfig} for variable name resolution.
+     *
+     * <p>This is the primary implementation that all other buildDecoderInputMap overloads delegate to.
+     * Uses the config's name fields instead of hardcoded string comparisons, enabling the same
+     * code to work with models that use different variable naming conventions.</p>
+     *
+     * @param ioConfig the model I/O configuration with variable name mappings
+     * @param decoderInputNames the decoder model's input names
+     * @param decoder the SameDiff decoder model (for createEmptyKvCache fallback)
+     * @param embeddings current step's embeddings [batch, seqLen, hidden]
+     * @param inputIds current step's input IDs [batch, seqLen]
+     * @param pastSeqLen logical past sequence length (for position_ids / RoPE)
+     * @param currentSeqLen current step's sequence length
+     * @param staticKvBuffers map of past_key_values input names to static buffers (null if not using static KV)
+     * @param maxKvLen total static KV length (ignored if not using static KV)
+     * @param cachePos next write position in static buffer (ignored if not using static KV)
+     * @param usingStaticKv whether we are in static KV mode
+     * @param hiddenSize model hidden size (for empty KV cache creation)
+     * @param reusableInputs optional cache map; populated on first use, updated in-place thereafter
+     * @param dspActive whether DSP is active (padded mode with fixed shapes for CUDA graphs)
+     * @param nativeDecodeInputs when true, C++ handles input updates on device
+     * @return map of input name to INDArray ready to pass to decoder.output()
+     */
+    public static Map<String, INDArray> buildDecoderInputMap(
+            ModelIOConfig ioConfig,
+            List<String> decoderInputNames, SameDiff decoder,
+            INDArray embeddings, INDArray inputIds,
+            long pastSeqLen, long currentSeqLen,
+            Map<String, INDArray> staticKvBuffers, long maxKvLen, long cachePos,
+            boolean usingStaticKv, long hiddenSize,
+            Map<String, INDArray> reusableInputs,
+            boolean dspActive, boolean nativeDecodeInputs) {
 
         Map<String, INDArray> decoderInputMap = new HashMap<>();
         boolean canReuse = reusableInputs != null && usingStaticKv && currentSeqLen == 1;
@@ -452,9 +668,9 @@ public class DecoderUtils {
         boolean usePadded = dspActive && usingStaticKv;
 
         for (String inputName : decoderInputNames) {
-            if (inputName.equals("inputs_embeds")) {
+            if (ioConfig.isInputEmbeddings(inputName)) {
                 decoderInputMap.put(inputName, embeddings);
-            } else if (inputName.equals("attention_mask")) {
+            } else if (ioConfig.isAttentionMask(inputName)) {
                 if (usePadded) {
                     // Padded mode with in-place KV write: shapes must match the model's
                     // attn_mask_reformat subgraph which derives KV length from
@@ -462,8 +678,8 @@ public class DecoderUtils {
                     // The in-place write ensures current K is at cachePos (visible to causal mask),
                     // while the concat'd copy at maxKvLen is masked (maxKvLen > cachePos).
                     long totalSeqLen = maxKvLen + currentSeqLen;
-                    if (canReuse && reusableInputs.containsKey("attention_mask")) {
-                        INDArray mask = reusableInputs.get("attention_mask");
+                    if (canReuse && reusableInputs.containsKey(inputName)) {
+                        INDArray mask = reusableInputs.get(inputName);
                         if (cachePos >= 0 && !nativeDecodeInputs) {
                             // Mark current position as valid (C++ handles when nativeDecodeInputs=true)
                             mask.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(cachePos)},
@@ -479,7 +695,7 @@ public class DecoderUtils {
                         // Also set the last position (the concat'd current token)
                         mask.putScalar(0, totalSeqLen - 1, 1);
                         decoderInputMap.put(inputName, mask);
-                        if (canReuse) reusableInputs.put("attention_mask", mask);
+                        if (canReuse) reusableInputs.put(inputName, mask);
                     }
                 } else if (usingStaticKv) {
                     // View-based mode: contiguous all-ones mask matching KV view size
@@ -489,16 +705,16 @@ public class DecoderUtils {
                     long totalSeqLen = pastSeqLen + currentSeqLen;
                     decoderInputMap.put(inputName, Nd4j.ones(DataType.LONG, 1, totalSeqLen));
                 }
-            } else if (inputName.equals("_causal_mask")) {
+            } else if (ioConfig.isCausalMask(inputName)) {
                 if (usePadded) {
                     // Padded mode: causal mask matches concat shape (maxKvLen + currentSeqLen)
-                    if (canReuse && reusableInputs.containsKey("_causal_mask")) {
-                        decoderInputMap.put(inputName, reusableInputs.get("_causal_mask"));
+                    if (canReuse && reusableInputs.containsKey(inputName)) {
+                        decoderInputMap.put(inputName, reusableInputs.get(inputName));
                     } else {
                         long totalSeqLen = maxKvLen + currentSeqLen;
                         INDArray causalMask = buildCausalMask(currentSeqLen, totalSeqLen);
                         decoderInputMap.put(inputName, causalMask);
-                        if (canReuse) reusableInputs.put("_causal_mask", causalMask);
+                        if (canReuse) reusableInputs.put(inputName, causalMask);
                     }
                 } else if (usingStaticKv) {
                     // View-based mode
@@ -510,23 +726,28 @@ public class DecoderUtils {
                     INDArray causalMask = buildCausalMask(currentSeqLen, totalSeqLen);
                     decoderInputMap.put(inputName, causalMask);
                 }
-            } else if (inputName.equals("input_ids")) {
+            } else if (ioConfig.isInputIds(inputName)) {
                 decoderInputMap.put(inputName, inputIds);
-            } else if (inputName.equals("position_ids")) {
-                if (canReuse && reusableInputs.containsKey("position_ids")) {
-                    INDArray posIds = reusableInputs.get("position_ids");
+            } else if (ioConfig.isPositionIds(inputName)) {
+                if (canReuse && reusableInputs.containsKey(inputName)) {
+                    INDArray posIds = reusableInputs.get(inputName);
                     if (!nativeDecodeInputs) {
                         // C++ handles this when nativeDecodeInputs=true
                         posIds.assign(Nd4j.scalar(DataType.LONG, pastSeqLen));
                     }
                     decoderInputMap.put(inputName, posIds);
                 } else {
-                    INDArray posIds = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
-                            .reshape(1, currentSeqLen).castTo(DataType.LONG);
+                    // arange creates a FLOAT array; reshape creates a view; castTo creates
+                    // a new LONG array. Close the intermediate FLOAT array to avoid leaking
+                    // its DataBuffer (the cast result has its own independent buffer).
+                    INDArray arangeResult = Nd4j.arange(pastSeqLen, pastSeqLen + currentSeqLen)
+                            .reshape(1, currentSeqLen);
+                    INDArray posIds = arangeResult.castTo(DataType.LONG);
+                    arangeResult.close();
                     decoderInputMap.put(inputName, posIds);
-                    if (canReuse) reusableInputs.put("position_ids", posIds);
+                    if (canReuse) reusableInputs.put(inputName, posIds);
                 }
-            } else if (inputName.startsWith("past_key_values.")) {
+            } else if (ioConfig.isKvCacheInput(inputName)) {
                 if (usingStaticKv) {
                     INDArray staticBuf = staticKvBuffers.get(inputName);
                     if (staticBuf != null) {
@@ -555,11 +776,28 @@ public class DecoderUtils {
             }
         }
 
-        if (!decoderInputMap.containsKey("inputs_embeds")) {
-            decoderInputMap.put("inputs_embeds", embeddings);
+        String embedsName = ioConfig.getInputEmbeddingsName();
+        if (embedsName != null && !decoderInputMap.containsKey(embedsName)) {
+            decoderInputMap.put(embedsName, embeddings);
         }
 
         return decoderInputMap;
+    }
+
+    /**
+     * Trim CUDA memory pools on all devices.
+     * Syncs pending cudaFreeAsync calls and releases physical memory back to the OS.
+     */
+    public static void trimAllDevicePools() {
+        try {
+            var nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPoolOnStream(d, null);
+            }
+        } catch (Exception e) {
+            log.debug("Failed to trim memory pools: {}", e.getMessage());
+        }
     }
 
 }

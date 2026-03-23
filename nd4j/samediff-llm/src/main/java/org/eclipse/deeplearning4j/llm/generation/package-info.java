@@ -75,6 +75,6 @@
  *   <li>{@code Nd4j.argMax()} for greedy selection</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 package org.eclipse.deeplearning4j.llm.generation;

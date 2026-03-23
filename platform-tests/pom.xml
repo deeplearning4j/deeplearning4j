@@ -1635,6 +1635,7 @@
                         <TEST_FILTER></TEST_FILTER>
                         <ND4J_DSP_DIAGNOSTICS>${nd4j.dsp.diagnostics}</ND4J_DSP_DIAGNOSTICS>
                         <ND4J_DSP_DIAGNOSTICS_LEVEL>${nd4j.dsp.diagnostics.level}</ND4J_DSP_DIAGNOSTICS_LEVEL>
+                        <ND4J_DSP_DIAGNOSTICS_FILE>${nd4j.dsp.diagnostics.file}</ND4J_DSP_DIAGNOSTICS_FILE>
                         <ND4J_TRITON_VERIFY_KERNELS>${nd4j.triton.verifyKernels}</ND4J_TRITON_VERIFY_KERNELS>
                         <ND4J_TRITON_FORCE_RECAPTURE>${nd4j.triton.forceRecapture}</ND4J_TRITON_FORCE_RECAPTURE>
                         <ND4J_TRITON_CAPTURE_MIN_EXEC>${nd4j.triton.captureMinExec}</ND4J_TRITON_CAPTURE_MIN_EXEC>

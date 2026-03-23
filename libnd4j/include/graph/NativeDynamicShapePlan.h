@@ -656,6 +656,22 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
       MmulHelper::clearCastCache();
       // Reset executeCount so step 0 = warmup, step 1+ = capture/replay
       executeCount_ = 0;
+      // Also reset per-segment executionCount so Triton capture window check
+      // doesn't reject capture due to stale pre-freeze count.
+      for (auto& seg : segments_) {
+        seg.executionCount = 0;
+        // Invalidate stale replay handles from pre-freeze execution
+        if (seg.replayHandle) {
+          for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+            if (!cb.directReference) delete cb.buffer;
+          }
+          seg.replayHandle->getCaptureBuffers().clear();
+          seg.replayHandle.reset();
+        }
+        seg.argTableStable = false;
+        seg.captureFailed = false;
+        seg.capturedInputAddrKey = 0;
+      }
     }
     if (!frozen) {
       // Reset frozen context state when unfreezing — shapes may change

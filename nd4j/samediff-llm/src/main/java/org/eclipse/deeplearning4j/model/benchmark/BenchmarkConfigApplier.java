@@ -144,8 +144,6 @@ public class BenchmarkConfigApplier {
 
         // cuBLAS TF32: enables tensor cores for FP32 GEMMs on sm_80+ (Ampere+)
         env.setCublasTf32Enabled(config.isCublasTf32());
-        // cuBLAS capture workspace: explicit workspace prevents MemAlloc graph nodes
-        env.setCublasCaptureWorkspace(config.isCublasCaptureWorkspace());
 
         // DSP optimization flags
         env.setDspCastElimination(config.isDspCastElimination());

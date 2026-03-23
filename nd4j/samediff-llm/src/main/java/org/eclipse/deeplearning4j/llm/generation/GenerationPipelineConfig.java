@@ -109,4 +109,7 @@ public class GenerationPipelineConfig {
     /** Whether DSP (DynamicShapePlan) is enabled for this pipeline. */
     @Builder.Default
     private final boolean dspEnabled = true;
+
+    /** Optional model loader for loading models from paths. Uses default loader if null. */
+    private final GenerationPipeline.ModelLoader modelLoader;
 }

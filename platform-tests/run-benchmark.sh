@@ -84,6 +84,7 @@ SPECULATIVE_K=0
 DRAFT_MODEL=false
 NO_NATIVE_DECODE=false
 NO_CUBLAS_WORKSPACE=false
+NO_FREEZE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -170,13 +171,17 @@ while [[ $# -gt 0 ]]; do
             NO_CUBLAS_WORKSPACE=true
             shift
             ;;
+        --no-freeze)
+            NO_FREEZE=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--op-timing-detailed]"
             echo "       [--op-breakdown OPS] [--op-histogram OPS] [--tokens N] [--config NAME]"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
-            echo "       [--draft] [--speculative K] [--no-native-decode] [--no-cublas-workspace]"
+            echo "       [--draft] [--speculative K] [--no-native-decode] [--no-cublas-workspace] [--no-freeze]"
             exit 1
             ;;
     esac
@@ -205,6 +210,7 @@ $DEBUG_MODE   && echo "  Mode:   DEBUG (DSP diagnostics + CUDA driver log)"
 $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
 $NO_NATIVE_DECODE && echo "  NativeDecodeInputs: DISABLED (Java feedDict path)"
 $NO_CUBLAS_WORKSPACE && echo "  cuBLAS workspace:   DISABLED (no explicit workspace during capture)"
+$NO_FREEZE           && echo "  Freeze:             DISABLED (no shape freezing, no CUDA graph)"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 $OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
 [ -n "$OP_BREAKDOWN_OPS" ] && echo "  Op breakdowns: $OP_BREAKDOWN_OPS"
@@ -245,6 +251,10 @@ fi
 
 if $NO_CUBLAS_WORKSPACE; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.cublas.captureWorkspace=0"
+fi
+
+if $NO_FREEZE; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.nofreeze=true"
 fi
 
 if $DRAFT_MODEL; then

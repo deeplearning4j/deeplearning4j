@@ -78,6 +78,33 @@ Surefire forks a new JVM. Shell environment variables (`ENV=value mvn test`) do 
 2. Wire it via a `-D` Maven property so it can be set from the command line.
 3. **NEVER** rely on `export VAR=value` before `mvn test` -- the forked JVM won't see it.
 
+### Where Test Output Goes
+
+**Know exactly where to find output. Do NOT guess or search randomly.**
+
+| Output Type | Location | Notes |
+|---|---|---|
+| **Java stdout/stderr** | `platform-tests/target/surefire-reports/<TestClass>-output.txt` | ALL System.out/err from the forked JVM goes here |
+| **DSP diagnostics (C++)** | `platform-tests/target/surefire-reports/<TestClass>-output.txt` | DSP_DIAG uses `fprintf(stdout, ...)` — captured by surefire |
+| **C++ sd_printf / fprintf(stderr)** | `platform-tests/target/surefire-reports/<TestClass>-output.txt` | Both stdout and stderr are captured |
+| **Test pass/fail XML** | `platform-tests/target/surefire-reports/TEST-<fully.qualified.TestClass>.xml` | JUnit XML results |
+| **Valgrind output** | Written by `bin/java` wrapper — check wrapper script for exact path | Typically in platform-tests/ |
+| **Compute-sanitizer output** | Written by `bin/java` wrapper — check wrapper script for exact path | Typically in platform-tests/ |
+| **Native build log** | `libnd4j/blasbuild/cuda/libnd4j-build.log` (when `-Dlibnd4j.log=libnd4j-build.log` is used) | Separate from Maven output |
+
+**To enable DSP diagnostics**, pass via Maven `-D` properties (NOT shell env vars):
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  mvn test -Dtest=MyTest -Dnd4j.dsp.diagnostics=ALL -Dnd4j.dsp.diagnostics.level=FULL
+```
+Then read the output from: `platform-tests/target/surefire-reports/MyTest-output.txt`
+
+**CRITICAL RULES:**
+- **NEVER** look for DSP_DIAG output in the Maven console — it is in the surefire report file.
+- **NEVER** use `export ND4J_DSP_DIAGNOSTICS=...` before `mvn test` — surefire replaces env, doesn't merge. Use `-D` properties.
+- **NEVER** use `tail` or `grep` on live test output — read the surefire report file AFTER the test completes.
+- **ALWAYS** read `platform-tests/target/surefire-reports/<TestClass>-output.txt` for ANY test output — Java, C++, DSP_DIAG, all of it.
+
 ### Writing Tests
 
 - **Always write standalone isolation tests** when debugging. Reproduce the bug in a minimal test before fixing it.
@@ -205,7 +232,59 @@ When debugging double-frees, use-after-free, or shutdown crashes:
 
 ### DSP Diagnostics
 
-When debugging DSP (DynamicShapePlan) related issues, **always use DSP diagnostics**. Enable via `-Dnd4j.dsp.diagnostics=<level>` (e.g., `MEMORY`, `EXECUTION`, `ALL`). DSP diagnostics provide structured, reusable tracing for plan compilation, slot execution, memory allocation, and kernel launches. **Do NOT add ad-hoc printf/logging for DSP debugging** -- use the existing diagnostic infrastructure.
+When debugging DSP (DynamicShapePlan) related issues, **always use DSP diagnostics**. Do NOT add ad-hoc printf/logging — use the existing diagnostic infrastructure.
+
+**Header:** `libnd4j/include/graph/DspDiagnostics.h` | **Impl:** `libnd4j/include/graph/impl/DspDiagnostics.cpp`
+
+**How to enable** (via Maven `-D` properties, NEVER shell env vars):
+```bash
+cd /home/agibsonccc/Documents/GitHub/deeplearning4j/platform-tests && \
+  mvn test -Dtest=MyTest \
+  -Dnd4j.dsp.diagnostics=ALL \
+  -Dnd4j.dsp.diagnostics.level=full
+```
+
+**Where to find the output:**
+- `platform-tests/target/surefire-reports/<TestClass>-output.txt` — ALL DSP_DIAG output goes here
+- JSON report: set `-Dnd4j.dsp.diagnostics.file=/tmp/dsp-report.json` for structured output
+- **NEVER** look for DSP_DIAG output in the Maven console — surefire captures it in the report file
+
+**Diagnostic levels** — controls verbosity:
+| Level | Value | Behavior |
+|---|---|---|
+| `summary` | 0 | Category stats only — printed when plan ends or `printPlanReport()` called |
+| `detailed` | 1 | Per-step info tracked |
+| **`full`** | **2** | **Every event echoed to stdout in real-time** — this is what you want for debugging |
+
+**CRITICAL: If you don't see DSP_DIAG output, the level is probably not `full`.** At `summary` (the default), events go to a ring buffer and are only printed in the plan report at the end. Set `-Dnd4j.dsp.diagnostics.level=full` to get real-time event output.
+
+**Diagnostic categories** — comma-separated, case-insensitive:
+| Category | What it traces |
+|---|---|
+| `COMPILE` | Backend compilation (Triton, MLIR) |
+| `JIT` | Kernel generation, PTX/cubin, cache hits/misses |
+| `EXECUTE` | Per-step execution flow, segment dispatch |
+| `TIMING` | Detailed timing breakdowns |
+| `MEMORY` | Allocations, OOM, failover, pool state |
+| `BACKEND` | Backend selection, device placement |
+| `SHAPE` | Shape analysis, static/dynamic, frozen detection |
+| `SEGMENT` | Segment building, boundaries, capturable analysis |
+| `FUSION` | Op fusion, identity elimination |
+| `VERIFY` | Golden comparison, output validation |
+| `KV_CACHE` | KV cache config, retention, scattering |
+| `FALLBACK` | Fallback events, error recovery |
+| `ALL` | All categories enabled |
+
+**Ring buffer:** 65,536 events stored in a pre-allocated ring buffer. At `summary`/`detailed`, events are only in the ring buffer. At `full`, events are ALSO echoed to stdout. The plan report (`printPlanReport()`) dumps stats from the ring buffer regardless of level.
+
+**Maven properties → env vars** (configured in `platform-tests/pom.xml`):
+| Maven `-D` property | Env var in forked JVM |
+|---|---|
+| `nd4j.dsp.diagnostics` | `ND4J_DSP_DIAGNOSTICS` |
+| `nd4j.dsp.diagnostics.level` | `ND4J_DSP_DIAGNOSTICS_LEVEL` |
+| `nd4j.dsp.diagnostics.file` | `ND4J_DSP_DIAGNOSTICS_FILE` |
+
+**Legacy env vars** (auto-mapped to categories): `ND4J_DSP_TRACE` → EXECUTE, `ND4J_TRITON_VERBOSE` → COMPILE|JIT|BACKEND, `ND4J_DSP_EXECUTION_TIMING` → TIMING, `ND4J_DSP_NATIVE_DUMP_OUTPUTS` → VERIFY.
 
 ### Printing Array Values
 
@@ -226,6 +305,38 @@ When debugging DSP (DynamicShapePlan) related issues, **always use DSP diagnosti
 - **Trace values to roots** -- always search for the origin of a value before attempting a fix.
 - **`MALLOC_CHECK_=3` does NOT work reliably** -- don't rely on it.
 - **Make diagnostics reusable.** When adding diagnostic or debug output, add it to the appropriate diagnostic framework (DSP diagnostics, OpTimingTracker, etc.) rather than one-off prints. Diagnostic code should be toggleable via configuration, not commented-out code.
+
+### Dispatching Subagents
+
+Subagents do NOT automatically inherit knowledge of this CLAUDE.md. When dispatching a subagent, you **MUST** include the following in the prompt:
+
+1. **Explicit rule reminders.** Copy the specific rules that apply to the subagent's task directly into the prompt. Do NOT say "follow CLAUDE.md" — the subagent may not read it. Key rules to always include:
+   - **Git Safety:** NEVER use `git checkout`, `git stash`, `git reset --hard`, or `git clean` on files. Use `Edit` tool to make targeted modifications. These git commands destroy uncommitted work irreversibly.
+   - **No Workarounds:** Fix root causes directly. NEVER work around a bug.
+   - **Build commands:** Include the exact build command if the subagent needs to build. NEVER use `make` directly.
+   - **Test location:** ALL tests run from `platform-tests/`. Test output is in `platform-tests/target/surefire-reports/<TestClass>-output.txt`.
+   - **No jemalloc:** NEVER use `LD_PRELOAD=libjemalloc.so`.
+   - **No `tail`:** NEVER pipe build or test output through `tail`.
+
+2. **Context about what files are modified.** Tell the subagent which files have uncommitted changes so it does not destroy them with git commands.
+
+3. **Scope boundaries.** Tell the subagent exactly what it should and should NOT modify. If it should only investigate, say "DO NOT modify any files — research only."
+
+**Example subagent prompt:**
+```
+Investigate why X crashes in Y.
+
+RULES (mandatory):
+- NEVER use git checkout, git stash, git reset --hard, or git clean — BANNED
+- NEVER modify files outside of libnd4j/include/ops/ — research only for other files
+- If you need to undo changes, use Edit tool to restore specific lines
+- Test output is in platform-tests/target/surefire-reports/<TestClass>-output.txt
+- Do NOT use workarounds — fix root causes
+
+Currently modified files (DO NOT git checkout these): <list>
+```
+
+**If a subagent violates a rule**, it is YOUR fault for not including the rule in the prompt. Always be explicit.
 
 ### Optimization and Crash Handling
 
