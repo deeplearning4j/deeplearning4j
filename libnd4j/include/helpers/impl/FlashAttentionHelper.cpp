@@ -660,11 +660,24 @@ void FlashAttentionHelper::forward4DDecode(
       // [batch, 1, seqKV] -> broadcast to [batch*heads, 1, seqKV]
       scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), attentionBias, scores, false);
     } else if (attentionBias->rankOf() == 4) {
-      // [batch, numHeads, 1, seqKV] -> reshape to [batch*heads, 1, seqKV]
+      // Bias may be [batch, numHeads, seqQ, seqKV] (full) or broadcastable
+      // (e.g. [1, 1, 1, seqKV]). Broadcast to full shape first, then reshape.
+      auto biasElements = attentionBias->lengthOf();
+      auto targetElements = batch * numHeads * 1 * seqKV;
       std::vector<LongType> biasShape3D = {batch * numHeads, 1, seqKV};
-      NDArray* biasFlat = attentionBias->reshape('c', biasShape3D, false);
-      scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
-      delete biasFlat;
+      if (biasElements == targetElements) {
+        NDArray* biasFlat = attentionBias->reshape('c', biasShape3D, false);
+        scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
+        delete biasFlat;
+      } else {
+        // Broadcast [1,1,1,seqKV] -> [batch,numHeads,1,seqKV] then reshape
+        std::vector<LongType> fullShape = {batch, numHeads, 1, seqKV};
+        NDArray biasFull('c', fullShape, attentionBias->dataType(), context);
+        attentionBias->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &biasFull, &biasFull, false);
+        NDArray* biasFlat = biasFull.reshape('c', biasShape3D, false);
+        scores->applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), biasFlat, scores, false);
+        delete biasFlat;
+      }
     }
   }
   

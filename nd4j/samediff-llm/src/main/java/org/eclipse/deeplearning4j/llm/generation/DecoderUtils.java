@@ -773,6 +773,41 @@ public class DecoderUtils {
                 } else {
                     decoderInputMap.put(inputName, createEmptyKvCache(decoder, inputName, 1, hiddenSize));
                 }
+            } else if (inputName.equals(ioConfig.getAttnMaskReformatOutput())) {
+                // Placeholder override for attn_mask_reformat — provide the 4D additive
+                // attention bias directly, bypassing the internal subgraph.
+                // Shape: [1, 1, currentSeqLen, totalSeqLen]
+                // 0.0 = attend, MASK_FILL = block
+                if (usePadded) {
+                    long totalSeqLen = maxKvLen + currentSeqLen;
+                    if (canReuse && reusableInputs.containsKey(inputName)) {
+                        INDArray bias = reusableInputs.get(inputName);
+                        if (!nativeDecodeInputs && cachePos > 0) {
+                            // Unmask the position that was just filled by KV scatter.
+                            // cachePos-1 was previously MASK_FILL (empty padding), now valid.
+                            bias.putScalar(new long[]{0, 0, 0, cachePos - 1}, 0.0f);
+                        }
+                        decoderInputMap.put(inputName, bias);
+                    } else {
+                        int totalLen = (int) totalSeqLen;
+                        float[] biasData = new float[(int) currentSeqLen * totalLen];
+                        for (int q = 0; q < (int) currentSeqLen; q++) {
+                            int rowOffset = q * totalLen;
+                            // Past: valid [0..cachePos-1], masked [cachePos..maxKvLen-1]
+                            for (int k = (int) cachePos; k < (int) maxKvLen; k++) {
+                                biasData[rowOffset + k] = MASK_FILL;
+                            }
+                            // Current: causal — future tokens masked
+                            for (int k = q + 1; k < (int) currentSeqLen; k++) {
+                                biasData[rowOffset + (int) maxKvLen + k] = MASK_FILL;
+                            }
+                        }
+                        INDArray bias = Nd4j.createFromArray(biasData)
+                                .reshape(1, 1, currentSeqLen, totalLen);
+                        decoderInputMap.put(inputName, bias);
+                        if (canReuse) reusableInputs.put(inputName, bias);
+                    }
+                }
             }
         }
 
