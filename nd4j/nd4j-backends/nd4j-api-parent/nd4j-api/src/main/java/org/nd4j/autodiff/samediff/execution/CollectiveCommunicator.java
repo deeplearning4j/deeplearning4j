@@ -37,7 +37,7 @@ import java.io.Closeable;
  * Use {@link CollectiveCommunicatorFactory#create(TensorParallelConfig)} to obtain
  * the appropriate implementation for the current backend.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public interface CollectiveCommunicator extends Closeable {
 

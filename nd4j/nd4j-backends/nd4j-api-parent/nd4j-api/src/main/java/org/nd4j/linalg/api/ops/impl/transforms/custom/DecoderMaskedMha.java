@@ -67,7 +67,7 @@ import java.util.List;
  *   <li>2: presentValue [B, heads, seq+1, dim]</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class DecoderMaskedMha extends DynamicCustomOp {

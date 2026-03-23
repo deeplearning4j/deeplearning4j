@@ -59,7 +59,7 @@ import java.util.Map;
  *     Shard:  W[rank * shard_size : (rank+1) * shard_size, :]
  * </pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see TensorParallelConfig
  */
 @Slf4j

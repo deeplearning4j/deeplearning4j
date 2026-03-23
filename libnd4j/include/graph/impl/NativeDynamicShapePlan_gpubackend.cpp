@@ -47,6 +47,12 @@
 #include <graph/gpu/CaptureBufferRegistry.h>
 #include <graph/cuda/CudaGraphReplayHandle.h>
 #endif
+#ifdef SD_TPU
+#include <graph/tpu/TpuGraphBackend.h>
+#endif
+#ifdef HAVE_HEXAGON_MLIR
+#include <graph/hexagon/HexagonGraphBackend.h>
+#endif
 
 namespace sd {
 namespace graph {
@@ -123,9 +129,14 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
   gpuGraphBackendChecked_ = true;
 
   // If a specific backend is forced via setGraphExecutionMode(), use only that one.
-  // SLOT_BY_SLOT and CUDA_GRAPHS don't use a GPU graph backend.
+  // SLOT_BY_SLOT and graph-replay-only modes don't use a GPU compiler backend —
+  // they rely on the GraphReplayHandle (CUDA/HIP/L0/Vulkan/Metal) for capture/replay.
   if (graphExecutionMode_ == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
-      graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS) {
+      graphExecutionMode_ == GraphExecutionMode::GEM_CUDA_GRAPHS ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_HIP_GRAPHS ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_LEVELZERO ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_VULKAN ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_METAL) {
     gpuGraphBackend_ = nullptr;
     return nullptr;
   }
@@ -186,6 +197,52 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
       gpuGraphBackend_ = nullptr;
       return nullptr;
     }
+  }
+#endif
+
+#ifdef SD_TPU
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& tpu = TpuGraphBackend::getInstance();
+    if (tpu.isAvailable()) {
+      gpuGraphBackend_ = &tpu;
+      DSP_DIAG(BACKEND, "using TPU HLO compiler backend");
+      return gpuGraphBackend_;
+    }
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU) {
+      DSP_DIAG(BACKEND, "TPU backend requested but not available");
+      gpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_TPU) {
+    DSP_DIAG(BACKEND, "TPU backend requested but not compiled (SD_TPU=0)");
+    gpuGraphBackend_ = nullptr;
+    return nullptr;
+  }
+#endif
+
+#ifdef HAVE_HEXAGON_MLIR
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_HEXAGON ||
+      graphExecutionMode_ == GraphExecutionMode::GEM_AUTO) {
+    auto& hexagon = HexagonGraphBackend::getInstance();
+    if (hexagon.isAvailable()) {
+      gpuGraphBackend_ = &hexagon;
+      DSP_DIAG(BACKEND, "using Hexagon MLIR NPU compiler backend");
+      return gpuGraphBackend_;
+    }
+    if (graphExecutionMode_ == GraphExecutionMode::GEM_HEXAGON) {
+      DSP_DIAG(BACKEND, "Hexagon backend requested but not available");
+      gpuGraphBackend_ = nullptr;
+      return nullptr;
+    }
+  }
+#else
+  if (graphExecutionMode_ == GraphExecutionMode::GEM_HEXAGON) {
+    DSP_DIAG(BACKEND, "Hexagon backend requested but not compiled (HAVE_HEXAGON_MLIR=0)");
+    gpuGraphBackend_ = nullptr;
+    return nullptr;
   }
 #endif
 
@@ -1393,9 +1450,14 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     // This stream mismatch creates data races: cast ops on gapStr write matmul
     // inputs, but cuBLAS on tritonStr starts before gapStr completes.
 
-    // Reset MmulHelper cast cache indices so capture reuses pre-allocated HALF buffers
-    // in the same order as the warmup execution (avoids capture workspace temporaries)
-    MmulHelper::resetCastCacheIndices();
+    // Clear the entire cast cache (not just indices) before warmup.
+    // In speculative decode, the draft model and target model alternate on the same
+    // thread. The draft model's matmuls contaminate the thread-local cast cache with
+    // wrong-shaped entries (e.g., [1,576] from seqLen=1 draft vs [6,576] from seqLen=6
+    // target). If we only reset indices, warmup reuses stale entries and capture creates
+    // cudaMallocAsync temporaries (MemAlloc graph nodes) that cause OOM on replay.
+    // Full clear forces warmup to rebuild the cache with correct shapes.
+    MmulHelper::clearCastCache();
 
     // ── Batch-zero preparation (OUTSIDE capture) ─────────────────────────
     // Use the registration-based approach: batchZeroEntries_ was populated
@@ -1494,6 +1556,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     {
       DSP_DIAG_SEG(EXECUTE, seg.startSlot, "Triton pre-capture warmup for seg[%d-%d] execCount=%d",
                 seg.startSlot, seg.endSlot, seg.executionCount);
+
+      // Set cuBLAS workspace during warmup too, so cuBLAS selects the same GEMM
+      // algorithms as during capture. Without this, warmup may use different
+      // algorithms than capture, causing shape/result divergence.
+      setCublasWorkspaceForWarmup();
 
       // Disable frozen fast path for warmup — same rationale as capture below.
       std::vector<bool> savedFrozenWarmup(seg.endSlot - seg.startSlot + 1);

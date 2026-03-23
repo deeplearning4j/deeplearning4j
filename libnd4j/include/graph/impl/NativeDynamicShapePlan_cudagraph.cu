@@ -51,7 +51,26 @@
 #include <unordered_set>
 
 namespace sd {
+
+// Extern declarations for capture host workspace (defined in DataBuffer.cu)
+extern SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace;
+extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize;
+extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset;
+
 namespace graph {
+
+// Default capture host workspace size (32MB, configurable via env var)
+static size_t CAPTURE_HOST_WORKSPACE_SIZE = []() -> size_t {
+  const char* envVal = std::getenv("ND4J_DSP_CAPTURE_HOST_WORKSPACE_MB");
+  size_t mb = 32;
+  if (envVal != nullptr) {
+    int parsed = std::atoi(envVal);
+    if (parsed > 0 && parsed <= 1024) {
+      mb = static_cast<size_t>(parsed);
+    }
+  }
+  return mb * 1024ULL * 1024ULL;
+}();
 
 // ─── Segment input address key computation ──────────────────────────────────
 
@@ -933,9 +952,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   DSP_DIAG_SEG(MEMORY, segIdx, "tl_captureWorkspace=%p size=%zu for capture",
                tl_captureWorkspace, tl_captureWorkspaceSize);
 
+  // Allocate pinned host workspace for H2D source copies during capture.
+  // This eliminates cudaMallocHost calls during capture — all host data for
+  // graph H2D memcpy nodes is bump-allocated from this pre-allocated buffer.
+  void* captureHostWs = nullptr;
+  auto hostWsErr = cudaMallocHost(&captureHostWs, CAPTURE_HOST_WORKSPACE_SIZE);
+  if (hostWsErr != cudaSuccess) {
+    cudaGetLastError();
+    captureHostWs = nullptr;
+    DSP_DIAG_SEG(FALLBACK, segIdx, "capture host workspace alloc failed (%zu bytes), H2D copies may use non-pinned sources",
+                 CAPTURE_HOST_WORKSPACE_SIZE);
+  }
+  tl_captureHostWorkspace = captureHostWs;
+  tl_captureHostWorkspaceSize = (captureHostWs != nullptr) ? CAPTURE_HOST_WORKSPACE_SIZE : 0;
+  tl_captureHostWorkspaceOffset = 0;
+
   tl_graphExecutionActive = true;
   tl_capturedHostPtrs.clear();
   tl_captureReplicateCache.clear();
+
+  // Track the host workspace as a single captured host pointer for lifetime management
+  if (captureHostWs != nullptr) {
+    tl_capturedHostPtrs.push_back(captureHostWs);
+  }
 
   if (!handle->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed)) {
     DSP_DIAG(FALLBACK, "graph capture begin failed for seg[%d-%d]",
@@ -945,6 +984,13 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
     tl_captureWorkspace = nullptr;
     tl_captureWorkspaceSize = 0;
     tl_captureWorkspaceOffset = 0;
+    // Clean up host workspace on capture begin failure
+    if (tl_captureHostWorkspace != nullptr) {
+      cudaFreeHost(tl_captureHostWorkspace);
+      tl_captureHostWorkspace = nullptr;
+    }
+    tl_captureHostWorkspaceSize = 0;
+    tl_captureHostWorkspaceOffset = 0;
     restoreCublasWorkspaceAfterCapture(stream);
     clearGraphStreamError(cudaStr);
     seg.captureFailed = true;
@@ -1047,6 +1093,10 @@ Status NativeDynamicShapePlan::executeSegmentWithGraph(
   tl_captureWorkspace = nullptr;
   tl_captureWorkspaceSize = 0;
   tl_captureWorkspaceOffset = 0;
+  // Reset host workspace thread-locals (ownership moves to tl_capturedHostPtrs → replay handle)
+  tl_captureHostWorkspace = nullptr;
+  tl_captureHostWorkspaceSize = 0;
+  tl_captureHostWorkspaceOffset = 0;
   restoreCublasWorkspaceAfterCapture(stream);
 
   for (auto& [extIdx, origPtr] : savedExternalInputs) {

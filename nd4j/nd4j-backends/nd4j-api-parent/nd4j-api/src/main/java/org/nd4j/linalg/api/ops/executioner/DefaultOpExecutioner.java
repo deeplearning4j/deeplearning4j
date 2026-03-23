@@ -649,9 +649,34 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     public static List<INDArray> inputsFromOp(CustomOp customOp,OpContext opContext) {
         if(opContext != null && !opContext.getInputArrays().isEmpty()) {
-            return opContext.getInputArrays();
+            List<INDArray> ctxInputs = opContext.getInputArrays();
+            for (int i = 0; i < ctxInputs.size(); i++) {
+                INDArray arr = ctxInputs.get(i);
+                if (arr != null && arr.wasClosed()) {
+                    log.warn("DIAGNOSTIC: inputsFromOp OpContext path for op '{}' ({}). " +
+                            "Input at index {} is CLOSED in OpContext. shape={} dtype={} id={} identityHash={}",
+                            ((DifferentialFunction)customOp).getOwnName(), customOp.opName(),
+                            i, java.util.Arrays.toString(arr.shape()), arr.dataType(),
+                            arr.getId(), System.identityHashCode(arr));
+                }
+            }
+            return ctxInputs;
         } else {
-            return customOp.inputArguments();
+            // DIAGNOSTIC: falling back to op's stale inputArguments - check for closed arrays
+            List<INDArray> staleInputs = customOp.inputArguments();
+            for (int i = 0; i < staleInputs.size(); i++) {
+                INDArray arr = staleInputs.get(i);
+                if (arr != null && arr.wasClosed()) {
+                    log.warn("DIAGNOSTIC: inputsFromOp FALLBACK to stale inputArguments for op '{}' ({}). " +
+                            "OpContext was {} with {} inputs. Stale input at index {} is CLOSED. " +
+                            "shape={} dtype={}",
+                            ((DifferentialFunction)customOp).getOwnName(), customOp.opName(),
+                            opContext == null ? "null" : "non-null",
+                            opContext == null ? 0 : opContext.getInputArrays().size(),
+                            i, java.util.Arrays.toString(arr.shape()), arr.dataType());
+                }
+            }
+            return staleInputs;
         }
     }
 
@@ -747,12 +772,25 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     private static void logArrays(List<INDArray> inArgs, List<INDArray> outArgs, NDArrayEventType eventType, NDArrayEventType outputEventType) {
         List<NDArrayMetaData> inArgsMeta = new ArrayList<>();
-        for (val arr: inArgs) {
+        for (int idx = 0; idx < inArgs.size(); idx++) {
+            val arr = inArgs.get(idx);
             if(arr == null)
                 continue;
 
-            if (arr.wasClosed())
-                throw new IllegalStateException("One of Input arguments was closed before call");
+            if (arr.wasClosed()) {
+                String bufInfo = "N/A";
+                try {
+                    if (arr.data() != null) {
+                        bufInfo = "id=" + arr.getId() + " bufClosed=" + arr.data().wasClosed()
+                                + " released=" + arr.data().wasClosed()
+                                + " const=" + arr.data().isConstant()
+                                + " addr=0x" + Long.toHexString(arr.data().pointer() != null ? arr.data().pointer().address() : 0);
+                    }
+                } catch (Exception ignored) {}
+                throw new IllegalStateException("Input argument at index " + idx + " was closed before call. "
+                        + "shape=" + java.util.Arrays.toString(arr.shape()) + " dtype=" + arr.dataType()
+                        + " " + bufInfo);
+            }
 
             if(Nd4j.getEnvironment().isLogNDArrayEvents() && !BaseNDArray.callingToString()) {
                 NDArrayMetaData ndArrayMetaData = NDArrayMetaData.from(arr);
@@ -1291,5 +1329,15 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         val addr = ((LongIndexer) buffer.indexer()).get(index);
         val ptr = new PagedPointer(addr);
         return "";
+    }
+
+    /**
+     * Clear the constant replica cache used for multi-device execution.
+     * Called between forward passes to free cached cross-device replicas of constant arrays.
+     * Default no-op; overridden by CudaExecutioner for multi-GPU support.
+     */
+    @Override
+    public void clearConstantReplicaCache() {
+        // No-op for CPU and default executioner
     }
 }

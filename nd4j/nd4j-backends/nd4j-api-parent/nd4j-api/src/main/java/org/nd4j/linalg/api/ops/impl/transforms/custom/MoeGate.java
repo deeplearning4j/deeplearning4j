@@ -66,7 +66,7 @@ import java.util.List;
  *   <li>2: auxLoss [1] - auxiliary load balancing loss scalar</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class MoeGate extends DynamicCustomOp {

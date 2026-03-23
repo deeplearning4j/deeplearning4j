@@ -47,7 +47,7 @@ import java.util.List;
  *
  * <p>Trainable parameters per layer: d + r (vs r*(d+k) for LoRA)</p>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see PeftConfig
  * @see <a href="https://arxiv.org/abs/2310.11454">VeRA Paper</a>
  */

@@ -50,7 +50,7 @@ import java.util.List;
  * }
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public interface OCREngine extends AutoCloseable {
 

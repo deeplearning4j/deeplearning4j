@@ -73,7 +73,7 @@ import java.util.List;
  *   <li>4: presence_penalty (default: 0.0)</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see GpuTopKSample
  * @see TokenSample
  */

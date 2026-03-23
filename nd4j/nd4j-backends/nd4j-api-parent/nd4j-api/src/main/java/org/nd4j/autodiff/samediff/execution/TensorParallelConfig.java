@@ -42,7 +42,7 @@ import lombok.Setter;
  *   // AllReduce sums partial results
  * </pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see TensorParallelRunner
  */
 @Getter

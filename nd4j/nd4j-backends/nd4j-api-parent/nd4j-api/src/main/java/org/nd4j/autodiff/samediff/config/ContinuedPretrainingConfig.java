@@ -36,7 +36,7 @@ import java.io.Serializable;
  * distinguishing it from instruction tuning where only response tokens are trained.
  * This is used to adapt a pretrained model to a specific domain (e.g., medical, legal, code).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

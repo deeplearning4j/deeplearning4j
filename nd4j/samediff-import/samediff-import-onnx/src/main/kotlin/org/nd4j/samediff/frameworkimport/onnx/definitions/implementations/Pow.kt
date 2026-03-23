@@ -40,7 +40,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * variance = mean((x - mean)^2)
  * The exponent 2.0 is a scalar that must broadcast over the input tensor.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Pow"], frameworkName = "onnx")
 class Pow : PreImportHook {

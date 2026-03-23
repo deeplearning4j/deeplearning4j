@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for H2OEvictionPolicy, StreamingLLMEvictionPolicy, and EvictablePagedKVCache.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class TestTokenEviction {
 

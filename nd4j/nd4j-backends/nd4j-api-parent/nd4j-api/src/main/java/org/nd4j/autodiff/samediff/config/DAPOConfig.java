@@ -34,7 +34,7 @@ import lombok.experimental.SuperBuilder;
  * - Dynamic sampling that skips groups with uniform rewards (no signal)
  * - Overlong filtering to remove completions that exceed max length
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

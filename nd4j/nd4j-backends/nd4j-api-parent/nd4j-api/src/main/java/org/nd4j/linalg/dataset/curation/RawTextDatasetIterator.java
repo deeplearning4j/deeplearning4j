@@ -45,7 +45,7 @@ import java.util.function.Function;
  *
  * Requires a tokenizer function to convert text to token IDs.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class RawTextDatasetIterator implements MultiDataSetIterator {

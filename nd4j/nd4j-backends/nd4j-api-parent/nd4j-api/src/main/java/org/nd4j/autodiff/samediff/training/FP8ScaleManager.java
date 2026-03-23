@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * FP8 E4M3 max = 448.0
  * FP8 E5M2 max = 57344.0
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class FP8ScaleManager {

@@ -30,7 +30,8 @@
     NOT_EXCLUDED(OP_flash_attention) || NOT_EXCLUDED(OP_kv_cache_update) || \
     NOT_EXCLUDED(OP_apply_alibi) || NOT_EXCLUDED(OP_sliding_window_attention) || \
     NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_mean_square) || \
-    NOT_EXCLUDED(OP_column_parallel_linear) || NOT_EXCLUDED(OP_row_parallel_linear)
+    NOT_EXCLUDED(OP_column_parallel_linear) || NOT_EXCLUDED(OP_row_parallel_linear) || \
+    NOT_EXCLUDED(OP_kv_cache_quantize) || NOT_EXCLUDED(OP_kv_cache_dequantize)
 
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
@@ -38,6 +39,7 @@
 #include <ops/declarable/helpers/rms_norm.h>
 #include <helpers/ShapeUtils.h>
 #include <math/templatemath.h>
+#include <ops/declarable/helpers/kv_cache_quantize.h>
 #include <cmath>
 
 namespace sd {
@@ -66,42 +68,10 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
     const bool gammaContiguous = gamma == nullptr ||
                                  shape::strideDescendingCAscendingF(gamma->shapeInfo());
 
-#if defined(SD_CUDA)
-    // CUDA fast path: fused kernel — dup non-contiguous inputs to avoid
-    // the general fallback which generates 7 native kernel launches per call
+    // Fast path: fused helper (linker resolves CPU vs CUDA impl)
     if ((isFloat || isDouble || isHalf) && gammaContiguous) {
         const NDArray* inputToUse = input;
         NDArray* contiguousInput = nullptr;
-        NDArray* contiguousOutput = nullptr;
-
-        if (!inputContiguous) {
-            contiguousInput = new NDArray(input->dup('c'));
-            inputToUse = contiguousInput;
-        }
-        NDArray* outputToUse = output;
-        if (!outputContiguous) {
-            contiguousOutput = new NDArray(output->dup('c'));
-            outputToUse = contiguousOutput;
-        }
-
-        helpers::rmsNormCuda(inputToUse, gamma, outputToUse, eps, block.launchContext());
-
-        if (contiguousOutput != nullptr) {
-            output->assign(contiguousOutput);
-            delete contiguousOutput;
-        }
-        if (contiguousInput != nullptr) {
-            delete contiguousInput;
-        }
-        return Status::OK;
-    }
-#endif
-
-#if !defined(SD_CUDA)
-    // CPU fast path: fused 2-pass implementation via helper — dup non-contiguous
-    if ((isFloat || isDouble) && gammaContiguous) {
-        const NDArray* inputToUse = input;
-        NDArray* contiguousInput = nullptr;
         if (!inputContiguous) {
             contiguousInput = new NDArray(input->dup('c'));
             inputToUse = contiguousInput;
@@ -113,7 +83,7 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
             outputToUse = contiguousOutput;
         }
 
-        helpers::rmsNormCpu(inputToUse, gamma, outputToUse, eps);
+        helpers::rmsNorm(block.launchContext(), const_cast<NDArray*>(inputToUse), gamma, outputToUse, eps);
 
         if (contiguousOutput != nullptr) {
             output->assign(contiguousOutput);
@@ -124,7 +94,6 @@ CUSTOM_OP_IMPL(rms_norm, 1, 1, false, 0, 0) {
         }
         return Status::OK;
     }
-#endif
 
     // General fallback path for unsupported dtypes
     std::vector<LongType> axis = {input->rankOf() - 1};
@@ -1044,6 +1013,91 @@ DECLARE_SHAPE_FN(row_parallel_linear) {
 
 DECLARE_TYPES(row_parallel_linear) {
     getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// kv_cache_quantize - KV Cache Quantization
+#if NOT_EXCLUDED(OP_kv_cache_quantize)
+CUSTOM_OP_IMPL(kv_cache_quantize, 1, 2, false, 0, 1) {
+    auto input = INPUT_VARIABLE(0);
+    auto quantized = OUTPUT_VARIABLE(0);
+    auto scales = OUTPUT_VARIABLE(1);
+
+    int quantFormat = INT_ARG(0);
+
+#if defined(SD_CUDA)
+    helpers::kvCacheQuantizeCuda(input, quantized, scales, quantFormat, block.launchContext());
+#else
+    helpers::kvCacheQuantizeCpu(input, quantized, scales, quantFormat);
+#endif
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(kv_cache_quantize) {
+    auto inShape = inputShape->at(0);
+    auto rank = shape::rank(inShape);
+
+    // Output 0: quantized data — same shape as input, INT8 dtype
+    auto quantShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        DataType::INT8, shape::order(inShape), static_cast<int>(shape::rank(inShape)), shape::shapeOf(inShape), static_cast<LongType>(0));
+
+    // Output 1: scales — input shape with last dimension removed (one scale per row)
+    std::vector<LongType> scaleShapeVec;
+    for (int i = 0; i < rank - 1; ++i) {
+        scaleShapeVec.push_back(shape::sizeAt(inShape, i));
+    }
+    if (scaleShapeVec.empty()) {
+        scaleShapeVec.push_back(1);
+    }
+
+    auto scaleShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        DataType::FLOAT32, 'c', scaleShapeVec);
+
+    return new ShapeList(std::vector<LongType*>{quantShape, scaleShape});
+}
+
+DECLARE_TYPES(kv_cache_quantize) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes(0, {DataType::INT8});
+    getOpDescriptor()->setAllowedOutputTypes(1, {DataType::FLOAT32});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// kv_cache_dequantize - KV Cache Dequantization
+#if NOT_EXCLUDED(OP_kv_cache_dequantize)
+CUSTOM_OP_IMPL(kv_cache_dequantize, 2, 1, false, 0, 1) {
+    auto quantized = INPUT_VARIABLE(0);
+    auto scales = INPUT_VARIABLE(1);
+    auto output = OUTPUT_VARIABLE(0);
+
+    int quantFormat = INT_ARG(0);
+
+#if defined(SD_CUDA)
+    helpers::kvCacheDequantizeCuda(quantized, scales, output, quantFormat, block.launchContext());
+#else
+    helpers::kvCacheDequantizeCpu(quantized, scales, output, quantFormat);
+#endif
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(kv_cache_dequantize) {
+    auto quantShape = inputShape->at(0);
+
+    // Output: same shape as quantized input, FLOAT32 dtype
+    auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(
+        DataType::FLOAT32, shape::order(quantShape), static_cast<int>(shape::rank(quantShape)), shape::shapeOf(quantShape), static_cast<LongType>(0));
+
+    return SHAPELIST(outShape);
+}
+
+DECLARE_TYPES(kv_cache_dequantize) {
+    getOpDescriptor()->setAllowedInputTypes(0, {DataType::INT8, DataType::UINT8});
+    getOpDescriptor()->setAllowedInputTypes(1, {DataType::FLOAT32});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
 }
 #endif

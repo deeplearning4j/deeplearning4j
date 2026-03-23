@@ -2,9 +2,11 @@
 
 ## Status
 
-Proposed (Skeleton Implementation)
+In Progress
 
 Proposed by: Adam Gibson (January 2025)
+
+Updated: March 2026 — Added C++ graph replay architecture (PJRT compilation caching, HLO IR builder, TpuGraphBackend)
 
 Discussed with: Development Team
 
@@ -222,22 +224,27 @@ Operations mark arrays as device-dirty after execution. Host reads trigger a dev
 
 ## Implementation Status
 
-The current implementation is a **skeleton** with the backend infrastructure in place but native bindings pending:
+The implementation includes both Java backend infrastructure and C++ graph replay architecture:
 
 **Implemented**:
 - Backend discovery and priority (JTpuBackend)
 - Environment configuration (TpuEnvironment)
-- Executioner framework with compilation caching pattern (TpuExecutioner)
+- Executioner framework with compilation caching and CPU fallback (TpuExecutioner)
 - NDArray and NDArrayFactory stubs (JTpuNDArray, JTpuNDArrayFactory)
 - Maven module structure with JavaCPP preset scaffold
+- C++ graph replay: TpuReplayHandle (XLA compilation caching via PJRT)
+- C++ graph backend: TpuGraphBackend (segment fusion, HLO compilation, execution)
+- C++ HLO IR builder: HloIRBuilder (NativeSlot → HLO opcode mapping)
+- C++ PJRT client manager: PjrtClientManager (dlopen libtpu.so, device enumeration)
+- GraphExecutionMode.TPU (native code 13) enum integration
+- GraphReplayFactory dispatch for SD_TPU builds
+- CMake build system (BuildTPU.cmake, TpuConfiguration.cmake)
 
 **Pending**:
 - JavaCPP PJRT native bindings generation
-- Native PJRT client initialization
-- HLO compilation from op graphs
-- Device buffer allocation and transfer
+- End-to-end testing on TPU hardware
 - Multi-chip execution (data/model parallelism)
-- Integration testing on TPU hardware
+- Performance benchmarking vs CPU baseline
 
 ## Consequences
 

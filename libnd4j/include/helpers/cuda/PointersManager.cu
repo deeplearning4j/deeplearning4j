@@ -32,6 +32,11 @@
 
 namespace sd {
 
+// Extern declarations for capture host workspace (defined in DataBuffer.cu)
+extern SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace;
+extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize;
+extern SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset;
+
 namespace {
 SD_INLINE cudaStream_t captureSafeStream(const LaunchContext* context) {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
@@ -118,22 +123,21 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
       // During CUDA graph capture, H2D copies are recorded as graph nodes with the HOST
       // source address baked in. On replay, the graph reads from that same address.
       // If the host data was on the stack or in a temp buffer, it's invalid at replay time.
-      // FIX: Copy host data to persistent pinned memory, then H2D from that.
-      void* pinnedSrc = nullptr;
-      auto pinErr = cudaMallocHost(&pinnedSrc, numberOfBytes);
-      if (pinErr == cudaSuccess && pinnedSrc != nullptr) {
-        std::memcpy(pinnedSrc, src, numberOfBytes);
-        tl_capturedHostPtrs.push_back(pinnedSrc);
-
-        cudaStream_t capturedStream = captureSafeStream(_context);
-        cudaMemcpyAsync(dst, pinnedSrc, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
-      } else {
-        // Pinned alloc failed — fall back to direct copy (may fail on replay)
-        sd_printf("PointersManager::replicatePointer: cudaMallocHost failed for %zu bytes\n",
-                  numberOfBytes);
-        cudaStream_t capturedStream = captureSafeStream(_context);
-        cudaMemcpyAsync(dst, src, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
+      // Use capture host workspace bump allocator for persistent pinned copy.
+      const void* h2dSrc = src;
+      if (tl_captureHostWorkspace != nullptr) {
+        size_t aligned = (numberOfBytes + 255) & ~255ULL;
+        if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
+          void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+          tl_captureHostWorkspaceOffset += aligned;
+          std::memcpy(pinnedCopy, src, numberOfBytes);
+          h2dSrc = pinnedCopy;
+        }
+        // If workspace exhausted, fall through to use src directly (may fail on replay)
       }
+
+      cudaStream_t capturedStream = captureSafeStream(_context);
+      cudaMemcpyAsync(dst, h2dSrc, numberOfBytes, cudaMemcpyHostToDevice, capturedStream);
 
       // Cache for future calls with same content (only for small arrays)
       if (numberOfBytes <= 256) {

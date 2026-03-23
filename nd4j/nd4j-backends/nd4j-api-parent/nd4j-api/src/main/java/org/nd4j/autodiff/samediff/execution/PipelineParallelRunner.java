@@ -54,7 +54,7 @@ import java.util.Map;
  * Data flow: each stage produces an activation tensor that is transferred to the
  * next stage's GPU via D2H + H2D (or peer-to-peer if available).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see TensorParallelRunner
  */
 @Slf4j

@@ -42,7 +42,7 @@ import java.util.List;
  *   <li>User preferences and configuration</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public interface BackendRoutingStrategy {
 

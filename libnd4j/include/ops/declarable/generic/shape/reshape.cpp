@@ -139,6 +139,20 @@ LongType* handleScalarAndLength1Case(NDArray* x, std::vector<LongType>& reshapeA
       return ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType());
     }
 
+    // For scalar/length-1 input with all-(-1) reshape args, preserve scalar rank.
+    // Reshaping a scalar with [-1] should stay scalar (rank 0), not become [1] (rank 1).
+    // This matters for DSP shape consistency — the output must match the pre-allocated slot.
+    bool allNegOne = true;
+    for (size_t i = 0; i < reshapeArgs.size(); i++) {
+      if (reshapeArgs[i] != -1) {
+        allNegOne = false;
+        break;
+      }
+    }
+    if (allNegOne && x->isScalar()) {
+      return ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType());
+    }
+
     // For scalar/length-1 input, if reshape args contain -1, replace it with 1
     std::vector<LongType> finalShape = reshapeArgs;
     for (size_t i = 0; i < finalShape.size(); i++) {

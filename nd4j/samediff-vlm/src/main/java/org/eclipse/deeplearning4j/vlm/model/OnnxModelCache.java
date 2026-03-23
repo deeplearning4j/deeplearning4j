@@ -55,7 +55,7 @@ import java.util.concurrent.Future;
  * <p>Cache invalidation uses file modification timestamps: if the ONNX file
  * is newer than the cached SDZ, the cache is regenerated.</p>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class OnnxModelCache {

@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * to pow_pairwise which doesn't support broadcasting, causing LayerNorm
  * operations to produce NaN/Infinity values.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @NativeTag

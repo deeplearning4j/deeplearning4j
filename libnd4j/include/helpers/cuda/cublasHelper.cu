@@ -116,6 +116,21 @@ CublasHelper& CublasHelper::getInstance() {
   return instance;
 }
 
+void CublasHelper::applyTf32Mode(bool enable) {
+  for (int e = 0; e < _cache.size(); e++) {
+    auto handle = _cache[e];
+    if (handle == nullptr) continue;
+    auto ch = reinterpret_cast<cublasHandle_t*>(handle);
+
+    // Check if device supports TF32 (sm_80+)
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, e);
+    if (prop.major >= 8) {
+      cublasSetMathMode(*ch, enable ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+    }
+  }
+}
+
 void* CublasHelper::cudnn() {
   auto deviceId = AffinityManager::currentDeviceId();
   if (deviceId < 0 || deviceId >= _cudnn.size())
@@ -153,6 +168,25 @@ void* CublasHelper::handle(int deviceId) {
   if (handle == nullptr) {
     throw cuda_exception::build("cuBLAS handle is null for device - initialization may have failed", deviceId);
   }
+
+  // Lazily apply/remove TF32 mode when the flag changes.
+  // Only check the atomic bool (cheap), and only call cublasSetMathMode on transitions.
+  static thread_local bool tl_tf32Applied = false;
+  static thread_local int tl_smMajor = -1;
+  bool wantTf32 = sd::Environment::getInstance().cublasTf32Enabled();
+  if (wantTf32 != tl_tf32Applied) {
+    if (tl_smMajor < 0) {
+      cudaDeviceProp prop;
+      cudaGetDeviceProperties(&prop, deviceId);
+      tl_smMajor = prop.major;
+    }
+    if (tl_smMajor >= 8) {
+      auto ch = reinterpret_cast<cublasHandle_t*>(handle);
+      cublasSetMathMode(*ch, wantTf32 ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+    }
+    tl_tf32Applied = wantTf32;
+  }
+
   return handle;
 }
 

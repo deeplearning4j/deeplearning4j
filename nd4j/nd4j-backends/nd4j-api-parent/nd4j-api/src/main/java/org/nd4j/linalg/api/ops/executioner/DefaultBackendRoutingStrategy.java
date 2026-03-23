@@ -50,7 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *   <li>Respects device memory constraints</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class DefaultBackendRoutingStrategy implements BackendRoutingStrategy {

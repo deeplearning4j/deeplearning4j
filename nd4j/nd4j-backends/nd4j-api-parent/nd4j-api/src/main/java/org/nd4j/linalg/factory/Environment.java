@@ -948,6 +948,20 @@ public interface Environment {
     default void setTritonMaxNreg(int maxNreg) {}
 
     /**
+     * Returns explicit attention blockN override (0 means auto).
+     * Controls the K-loop tile size in fused attention kernels.
+     */
+    default int tritonAttentionBlockN() {
+        return 0;
+    }
+
+    /**
+     * Set explicit attention blockN override (0 means auto).
+     * Use 64 for better occupancy or 128 for better bandwidth efficiency.
+     */
+    default void setTritonAttentionBlockN(int blockN) {}
+
+    /**
      * Returns whether LLVM floating-point fusion is enabled for Triton compilation.
      */
     default boolean tritonEnableFpFusion() {
@@ -1325,6 +1339,15 @@ public interface Environment {
     default void setCublasTf32Enabled(boolean enabled) {}
 
     /**
+     * Whether to pre-allocate an explicit cuBLAS workspace for CUDA graph capture.
+     * Prevents cuBLAS from creating MemAlloc/MemFree graph nodes during capture,
+     * but may cause algorithm divergence (split-K selection) for some configurations.
+     * @return true if capture workspace is enabled (default: true)
+     */
+    default boolean cublasCaptureWorkspace() { return true; }
+    default void setCublasCaptureWorkspace(boolean enabled) {}
+
+    /**
      * Whether cast sinking through matmul is enabled in FusionPass.
      * Marks FP16→FP32 casts as identity ops when their only consumer is a matmul,
      * since MmulHelper already handles mixed-precision internally.
@@ -1400,4 +1423,92 @@ public interface Environment {
      */
     default long dspCapturePoolMaxBytes() { return 1073741824L; }
     default void setDspCapturePoolMaxBytes(long bytes) {}
+
+    // ============== LLM Benchmark Config Presets ==============
+
+    /**
+     * Apply the optimal configuration for LLM workloads (inference, training,
+     * embedding, and other GPU-accelerated workflows).
+     *
+     * Sets Triton compilation flags, cuBLAS TF32, DSP batch optimizations,
+     * section fusion, graph capture, and consolidated arg table.
+     * Matches BenchmarkConfig.optimal() from samediff-llm (~86 tok/s on RTX 4090).
+     *
+     * This is the recommended default for any LLM execution.
+     *
+     * @see org.eclipse.deeplearning4j.model.benchmark.BenchmarkConfig#optimal()
+     */
+    default void applyOptimalLLMConfig() {
+        // Reset all Triton/DSP flags to defaults
+        setTritonGraphCapture(false);
+        setTritonSectionFusion(false);
+        setTritonConsolidatedArgTable(false);
+        setTritonArgDirtyTracking(false);
+        setTritonSkipKernels(false);
+        setTritonVerifyKernels(false);
+        setTritonVerifyFullSnapshot(false);
+        setTritonForceRecapture(false);
+        setTritonIncludeTypes("");
+        setTritonCompileAll(false);
+        setTritonExcludeOps("");
+        setTritonCooperativeLaunch(false);
+        setTritonVerbose(false);
+        setTritonDumpSections(false);
+        setTritonDumpArgs(false);
+        setTritonDumpGraphDot(false);
+        setTritonAllowFallbackCapture(false);
+        setDspBatchZero(false);
+        setDspBatchZeroKernel(false);
+        setDspBatchedGemm(false);
+        setDspCastSinkMatmul(false);
+
+        // Apply BALANCED profile baseline
+        setTritonCacheEnabled(true);
+        setTritonAlwaysCompile(false);
+        setTritonDisableLineInfo(true);
+        setTritonBuildThreads(4);
+        setTritonNumWarps(8);
+        setTritonNumStages(2);
+        setTritonNumCTAs(1);
+        setTritonEnableFpFusion(true);
+
+        // Apply optimal overrides (matches BenchmarkConfig.optimal())
+        setTritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION");
+        setTritonSectionFusion(true);
+        setTritonCompileAll(true);
+        setTritonGraphCapture(true);
+        setTritonAllowFallbackCapture(true);
+        setTritonConsolidatedArgTable(true);
+        setTritonArgDirtyTracking(true);
+        setTritonFusionScoring(false);
+        setTritonNumWarps(4);
+        setTritonNumStages(1);
+        setCublasTf32Enabled(true);
+        setDspBatchedGemm(true);
+    }
+
+    /**
+     * Apply a conservative configuration suitable for LLM inference on
+     * systems where Triton/CUDA graph capture may not be available.
+     * Enables cuBLAS TF32 and basic DSP optimizations only.
+     */
+    default void applyBasicLLMConfig() {
+        setCublasTf32Enabled(true);
+        setDspBatchedGemm(true);
+        setDspCastElimination(true);
+    }
+
+    /**
+     * Apply a debug-friendly LLM configuration with verbose logging
+     * and kernel verification enabled.
+     */
+    default void applyDebugLLMConfig() {
+        applyOptimalLLMConfig();
+        setTritonVerbose(true);
+        setTritonDumpSections(true);
+        setTritonVerifyKernels(true);
+        setTritonBuildThreads(1);
+        setTritonNumWarps(2);
+        setTritonNumStages(2);
+    }
 }

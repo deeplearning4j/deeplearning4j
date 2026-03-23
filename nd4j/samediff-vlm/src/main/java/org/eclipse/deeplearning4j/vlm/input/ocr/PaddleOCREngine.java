@@ -56,7 +56,7 @@ import java.util.*;
  * }
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class PaddleOCREngine extends AbstractOCREngine {
 

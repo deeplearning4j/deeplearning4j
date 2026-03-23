@@ -54,7 +54,7 @@ import java.util.*;
  * System.out.println(result.getFullText());
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class TrOCREngine extends AbstractOCREngine {
 

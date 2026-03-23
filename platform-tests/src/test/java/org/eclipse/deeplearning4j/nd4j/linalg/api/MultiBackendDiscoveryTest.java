@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Dual backend: mvn test -Pmulti-backend-dual -Dtest=MultiBackendDiscoveryTest
  * - All backends: mvn test -Pmulti-backend-all -Dtest=MultiBackendDiscoveryTest
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Tag("multi-backend")
 @Tag("backend-discovery")

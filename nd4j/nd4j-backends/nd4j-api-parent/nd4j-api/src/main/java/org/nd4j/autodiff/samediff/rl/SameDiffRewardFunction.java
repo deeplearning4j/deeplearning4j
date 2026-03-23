@@ -31,7 +31,7 @@ import java.util.Map;
  * Reward function backed by a SameDiff reward model.
  * Runs a forward pass through the reward model and extracts the reward output.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class SameDiffRewardFunction implements RewardFunction {
 

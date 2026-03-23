@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Weighted combination of multiple reward functions.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class CompositeRewardFunction implements RewardFunction {
 

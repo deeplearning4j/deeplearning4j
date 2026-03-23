@@ -44,7 +44,7 @@ import java.util.Map;
  *
  * This provides ~4x memory reduction for optimizer state with minimal accuracy impact.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 public class Adam8bitUpdater implements GradientUpdater<Adam8bit> {

@@ -70,7 +70,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * System.out.println(MultiBackendNativeOpsHolder.getInstance().getBackendInfo());
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class MultiBackendNativeOpsHolder {

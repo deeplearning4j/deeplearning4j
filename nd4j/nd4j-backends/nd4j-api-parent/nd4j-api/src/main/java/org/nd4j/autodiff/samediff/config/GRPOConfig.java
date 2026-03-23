@@ -34,7 +34,7 @@ import lombok.experimental.SuperBuilder;
  *
  * Loss = -min(ratio * advantage, clip(ratio, 1-epsilon, 1+epsilon) * advantage) + klPenalty * KL
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

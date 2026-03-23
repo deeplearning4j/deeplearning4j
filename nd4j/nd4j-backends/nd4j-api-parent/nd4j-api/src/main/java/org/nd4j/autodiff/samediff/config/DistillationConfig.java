@@ -41,7 +41,7 @@ import java.util.Map;
  *   <li>COMBINED: Weighted combination of multiple strategies</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

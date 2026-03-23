@@ -90,7 +90,7 @@ import java.util.concurrent.CompletableFuture;
  * vlm.close();
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @Getter

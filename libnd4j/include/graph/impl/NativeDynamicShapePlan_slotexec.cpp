@@ -1187,7 +1187,75 @@ step3_allocate:
 
   ctx.setShapeFunctionOverride(true);
 
-  auto status = slot.op->execute(&ctx);
+  // Log shapes for matmul gap slots to diagnose capture shape mismatches
+  if (normalizeOpName_slotexec(slot.opName) == "matmul") {
+    std::string inStr, outStr, cachedStr;
+    for (int i = 0; i < slot.numInputs; i++) {
+      if (i > 0) inStr += ", ";
+      inStr += inputs[i] ? ShapeUtils::shapeAsString(inputs[i]) : "null";
+    }
+    for (int i = 0; i < numActualOutputs; i++) {
+      if (i > 0) outStr += ", ";
+      outStr += outputs[i] ? ShapeUtils::shapeAsString(outputs[i]) : "null";
+    }
+    for (size_t i = 0; i < outputShapes.size(); i++) {
+      if (i > 0) cachedStr += ", ";
+      cachedStr += outputShapes[i] ? ShapeUtils::shapeAsString(outputShapes[i]) : "null";
+    }
+    DSP_DIAG(EXECUTE, "MATMUL PRE-EXEC: slot %d inputs=[%s] outputs=[%s] cachedShapes=[%s] "
+              "cacheHit=%d frozen=%d execCount=%d",
+              stepIdx, inStr.c_str(), outStr.c_str(), cachedStr.c_str(),
+              (int)cacheHit, (int)shapesFrozen_, executeCount_);
+  }
+
+  Status status;
+  try {
+    status = slot.op->execute(&ctx);
+  } catch (const std::exception& e) {
+    // Reshape failures and other exceptions land here — log with DSP_DIAG
+    std::string inputShapes, outputShapesStr;
+    for (int i = 0; i < slot.numInputs; i++) {
+      if (i > 0) inputShapes += ", ";
+      inputShapes += inputs[i] ? ShapeUtils::shapeAsString(inputs[i]) : "null";
+    }
+    for (int i = 0; i < numActualOutputs; i++) {
+      if (i > 0) outputShapesStr += ", ";
+      outputShapesStr += outputs[i] ? ShapeUtils::shapeAsString(outputs[i]) : "null";
+    }
+    std::string iArgsStr;
+    for (int i = 0; i < slot.numIArgs; i++) {
+      if (i > 0) iArgsStr += ",";
+      iArgsStr += std::to_string(slot.iArgs[i]);
+    }
+    DSP_DIAG(EXECUTE, "SLOT EXEC EXCEPTION: slot %d (%s) exception='%s', inputs=[%s], outputs=[%s], "
+              "iArgs=[%s], cacheHit=%d executeCount=%d shapesFrozen=%d",
+              stepIdx, slot.opName.c_str(), e.what(),
+              inputShapes.c_str(), outputShapesStr.c_str(), iArgsStr.c_str(),
+              (int)cacheHit, executeCount_, (int)shapesFrozen_);
+    return Status::KERNEL_FAILURE;
+  }
+
+  if (status != Status::OK) {
+    std::string inputShapes, outputShapesStr;
+    for (int i = 0; i < slot.numInputs; i++) {
+      if (i > 0) inputShapes += ", ";
+      inputShapes += inputs[i] ? ShapeUtils::shapeAsString(inputs[i]) : "null";
+    }
+    for (int i = 0; i < numActualOutputs; i++) {
+      if (i > 0) outputShapesStr += ", ";
+      outputShapesStr += outputs[i] ? ShapeUtils::shapeAsString(outputs[i]) : "null";
+    }
+    std::string iArgsStr;
+    for (int i = 0; i < slot.numIArgs; i++) {
+      if (i > 0) iArgsStr += ",";
+      iArgsStr += std::to_string(slot.iArgs[i]);
+    }
+    DSP_DIAG(EXECUTE, "SLOT EXEC FAIL: slot %d (%s) status=%d, inputs=[%s], outputs=[%s], iArgs=[%s], "
+              "cacheHit=%d executeCount=%d shapesFrozen=%d",
+              stepIdx, slot.opName.c_str(), static_cast<int>(status),
+              inputShapes.c_str(), outputShapesStr.c_str(), iArgsStr.c_str(),
+              (int)cacheHit, executeCount_, (int)shapesFrozen_);
+  }
 
   for (int i = 0; i < numActualOutputs; i++) {
     if (outputs[i] != nullptr) {

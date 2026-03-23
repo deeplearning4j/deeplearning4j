@@ -40,7 +40,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * on the last dimension (key sequence length) of attention scores.
  * For shape [batch, heads, seq_q, seq_k], softmax should be on axis=-1 (seq_k).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["Softmax"], frameworkName = "onnx")
 class Softmax : PreImportHook {

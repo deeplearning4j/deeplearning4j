@@ -54,7 +54,7 @@ import java.util.List;
  *   0: tokenOutput [batch, tokenSeqLen, embedDim]
  *   1: imageOutput [batch, imageSeqLen, embedDim]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class TwoWayCrossAttention extends DynamicCustomOp {

@@ -19,8 +19,39 @@
 #include <graph/GraphReplayHandle.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 
-#ifdef SD_CUDA
+// ZLUDA builds define SD_CUDA but the actual GPU is AMD (HIP) or Intel (Level Zero).
+// ZLUDA's CUDA graph translation is incomplete — use native APIs instead.
+// Check ZLUDA targets BEFORE SD_CUDA so the native handle is selected.
+#if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
+#include <graph/hip/HipGraphReplayHandle.h>
+#elif defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_INTEL)
+#include <graph/levelzero/LevelZeroReplayHandle.h>
+#elif defined(SD_CUDA)
 #include <graph/cuda/CudaGraphReplayHandle.h>
+#endif
+
+#if defined(SD_HIP) && !defined(HAVE_ZLUDA)
+#include <graph/hip/HipGraphReplayHandle.h>
+#endif
+
+#if defined(HAVE_LEVELZERO) && !defined(HAVE_ZLUDA)
+#include <graph/levelzero/LevelZeroReplayHandle.h>
+#endif
+
+#if defined(HAVE_VULKAN)
+#include <graph/vulkan/VulkanReplayHandle.h>
+#endif
+
+#ifdef SD_METAL
+#include <graph/metal/MetalReplayHandle.h>
+#endif
+
+#ifdef SD_TPU
+#include <graph/tpu/TpuReplayHandle.h>
+#endif
+
+#ifdef HAVE_HEXAGON_MLIR
+#include <graph/hexagon/HexagonReplayHandle.h>
 #endif
 
 namespace sd {
@@ -105,15 +136,40 @@ void GraphReplayHandle::freeHostPointers() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
-#ifdef SD_CUDA
+  // ── ZLUDA builds: bypass CUDA graph translation, use native APIs ──────
+  // ZLUDA defines SD_CUDA but the GPU is actually AMD or Intel.
+  // ZLUDA's CUDA graph API coverage is incomplete (missing cuGraphLaunch
+  // in official v5, partial in lshqqytiger fork). Native HIP/L0 graph
+  // APIs are production-ready, so use them directly.
+#if defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_AMD)
+  return std::make_unique<HipGraphReplayHandle>(deviceId);
+#elif defined(HAVE_ZLUDA) && defined(ZLUDA_TARGET_INTEL)
+  return std::make_unique<LevelZeroReplayHandle>(deviceId);
+
+  // ── Native builds: use the platform's own graph replay API ────────────
+#elif defined(SD_CUDA)
   return std::make_unique<CudaGraphReplayHandle>(deviceId);
+#elif defined(SD_HIP)
+  return std::make_unique<HipGraphReplayHandle>(deviceId);
+#elif defined(SD_METAL)
+  return std::make_unique<MetalReplayHandle>(deviceId);
+#elif defined(HAVE_LEVELZERO)
+  return std::make_unique<LevelZeroReplayHandle>(deviceId);
+#elif defined(HAVE_VULKAN)
+  return std::make_unique<VulkanReplayHandle>(deviceId);
+#elif defined(SD_TPU)
+  return std::make_unique<TpuReplayHandle>(deviceId);
+#elif defined(HAVE_HEXAGON_MLIR)
+  return std::make_unique<HexagonReplayHandle>(deviceId);
 #else
   return std::make_unique<FunctionalReplayHandle>();
 #endif
 }
 
 bool GraphReplayFactory::hasHardwareReplay() {
-#ifdef SD_CUDA
+#if defined(SD_CUDA) || defined(SD_HIP) || defined(SD_METAL) || \
+    defined(HAVE_LEVELZERO) || defined(HAVE_VULKAN) || \
+    defined(SD_TPU) || defined(HAVE_HEXAGON_MLIR)
   return true;
 #else
   return false;

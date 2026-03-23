@@ -32,7 +32,7 @@ import java.util.List;
  * about the generation process such as token count, finish reason,
  * and timing information.</p>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder
@@ -108,6 +108,40 @@ public class GenerationResult {
      * Log probabilities for each generated token (if requested).
      */
     private final List<Double> logProbs;
+
+    // ==================== Speculative Decoding Statistics ====================
+
+    /**
+     * Total number of speculative tokens proposed across all steps.
+     */
+    @Builder.Default
+    private final int totalSpeculativeTokens = 0;
+
+    /**
+     * Total number of speculative tokens accepted (matched model's greedy output).
+     */
+    @Builder.Default
+    private final int totalAcceptedTokens = 0;
+
+    /**
+     * Number of speculative decode steps executed.
+     */
+    @Builder.Default
+    private final int speculativeSteps = 0;
+
+    /**
+     * Average acceptance rate (totalAcceptedTokens / totalSpeculativeTokens).
+     */
+    @Builder.Default
+    private final double averageAcceptanceRate = 0.0;
+
+    /**
+     * Effective tokens per second accounting for multi-token steps.
+     * For speculative decoding: total tokens / wall time, where each step
+     * may produce multiple tokens.
+     */
+    @Builder.Default
+    private final double effectiveTokensPerSecond = 0.0;
 
     /**
      * Reason why generation stopped.

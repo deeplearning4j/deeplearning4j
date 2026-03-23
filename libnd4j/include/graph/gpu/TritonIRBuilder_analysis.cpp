@@ -829,9 +829,11 @@ void TritonIRBuilder::selectTileConfig(const std::vector<TritonOpCategory>& cate
     }
     dim3 dims = getSoftmaxDims(numTads, tadLen);
     blockSize = 64;
-    int suggestedWarps = std::max(1, static_cast<int>(dims.y) / 32);
-    numWarps = std::max(1, std::min(suggestedWarps, 8));
-    numStages = 2;
+    // 4 warps empirically optimal for decode attention (86.91 tok/s vs 69.56 at 2 warps)
+    numWarps = 4;
+    // numStages=1 empirically optimal for decode: no multi-buffering overhead
+    // for the small tile loads in single-token decode (blockM=1).
+    numStages = 1;
   } else if (hasMatmul) {
     int length = static_cast<int>(std::min(maxOutputLen, static_cast<LongType>(INT_MAX)));
     dim3 dims = getMMulDims(length > 0 ? length : 1, sizeof(float));

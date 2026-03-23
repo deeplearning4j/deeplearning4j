@@ -57,7 +57,7 @@ import java.util.List;
  * <p>
  * Output: [B, O]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class RowParallelLinear extends DynamicCustomOp {

@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Interface for reward functions used in online RL alignment methods (GRPO, PPO, etc.).
  * Given prompts and generated completions, returns scalar reward scores.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public interface RewardFunction {
 

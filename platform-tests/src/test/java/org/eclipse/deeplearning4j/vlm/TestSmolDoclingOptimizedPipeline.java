@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -84,6 +85,9 @@ public class TestSmolDoclingOptimizedPipeline {
         INDArray inputsEmbeds;
         int[] promptTokenIds;
         long hiddenSize;
+        // Draft model for speculative decoding (lazily loaded)
+        SameDiff draftDecoder;
+        long draftHiddenSize;
         // Pipeline setup timings
         long downloadMs;
         long importMs;
@@ -134,14 +138,96 @@ public class TestSmolDoclingOptimizedPipeline {
         // This is the ONLY config that runs unless vlm.test.configs selects others.
         // Target: ≥90 tok/s steady-state decode with ≥50% token diversity.
         if (triton) {
-            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_default")
+            configs.add(BenchmarkConfig.optimal());
+
+            // ─── cuBLAS workspace matrix ─────────────────────────────────────
+            // Tests all combinations of workspace ON/OFF × stages 1/2 × tf32 ON/OFF.
+            // workspace=ON prevents MemAlloc graph nodes but may cause algorithm divergence.
+            // Run these via: --configs WORKSPACE_ON_stages1_tf32,WORKSPACE_OFF_stages1_tf32,...
+
+            // Workspace ON + stages=1 + TF32 (current OPTIMAL)
+            configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages1_tf32")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true).cublasCaptureWorkspace(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(40));
+
+            // Workspace OFF + stages=1 + TF32
+            configs.add(BenchmarkConfig.create("WORKSPACE_OFF_stages1_tf32")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true).cublasCaptureWorkspace(false)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(40));
+
+            // Workspace ON + stages=2 + no TF32 (committed best before workspace change)
+            configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages2_noTf32")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
+                    .cublasTf32(false).cublasCaptureWorkspace(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(40));
+
+            // Workspace OFF + stages=2 + no TF32 (original committed config)
+            configs.add(BenchmarkConfig.create("WORKSPACE_OFF_stages2_noTf32")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
+                    .cublasTf32(false).cublasCaptureWorkspace(false)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(40));
+
+            // Workspace ON + stages=2 + TF32 (test if TF32 compensates for workspace divergence)
+            configs.add(BenchmarkConfig.create("WORKSPACE_ON_stages2_tf32")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
+                    .cublasTf32(true).cublasCaptureWorkspace(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(40));
+
+            // Workspace OFF + stages=2 + TF32
+            configs.add(BenchmarkConfig.create("WORKSPACE_OFF_stages2_tf32")
+                    .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
+                    .tritonSectionFusion(true).tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(2)
+                    .cublasTf32(true).cublasCaptureWorkspace(false)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(40));
+
+            // blockN=64 variant: lower shared mem (36KB vs 71KB), better occupancy, more K-loop iterations
+            configs.add(BenchmarkConfig.create("TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages1_tf32_blockN64")
                     .tritonIncludeTypes(COMPILE_ALL_TYPES_WITH_NORM + ",ATTENTION")
                     .tritonSectionFusion(true)
                     .tritonCompileAll(true)
                     .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
                     .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
                     .tritonFusionScoring(false)
-                    .tritonNumWarps(4).tritonNumStages(2)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .tritonAttentionBlockN(64)
+                    .cublasTf32(true)
                     .dspBatchedGemm(true)
                     .maxTokens(100).minDiversityPct(40));
 
@@ -997,15 +1083,36 @@ public class TestSmolDoclingOptimizedPipeline {
 
         // Decode function: wraps StaticKvCacheDecodeLoop
         BenchmarkRunner.DecodeFunction decodeFn = config -> {
-            StaticKvCacheDecodeLoop decodeLoop = StaticKvCacheDecodeLoop.builder()
+            String specTokensProp = System.getProperty("vlm.speculative.tokens", "0");
+            int specTokens = (specTokensProp == null || specTokensProp.isEmpty()) ? 0 : Integer.parseInt(specTokensProp);
+            boolean useDraft = config.isUseDraftModel()
+                    || "true".equalsIgnoreCase(System.getProperty("vlm.speculative.draft"));
+            if (useDraft && specTokens == 0) {
+                specTokens = config.getDraftModelK() > 0 ? config.getDraftModelK() : 5;
+            }
+
+            // Build draft model speculator if requested
+            Speculator draftSpeculator = null;
+            if (useDraft && specTokens > 0) {
+                draftSpeculator = buildDraftModelSpeculator(ctx, specTokens);
+            }
+
+            // Auto-discover I/O names from the decoder model graph
+            ModelIOConfig decoderIOConfig = ModelIOConfig.discover(ctx.decoder);
+
+            StaticKvCacheDecodeLoop.StaticKvCacheDecodeLoopBuilder loopBuilder = StaticKvCacheDecodeLoop.builder()
                     .decoder(ctx.decoder)
                     .embedTokens(ctx.embedTokens)
                     .tokenizer(ctx.tokenizer)
+                    .ioConfig(decoderIOConfig)
                     .samplingConfig(SamplingConfig.greedy())
                     .maxNewTokens(config.getMaxTokens())
-                    .hiddenSize(ctx.hiddenSize)
-                    .build();
-            return decodeLoop.decode(ctx.inputsEmbeds, ctx.promptTokenIds);
+                    .maxSpeculativeTokens(specTokens)
+                    .hiddenSize(ctx.hiddenSize);
+            if (draftSpeculator != null) {
+                loopBuilder.speculator(draftSpeculator);
+            }
+            return loopBuilder.build().decode(ctx.inputsEmbeds, ctx.promptTokenIds);
         };
 
         // Validate function: structural tags + diversity checks
@@ -1394,5 +1501,138 @@ public class TestSmolDoclingOptimizedPipeline {
         }
         Nd4j.getExecutioner().commit();
         log.info("  Freed {} {} arrays ({}MB)", closedArrays, label, closedBytes / (1024 * 1024));
+    }
+
+    // ─── Draft model speculation support ──────────────────────────────────
+
+    /**
+     * Build a DraftModelSpeculator using SmolLM2-135M as the draft model.
+     * Lazy-loads the draft model into PipelineContext on first call.
+     */
+    private Speculator buildDraftModelSpeculator(PipelineContext ctx, int maxSpecTokens) {
+        try {
+            if (ctx.draftDecoder == null) {
+                loadDraftModel(ctx);
+            }
+
+            // Extract embedding table from draft model
+            INDArray draftEmbeddingTable = null;
+            for (org.nd4j.autodiff.samediff.SDVariable var : ctx.draftDecoder.variables()) {
+                if (var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.CONSTANT
+                        || var.getVariableType() == org.nd4j.autodiff.samediff.VariableType.VARIABLE) {
+                    INDArray arr = var.getArr();
+                    if (arr != null && arr.rank() == 2) {
+                        if (draftEmbeddingTable == null || arr.length() > draftEmbeddingTable.length()) {
+                            draftEmbeddingTable = arr;
+                        }
+                    }
+                }
+            }
+
+            if (draftEmbeddingTable == null) {
+                throw new RuntimeException("Could not extract embedding table from draft model");
+            }
+
+            long draftHidden = ctx.draftHiddenSize > 0 ? ctx.draftHiddenSize : draftEmbeddingTable.size(1);
+
+            // Auto-discover I/O names from the draft model graph
+            ModelIOConfig draftIOConfig = ModelIOConfig.discover(ctx.draftDecoder);
+
+            // Embed function: direct table lookup
+            final INDArray embedTable = draftEmbeddingTable;
+            final long hidden = draftHidden;
+            java.util.function.Function<int[], INDArray> embedFn = tokenIds -> {
+                INDArray emb = Nd4j.zeros(DataType.FLOAT, 1, tokenIds.length, hidden);
+                for (int i = 0; i < tokenIds.length; i++) {
+                    emb.get(NDArrayIndex.point(0), NDArrayIndex.point(i), NDArrayIndex.all())
+                            .assign(embedTable.getRow(tokenIds[i]));
+                }
+                return emb;
+            };
+
+            // Decode function: greedy argmax from logits
+            java.util.function.Function<INDArray, Integer> decodeFn = logits -> {
+                INDArray lastLogits;
+                if (logits.rank() == 3) {
+                    lastLogits = logits.get(NDArrayIndex.point(0),
+                            NDArrayIndex.point(logits.size(1) - 1), NDArrayIndex.all());
+                } else if (logits.rank() == 2) {
+                    lastLogits = logits.get(NDArrayIndex.point(0), NDArrayIndex.all());
+                } else {
+                    lastLogits = logits;
+                }
+                return Nd4j.argMax(lastLogits).getInt(0);
+            };
+
+            log.info("  Draft model speculator: hidden={}, logits={}, kvLayers={}",
+                    draftHidden, draftIOConfig.getLogitsOutputName(),
+                    draftIOConfig.getKvCacheNames() != null ? draftIOConfig.getKvCacheNames().keyNames.size() : 0);
+
+            long draftVocabSize = draftEmbeddingTable.size(0);
+            return new DraftModelSpeculator(
+                    "draft-smollm2-135m",
+                    ctx.draftDecoder,
+                    embedFn,
+                    decodeFn,
+                    draftIOConfig,
+                    draftHidden,
+                    draftVocabSize,
+                    maxSpecTokens,
+                    256);
+        } catch (Exception e) {
+            log.error("Failed to build draft model speculator, falling back to ngram", e);
+            return null;
+        }
+    }
+
+    /**
+     * Load SmolLM2-135M ONNX model as the draft decoder.
+     */
+    private void loadDraftModel(PipelineContext ctx) throws Exception {
+        log.info("  Loading SmolLM2-135M draft model...");
+        long startMs = System.currentTimeMillis();
+
+        // Download ONNX model
+        VLMModelDownloader.DownloadResult draftResult = VLMModelDownloader.download(
+                VLMModelDownloader.VLMModel.SMOLLM2_135M_DECODER);
+        File draftOnnx = draftResult.getModelFile();
+        log.info("  Draft model downloaded: {} ({}MB)", draftOnnx.getName(),
+                draftOnnx.length() / (1024 * 1024));
+
+        // Load draft model on device 1 (if available) to reduce memory pressure on
+        // device 0 where the target model's CUDA graph needs memory for replay.
+        // The draft model is small (~515MB) and runs without CUDA graph acceleration.
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        int draftDevice = numDevices > 1 ? 1 : 0;
+        int origDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        if (draftDevice != origDevice) {
+            log.info("  Loading draft model on device {} (freeing device {} for target model graph)",
+                    draftDevice, origDevice);
+            DeviceMemoryManager.getInstance().switchDevice(draftDevice, "loadDraftModel", "draft-load");
+        }
+
+        // Import via SDZ cache (same path as main models)
+        ctx.draftDecoder = OnnxModelCache.importWithCache(draftOnnx.getAbsolutePath());
+
+        // Restore original device
+        if (draftDevice != origDevice) {
+            DeviceMemoryManager.getInstance().switchDevice(origDevice, "loadDraftModel", "restore");
+        }
+
+        long elapsed = System.currentTimeMillis() - startMs;
+        log.info("  Draft model loaded in {}ms on device {}, ops={}", elapsed, draftDevice,
+                ctx.draftDecoder.ops().length);
+
+        // Try to read hidden size from config
+        try {
+            VLMModelDownloader.DownloadResult configResult = VLMModelDownloader.download(
+                    VLMModelDownloader.VLMModel.SMOLLM2_135M_CONFIG);
+            org.eclipse.deeplearning4j.llm.config.ModelConfig modelConfig =
+                    org.eclipse.deeplearning4j.llm.config.ModelConfig.fromFile(configResult.getModelFile());
+            ctx.draftHiddenSize = modelConfig.getHiddenSize();
+            log.info("  Draft model config: hidden_size={}", ctx.draftHiddenSize);
+        } catch (Exception e) {
+            log.warn("  Could not load draft model config, will infer hidden size from embedding table", e);
+        }
     }
 }

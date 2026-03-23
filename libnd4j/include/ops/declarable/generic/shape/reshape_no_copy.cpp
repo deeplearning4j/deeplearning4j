@@ -226,6 +226,22 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
+  // For scalar input with resolved shape [-1] -> [1], preserve scalar rank.
+  // Reshaping a scalar with [-1] should stay scalar (rank 0), not become [1] (rank 1).
+  // This matches the block.width()==1 path which returns scalar when newShape is empty.
+  if (shape::rank(inShape) == 0 && totalElements <= 1 && newShape.size() == 1 && newShape[0] == 1) {
+    sd::LongType len2 = shape::shapeInfoLength(static_cast<sd::LongType>(0));
+    sd::LongType *scalarInfo = new sd::LongType[len2 + SD_SHAPE_ALLOC_PADDING]();
+    scalarInfo[0] = 0;
+    shape::setOrder(scalarInfo, order);
+    ArrayOptions::resetFlags(scalarInfo);
+    ArrayOptions::setDataType(scalarInfo, dtype);
+    ArrayOptions::togglePropertyBit(scalarInfo, ARRAY_COPY_OFFSET_INPUT_0);
+    auto result = ConstantShapeHelper::getInstance().createFromExisting(scalarInfo);
+    delete[] scalarInfo;
+    return SHAPELIST(CONSTANT(result));
+  }
+
   // Validate that the target shape's total element count matches the input's element count.
   // This catches bugs where wrong dimensions are passed (e.g., from Java char-widening
   // or incorrect shape calculations), which would create a view with more elements than

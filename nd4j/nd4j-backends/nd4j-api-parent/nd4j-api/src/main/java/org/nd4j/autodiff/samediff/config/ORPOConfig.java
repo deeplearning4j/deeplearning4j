@@ -35,7 +35,7 @@ import lombok.experimental.SuperBuilder;
  *
  * Key advantage: no reference model needed, reducing memory and compute costs.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

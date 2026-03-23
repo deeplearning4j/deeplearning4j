@@ -34,7 +34,7 @@ import org.nd4j.common.base.Preconditions;
  *
  * <p>Key benefit: Train once, deploy at any rank from minRank to r.</p>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see LoraConfig
  * @see PeftConfig
  * @see <a href="https://arxiv.org/abs/2210.07558">DyLoRA Paper</a>

@@ -44,7 +44,9 @@ public interface OpExecutioner {
     enum ExecutionerType {
         NATIVE_CPU,
         CUDA,
-        MULTI_BACKEND
+        MULTI_BACKEND,
+        TPU,
+        HEXAGON
     }
 
     enum ProfilingMode {
@@ -419,6 +421,24 @@ public interface OpExecutioner {
      */
     default void setSkipDeviceCoherency(boolean skip) {
         // No-op by default (CPU backend)
+    }
+
+    /**
+     * Reset cross-device replication counter.
+     * Returns [count, bytes] from the previous period.
+     * Used for diagnosing per-step cross-device data copies.
+     */
+    default long[] resetReplicationCounter() {
+        return new long[]{0, 0};
+    }
+
+    /**
+     * Clear the constant replica cache used for multi-device execution.
+     * Called between forward passes to free cached cross-device replicas of constant arrays.
+     * No-op on CPU; overridden by CudaExecutioner for multi-GPU support.
+     */
+    default void clearConstantReplicaCache() {
+        // No-op by default
     }
 
 }

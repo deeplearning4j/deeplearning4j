@@ -78,7 +78,13 @@ enum class GraphExecutionMode : int {
   GEM_TRITON = 5,       // Force Triton MLIR backend for fusible segments
   GEM_MLX = 6,          // Force MLX Apple Silicon backend for fusible segments
   GEM_ARM_HYBRID = 7,   // Force ARM Hybrid (MLIR CPU + Vulkan) backend
-  GEM_NNAPI = 8         // Force Android NNAPI backend for hardware acceleration
+  GEM_NNAPI = 8,        // Force Android NNAPI backend for hardware acceleration
+  GEM_HIP_GRAPHS = 9,   // HIP graph capture/replay (AMD ROCm) — mirrors CUDA graphs
+  GEM_LEVELZERO = 10,   // Intel Level Zero mutable command list replay
+  GEM_VULKAN = 11,      // Vulkan compute command buffer replay
+  GEM_METAL = 12,       // Metal indirect command buffer replay (Apple GPU)
+  GEM_TPU = 13,         // TPU HLO compilation + PJRT execution caching
+  GEM_HEXAGON = 14      // Hexagon-MLIR NPU compilation + command list replay
 };
 
 // FlatGraph is in the ::graph namespace (FlatBuffer-generated)

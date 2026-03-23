@@ -53,7 +53,7 @@ import java.util.regex.Pattern;
  * System.out.println(result.getFullText());
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class TesseractOCREngine extends AbstractOCREngine {
 

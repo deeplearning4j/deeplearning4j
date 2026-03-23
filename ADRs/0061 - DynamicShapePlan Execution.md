@@ -5,7 +5,7 @@
 Implemented and actively maintained.
 
 Proposed by: Adam Gibson (January 2025)
-Updated by: Runtime maintainers (March 9, 2026)
+Updated by: Runtime maintainers (March 20, 2026)
 
 ## Context
 
@@ -1762,6 +1762,133 @@ The following classes have been deleted as DSP now provides all graph execution 
 
 Control flow that was handled by `Logic*` classes is now handled inline in `NativeDynamicShapePlan_segments.cpp`'s `executeSegmentSlotBySlot()` via direct dispatch on control-flow type codes.
 
+## Recent Optimizations (March 2026)
+
+### Consolidated Arg Table for Graph Replay
+
+**Problem**: Graph replay bypassed `TritonGraphBackend::executeSegment`, causing each sub-kernel to perform its own individual H2D arg table memcpy. For a SmolDocling model, this meant ~79,000 per-kernel memcpy calls per step — a catastrophic bottleneck.
+
+**Solution**: A new `copyConsolidatedArgTableToDevice()` method is called after `refreshArgTablesForReplay()`. All sub-kernel arg tables are packed into a single consolidated host buffer and copied to the device in one H2D transfer.
+
+```
+Before: ~79,000 individual H2D memcpy per step (one per sub-kernel)
+After:  ~50 consolidated H2D copies per step (-99.9%)
+```
+
+**Performance impact** (SmolDocling, RTX 4090):
+- 500 tokens: 18.06 → 30.64 tok/s (+70%)
+- Step 3 latency: 8803ms → ~20ms (-99.8%)
+- Steady state: 45-55 → 52-56 tok/s
+
+Additionally, a **fast-replay path** (`argTableStable`) detects when arg table pointers are unchanged since the last refresh. When stable, it skips the refresh and external input sync entirely — only the D2D capture buffer copies and graph launch are needed. Stability is tracked in `refreshArgTablesForReplay()` and invalidated at all 8 `replayHandle.reset()` points.
+
+**Configuration**: `ND4J_TRITON_CONSOLIDATED_ARG_TABLE` (default: false)
+
+**Files**: `NativeDynamicShapePlan_gpubackend.cpp`, `TritonGraphBackend.h`, `TritonGraphBackend_kernel.cu`
+
+### Symbolic Shape Ranges & Dynamic Recompilation
+
+**Problem**: In autoregressive decode, the KV cache grows by 1 token per step, changing shapes every step. Without mitigation, this forces segment recompilation at every step.
+
+**Solution**: Symbolic shape keys abstract over observed shape ranges. During a configurable warmup period, the system observes actual shapes. After warmup, it establishes ranges and generates symbolic keys that remain stable across steps within the observed bounds.
+
+- **Warmup-Based Ranging**: Observe shapes for N steps before establishing range
+- **Deferred Shape Freezing**: Shapes frozen after recompilation, not before
+- **Stable Keys**: Symbolic keys prevent recompilation when dimensions change within bounds
+
+**Configuration**:
+- `ND4J_DSP_SYMBOLIC_SHAPES` (default: true)
+- `ND4J_DSP_SYMBOLIC_SHAPE_WARMUP` (default: 2 steps)
+
+### Triton Disk Cache Persistence (Shape Freezing)
+
+**Problem**: Triton disk cache missed on the second process run because shapes were frozen AFTER plan cache clear. The new plan had `shapesFrozen_=false`, producing different shape keys on each run.
+
+**Solution**: Freeze shapes IMMEDIATELY after DSP plan recompilation, ensuring stable shape keys that match across process restarts.
+
+**Performance impact** (second run, SmolDocling):
+- Step 2: 8803ms → 493ms (18x faster, disk cache hit instead of full recompile)
+- Step 3+: 52-62 tok/s steady state
+
+**Configuration**:
+- `ND4J_TRITON_CACHE_ENABLED` (default: true)
+- `ND4J_TRITON_CACHE_DIR` (runtime cache location, default: `~/.nd4j/triton_cache/`)
+
+### DSP Optimization Passes
+
+#### Batch-Zero Kernel
+
+Replaces per-slot `cudaMemsetAsync` calls with a single batch kernel that zeros all registered buffers in one launch. This is particularly valuable during CUDA graph capture where minimizing kernel launches reduces capture overhead.
+
+**Configuration**:
+- `ND4J_DSP_BATCH_ZERO` (default: false)
+- `ND4J_DSP_BATCH_ZERO_GAP_ONLY` (default: true — only zero gap slot outputs)
+- `ND4J_DSP_BATCH_ZERO_KERNEL` (default: false — use kernel vs cudaMemsetAsync)
+
+**Files**: `NativeDynamicShapePlan_batchzero.cu`
+
+#### Batched GEMM
+
+Groups consecutive same-shape matmul slots into single `cublasGemmBatchedEx` calls, reducing kernel launch overhead for repeated GEMMs in multi-head attention patterns.
+
+**Configuration**: `ND4J_DSP_BATCHED_GEMM` (default: false)
+
+### cuBLAS Lt Infrastructure
+
+Thread-local `cublasLtHandle_t` management with algorithm caching for optimized GEMM on large output projections (e.g., vocabulary logits `[1, K] × [K, 49280]`).
+
+**Architecture**:
+- **Per-device Lt handles**: Thread-local `cublasLtHandle_t` in `CublasHelper`
+- **Algorithm cache**: `LtMatmulCacheKey` by `{deviceId, M, N, K, dtypeA, dtypeB, dtypeC, transA, transB}` → compiled `cublasLtMatmulAlgo_t` + workspace size
+- **Narrow fast path**: `tryLtMatmul()` in `MmulHelper.cu`, gated for M=1 decode with large N, FP32 output, FP16 inputs
+- **Capture-safe cast reuse**: Thread-local maps (`tl_captureCastReuseA/B`) prevent redundant H2D copies during CUDA graph capture
+
+**Files**: `MmulHelper.cu`, `cublasHelper.cu`, `cublasHelper.h`
+
+### TF32 Math Mode for cuBLAS
+
+Enables TF32 tensor core math on Ampere+ (sm_80+) GPUs for significant speedup on FP32 GEMMs. TF32 uses 10-bit mantissa (vs FP32's 23-bit) for 3-8x throughput improvement on tensor cores.
+
+**Configuration**: `ND4J_CUBLAS_TF32_ENABLED` (default: auto-detected based on SM capability)
+
+**Java interface**: `Environment.cublasTf32Enabled()` / `CudaEnvironment`
+
+**Files**: `cublasHelper.cu`, `Environment.h`, `CudaEnvironment.java`
+
+### CUDA Graph Capture Pool
+
+Routes capture-time buffer allocations through `CudaMemoryPool` instead of raw `cudaMalloc`, providing pre-allocated workspace for graph capture operations and avoiding allocation failures during the capture window.
+
+**Configuration**:
+- `ND4J_DSP_CAPTURE_POOL_ENABLED` (default: true)
+- `ND4J_DSP_CAPTURE_POOL_MAX_BYTES` (default: 1GB)
+
+### Updated Operational Controls
+
+New controls added since the last ADR update:
+
+| Property | Default | Purpose |
+|----------|---------|---------|
+| `ND4J_TRITON_CONSOLIDATED_ARG_TABLE` | false | Enable consolidated arg table H2D for graph replay |
+| `ND4J_DSP_SYMBOLIC_SHAPES` | true | Symbolic shape keys to reduce recompilation |
+| `ND4J_DSP_SYMBOLIC_SHAPE_WARMUP` | 2 | Steps before establishing symbolic ranges |
+| `ND4J_TRITON_CACHE_ENABLED` | true | Persist compiled PTX to disk |
+| `ND4J_TRITON_CACHE_DIR` | `~/.nd4j/triton_cache/` | Disk cache location |
+| `ND4J_DSP_BATCH_ZERO` | false | Batch pre-zeroing kernel |
+| `ND4J_DSP_BATCHED_GEMM` | false | Group same-shape matmuls into batched GEMM |
+| `ND4J_DSP_CAPTURE_POOL_ENABLED` | true | Capture pool via CudaMemoryPool |
+| `ND4J_DSP_CAPTURE_POOL_MAX_BYTES` | 1GB | Capture pool size limit |
+| `ND4J_CUBLAS_TF32_ENABLED` | auto | TF32 tensor core math |
+| `ND4J_TRITON_SECTION_FUSION` | true | Enable section fusion scoring |
+| `ND4J_TRITON_FUSION_SCORING` | true | Cost-model-based fusion decisions |
+| `ND4J_TRITON_FUSION_MIN_SCORE` | 5.0 | Minimum fusion benefit score |
+| `ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS` | true | Fuse sections adjacent to attention ops |
+| `ND4J_TRITON_NUM_WARPS` | auto | Override Triton warp count |
+| `ND4J_TRITON_NUM_STAGES` | auto | Override Triton pipeline stages |
+| `ND4J_TRITON_FORCE_RECAPTURE` | false | Force CUDA graph re-capture every step |
+| `ND4J_TRITON_CAPTURE_MIN_EXEC` | 2 | Execution count before graph capture |
+| `ND4J_TRITON_VERIFY_KERNELS` | false | Run Triton + native, compare outputs |
+
 ## Consequences
 
 ### Benefits
@@ -1775,6 +1902,11 @@ Control flow that was handled by `Logic*` classes is now handled inline in `Nati
 - Decomposed compilation units enable independent development and testing of backend stages.
 - Plan introspection and Graphviz export enable debugging without printf.
 - Structured diagnostics with 12 categories replace ad-hoc logging.
+- Consolidated arg table reduces graph replay overhead by 99.9% (79k → ~50 memcpy per step).
+- Symbolic shape ranges eliminate per-step recompilation for autoregressive decode.
+- Disk cache persistence eliminates multi-second recompilation on process restart.
+- TF32 math mode provides 3-8x throughput improvement on Ampere+ tensor cores.
+- cuBLAS Lt algorithm caching optimizes large output projections (vocabulary logits).
 
 ### Tradeoffs
 

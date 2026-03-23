@@ -66,7 +66,7 @@ import java.util.List;
  *   <li>1: scale [B] FLOAT32</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class FusedNormQuantize extends DynamicCustomOp {

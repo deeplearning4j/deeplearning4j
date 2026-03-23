@@ -46,7 +46,7 @@ import java.util.List;
  * System.out.println(result.getFullText());
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class DeepSeekOCREngine extends AbstractOCREngine {
 

@@ -42,7 +42,7 @@ import java.util.Set;
  *
  * Requires GPU compute capability >= 8.9 (Ada Lovelace / Hopper).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

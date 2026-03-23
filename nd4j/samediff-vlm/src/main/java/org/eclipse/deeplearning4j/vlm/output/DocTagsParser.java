@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  * fcel (full cell), ecel (empty cell), lcel (left-span), ucel (up-span),
  * xcel (cross-span), ched (column header), rhed (row header), nl (newline/row separator).</p>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class DocTagsParser {

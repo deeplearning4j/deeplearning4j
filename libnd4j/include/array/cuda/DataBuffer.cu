@@ -72,6 +72,15 @@ SD_TLS_EXPORT thread_local bool tl_captureSkipFrees = false;
 // via same-stream graph launch or explicit sync). Set/unset by DSP replay path.
 SD_TLS_EXPORT thread_local cudaStream_t tl_dspExecutionStream = nullptr;
 
+// Capture host workspace: pre-allocated PINNED HOST buffer for eliminating
+// cudaMallocHost calls during CUDA graph capture. H2D memcpy nodes bake the
+// source address — this workspace provides persistent pinned copies so graph
+// replay reads valid data. Bump-allocated like tl_captureWorkspace (device side).
+// Allocated before capture, freed when replay handle is destroyed.
+SD_TLS_EXPORT thread_local void* tl_captureHostWorkspace = nullptr;
+SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceSize = 0;
+SD_TLS_EXPORT thread_local size_t tl_captureHostWorkspaceOffset = 0;
+
 namespace {
 SD_INLINE cudaStream_t captureSafeStreamOrDefault() {
   if (tl_graphExecutionActive && tl_graphCaptureStream != nullptr) {
@@ -746,20 +755,20 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
     allocateSpecial();
     if (_specialBuffer == nullptr) return;
 
-    // Allocate pinned host copy so the data persists for graph replay
-    void* pinnedCopy = nullptr;
-    auto pinErr = cudaMallocHost(&pinnedCopy, getLenInBytes());
-    if (pinErr != cudaSuccess) {
-      // Fallback: use _primaryBuffer directly (risk of stale data on replay)
-      cudaGetLastError();
-      pinnedCopy = nullptr;
-    }
-
+    // Use capture host workspace bump allocator for persistent pinned copy.
+    // The H2D memcpy node bakes the source address — if _primaryBuffer is freed
+    // after capture, graph replay reads garbage. The pinned copy in the workspace
+    // persists for the graph's lifetime (freed when replay handle is destroyed).
     void* h2dSource = _primaryBuffer;
-    if (pinnedCopy != nullptr) {
-      std::memcpy(pinnedCopy, _primaryBuffer, getLenInBytes());
-      tl_capturedHostPtrs.push_back(pinnedCopy);
-      h2dSource = pinnedCopy;
+    if (tl_captureHostWorkspace != nullptr) {
+      size_t aligned = (getLenInBytes() + 255) & ~255ULL;
+      if (tl_captureHostWorkspaceOffset + aligned <= tl_captureHostWorkspaceSize) {
+        void* pinnedCopy = static_cast<char*>(tl_captureHostWorkspace) + tl_captureHostWorkspaceOffset;
+        tl_captureHostWorkspaceOffset += aligned;
+        std::memcpy(pinnedCopy, _primaryBuffer, getLenInBytes());
+        h2dSource = pinnedCopy;
+      }
+      // If workspace exhausted, fall through to use _primaryBuffer directly
     }
 
     cudaStream_t capturedStream = captureSafeStreamOrDefault();
@@ -830,7 +839,9 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   // This allows H2D copies to be async on the same stream as graph launch,
   // with stream ordering guaranteeing completion before the graph reads the data.
   // Falls back to stream 0 when no DSP stream is set (standalone syncToDevice calls).
-  bool useDspStream = (tl_dspExecutionStream != nullptr);
+  // IMPORTANT: Only use DSP stream if we're on the SAME device. DSP streams are
+  // device-specific — using a device 1 stream for a device 0 memcpy is invalid.
+  bool useDspStream = (tl_dspExecutionStream != nullptr && !switchedDevice);
   cudaStream_t stream = useDspStream ? tl_dspExecutionStream : 0;
   auto res = cudaMemcpyAsync(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice, stream);
   if (res != cudaSuccess) {
@@ -1421,42 +1432,36 @@ void DataBuffer::migrate() {
   if (_specialBuffer != nullptr) {
     // Copy from old device to new device
     if (oldDeviceId != targetDevice && oldDeviceId >= 0) {
-      // Cross-device copy - stage through host memory for reliability
-      void* hostStaging = nullptr;
-      auto allocRes = cudaMallocHost(&hostStaging, getLenInBytes());
-      if (allocRes != cudaSuccess) {
-        std::string err = "DataBuffer::migrate: cudaMallocHost for staging failed! Error: " +
-                          std::string(cudaGetErrorString(allocRes)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) +
-                          ", from device " + std::to_string(oldDeviceId) + " to device " + std::to_string(targetDevice);
-        THROW_EXCEPTION(err.c_str());
-      }
-
-      // Copy from source device to host - need to be on source device for this
+      // Cross-device copy via cudaMemcpyPeer — handles staging internally
+      // (uses peer DMA if available, otherwise stages through host automatically).
+      // Synchronize source device first to ensure prior operations complete.
       auto setRes = cudaSetDevice(oldDeviceId);
       if (setRes != cudaSuccess) {
-        cudaFreeHost(hostStaging);
         cudaSetDevice(targetDevice);
         std::string err = "DataBuffer::migrate: Failed to switch to source device " + std::to_string(oldDeviceId) +
                           ": " + std::string(cudaGetErrorString(setRes));
         THROW_EXCEPTION(err.c_str());
       }
 
-      // Synchronize the default stream on source device to ensure prior operations complete
+      // getCudaStream() may trigger ContextBuffers initialization which can change the
+      // active CUDA device (via allocateFailover). We must restore oldDeviceId afterward.
       auto srcStream = sd::LaunchContext::defaultContext()->getCudaStream();
       if (srcStream != nullptr)
         cudaStreamSynchronize(*srcStream);
 
-      auto d2hRes = cudaMemcpy(hostStaging, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
-      if (d2hRes != cudaSuccess) {
-        cudaFreeHost(hostStaging);
-        // D2H failed — try to recover by querying actual pointer attributes
+      // Restore source device — getCudaStream() may have changed it via ContextBuffers init.
+      cudaSetDevice(oldDeviceId);
+      cudaGetLastError();  // clear any sticky error from ContextBuffers init
+
+      auto peerRes = cudaMemcpyPeer(newBuffer, targetDevice, _specialBuffer, oldDeviceId, getLenInBytes());
+      if (peerRes != cudaSuccess) {
         cudaPointerAttributes retryAttrs;
         auto retryRes = cudaPointerGetAttributes(&retryAttrs, _specialBuffer);
-        cudaGetLastError();  // Clear any error from the query
+        cudaGetLastError();
         cudaSetDevice(targetDevice);
-        std::string err = "DataBuffer::migrate: D2H copy failed! Error: " + std::string(cudaGetErrorString(d2hRes)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) + ", from device " + std::to_string(oldDeviceId);
+        std::string err = "DataBuffer::migrate: cudaMemcpyPeer failed! Error: " + std::string(cudaGetErrorString(peerRes)) +
+                          ", bytes: " + std::to_string(getLenInBytes()) +
+                          ", from device " + std::to_string(oldDeviceId) + " to device " + std::to_string(targetDevice);
         if (retryRes == cudaSuccess) {
           err += ", ptrAttrs: type=" + std::to_string(retryAttrs.type) +
                  " device=" + std::to_string(retryAttrs.device);
@@ -1466,24 +1471,8 @@ void DataBuffer::migrate() {
         THROW_EXCEPTION(err.c_str());
       }
 
-      // Switch to target device (where newBuffer was actually allocated) for H2D copy
-      setRes = cudaSetDevice(targetDevice);
-      if (setRes != cudaSuccess) {
-        cudaFreeHost(hostStaging);
-        std::string err = "DataBuffer::migrate: Failed to switch to target device " + std::to_string(targetDevice) +
-                          ": " + std::string(cudaGetErrorString(setRes));
-        THROW_EXCEPTION(err.c_str());
-      }
-
-      auto h2dRes = cudaMemcpy(newBuffer, hostStaging, getLenInBytes(), cudaMemcpyHostToDevice);
-      cudaFreeHost(hostStaging);
-      if (h2dRes != cudaSuccess) {
-        std::string err = "DataBuffer::migrate: H2D copy failed! Error: " + std::string(cudaGetErrorString(h2dRes)) +
-                          ", bytes: " + std::to_string(getLenInBytes()) + ", to device " + std::to_string(targetDevice);
-        THROW_EXCEPTION(err.c_str());
-      }
-
-      // cudaMemcpy is synchronous, no additional sync needed
+      // cudaMemcpyPeer is synchronous — no additional sync needed
+      cudaSetDevice(targetDevice);
     } else {
       // Same device copy or unknown source device
       cudaSetDevice(targetDevice);

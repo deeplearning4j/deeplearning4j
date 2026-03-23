@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * <p>Cross-device operations use staged host memory transfer (GPU → Host → GPU)
  * for reliable data migration between devices.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @DisplayName("Multi-GPU Migration Tests")

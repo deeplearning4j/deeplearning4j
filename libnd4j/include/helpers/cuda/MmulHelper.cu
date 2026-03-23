@@ -718,8 +718,15 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  // cublasSgemmEx handles HALF×HALF→FLOAT32 with FP32 accumulation (~2x throughput on sm_60+).
  // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
  if (aType == FLOAT32 && bType == FLOAT32 && cType == FLOAT32 && major >= 6) {
-   if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
-       && tl_castIdxB < tl_castCacheB.size()) {
+   // Shape-check cached arrays: the thread-local cast cache is shared across all
+   // models on the same thread. If a different model (e.g., draft model with seqLen=1)
+   // populated the cache, shapes will differ from the current model (e.g., target with
+   // seqLen=6). Clear and rebuild when shapes don't match.
+   bool cacheShapeMatch = tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+       && tl_castIdxB < tl_castCacheB.size()
+       && tl_castCacheA[tl_castIdxA]->isSameShape(effA)
+       && tl_castCacheB[tl_castIdxB]->isSameShape(effB);
+   if (cacheShapeMatch) {
      NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
      cachedA->assign(effA);
      effA = cachedA;
@@ -727,6 +734,11 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      cachedB->assign(effB);
      effB = cachedB;
    } else {
+     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+       // Shape mismatch during graph execution — cache is stale from another model.
+       // Clear and let the warmup path rebuild it on next non-capture execution.
+       MmulHelper::clearCastCache();
+     }
      castA = effA->cast(HALF);
      effA = castA;
      castB = effB->cast(HALF);
@@ -754,7 +766,8 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
        // advance the cache index so capture and replay consume buffers in the same order.
        tl_castIdxA++;
        effA = tl_lastCaptureCastArrayA;
-     } else if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+     } else if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+                && tl_castCacheA[tl_castIdxA]->isSameShape(effA)) {
        // During capture: reuse persistent buffer, assign launches FLOAT→HALF kernel (captured)
        NDArray* cached = tl_castCacheA[tl_castIdxA++];
        cached->assign(effA);
@@ -779,7 +792,8 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
      if (tl_graphExecutionActive && sameLogicalB && tl_castIdxB < tl_castCacheB.size()) {
        tl_castIdxB++;
        effB = tl_lastCaptureCastArrayB;
-     } else if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()) {
+     } else if (tl_graphExecutionActive && tl_castIdxB < tl_castCacheB.size()
+                && tl_castCacheB[tl_castIdxB]->isSameShape(effB)) {
        NDArray* cached = tl_castCacheB[tl_castIdxB++];
        cached->assign(effB);
        tl_lastCaptureCastSourceB = B;
@@ -1006,8 +1020,11 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
  // For M=1 GEMVs (decode-phase matmuls), memory bandwidth is the bottleneck — HALF halves traffic.
  // Always enabled for FP32 inputs on compute capability 6.0+ (Pascal and newer).
  if (aType == FLOAT32 && xType == FLOAT32 && yType == FLOAT32 && major >= 6) {
-   if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
-       && tl_castIdxB < tl_castCacheB.size()) {
+   bool cacheShapeMatch = tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()
+       && tl_castIdxB < tl_castCacheB.size()
+       && tl_castCacheA[tl_castIdxA]->isSameShape(effA)
+       && tl_castCacheB[tl_castIdxB]->isSameShape(effX);
+   if (cacheShapeMatch) {
      // During graph capture: reuse persistent HALF buffers
      NDArray* cachedA = tl_castCacheA[tl_castIdxA++];
      cachedA->assign(effA);
@@ -1016,6 +1033,9 @@ NDArray* MmulHelper::mmulMxV(NDArray* A, NDArray* X, NDArray* Y, const double al
      cachedX->assign(effX);
      effX = cachedX;
    } else {
+     if (tl_graphExecutionActive && tl_castIdxA < tl_castCacheA.size()) {
+       MmulHelper::clearCastCache();
+     }
      castA = effA->cast(HALF);
      effA = castA;
      castX = effX->cast(HALF);
@@ -1261,7 +1281,8 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
          if (reuseIt != tl_captureCastReuseA.end()) {
            if (tl_castIdxA < tl_castCacheA.size()) tl_castIdxA++;
            effA2d = reuseIt->second;
-         } else if (tl_castIdxA < tl_castCacheA.size()) {
+         } else if (tl_castIdxA < tl_castCacheA.size()
+                    && tl_castCacheA[tl_castIdxA]->isSameShape(a2d)) {
            NDArray* cached = tl_castCacheA[tl_castIdxA++];
            cached->assign(a2d);
            tl_captureCastReuseA.emplace(A, cached);
@@ -1272,7 +1293,8 @@ NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, double alpha, d
          if (reuseIt != tl_captureCastReuseB.end()) {
            if (tl_castIdxB < tl_castCacheB.size()) tl_castIdxB++;
            effB2d = reuseIt->second;
-         } else if (tl_castIdxB < tl_castCacheB.size()) {
+         } else if (tl_castIdxB < tl_castCacheB.size()
+                    && tl_castCacheB[tl_castIdxB]->isSameShape(b2d)) {
            NDArray* cached = tl_castCacheB[tl_castIdxB++];
            cached->assign(b2d);
            tl_captureCastReuseB.emplace(B, cached);

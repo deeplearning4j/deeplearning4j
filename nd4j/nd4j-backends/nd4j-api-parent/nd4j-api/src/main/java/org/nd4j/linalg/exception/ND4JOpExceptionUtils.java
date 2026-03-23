@@ -48,7 +48,7 @@ import java.util.List;
  * <p>
  * This information is invaluable for debugging use-after-free and other memory corruption issues.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class ND4JOpExceptionUtils {

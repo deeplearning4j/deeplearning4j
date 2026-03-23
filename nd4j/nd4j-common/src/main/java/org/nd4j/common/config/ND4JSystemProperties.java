@@ -1021,6 +1021,53 @@ public class ND4JSystemProperties {
      */
     public static final String DSP_CAPTURE_POOL_MAX_BYTES = "nd4j.dsp.capturePoolMaxBytes";
 
+    /**
+     * Applicability: Multi-device placement<br>
+     * Description: Enable automatic device placement planning for DSP execution.
+     * When enabled, the planner assigns ops/weights across available devices.
+     * Environment variable: ND4J_PLACEMENT_ENABLED
+     * <p>
+     * Default: false
+     */
+    public static final String PLACEMENT_ENABLED = "nd4j.placement.enabled";
+
+    /**
+     * Applicability: Multi-device placement<br>
+     * Description: Device placement strategy. One of: SINGLE_DEVICE, MEMORY_FIT, PIPELINE_PARALLEL, CUSTOM.
+     * Environment variable: ND4J_PLACEMENT_STRATEGY
+     * <p>
+     * Default: SINGLE_DEVICE
+     */
+    public static final String PLACEMENT_STRATEGY = "nd4j.placement.strategy";
+
+    /**
+     * Applicability: Multi-device placement<br>
+     * Description: Default device ID for placement when using SINGLE_DEVICE strategy.
+     * Environment variable: ND4J_PLACEMENT_DEFAULT_DEVICE
+     * <p>
+     * Default: 0
+     */
+    public static final String PLACEMENT_DEFAULT_DEVICE = "nd4j.placement.defaultDevice";
+
+    /**
+     * Applicability: Multi-device placement<br>
+     * Description: Fraction of device memory to reserve as headroom (0.0-1.0).
+     * The planner will not assign ops that would use more than (1 - headroom) of device memory.
+     * Environment variable: ND4J_PLACEMENT_MEMORY_HEADROOM
+     * <p>
+     * Default: 0.1
+     */
+    public static final String PLACEMENT_MEMORY_HEADROOM = "nd4j.placement.memoryHeadroom";
+
+    /**
+     * Applicability: Multi-device placement<br>
+     * Description: Log placement decisions for debugging.
+     * Environment variable: ND4J_PLACEMENT_LOG_DECISIONS
+     * <p>
+     * Default: false
+     */
+    public static final String PLACEMENT_LOG_DECISIONS = "nd4j.placement.logDecisions";
+
     private ND4JSystemProperties() {
     }
 }

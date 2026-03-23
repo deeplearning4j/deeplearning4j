@@ -27,8 +27,8 @@
 
 thread_local int globalThreadToDevice = -1;
 
-// Defined in LaunchContext.cu - thread-local context buffers
-extern thread_local sd::ContextBuffers contextBuffers;
+// Defined in LaunchContext.cu - returns per-device ContextBuffers for current CUDA device
+extern sd::ContextBuffers& contextBuffersForCurrentDevice();
 
 namespace sd {
 
@@ -108,28 +108,9 @@ void AffinityManager::setCurrentNativeDevice(int deviceId) {
 void AffinityManager::setCurrentDevice(int deviceId) {
   auto previousDeviceId = globalThreadToDevice;
 
-  // Check if context buffers need to be released due to device mismatch.
-  // This handles two cases:
-  // 1. Thread switching from one device to another (previousDeviceId >= 0 and different)
-  // 2. NEW threads where context was lazily initialized for wrong device (previousDeviceId == -1)
-  if (LaunchContext::isInitialized()) {
-    int contextDeviceId = contextBuffers.deviceId();
-
-    // Determine if we need to release and reinitialize
-    bool needsRelease = false;
-    if (previousDeviceId >= 0 && deviceId != previousDeviceId) {
-      // Case 1: Explicit device switch
-      needsRelease = true;
-    } else if (contextDeviceId >= 0 && contextDeviceId != deviceId) {
-      // Case 2: Context was initialized for wrong device
-      needsRelease = true;
-    }
-
-    if (needsRelease) {
-      // Release will handle device switching internally to properly sync streams
-      LaunchContext::releaseBuffers();
-    }
-  }
+  // With per-device ContextBuffers map, no need to release buffers when switching
+  // devices. Each device has its own persistent buffers (streams, workspace).
+  // The per-device map in LaunchContext.cu handles routing automatically.
 
   // Switch to target device
   auto res = cudaSetDevice(deviceId);

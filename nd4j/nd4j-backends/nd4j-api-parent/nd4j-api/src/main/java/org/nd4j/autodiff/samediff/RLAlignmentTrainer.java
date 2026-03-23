@@ -45,7 +45,7 @@ import java.util.*;
  *   <li>{@link #trainStep(Map)} computes gradients via {@code calculateGradientsAndOutputs()} and applies updates</li>
  * </ol>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public abstract class RLAlignmentTrainer<C extends RLAlignmentConfig> {

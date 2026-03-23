@@ -46,7 +46,7 @@ import java.util.Map;
  * External values (old log probs, advantages, ref log probs, group masks) are
  * computed in {@link #prepareInputs(Map)} and fed as placeholders.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class DAPOTrainer extends RLAlignmentTrainer<DAPOConfig> {

@@ -59,7 +59,7 @@ import java.util.*;
  * double loss = trainer.trainStep(inputs);
  * </pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class DistillationTrainer {

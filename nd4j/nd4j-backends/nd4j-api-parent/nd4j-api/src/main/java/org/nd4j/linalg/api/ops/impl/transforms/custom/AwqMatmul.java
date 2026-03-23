@@ -56,7 +56,7 @@ import java.util.List;
  * <p>
  * Output: [M, N] same dtype as input
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class AwqMatmul extends DynamicCustomOp {

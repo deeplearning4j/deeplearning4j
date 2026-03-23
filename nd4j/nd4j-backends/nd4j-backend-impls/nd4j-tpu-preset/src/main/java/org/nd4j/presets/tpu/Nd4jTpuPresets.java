@@ -101,6 +101,11 @@ import org.nd4j.presets.OpExclusionUtils;
                 "build_info.h",
                 // TPU/PJRT specific headers
                 "ops/declarable/platform/pjrt/pjrtUtils.h",
+                // TPU graph backend headers
+                "graph/tpu/PjrtClientManager.h",
+                "graph/tpu/TpuReplayHandle.h",
+                "graph/tpu/HloIRBuilder.h",
+                "graph/tpu/TpuGraphBackend.h",
         },
                 exclude = {"ops/declarable/headers/activations.h",
                         "ops/declarable/headers/boolean.h",

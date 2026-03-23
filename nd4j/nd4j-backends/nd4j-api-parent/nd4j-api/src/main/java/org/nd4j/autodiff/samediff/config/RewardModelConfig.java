@@ -36,7 +36,7 @@ import lombok.experimental.SuperBuilder;
  * Reward models are typically trained as a preprocessing step before RL-based
  * alignment methods like PPO or GRPO.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

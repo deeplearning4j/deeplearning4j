@@ -39,6 +39,7 @@ import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.*;
+import org.nd4j.autodiff.samediff.execution.DevicePlacementPlanner;
 import org.nd4j.autodiff.samediff.execution.DspCompilationMode;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlan;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
@@ -198,6 +199,15 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
     @Getter
     private final Set<String> placeholderOverrides = new LinkedHashSet<>();
     private final Map<String, VariableType> originalOverrideTypes = new LinkedHashMap<>();
+
+    // Device placement strategy for multi-device DSP execution.
+    // null means disabled (default). Set to non-null to enable placement planning.
+    @Getter @Setter
+    private DevicePlacementPlanner.PlacementStrategy placementStrategy;
+
+    // Custom variable-to-device mapping for CUSTOM placement strategy.
+    @Getter @Setter
+    private Map<String, Integer> customDevicePlacement;
 
     ///////////////////////////////////////
     //Fields related to training

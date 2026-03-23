@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   -Dvlm.test.pdf.path=/path/to/book.pdf
  *
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)

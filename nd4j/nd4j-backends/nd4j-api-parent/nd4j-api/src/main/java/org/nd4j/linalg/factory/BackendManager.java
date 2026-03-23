@@ -78,7 +78,7 @@ import java.util.stream.Collectors;
  * }
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class BackendManager {
@@ -223,16 +223,20 @@ public class BackendManager {
                 return;
             }
 
-            // Check if CPU backend is available
-            if (!CpuBackendLoader.isCpuBackendAvailable()) {
-                log.debug("CPU backend not on classpath, single-backend mode only");
-                return;
-            }
-
-            // Install DeviceAwareOpExecutioner with multi-backend support
-            boolean success = DeviceAwareOpExecutioner.installWithMultiBackend();
-            if (success) {
-                log.info("DeviceAwareOpExecutioner installed with CPU fallback support");
+            // Install DeviceAwareOpExecutioner for cross-device routing.
+            // Multi-GPU: ops must execute on the device where data lives.
+            // GPU+CPU: ops can spill to CPU when GPU is full.
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            if (numDevices > 1) {
+                // Multi-GPU: always install for cross-device op routing
+                DeviceAwareOpExecutioner.install();
+                log.info("DeviceAwareOpExecutioner installed for multi-GPU routing ({} devices)", numDevices);
+            } else if (CpuBackendLoader.isCpuBackendAvailable()) {
+                // Single GPU + CPU backend: install with multi-backend support
+                boolean success = DeviceAwareOpExecutioner.installWithMultiBackend();
+                if (success) {
+                    log.info("DeviceAwareOpExecutioner installed with CPU fallback support");
+                }
             }
 
         } catch (Exception e) {

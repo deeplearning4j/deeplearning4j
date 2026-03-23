@@ -1,0 +1,315 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.eclipse.deeplearning4j.llm.generation;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.SameDiff;
+
+import java.util.List;
+
+/**
+ * Configuration for decoder model input/output variable names.
+ *
+ * <p>Eliminates hardcoded variable name assumptions throughout the decode pipeline.
+ * All components (StaticKvCacheDecodeLoop, DraftModelSpeculator, FrozenDecodeStep,
+ * DecoderUtils) use this config instead of comparing against string literals like
+ * "inputs_embeds", "attention_mask", etc.</p>
+ *
+ * <p>Provides a {@link #discover(SameDiff)} factory that auto-discovers names from
+ * the SameDiff graph, and a builder for explicit configuration.</p>
+ *
+ * <h3>Usage:</h3>
+ * <pre>{@code
+ * // Auto-discover from model graph
+ * ModelIOConfig config = ModelIOConfig.discover(decoder);
+ *
+ * // Or configure explicitly
+ * ModelIOConfig config = ModelIOConfig.builder()
+ *     .inputEmbeddingsName("inputs_embeds")
+ *     .inputIdsName("input_ids")
+ *     .attentionMaskName("attention_mask")
+ *     .causalMaskName("_causal_mask")
+ *     .positionIdsName("position_ids")
+ *     .kvCachePrefix("past_key_values.")
+ *     .kvPresentToInputReplace(new String[]{"present", "past_key_values"})
+ *     .logitsOutputName("logits")
+ *     .build();
+ * }</pre>
+ *
+ * @see DecoderUtils#buildDecoderInputMap
+ * @see DraftModelSpeculator
+ * @see FrozenDecodeStep
+ * @see StaticKvCacheDecodeLoop
+ */
+@Slf4j
+@Getter
+@Builder
+public class ModelIOConfig {
+
+    // ========== Input Names ==========
+
+    /** Name of the input embeddings placeholder (e.g., "inputs_embeds"). */
+    @Builder.Default
+    private final String inputEmbeddingsName = "inputs_embeds";
+
+    /** Name of the input IDs placeholder (e.g., "input_ids"). May be null if model uses embeddings only. */
+    @Builder.Default
+    private final String inputIdsName = "input_ids";
+
+    /** Name of the attention mask placeholder (e.g., "attention_mask"). May be null if not used. */
+    @Builder.Default
+    private final String attentionMaskName = "attention_mask";
+
+    /** Name of the causal mask placeholder (e.g., "_causal_mask"). May be null if not used. */
+    @Builder.Default
+    private final String causalMaskName = "_causal_mask";
+
+    /** Name of the position IDs placeholder (e.g., "position_ids"). May be null if not used. */
+    @Builder.Default
+    private final String positionIdsName = "position_ids";
+
+    /**
+     * Prefix for KV cache input variables (e.g., "past_key_values.").
+     * Used to identify which inputs are KV cache entries vs. regular inputs.
+     */
+    @Builder.Default
+    private final String kvCachePrefix = "past_key_values.";
+
+    /**
+     * String replacement pair for mapping present KV output names to past KV input names.
+     * Element 0 is the source substring (in the output name), element 1 is the replacement.
+     * Default: {"present", "past_key_values"} — e.g., "present.0.key" maps to "past_key_values.0.key".
+     */
+    @Builder.Default
+    private final String[] kvPresentToInputReplace = new String[]{"present", "past_key_values"};
+
+    // ========== Output Names ==========
+
+    /** Name of the logits output variable (e.g., "logits"). */
+    @Builder.Default
+    private final String logitsOutputName = "logits";
+
+    /**
+     * KV cache output names (present key/value pairs).
+     * Discovered via {@link DecoderUtils#findKVCacheOutputNames(SameDiff)}.
+     */
+    private final DecoderUtils.KVCacheNames kvCacheNames;
+
+    // ========== Special Nodes ==========
+
+    /**
+     * Name of the attn_mask_reformat output node that can be overridden with a placeholder
+     * to bypass the subgraph (e.g., for multi-token decode with FrozenDecodeStep).
+     * May be null if the model doesn't have this subgraph.
+     */
+    @Builder.Default
+    private final String attnMaskReformatOutput = "/model/attn_mask_reformat/Tile/output_0";
+
+    // ========== Query Methods ==========
+
+    /**
+     * Check whether a given input name is the input embeddings variable.
+     */
+    public boolean isInputEmbeddings(String name) {
+        return inputEmbeddingsName != null && inputEmbeddingsName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the input IDs variable.
+     */
+    public boolean isInputIds(String name) {
+        return inputIdsName != null && inputIdsName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the attention mask variable.
+     */
+    public boolean isAttentionMask(String name) {
+        return attentionMaskName != null && attentionMaskName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the causal mask variable.
+     */
+    public boolean isCausalMask(String name) {
+        return causalMaskName != null && causalMaskName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is the position IDs variable.
+     */
+    public boolean isPositionIds(String name) {
+        return positionIdsName != null && positionIdsName.equals(name);
+    }
+
+    /**
+     * Check whether a given input name is a KV cache input.
+     */
+    public boolean isKvCacheInput(String name) {
+        return kvCachePrefix != null && name.startsWith(kvCachePrefix);
+    }
+
+    /**
+     * Check whether a given input name is a non-KV-cache input that should be cleaned up per step
+     * (i.e., not embeddings, input_ids, or KV cache entries).
+     */
+    public boolean isPerStepDisposableInput(String name) {
+        return !isInputEmbeddings(name) && !isInputIds(name) && !isKvCacheInput(name);
+    }
+
+    /**
+     * Map a present KV output name to the corresponding past KV input name.
+     * E.g., "present.0.key" to "past_key_values.0.key".
+     */
+    public String presentToInputName(String presentName) {
+        if (kvPresentToInputReplace != null && kvPresentToInputReplace.length == 2) {
+            return presentName.replace(kvPresentToInputReplace[0], kvPresentToInputReplace[1]);
+        }
+        return presentName;
+    }
+
+    /**
+     * Map a past KV input name to the corresponding present KV output name.
+     * E.g., "past_key_values.0.key" to "present.0.key".
+     * This is the reverse of {@link #presentToInputName(String)}.
+     */
+    public String inputToPresentName(String inputName) {
+        if (kvPresentToInputReplace != null && kvPresentToInputReplace.length == 2) {
+            return inputName.replace(kvPresentToInputReplace[1], kvPresentToInputReplace[0]);
+        }
+        return inputName;
+    }
+
+    /**
+     * Check whether the model uses input_ids (vs. only inputs_embeds).
+     * Determined by whether input_ids is in the decoder's input list.
+     */
+    public boolean hasInputIds(List<String> decoderInputNames) {
+        return inputIdsName != null && decoderInputNames.contains(inputIdsName);
+    }
+
+    // ========== Auto-Discovery ==========
+
+    /**
+     * Auto-discover a ModelIOConfig from a SameDiff model graph.
+     *
+     * <p>Inspects the model's input and output variable names to find:
+     * <ul>
+     *   <li>Input embeddings: first input containing "embed"</li>
+     *   <li>Input IDs: first input containing "input_id"</li>
+     *   <li>Attention mask: first input containing "attention_mask"</li>
+     *   <li>Causal mask: first input containing "causal_mask"</li>
+     *   <li>Position IDs: first input containing "position_id"</li>
+     *   <li>KV cache prefix: detected from first input starting with common KV prefixes</li>
+     *   <li>Logits output: via {@link DecoderUtils#findLogitsOutputName(SameDiff)}</li>
+     *   <li>KV cache outputs: via {@link DecoderUtils#findKVCacheOutputNames(SameDiff)}</li>
+     * </ul></p>
+     *
+     * @param model the SameDiff model to inspect
+     * @return a ModelIOConfig with discovered names (with sensible defaults for any not found)
+     */
+    public static ModelIOConfig discover(SameDiff model) {
+        List<String> inputs = model.inputs();
+
+        String embedName = null;
+        String idsName = null;
+        String maskName = null;
+        String causalName = null;
+        String posName = null;
+        String kvPrefix = null;
+        String attnReformat = null;
+
+        for (String input : inputs) {
+            if (embedName == null && input.contains("embed")) {
+                embedName = input;
+            } else if (idsName == null && input.contains("input_id")) {
+                idsName = input;
+            } else if (maskName == null && input.contains("attention_mask")) {
+                maskName = input;
+            } else if (causalName == null && input.contains("causal_mask")) {
+                causalName = input;
+            } else if (posName == null && input.contains("position_id")) {
+                posName = input;
+            }
+
+            // Detect KV cache prefix
+            if (kvPrefix == null) {
+                if (input.startsWith("past_key_values.")) {
+                    kvPrefix = "past_key_values.";
+                } else if (input.startsWith("past_key_value.")) {
+                    kvPrefix = "past_key_value.";
+                } else if (input.startsWith("pkv.")) {
+                    kvPrefix = "pkv.";
+                }
+            }
+        }
+
+        // Detect attn_mask_reformat output node
+        String defaultAttnReformat = "/model/attn_mask_reformat/Tile/output_0";
+        if (model.hasVariable(defaultAttnReformat)) {
+            attnReformat = defaultAttnReformat;
+        } else {
+            // Search for alternative patterns
+            for (String varName : model.variableMap().keySet()) {
+                if (varName.contains("attn_mask_reformat") && varName.contains("output")) {
+                    attnReformat = varName;
+                    break;
+                }
+            }
+        }
+
+        // Determine present-to-past replacement
+        String[] replacement = new String[]{"present", "past_key_values"};
+        if (kvPrefix != null && !kvPrefix.equals("past_key_values.")) {
+            // For non-standard KV prefixes, try to infer the replacement
+            String kvBase = kvPrefix.substring(0, kvPrefix.length() - 1); // Remove trailing dot
+            replacement = new String[]{"present", kvBase};
+        }
+
+        // Discover outputs
+        String logitsName = DecoderUtils.findLogitsOutputName(model);
+        DecoderUtils.KVCacheNames kvNames = DecoderUtils.findKVCacheOutputNames(model);
+
+        ModelIOConfig config = ModelIOConfig.builder()
+                .inputEmbeddingsName(embedName != null ? embedName : "inputs_embeds")
+                .inputIdsName(idsName)
+                .attentionMaskName(maskName)
+                .causalMaskName(causalName)
+                .positionIdsName(posName)
+                .kvCachePrefix(kvPrefix != null ? kvPrefix : "past_key_values.")
+                .kvPresentToInputReplace(replacement)
+                .logitsOutputName(logitsName != null ? logitsName : "logits")
+                .kvCacheNames(kvNames)
+                .attnMaskReformatOutput(attnReformat)
+                .build();
+
+        log.info("ModelIOConfig.discover(): embeddings={}, inputIds={}, attentionMask={}, causalMask={}, " +
+                        "positionIds={}, kvPrefix={}, logits={}, kvLayers={}, attnReformat={}",
+                config.inputEmbeddingsName, config.inputIdsName, config.attentionMaskName,
+                config.causalMaskName, config.positionIdsName, config.kvCachePrefix,
+                config.logitsOutputName, kvNames != null ? kvNames.keyNames.size() : 0,
+                config.attnMaskReformatOutput);
+
+        return config;
+    }
+}

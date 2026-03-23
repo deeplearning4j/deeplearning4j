@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Memory cap enforcement
  * - Device priority handling
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Tag("multi-backend")
 @Tag("device-routing")

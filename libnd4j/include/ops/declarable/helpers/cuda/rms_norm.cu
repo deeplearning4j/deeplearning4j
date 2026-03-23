@@ -29,6 +29,7 @@
 #include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
 #include <types/float16.h>
+#include <ops/declarable/helpers/rms_norm.h>
 
 namespace sd {
 namespace ops {
@@ -190,12 +191,12 @@ template void launchRmsNormKernel<float16>(
 //////////////////////////////////////////////////////////////////////////////
 // Public interface called from rms_norm op
 //////////////////////////////////////////////////////////////////////////////
-void rmsNormCuda(
+void rmsNorm(
+    LaunchContext* context,
     NDArray* input,
     NDArray* gamma,
     NDArray* output,
-    float epsilon,
-    LaunchContext* context) {
+    float epsilon) {
 
   const LongType numRows = input->lengthOf() / input->sizeAt(-1);
   const LongType rowLen = input->sizeAt(-1);

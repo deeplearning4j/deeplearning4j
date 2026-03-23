@@ -174,7 +174,21 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
             if (allUpdated)
                 delayedArray = null;
         }
-        return get(deviceId);
+        INDArray result = get(deviceId);
+        if (result == null) {
+            // Fallback: check other devices for an empty array that wasn't replicated.
+            // Empty arrays are device-agnostic (no data buffer), so any copy is valid.
+            for (int i = 0; i < numDevices; i++) {
+                if (i != deviceId) {
+                    INDArray other = get(i);
+                    if (other != null && other.isEmpty()) {
+                        set(deviceId, other);
+                        return other;
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**
@@ -258,9 +272,15 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
                        updatesMap.get(i).set(deviceId);
                    }
                }
+           } else if (array.isEmpty() && numDevices > 1) {
+               // Empty arrays have no data buffer — they are device-agnostic.
+               // Store the same empty array for all devices so get() never returns null.
+               for (int i = 0; i < numDevices; i++) {
+                   if (i != deviceId) {
+                       set(i, detachedForCurrentDevice);
+                   }
+               }
            }
-           // NOTE: For empty arrays, we don't mark other devices as stale because there's
-           // no data to replicate. Each device should handle empty arrays independently.
         }
 
     }

@@ -52,7 +52,7 @@ import java.util.List;
  * Output:
  *   0: tensor with rotary embeddings applied
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class RoPE extends DynamicCustomOp {

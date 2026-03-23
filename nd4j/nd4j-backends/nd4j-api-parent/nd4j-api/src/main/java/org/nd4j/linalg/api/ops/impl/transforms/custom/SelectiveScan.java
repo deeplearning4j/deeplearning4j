@@ -51,7 +51,7 @@ import java.util.List;
  * <p>
  * Output: [B, L, D]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class SelectiveScan extends DynamicCustomOp {

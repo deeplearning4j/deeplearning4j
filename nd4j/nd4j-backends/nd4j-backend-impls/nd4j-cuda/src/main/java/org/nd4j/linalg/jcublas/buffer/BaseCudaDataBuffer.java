@@ -2370,11 +2370,27 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             if (currentNativeDevice != -1 && currentNativeDevice != targetDeviceIndex) {
                 // Check if we need to migrate or if P2P is enough
                 if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+                    // Save current device context — migrate requires switching to target
+                    // device, but we must restore the caller's context afterward.
+                    // Without this, the calling thread's CUDA device is permanently changed
+                    // to the target device, causing subsequent ops to execute on the wrong
+                    // device (error 700: illegal memory access).
+                    int callerDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
                     DeviceMemoryManager.getInstance().switchDevice(targetDeviceIndex, "BaseCudaDataBuffer.ensureAvailableOn", "migrate-to-target");
-                    // 2. Call native migrate to move buffer to target device
+                    // Call native migrate to move buffer to target device
                     ptrDataBuffer.migrate();
                     gpuValid = true;
                     hostDirty = false;
+                    // Re-read actual device from native layer — migrate's internal
+                    // failover may have routed to a different device than requested
+                    int actualDevice = targetDevice();
+                    ownerDevice = DeviceDescriptor.cuda(actualDevice);
+                    // Restore caller's device context so the thread doesn't stay on
+                    // the target device after the transfer
+                    if (callerDevice != targetDeviceIndex) {
+                        DeviceMemoryManager.getInstance().switchDevice(callerDevice, "BaseCudaDataBuffer.ensureAvailableOn", "restore-caller-context");
+                    }
+                    return;
                 } else {
                     // P2P is available - treat device data as valid on target
                     gpuValid = true;
@@ -2485,13 +2501,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public void allocateOnDevice(DeviceDescriptor device, long requiredSize) {
-        // For CUDA buffers, allocation is handled by AtomicAllocator
-        // This method is a hook for workspace-based allocation
-        if (multiBackendWorkspace != null) {
-            // Use workspace allocation - the workspace handles device-specific allocation
-            // The actual memory pointer management is in the native layer
+        if (device == null || !device.getDeviceType().isGpu()) {
+            return;
         }
-        // Otherwise, standard allocation already happened in constructor
+
+        int targetDeviceId = device.getDeviceIndex();
+        int currentDeviceId = targetDevice();
+        if (targetDeviceId == currentDeviceId) {
+            return; // already on target device
+        }
+
+        // Switch to target device and migrate the native buffer
+        DeviceMemoryManager.getInstance().switchDevice(targetDeviceId, "BaseCudaDataBuffer", "allocateOnDevice");
+        ptrDataBuffer.migrate();
+
+        // Update tracking
+        this.ownerDevice = device;
+        this.gpuValid = true;
+        this.hostDirty = false;
     }
 
     @Override

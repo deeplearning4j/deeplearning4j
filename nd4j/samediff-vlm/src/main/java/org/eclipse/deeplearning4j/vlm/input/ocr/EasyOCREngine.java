@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  * System.out.println(result.getFullText());
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class EasyOCREngine extends AbstractOCREngine {
 

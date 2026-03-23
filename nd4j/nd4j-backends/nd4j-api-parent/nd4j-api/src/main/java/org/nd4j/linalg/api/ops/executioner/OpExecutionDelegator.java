@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * TransferMetrics.getInstance().logSummary();
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class OpExecutionDelegator {
@@ -308,7 +308,7 @@ public class OpExecutionDelegator {
         Map<String, Long> deviceSizes = new HashMap<>();
 
         for (INDArray arr : arrays) {
-            if (arr == null) continue;
+            if (arr == null || arr.data() == null) continue;
 
             DeviceDescriptor device = getArrayDevice(arr);
             if (device != null) {
@@ -378,7 +378,7 @@ public class OpExecutionDelegator {
      */
     public void transferArrayToDevice(INDArray array, DeviceDescriptor targetDevice,
                                       DeviceRoutingConfiguration config) {
-        if (array == null || targetDevice == null) {
+        if (array == null || targetDevice == null || array.data() == null) {
             return;
         }
 

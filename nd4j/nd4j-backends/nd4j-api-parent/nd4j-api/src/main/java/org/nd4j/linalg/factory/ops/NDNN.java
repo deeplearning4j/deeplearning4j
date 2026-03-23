@@ -171,6 +171,86 @@ public class NDNN {
   }
 
   /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn,
+      int activation) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, null, null, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, null, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, 0));
+  }
+
+  /**
    * DINOv2 centering and sharpening operation.<br>
    * Prevents mode collapse in self-supervised learning by centering the teacher output<br>
    * and applying temperature-based sharpening:<br>
@@ -951,6 +1031,137 @@ public class NDNN {
         }
       }
     }
+  }
+
+  /**
+   * Full Gated Delta Network (GDN) layer block.<br>
+   * <br>
+   * Fuses the complete GDN layer pipeline:<br>
+   *   1. Linear projection (QKV + beta + gate)<br>
+   *   2. Causal depthwise conv1d with SiLU activation<br>
+   *   3. Gated delta rule recurrent state update<br>
+   *   4. RMSNorm + Swish gate<br>
+   *   5. Output linear projection<br>
+   * <br>
+   * This is the building block for Gated Delta Network architectures<br>
+   * (arXiv:2412.06464, ICLR 2025).<br>
+   *
+   * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
+   * @param wqkv QKV projection weights [modelDim, qkvDim] (NUMERIC type)
+   * @param wbeta Beta projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wgate Gate projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wout Output projection weights [numHeads*headDimV, modelDim] (NUMERIC type)
+   * @param convWeight Causal conv1d weights [modelDim, kernelSize] (NUMERIC type)
+   * @param convBias Causal conv1d bias [modelDim] (NUMERIC type)
+   * @param recurrentStateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   * @param numHeads Number of attention heads (H)
+   * @param headDimK Key head dimension (D_k)
+   * @param headDimV Value head dimension (D_v)
+   * @param rmsNormEpsilon RMSNorm epsilon
+   */
+  public INDArray[] gatedDeltaNetBlock(INDArray x, INDArray wqkv, INDArray wbeta, INDArray wgate,
+      INDArray wout, INDArray convWeight, INDArray convBias, INDArray recurrentStateIn,
+      int numHeads, int headDimK, int headDimV, double rmsNormEpsilon) {
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "x", x);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wqkv", wqkv);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wbeta", wbeta);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wgate", wgate);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "recurrentStateIn", recurrentStateIn);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, recurrentStateIn, numHeads, headDimK, headDimV, rmsNormEpsilon));
+  }
+
+  /**
+   * Full Gated Delta Network (GDN) layer block.<br>
+   * <br>
+   * Fuses the complete GDN layer pipeline:<br>
+   *   1. Linear projection (QKV + beta + gate)<br>
+   *   2. Causal depthwise conv1d with SiLU activation<br>
+   *   3. Gated delta rule recurrent state update<br>
+   *   4. RMSNorm + Swish gate<br>
+   *   5. Output linear projection<br>
+   * <br>
+   * This is the building block for Gated Delta Network architectures<br>
+   * (arXiv:2412.06464, ICLR 2025).<br>
+   *
+   * @param x Input tensor [batch, seqLen, modelDim] (NUMERIC type)
+   * @param wqkv QKV projection weights [modelDim, qkvDim] (NUMERIC type)
+   * @param wbeta Beta projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wgate Gate projection weights [modelDim, numHeads] (NUMERIC type)
+   * @param wout Output projection weights [numHeads*headDimV, modelDim] (NUMERIC type)
+   * @param convWeight Causal conv1d weights [modelDim, kernelSize] (NUMERIC type)
+   * @param convBias Causal conv1d bias [modelDim] (NUMERIC type)
+   * @param numHeads Number of attention heads (H)
+   * @param headDimK Key head dimension (D_k)
+   * @param headDimV Value head dimension (D_v)
+   */
+  public INDArray[] gatedDeltaNetBlock(INDArray x, INDArray wqkv, INDArray wbeta, INDArray wgate,
+      INDArray wout, INDArray convWeight, INDArray convBias, int numHeads, int headDimK,
+      int headDimV) {
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "x", x);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wqkv", wqkv);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wbeta", wbeta);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wgate", wgate);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "wout", wout);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convWeight", convWeight);
+    NDValidation.validateNumerical("gatedDeltaNetBlock", "convBias", convBias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaNetBlock(x, wqkv, wbeta, wgate, wout, convWeight, convBias, null, numHeads, headDimK, headDimV, 1.0E-5));
+  }
+
+  /**
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
+   * <br>
+   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
+   *   output_t = S_t^T * q_t<br>
+   * <br>
+   * State shape: [batch, numHeads, headDimK, headDimV].<br>
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   *
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   * @param stateIn Previous recurrent state [batch, numHeads, headDimK, headDimV] (NUMERIC type)
+   */
+  public INDArray[] gatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta, INDArray gate,
+      INDArray stateIn) {
+    NDValidation.validateNumerical("gatedDeltaRule", "q", q);
+    NDValidation.validateNumerical("gatedDeltaRule", "k", k);
+    NDValidation.validateNumerical("gatedDeltaRule", "v", v);
+    NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
+    NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
+    NDValidation.validateNumerical("gatedDeltaRule", "stateIn", stateIn);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, stateIn));
+  }
+
+  /**
+   * Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).<br>
+   * <br>
+   * Recurrent linear attention with gated exponential decay and delta update rule:<br>
+   *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)<br>
+   *   output_t = S_t^T * q_t<br>
+   * <br>
+   * State shape: [batch, numHeads, headDimK, headDimV].<br>
+   * Used in Gated Delta Networks (Qwen3.5 and other production models).<br>
+   *
+   * @param q Query tensor [batch, seqLen, numHeads, headDimK] (NUMERIC type)
+   * @param k Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized) (NUMERIC type)
+   * @param v Value tensor [batch, seqLen, numHeads, headDimV] (NUMERIC type)
+   * @param beta Per-step learning rate [batch, seqLen, numHeads] (NUMERIC type)
+   * @param gate Decay gate (pre-exp) [batch, seqLen, numHeads] (NUMERIC type)
+   */
+  public INDArray[] gatedDeltaRule(INDArray q, INDArray k, INDArray v, INDArray beta,
+      INDArray gate) {
+    NDValidation.validateNumerical("gatedDeltaRule", "q", q);
+    NDValidation.validateNumerical("gatedDeltaRule", "k", k);
+    NDValidation.validateNumerical("gatedDeltaRule", "v", v);
+    NDValidation.validateNumerical("gatedDeltaRule", "beta", beta);
+    NDValidation.validateNumerical("gatedDeltaRule", "gate", gate);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.GatedDeltaRule(q, k, v, beta, gate, null));
   }
 
   /**

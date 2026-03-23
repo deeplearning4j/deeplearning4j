@@ -1622,7 +1622,7 @@
                         <org.bytedeco.javacpp.logger.debug>false</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
-                        <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
+                        <CUDA_LAUNCH_BLOCKING>${cuda.launch.blocking}</CUDA_LAUNCH_BLOCKING>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
@@ -1647,7 +1647,11 @@
                         <ND4J_DSP_BATCH_ZERO_VERBOSE>${nd4j.dsp.batchZeroVerbose}</ND4J_DSP_BATCH_ZERO_VERBOSE>
                         <ND4J_DSP_CAST_SINK_MATMUL>${nd4j.dsp.castSinkMatmul}</ND4J_DSP_CAST_SINK_MATMUL>
                         <ND4J_TRITON_WARMUP_ONLY>${nd4j.triton.warmupOnly}</ND4J_TRITON_WARMUP_ONLY>
+                        <ND4J_TRITON_SECTION_FUSION>${nd4j.triton.sectionFusion}</ND4J_TRITON_SECTION_FUSION>
+                        <ND4J_TRITON_FUSE_TRIVIAL_GATHER>${nd4j.triton.fuseTrivialGather}</ND4J_TRITON_FUSE_TRIVIAL_GATHER>
+                        <ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>${nd4j.triton.fuseAttentionNeighborhoods}</ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>
                         <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
+                        <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->
@@ -1672,6 +1676,9 @@
                         <!-- DSP debug properties -->
                         <nd4j.dsp.native.dumpOutputs>${nd4j.dsp.native.dumpOutputs}</nd4j.dsp.native.dumpOutputs>
                         <nd4j.dsp.java.dumpOutputs>${nd4j.dsp.java.dumpOutputs}</nd4j.dsp.java.dumpOutputs>
+                        <!-- VLM speculative decoding -->
+                        <vlm.speculative.tokens>${vlm.speculative.tokens}</vlm.speculative.tokens>
+                        <vlm.speculative.draft>${vlm.speculative.draft}</vlm.speculative.draft>
                     </systemPropertyVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>

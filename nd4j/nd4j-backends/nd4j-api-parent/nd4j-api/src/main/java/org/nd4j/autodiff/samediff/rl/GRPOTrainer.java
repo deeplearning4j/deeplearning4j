@@ -51,7 +51,7 @@ import java.util.Map;
  * External values (old log probs, advantages, reference log probs) are computed in
  * {@link #prepareInputs(Map)} and fed as placeholders.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class GRPOTrainer extends RLAlignmentTrainer<GRPOConfig> {

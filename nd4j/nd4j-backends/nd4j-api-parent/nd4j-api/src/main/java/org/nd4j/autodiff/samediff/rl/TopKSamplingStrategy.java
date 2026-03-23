@@ -34,7 +34,7 @@ import java.util.Random;
 /**
  * Top-k / top-p (nucleus) sampling strategy for generating completions.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

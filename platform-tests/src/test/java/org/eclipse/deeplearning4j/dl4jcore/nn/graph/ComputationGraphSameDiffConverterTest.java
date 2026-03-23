@@ -22,7 +22,9 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -41,60 +43,60 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for ComputationGraphSameDiffConverter
+ * Tests for ComputationGraphSameDiffConverter.
+ * Verifies both structural correctness and forward-pass numerical equivalence.
  */
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
 @DisplayName("ComputationGraph SameDiff Converter Test")
 public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
 
-    @Test
-    @DisplayName("Test Simple Dense Graph To SameDiff")
-    public void testSimpleDenseGraphToSameDiff() {
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(new Adam(0.001))
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("input")
-                .addLayer("dense1", new DenseLayer.Builder()
-                        .nIn(10)
-                        .nOut(20)
-                        .activation(Activation.RELU)
-                        .build(), "input")
-                .addLayer("dense2", new DenseLayer.Builder()
-                        .nIn(20)
-                        .nOut(10)
-                        .activation(Activation.RELU)
-                        .build(), "dense1")
-                .addLayer("output", new OutputLayer.Builder()
-                        .nIn(10)
-                        .nOut(5)
-                        .activation(Activation.SOFTMAX)
-                        .lossFunction(new LossMCXENT())
-                        .build(), "dense2")
-                .setOutputs("output")
-                .build();
+    private static final double TOLERANCE = 1e-3;
 
-        ComputationGraph graph = new ComputationGraph(conf);
-        graph.init();
+    /**
+     * Helper to compare ComputationGraph forward pass output with SameDiff forward pass output.
+     */
+    private void assertForwardPassEquivalent(ComputationGraph graph, INDArray... inputs) {
+        // DL4J forward pass
+        INDArray[] dl4jOutputs = graph.output(inputs);
+        INDArray dl4jOutput = dl4jOutputs[0];
 
+        // SameDiff conversion
         SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
 
-        assertNotNull(sd);
-        assertTrue(sd.hasVariable("input"));
-        assertTrue(sd.getVariables().keySet().stream().anyMatch(name -> name.contains("output")));
+        // Build placeholder map
+        java.util.List<String> networkInputs = graph.getConfiguration().getNetworkInputs();
+        Map<String, INDArray> placeholders = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < networkInputs.size(); i++) {
+            placeholders.put(networkInputs.get(i), inputs[i]);
+        }
+
+        Map<String, INDArray> sdOutputs = sd.output(placeholders, sd.outputs());
+        INDArray sdOutput = sdOutputs.values().iterator().next();
+
+        assertNotNull(dl4jOutput, "DL4J output should not be null");
+        assertNotNull(sdOutput, "SameDiff output should not be null");
+        assertArrayEquals(dl4jOutput.shape(), sdOutput.shape(),
+            "Output shapes should match. DL4J: " + java.util.Arrays.toString(dl4jOutput.shape()) +
+            " SameDiff: " + java.util.Arrays.toString(sdOutput.shape()));
+
+        double maxDiff = dl4jOutput.sub(sdOutput).amaxNumber().doubleValue();
+        assertTrue(maxDiff < TOLERANCE,
+            "Outputs should be numerically equivalent. Max diff: " + maxDiff);
     }
 
     @Test
-    @DisplayName("Test Dense Graph Forward Pass")
-    public void testDenseGraphForwardPass() {
+    @DisplayName("Test Dense Graph Forward Pass Equivalence")
+    public void testDenseGraphForwardPassEquivalence() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.001))
                 .weightInit(WeightInit.XAVIER)
-                .inferenceWorkspaceMode(org.deeplearning4j.nn.conf.WorkspaceMode.NONE)  // Disable workspaces for inference
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .graphBuilder()
                 .addInputs("input")
                 .addLayer("dense1", new DenseLayer.Builder()
@@ -114,50 +116,77 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        // Get output first before converting (to avoid any internal state changes)
         INDArray input = Nd4j.rand(DataType.FLOAT, 2, 4);
-        INDArray originalOutput = graph.outputSingle(input);
-
-        // Now convert to SameDiff
-        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
-        assertNotNull(sd);
-        assertNotNull(originalOutput);
-        assertEquals(2, originalOutput.rows());
-        assertEquals(3, originalOutput.columns());
+        assertForwardPassEquivalent(graph, input);
     }
 
     @Test
-    @DisplayName("Test CNN Graph To SameDiff")
-    public void testCNNGraphToSameDiff() {
+    @DisplayName("Test Deep Dense Graph Forward Pass")
+    public void testDeepDenseGraphForwardPass() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.001))
                 .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .graphBuilder()
                 .addInputs("input")
-                .setInputTypes(InputType.convolutional(28, 28, 1))
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(32)
+                        .activation(Activation.RELU)
+                        .build(), "input")
+                .addLayer("dense2", new DenseLayer.Builder()
+                        .nIn(32)
+                        .nOut(16)
+                        .activation(Activation.TANH)
+                        .build(), "dense1")
+                .addLayer("dense3", new DenseLayer.Builder()
+                        .nIn(16)
+                        .nOut(8)
+                        .activation(Activation.SIGMOID)
+                        .build(), "dense2")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(8)
+                        .nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(new LossMCXENT())
+                        .build(), "dense3")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray input = Nd4j.rand(DataType.FLOAT, 3, 10);
+        assertForwardPassEquivalent(graph, input);
+    }
+
+    @Test
+    @DisplayName("Test CNN Graph Forward Pass")
+    public void testCNNGraphForwardPass() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.001))
+                .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
+                .addInputs("input")
+                .setInputTypes(InputType.convolutional(16, 16, 1))
                 .addLayer("conv1", new ConvolutionLayer.Builder()
                         .kernelSize(3, 3)
                         .stride(1, 1)
-                        .nOut(16)
+                        .nOut(8)
                         .activation(Activation.RELU)
+                        .convolutionMode(ConvolutionMode.Same)
                         .build(), "input")
                 .addLayer("pool1", new SubsamplingLayer.Builder()
                         .kernelSize(2, 2)
                         .stride(2, 2)
                         .poolingType(SubsamplingLayer.PoolingType.MAX)
                         .build(), "conv1")
-                .addLayer("conv2", new ConvolutionLayer.Builder()
-                        .kernelSize(3, 3)
-                        .stride(1, 1)
-                        .nOut(32)
-                        .activation(Activation.RELU)
-                        .build(), "pool1")
                 .addLayer("globalPool", new GlobalPoolingLayer.Builder()
                         .poolingType(PoolingType.AVG)
-                        .build(), "conv2")
+                        .build(), "pool1")
                 .addLayer("output", new OutputLayer.Builder()
-                        .nOut(10)
+                        .nOut(3)
                         .activation(Activation.SOFTMAX)
                         .lossFunction(new LossMCXENT())
                         .build(), "globalPool")
@@ -167,18 +196,17 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
-        assertNotNull(sd);
-        assertTrue(sd.hasVariable("input"));
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 1, 16, 16);
+        assertForwardPassEquivalent(graph, input);
     }
 
     @Test
-    @DisplayName("Test Batch Norm Graph To SameDiff")
-    public void testBatchNormGraphToSameDiff() {
+    @DisplayName("Test Batch Norm Graph Forward Pass")
+    public void testBatchNormGraphForwardPass() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.001))
                 .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .graphBuilder()
                 .addInputs("input")
                 .addLayer("dense1", new DenseLayer.Builder()
@@ -202,7 +230,6 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
         graph.init();
 
         SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
         assertNotNull(sd);
         boolean hasBnParams = sd.getVariables().keySet().stream()
                 .anyMatch(name -> name.contains("bn1"));
@@ -210,11 +237,12 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Multi Input Graph To SameDiff")
-    public void testMultiInputGraphToSameDiff() {
+    @DisplayName("Test Multi Input Graph Forward Pass")
+    public void testMultiInputGraphForwardPass() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.001))
                 .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .graphBuilder()
                 .addInputs("input1", "input2")
                 .addLayer("dense1", new DenseLayer.Builder()
@@ -241,10 +269,149 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
         graph.init();
 
         SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
         assertNotNull(sd);
         assertTrue(sd.hasVariable("input1"));
         assertTrue(sd.hasVariable("input2"));
+    }
+
+    @Test
+    @DisplayName("Test Residual Connection Forward Pass")
+    public void testResidualConnectionForwardPass() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.001))
+                .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(10)
+                        .activation(Activation.RELU)
+                        .build(), "input")
+                .addLayer("dense2", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(10)
+                        .activation(Activation.RELU)
+                        .build(), "dense1")
+                .addVertex("add", new org.deeplearning4j.nn.conf.graph.ElementWiseVertex(
+                        org.deeplearning4j.nn.conf.graph.ElementWiseVertex.Op.Add), "input", "dense2")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(10)
+                        .nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(new LossMCXENT())
+                        .build(), "add")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
+        assertNotNull(sd);
+        assertTrue(sd.hasVariable("input"));
+    }
+
+    @Test
+    @DisplayName("Test Output Layer Without Bias")
+    public void testOutputLayerWithoutBias() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.001))
+                .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(20)
+                        .activation(Activation.RELU)
+                        .build(), "input")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20)
+                        .nOut(5)
+                        .hasBias(false)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(new LossMCXENT())
+                        .build(), "dense1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+        assertForwardPassEquivalent(graph, input);
+
+        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
+        boolean hasOutputBias = sd.getVariables().keySet().stream()
+                .anyMatch(name -> name.equals("output_b"));
+        assertFalse(hasOutputBias, "Output layer should NOT have bias");
+    }
+
+    @Test
+    @DisplayName("Test Dense Graph No Bias")
+    public void testGraphWithNoBias() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.001))
+                .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(20)
+                        .activation(Activation.RELU)
+                        .hasBias(false)
+                        .build(), "input")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20)
+                        .nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(new LossMCXENT())
+                        .build(), "dense1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 10);
+        assertForwardPassEquivalent(graph, input);
+
+        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
+        boolean hasDense1Bias = sd.getVariables().keySet().stream()
+                .anyMatch(name -> name.equals("dense1_b") || name.equals("dense1_bias"));
+        assertFalse(hasDense1Bias, "Should not have bias for dense1 layer");
+    }
+
+    @Test
+    @DisplayName("Test Graph With Dropout")
+    public void testGraphWithDropout() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.001))
+                .weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(20)
+                        .activation(Activation.RELU)
+                        .dropOut(0.5)
+                        .build(), "input")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(20)
+                        .nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(new LossMCXENT())
+                        .build(), "dense1")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
+        assertNotNull(sd);
     }
 
     @Test
@@ -280,77 +447,92 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
     }
 
     @Test
-    @DisplayName("Test Graph With Dropout")
-    public void testGraphWithDropout() {
+    @DisplayName("Test Multiple Activations Forward Pass")
+    public void testMultipleActivationsForwardPass() {
+        Activation[] activations = {
+            Activation.RELU, Activation.SIGMOID, Activation.TANH,
+            Activation.ELU, Activation.SOFTPLUS, Activation.SOFTSIGN,
+            Activation.SWISH, Activation.GELU, Activation.HARDSIGMOID
+        };
+
+        for (Activation act : activations) {
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(42)
+                    .weightInit(WeightInit.XAVIER)
+                    .inferenceWorkspaceMode(WorkspaceMode.NONE)
+                    .graphBuilder()
+                    .addInputs("input")
+                    .addLayer("dense1", new DenseLayer.Builder()
+                            .nIn(5)
+                            .nOut(5)
+                            .activation(act)
+                            .build(), "input")
+                    .addLayer("output", new OutputLayer.Builder()
+                            .nIn(5)
+                            .nOut(3)
+                            .activation(Activation.SOFTMAX)
+                            .lossFunction(new LossMCXENT())
+                            .build(), "dense1")
+                    .setOutputs("output")
+                    .build();
+
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            INDArray input = Nd4j.rand(DataType.FLOAT, 2, 5);
+            assertForwardPassEquivalent(graph, input);
+        }
+    }
+
+    @Test
+    @DisplayName("Test CNN With Conv Same Padding Forward Pass")
+    public void testCNNSamePaddingForwardPass() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.001))
                 .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer("dense1", new DenseLayer.Builder()
-                        .nIn(10)
-                        .nOut(20)
+                .setInputTypes(InputType.convolutional(8, 8, 1))
+                .addLayer("conv1", new ConvolutionLayer.Builder()
+                        .kernelSize(3, 3)
+                        .stride(1, 1)
+                        .nOut(4)
                         .activation(Activation.RELU)
-                        .dropOut(0.5)
+                        .convolutionMode(ConvolutionMode.Same)
                         .build(), "input")
+                .addLayer("conv2", new ConvolutionLayer.Builder()
+                        .kernelSize(3, 3)
+                        .stride(1, 1)
+                        .nOut(8)
+                        .activation(Activation.RELU)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .build(), "conv1")
+                .addLayer("globalPool", new GlobalPoolingLayer.Builder()
+                        .poolingType(PoolingType.AVG)
+                        .build(), "conv2")
                 .addLayer("output", new OutputLayer.Builder()
-                        .nIn(20)
-                        .nOut(5)
+                        .nOut(3)
                         .activation(Activation.SOFTMAX)
                         .lossFunction(new LossMCXENT())
-                        .build(), "dense1")
+                        .build(), "globalPool")
                 .setOutputs("output")
                 .build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
 
-        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
-        assertNotNull(sd);
+        INDArray input = Nd4j.rand(DataType.FLOAT, 2, 1, 8, 8);
+        assertForwardPassEquivalent(graph, input);
     }
 
     @Test
-    @DisplayName("Test Graph With No Bias")
-    public void testGraphWithNoBias() {
+    @DisplayName("Test ElementWise Product Vertex")
+    public void testElementWiseProductVertex() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new Adam(0.001))
                 .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("input")
-                .addLayer("dense1", new DenseLayer.Builder()
-                        .nIn(10)
-                        .nOut(20)
-                        .activation(Activation.RELU)
-                        .hasBias(false)
-                        .build(), "input")
-                .addLayer("output", new OutputLayer.Builder()
-                        .nIn(20)
-                        .nOut(5)
-                        .activation(Activation.SOFTMAX)
-                        .lossFunction(new LossMCXENT())
-                        .build(), "dense1")
-                .setOutputs("output")
-                .build();
-
-        ComputationGraph graph = new ComputationGraph(conf);
-        graph.init();
-
-        SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
-        assertNotNull(sd);
-
-        boolean hasDense1Bias = sd.getVariables().keySet().stream()
-                .anyMatch(name -> name.equals("dense1_b") || name.equals("dense1_bias"));
-        assertFalse(hasDense1Bias, "Should not have bias for dense1 layer");
-    }
-
-    @Test
-    @DisplayName("Test Residual Connection")
-    public void testResidualConnection() {
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .updater(new Adam(0.001))
-                .weightInit(WeightInit.XAVIER)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
                 .graphBuilder()
                 .addInputs("input")
                 .addLayer("dense1", new DenseLayer.Builder()
@@ -361,16 +543,16 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
                 .addLayer("dense2", new DenseLayer.Builder()
                         .nIn(10)
                         .nOut(10)
-                        .activation(Activation.RELU)
-                        .build(), "dense1")
-                .addVertex("add", new org.deeplearning4j.nn.conf.graph.ElementWiseVertex(
-                        org.deeplearning4j.nn.conf.graph.ElementWiseVertex.Op.Add), "input", "dense2")
+                        .activation(Activation.SIGMOID)
+                        .build(), "input")
+                .addVertex("product", new org.deeplearning4j.nn.conf.graph.ElementWiseVertex(
+                        org.deeplearning4j.nn.conf.graph.ElementWiseVertex.Op.Product), "dense1", "dense2")
                 .addLayer("output", new OutputLayer.Builder()
                         .nIn(10)
-                        .nOut(5)
+                        .nOut(3)
                         .activation(Activation.SOFTMAX)
                         .lossFunction(new LossMCXENT())
-                        .build(), "add")
+                        .build(), "product")
                 .setOutputs("output")
                 .build();
 
@@ -378,8 +560,39 @@ public class ComputationGraphSameDiffConverterTest extends BaseDL4JTest {
         graph.init();
 
         SameDiff sd = ComputationGraphSameDiffConverter.toSameDiff(graph);
-
         assertNotNull(sd);
         assertTrue(sd.hasVariable("input"));
+    }
+
+    @Test
+    @DisplayName("Test Unsupported Vertex Throws")
+    public void testUnsupportedVertexThrows() {
+        // L2NormalizeVertex is not supported
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Adam(0.001))
+                .weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("input")
+                .addLayer("dense1", new DenseLayer.Builder()
+                        .nIn(10)
+                        .nOut(10)
+                        .activation(Activation.RELU)
+                        .build(), "input")
+                .addVertex("l2norm", new org.deeplearning4j.nn.conf.graph.L2NormalizeVertex(), "dense1")
+                .addLayer("output", new OutputLayer.Builder()
+                        .nIn(10)
+                        .nOut(5)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(new LossMCXENT())
+                        .build(), "l2norm")
+                .setOutputs("output")
+                .build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        assertThrows(UnsupportedOperationException.class, () -> {
+            ComputationGraphSameDiffConverter.toSameDiff(graph);
+        }, "Should throw for unsupported vertex type");
     }
 }

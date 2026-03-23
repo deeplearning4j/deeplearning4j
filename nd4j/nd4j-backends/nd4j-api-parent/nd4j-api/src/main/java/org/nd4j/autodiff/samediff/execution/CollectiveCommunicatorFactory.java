@@ -33,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  *   <li>Otherwise, returns {@link LocalCollectiveCommunicator} with a warning</li>
  * </ol>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class CollectiveCommunicatorFactory {

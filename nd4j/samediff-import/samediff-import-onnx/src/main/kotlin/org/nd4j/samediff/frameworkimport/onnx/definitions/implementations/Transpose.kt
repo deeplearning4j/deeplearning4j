@@ -52,7 +52,13 @@ class Transpose : PreImportHook  {
         // https://github.com/onnx/onnx/blob/master/docs/Operators.md#cast
 
         var inputVariable = sd.getVariable(op.inputsToOp[0])
-        val perm = attributes["perm"] as List<Long>
+        val permAttr = attributes["perm"]
+        if (permAttr == null) {
+            // ONNX spec: if perm is not provided, reverse all axes (standard transpose)
+            val outputVar = sd.transpose(outputNames[0], inputVariable)
+            return mapOf(outputVar.name() to listOf(outputVar))
+        }
+        val perm = permAttr as List<Long>
         // Use createFromArray to ensure 1D shape, not [1, N] row vector
         val permInput = sd.constant(Nd4j.createFromArray(*perm.toLongArray()))
         val outputVar = sd.permute(outputNames[0],inputVariable,permInput)

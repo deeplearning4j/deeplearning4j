@@ -51,7 +51,7 @@ import java.util.List;
  * Output:
  *   0: normalized tensor [batch, ..., features]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class RmsNorm extends DynamicCustomOp {

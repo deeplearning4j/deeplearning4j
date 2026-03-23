@@ -27,7 +27,7 @@ import org.eclipse.deeplearning4j.vlm.output.BoundingBox;
 /**
  * Represents a detected text region from OCR.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

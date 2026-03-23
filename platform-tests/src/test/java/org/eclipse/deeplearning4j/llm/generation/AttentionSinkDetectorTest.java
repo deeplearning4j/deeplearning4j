@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for AttentionSinkDetector, EvictionPolicy, and SinkAwareEvictionPolicy.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class AttentionSinkDetectorTest {
 

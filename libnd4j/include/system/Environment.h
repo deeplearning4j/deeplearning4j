@@ -160,6 +160,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<int> _tritonNumStages{0};   // 0 = auto
   std::atomic<int> _tritonNumCTAs{1};     // 1 = default (non-clustered)
   std::atomic<int> _tritonMaxNreg{0};     // 0 = unset
+  std::atomic<int> _tritonAttentionBlockN{0};  // 0 = auto (use chooseFusedAttentionTileConfig heuristic)
   std::atomic<bool> _tritonEnableFpFusion{true};
   std::atomic<bool> _tritonDisableLineInfo{false};
   std::string _tritonCacheDir;
@@ -226,6 +227,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspMatmulSegmentation{false};   // break segments at matmul boundaries
   std::atomic<bool> _dspFp16Compute{false};          // auto-cast FP32 matmul inputs to FP16 for TensorCore
   std::atomic<bool> _cublasTf32Enabled{false};       // enable TF32 math mode for cuBLAS on sm_80+
+  std::atomic<bool> _cublasCaptureWorkspace{true};   // pre-allocate cuBLAS workspace for CUDA graph capture
   std::atomic<bool> _dspCastSinkMatmul{false};       // sink FP16→FP32 casts through matmul ops
   std::atomic<bool> _tritonConsolidatedArgTable{false}; // consolidate arg tables into single H2D copy
   std::atomic<bool> _tritonArgDirtyTracking{false};  // skip arg table refresh for static-only sub-kernels
@@ -562,6 +564,8 @@ class SD_LIB_EXPORT Environment {
   void setTritonNumCTAs(int ctas);
   int tritonMaxNreg() { return _tritonMaxNreg.load(); }
   void setTritonMaxNreg(int maxNreg);
+  int tritonAttentionBlockN() { return _tritonAttentionBlockN.load(); }
+  void setTritonAttentionBlockN(int blockN);
   bool tritonEnableFpFusion() { return _tritonEnableFpFusion.load(); }
   void setTritonEnableFpFusion(bool enableFpFusion);
   bool tritonDisableLineInfo() { return _tritonDisableLineInfo.load(); }
@@ -656,6 +660,8 @@ class SD_LIB_EXPORT Environment {
   void setDspFp16Compute(bool enabled);
   bool cublasTf32Enabled() { return _cublasTf32Enabled.load(); }
   void setCublasTf32Enabled(bool enabled);
+  bool cublasCaptureWorkspace() { return _cublasCaptureWorkspace.load(); }
+  void setCublasCaptureWorkspace(bool enabled);
   bool dspCastSinkMatmul() { return _dspCastSinkMatmul.load(); }
   void setDspCastSinkMatmul(bool enabled);
   bool tritonConsolidatedArgTable() { return _tritonConsolidatedArgTable.load(); }

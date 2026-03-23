@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * BaseCudaDataBuffer.initPointers(). These tests verify the ACTUAL allocation path
  * correctly handles memory exhaustion scenarios.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer
  */
 @Slf4j

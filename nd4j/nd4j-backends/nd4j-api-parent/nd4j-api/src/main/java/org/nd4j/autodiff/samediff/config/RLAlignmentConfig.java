@@ -32,7 +32,7 @@ import java.io.Serializable;
  * Abstract base configuration for RL alignment training methods.
  * All RL alignment trainers (DPO, KTO, GRPO, PPO, etc.) extend this config.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

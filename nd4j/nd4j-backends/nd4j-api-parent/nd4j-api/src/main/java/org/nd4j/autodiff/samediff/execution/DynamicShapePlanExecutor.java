@@ -137,6 +137,9 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  clearing between executions because all shapes are guaranteed constant. */
     private boolean shapesFrozen;
 
+    /** Optional interceptor called after each slot execution. Null by default (zero overhead). */
+    private SlotOutputInterceptor slotOutputInterceptor;
+
 
     private final SameDiff sd;
     private final SessionMemMgr mmgr;
@@ -323,6 +326,15 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Set of present KV output names managed by C++ scatter. Skip copying these in executeNative(). */
     private Set<String> kvRetentionOutputNames;
 
+    /** Saved KV retention configuration for re-application after plan recompilation.
+     *  When the plan changes (e.g., fullOutputNames → logitsOnly), the native handle is freed
+     *  and recompiled. These saved params allow automatic KV retention re-configuration
+     *  on the new native handle, preventing the scatter from being silently lost. */
+    private List<String> savedKvPresentOutputNames;
+    private List<String> savedKvPastInputNames;
+    private int savedKvMaxLen;
+    private int savedKvCurrentPos;
+
     /** Cached OpaqueContext for native execution. Reused across executeNative() calls
      *  to avoid JNI create/delete overhead (~1-2ms). Freed on close(). */
     private OpaqueContext cachedOpContext;
@@ -372,6 +384,20 @@ public class DynamicShapePlanExecutor implements Closeable {
     /** Cached execution stream pointer. Avoids 2 JNI calls per step. */
     private Pointer cachedExecStream;
     private boolean execStreamCached;
+
+    /** Device ID where this DSP executor runs native execution. Determined from the
+     *  majority device of external inputs on first executeNative() call. For multi-GPU
+     *  scenarios (e.g., draft model on device 1 while target model on device 0), the
+     *  entire DSP including CUDA graph capture/replay happens on this device.
+     *  -1 means not yet determined. */
+    private int nativeExecutionDevice = -1;
+
+    /** Cache of constant replicas for the native execution path. Keyed by external input
+     *  index. When constants live on a different device than nativeExecutionDevice (e.g.,
+     *  draft model weights on device 1, execution on device 0), replicateToDevice() copies
+     *  them to the execution device. Cached here to avoid re-copying 100s of MB of weights
+     *  on every decode step. Cleared on close() and when nativeExecutionDevice changes. */
+    private Map<Integer, INDArray> nativeConstantReplicaCache;
 
     /** Maximum KV cache length for pre-allocation. When > 0 and CUDA graphs enabled,
      *  output slots for KV cache are pre-allocated at max size to keep addresses stable.
@@ -543,9 +569,40 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         this.kvCacheRetentionConfigured = true;
         this.kvRetentionOutputNames = new HashSet<>(presentOutputNames);
+
+        // Save configuration for re-application after plan recompilation.
+        // When the plan changes (e.g., fullOutputNames → logitsOnly), the native handle is
+        // freed and recompiled. Without saving, KV retention silently disappears.
+        this.savedKvPresentOutputNames = new ArrayList<>(presentOutputNames);
+        this.savedKvPastInputNames = new ArrayList<>(pastInputNames);
+        this.savedKvMaxLen = maxKvLen;
+        this.savedKvCurrentPos = initialPos;
+
         log.info("KV cache retention configured: {} mappings, maxLen={}, initialPos={}, retainedOutputs={}",
                 numMappings, maxKvLen, initialPos, kvRetentionOutputNames.size());
         return true;
+    }
+
+    /**
+     * Re-apply saved KV cache retention configuration on a new native plan handle.
+     * Called automatically by compileNativePlan() when the plan changes but KV retention
+     * was previously configured. The present output names must exist in the new plan
+     * (they may map to different slot indices).
+     */
+    private void reapplyKvCacheRetention(DynamicShapePlan plan) {
+        if (savedKvPresentOutputNames == null || nativePlanHandle == null) return;
+
+        // Temporarily clear the flag so configureKvCacheRetention can set it fresh
+        this.kvCacheRetentionConfigured = false;
+        boolean ok = configureKvCacheRetention(plan,
+                savedKvPresentOutputNames, savedKvPastInputNames,
+                savedKvMaxLen, savedKvCurrentPos);
+        if (!ok) {
+            log.warn("KV cache retention re-apply failed on new plan — present outputs may not exist in logits-only plan. " +
+                     "C++ scatter will be disabled for this plan.");
+            // Clear saved state so we don't keep trying
+            this.kvCacheRetentionConfigured = false;
+        }
     }
 
     /**
@@ -555,7 +612,9 @@ public class DynamicShapePlanExecutor implements Closeable {
     public int advanceKvCachePosition() {
         if (nativePlanHandle == null || !kvCacheRetentionConfigured) return -1;
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        return nativeOps.advancePlanKvCachePosition(nativePlanHandle);
+        int newPos = nativeOps.advancePlanKvCachePosition(nativePlanHandle);
+        savedKvCurrentPos = newPos;  // Keep saved pos in sync for plan recompilation
+        return newPos;
     }
 
     /**
@@ -565,6 +624,7 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (nativePlanHandle == null || !kvCacheRetentionConfigured) return;
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         nativeOps.resetPlanKvCachePosition(nativePlanHandle, newPos);
+        savedKvCurrentPos = newPos;  // Keep saved pos in sync for plan recompilation
     }
 
     /**
@@ -577,6 +637,12 @@ public class DynamicShapePlanExecutor implements Closeable {
     // ── Decode input direct-update (zero putScalar) ──────────────────────
 
     private boolean decodeInputsConfigured = false;
+
+    /** External input indices for decode inputs — C++ manages these on device,
+     *  so Java must NOT syncToSpecial (which would overwrite device with stale host). */
+    private int decodeInputIdsExtIdx = -1;
+    private int decodePositionIdsExtIdx = -1;
+    private int decodeAttentionMaskExtIdx = -1;
 
     /**
      * Configure decode input indices for direct device-side updates.
@@ -605,6 +671,9 @@ public class DynamicShapePlanExecutor implements Closeable {
         nativeOps.configurePlanDecodeInputs(nativePlanHandle,
                 inputIdsIdx, posIdsIdx, attnMaskIdx, maxKvLen);
         decodeInputsConfigured = true;
+        decodeInputIdsExtIdx = inputIdsIdx;
+        decodePositionIdsExtIdx = posIdsIdx;
+        decodeAttentionMaskExtIdx = attnMaskIdx;
         log.info("Decode inputs configured: inputIds={} posIds={} attnMask={} maxKvLen={}",
                 inputIdsIdx, posIdsIdx, attnMaskIdx, maxKvLen);
     }
@@ -647,7 +716,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         } else if (!frozen && wasFrozen) {
             log.info("FROZEN_TRANSITION: FROZEN → unfrozen (caches cleared)");
         }
-        if (!frozen) {
+        // Always clear frozen-state caches on ANY transition (freeze or unfreeze).
+        // When entering frozen mode, stale caches from a previous plan/seqLen would cause
+        // shape mismatches (e.g., zeroCopyOutputCache has [1,576] from seqLen=1 but new plan
+        // needs [6,576] for seqLen=6). When leaving frozen mode, caches must also be cleared
+        // so the next execution does full shape inference.
+        {
             zeroCopyOutputCache = null;
             cachedInputOpaques = null;
             cachedInputArrays = null;
@@ -667,6 +741,20 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     public boolean isShapesFrozen() {
         return shapesFrozen;
+    }
+
+    /**
+     * Sets an optional interceptor that is called after each slot execution.
+     * The interceptor receives the output array directly — implementations
+     * must {@code dup()} arrays they want to retain.
+     * Pass {@code null} to disable (default).
+     */
+    public void setSlotOutputInterceptor(SlotOutputInterceptor interceptor) {
+        this.slotOutputInterceptor = interceptor;
+    }
+
+    public SlotOutputInterceptor getSlotOutputInterceptor() {
+        return slotOutputInterceptor;
     }
 
     /**
@@ -846,6 +934,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                     "Java: compiled native plan " + plan.getSlots().length + " slots, " +
                     plan.getExternalInputKeys().length + " inputs, " +
                     plan.getRequestedOutputs().size() + " outputs");
+
+            // Re-apply KV cache retention if it was previously configured but lost.
+            // When the plan changes (e.g., fullOutputNames → logitsOnly), freeNativePlanHandle()
+            // resets kvCacheRetentionConfigured. Re-apply saved params on the new handle
+            // so C++ scatter continues to work.
+            if (savedKvPresentOutputNames != null && !kvCacheRetentionConfigured) {
+                log.info("Native executor: re-applying KV cache retention on new plan (pos={})", savedKvCurrentPos);
+                reapplyKvCacheRetention(plan);
+            }
         }
 
         GraphExecutionMode resolvedMode = resolveRequestedGraphExecutionMode(requestedMode);
@@ -1195,6 +1292,18 @@ public class DynamicShapePlanExecutor implements Closeable {
                     }
                     long tSlot0 = TIMING_ENABLED ? System.nanoTime() : 0;
                     executeSlot(slot, ctx, nativeOps, localPool, execStream, cachedDeviceId);
+                    if (slotOutputInterceptor != null) {
+                        int[] outSlotIds = slot.getOutputSlotIndices();
+                        String[] outVarNames = slot.getOutputVarNames();
+                        if (outSlotIds != null) {
+                            for (int oi = 0; oi < outSlotIds.length; oi++) {
+                                INDArray outArr = outputSlots[outSlotIds[oi]];
+                                slotOutputInterceptor.onSlotOutput(stepIdx, slot.getOpName(),
+                                        outVarNames != null && oi < outVarNames.length ? outVarNames[oi] : "slot_" + outSlotIds[oi],
+                                        outArr, outSlotIds[oi]);
+                            }
+                        }
+                    }
                     if (TIMING_ENABLED) {
                         long slotNs = System.nanoTime() - tSlot0;
                         double slotMs = slotNs / 1_000_000.0;
@@ -1817,10 +1926,19 @@ public class DynamicShapePlanExecutor implements Closeable {
         // block, so cachedDeviceId is always accurate at entry.
         int previousDeviceId = cachedDeviceId;
         int targetDevice = slot.getTargetDeviceId();
+        // Resolve unset device placement (-1) to the cached thread device.
+        // Then check if the resolved device has enough free memory for C++ ContextBuffers
+        // workspace (16MB reduction + 16MB allocation + streams). Without this check,
+        // ops run on device 0 (thread affinity) even when it has only ~50MB free,
+        // causing ContextBuffers to failover to device 1 and create cross-device
+        // stream/data mismatches that crash with error 700/900.
+        if (targetDevice < 0) {
+            targetDevice = cachedDeviceId;
+        }
         // If the planned device hit an unrecoverable CUDA error (e.g., OOM cascade),
         // redirect to the first non-failed device. When device 0 fails, we redirect
         // to device 1 (or the next available). When device 1+ fails, redirect to 0.
-        if (targetDevice >= 0 && failedDevices != null && failedDevices.contains(targetDevice)) {
+        if (failedDevices != null && failedDevices.contains(targetDevice)) {
             int redirectDevice = 0;
             for (int d = 0; d < cachedNumDevices; d++) {
                 if (!failedDevices.contains(d)) {
@@ -1830,17 +1948,41 @@ public class DynamicShapePlanExecutor implements Closeable {
             }
             targetDevice = redirectDevice;
         }
-        boolean deviceSwitchOccurred = false;
-        if (targetDevice >= 0) {
-            if (previousDeviceId != targetDevice) {
-                deviceSwitchOccurred = true;
-                DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "slot-device-placement");
-                // Re-fetch execution stream for the target device. The execStream passed
-                // in was cached from the original device's launch context — using it for
-                // cudaMemsetAsync on a different device's memory fails for non-P2P GPUs.
-                Pointer deviceStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
-                if (deviceStream != null) execStream = deviceStream;
+        // Free memory gate: if target device can't afford ContextBuffers workspace (16MB)
+        // plus some execution headroom, route to the device with most free memory.
+        // This prevents the ContextBuffers flip-flop where it initializes via failover
+        // on a different device than the op data, causing cross-device crashes.
+        if (cachedNumDevices > 1) {
+            long freeMem = nativeOps.getDeviceFreeMemory(targetDevice);
+            long MIN_WORKSPACE_HEADROOM = 128L * 1024 * 1024; // 128MB for workspace + intermediates
+            if (freeMem < MIN_WORKSPACE_HEADROOM) {
+                long bestFree = -1;
+                int bestDevice = targetDevice;
+                for (int d = 0; d < cachedNumDevices; d++) {
+                    if (failedDevices != null && failedDevices.contains(d)) continue;
+                    long dfree = nativeOps.getDeviceFreeMemory(d);
+                    if (dfree > bestFree) {
+                        bestFree = dfree;
+                        bestDevice = d;
+                    }
+                }
+                if (bestDevice != targetDevice) {
+                    log.debug("DSP executeSlot: device {} has only {}MB free (need {}MB), routing to device {} ({}MB free) for op {}",
+                            targetDevice, freeMem / (1024*1024), MIN_WORKSPACE_HEADROOM / (1024*1024),
+                            bestDevice, bestFree / (1024*1024), slot.getOpName());
+                    targetDevice = bestDevice;
+                }
             }
+        }
+        boolean deviceSwitchOccurred = false;
+        if (previousDeviceId != targetDevice) {
+            deviceSwitchOccurred = true;
+            DeviceMemoryManager.getInstance().switchDevice(targetDevice, "DSP.executeSlot", "slot-device-placement");
+            // Re-fetch execution stream for the target device. The execStream passed
+            // in was cached from the original device's launch context — using it for
+            // cudaMemsetAsync on a different device's memory fails for non-P2P GPUs.
+            Pointer deviceStream = DeviceMemoryManager.getInstance().getFreshExecutionStream();
+            if (deviceStream != null) execStream = deviceStream;
         }
 
         try {
@@ -2616,6 +2758,26 @@ public class DynamicShapePlanExecutor implements Closeable {
             // already and we can update the slot tracking.
             if (slot.isViewCapableOp() && fn instanceof CustomOp) {
                 CustomOp customOp = (CustomOp) fn;
+                // Sync op-level inputArguments from OpContext. DSP sets inputs on the
+                // OpContext, not on the op object. But initializeOutputs() accesses
+                // this.inputArguments directly (e.g., ReshapeNoCopy needs inputArguments.get(0)
+                // to create a view sharing the input's data buffer). Without this sync,
+                // inputArguments is empty → IndexOutOfBoundsException → slot fails.
+                // Always sync (not just when empty) because the OpContext may have different
+                // arrays than a previous execution.
+                if (customOp instanceof DynamicCustomOp) {
+                    DynamicCustomOp dco = (DynamicCustomOp) customOp;
+                    dco.setInputArguments((INDArray[]) null);
+                    dco.outputArguments().clear();
+                    List<INDArray> ctxInputs = ctx.getInputArrays();
+                    if (ctxInputs != null) {
+                        for (INDArray input : ctxInputs) {
+                            if (input != null) {
+                                dco.addInputArgument(input);
+                            }
+                        }
+                    }
+                }
                 boolean needsShapeCalc = customOp.initializeOutputs(ctx);
                 if (!needsShapeCalc && customOp.numOutputArguments() > 0) {
                     // initializeOutputs created a view — update outputSlots and ctx
@@ -4402,6 +4564,126 @@ public class DynamicShapePlanExecutor implements Closeable {
             log.debug("EXT_INPUT_WRITE_SUMMARY: total={} null={} empty={} withData={}", extInputs.length, nullCount, emptyCount, dataCount);
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // MULTI-GPU DEVICE COHERENCY
+        // ═══════════════════════════════════════════════════════════════════
+        // Determine which device holds the majority of external input data.
+        // For multi-GPU scenarios (e.g., draft model weights on device 1 after
+        // failover from OOM device 0), the entire DSP execution — including
+        // CUDA graph capture and replay — must happen on the device where the
+        // data lives. Non-peer GPUs cannot cross-access each other's memory.
+        //
+        // On first call: scan all external inputs to find majority device.
+        // On subsequent calls: reuse cached device (data doesn't move).
+        // ═══════════════════════════════════════════════════════════════════
+        int previousDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        boolean deviceSwitched = false;
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if (numDevices > 1) {
+            NativeOps nOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            if (nativeExecutionDevice < 0) {
+                // First call: determine majority device by data volume
+                long[] deviceBytes = new long[numDevices];
+                for (INDArray arr : extInputs) {
+                    if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        int devId = nOps.dbDeviceId(arr.data().opaqueBuffer());
+                        if (devId >= 0 && devId < numDevices) {
+                            deviceBytes[devId] += arr.length() * arr.data().getElementSize();
+                        }
+                    }
+                }
+                int bestDevice = 0;
+                long bestBytes = deviceBytes[0];
+                for (int d = 1; d < numDevices; d++) {
+                    if (deviceBytes[d] > bestBytes) {
+                        bestDevice = d;
+                        bestBytes = deviceBytes[d];
+                    }
+                }
+                nativeExecutionDevice = bestDevice;
+                if (nativeExecutionDevice != previousDevice) {
+                    log.info("DSP native executor: majority device={} ({}MB), switching from device {}",
+                            nativeExecutionDevice,
+                            bestBytes / (1024 * 1024),
+                            previousDevice);
+                }
+            }
+
+            if (nativeExecutionDevice != previousDevice) {
+                // Switch to the target device — this changes CUDA context + ContextBuffers
+                DeviceMemoryManager.getInstance().switchDevice(nativeExecutionDevice,
+                        "DSP.executeNative", "multi-gpu-coherency");
+                deviceSwitched = true;
+
+                // Invalidate cached exec stream — it belongs to the previous device
+                cachedExecStream = null;
+                execStreamCached = false;
+
+                // Migrate any off-device inputs to the target device.
+                // For non-peer GPUs, cross-device memory access causes error 700.
+                // Use replicateToDevice() instead of dup() because dup() does a direct
+                // GPU-to-GPU cudaMemcpy which requires peer access. replicateToDevice()
+                // stages through host memory for non-peer GPUs.
+                // Cache constant replicas to avoid re-copying model weights every step.
+                if (nativeConstantReplicaCache == null) {
+                    nativeConstantReplicaCache = new HashMap<>();
+                }
+                int migratedCount = 0;
+                long migratedBytes = 0;
+                for (int i = 0; i < extInputs.length; i++) {
+                    INDArray arr = extInputs[i];
+                    if (arr != null && arr.data() != null && !arr.data().wasClosed()) {
+                        int arrDevice = nOps.dbDeviceId(arr.data().opaqueBuffer());
+                        if (arrDevice >= 0 && arrDevice != nativeExecutionDevice) {
+                            // Check constant replica cache first — model weights don't change
+                            boolean isConstant = arr.data().isConstant();
+                            boolean isPlaceholder = placeholderArrays != null
+                                    && extKeys[i] != null && placeholderArrays.containsKey(extKeys[i]);
+                            // Placeholders poisoned by setCloseable(false) appear constant —
+                            // never cache them (stale shapes from previous step)
+                            boolean isTrulyConstant = isConstant && !isPlaceholder;
+
+                            if (isTrulyConstant) {
+                                INDArray cached = nativeConstantReplicaCache.get(i);
+                                if (cached != null && !cached.wasClosed()
+                                        && cached.data() != null && !cached.data().wasClosed()) {
+                                    extInputs[i] = cached;
+                                    if (cachedInputArrays != null && i < cachedInputArrays.length) {
+                                        cachedInputArrays[i] = cached;
+                                    }
+                                    continue;
+                                }
+                            }
+
+                            // Cross-device migration via replicateToDevice (handles non-peer GPUs)
+                            INDArray migrated = Nd4j.getAffinityManager().replicateToDevice(
+                                    nativeExecutionDevice, arr);
+                            extInputs[i] = migrated;
+                            migratedCount++;
+                            migratedBytes += arr.length() * arr.data().getElementSize();
+
+                            // Cache constant replicas for reuse across decode steps
+                            if (isTrulyConstant) {
+                                nativeConstantReplicaCache.put(i, migrated);
+                            }
+
+                            // Update frozen cache
+                            if (cachedInputArrays != null && i < cachedInputArrays.length) {
+                                cachedInputArrays[i] = migrated;
+                            }
+                        }
+                    }
+                }
+                if (migratedCount > 0) {
+                    log.info("DSP native executor: migrated {} inputs ({}MB) to device {}",
+                            migratedCount, migratedBytes / (1024 * 1024), nativeExecutionDevice);
+                }
+            }
+        }
+
+        // Wrap remaining execution in try/finally to restore device if we switched
+        try {
+
         // Reuse OpaqueContext across calls to avoid JNI create/delete overhead.
         // Only recreate if input/output count changes.
         int numOutputs = plan.getRequestedOutputs().size();
@@ -4439,6 +4721,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // Frozen fast path: only iterate placeholder indices (not all 1332 inputs)
                 if (placeholderIndices != null) {
                     for (int pi : placeholderIndices) {
+                        // When C++ manages decode inputs, skip syncToSpecial for them.
+                        // syncToSpecial copies HOST→DEVICE, but C++ updateDecodeInputs
+                        // accumulates values on DEVICE directly. Syncing would overwrite
+                        // device with stale host data (e.g., wipe accumulated attention_mask).
+                        if (decodeInputsConfigured && (pi == decodeInputIdsExtIdx
+                                || pi == decodePositionIdsExtIdx
+                                || pi == decodeAttentionMaskExtIdx)) {
+                            continue;
+                        }
                         INDArray arr = extInputs[pi];
                         if (arr != cachedInputArrays[pi]) {
                             // Placeholder array identity changed — re-set input (rare)
@@ -4475,6 +4766,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                             cachedInputOpaques[i] = opaqueIn;
                             cachedInputArrays[i] = extInputs[i];
                         } else if (inputIsPlaceholder != null && inputIsPlaceholder[i]) {
+                            // Skip decode inputs managed by C++ (same reason as fast path above)
+                            if (decodeInputsConfigured && (i == decodeInputIdsExtIdx
+                                    || i == decodePositionIdsExtIdx
+                                    || i == decodeAttentionMaskExtIdx)) {
+                                continue;
+                            }
                             INDArray arr = extInputs[i];
                             if (!arr.isEmpty() && arr.data() != null && !arr.data().wasClosed()) {
                                 OpaqueDataBuffer odb = arr.data().opaqueBuffer();
@@ -4723,6 +5020,13 @@ public class DynamicShapePlanExecutor implements Closeable {
 
             return results;
         }
+        } finally {
+            // Restore original device if we switched for multi-GPU coherency
+            if (deviceSwitched) {
+                DeviceMemoryManager.getInstance().switchDevice(previousDevice,
+                        "DSP.executeNative", "restore-device");
+            }
+        }
     }
 
     /**
@@ -4762,6 +5066,20 @@ public class DynamicShapePlanExecutor implements Closeable {
         frozenCallCount = 0;
         cachedExecStream = null;
         execStreamCached = false;
+        // Clear native constant replica cache — replicas reference the old plan's device
+        if (nativeConstantReplicaCache != null) {
+            nativeConstantReplicaCache.clear();
+            nativeConstantReplicaCache = null;
+        }
+        nativeExecutionDevice = -1;
+        // Reset KV retention flag — the C++ config is on the freed handle.
+        // savedKvPresentOutputNames etc. are intentionally NOT cleared so
+        // reapplyKvCacheRetention() can restore the config on a new handle.
+        kvCacheRetentionConfigured = false;
+        decodeInputsConfigured = false;
+        decodeInputIdsExtIdx = -1;
+        decodePositionIdsExtIdx = -1;
+        decodeAttentionMaskExtIdx = -1;
     }
 
     @Override
@@ -4780,6 +5098,11 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (constantReplicaCache != null) {
             constantReplicaCache.clear();
             constantReplicaCache = null;
+        }
+        if (nativeConstantReplicaCache != null) {
+            log.info("  DSP close() step 3b: native constant replicas ({})", nativeConstantReplicaCache.size());
+            nativeConstantReplicaCache.clear();
+            nativeConstantReplicaCache = null;
         }
         log.info("  DSP close() step 4: ctxPool ({})", ctxPool.size());
         System.out.flush(); System.err.flush();
@@ -4848,6 +5171,9 @@ public class DynamicShapePlanExecutor implements Closeable {
 
         currentPlan = null;
         externalConstantsResolved = false;
+        // Clear saved KV retention params — executor is fully closed, no re-apply possible
+        savedKvPresentOutputNames = null;
+        savedKvPastInputNames = null;
         log.info("  DSP close() complete");
         System.out.flush(); System.err.flush();
     }

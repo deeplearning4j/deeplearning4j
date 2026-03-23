@@ -62,7 +62,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * DeviceDescriptor device = mgr.selectDeviceForAllocation(1024 * 1024);
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class DeviceMemoryManager {
@@ -340,11 +340,28 @@ public class DeviceMemoryManager {
     }
 
     /**
+     * Get a registered GPU device by its device index.
+     *
+     * @param deviceIndex the GPU device index (e.g., 0, 1)
+     * @return the registered device descriptor, or null if not found
+     */
+    public DeviceDescriptor getRegisteredDevice(int deviceIndex) {
+        ensureDevicesRegistered();
+        for (DeviceDescriptor device : registeredDevices.values()) {
+            if (device.getDeviceIndex() == deviceIndex && device.getDeviceType().isGpu()) {
+                return device;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Get the number of registered devices.
      *
      * @return count of registered devices
      */
     public int getRegisteredDeviceCount() {
+        ensureDevicesRegistered();
         return registeredDevices.size();
     }
 
@@ -633,6 +650,7 @@ public class DeviceMemoryManager {
      * the requested allocation. Uses real CUDA free memory queries, not internal tracking.
      */
     private DeviceDescriptor selectMostFree(long bytes) {
+        ensureDevicesRegistered();
         DeviceDescriptor best = null;
         long bestFree = -1;
 
@@ -655,6 +673,12 @@ public class DeviceMemoryManager {
      * Falls back to the descriptor's available memory if native query fails.
      */
     public long getActualFreeMemory(DeviceDescriptor device) {
+        // Check simulation first — if enabled, simulated values override real queries
+        Integer simId = simulationDeviceId(device);
+        if (memorySimulationEnabled && simId != null && simulatedFreeMemory.containsKey(simId)) {
+            return getEffectiveFreeMemory(simId, device.getAvailableMemory());
+        }
+
         if (device.getDeviceType().isGpu()) {
             try {
                 return NativeOpsHolder.getInstance().getDeviceNativeOps()
@@ -681,28 +705,22 @@ public class DeviceMemoryManager {
                 return 0;
             }
 
-            // Use TOTAL memory as the primary metric, with free memory as tiebreaker.
-            // Free memory is misleading because:
-            // - Pool reservations reduce reported free memory (but pool memory IS reusable)
-            // - Display driver and CUDA context consume some memory on all devices
-            // - Early startup has high free memory on all devices, masking capacity differences
-            // The GPU with the most total memory (e.g., 24GB RTX 4090 vs 8GB RTX 3070 Ti)
-            // is the best choice for loading model constants and running compute-intensive ops.
-            long bestTotal = -1;
+            // Pick the GPU with the most FREE memory. This handles the common case
+            // where a large model has already been loaded on one device (e.g., 4090
+            // with 24GB total but only 36MB free after SmolDocling), and a second
+            // model needs to go to the device that actually has room.
             long bestFree = -1;
             int bestDevice = 0;
             for (int i = 0; i < numDevices; i++) {
-                long totalMem = nativeOps.getDeviceTotalMemory(i);
                 long freeMem = nativeOps.getDeviceFreeMemory(i);
-                if (totalMem > bestTotal || (totalMem == bestTotal && freeMem > bestFree)) {
-                    bestTotal = totalMem;
+                if (freeMem > bestFree) {
                     bestFree = freeMem;
                     bestDevice = i;
                 }
             }
 
-            log.debug("selectBestGpu: device [{}] selected with {} MB total, {} MB free out of {} devices",
-                    bestDevice, bestTotal / (1024 * 1024), bestFree / (1024 * 1024), numDevices);
+            log.debug("selectBestGpu: device [{}] selected with {} MB free out of {} devices",
+                    bestDevice, bestFree / (1024 * 1024), numDevices);
             return bestDevice;
         } catch (Exception e) {
             log.warn("Failed to query GPU free memory, defaulting to device 0: {}", e.getMessage());

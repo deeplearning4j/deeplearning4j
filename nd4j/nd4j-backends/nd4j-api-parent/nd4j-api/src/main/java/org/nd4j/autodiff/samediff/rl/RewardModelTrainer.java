@@ -48,7 +48,7 @@ import java.util.Map;
  * concatenated along the batch dimension, then split via gather indices.
  * No reference model is needed.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class RewardModelTrainer extends RLAlignmentTrainer<RewardModelConfig> {

@@ -61,7 +61,7 @@ import java.util.Map;
  * System.out.println("Number of arrays: " + sizeInfo.getArrayCount());
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see ModelLoadingContext
  */
 @Data

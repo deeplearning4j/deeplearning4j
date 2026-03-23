@@ -52,7 +52,7 @@ import java.util.Map;
  *
  * PPO's inner loop of multiple epochs is implemented by overriding {@link #trainStep(Map)}.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class PPOTrainer extends RLAlignmentTrainer<PPOConfig> {

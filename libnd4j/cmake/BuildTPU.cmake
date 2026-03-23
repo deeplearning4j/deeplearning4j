@@ -41,6 +41,13 @@ if(HAVE_PJRT)
     message(STATUS "Added PJRT platform sources: ${CUSTOMOPS_PJRT_SOURCES}")
 endif()
 
+# --- TPU Graph Backend Sources ---
+file(GLOB_RECURSE TPU_GRAPH_SOURCES
+    ./include/graph/tpu/*.cpp
+    ./include/graph/tpu/*.h)
+list(APPEND STATIC_SOURCES_TO_CHECK ${TPU_GRAPH_SOURCES})
+message(STATUS "Added TPU graph backend sources: ${TPU_GRAPH_SOURCES}")
+
 # Add no-PLT stub functions for functrace builds (GCC and Clang)
 if(SD_GCC_FUNCTRACE)
     list(APPEND STATIC_SOURCES_TO_CHECK ./include/platform/noplt_libc_stubs.c)
@@ -48,6 +55,15 @@ if(SD_GCC_FUNCTRACE)
 endif()
 
 list(APPEND ALL_SOURCES ${STATIC_SOURCES_TO_CHECK})
+
+# --- Exclude CUDA/HIP/Metal/Vulkan/L0/Hexagon specific sources ---
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*cuda.*")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*hip/.*")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*metal/.*")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*vulkan/.*")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*levelzero/.*")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*hexagon/.*")
+
 list(REMOVE_DUPLICATES ALL_SOURCES)
 
 # --- Generate Template Instantiations ---

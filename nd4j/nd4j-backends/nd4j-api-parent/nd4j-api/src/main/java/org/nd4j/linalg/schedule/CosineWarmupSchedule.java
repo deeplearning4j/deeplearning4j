@@ -33,7 +33,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *   lr = minLR + 0.5 * (maxLR - minLR) * (1 + cos(pi * progress))
  *   where progress = (iteration - warmupSteps) / (totalSteps - warmupSteps)
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 public class CosineWarmupSchedule implements ISchedule {

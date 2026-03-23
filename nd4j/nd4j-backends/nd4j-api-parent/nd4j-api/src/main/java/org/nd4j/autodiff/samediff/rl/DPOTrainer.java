@@ -43,7 +43,7 @@ import java.util.Map;
  *
  * Supports variants: STANDARD, IPO (identity preference optimization), RDPO (robust DPO).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class DPOTrainer extends RLAlignmentTrainer<DPOConfig> {
 

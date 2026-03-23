@@ -45,7 +45,7 @@ import java.util.List;
  * Output:
  *   0: silu(input)
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class SiLU extends DynamicCustomOp {

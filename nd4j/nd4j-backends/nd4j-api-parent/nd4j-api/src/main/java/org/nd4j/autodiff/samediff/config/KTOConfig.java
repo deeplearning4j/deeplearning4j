@@ -37,7 +37,7 @@ import lombok.experimental.SuperBuilder;
  * Loss aversion controls the relative weight of undesirable examples, inspired
  * by Kahneman and Tversky's prospect theory.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

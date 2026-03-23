@@ -48,7 +48,7 @@ import java.util.List;
  *   0: dL/dModel
  *   1: dL/dShadow
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class EmaUpdateBp extends DynamicCustomOp {

@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Backward pass for Feature Distillation Loss.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class FeatureDistillationLossBp extends DynamicCustomOp {

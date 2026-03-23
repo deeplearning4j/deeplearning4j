@@ -59,7 +59,7 @@ import java.util.concurrent.Executors;
  * DeviceAwareNDArrayFactory.ensureOnDevice(existingArray, DeviceDescriptor.cuda(1));
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class DeviceAwareNDArrayFactory {

@@ -23,6 +23,7 @@ package org.nd4j.autodiff.samediff.execution;
 import java.util.Arrays;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
@@ -860,6 +861,17 @@ public class DynamicShapePlanCompiler {
 
         if (log.isDebugEnabled()) {
             log.debug("Plan structure:\n{}", PlanIntrospection.formatPlan(plan));
+        }
+
+        // Device placement planning (disabled by default)
+        if (Boolean.getBoolean(ND4JSystemProperties.PLACEMENT_ENABLED)
+                || sd.getPlacementStrategy() != null) {
+            DevicePlacementPlanner.PlacementStrategy strategy = sd.getPlacementStrategy() != null
+                    ? sd.getPlacementStrategy()
+                    : DevicePlacementPlanner.PlacementStrategy.valueOf(System.getProperty(
+                    ND4JSystemProperties.PLACEMENT_STRATEGY, "SINGLE_DEVICE"));
+            DevicePlacementPlanner.PlacementPlan placement = DevicePlacementPlanner.plan(plan, sd, strategy);
+            DevicePlacementPlanner.applyPlan(plan, placement);
         }
 
         return plan;

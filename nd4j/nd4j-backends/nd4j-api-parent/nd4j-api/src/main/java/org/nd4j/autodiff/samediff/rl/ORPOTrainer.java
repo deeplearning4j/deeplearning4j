@@ -50,7 +50,7 @@ import java.util.Map;
  * concatenated along the batch dimension, then split via gather indices.
  * All computation is in-graph for proper backpropagation.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class ORPOTrainer extends RLAlignmentTrainer<ORPOConfig> {

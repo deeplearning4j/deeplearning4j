@@ -862,12 +862,16 @@ Status NativeDynamicShapePlan::execute(
     }
   }
 
-  // Apply pending decode input updates directly on device (if configured).
-  // This replaces Java-side putScalar calls for input_ids, position_ids, attention_mask.
+  // Apply pending decode input updates to external input arrays (if configured).
+  // This updates the source arrays that the frozen path's D2D copies read from.
+  // The frozen path additionally writes directly to capture buffers (which the
+  // graph actually reads from) to handle cases where Java skipped feedDict updates.
+  // For the non-frozen fallback path, this is the only update needed.
   if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
     updateDecodeInputs(externalInputs, numExternalInputs,
                         pendingTokenId_, pendingCachePos_, stream);
-    hasPendingDecodeUpdate_ = false;
+    // Do NOT clear hasPendingDecodeUpdate_ here — the frozen fast path
+    // also needs it to write directly to capture buffers.
   }
 
   // Frozen graph fast path: if shapes are frozen and a single captured GPU graph
@@ -876,6 +880,10 @@ Status NativeDynamicShapePlan::execute(
   auto fastPathResult = platformTryFrozenFastPath(
       externalInputs, numExternalInputs, requestedOutputs, numRequestedOutputs, stream);
   if (fastPathResult != Status::MAYBE) return fastPathResult;
+
+  // Frozen path didn't handle execution — clear the pending flag for fallback path.
+  // (External inputs were already updated by updateDecodeInputs above.)
+  hasPendingDecodeUpdate_ = false;
 
   // Pre-execute setup: clear stale errors, manage attention workspace,
   // flush pending close, invalidate stale cached graphs.
@@ -1269,25 +1277,28 @@ void NativeDynamicShapePlan::updateDecodeInputs(
     }
   }
 
-  // attention_mask[cachePos - 1] = 1  (if cachePos > 0)
+  // attention_mask[cachePos - 1] = 1  (unmask the position filled by the PREVIOUS step's scatter)
+  // cachePos is the NEXT write position — not yet filled. The position just filled is cachePos - 1.
+  // Positions 0..cachePos-1 are valid; cachePos itself will be filled AFTER this forward pass.
   if (decodeAttentionMaskExtIdx_ >= 0 && decodeAttentionMaskExtIdx_ < numExt && cachePos > 0) {
     NDArray* mask = externalInputs[decodeAttentionMaskExtIdx_];
-    DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d offset=%d",
+    int writePos = cachePos - 1;
+    DSP_DIAG(EXECUTE, "updateDecodeInputs: mask NDArray=%p specialBuf=%p len=%lld cachePos=%d writePos=%d",
              mask, mask ? mask->specialBuffer() : nullptr, mask ? (long long)mask->lengthOf() : -1,
-             cachePos, cachePos - 1);
+             cachePos, writePos);
     if (mask != nullptr && mask->specialBuffer() != nullptr) {
       LongType one = 1;
       auto maskLen = mask->lengthOf();
-      if ((cachePos - 1) < maskLen) {
-        auto* dst = static_cast<LongType*>(mask->specialBuffer()) + (cachePos - 1);
+      if (writePos < maskLen) {
+        auto* dst = static_cast<LongType*>(mask->specialBuffer()) + writePos;
         DSP_DIAG(EXECUTE, "updateDecodeInputs: mask dst=%p (base=%p + %d * %d)",
-                 dst, mask->specialBuffer(), cachePos - 1, (int)sizeof(LongType));
+                 dst, mask->specialBuffer(), writePos, (int)sizeof(LongType));
         cudaMemcpyAsync(dst, &one, sizeof(LongType),
                         cudaMemcpyHostToDevice, cudaStr);
         mask->dataBuffer()->writeSpecial();
       } else {
-        DSP_DIAG(EXECUTE, "updateDecodeInputs: SKIP attn_mask write cachePos=%d maskLen=%lld (OOB)",
-                 cachePos, (long long)maskLen);
+        DSP_DIAG(EXECUTE, "updateDecodeInputs: SKIP attn_mask write writePos=%d maskLen=%lld (OOB)",
+                 writePos, (long long)maskLen);
       }
     }
   }
@@ -1393,7 +1404,33 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
 
   platformEndKvScatter(savedState);
 
-  DSP_DIAG(KV_CACHE, "KV scatter (batched): %d scattered, %d skipped, pos=%d", scattered, skipped, kvCachePosition_);
+  DSP_DIAG(KV_CACHE, "KV scatter (batched): %d scattered, %d skipped, pos=%d, numMappings=%d, execCount=%lld",
+           scattered, skipped, kvCachePosition_, kvCacheNumMappings_, (long long)executeCount_);
+  if (DSP_DIAG_ENABLED(KV_CACHE) && scattered > 0) {
+    auto& e0 = batchEntries[0];
+    DSP_DIAG(KV_CACHE, "  entry[0]: srcPtr=%p dstPtr=%p heads=%lld srcSeqLen=%lld dstSeqLen=%lld dim=%lld lastPos=%lld cachePos=%lld dtype=%d",
+             e0.srcPtr, e0.dstPtr, (long long)e0.heads, (long long)e0.srcSeqLen,
+             (long long)e0.dstSeqLen, (long long)e0.dim, (long long)e0.lastPos, (long long)e0.cachePos,
+             (int)batchDtype);
+  }
+  if (DSP_DIAG_ENABLED(KV_CACHE) && skipped > 0) {
+    // Log which mappings were skipped and why
+    for (int m = 0; m < kvCacheNumMappings_ && m < 3; m++) {
+      KvCacheMapping& mapping = kvCacheMappings_[m];
+      int psi = mapping.presentOutputSlotIdx;
+      int exi = mapping.pastInputExternalIdx;
+      NDArray* fromSlot = (psi >= 0 && psi < totalOutputSlots_) ? outputSlots_[psi] : nullptr;
+      NDArray* fromCache = (psi >= 0 && psi < totalOutputSlots_) ? slotArrayCache_[psi] : nullptr;
+      NDArray* extArr = (exi >= 0 && exi < numExt) ? externalInputs[exi] : nullptr;
+      DSP_DIAG(KV_CACHE, "  mapping[%d]: presentSlot=%d outputSlots_=%p slotCache=%p extIdx=%d ext=%p",
+               m, psi, fromSlot, fromCache, exi, extArr);
+      if (fromSlot != nullptr) {
+        auto* db = fromSlot->dataBuffer();
+        DSP_DIAG(KV_CACHE, "    fromSlot: empty=%d db=%p dbValid=%d rank=%d",
+                 fromSlot->isEmpty(), db, db ? db->isValid() : 0, fromSlot->rankOf());
+      }
+    }
+  }
 }
 
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────

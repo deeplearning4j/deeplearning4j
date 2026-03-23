@@ -39,7 +39,7 @@ import java.util.List;
  * OCREngine ocr = OCREngineFactory.createBestAvailable();
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class OCREngineFactory {
 

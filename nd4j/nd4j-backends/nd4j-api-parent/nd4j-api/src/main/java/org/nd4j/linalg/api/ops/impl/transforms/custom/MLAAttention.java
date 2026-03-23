@@ -74,7 +74,7 @@ import java.util.List;
  *   <li>0: output [B, 1, numHeads, headDim]</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class MLAAttention extends DynamicCustomOp {

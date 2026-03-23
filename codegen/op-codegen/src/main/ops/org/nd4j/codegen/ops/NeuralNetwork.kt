@@ -1571,4 +1571,103 @@ fun NN() = Namespace("NN") {
             """.trimIndent()
         }
     }
+
+    Op("gatedDeltaRule") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GatedDeltaRule"
+        val q = Input(NUMERIC, "q") { description = "Query tensor [batch, seqLen, numHeads, headDimK]" }
+        val k = Input(NUMERIC, "k") { description = "Key tensor [batch, seqLen, numHeads, headDimK] (L2-normalized)" }
+        val v = Input(NUMERIC, "v") { description = "Value tensor [batch, seqLen, numHeads, headDimV]" }
+        val beta = Input(NUMERIC, "beta") { description = "Per-step learning rate [batch, seqLen, numHeads]" }
+        val gate = Input(NUMERIC, "gate") { description = "Decay gate (pre-exp) [batch, seqLen, numHeads]" }
+        val stateIn = Input(NUMERIC, "stateIn") { description = "Previous recurrent state [batch, numHeads, headDimK, headDimV]"; defaultValue = null }
+
+        Output(NUMERIC, "output") { description = "Attention output [batch, seqLen, numHeads, headDimV]" }
+        Output(NUMERIC, "stateOut") { description = "Final recurrent state [batch, numHeads, headDimK, headDimV]" }
+
+        AllParamSignature()
+        Signature(q, k, v, beta, gate)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Gated Delta Rule (arXiv:2412.06464, ICLR 2025, NVIDIA Research).
+
+             Recurrent linear attention with gated exponential decay and delta update rule:
+               S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)
+               output_t = S_t^T * q_t
+
+             State shape: [batch, numHeads, headDimK, headDimV].
+             Used in Gated Delta Networks (Qwen3.5 and other production models).
+            """.trimIndent()
+        }
+    }
+
+    Op("causalConv1d") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "CausalConv1d"
+        val x = Input(NUMERIC, "x") { description = "Input sequence [batch, seqLen, dim]" }
+        val weight = Input(NUMERIC, "weight") { description = "Depthwise conv weights [dim, kernelSize]" }
+        val bias = Input(NUMERIC, "bias") { description = "Bias [dim]"; defaultValue = null }
+        val stateIn = Input(NUMERIC, "convStateIn") { description = "Conv state for autoregressive decode [batch, dim, kernelSize-1]"; defaultValue = null }
+        val activation = Arg(INT, "activation") { description = "Activation function (0=none, 1=silu)"; defaultValue = 0 }
+
+        Output(NUMERIC, "output") { description = "Convolved output [batch, seqLen, dim]" }
+        Output(NUMERIC, "stateOut") { description = "Updated conv state [batch, dim, kernelSize-1]" }
+
+        AllParamSignature()
+        Signature(x, weight)
+        Signature(x, weight, bias)
+        Signature(x, weight, bias, stateIn)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Causal depthwise 1D convolution with state for autoregressive decoding.
+
+             Performs a causal (left-padded) depthwise 1D convolution.
+             Used in Gated Delta Networks (GDN) and Mamba architectures.
+             The state output preserves the last (kernelSize-1) input elements
+             for use as initial state in the next autoregressive step.
+            """.trimIndent()
+        }
+    }
+
+    Op("gatedDeltaNetBlock") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "GatedDeltaNetBlock"
+        val x = Input(NUMERIC, "x") { description = "Input tensor [batch, seqLen, modelDim]" }
+        val wqkv = Input(NUMERIC, "wqkv") { description = "QKV projection weights [modelDim, qkvDim]" }
+        val wbeta = Input(NUMERIC, "wbeta") { description = "Beta projection weights [modelDim, numHeads]" }
+        val wgate = Input(NUMERIC, "wgate") { description = "Gate projection weights [modelDim, numHeads]" }
+        val wout = Input(NUMERIC, "wout") { description = "Output projection weights [numHeads*headDimV, modelDim]" }
+        val convWeight = Input(NUMERIC, "convWeight") { description = "Causal conv1d weights [modelDim, kernelSize]" }
+        val convBias = Input(NUMERIC, "convBias") { description = "Causal conv1d bias [modelDim]" }
+        val stateIn = Input(NUMERIC, "recurrentStateIn") { description = "Previous recurrent state [batch, numHeads, headDimK, headDimV]"; defaultValue = null }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads (H)" }
+        val headDimK = Arg(INT, "headDimK") { description = "Key head dimension (D_k)" }
+        val headDimV = Arg(INT, "headDimV") { description = "Value head dimension (D_v)" }
+        val rmsNormEpsilon = Arg(FLOATING_POINT, "rmsNormEpsilon") { description = "RMSNorm epsilon"; defaultValue = 1e-5 }
+
+        Output(NUMERIC, "output") { description = "Layer output [batch, seqLen, modelDim]" }
+        Output(NUMERIC, "recurrentStateOut") { description = "Final recurrent state [batch, numHeads, headDimK, headDimV]" }
+        Output(NUMERIC, "convStateOut") { description = "Final conv state [batch, modelDim, kernelSize-1]" }
+
+        AllParamSignature()
+        Signature(x, wqkv, wbeta, wgate, wout, convWeight, convBias, numHeads, headDimK, headDimV)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             Full Gated Delta Network (GDN) layer block.
+
+             Fuses the complete GDN layer pipeline:
+               1. Linear projection (QKV + beta + gate)
+               2. Causal depthwise conv1d with SiLU activation
+               3. Gated delta rule recurrent state update
+               4. RMSNorm + Swish gate
+               5. Output linear projection
+
+             This is the building block for Gated Delta Network architectures
+             (arXiv:2412.06464, ICLR 2025).
+            """.trimIndent()
+        }
+    }
 }

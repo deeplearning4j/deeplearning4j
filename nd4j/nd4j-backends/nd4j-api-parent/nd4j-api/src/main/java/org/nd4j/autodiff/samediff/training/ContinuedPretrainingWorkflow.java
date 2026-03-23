@@ -51,7 +51,7 @@ import java.util.Collections;
  * workflow.train(dataIterator, totalSteps);
  * </pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class ContinuedPretrainingWorkflow {

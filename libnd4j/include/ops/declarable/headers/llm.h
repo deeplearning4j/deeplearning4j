@@ -632,6 +632,125 @@ DECLARE_CUSTOM_OP(multi_lora_matmul, 5, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(smooth_quant, 4, 1, false, 0, 0);
 #endif
 
+/**
+ * kv_cache_quantize - KV Cache Quantization
+ *
+ * Quantizes floating-point KV cache data using per-row symmetric quantization.
+ * Each row (last dimension) gets its own scale factor: scale = max(abs(row)) / 127 (INT8).
+ *
+ * Input:
+ *   0: input tensor [..., rowLen] (float KV data)
+ *
+ * Output:
+ *   0: quantized tensor [..., rowLen] (INT8)
+ *   1: scales tensor [...] (FLOAT32, one scale per row)
+ *
+ * Integer arguments:
+ *   0: quantization format (0=INT8, 1=FP8_E4M3, 2=FP8_E5M2, 3=INT4)
+ *   1: group size (optional, default: full row length)
+ */
+#if NOT_EXCLUDED(OP_kv_cache_quantize)
+DECLARE_CUSTOM_OP(kv_cache_quantize, 1, 2, false, 0, 1);
+#endif
+
+/**
+ * kv_cache_dequantize - KV Cache Dequantization
+ *
+ * Reverses kv_cache_quantize: reconstructs floating-point KV data
+ * from quantized representation and per-row scales.
+ * output = quantized * scale (per row)
+ *
+ * Input:
+ *   0: quantized tensor [..., rowLen] (INT8)
+ *   1: scales tensor [...] (FLOAT32, one scale per row)
+ *
+ * Output:
+ *   0: dequantized tensor [..., rowLen] (FLOAT32)
+ *
+ * Integer arguments:
+ *   0: quantization format (0=INT8, 1=FP8_E4M3, 2=FP8_E5M2, 3=INT4)
+ */
+#if NOT_EXCLUDED(OP_kv_cache_dequantize)
+DECLARE_CUSTOM_OP(kv_cache_dequantize, 2, 1, false, 0, 1);
+#endif
+
+/**
+ * gated_delta_rule - Gated Delta Network recurrent state update
+ *
+ * Implements the gated delta rule from arXiv:2412.06464 (ICLR 2025, NVIDIA Research):
+ *   S_t = exp(g_t) * S_{t-1} + beta_t * k_t (x) (v_t - exp(g_t) * S_{t-1}^T * k_t)
+ *   output_t = S_t^T * q_t
+ *
+ * Input:
+ *   0: Q [B, L, H, D_k] - query
+ *   1: K [B, L, H, D_k] - key (L2-normalized)
+ *   2: V [B, L, H, D_v] - value
+ *   3: beta [B, L, H] - per-step learning rate
+ *   4: gate [B, L, H] - decay gate (pre-exp)
+ *   5: state_in [B, H, D_k, D_v] - previous recurrent state (optional, zeros if absent)
+ *
+ * Output:
+ *   0: output [B, L, H, D_v] - attention output
+ *   1: state_out [B, H, D_k, D_v] - final recurrent state
+ */
+#if NOT_EXCLUDED(OP_gated_delta_rule)
+DECLARE_CUSTOM_OP(gated_delta_rule, 5, 2, false, 0, 0);
+#endif
+
+/**
+ * causal_conv1d - Depthwise causal 1D convolution with state
+ *
+ * Performs a causal (left-padded) depthwise 1D convolution, used in GDN and Mamba.
+ *
+ * Input:
+ *   0: x [B, L, D] - input sequence
+ *   1: weight [D, K] - depthwise conv weights (K = kernel size, typically 4)
+ *   2: bias [D] (optional)
+ *   3: state_in [B, D, K-1] (optional - conv state for autoregressive decode)
+ *
+ * Output:
+ *   0: output [B, L, D] - convolved output
+ *   1: state_out [B, D, K-1] - updated conv state
+ *
+ * Integer arguments:
+ *   0: activation (0=none, 1=silu)
+ */
+#if NOT_EXCLUDED(OP_causal_conv1d)
+DECLARE_CUSTOM_OP(causal_conv1d, 2, 2, false, 0, 0);
+#endif
+
+/**
+ * gated_delta_net_block - Full Gated Delta Network layer
+ *
+ * Fuses: linear projection -> causal_conv1d + SiLU -> gated_delta_rule -> RMSNorm + Swish gate -> output projection
+ *
+ * Input:
+ *   0: x [B, L, D] - input
+ *   1: Wqkv [D, (H*D_k*3 + H*D_v)] - QKV projection weights
+ *   2: Wbeta [D, H] - beta projection weights
+ *   3: Wgate [D, H] - gate projection weights
+ *   4: Wout [H*D_v, D] - output projection weights
+ *   5: conv_weight [D, K] - causal conv1d weights
+ *   6: conv_bias [D] - causal conv1d bias
+ *   7: state_in [B, H, D_k, D_v] - recurrent state (optional)
+ *
+ * Output:
+ *   0: output [B, L, D]
+ *   1: recurrent_state_out [B, H, D_k, D_v]
+ *   2: conv_state_out [B, D, K-1]
+ *
+ * Integer arguments:
+ *   0: num_heads (H)
+ *   1: head_dim_k (D_k)
+ *   2: head_dim_v (D_v)
+ *
+ * Float arguments:
+ *   0: rms_norm_epsilon (default: 1e-5)
+ */
+#if NOT_EXCLUDED(OP_gated_delta_net_block)
+DECLARE_CUSTOM_OP(gated_delta_net_block, 7, 3, false, 0, 3);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

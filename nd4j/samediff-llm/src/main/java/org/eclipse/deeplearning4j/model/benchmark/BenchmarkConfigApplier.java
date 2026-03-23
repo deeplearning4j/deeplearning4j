@@ -126,6 +126,7 @@ public class BenchmarkConfigApplier {
             if (config.getTritonNumStages() > 0) env.setTritonNumStages(config.getTritonNumStages());
             if (config.getTritonNumCTAs() > 0) env.setTritonNumCTAs(config.getTritonNumCTAs());
             if (config.getTritonMaxNreg() > 0) env.setTritonMaxNreg(config.getTritonMaxNreg());
+            if (config.getTritonAttentionBlockN() > 0) env.setTritonAttentionBlockN(config.getTritonAttentionBlockN());
             if (config.getTritonMaxSubsegmentOps() > 0) env.setTritonMaxSubsegmentOps(config.getTritonMaxSubsegmentOps());
             if (config.getTritonMaxSubsegmentSections() > 0) env.setTritonMaxSubsegmentSections(config.getTritonMaxSubsegmentSections());
             if (config.getTritonBuildThreads() > 0) env.setTritonBuildThreads(config.getTritonBuildThreads());
@@ -140,6 +141,11 @@ public class BenchmarkConfigApplier {
             env.setTritonFusionScoring(config.isTritonFusionScoring());
             env.setTritonFusionMinScore(config.getTritonFusionMinScore());
         }
+
+        // cuBLAS TF32: enables tensor cores for FP32 GEMMs on sm_80+ (Ampere+)
+        env.setCublasTf32Enabled(config.isCublasTf32());
+        // cuBLAS capture workspace: explicit workspace prevents MemAlloc graph nodes
+        env.setCublasCaptureWorkspace(config.isCublasCaptureWorkspace());
 
         // DSP optimization flags
         env.setDspCastElimination(config.isDspCastElimination());

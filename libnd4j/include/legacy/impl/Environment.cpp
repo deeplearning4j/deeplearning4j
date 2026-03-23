@@ -1176,6 +1176,23 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
 #endif
  }
 
+ const char* tritonAttentionBlockNVar = std::getenv("ND4J_TRITON_ATTENTION_BLOCK_N");
+ if (tritonAttentionBlockNVar != nullptr) {
+#ifdef __cpp_exceptions
+   try {
+     std::string blockNStr(tritonAttentionBlockNVar);
+     int blockN = std::stoi(blockNStr);
+     setTritonAttentionBlockN(blockN);
+   } catch (std::exception &e) {
+     // Do nothing on error
+   }
+#else
+   std::string blockNStr(tritonAttentionBlockNVar);
+   int blockN = std::stoi(blockNStr);
+   setTritonAttentionBlockN(blockN);
+#endif
+ }
+
  const char* tritonAllowFallbackCaptureVar = std::getenv("ND4J_TRITON_ALLOW_FALLBACK_CAPTURE");
  if (tritonAllowFallbackCaptureVar != nullptr) {
    std::string val(tritonAllowFallbackCaptureVar);
@@ -1289,6 +1306,7 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
  }
 
  { int v = readBoolEnv("ND4J_CUBLAS_TF32");                    if (v >= 0) setCublasTf32Enabled(v); }
+ { int v = readBoolEnv("ND4J_CUBLAS_CAPTURE_WORKSPACE");       if (v >= 0) setCublasCaptureWorkspace(v); }
  { int v = readBoolEnv("ND4J_DSP_CAST_SINK_MATMUL");           if (v >= 0) setDspCastSinkMatmul(v); }
  { int v = readBoolEnv("ND4J_TRITON_CONSOLIDATED_ARG_TABLE");   if (v >= 0) setTritonConsolidatedArgTable(v); }
  { int v = readBoolEnv("ND4J_TRITON_ARG_DIRTY_TRACKING");       if (v >= 0) setTritonArgDirtyTracking(v); }
@@ -1713,6 +1731,13 @@ void Environment::setOpenBlasThreads(int threads) {
     _tritonMaxNreg.store(maxNreg);
   }
 
+  void Environment::setTritonAttentionBlockN(int blockN) {
+    if (blockN < 0) {
+      blockN = 0;
+    }
+    _tritonAttentionBlockN.store(blockN);
+  }
+
   void Environment::setTritonEnableFpFusion(bool enableFpFusion) {
     _tritonEnableFpFusion.store(enableFpFusion);
   }
@@ -1806,6 +1831,10 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setCublasTf32Enabled(bool enabled) {
     _cublasTf32Enabled.store(enabled);
+  }
+
+  void Environment::setCublasCaptureWorkspace(bool enabled) {
+    _cublasCaptureWorkspace.store(enabled);
   }
 
   void Environment::setDspCastSinkMatmul(bool enabled) {

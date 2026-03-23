@@ -47,7 +47,7 @@ import java.util.*;
  * config.apply();  // Apply to global configuration
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @Getter

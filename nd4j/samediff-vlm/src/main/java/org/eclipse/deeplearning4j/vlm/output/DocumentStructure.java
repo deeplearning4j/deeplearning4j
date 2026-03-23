@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  * Represents a parsed document structure from VLM output.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

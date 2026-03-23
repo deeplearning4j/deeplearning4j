@@ -28,7 +28,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.device.DeviceMemoryManager;
+
 import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -92,86 +92,38 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             return ptr;
         } else if (kind == MemoryKind.DEVICE) {
-            // Try CUDA device allocation first
-            Pointer ptr = tryAllocateDevice(bytes);
+            // Allocate on the current thread's device. Device selection (best GPU by
+            // free memory) is handled upstream by OpaqueDataBuffer.allocateDataBuffer().
+            val ptr = tryAllocateDevice(bytes);
 
-            if (ptr != null) {
-                // Successful CUDA allocation
-                if (initialize) {
-                    val context = AtomicAllocator.getInstance().getDeviceContext();
-                    int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
-                    if (i == 0)
-                        throw new ND4JIllegalStateException("memset failed on device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
-                    context.getSpecialStream().synchronize();
-                }
-                return ptr;
+            if (ptr == null)
+                throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE memory");
+
+            if (initialize) {
+                val context = AtomicAllocator.getInstance().getDeviceContext();
+                int ret = NativeOpsHolder.getInstance().getDeviceNativeOps()
+                        .memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                if (ret == 0)
+                    throw new ND4JIllegalStateException("memset failed on device_" +
+                            Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                context.getSpecialStream().synchronize();
             }
 
-            // CUDA allocation failed - attempt recovery
-            log.warn("CUDA device allocation failed for {} bytes on device_{}, attempting recovery...",
-                    bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
-
-            // Step 1: Trigger garbage collection and synchronize
-            triggerMemoryReclamation();
-
-            // Step 2: Retry CUDA allocation on same device
-            ptr = tryAllocateDevice(bytes);
-            if (ptr != null) {
-                log.info("CUDA allocation succeeded after memory reclamation for {} bytes", bytes);
-                if (initialize) {
-                    val context = AtomicAllocator.getInstance().getDeviceContext();
-                    int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
-                    if (i == 0)
-                        throw new ND4JIllegalStateException("memset failed on device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
-                    context.getSpecialStream().synchronize();
-                }
-                return ptr;
-            }
-
-            // Step 3: Try other GPUs with available memory before falling back to CPU
-            ptr = tryAllocateOnAlternateGpu(bytes, initialize);
-            if (ptr != null) {
-                return ptr;
-            }
-
-            // Step 4: Check if CPU fallback is available and enabled
-            if (CPU_FALLBACK_ENABLED && CpuBackendLoader.isCpuBackendAvailable()) {
-                log.warn("CUDA allocation still failed after GC. Falling back to HOST memory for {} bytes. " +
-                        "CPU backend (nd4j-native) is available for execution.", bytes);
-
-                // Allocate in HOST memory instead
-                ptr = allocateHostFallback(bytes, initialize);
-                if (ptr != null) {
-                    // Track this as a fallback allocation so release() knows to use freeHost
-                    hostFallbackAllocations.put(ptr.address(), Boolean.TRUE);
-                    log.info("Successfully allocated {} bytes in HOST memory as CUDA fallback", bytes);
-                    return ptr;
-                }
-            }
-
-            // All recovery attempts failed - throw with detailed info
-            val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            String cpuStatus = CpuBackendLoader.isCpuBackendAvailable() ?
-                    "CPU backend available but allocation failed" :
-                    "CPU backend NOT available (add nd4j-native to classpath for fallback)";
-            throw new RuntimeException(String.format(
-                    "CUDA memory allocation failed and recovery unsuccessful. " +
-                    "Requested: %d bytes (%.2f MB); Device: %d; %s. " +
-                    "Consider: (1) reducing batch size, (2) adding nd4j-native for CPU fallback, " +
-                    "(3) freeing unused arrays, or (4) using a GPU with more VRAM.",
-                    bytes, bytes / (1024.0 * 1024.0), deviceId, cpuStatus));
+            return ptr;
         } else
             throw new RuntimeException("Unknown MemoryKind requested: " + kind);
     }
 
     /**
-     * Attempt to allocate device memory without throwing on failure.
-     * Uses the current thread's device. If this fails, tryAllocateOnAlternateGpu()
-     * handles failover to other GPUs via DeviceMemoryManager.
+     * Attempt to allocate device memory on a specific device without throwing on failure.
+     * Uses mallocDevice which routes to the CUDA memory pool for the target device directly —
+     * no thread-based device switching is needed.
+     *
+     * @param bytes number of bytes to allocate
+     * @param deviceId target device to allocate on
      * @return pointer if successful, null if allocation failed
      */
-    private Pointer tryAllocateDevice(long bytes) {
-        int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+    private Pointer tryAllocateDevice(long bytes, int deviceId) {
         val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, deviceId, 0);
         log.trace("Attempting allocation of {} bytes for device_{}", bytes, deviceId);
 
@@ -190,160 +142,10 @@ public class CudaMemoryManager extends BasicMemoryManager {
     }
 
     /**
-     * Try to allocate device memory on an alternate GPU when the current GPU is exhausted.
-     * Uses DeviceMemoryManager.selectBestGpu() to find the GPU with the most free memory,
-     * then switches to it and retries allocation. If the best GPU fails, tries all remaining
-     * GPUs in order of free memory.
-     *
-     * @param bytes number of bytes to allocate
-     * @param initialize whether to zero-initialize the memory
-     * @return pointer if successful, null if all GPUs failed
+     * Convenience: allocate on the current thread's device.
      */
-    private Pointer tryAllocateOnAlternateGpu(long bytes, boolean initialize) {
-        // Use nativeOps.getAvailableDevices() to get the REAL device count.
-        // Nd4j.getAffinityManager().getNumberOfDevices() returns 1 when autoMultiGpuEnabled
-        // is false (default), making this failover path dead code on multi-GPU systems.
-        int numDevices = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
-        if (numDevices <= 1) {
-            return null;
-        }
-
-        int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-        // Query free memory for all GPUs and find the best one
-        int bestDevice = DeviceMemoryManager.getInstance().selectBestGpu();
-
-        if (bestDevice != currentDevice) {
-            Pointer ptr = tryAllocateOnDevice(bestDevice, bytes, initialize);
-            if (ptr != null) {
-                log.info("GPU failover succeeded: allocated {} bytes on device_{} (was device_{})",
-                        bytes, bestDevice, currentDevice);
-                return ptr;
-            }
-        }
-
-        // Best GPU failed too - try all remaining GPUs sorted by free memory
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-        int[] devices = new int[numDevices];
-        long[] freeMemory = new long[numDevices];
-        for (int i = 0; i < numDevices; i++) {
-            devices[i] = i;
-            freeMemory[i] = nativeOps.getDeviceFreeMemory(i);
-        }
-
-        // Simple sort by free memory descending
-        for (int i = 0; i < numDevices - 1; i++) {
-            for (int j = i + 1; j < numDevices; j++) {
-                if (freeMemory[j] > freeMemory[i]) {
-                    long tmpMem = freeMemory[i]; freeMemory[i] = freeMemory[j]; freeMemory[j] = tmpMem;
-                    int tmpDev = devices[i]; devices[i] = devices[j]; devices[j] = tmpDev;
-                }
-            }
-        }
-
-        for (int idx = 0; idx < numDevices; idx++) {
-            int d = devices[idx];
-            if (d == currentDevice || d == bestDevice) continue;
-            if (freeMemory[idx] < bytes) continue;
-
-            Pointer ptr = tryAllocateOnDevice(d, bytes, initialize);
-            if (ptr != null) {
-                log.info("GPU failover succeeded: allocated {} bytes on device_{} (was device_{})",
-                        bytes, d, currentDevice);
-                return ptr;
-            }
-        }
-
-        // All GPUs exhausted - restore original device
-        DeviceMemoryManager.getInstance().switchDevice(currentDevice, "CudaMemoryManager", "failover-restore");
-        log.warn("GPU failover failed: no alternate GPU could allocate {} bytes", bytes);
-        return null;
-    }
-
-    /**
-     * Switch to the specified device, attempt allocation, and initialize if requested.
-     * Returns null on failure without throwing.
-     */
-    private Pointer tryAllocateOnDevice(int deviceId, long bytes, boolean initialize) {
-        try {
-            DeviceMemoryManager.getInstance().switchDevice(deviceId, "CudaMemoryManager.tryAllocateOnDevice", "failover-attempt");
-            Pointer ptr = tryAllocateDevice(bytes);
-            if (ptr != null) {
-                if (initialize) {
-                    val context = AtomicAllocator.getInstance().getDeviceContext();
-                    int i = NativeOpsHolder.getInstance().getDeviceNativeOps()
-                            .memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
-                    if (i == 0) {
-                        // memset failed - free the allocation and return null
-                        NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(ptr, 0);
-                        return null;
-                    }
-                    context.getSpecialStream().synchronize();
-                }
-                return ptr;
-            }
-        } catch (Exception e) {
-            log.debug("Allocation attempt on device_{} failed: {}", deviceId, e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Allocate memory in HOST as a fallback when DEVICE allocation fails.
-     * Uses CPU NativeOps if available for proper host allocation.
-     */
-    private Pointer allocateHostFallback(long bytes, boolean initialize) {
-        try {
-            // Try using CPU backend's NativeOps for host allocation if available
-            NativeOps cpuNativeOps = CpuBackendLoader.loadCpuNativeOps();
-            Pointer ptr;
-
-            if (cpuNativeOps != null) {
-                // Use CPU backend for host allocation - this ensures proper CPU-side memory management
-                ptr = cpuNativeOps.mallocHost(bytes, 0);
-            } else {
-                // Fall back to CUDA's host allocation (pinned memory)
-                ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
-            }
-
-            if (ptr == null || ptr.address() == 0L) {
-                log.error("HOST memory allocation also failed for {} bytes", bytes);
-                return null;
-            }
-
-            if (initialize) {
-                Pointer.memset(ptr, 0, bytes);
-            }
-
-            return ptr;
-        } catch (Exception e) {
-            log.error("Exception during HOST fallback allocation: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Trigger memory reclamation across the system.
-     * This synchronizes CUDA operations, runs GC, and gives time for async deallocations.
-     */
-    private void triggerMemoryReclamation() {
-        try {
-            // Synchronize all pending CUDA operations
-            Nd4j.getExecutioner().commit();
-
-            // Run Java garbage collector
-            System.gc();
-
-            // Brief pause for async deallocations to complete
-            Thread.sleep(50);
-
-            // Synchronize again after GC
-            Nd4j.getExecutioner().commit();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        } catch (Exception e) {
-            log.debug("Exception during memory reclamation: {}", e.getMessage());
-        }
+    private Pointer tryAllocateDevice(long bytes) {
+        return tryAllocateDevice(bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
     /**

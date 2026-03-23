@@ -41,6 +41,8 @@ import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.nativeblas.MultiBackendNativeOpsHolder;
 import org.nd4j.nativeblas.NativeOps;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -73,7 +75,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * INDArray result = cpuArray.add(gpuArray);
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see OpExecutionDelegator
  * @see DeviceRoutingConfiguration
  */
@@ -193,7 +195,7 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
             try {
                 // Get the current executioner via reflection since Nd4j.getExecutioner()
                 // returns the field directly
-                java.lang.reflect.Field field = org.nd4j.linalg.factory.Nd4j.class
+                java.lang.reflect.Field field = Nd4j.class
                         .getDeclaredField("OP_EXECUTIONER_INSTANCE");
                 field.setAccessible(true);
 
@@ -295,7 +297,7 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
             }
 
             try {
-                java.lang.reflect.Field field = org.nd4j.linalg.factory.Nd4j.class
+                java.lang.reflect.Field field = Nd4j.class
                         .getDeclaredField("OP_EXECUTIONER_INSTANCE");
                 field.setAccessible(true);
                 field.set(null, originalExecutioner);
@@ -347,50 +349,85 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     @Override
     public INDArray[] exec(CustomOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op, context);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op, context);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op, context);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public INDArray exec(ReduceOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public INDArray exec(BroadcastOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public INDArray exec(IndexAccumulation op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public INDArray exec(ScalarOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public INDArray exec(Op op, OpContext opContext) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op, opContext);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op, opContext);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op, opContext);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
@@ -407,8 +444,13 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(Variance accumulation) {
         DeviceDescriptor targetDevice = prepareOpForExecution(accumulation);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(accumulation);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(accumulation);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     /**
@@ -417,8 +459,6 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
      * returns the default delegate.
      */
     private OpExecutioner selectExecutionerForDevice(DeviceDescriptor device) {
-        setDeviceContextForExecution(device);
-
         if (!multiBackendEnabled || device == null) {
             return delegate;
         }
@@ -435,15 +475,20 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
      *
      * @param targetDevice the device where execution should occur (may be null)
      */
-    private void setDeviceContextForExecution(DeviceDescriptor targetDevice) {
+    /**
+     * Switch to the target device for op execution.
+     *
+     * @return the original device ID (for restore), or -1 if no switch was needed
+     */
+    private int setDeviceContextForExecution(DeviceDescriptor targetDevice) {
         if (targetDevice == null) {
-            return;
+            return -1;
         }
 
         // Only relevant for GPU devices
         if (targetDevice.getDeviceType() != DeviceType.CUDA_GPU &&
             targetDevice.getDeviceType() != DeviceType.ROCM_GPU) {
-            return;
+            return -1;
         }
 
         try {
@@ -457,6 +502,7 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
                               currentDevice, targetDeviceIndex);
                 }
                 DeviceMemoryManager.getInstance().switchDevice(targetDeviceIndex, "DeviceAwareOpExecutioner.exec", "target-device");
+                return currentDevice;
             }
         } catch (Exception e) {
             // Log but don't fail - device may already be correct or single-GPU system
@@ -464,11 +510,30 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
                 log.trace("Could not set device context: {}", e.getMessage());
             }
         }
+        return -1;
+    }
+
+    /**
+     * Restore the device context after op execution.
+     *
+     * @param originalDevice the device to restore, or -1 if no restore is needed
+     */
+    private void restoreDeviceContext(int originalDevice) {
+        if (originalDevice >= 0) {
+            try {
+                DeviceMemoryManager.getInstance().switchDevice(originalDevice, "DeviceAwareOpExecutioner.exec", "restore-device");
+            } catch (Exception e) {
+                if (log.isTraceEnabled()) {
+                    log.trace("Could not restore device context: {}", e.getMessage());
+                }
+            }
+        }
     }
 
     /**
      * Helper class to save and restore device context around operations.
-     * This is useful when an operation needs to temporarily switch devices.
+     * Use this for external code that needs to temporarily switch devices.
+     * The exec/execAndReturn methods handle save/restore internally.
      */
     public static class DeviceContextScope implements AutoCloseable {
         private final int originalDevice;
@@ -567,27 +632,41 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
             return getDefaultTargetDevice(op);
         }
 
-        // Determine target device from inputs
+        // Determine target device from all operands (inputs + output)
         INDArray x = op.x();
         INDArray y = op.y();
+        INDArray z = op.z();
 
+        // For ops with a pre-allocated output (z != x), the output device is the
+        // correct target. The output was allocated there intentionally (e.g., by
+        // device routing) and migrating it back would defeat the purpose.
+        // For in-place ops (z == x) or no output, use input device.
         DeviceDescriptor targetDevice = null;
-        if (x != null && y != null) {
-            targetDevice = delegator.selectTargetDeviceForArrays(java.util.Arrays.asList(x, y));
-        } else if (x != null) {
-            targetDevice = getArrayDevice(x);
+        if (z != null && z != x) {
+            targetDevice = getArrayDevice(z);
+        }
+        if (targetDevice == null) {
+            List<INDArray> inputs = new ArrayList<>(2);
+            if (x != null) inputs.add(x);
+            if (y != null) inputs.add(y);
+            if (!inputs.isEmpty()) {
+                targetDevice = delegator.selectTargetDeviceForArrays(inputs);
+            }
         }
 
         if (targetDevice == null) {
             return null;
         }
 
-        // Transfer inputs to target device
+        // Transfer all operands to target device
         if (x != null) {
             delegator.transferArrayToDevice(x, targetDevice, config);
         }
         if (y != null) {
             delegator.transferArrayToDevice(y, targetDevice, config);
+        }
+        if (z != null && z != x) {
+            delegator.transferArrayToDevice(z, targetDevice, config);
         }
 
         return targetDevice;
@@ -641,7 +720,7 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
      */
     private DeviceDescriptor getDefaultTargetDevice(Op op) {
         if (op == null) return null;
-        List<INDArray> inputs = new java.util.ArrayList<>();
+        List<INDArray> inputs = new ArrayList<>();
         if (op.x() != null) {
             inputs.add(op.x());
         }
@@ -735,8 +814,13 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     @Override
     public CustomOp execAndReturn(CustomOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
@@ -842,57 +926,97 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     @Override
     public INDArray exec(Op op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.exec(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.exec(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public TransformOp execAndReturn(TransformOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public ReduceOp execAndReturn(ReduceOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public Variance execAndReturn(Variance op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public IndexAccumulation execAndReturn(IndexAccumulation op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public ScalarOp execAndReturn(ScalarOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public BroadcastOp execAndReturn(BroadcastOp op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
     public Op execAndReturn(Op op) {
         DeviceDescriptor targetDevice = prepareOpForExecution(op);
-        OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
-        return targetExecutioner.execAndReturn(op);
+        int originalDevice = setDeviceContextForExecution(targetDevice);
+        try {
+            OpExecutioner targetExecutioner = selectExecutionerForDevice(targetDevice);
+            return targetExecutioner.execAndReturn(op);
+        } finally {
+            restoreDeviceContext(originalDevice);
+        }
     }
 
     @Override
@@ -908,6 +1032,11 @@ public class DeviceAwareOpExecutioner implements OpExecutioner {
     @Override
     public void printEnvironmentInformation() {
         delegate.printEnvironmentInformation();
+    }
+
+    @Override
+    public void setSkipDeviceCoherency(boolean skip) {
+        delegate.setSkipDeviceCoherency(skip);
     }
 
     @Override

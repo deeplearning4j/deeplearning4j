@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * variable names, these tests focus on constructor validation, default values, and
  * chunk count arithmetic.</p>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class TestChunkedPrefill {
 

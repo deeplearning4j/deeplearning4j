@@ -69,7 +69,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionDelegator;
  * INDArray result = cpuArray.add(gpuArray); // cpuArray copied to GPU transparently
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see DeviceMemoryManager
  * @see DeviceRoutingConfiguration
  * @see OpExecutionDelegator
@@ -77,7 +77,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionDelegator;
 @Slf4j
 public class DeviceAwareNd4j {
 
-    private static volatile boolean routingEnabled = false;
+    private static volatile boolean routingEnabled = true;
     private static volatile AllocationHook allocationHook;
 
     private DeviceAwareNd4j() {

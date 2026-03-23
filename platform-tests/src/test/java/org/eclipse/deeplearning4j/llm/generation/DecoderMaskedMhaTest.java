@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Validates op name, argument wiring, output count, and constructor variants.
  * Does not execute the op (that requires a native backend with the kernel registered).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class DecoderMaskedMhaTest {
 

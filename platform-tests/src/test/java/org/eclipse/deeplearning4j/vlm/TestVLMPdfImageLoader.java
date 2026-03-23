@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - Default DPI for rendering: 150 (configurable via -Dvlm.test.pdf.dpi)
  * - Target image size: 224x224 (CLIP default) or 768x768 (SmolDocling)
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @NativeTag

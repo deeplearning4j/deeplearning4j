@@ -8,11 +8,11 @@
 # │  FP16 weight pre-cast:  ON  (default, disable: --no-fp16)         │
 # │  GraphOptimizer:        ON  (default, disable: --no-optimizer)     │
 # │  Clear decoder cache:   ON  (default, disable: --no-clear-decoder) │
-# │  Config:                TRITON_compileAll_best_ATTN_NORM_gc_argOpt_│
-# │                         batchGemmOnly_warps4_stages2_default        │
+# │  Config:                OPTIMAL (warps4/stages1/tf32/batchedGemm)   │
 # │  Max tokens:            250                                         │
 # │                                                                     │
-# │  Best measured:         ~85.9 tok/s late steady-state decode        │
+# │  Best measured:         ~87-92 tok/s late steady-state decode       │
+# │  Speculation (K=5):    ~37 tok/s (n-gram 0% acceptance, overhead)  │
 # │  Expected with FP16:    mythic passage + section header present     │
 # └─────────────────────────────────────────────────────────────────────┘
 #
@@ -30,8 +30,7 @@
 #                     Print per-op timing histograms for comma-separated op names
 #                     (requires --op-timing)
 #   --tokens N        Override max decode tokens (default: 250)
-#   --config NAME     Override benchmark config name
-#                     (default: TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_default)
+#   --config NAME     Override benchmark config name (default: OPTIMAL)
 #
 # Optimizer options:
 #   --fp16            Enable FP16 weight pre-casting via GraphOptimizer (DEFAULT: ON)
@@ -75,12 +74,16 @@ OP_TIMING_DETAILED=false
 OP_BREAKDOWN_OPS=""
 OP_HISTOGRAM_OPS=""
 MAX_TOKENS=250
-CONFIG="TRITON_compileAll_best_ATTN_NORM_gc_argOpt_batchGemmOnly_warps4_stages2_default"
+CONFIG="OPTIMAL"
 FP16=true
 NO_OPTIMIZER=false
 OPTIMIZER_LOG=false
 CLEAR_CACHE=false
 CLEAR_DECODER=true
+SPECULATIVE_K=0
+DRAFT_MODEL=false
+NO_NATIVE_DECODE=false
+NO_CUBLAS_WORKSPACE=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -148,12 +151,32 @@ while [[ $# -gt 0 ]]; do
             CLEAR_DECODER=false
             shift
             ;;
+        --speculative)
+            SPECULATIVE_K="$2"
+            shift 2
+            ;;
+        --draft)
+            DRAFT_MODEL=true
+            if [ "$SPECULATIVE_K" -eq 0 ]; then
+                SPECULATIVE_K=5
+            fi
+            shift
+            ;;
+        --no-native-decode)
+            NO_NATIVE_DECODE=true
+            shift
+            ;;
+        --no-cublas-workspace)
+            NO_CUBLAS_WORKSPACE=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--op-timing-detailed]"
             echo "       [--op-breakdown OPS] [--op-histogram OPS] [--tokens N] [--config NAME]"
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
+            echo "       [--draft] [--speculative K] [--no-native-decode] [--no-cublas-workspace]"
             exit 1
             ;;
     esac
@@ -180,6 +203,8 @@ $NO_OPTIMIZER && echo "  Optimizer: DISABLED"
 $OPTIMIZER_LOG && echo "  Optimizer: logging applied transforms"
 $DEBUG_MODE   && echo "  Mode:   DEBUG (DSP diagnostics + CUDA driver log)"
 $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
+$NO_NATIVE_DECODE && echo "  NativeDecodeInputs: DISABLED (Java feedDict path)"
+$NO_CUBLAS_WORKSPACE && echo "  cuBLAS workspace:   DISABLED (no explicit workspace during capture)"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 $OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
 [ -n "$OP_BREAKDOWN_OPS" ] && echo "  Op breakdowns: $OP_BREAKDOWN_OPS"
@@ -209,6 +234,24 @@ if $OPTIMIZER_LOG; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.optimizer.logApplied=true"
 fi
 
+if [ "$SPECULATIVE_K" -gt 0 ]; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.speculative.tokens=$SPECULATIVE_K"
+    echo "  Speculation:  K=$SPECULATIVE_K (seqLen=$((SPECULATIVE_K + 1)))"
+fi
+
+if $NO_NATIVE_DECODE; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.noNativeDecodeInputs=true"
+fi
+
+if $NO_CUBLAS_WORKSPACE; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.cublas.captureWorkspace=0"
+fi
+
+if $DRAFT_MODEL; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dvlm.speculative.draft=true"
+    echo "  Draft model:  SmolLM2-135M (K=$SPECULATIVE_K)"
+fi
+
 # Debug mode flags
 if $DEBUG_MODE; then
     CUDA_LOG="$SCRIPT_DIR/cuda-driver.log"
@@ -220,6 +263,8 @@ if $DEBUG_MODE; then
     # CUDA_LOG_FILE captures CUDA driver/graph capture errors
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.diagnostics=ALL"
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.native.dumpOutputs=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.summary=true"
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.frozen.debug=true"
     EXTRA_ARGS="$EXTRA_ARGS -Dcuda.log.file=$CUDA_LOG"
     # Export CUDA_LOG_FILE for the CUDA driver (picked up by surefire env)
     export CUDA_LOG_FILE="$CUDA_LOG"

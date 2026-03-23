@@ -675,10 +675,52 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       TritonOpCategory::REDUCTION) != categories.end();
   bool hasNormalization = std::find(categories.begin(), categories.end(),
       TritonOpCategory::NORMALIZATION) != categories.end();
+  // Track multi-row normalization state for row-indexed addressing
+  int64_t normLogicalRowLen = 0;  // logical elements per row (last dim)
+  int64_t normNumRows = 0;       // number of rows (product of leading dims)
+  int64_t normPaddedRowLen = 0;  // paddedRowLen for normalization
+  bool normMultiRow = false;     // true if normalization needs per-row processing
+
   if (hasReduction || hasNormalization) {
     result.useDynamicGrid = false;
-    result.gridX = 1;
-    DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: forced single-block grid for segmented reduction (BLOCK_SIZE=%d)", blockSize);
+
+    // For normalization-only kernels with multi-row inputs (seqLen > 1),
+    // each block processes one row: blockSize = paddedRowLen, gridX = numRows.
+    // Without this, blockSize = totalPaddedElements but the emitter only produces
+    // paddedRowLen-sized tensors, causing MLIR type mismatch on tt.store.
+    if (hasNormalization && !hasReduction && !hasMatmul) {
+      for (int i = startSlot; i <= endSlot; i++) {
+        if (slots[i].numInputs >= 1) {
+          auto inputShape = resolveShapeLocal(slots[i].inputSourceIndices[0]);
+          if (!inputShape.empty()) {
+            int64_t rowLen = inputShape.back();
+            int64_t totalElements = 1;
+            for (auto d : inputShape) totalElements *= static_cast<int64_t>(d);
+            int64_t nRows = totalElements / rowLen;
+            if (nRows > 1) {
+              normLogicalRowLen = rowLen;
+              normNumRows = nRows;
+              normPaddedRowLen = 1;
+              while (normPaddedRowLen < rowLen) normPaddedRowLen <<= 1;
+              normMultiRow = true;
+              blockSize = static_cast<int>(std::min(normPaddedRowLen, (int64_t)4096));
+              result.gridX = static_cast<int>(nRows);
+              DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: multi-row normalization "
+                        "blockSize=%d (paddedRowLen), gridX=%d (numRows), logicalRowLen=%lld",
+                        blockSize, result.gridX, (long long)normLogicalRowLen);
+            }
+          }
+          break;  // Only check first normalization op
+        }
+      }
+    }
+    if (!normMultiRow) {
+      result.gridX = 1;
+    }
+    DSP_DIAG(COMPILE, "TritonIRBuilder::buildModule: %s grid for %s (BLOCK_SIZE=%d, gridX=%d)",
+              normMultiRow ? "multi-block" : "single-block",
+              hasNormalization ? "normalization" : "segmented reduction",
+              blockSize, result.gridX);
   }
 
   // ── Kernel body: 1D element-wise pattern ──
@@ -719,6 +761,9 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   // This is the core fusion mechanism: ops share SSA values instead of going
   // through global memory stores/loads.
   std::unordered_map<int, mlir::Value> ssaValues;
+
+  // Outputs that were stored inline by normalization (skip in generic store loop)
+  std::unordered_set<int> normInlineStoredOutputs;
 
   // Map: kernel arg index -> slotIndex for reverse lookup
   std::unordered_map<int, int> slotToArgIdx;
@@ -1618,6 +1663,23 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       int64_t paddedRowLen = 1;
       while (paddedRowLen < logicalRowLen) paddedRowLen *= 2;
 
+      // For multi-row normalization: compute row offset = pid * logicalRowLen
+      // Each block processes one row; pid selects which row.
+      mlir::Value normRowOffset;
+      if (normMultiRow) {
+        auto rowLenVal = builder.create<mlir::arith::ConstantIntOp>(loc, normLogicalRowLen, 32);
+        normRowOffset = builder.create<mlir::arith::MulIOp>(loc, pid, rowLenVal);
+      }
+
+      // Helper: add row offset to padded range for multi-row addressing
+      // Input data is contiguous: row i starts at ptr + i * logicalRowLen
+      auto makeRowOffsetRange = [&](mlir::Value paddedRange) -> mlir::Value {
+        if (!normMultiRow) return paddedRange;
+        auto splatOffset = builder.create<mlir::triton::SplatOp>(loc,
+            paddedRange.getType(), normRowOffset);
+        return builder.create<mlir::arith::AddIOp>(loc, paddedRange, splatOffset);
+      };
+
       // For normalization, ALWAYS load external inputs directly from buffer with actual shape
       // (SSA values from preloading are flattened to blockSize, which breaks reduction semantics)
       
@@ -1653,24 +1715,26 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Create offsets for padded row size (power of 2)
         auto paddedRange = builder.create<mlir::triton::MakeRangeOp>(loc,
             mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+        // For multi-row: add row offset so each block reads the correct row
+        auto rowOffsetRange = makeRowOffsetRange(paddedRange);
         auto paddedPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
         auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, paddedPtrTensorType, bufferArg);
-        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, paddedPtrTensorType, splatPtr, paddedRange);
+        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, paddedPtrTensorType, splatPtr, rowOffsetRange);
 
         // Create mask for actual row length (not padded)
         auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
-        auto splatRowLen = builder.create<mlir::triton::SplatOp>(loc, 
+        auto splatRowLen = builder.create<mlir::triton::SplatOp>(loc,
             mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), rowLenConst);
         auto fullMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, paddedRange, splatRowLen);
 
         inputValue = builder.create<mlir::triton::LoadOp>(loc, ptrs.getResult(), fullMask,
-            builder.create<mlir::triton::SplatOp>(loc, 
+            builder.create<mlir::triton::SplatOp>(loc,
                 mlir::RankedTensorType::get({paddedRowLen}, elemType),
                 builder.create<mlir::arith::ConstantOp>(loc, builder.getFloatAttr(elemType, 0.0))).getResult(),
             mlir::triton::CacheModifier::NONE,
             mlir::triton::EvictionPolicy::NORMAL, false);
         inputTensorType = mlir::RankedTensorType::get({paddedRowLen}, elemType);
-        
+
         // Update SSA cache with correctly-shaped value for downstream consumers
         ssaValues[inputSrc] = inputValue;
       } else {
@@ -1699,13 +1763,15 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
         // Create offsets for padded row size (power of 2)
         auto paddedRange = builder.create<mlir::triton::MakeRangeOp>(loc,
             mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+        // For multi-row: add row offset so each block reads the correct row
+        auto rowOffsetRange = makeRowOffsetRange(paddedRange);
         auto paddedPtrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
         auto splatPtr = builder.create<mlir::triton::SplatOp>(loc, paddedPtrTensorType, intBufferArg);
-        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, paddedPtrTensorType, splatPtr, paddedRange);
+        auto ptrs = builder.create<mlir::triton::AddPtrOp>(loc, paddedPtrTensorType, splatPtr, rowOffsetRange);
 
         // Create mask for actual row length (not padded)
         auto rowLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
-        auto splatRowLen = builder.create<mlir::triton::SplatOp>(loc, 
+        auto splatRowLen = builder.create<mlir::triton::SplatOp>(loc,
             mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), rowLenConst);
         auto fullMask = builder.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::slt, paddedRange, splatRowLen);
 
@@ -1827,14 +1893,58 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
       // Safety: if normalization somehow returns a scalar, splat it back to tensor
       if (!mlir::isa<mlir::RankedTensorType>(opResult.getType())) {
         auto splatElemType = opResult.getType();
-        auto splatTensorType = mlir::RankedTensorType::get({blockSize}, splatElemType);
+        auto splatTensorType = mlir::RankedTensorType::get({paddedRowLen}, splatElemType);
         opResult = builder.create<mlir::triton::SplatOp>(loc, splatTensorType, opResult);
       }
       opResult = emulateNativePrecision(opResult, si);
-      // Store result in SSA for downstream consumers
-      // Generic store loop at end of buildModule will handle actual storage
-      for (int o = 0; o < slot.numOutputs; o++) {
-        ssaValues[slot.outputSlotIndices[o]] = opResult;
+
+      if (normMultiRow) {
+        // Multi-row normalization: store output inline with row-indexed addressing.
+        // The generic store uses blockSize-wide tensors with contiguous offsets,
+        // which doesn't match the per-row paddedRowLen-wide normalization output
+        // when data rows are packed at logicalRowLen intervals (not paddedRowLen).
+        for (int o = 0; o < slot.numOutputs; o++) {
+          auto outSlot = slot.outputSlotIndices[o];
+          // Find the output buffer arg
+          auto outArgIt = std::find_if(result.args.begin(), result.args.end(),
+              [outSlot](const TritonKernelArg& arg) {
+                  return arg.slotIndex == outSlot && arg.isOutput;
+              });
+          if (outArgIt != result.args.end()) {
+            int outArgIdx = outArgIt - result.args.begin();
+            auto outBufArg = getBufferArg(outArgIdx);
+            if (outBufArg) {
+              auto elemType = getElementType(opResult);
+              auto ptrType = mlir::triton::PointerType::get(elemType, 1);
+              auto ptrTensorType = mlir::RankedTensorType::get({paddedRowLen}, ptrType);
+
+              // Offsets: row offset + range[0..paddedRowLen)
+              auto storeRange = builder.create<mlir::triton::MakeRangeOp>(loc,
+                  mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), 0, paddedRowLen);
+              auto storeOffsets = makeRowOffsetRange(storeRange);
+              auto splatOutPtr = builder.create<mlir::triton::SplatOp>(loc, ptrTensorType, outBufArg);
+              auto outPtrs = builder.create<mlir::triton::AddPtrOp>(loc, ptrTensorType, splatOutPtr, storeOffsets);
+
+              // Mask: range < logicalRowLen (protect against padding overrun)
+              auto storeMaskLenConst = builder.create<mlir::arith::ConstantIntOp>(loc, logicalRowLen, 32);
+              auto storeMaskSplat = builder.create<mlir::triton::SplatOp>(loc,
+                  mlir::RankedTensorType::get({paddedRowLen}, builder.getI32Type()), storeMaskLenConst);
+              auto storeMask = builder.create<mlir::arith::CmpIOp>(loc,
+                  mlir::arith::CmpIPredicate::slt, storeRange, storeMaskSplat);
+
+              builder.create<mlir::triton::StoreOp>(loc, outPtrs, opResult, storeMask,
+                  mlir::triton::CacheModifier::NONE, mlir::triton::EvictionPolicy::NORMAL);
+              normInlineStoredOutputs.insert(outSlot);
+            }
+          }
+          // Still put in SSA for any downstream consumers in the same kernel
+          ssaValues[outSlot] = opResult;
+        }
+      } else {
+        // Single-row: use generic store loop at end of buildModule
+        for (int o = 0; o < slot.numOutputs; o++) {
+          ssaValues[slot.outputSlotIndices[o]] = opResult;
+        }
       }
 
     } else if (cat == TritonOpCategory::MATMUL) {
@@ -2947,6 +3057,11 @@ TritonIRModule TritonIRBuilder::buildModule(NativeSlot* slots, int startSlot, in
   for (int a = 0; a < static_cast<int>(outputArgs.size()); a++) {
     auto& arg = outputArgs[a];
     auto funcArg = getBufferArg(outputArgBase + a);
+
+    // Skip outputs already stored inline by multi-row normalization
+    if (normInlineStoredOutputs.count(arg.slotIndex)) {
+      continue;
+    }
 
     auto ssaIt = ssaValues.find(arg.slotIndex);
     if (ssaIt == ssaValues.end()) {

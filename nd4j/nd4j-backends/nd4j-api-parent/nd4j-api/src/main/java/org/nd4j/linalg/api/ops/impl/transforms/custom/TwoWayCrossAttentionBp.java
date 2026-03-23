@@ -48,7 +48,7 @@ import java.util.List;
  *   4: dL/dImageKey
  *   5: dL/dImageValue
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class TwoWayCrossAttentionBp extends DynamicCustomOp {

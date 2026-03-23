@@ -45,7 +45,7 @@ import java.util.List;
  * Output:
  *   0: result of A x B (floating point type)
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class QuantizedMatmul extends DynamicCustomOp {

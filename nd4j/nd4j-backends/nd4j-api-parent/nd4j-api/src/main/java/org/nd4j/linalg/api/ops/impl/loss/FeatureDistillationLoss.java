@@ -45,7 +45,7 @@ import java.util.List;
  * Output:
  *   0: scalar loss value
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class FeatureDistillationLoss extends DynamicCustomOp {

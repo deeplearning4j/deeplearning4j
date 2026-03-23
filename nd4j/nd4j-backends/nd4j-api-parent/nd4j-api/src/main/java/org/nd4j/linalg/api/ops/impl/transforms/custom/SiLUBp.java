@@ -43,7 +43,7 @@ import java.util.List;
  * Output:
  *   0: gradient with respect to input
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class SiLUBp extends DynamicCustomOp {

@@ -46,7 +46,7 @@ import java.util.Map;
  * 2. Performing the standard Adam update step in FP32
  * 3. Requantizing the updated m/v state back to INT8
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see Adam
  */
 @Data

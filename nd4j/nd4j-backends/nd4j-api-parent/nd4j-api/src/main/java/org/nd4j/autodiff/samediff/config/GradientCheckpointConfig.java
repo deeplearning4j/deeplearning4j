@@ -43,7 +43,7 @@ import java.util.Set;
  *       (use factory method {@link #sqrtN()})</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

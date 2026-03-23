@@ -47,7 +47,7 @@ import java.util.List;
  * Output:
  *   0: updated shadow parameters
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class EmaUpdate extends DynamicCustomOp {

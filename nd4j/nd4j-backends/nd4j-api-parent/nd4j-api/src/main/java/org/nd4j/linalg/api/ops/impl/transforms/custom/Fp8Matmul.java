@@ -60,7 +60,7 @@ import java.util.List;
  *   <li>2: transpose_b (0=no, 1=yes, default: 0)</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class Fp8Matmul extends DynamicCustomOp {

@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Configuration options for OCR engines.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

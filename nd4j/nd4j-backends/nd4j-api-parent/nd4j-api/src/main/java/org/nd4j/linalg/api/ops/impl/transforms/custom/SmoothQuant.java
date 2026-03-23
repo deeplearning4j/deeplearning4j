@@ -60,7 +60,7 @@ import java.util.List;
  *   <li>0: transpose_weight (0=no, 1=yes, default: 0)</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class SmoothQuant extends DynamicCustomOp {

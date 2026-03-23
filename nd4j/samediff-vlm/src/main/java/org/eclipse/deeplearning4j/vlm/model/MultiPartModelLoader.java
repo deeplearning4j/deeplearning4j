@@ -64,7 +64,7 @@ import java.util.Map;
  * └── decoder.sdz
  * </pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class MultiPartModelLoader {

@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link MLAKVCache} -- Multi-head Latent Attention KV cache.
  * Java-only tests: validates construction, data flow, memory calculations, and lifecycle.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class TestMLAKVCache {
 

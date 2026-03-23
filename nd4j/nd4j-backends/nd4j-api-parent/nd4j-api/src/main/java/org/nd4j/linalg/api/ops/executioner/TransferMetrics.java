@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.LongAdder;
  * metrics.logSummary();
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class TransferMetrics {

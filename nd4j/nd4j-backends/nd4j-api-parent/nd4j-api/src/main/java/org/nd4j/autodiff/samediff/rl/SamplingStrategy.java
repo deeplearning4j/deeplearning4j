@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * Interface for generating completions from a policy model.
  * Used by online RL methods (GRPO, PPO) that need to sample from the policy.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public interface SamplingStrategy {
 

@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for BeamKVCacheManager and KVCachePrefixTree.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class TestBeamKVCache {
 

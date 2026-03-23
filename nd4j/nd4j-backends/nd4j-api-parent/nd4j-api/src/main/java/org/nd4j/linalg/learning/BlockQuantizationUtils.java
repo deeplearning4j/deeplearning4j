@@ -34,7 +34,7 @@ import org.nd4j.common.primitives.Pair;
  * Each block of {@code blockSize} elements is independently quantized
  * using a single absmax scale factor, mapping [-absmax, absmax] to [-127, 127].
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class BlockQuantizationUtils {
 

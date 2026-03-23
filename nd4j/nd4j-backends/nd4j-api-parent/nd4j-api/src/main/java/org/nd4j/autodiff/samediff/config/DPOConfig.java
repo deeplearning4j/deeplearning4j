@@ -37,7 +37,7 @@ import lombok.experimental.SuperBuilder;
  * - IPO: Identity Preference Optimization — uses squared hinge loss instead of sigmoid
  * - RDPO: Robust DPO — adds label smoothing for noisy preferences
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

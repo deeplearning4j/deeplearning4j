@@ -43,7 +43,7 @@ import java.util.List;
  *   0: dL/dImageEmbeddings [batch, embedDim]
  *   1: dL/dTextEmbeddings  [batch, embedDim]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class ContrastiveLossBp extends DynamicCustomOp {

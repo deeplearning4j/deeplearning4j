@@ -211,6 +211,14 @@ When debugging DSP (DynamicShapePlan) related issues, **always use DSP diagnosti
 
 **Use `array->printIndexedBuffer()` instead of manual loops** when you need to print NDArray values for debugging. This method handles all data types, formatting, and edge cases correctly. Manual `for` loops over buffer elements are error-prone (wrong strides, wrong types, missing sync) and wasteful.
 
+### Git Safety
+
+- **NEVER use `git checkout` on files — BANNED.** Use `git diff` to review changes and `Edit` tool to make targeted modifications. `git checkout` on a file destroys ALL uncommitted changes including the user's own work. There is no undo.
+- **NEVER use `git stash` — BANNED.** Stashing silently hides uncommitted changes and risks losing the user's work. If you need to set aside changes, ask the user.
+- **NEVER use `git reset --hard` — BANNED.** This destroys uncommitted work irreversibly.
+- **NEVER use `git clean` — BANNED.** This deletes untracked files irreversibly.
+- **If you need to undo YOUR changes to a file**, use `Edit` to restore the specific lines you changed. Do NOT use git commands that affect the entire file.
+
 ### Additional Rules
 
 - **No `.arr` or `.shape` in model import code** -- use `sd.shape(..)` and `sd.rank(..)`. Everything must be variable-based for dynamic shape support.

@@ -49,7 +49,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *   comm.close();
  * </pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see TensorParallelRunner
  */
 @Slf4j

@@ -33,7 +33,7 @@ import lombok.experimental.SuperBuilder;
  * reduces the variance of the policy gradient estimator, while the stability
  * term prevents catastrophic updates.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

@@ -59,13 +59,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Jackson for JSON config parsing -->
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>jackson</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

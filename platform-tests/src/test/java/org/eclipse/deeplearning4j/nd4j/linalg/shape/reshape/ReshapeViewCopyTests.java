@@ -434,6 +434,200 @@ public class ReshapeViewCopyTests extends BaseNd4jTestWithBackends {
         assertEquals(arr.sumNumber().doubleValue(), reshaped.sumNumber().doubleValue(), 1e-5);
     }
 
+    // ===================================================================
+    // Regression tests for reshape order-only scalar case
+    // When iArgs contains ONLY the order marker (-99 for 'c', -102 for 'f')
+    // and the input is scalar, reshape must preserve scalar rank (rank 0),
+    // NOT produce a rank-1 array [1].
+    // ===================================================================
+
+    /**
+     * Test reshape scalar with C ordering only (-99) via reshape op.
+     * iArgs = [-99] means "reshape to same shape, C order".
+     * For scalar input, output must remain scalar (rank 0).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeScalarWithCOrderOnly(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.FLOAT, 42.0f);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape")
+                .addInputs(scalar)
+                .addIntegerArguments(-99L)  // C order marker only, no shape dims
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        INDArray result = results[0];
+        assertEquals(0, result.rank(), "Scalar reshape with C order should preserve rank 0");
+        assertEquals(42.0f, result.getFloat(0), 1e-5, "Data should be preserved");
+    }
+
+    /**
+     * Test reshape scalar with F ordering only (-102) via reshape op.
+     * iArgs = [-102] means "reshape to same shape, F order".
+     * For scalar input, output must remain scalar (rank 0).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeScalarWithFOrderOnly(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.FLOAT, 42.0f);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape")
+                .addInputs(scalar)
+                .addIntegerArguments(-102L)  // F order marker only, no shape dims
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        INDArray result = results[0];
+        assertEquals(0, result.rank(), "Scalar reshape with F order should preserve rank 0");
+        assertEquals(42.0f, result.getFloat(0), 1e-5, "Data should be preserved");
+    }
+
+    /**
+     * Test reshape_no_copy scalar with C ordering only via iArgs path.
+     * iArgs = [-99] means "no shape dims, C order marker only".
+     * For scalar input, output must remain scalar (rank 0).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeNoCopyScalarWithCOrderOnly(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.DOUBLE, 7.0);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape_no_copy")
+                .addInputs(scalar)
+                .addIntegerArguments(-99L)  // C order marker only
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        INDArray result = results[0];
+        assertEquals(0, result.rank(), "reshape_no_copy scalar with C order should preserve rank 0");
+        assertEquals(7.0, result.getDouble(0), 1e-5, "Data should be preserved");
+    }
+
+    /**
+     * Test reshape_no_copy scalar with F ordering only via iArgs path.
+     * iArgs = [-102] means "no shape dims, F order marker only".
+     * For scalar input, output must remain scalar (rank 0).
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeNoCopyScalarWithFOrderOnly(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.DOUBLE, 7.0);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape_no_copy")
+                .addInputs(scalar)
+                .addIntegerArguments(-102L)  // F order marker only
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        INDArray result = results[0];
+        assertEquals(0, result.rank(), "reshape_no_copy scalar with F order should preserve rank 0");
+        assertEquals(7.0, result.getDouble(0), 1e-5, "Data should be preserved");
+    }
+
+    /**
+     * Test reshape scalar with [-1] dimension inference preserves scalar rank.
+     * reshape(scalar, [-1]) should stay scalar, not become [1].
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeScalarWithNeg1PreservesScalar(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.FLOAT, 3.14f);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        // Test via reshape op
+        DynamicCustomOp reshapeOp = DynamicCustomOp.builder("reshape")
+                .addInputs(scalar)
+                .addIntegerArguments(-1L)
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(reshapeOp);
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        assertEquals(0, results[0].rank(), "reshape(scalar, [-1]) should preserve rank 0");
+        assertEquals(3.14f, results[0].getFloat(0), 1e-5);
+    }
+
+    /**
+     * Test reshape_no_copy scalar with [-1, -99] (infer dim + C order) preserves scalar rank.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeNoCopyScalarWithNeg1COrder(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.FLOAT, 3.14f);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape_no_copy")
+                .addInputs(scalar)
+                .addIntegerArguments(-1L, -99L)  // shape=[-1], order='c'
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        assertEquals(0, results[0].rank(), "reshape_no_copy(scalar, [-1], 'c') should preserve rank 0");
+        assertEquals(3.14f, results[0].getFloat(0), 1e-5);
+    }
+
+    /**
+     * Test reshape_no_copy scalar with [-1, -102] (infer dim + F order) preserves scalar rank.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeNoCopyScalarWithNeg1FOrder(Nd4jBackend backend) {
+        INDArray scalar = Nd4j.scalar(DataType.FLOAT, 3.14f);
+        assertEquals(0, scalar.rank(), "Input should be scalar (rank 0)");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape_no_copy")
+                .addInputs(scalar)
+                .addIntegerArguments(-1L, -102L)  // shape=[-1], order='f'
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        assertEquals(0, results[0].rank(), "reshape_no_copy(scalar, [-1], 'f') should preserve rank 0");
+        assertEquals(3.14f, results[0].getFloat(0), 1e-5);
+    }
+
+    /**
+     * Test that non-scalar reshape with order-only marker still works correctly.
+     * A length-1 array with iArgs=[-99] should remain length-1.
+     */
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testReshapeLength1WithCOrderOnly(Nd4jBackend backend) {
+        INDArray length1 = Nd4j.createFromArray(new float[]{5.0f});
+        assertEquals(1, length1.rank(), "Input should be rank 1");
+        assertEquals(1, length1.length(), "Input should have 1 element");
+
+        DynamicCustomOp op = DynamicCustomOp.builder("reshape")
+                .addInputs(length1)
+                .addIntegerArguments(-99L)
+                .build();
+
+        INDArray[] results = Nd4j.getExecutioner().exec(op);
+        assertNotNull(results);
+        assertEquals(1, results.length);
+        assertEquals(5.0f, results[0].getFloat(0), 1e-5, "Data should be preserved");
+    }
+
     /**
      * Test that reshape properly handles arrays with zero-length dimensions
      */

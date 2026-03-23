@@ -30,7 +30,31 @@
 
 #include <thread>
 
-thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
+// Per-device ContextBuffers array. Each device gets its own persistent buffers
+// (streams, workspace) so device switches don't destroy/recreate buffers.
+// This eliminates the "flip-flop" pattern where switching devices caused
+// release+reinitialize cycles that fail when a device is out of memory.
+//
+// CRITICAL: ContextBuffers MUST live in thread-local storage (TLS), NOT on the
+// heap. Known buffer overrun issues in C++ ops corrupt heap metadata, causing
+// "free(): invalid pointer" crashes. TLS is in a separate memory segment that
+// heap corruption cannot reach. Using `new ContextBuffers()` (heap) triggers
+// this corruption; thread_local objects (TLS) are immune.
+static constexpr int MAX_CUDA_DEVICES = 16;
+thread_local sd::ContextBuffers contextBuffersStorage[MAX_CUDA_DEVICES];
+
+// Returns the ContextBuffers for the current CUDA device.
+// Exported for use by AffinityManager.cu.
+sd::ContextBuffers& contextBuffersForCurrentDevice() {
+  int deviceId = 0;
+  cudaGetDevice(&deviceId);
+  if (deviceId < 0 || deviceId >= MAX_CUDA_DEVICES) deviceId = 0;
+  return contextBuffersStorage[deviceId];
+}
+
+// Legacy single-buffer reference — redirects to per-device map.
+// Kept as a macro-like reference for minimal code changes.
+#define contextBuffers (contextBuffersForCurrentDevice())
 
 namespace sd {
 

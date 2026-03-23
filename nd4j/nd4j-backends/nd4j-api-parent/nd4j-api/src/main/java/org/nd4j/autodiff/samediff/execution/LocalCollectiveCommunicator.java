@@ -36,7 +36,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *   <li>Send/Recv: throw (no peer in single-rank group)</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class LocalCollectiveCommunicator implements CollectiveCommunicator {

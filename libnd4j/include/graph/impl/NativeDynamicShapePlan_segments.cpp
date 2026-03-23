@@ -265,7 +265,11 @@ GraphBackend* NativeDynamicShapePlan::getCpuGraphBackend() {
   if (mode == GraphExecutionMode::GEM_SLOT_BY_SLOT ||
       mode == GraphExecutionMode::GEM_TRITON ||
       mode == GraphExecutionMode::GEM_NVRTC_JIT ||
-      mode == GraphExecutionMode::GEM_PTX_JIT) {
+      mode == GraphExecutionMode::GEM_PTX_JIT ||
+      mode == GraphExecutionMode::GEM_HIP_GRAPHS ||
+      mode == GraphExecutionMode::GEM_LEVELZERO ||
+      mode == GraphExecutionMode::GEM_VULKAN ||
+      mode == GraphExecutionMode::GEM_METAL) {
     cpuGraphBackend_ = nullptr;
     return nullptr;
   }

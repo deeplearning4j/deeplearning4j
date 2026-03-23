@@ -34,7 +34,7 @@ import lombok.experimental.SuperBuilder;
  * - Baseline subtraction: subtracts the mean reward before computing advantages,
  *   providing a stronger baseline that reduces variance
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

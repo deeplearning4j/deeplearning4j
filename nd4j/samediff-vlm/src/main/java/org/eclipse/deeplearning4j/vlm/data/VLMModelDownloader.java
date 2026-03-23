@@ -163,6 +163,31 @@ public class VLMModelDownloader {
                 ModelFormat.ONNX,
                 448, 448,
                 "Docling TableFormer Fast - fast table structure recognition"
+        ),
+
+        // SmolLM2-135M - Draft model for speculative decoding
+        SMOLLM2_135M_DECODER(
+                "smollm2-135m-decoder",
+                "https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/resolve/main/onnx/model.onnx",
+                ModelFormat.ONNX,
+                0, 0,
+                "SmolLM2-135M-Instruct Decoder - tiny draft model for speculative decoding (~540MB)"
+        ),
+
+        SMOLLM2_135M_TOKENIZER(
+                "smollm2-135m-tokenizer",
+                "https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/resolve/main/tokenizer.json",
+                ModelFormat.JSON,
+                0, 0,
+                "SmolLM2-135M-Instruct Tokenizer - HuggingFace tokenizer.json"
+        ),
+
+        SMOLLM2_135M_CONFIG(
+                "smollm2-135m-config",
+                "https://huggingface.co/HuggingFaceTB/SmolLM2-135M-Instruct/resolve/main/config.json",
+                ModelFormat.JSON,
+                0, 0,
+                "SmolLM2-135M-Instruct Config - model configuration"
         );
 
         private final String name;

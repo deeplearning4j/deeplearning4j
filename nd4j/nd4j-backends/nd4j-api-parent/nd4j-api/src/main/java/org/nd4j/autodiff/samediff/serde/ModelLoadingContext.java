@@ -85,7 +85,7 @@ import java.util.function.BiConsumer;
  * }
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see ModelSizeInfo
  * @see DeviceMemoryManager
  * @see TransferMetrics

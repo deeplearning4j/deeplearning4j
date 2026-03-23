@@ -468,8 +468,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         freedArrays().clear();
         latestRequestedOutputsTl.get().clear();
 
-        // Track externally-provided placeholder DataBuffers so resetSession() won't close them.
-        // These arrays are owned by the caller, not this session.
+        // Clear and repopulate externally-provided placeholder DataBuffers.
+        // Without clearing, this map accumulates references to DataBuffers from ALL previous
+        // output() calls (e.g., 5 draft model steps per speculative decode round), preventing
+        // GC of closed DataBuffer objects and causing Java heap growth.
+        externalPlaceholderBuffers.clear();
         if (placeholderValues != null) {
             for (INDArray arr : placeholderValues.values()) {
                 if (arr != null && !arr.wasClosed() && arr.data() != null) {
@@ -668,6 +671,22 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     Map<String, INDArray> dspPlaceholders = castPlaceholderTypes(placeholderValues);
                     Map<String, SDValue> dynamicPlanResults = executeDynamicShapePlanBased(
                             dag, dspPlaceholders, allRequired, variables);
+                    if (dynamicPlanResults == null) {
+                        // DSP not available — close any cast copies to prevent GPU memory leak.
+                        // castPlaceholderTypes returns a NEW map with cast arrays when types mismatch.
+                        // Without closing, these cast arrays leak each output() call.
+                        if (dspPlaceholders != placeholderValues && dspPlaceholders != null) {
+                            for (Map.Entry<String, INDArray> entry : dspPlaceholders.entrySet()) {
+                                INDArray castArr = entry.getValue();
+                                // Only close arrays that are NOT the same object as the original placeholder
+                                if (placeholderValues != null && castArr != placeholderValues.get(entry.getKey())) {
+                                    if (castArr != null && !castArr.wasClosed()) {
+                                        castArr.close();
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if (dynamicPlanResults != null) {
                         log.debug("[EXEC-PATH] DSP path succeeded for {} outputs", dynamicPlanResults.size());
                         filteredResults = dynamicPlanResults;
@@ -759,14 +778,20 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             log.debug("[EXEC-PATH] Falling through to standard executeOperations (planBasedEnabled={}, DSP_ENABLED={})",
                     planBasedExecutionEnabled, DYNAMIC_SHAPE_PLAN_ENABLED);
-            // Disable cache during execution + force growth factor to 1.0.
+            // Reset growth factor to 1.0 but keep cache ENABLED.
             // The DSP side effect enables cache + growth factor 1.1x before checking if plan exists.
             // Growth factor > 1.0 creates oversized buffers (output arrays become views) and
             // cuBLAS matmul doesn't fully overwrite the oversized region → stale data leaks into
-            // outputs, causing numerical explosion. Cache is re-enabled after execution for
-            // cross-step buffer reuse (end-of-execution cleanup caches freed buffers for next step).
+            // outputs, causing numerical explosion.
+            // IMPORTANT: Do NOT disable the cache here. The cache prevents premature DataBuffer
+            // close in the standard executeOperations path — the no-cache cleanup aggressively
+            // closes DataBuffers of intermediate variables, which destroys shared buffers for
+            // view-producing ops (reshape_no_copy, permute, etc.). When the vision encoder
+            // dep tracker releases intermediates whose DataBuffer is shared with caller arrays
+            // (e.g., imageInput), the caller's arrays become invalid. Keeping the cache enabled
+            // routes releases through ArrayCacheMemoryMgr.release() which respects closeable()
+            // and defers non-closeable views, preventing premature buffer destruction.
             if (mmgr instanceof ArrayCacheMemoryMgr) {
-                ArrayCacheMemoryMgr.setEnableCache(false);
                 ArrayCacheMemoryMgr.setGrowthFactor(1.0);
             }
             Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
@@ -1326,15 +1351,11 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         long tDup0 = TIMING_ENABLED ? System.nanoTime() : 0;
         for(String output : allRequired) {
             if(!variableValues.containsKey(output)) {
-                // For control flow graphs, some intermediate variables (e.g., Switch
-                // inactive branch outputs) may not have values. Skip them rather than
-                // failing, since they weren't actually computed.
                 log.debug("Output '{}' not in variableValues after execution, skipping", output);
                 continue;
             }
             SDValue val = variableValues.get(output);
             if (val == null) {
-                // Null values come from Switch inactive branches. Skip them.
                 log.debug("Output '{}' has null value (inactive control flow branch), skipping", output);
                 continue;
             }
@@ -1371,7 +1392,6 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         if (placeholderValues != null) {
             preserveNames.addAll(placeholderValues.keySet());
         }
-
         boolean cacheEnabled = ArrayCacheMemoryMgr.isCacheEnabled();
 
         if (cacheEnabled) {
@@ -1480,10 +1500,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 nativeOps2.trimMemoryPoolOnStream(currentDevice2, null);
             }
 
-            try {
-                LongPointer pu = new LongPointer(1);
+            try (LongPointer pu = new LongPointer(1);
+                 LongPointer pr = new LongPointer(1)) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().getMemoryPoolStats(
-                        Nd4j.getAffinityManager().getDeviceForCurrentThread(), pu, new LongPointer(1));
+                        Nd4j.getAffinityManager().getDeviceForCurrentThread(), pu, pr);
                 log.debug("Cleanup: released={} to cache, force-closed={} ({}MB), deferred-closed={} ({}MB), poolUsed={}MB",
                         releasedToCache - forceClosedCount, forceClosedCount, forceClosedBytes / (1024 * 1024),
                         deferredClosed, deferredBytes / (1024 * 1024),
@@ -1544,17 +1564,30 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         break;
                 }
             }
+            log.info("CLEANUP: variableValues={} entries, preserveNames={}, uniqueBuffers={}, protectedBuffers={}",
+                    variableValues.size(), preserveNames.size(), uniqueBuffers.size(), protectedBuffers.size());
             variableValues.clear();
 
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             Nd4j.getExecutioner().commit();
 
+            // Pool stats BEFORE cleanup
+            long poolUsedBeforeMB = 0;
+            try (LongPointer pBefore = new LongPointer(2);
+                 LongPointer pResBefore = new LongPointer(1)) {
+                nativeOps.getMemoryPoolStats(Nd4j.getAffinityManager().getDeviceForCurrentThread(), pBefore, pResBefore);
+                poolUsedBeforeMB = pBefore.get(0) / (1024 * 1024);
+            } catch (Exception e) { /* ignore */ }
+
             int releasedCount = 0;
             long releasedBytes = 0;
             int skippedConstant = 0, skippedAttached = 0, skippedReleased = 0;
+            int forceClosedConstant = 0;
+            long forceClosedConstantBytes = 0;
             int closeErrors = 0;
             nativeOps.dbCloseResetDiagnostics();
+            OpaqueDataBuffer.resetCloseBufferStats();
             for (DataBuffer buf : uniqueBuffers.keySet()) {
                 if (buf.closeable()) {
                     try {
@@ -1566,19 +1599,36 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         log.info("Error closing buffer: {}", e.getMessage());
                     }
                 } else {
-                    if (buf.wasClosed()) skippedReleased++;
-                    else if (buf.isAttached()) skippedAttached++;
-                    else if (buf.isConstant()) skippedConstant++;
+                    if (buf.wasClosed()) {
+                        skippedReleased++;
+                    } else if (buf.isAttached()) {
+                        skippedAttached++;
+                    } else if (buf.isConstant()) {
+                        // This buffer is marked constant (likely by setCloseable(false) on placeholder
+                        // inputs). Since it's NOT in protectedBuffers, it's an intermediate that shares
+                        // no DataBuffer with any constant/variable/placeholder. It was poisoned by
+                        // setCloseable(false) in batchOutputHelper/directExecHelper. Force-close it
+                        // to prevent GPU memory leaks in the standard execution path.
+                        try {
+                            forceClosedConstantBytes += buf.length() * buf.getElementSize();
+                            buf.setConstant(false);
+                            buf.close();
+                            forceClosedConstant++;
+                        } catch (Exception e) {
+                            closeErrors++;
+                        }
+                        skippedConstant++;
+                    }
                 }
             }
-            try {
-                LongPointer nativeStats = new LongPointer(9);
+            try (LongPointer nativeStats = new LongPointer(9)) {
                 nativeOps.dbCloseGetDiagnostics(nativeStats);
-                log.debug("Native dbClose stats: total={}, null={}, constant={}, alreadyClosed={}, noDataBuffer={}, notOwner={}, deviceError={}, deleted={}, freedBytes={}MB",
+                log.info("Native dbClose stats: total={}, null={}, constant={}, alreadyClosed={}, noDataBuffer={}, notOwner={}, deviceError={}, deleted={}, freedBytes={}MB",
                         nativeStats.get(0), nativeStats.get(1), nativeStats.get(2), nativeStats.get(3),
                         nativeStats.get(4), nativeStats.get(5), nativeStats.get(6), nativeStats.get(7),
                         nativeStats.get(8) / (1024 * 1024));
                 nativeOps.dbCloseResetDiagnostics();
+                log.info("Java {}", OpaqueDataBuffer.getCloseBufferStats());
             } catch (Exception e) {
                 log.debug("Could not get native dbClose diagnostics: {}", e.getMessage());
             }
@@ -1602,11 +1652,24 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     log.debug("Failed to trim memory pool: {}", e.getMessage());
                 }
 
-                log.debug("Released {} of {} unique data buffers ({} MB) after forward execution. Skipped: constant={}, attached={}, released={}.",
+                // Pool stats after cleanup + trim
+                long poolUsedMB = 0;
+                try (LongPointer pStats = new LongPointer(2);
+                     LongPointer pResStats = new LongPointer(1)) {
+                    nativeOps.getMemoryPoolStats(Nd4j.getAffinityManager().getDeviceForCurrentThread(), pStats, pResStats);
+                    poolUsedMB = pStats.get(0) / (1024 * 1024);
+                } catch (Exception e) { /* ignore */ }
+                log.info("CLEANUP: Released {} of {} unique data buffers ({} MB), force-closed {} constant-poisoned ({}MB). Pool: before={}MB after={}MB delta={}MB. Skipped: constant={}, attached={}, released={}",
                         releasedCount, uniqueBuffers.size(), releasedBytes / (1024 * 1024),
+                        forceClosedConstant, forceClosedConstantBytes / (1024 * 1024),
+                        poolUsedBeforeMB, poolUsedMB, poolUsedMB - poolUsedBeforeMB,
                         skippedConstant, skippedAttached, skippedReleased);
             }
         }
+
+        // Clear cross-device constant replica cache so replicas are freed between forward passes.
+        // Without this, constant replicas accumulate indefinitely in multi-device execution.
+        Nd4j.getExecutioner().clearConstantReplicaCache();
 
         return results;
     }
@@ -3038,6 +3101,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
 
             opContext.setInputArrays(inputArrays);
+            // DIAGNOSTIC: check if inputs are closed right after setting them
+            if ("gather".equals(op.opName())) {
+                for (int di = 0; di < inputArrays.length; di++) {
+                    if (inputArrays[di] != null) {
+                        log.info("DIAG-SET-INPUT: gather op '{}' input[{}] '{}': closed={} id={} identityHash={}",
+                                op.getOwnName(), di, argNames[di],
+                                inputArrays[di].wasClosed(), inputArrays[di].getId(),
+                                System.identityHashCode(inputArrays[di]));
+                    }
+                }
+            }
         }
         if (TIMING_ENABLED) timingInputResolveNs += System.nanoTime() - tInput0;
 
@@ -3340,6 +3414,32 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         }
 
         // Execute the operation
+        // DIAGNOSTIC: check if inputs are closed right before exec
+        {
+            List<INDArray> preExecInputs = opContext.getInputArrays();
+            for (int di = 0; di < preExecInputs.size(); di++) {
+                INDArray dArr = preExecInputs.get(di);
+                if (dArr != null && dArr.wasClosed()) {
+                    String opNameDiag = customOp.opName();
+                    String ownNameDiag = dynOp.getOwnName();
+                    log.warn("DIAG-PRE-EXEC: Op '{}' ({}) input[{}] is CLOSED right before Nd4j.exec. " +
+                            "id={} identityHash={} shape={} dtype={}",
+                            ownNameDiag, opNameDiag, di, dArr.getId(),
+                            System.identityHashCode(dArr),
+                            java.util.Arrays.toString(dArr.shape()), dArr.dataType());
+                    String[] diagArgNames = dynOp.argNames();
+                    if (diagArgNames != null && di < diagArgNames.length) {
+                        INDArray modelArr = sameDiff.getArrForVarName(diagArgNames[di]);
+                        log.warn("DIAG-PRE-EXEC:   model array for '{}': closed={} id={} identityHash={} sameObject={}",
+                                diagArgNames[di],
+                                modelArr == null ? "null" : modelArr.wasClosed(),
+                                modelArr == null ? -1 : modelArr.getId(),
+                                modelArr == null ? -1 : System.identityHashCode(modelArr),
+                                modelArr == dArr);
+                    }
+                }
+            }
+        }
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
         Nd4j.exec(dynOp, opContext);
         if (TIMING_ENABLED) {
@@ -5262,7 +5362,15 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         SDVariable v = sameDiff.getVariable(variableName);
         Preconditions.checkState(sameDiff.getVariable(variableName).isConstant() || v.getVariableType() == VariableType.VARIABLE,
                 "Variable %s is not a constant", variableName);
-        return sameDiff.getArrForVarName(variableName);
+        INDArray arr = sameDiff.getArrForVarName(variableName);
+        // Mark constant arrays' DataBuffers as constant so the multi-GPU replica cache
+        // routes them to constantReplicaCache (cached across ops within a forward pass)
+        // instead of pendingReplicaClose (closed after each op). Without this, constant
+        // replicas like sin_cache/cos_cache get closed prematurely between ops.
+        if (arr != null && arr.data() != null && v.isConstant() && !arr.data().isConstant()) {
+            arr.data().setConstant(true);
+        }
+        return arr;
     }
 
     @Override

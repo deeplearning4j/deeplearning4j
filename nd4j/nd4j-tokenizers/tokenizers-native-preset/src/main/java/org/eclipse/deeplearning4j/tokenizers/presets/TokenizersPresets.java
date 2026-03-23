@@ -37,7 +37,7 @@ import org.bytedeco.javacpp.tools.*;
  * - Platform-specific compilation and linking settings
  * - Library loading and path configuration
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Properties(
         target = "org.eclipse.deeplearning4j.tokenizers.bindings.TokenizersNative",

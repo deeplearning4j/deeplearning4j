@@ -64,7 +64,7 @@ import java.util.List;
  *   <li>0: temperature (default: 1.0)</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see GpuTopPSample
  * @see TokenSample
  */

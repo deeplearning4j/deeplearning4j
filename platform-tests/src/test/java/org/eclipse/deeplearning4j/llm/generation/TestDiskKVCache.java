@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for KVCacheDiskOffloader and TieredKVCacheManager.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class TestDiskKVCache {
 

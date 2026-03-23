@@ -54,7 +54,7 @@ import java.util.List;
  *   0: topK (default: 0 = disabled)
  *   1: seed (default: 0 = random)
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class TokenSample extends DynamicCustomOp {

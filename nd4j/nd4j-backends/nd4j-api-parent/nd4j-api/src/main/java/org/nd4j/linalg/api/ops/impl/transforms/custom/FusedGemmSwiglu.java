@@ -48,7 +48,7 @@ import java.util.List;
  * <p>
  * Output: [M, N]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class FusedGemmSwiglu extends DynamicCustomOp {

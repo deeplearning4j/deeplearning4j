@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * Result of OCR recognition containing detected text regions.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

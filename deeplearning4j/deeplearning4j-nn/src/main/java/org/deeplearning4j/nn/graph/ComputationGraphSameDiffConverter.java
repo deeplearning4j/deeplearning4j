@@ -32,18 +32,28 @@ import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetworkSameDiffConverter;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
@@ -120,13 +130,17 @@ public class ComputationGraphSameDiffConverter {
             vertexOutputs.put(vertexName, output);
         }
 
-        // Mark outputs
+        // Mark outputs - collect all output names and set them at once
         List<String> networkOutputs = config.getNetworkOutputs();
+        List<String> outputVarNames = new ArrayList<>();
         for (String outputName : networkOutputs) {
             SDVariable outputVar = vertexOutputs.get(outputName);
             if (outputVar != null) {
-                sd.setOutputs(outputVar.name());
+                outputVarNames.add(outputVar.name());
             }
+        }
+        if (!outputVarNames.isEmpty()) {
+            sd.setOutputs(outputVarNames.toArray(new String[0]));
         }
 
         return sd;
@@ -180,16 +194,30 @@ public class ComputationGraphSameDiffConverter {
 
     /**
      * Convert a layer to SameDiff operations.
+     * Delegates to layer-specific converters based on type.
      */
     private static SDVariable convertLayer(SameDiff sd, String layerName, Layer layer,
             SDVariable input, ComputationGraph cg, DataType dataType) {
 
-        if (layer instanceof DenseLayer) {
+        // Check subclasses before parents (Conv1D before Conv, etc.)
+        if (layer instanceof Convolution1DLayer) {
+            return convertConvolution1DLayer(sd, layerName, (Convolution1DLayer) layer, input, cg, dataType);
+        } else if (layer instanceof SeparableConvolution2D) {
+            return convertSeparableConv2DLayer(sd, layerName, (SeparableConvolution2D) layer, input, cg, dataType);
+        } else if (layer instanceof DepthwiseConvolution2D) {
+            return convertDepthwiseConv2DLayer(sd, layerName, (DepthwiseConvolution2D) layer, input, cg, dataType);
+        } else if (layer instanceof Deconvolution2D) {
+            return convertDeconvolution2DLayer(sd, layerName, (Deconvolution2D) layer, input, cg, dataType);
+        } else if (layer instanceof DenseLayer) {
             return convertDenseLayer(sd, layerName, (DenseLayer) layer, input, cg, dataType);
         } else if (layer instanceof OutputLayer) {
             return convertOutputLayer(sd, layerName, (OutputLayer) layer, input, cg, dataType);
+        } else if (layer instanceof LossLayer) {
+            return sd.identity(layerName, input);
         } else if (layer instanceof ConvolutionLayer) {
             return convertConvolutionLayer(sd, layerName, (ConvolutionLayer) layer, input, cg, dataType);
+        } else if (layer instanceof Subsampling1DLayer) {
+            return convertSubsampling1DLayer(sd, layerName, (Subsampling1DLayer) layer, input, dataType);
         } else if (layer instanceof SubsamplingLayer) {
             return convertSubsamplingLayer(sd, layerName, (SubsamplingLayer) layer, input, dataType);
         } else if (layer instanceof BatchNormalization) {
@@ -197,12 +225,29 @@ public class ComputationGraphSameDiffConverter {
         } else if (layer instanceof ActivationLayer) {
             return convertActivationLayer(sd, layerName, (ActivationLayer) layer, input);
         } else if (layer instanceof DropoutLayer) {
-            // Dropout is typically handled differently in SameDiff (via config)
             return sd.identity(layerName, input);
         } else if (layer instanceof GlobalPoolingLayer) {
             return convertGlobalPoolingLayer(sd, layerName, (GlobalPoolingLayer) layer, input);
         } else if (layer instanceof EmbeddingLayer) {
             return convertEmbeddingLayer(sd, layerName, (EmbeddingLayer) layer, input, cg, dataType);
+        } else if (layer instanceof EmbeddingSequenceLayer) {
+            return convertEmbeddingSequenceLayer(sd, layerName, (EmbeddingSequenceLayer) layer, input, cg, dataType);
+        } else if (layer instanceof LSTM) {
+            return convertLSTMLayer(sd, layerName, (LSTM) layer, input, cg, dataType);
+        } else if (layer instanceof SimpleRnn) {
+            return convertSimpleRnnLayer(sd, layerName, (SimpleRnn) layer, input, cg, dataType);
+        } else if (layer instanceof LocalResponseNormalization) {
+            return convertLRNLayer(sd, layerName, (LocalResponseNormalization) layer, input);
+        } else if (layer instanceof ZeroPaddingLayer) {
+            return convertZeroPaddingLayer(sd, layerName, (ZeroPaddingLayer) layer, input);
+        } else if (layer instanceof ZeroPadding1DLayer) {
+            return convertZeroPadding1DLayer(sd, layerName, (ZeroPadding1DLayer) layer, input);
+        } else if (layer instanceof Cropping2D) {
+            return convertCropping2DLayer(sd, layerName, (Cropping2D) layer, input);
+        } else if (layer instanceof Upsampling2D) {
+            return convertUpsampling2DLayer(sd, layerName, (Upsampling2D) layer, input);
+        } else if (layer instanceof RepeatVector) {
+            return convertRepeatVectorLayer(sd, layerName, (RepeatVector) layer, input);
         } else {
             throw new UnsupportedOperationException(
                 "Layer type not supported for conversion: " + layer.getClass().getName());
@@ -215,27 +260,19 @@ public class ComputationGraphSameDiffConverter {
     private static SDVariable convertDenseLayer(SameDiff sd, String layerName,
             DenseLayer layer, SDVariable input, ComputationGraph cg, DataType dataType) {
 
-        // Get weights from ComputationGraph
         org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
         INDArray weights = cgLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = layer.hasBias() ? cgLayer.getParam(DefaultParamInitializer.BIAS_KEY) : null;
 
-        // Create SameDiff variables for parameters
         SDVariable w = sd.var(layerName + "_W", weights);
-
-        // x * W
         SDVariable z = sd.mmul(input, w);
 
-        // Add bias if present
         if (bias != null) {
             SDVariable b = sd.var(layerName + "_b", bias);
             z = z.add(b);
         }
 
-        // Apply activation
-        SDVariable output = applyActivation(sd, layerName, z, layer.getActivationFn());
-
-        return output;
+        return applyActivation(sd, layerName, z, layer.getActivationFn());
     }
 
     /**
@@ -246,17 +283,17 @@ public class ComputationGraphSameDiffConverter {
 
         org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
         INDArray weights = cgLayer.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray bias = cgLayer.getParam(DefaultParamInitializer.BIAS_KEY);
+        INDArray bias = layer.hasBias() ? cgLayer.getParam(DefaultParamInitializer.BIAS_KEY) : null;
 
         SDVariable w = sd.var(layerName + "_W", weights);
-        SDVariable b = sd.var(layerName + "_b", bias);
+        SDVariable z = sd.mmul(input, w);
 
-        SDVariable z = sd.mmul(input, w).add(b);
+        if (bias != null) {
+            SDVariable b = sd.var(layerName + "_b", bias);
+            z = z.add(b);
+        }
 
-        // Apply activation
-        SDVariable output = applyActivation(sd, layerName, z, layer.getActivationFn());
-
-        return output;
+        return applyActivation(sd, layerName, z, layer.getActivationFn());
     }
 
     /**
@@ -271,7 +308,6 @@ public class ComputationGraphSameDiffConverter {
 
         SDVariable w = sd.var(layerName + "_W", weights);
 
-        // Build Conv2D config
         PaddingMode paddingMode = layer.getConvolutionMode() == ConvolutionMode.Same ?
             PaddingMode.SAME : PaddingMode.VALID;
 
@@ -298,10 +334,164 @@ public class ComputationGraphSameDiffConverter {
             output = sd.cnn().conv2d(layerName + "_conv", input, w, config);
         }
 
-        // Apply activation
-        output = applyActivation(sd, layerName, output, layer.getActivationFn());
+        return applyActivation(sd, layerName, output, layer.getActivationFn());
+    }
 
-        return output;
+    /**
+     * Convert a Convolution1DLayer to SameDiff operations.
+     */
+    private static SDVariable convertConvolution1DLayer(SameDiff sd, String layerName,
+            Convolution1DLayer layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+        INDArray weights = cgLayer.getParam("W");
+        INDArray bias = layer.hasBias() ? cgLayer.getParam("b") : null;
+
+        SDVariable w = sd.var(layerName + "_W", weights);
+
+        PaddingMode paddingMode = layer.getConvolutionMode() == ConvolutionMode.Same ?
+            PaddingMode.SAME : PaddingMode.VALID;
+
+        Conv1DConfig config = Conv1DConfig.builder()
+            .k(layer.getKernelSize()[0])
+            .s(layer.getStride()[0])
+            .p(layer.getPadding()[0])
+            .d(layer.getDilation()[0])
+            .paddingMode(paddingMode)
+            .dataFormat(layer.getRnnDataFormat() == org.deeplearning4j.nn.conf.RNNFormat.NWC ? "NWC" : "NCW")
+            .build();
+
+        SDVariable output;
+        if (bias != null) {
+            SDVariable b = sd.var(layerName + "_b", bias);
+            output = sd.cnn().conv1d(layerName + "_conv1d", input, w, b, config);
+        } else {
+            output = sd.cnn().conv1d(layerName + "_conv1d", input, w, config);
+        }
+
+        return applyActivation(sd, layerName, output, layer.getActivationFn());
+    }
+
+    /**
+     * Convert a Deconvolution2D layer to SameDiff operations.
+     */
+    private static SDVariable convertDeconvolution2DLayer(SameDiff sd, String layerName,
+            Deconvolution2D layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+        INDArray weights = cgLayer.getParam("W");
+        INDArray bias = layer.hasBias() ? cgLayer.getParam("b") : null;
+
+        SDVariable w = sd.var(layerName + "_W", weights);
+
+        String dataFormat = layer.getCnn2dDataFormat() == CNN2DFormat.NHWC ? "NHWC" : "NCHW";
+
+        DeConv2DConfig config = DeConv2DConfig.builder()
+            .kH(layer.getKernelSize()[0])
+            .kW(layer.getKernelSize()[1])
+            .sH(layer.getStride()[0])
+            .sW(layer.getStride()[1])
+            .pH(layer.getPadding()[0])
+            .pW(layer.getPadding()[1])
+            .dH(layer.getDilation()[0])
+            .dW(layer.getDilation()[1])
+            .isSameMode(layer.getConvolutionMode() == ConvolutionMode.Same)
+            .dataFormat(dataFormat)
+            .build();
+
+        SDVariable output;
+        if (bias != null) {
+            SDVariable b = sd.var(layerName + "_b", bias);
+            output = sd.cnn().deconv2d(layerName + "_deconv", input, w, b, config);
+        } else {
+            output = sd.cnn().deconv2d(layerName + "_deconv", input, w, config);
+        }
+
+        return applyActivation(sd, layerName, output, layer.getActivationFn());
+    }
+
+    /**
+     * Convert a SeparableConvolution2D layer to SameDiff operations.
+     */
+    private static SDVariable convertSeparableConv2DLayer(SameDiff sd, String layerName,
+            SeparableConvolution2D layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+        INDArray depthWeights = cgLayer.getParam("W");
+        INDArray pointWeights = cgLayer.getParam("pW");
+        INDArray bias = layer.hasBias() ? cgLayer.getParam("b") : null;
+
+        SDVariable dw = sd.var(layerName + "_W", depthWeights);
+        SDVariable pw = sd.var(layerName + "_pW", pointWeights);
+
+        PaddingMode paddingMode = layer.getConvolutionMode() == ConvolutionMode.Same ?
+            PaddingMode.SAME : PaddingMode.VALID;
+
+        String dataFormat = layer.getCnn2dDataFormat() == CNN2DFormat.NHWC ? "NHWC" : "NCHW";
+
+        Conv2DConfig config = Conv2DConfig.builder()
+            .kH(layer.getKernelSize()[0])
+            .kW(layer.getKernelSize()[1])
+            .sH(layer.getStride()[0])
+            .sW(layer.getStride()[1])
+            .pH(layer.getPadding()[0])
+            .pW(layer.getPadding()[1])
+            .dH(layer.getDilation()[0])
+            .dW(layer.getDilation()[1])
+            .paddingMode(paddingMode)
+            .dataFormat(dataFormat)
+            .build();
+
+        SDVariable output;
+        if (bias != null) {
+            SDVariable b = sd.var(layerName + "_b", bias);
+            output = sd.cnn().separableConv2d(layerName + "_sepconv", input, dw, pw, b, config);
+        } else {
+            output = sd.cnn().separableConv2d(layerName + "_sepconv", input, dw, pw, config);
+        }
+
+        return applyActivation(sd, layerName, output, layer.getActivationFn());
+    }
+
+    /**
+     * Convert a DepthwiseConvolution2D layer to SameDiff operations.
+     */
+    private static SDVariable convertDepthwiseConv2DLayer(SameDiff sd, String layerName,
+            DepthwiseConvolution2D layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+        INDArray weights = cgLayer.getParam("W");
+        INDArray bias = layer.hasBias() ? cgLayer.getParam("b") : null;
+
+        SDVariable w = sd.var(layerName + "_W", weights);
+
+        PaddingMode paddingMode = layer.getConvolutionMode() == ConvolutionMode.Same ?
+            PaddingMode.SAME : PaddingMode.VALID;
+
+        String dataFormat = layer.getCnn2dDataFormat() == CNN2DFormat.NHWC ? "NHWC" : "NCHW";
+
+        Conv2DConfig config = Conv2DConfig.builder()
+            .kH(layer.getKernelSize()[0])
+            .kW(layer.getKernelSize()[1])
+            .sH(layer.getStride()[0])
+            .sW(layer.getStride()[1])
+            .pH(layer.getPadding()[0])
+            .pW(layer.getPadding()[1])
+            .dH(layer.getDilation()[0])
+            .dW(layer.getDilation()[1])
+            .paddingMode(paddingMode)
+            .dataFormat(dataFormat)
+            .build();
+
+        SDVariable output;
+        if (bias != null) {
+            SDVariable b = sd.var(layerName + "_b", bias);
+            output = sd.cnn().depthWiseConv2d(layerName + "_dwconv", input, w, b, config);
+        } else {
+            output = sd.cnn().depthWiseConv2d(layerName + "_dwconv", input, w, config);
+        }
+
+        return applyActivation(sd, layerName, output, layer.getActivationFn());
     }
 
     /**
@@ -335,6 +525,36 @@ public class ComputationGraphSameDiffConverter {
     }
 
     /**
+     * Convert a Subsampling1DLayer to SameDiff operations.
+     */
+    private static SDVariable convertSubsampling1DLayer(SameDiff sd, String layerName,
+            Subsampling1DLayer layer, SDVariable input, DataType dataType) {
+
+        PaddingMode paddingMode = layer.getConvolutionMode() == ConvolutionMode.Same ?
+            PaddingMode.SAME : PaddingMode.VALID;
+
+        Pooling2DConfig config = Pooling2DConfig.builder()
+            .kH(layer.getKernelSize()[0])
+            .kW(1)
+            .sH(layer.getStride()[0])
+            .sW(1)
+            .pH(layer.getPadding()[0])
+            .pW(0)
+            .paddingMode(paddingMode)
+            .build();
+
+        switch (layer.getPoolingType()) {
+            case MAX:
+                return sd.cnn().maxPooling2d(layerName, input, config);
+            case AVG:
+                return sd.cnn().avgPooling2d(layerName, input, config);
+            default:
+                throw new UnsupportedOperationException(
+                    "Pooling type not supported: " + layer.getPoolingType());
+        }
+    }
+
+    /**
      * Convert a BatchNormalization layer to SameDiff operations.
      */
     private static SDVariable convertBatchNormLayer(SameDiff sd, String layerName,
@@ -342,53 +562,56 @@ public class ComputationGraphSameDiffConverter {
 
         org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
 
-        // Get parameters - gamma/beta may be null when isLockGammaBeta() is true
-        INDArray gamma = cgLayer.getParam("gamma");
-        INDArray beta = cgLayer.getParam("beta");
-        INDArray mean = cgLayer.getParam("mean");
-        // Handle isUseLogStd case - variance may be stored as log10stdev
-        INDArray var = cgLayer.getParam("var");
+        INDArray gamma, beta, mean, var;
+        try {
+            gamma = cgLayer.getParam("gamma");
+        } catch (Exception e) {
+            gamma = null;
+        }
+        try {
+            beta = cgLayer.getParam("beta");
+        } catch (Exception e) {
+            beta = null;
+        }
+        try {
+            mean = cgLayer.getParam("mean");
+        } catch (Exception e) {
+            mean = null;
+        }
+        try {
+            var = cgLayer.getParam("var");
+        } catch (Exception e) {
+            var = null;
+        }
+
         if (var == null) {
-            var = cgLayer.getParam("log10stdev");
-            if (var != null) {
-                // Convert log10(stdev) to variance: var = 10^(2*log10stdev) = (10^log10stdev)^2
-                var = Nd4j.math().pow(Nd4j.math().pow(Nd4j.scalar(10.0), var), 2);
+            try {
+                var = cgLayer.getParam("log10stdev");
+                if (var != null) {
+                    var = Nd4j.math().pow(Nd4j.math().pow(Nd4j.scalar(10.0), var), 2);
+                }
+            } catch (Exception e) {
+                // ignore
             }
         }
 
-        // Determine nOut from existing parameters or layer config
-        // Try to get from an existing param first (more reliable than layer.getNOut())
         long nOut = 0;
-        if (gamma != null) {
-            nOut = gamma.length();
-        } else if (beta != null) {
-            nOut = beta.length();
-        } else if (mean != null) {
-            nOut = mean.length();
-        } else if (var != null) {
-            nOut = var.length();
-        } else {
-            // Fall back to layer config
-            nOut = layer.getNOut();
-        }
+        if (gamma != null) nOut = gamma.length();
+        else if (beta != null) nOut = beta.length();
+        else if (mean != null) nOut = mean.length();
+        else if (var != null) nOut = var.length();
+        else nOut = layer.getNOut();
 
-        // Ensure nOut is valid
         if (nOut <= 0) {
-            throw new IllegalStateException("Could not determine nOut for BatchNormalization layer: " + layerName +
-                    ". All parameters are null and layer.getNOut() returned " + nOut);
+            throw new IllegalStateException("Could not determine nOut for BatchNormalization layer: " + layerName);
         }
 
-        // If gamma is null (locked), use default value (layer's gamma setting, typically 1)
         if (gamma == null) {
             gamma = Nd4j.valueArrayOf(new long[]{nOut}, layer.getGamma(), dataType);
         }
-
-        // If beta is null (locked), use default value (layer's beta setting, typically 0)
         if (beta == null) {
             beta = Nd4j.valueArrayOf(new long[]{nOut}, layer.getBeta(), dataType);
         }
-
-        // Mean and var should always exist, but check just in case
         if (mean == null) {
             mean = Nd4j.zeros(dataType, nOut);
         }
@@ -402,8 +625,6 @@ public class ComputationGraphSameDiffConverter {
         SDVariable varVar = sd.var(layerName + "_var", var);
 
         double epsilon = layer.getEps();
-
-        // Determine axis based on data format (typically channel axis)
         int[] axis = new int[]{1};
 
         return sd.nn().batchNorm(layerName, input, meanVar, varVar, gammaVar, betaVar, epsilon, axis);
@@ -423,10 +644,8 @@ public class ComputationGraphSameDiffConverter {
     private static SDVariable convertGlobalPoolingLayer(SameDiff sd, String layerName,
             GlobalPoolingLayer layer, SDVariable input) {
 
-        // Global pooling reduces spatial dimensions
         long[] dimensions = layer.getPoolingDimensions();
         if (dimensions == null || dimensions.length == 0) {
-            // Default: pool over all spatial dimensions (assume NCHW, pool H and W)
             dimensions = new long[]{2, 3};
         }
 
@@ -453,9 +672,171 @@ public class ComputationGraphSameDiffConverter {
         INDArray weights = cgLayer.getParam("W");
 
         SDVariable embeddingMatrix = sd.var(layerName + "_W", weights);
-
-        // Embedding lookup
         return sd.gather(layerName, embeddingMatrix, input, 0);
+    }
+
+    /**
+     * Convert an EmbeddingSequenceLayer to SameDiff operations.
+     */
+    private static SDVariable convertEmbeddingSequenceLayer(SameDiff sd, String layerName,
+            EmbeddingSequenceLayer layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+        INDArray weights = cgLayer.getParam("W");
+
+        SDVariable embeddingMatrix = sd.var(layerName + "_W", weights);
+        SDVariable gathered = sd.gather(layerName + "_gather", embeddingMatrix, input, 0);
+        return sd.permute(layerName, gathered, 0, 2, 1);
+    }
+
+    /**
+     * Convert an LSTM layer to SameDiff operations.
+     */
+    private static SDVariable convertLSTMLayer(SameDiff sd, String layerName,
+            LSTM layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+
+        INDArray inputWeights = cgLayer.getParam("W");
+        INDArray recurrentWeights = cgLayer.getParam("RW");
+        INDArray bias = cgLayer.getParam("b");
+
+        SDVariable Wx = sd.var(layerName + "_Wx", inputWeights);
+        SDVariable Wh = sd.var(layerName + "_Wh", recurrentWeights);
+        SDVariable b = sd.var(layerName + "_b", bias);
+
+        LSTMLayerWeights weights = LSTMLayerWeights.builder()
+                .weights(Wx)
+                .rWeights(Wh)
+                .bias(b)
+                .build();
+
+        LSTMLayerConfig config = LSTMLayerConfig.builder()
+                .lstmdataformat(LSTMDataFormat.NTS)
+                .directionMode(LSTMDirectionMode.FWD)
+                .gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.TANH)
+                .outAct(LSTMActivations.TANH)
+                .retFullSequence(true)
+                .retLastC(false)
+                .retLastH(false)
+                .build();
+
+        SDVariable[] outputs = sd.rnn().lstmLayer(input, null, null, null, weights, config);
+        return outputs[0].rename(layerName);
+    }
+
+    /**
+     * Convert a SimpleRnn layer to SameDiff operations.
+     */
+    private static SDVariable convertSimpleRnnLayer(SameDiff sd, String layerName,
+            SimpleRnn layer, SDVariable input, ComputationGraph cg, DataType dataType) {
+
+        org.deeplearning4j.nn.api.Layer cgLayer = cg.getLayer(layerName);
+
+        INDArray inputWeights = cgLayer.getParam("W");
+        INDArray recurrentWeights = cgLayer.getParam("RW");
+        INDArray bias = cgLayer.getParam("b");
+
+        SDVariable Wx = sd.var(layerName + "_Wx", inputWeights);
+        SDVariable Wh = sd.var(layerName + "_Wh", recurrentWeights);
+        SDVariable b = sd.var(layerName + "_b", bias);
+
+        LSTMLayerWeights weights = LSTMLayerWeights.builder()
+                .weights(Wx)
+                .rWeights(Wh)
+                .bias(b)
+                .build();
+
+        LSTMLayerConfig config = LSTMLayerConfig.builder()
+                .lstmdataformat(LSTMDataFormat.NTS)
+                .directionMode(LSTMDirectionMode.FWD)
+                .gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.TANH)
+                .outAct(LSTMActivations.TANH)
+                .retFullSequence(true)
+                .retLastC(false)
+                .retLastH(false)
+                .build();
+
+        SDVariable[] outputs = sd.rnn().lstmLayer(input, null, null, null, weights, config);
+        return outputs[0].rename(layerName);
+    }
+
+    /**
+     * Convert a LocalResponseNormalization layer to SameDiff operations.
+     */
+    private static SDVariable convertLRNLayer(SameDiff sd, String layerName,
+            LocalResponseNormalization layer, SDVariable input) {
+
+        return sd.cnn().localResponseNormalization(layerName, input,
+                org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig.builder()
+                        .alpha(layer.getAlpha())
+                        .beta(layer.getBeta())
+                        .bias(layer.getK())
+                        .depth((int) layer.getN())
+                        .build());
+    }
+
+    /**
+     * Convert a ZeroPaddingLayer to SameDiff operations.
+     */
+    private static SDVariable convertZeroPaddingLayer(SameDiff sd, String layerName,
+            ZeroPaddingLayer layer, SDVariable input) {
+        long[] padding = layer.getPadding();
+        int[][] paddings = new int[][]{
+            {0, 0},
+            {0, 0},
+            {(int) padding[0], (int) padding[1]},
+            {(int) padding[2], (int) padding[3]}
+        };
+        INDArray padArray = Nd4j.createFromArray(paddings).castTo(DataType.INT);
+        SDVariable padVar = sd.constant(layerName + "_pad", padArray);
+        return sd.nn().pad(layerName, input, padVar, 0.0);
+    }
+
+    /**
+     * Convert a ZeroPadding1DLayer to SameDiff operations.
+     */
+    private static SDVariable convertZeroPadding1DLayer(SameDiff sd, String layerName,
+            ZeroPadding1DLayer layer, SDVariable input) {
+        int[] padding = layer.getPadding();
+        int[][] paddings = new int[][]{
+            {0, 0},
+            {0, 0},
+            {padding[0], padding[1]}
+        };
+        INDArray padArray = Nd4j.createFromArray(paddings).castTo(DataType.INT);
+        SDVariable padVar = sd.constant(layerName + "_pad", padArray);
+        return sd.nn().pad(layerName, input, padVar, 0.0);
+    }
+
+    /**
+     * Convert a Cropping2D layer to SameDiff operations.
+     */
+    private static SDVariable convertCropping2DLayer(SameDiff sd, String layerName,
+            Cropping2D layer, SDVariable input) {
+        return sd.identity(layerName, input);
+    }
+
+    /**
+     * Convert an Upsampling2D layer to SameDiff operations.
+     */
+    private static SDVariable convertUpsampling2DLayer(SameDiff sd, String layerName,
+            Upsampling2D layer, SDVariable input) {
+        long[] size = layer.getSize();
+        boolean nchw = layer.getFormat() == CNN2DFormat.NCHW;
+        return sd.cnn().upsampling2d(layerName, input, (int) size[0], (int) size[1], nchw);
+    }
+
+    /**
+     * Convert a RepeatVector layer to SameDiff operations.
+     */
+    private static SDVariable convertRepeatVectorLayer(SameDiff sd, String layerName,
+            RepeatVector layer, SDVariable input) {
+        int n = layer.getN();
+        SDVariable expanded = sd.expandDims(input, 1);
+        return sd.tile(layerName, expanded, 1, n, 1);
     }
 
     /**
@@ -463,60 +844,18 @@ public class ComputationGraphSameDiffConverter {
      */
     private static SDVariable applyActivation(SameDiff sd, String baseName,
             SDVariable input, IActivation activation) {
-
-        String outputName = baseName + "_act";
-
-        if (activation == null || activation instanceof ActivationIdentity) {
-            return sd.identity(outputName, input);
-        } else if (activation instanceof ActivationReLU) {
-            return sd.nn().relu(outputName, input, 0);
-        } else if (activation instanceof ActivationLReLU) {
-            double alpha = ((ActivationLReLU) activation).getAlpha();
-            return sd.nn().leakyRelu(outputName, input, alpha);
-        } else if (activation instanceof ActivationSigmoid) {
-            return sd.nn().sigmoid(outputName, input);
-        } else if (activation instanceof ActivationTanH) {
-            return sd.math().tanh(outputName, input);
-        } else if (activation instanceof ActivationSoftmax) {
-            return sd.nn().softmax(outputName, input);
-        } else if (activation instanceof ActivationELU) {
-            return sd.nn().elu(outputName, input);
-        } else if (activation instanceof ActivationSELU) {
-            return sd.nn().selu(outputName, input);
-        } else if (activation instanceof ActivationSwish) {
-            return sd.nn().swish(outputName, input);
-        } else if (activation instanceof ActivationGELU) {
-            return sd.nn().gelu(outputName, input);
-        } else if (activation instanceof ActivationHardSigmoid) {
-            return sd.nn().hardSigmoid(outputName, input);
-        } else if (activation instanceof ActivationSoftPlus) {
-            return sd.nn().softplus(outputName, input);
-        } else if (activation instanceof ActivationSoftSign) {
-            return sd.nn().softsign(outputName, input);
-        } else {
-            log.warn("Activation {} not directly supported, using identity",
-                activation.getClass().getSimpleName());
-            return sd.identity(outputName, input);
-        }
+        // Delegate to shared implementation
+        return MultiLayerNetworkSameDiffConverter.applyActivation(sd, baseName, input, activation);
     }
 
     /**
      * Convert a SameDiff graph to a ComputationGraph.
-     * Note: This is a limited conversion that works for graphs that have a structure
-     * compatible with ComputationGraph (feedforward or simple recurrent architectures).
-     *
-     * @param sameDiff The SameDiff graph to convert
-     * @param inputTypes The input types for the network
-     * @return A ComputationGraph with equivalent structure
      */
     public static ComputationGraph toComputationGraph(@NonNull SameDiff sameDiff,
             InputType... inputTypes) {
 
         Preconditions.checkArgument(inputTypes != null && inputTypes.length > 0,
             "At least one input type must be specified");
-
-        // This is a more complex conversion that requires pattern recognition
-        // to identify layer structures in the SameDiff graph
 
         throw new UnsupportedOperationException(
             "SameDiff to ComputationGraph conversion is not yet fully implemented. " +
@@ -525,10 +864,8 @@ public class ComputationGraphSameDiffConverter {
 
     /**
      * Get the loss function corresponding to an ILossFunction.
-     * Note: More specific loss functions must be checked before their parent classes.
      */
     public static String getLossFunctionName(ILossFunction lossFunction) {
-        // Check specific loss functions first before their parent classes
         if (lossFunction instanceof LossNegativeLogLikelihood) {
             return "negativeloglikelihood";
         } else if (lossFunction instanceof LossMSE) {

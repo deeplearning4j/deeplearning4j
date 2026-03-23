@@ -281,7 +281,9 @@ DECLARE_SHAPE_FN(concat) {
   ShapeList arrShapes;
   std::vector<LongType> shapesToDelete;
   LongType numOfNonEmptyArrs = 0;
-  const LongType rank = shape::rank(INPUT_VARIABLE(0)->shapeInfo());
+  const LongType rawRank = shape::rank(INPUT_VARIABLE(0)->shapeInfo());
+  // Scalars (rank 0) are treated as 1D vectors of length 1 for concat purposes
+  const LongType rank = (rawRank == 0) ? 1 : rawRank;
   LongType newDim = 0;
   LongType axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<LongType>(0) : INT_ARG(0);
   if (axis < 0) {

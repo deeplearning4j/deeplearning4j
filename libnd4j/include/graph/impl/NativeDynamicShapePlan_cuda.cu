@@ -190,6 +190,19 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
       continue;
     }
 
+    // Skip decode inputs (position_ids, attention_mask, input_ids) when C++ manages them.
+    // The regular D2D/hostMirror copy would read stale HOST values (because Java doesn't
+    // update host when nativeDecodeInputs=true). Instead, these are written directly to
+    // capture buffers in the decode-input block below.
+    if (hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
+      int ei = cb.externalInputIndex;
+      if (ei >= 0 && (ei == decodeInputIdsExtIdx_ || ei == decodePositionIdsExtIdx_
+                      || ei == decodeAttentionMaskExtIdx_)) {
+        skippedCount++;
+        continue;
+      }
+    }
+
     NDArray* src = nullptr;
     if (cb.externalInputIndex >= 0 && cb.externalInputIndex < numExternalInputs) {
       src = externalInputs[cb.externalInputIndex];
@@ -229,6 +242,50 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
   }
   DSP_DIAG(EXECUTE, "NativeDSP::frozenFastPath: copied=%d skipped=%d total=%d",
            copiedCount, skippedCount, copiedCount + skippedCount);
+
+  // Apply pending decode input updates directly to capture buffers.
+  // updateDecodeInputs() writes to external input arrays, but the graph reads
+  // from capture buffers (separate fixed-address copies). By writing to
+  // capture buffers here (after D2D copies, before graph launch), the graph
+  // sees the correct position_ids, attention_mask, and input_ids values.
+  if (ok && hasPendingDecodeUpdate_ && isDecodeInputsConfigured()) {
+    for (auto& cb : seg.replayHandle->getCaptureBuffers()) {
+      if (cb.directReference || cb.buffer == nullptr) continue;
+      int ei = cb.externalInputIndex;
+      if (ei < 0) continue;
+
+      // input_ids capture buffer: write pendingTokenId_
+      if (ei == decodeInputIdsExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
+        LongType val = static_cast<LongType>(pendingTokenId_);
+        cudaMemcpyAsync(cb.buffer->specialBuffer(), &val, sizeof(LongType),
+                        cudaMemcpyHostToDevice, cudaStr);
+        DSP_DIAG(EXECUTE, "frozenFastPath: wrote input_ids=%lld to capture buffer (extIdx=%d)",
+                 pendingTokenId_, ei);
+      }
+      // position_ids capture buffer: write pendingCachePos_
+      else if (ei == decodePositionIdsExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
+        LongType val = static_cast<LongType>(pendingCachePos_);
+        cudaMemcpyAsync(cb.buffer->specialBuffer(), &val, sizeof(LongType),
+                        cudaMemcpyHostToDevice, cudaStr);
+        DSP_DIAG(EXECUTE, "frozenFastPath: wrote position_ids=%d to capture buffer (extIdx=%d)",
+                 pendingCachePos_, ei);
+      }
+      // attention_mask capture buffer: write 1 at cachePos
+      else if (ei == decodeAttentionMaskExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
+        int writePos = pendingCachePos_;
+        auto maskLen = cb.buffer->lengthOf();
+        if (writePos >= 0 && writePos < maskLen) {
+          LongType one = 1;
+          auto* dst = static_cast<LongType*>(cb.buffer->specialBuffer()) + writePos;
+          cudaMemcpyAsync(dst, &one, sizeof(LongType),
+                          cudaMemcpyHostToDevice, cudaStr);
+          DSP_DIAG(EXECUTE, "frozenFastPath: wrote attention_mask[%d]=1 to capture buffer (extIdx=%d)",
+                   writePos, ei);
+        }
+      }
+    }
+    hasPendingDecodeUpdate_ = false;
+  }
 
   if (ok) {
     auto tCopyDone = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};

@@ -31,7 +31,7 @@ import java.util.function.BiFunction;
  * Rule-based reward function for format, length, and pattern rewards.
  * Useful for GRPO-style training where rewards can be computed programmatically.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @Builder

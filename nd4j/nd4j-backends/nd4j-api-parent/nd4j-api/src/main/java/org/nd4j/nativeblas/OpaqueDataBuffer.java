@@ -30,8 +30,9 @@ import org.nd4j.linalg.api.device.DeviceType;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
 import org.nd4j.linalg.api.memory.deallocation.OpaqueDataBufferDeallocator;
 import org.nd4j.linalg.api.ops.executioner.CpuBackendLoader;
+import org.nd4j.linalg.api.ops.executioner.DeviceAwareOpExecutioner;
 import org.nd4j.linalg.factory.BackendRegistry;
-import org.nd4j.linalg.factory.DeviceAwareNd4j;
+
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -354,17 +355,8 @@ public class OpaqueDataBuffer extends Pointer {
     }
 
     /**
-     * This method allocates new InteropDataBuffer and returns pointer to it.
+     * Allocates a new InteropDataBuffer on the GPU with the most free memory.
      * The buffer is automatically registered with DeallocatorService for cleanup.
-     *
-     * MEMORY LEAK FIXES:
-     * - Clean up failed buffers in retry loop
-     * - Clean up buffer if registration fails
-     *
-     * Note: Device assignment must happen before native allocation. Without this, multiple threads
-     * starting simultaneously could all see CUDA device 0 (default), but then get different device
-     * assignments from Java's round-robin, leading to illegal memory access when operations try to
-     * access buffers on the wrong device.
      *
      * @param numElements Number of elements
      * @param dataType Data type
@@ -379,101 +371,101 @@ public class OpaqueDataBuffer extends Pointer {
         DeviceDescriptor selectedDevice = null;
 
         DeviceMemoryManager memoryManager = DeviceMemoryManager.getInstance();
-        boolean routingEnabled = DeviceAwareNd4j.isRoutingEnabled();
-        boolean simulationEnabled = memoryManager.isMemorySimulationEnabled();
 
-        if (routingEnabled || simulationEnabled) {
-            selectedDevice = selectDeviceForAllocation(bytes, routingEnabled, memoryManager);
-            if (selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
-                int targetDevice = selectedDevice.getDeviceIndex();
-                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                if (targetDevice >= 0 && currentDevice != targetDevice) {
-                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueDataBuffer", "allocate");
+        // Select the best GPU based on free memory before allocating.
+        // This ensures allocations route to a device that can actually fit them,
+        // e.g., after a large model has consumed most memory on the primary GPU.
+        // Save and restore CUDA context — switchDevice changes the active device
+        // for ALL CUDA calls on this thread, which would corrupt DSP streams/graphs.
+        int savedDevice = -1;
+        selectedDevice = selectDeviceForAllocation(bytes, memoryManager);
+        if (selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+            int targetDevice = selectedDevice.getDeviceIndex();
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (targetDevice >= 0 && currentDevice != targetDevice) {
+                savedDevice = currentDevice;
+                // Auto-install device-aware op executioner on first cross-device allocation
+                // so that subsequent ops handle cross-device data correctly
+                if (!DeviceAwareOpExecutioner.isInstalled()) {
+                    DeviceAwareOpExecutioner.install();
                 }
+                DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueDataBuffer", "allocate");
             }
         }
 
-        // Ensure device is assigned for this thread before any native allocation.
-        // This ensures the native code allocates the buffer on the correct device.
-        // Without this, there's a race condition where:
-        // 1. Native code uses CUDA's current device (often device 0)
-        // 2. Java later assigns a different device via round-robin
-        // 3. Subsequent operations fail with CUDA error 700 (illegal memory access)
-        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        try {
+            for (int t = 0; t < MAX_TRIES; t++) {
+                try {
+                    // try to allocate data buffer
+                    buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
 
-        for (int t = 0; t < MAX_TRIES; t++) {
-            try {
-                // try to allocate data buffer
-                buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
+                    // Check if allocation succeeded
+                    if(buffer != null && !buffer.isNull()) {
+                        buffer.retainReference();
 
-                // Check if allocation succeeded
-                if(buffer != null && !buffer.isNull()) {
-                    buffer.retainReference();
+                        // Register with DeallocatorService
+                        try {
+                            registerWithDeallocatorService(buffer, false, bytes);
 
-                    // Register with DeallocatorService
-                    try {
-                        registerWithDeallocatorService(buffer, false, bytes);
+                            // Always track allocation in DeviceMemoryManager so device selection
+                            // and failover have accurate memory accounting
+                            DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
+                            if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
+                                    && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                                actualDevice = selectedDevice;
+                            }
+                            if (actualDevice != null) {
+                                memoryManager.recordAllocation(actualDevice, bytes);
+                            }
 
-                        // Always track allocation in DeviceMemoryManager so device selection
-                        // and failover have accurate memory accounting
-                        DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
-                        if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
-                                && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
-                            actualDevice = selectedDevice;
+                            // Capture trace if needed
+                            if(Nd4j.getNativeOps().isFuncTrace())
+                                buffer.captureTrace();
+
+                            // Success - return the buffer
+                            return buffer;
+                        } catch (Exception regEx) {
+                            // LEAK FIX: Clean up buffer if registration fails
+                            Nd4j.getNativeOps().dbClose(buffer);
+                            throw regEx;
                         }
-                        if (actualDevice != null) {
-                            memoryManager.recordAllocation(actualDevice, bytes);
-                        }
-
-                        // Capture trace if needed
-                        if(Nd4j.getNativeOps().isFuncTrace())
-                            buffer.captureTrace();
-
-                        // Success - return the buffer
-                        return buffer;
-                    } catch (Exception regEx) {
-                        // LEAK FIX: Clean up buffer if registration fails
-                        Nd4j.getNativeOps().dbClose(buffer);
-                        throw regEx;
                     }
-                }
-                
-                // check error code
-                ec = Nd4j.getNativeOps().lastErrorCode();
-                if (ec != 0) {
-                    em = Nd4j.getNativeOps().lastErrorMessage();
 
-                    // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
-                    gcIfHeapPressured();
+                    // check error code
+                    ec = Nd4j.getNativeOps().lastErrorCode();
+                    if (ec != 0) {
+                        em = Nd4j.getNativeOps().lastErrorMessage();
 
-                    // sleeping for 50ms to let any pending async frees complete
-                    Thread.sleep(50);
-                } else {
-                    // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
-                    break;
+                        // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
+                        gcIfHeapPressured();
+
+                        // sleeping for 50ms to let any pending async frees complete
+                        Thread.sleep(50);
+                    } else {
+                        // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Allocation interrupted", e);
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Allocation interrupted", e);
+            }
+
+            // if MAX_TRIES is over, we'll just throw an exception
+            throw new RuntimeException("Allocation failed: [" + em + "] for amount of memory " + numElements * dataType.width() + " bytes");
+        } finally {
+            // Restore CUDA context to the original device — leaving it on a different
+            // device would corrupt DSP streams, CUDA graphs, and all subsequent ops.
+            if (savedDevice >= 0) {
+                DeviceMemoryManager.getInstance().switchDevice(savedDevice, "OpaqueDataBuffer", "restore");
             }
         }
-
-        // if MAX_TRIES is over, we'll just throw an exception
-        throw new RuntimeException("Allocation failed: [" + em + "] for amount of memory " + numElements * dataType.width() + " bytes");
     }
 
     /**
-     * Allocates a new InteropDataBuffer and optionally marks it as constant.
-     *
-     * This method allows creating constant buffers that are protected from deallocation
-     * before the deallocator is registered with DeallocatorService. This prevents the race
-     * condition where GC could trigger deallocation between buffer creation and setConstant()
-     * being called.
-     *
-     * Note: Device assignment must happen before native allocation. Without this, multiple threads
-     * starting simultaneously could all see CUDA device 0 (default), but then get different device
-     * assignments from Java's round-robin, leading to illegal memory access when operations try to
-     * access buffers on the wrong device.
+     * Allocates a new InteropDataBuffer on the GPU with the most free memory,
+     * and optionally marks it as constant to prevent deallocation before
+     * DeallocatorService registration.
      *
      * @param numElements Number of elements
      * @param dataType Data type
@@ -489,84 +481,91 @@ public class OpaqueDataBuffer extends Pointer {
         DeviceDescriptor selectedDevice = null;
 
         DeviceMemoryManager memoryManager = DeviceMemoryManager.getInstance();
-        boolean routingEnabled = DeviceAwareNd4j.isRoutingEnabled();
-        boolean simulationEnabled = memoryManager.isMemorySimulationEnabled();
 
-        if (routingEnabled || simulationEnabled) {
-            selectedDevice = selectDeviceForAllocation(bytes, routingEnabled, memoryManager);
-            if (selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
-                int targetDevice = selectedDevice.getDeviceIndex();
-                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                if (targetDevice >= 0 && currentDevice != targetDevice) {
-                    DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueDataBuffer", "allocate");
+        // Select the best GPU based on free memory before allocating.
+        // Save and restore CUDA context around allocation.
+        int savedDevice = -1;
+        selectedDevice = selectDeviceForAllocation(bytes, memoryManager);
+        if (selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+            int targetDevice = selectedDevice.getDeviceIndex();
+            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            if (targetDevice >= 0 && currentDevice != targetDevice) {
+                savedDevice = currentDevice;
+                // Auto-install device-aware op executioner on first cross-device allocation
+                // so that subsequent ops handle cross-device data correctly
+                if (!DeviceAwareOpExecutioner.isInstalled()) {
+                    DeviceAwareOpExecutioner.install();
                 }
+                DeviceMemoryManager.getInstance().switchDevice(targetDevice, "OpaqueDataBuffer", "allocate");
             }
         }
 
-        // Ensure device is assigned for this thread before any native allocation.
-        // This ensures the native code allocates the buffer on the correct device.
-        Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        try {
+            for (int t = 0; t < MAX_TRIES; t++) {
+                try {
+                    // try to allocate data buffer
+                    buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
 
-        for (int t = 0; t < MAX_TRIES; t++) {
-            try {
-                // try to allocate data buffer
-                buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
+                    // Check if allocation succeeded
+                    if(buffer != null && !buffer.isNull()) {
+                        buffer.retainReference();
 
-                // Check if allocation succeeded
-                if(buffer != null && !buffer.isNull()) {
-                    buffer.retainReference();
+                        // Register with DeallocatorService, marking as constant if requested
+                        try {
+                            registerWithDeallocatorService(buffer, isConstant, isConstant ? 0L : bytes);
 
-                    // Register with DeallocatorService, marking as constant if requested
-                    try {
-                        registerWithDeallocatorService(buffer, isConstant, isConstant ? 0L : bytes);
-
-                        // Always track non-constant allocations in DeviceMemoryManager
-                        if (!isConstant) {
-                            DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
-                            if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
-                                    && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
-                                actualDevice = selectedDevice;
+                            // Always track non-constant allocations in DeviceMemoryManager
+                            if (!isConstant) {
+                                DeviceDescriptor actualDevice = resolveAllocationDevice(buffer);
+                                if ((actualDevice == null || actualDevice.getDeviceType() == DeviceType.CPU)
+                                        && selectedDevice != null && selectedDevice.getDeviceType().isGpu()) {
+                                    actualDevice = selectedDevice;
+                                }
+                                if (actualDevice != null) {
+                                    memoryManager.recordAllocation(actualDevice, bytes);
+                                }
                             }
-                            if (actualDevice != null) {
-                                memoryManager.recordAllocation(actualDevice, bytes);
-                            }
+
+                            // Capture trace if needed
+                            if(Nd4j.getNativeOps().isFuncTrace())
+                                buffer.captureTrace();
+
+                            // Success - return the buffer
+                            return buffer;
+                        } catch (Exception regEx) {
+                            // LEAK FIX: Clean up buffer if registration fails
+                            Nd4j.getNativeOps().dbClose(buffer);
+                            throw regEx;
                         }
-
-                        // Capture trace if needed
-                        if(Nd4j.getNativeOps().isFuncTrace())
-                            buffer.captureTrace();
-
-                        // Success - return the buffer
-                        return buffer;
-                    } catch (Exception regEx) {
-                        // LEAK FIX: Clean up buffer if registration fails
-                        Nd4j.getNativeOps().dbClose(buffer);
-                        throw regEx;
                     }
+
+                    // check error code
+                    ec = Nd4j.getNativeOps().lastErrorCode();
+                    if (ec != 0) {
+                        em = Nd4j.getNativeOps().lastErrorMessage();
+
+                        // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
+                        gcIfHeapPressured();
+
+                        // sleeping for 50ms to let any pending async frees complete
+                        Thread.sleep(50);
+                    } else {
+                        // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
+                        break;
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Allocation interrupted", e);
                 }
+            }
 
-                // check error code
-                ec = Nd4j.getNativeOps().lastErrorCode();
-                if (ec != 0) {
-                    em = Nd4j.getNativeOps().lastErrorMessage();
-
-                    // Only invoke GC if Java heap is under pressure — GPU OOM is not helped by Java GC
-                    gcIfHeapPressured();
-
-                    // sleeping for 50ms to let any pending async frees complete
-                    Thread.sleep(50);
-                } else {
-                    // Buffer is null but no error - shouldn't happen, but break to avoid infinite loop
-                    break;
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Allocation interrupted", e);
+            // if MAX_TRIES is over, we'll just throw an exception
+            throw new RuntimeException("Allocation failed: [" + em + "] for amount of memory " + numElements * dataType.width() + " bytes");
+        } finally {
+            if (savedDevice >= 0) {
+                DeviceMemoryManager.getInstance().switchDevice(savedDevice, "OpaqueDataBuffer", "restore");
             }
         }
-
-        // if MAX_TRIES is over, we'll just throw an exception
-        throw new RuntimeException("Allocation failed: [" + em + "] for amount of memory " + numElements * dataType.width() + " bytes");
     }
 
     /**
@@ -977,25 +976,69 @@ public class OpaqueDataBuffer extends Pointer {
         return cpu != null ? cpu : DeviceDescriptor.cpu();
     }
 
-    private static DeviceDescriptor selectDeviceForAllocation(long bytes, boolean routingEnabled, DeviceMemoryManager memoryManager) {
-        DeviceDescriptor preferred;
-        if (routingEnabled) {
-            preferred = Nd4j.getDefaultDevice();
-        } else {
-            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-            BackendRegistry registry = BackendRegistry.getInstance();
-            if (currentDevice >= 0) {
-                DeviceDescriptor byId = registry.getDevice(DeviceDescriptor.cuda(currentDevice).getDeviceId());
-                preferred = byId != null ? byId : DeviceDescriptor.cuda(currentDevice);
-            } else {
-                preferred = registry.getDefaultCpuDevice();
-                if (preferred == null) {
-                    preferred = DeviceDescriptor.cpu();
-                }
-            }
+    /**
+     * Minimum device headroom in bytes (128MB). Allocations will not be placed on a device
+     * if doing so would leave less than this amount free. This reserves space for CUDA
+     * ContextBuffers (2x8MB workspace + streams), DSP capture workspace (up to 512MB),
+     * CudaMemoryPool reserved blocks, and other C++ runtime overhead that bypasses Java routing.
+     */
+    private static final long MIN_DEVICE_HEADROOM = 128L * 1024 * 1024;
+
+    /**
+     * Thread-local flag to suppress cross-device routing during CUDA graph
+     * capture/replay. When true, allocations stay on the current device even
+     * if memory is low — the C++ layer handles OOM via its own failover.
+     * Routing to another device during graph execution would invalidate the
+     * captured graph (different device pointers).
+     */
+    private static final ThreadLocal<Boolean> tl_suppressCrossDeviceRouting = ThreadLocal.withInitial(() -> false);
+
+    public static void suppressCrossDeviceRouting(boolean suppress) {
+        tl_suppressCrossDeviceRouting.set(suppress);
+    }
+
+    private static DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceMemoryManager memoryManager) {
+        // Prefer the current device — only route elsewhere if it can't fit the allocation
+        // plus a safety headroom. This avoids unnecessary CUDA context switches during
+        // DSP execution, CUDA graph capture, and other operations that depend on a stable
+        // device context. The headroom ensures ContextBuffers workspace (16MB) and other
+        // runtime overhead can still be allocated on the device.
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+        // During CUDA graph capture/replay, never route to a different device.
+        // Cross-device pointers invalidate the captured graph.
+        if (tl_suppressCrossDeviceRouting.get()) {
+            DeviceDescriptor currentDevice = memoryManager.getRegisteredDevice(currentDeviceId);
+            return currentDevice != null ? currentDevice :
+                memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
         }
 
-        return memoryManager.selectDeviceForAllocation(bytes, preferred);
+        // Look up the already-registered device descriptor for the current device.
+        // Devices are registered at startup by the backend (JCublasBackend) with real
+        // memory values. We must use that descriptor, NOT create a new one.
+        DeviceDescriptor currentDevice = memoryManager.getRegisteredDevice(currentDeviceId);
+        if (currentDevice != null) {
+            long freeMem = memoryManager.getActualFreeMemory(currentDevice);
+            // Only require full headroom for large allocations (>1MB).
+            // Small allocations (dup targets, scalars, etc.) should stay on the
+            // current device to avoid cross-device kernel issues. The C++ failover
+            // handles actual OOM at the native layer.
+            long headroom = bytes > 1024 * 1024 ? MIN_DEVICE_HEADROOM : Math.min(bytes * 2, MIN_DEVICE_HEADROOM);
+            if (freeMem >= bytes + headroom) {
+                return currentDevice;
+            }
+            // Current device can't fit — route to device with most free memory
+            DeviceDescriptor alt = memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
+            if (alt != null && alt.getDeviceIndex() != currentDeviceId) {
+                log.info("Multi-GPU routing: device {} has {}MB free, need {}MB + 128MB headroom. Routing to device {} ({}MB free)",
+                        currentDeviceId, freeMem / (1024 * 1024), bytes / (1024 * 1024),
+                        alt.getDeviceIndex(), memoryManager.getActualFreeMemory(alt) / (1024 * 1024));
+            }
+            return alt;
+        }
+
+        // Current device not registered — fall back to device with most free memory.
+        return memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);
     }
 
     /**

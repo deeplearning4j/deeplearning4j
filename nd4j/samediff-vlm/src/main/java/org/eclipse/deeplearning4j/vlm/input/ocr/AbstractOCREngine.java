@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * Abstract base class for OCR engine implementations.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public abstract class AbstractOCREngine implements OCREngine {
 

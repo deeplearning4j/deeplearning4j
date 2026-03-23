@@ -49,7 +49,7 @@ import java.util.List;
  * Output:
  *   0: scores with ALiBi biases applied
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class ApplyAlibi extends DynamicCustomOp {

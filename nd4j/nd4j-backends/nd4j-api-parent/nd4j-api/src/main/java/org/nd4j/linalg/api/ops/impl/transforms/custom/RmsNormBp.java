@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Backpropagation for RmsNorm.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class RmsNormBp extends DynamicCustomOp {

@@ -61,6 +61,7 @@ public class GraphOptimizer {
                 new ShapeFunctionOptimizations(),
                 new ActivationFusionOptimizations(), // sigmoid(x)*x -> swish, SwiGLU detection
                 new NormalizationFusionOptimizations(), // RMSNorm detection
+                new GatedDeltaNetFusionOptimizations(), // GDN pattern fusion
                 new LinearFusionOptimizations(),
                 new AttentionFusionOptimizations(),  // Fuse attention patterns
                 new QuantizationOptimizations(),     // Remove redundant casts, FP16 quantization

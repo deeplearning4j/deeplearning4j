@@ -36,7 +36,7 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
  * However, ND4J LogSoftMax defaults to dimension=1, which causes incorrect
  * results when the ONNX model doesn't explicitly set the axis attribute.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @PreHookRule(nodeNames = [], opNames = ["LogSoftmax"], frameworkName = "onnx")
 class LogSoftmax : PreImportHook {

@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link QuantizedPagedKVCache} -- structure and lifecycle tests only.
  * Does not test append/dequantize since those require native quantization ops.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 class TestQuantizedKVCache {
 

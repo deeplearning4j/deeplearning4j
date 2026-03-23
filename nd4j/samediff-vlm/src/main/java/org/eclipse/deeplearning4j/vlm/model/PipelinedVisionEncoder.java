@@ -53,7 +53,7 @@ import java.util.function.Supplier;
  *   <li>Speedup: ~preprocess_time * (K-1) saved</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class PipelinedVisionEncoder {

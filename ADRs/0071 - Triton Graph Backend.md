@@ -6,6 +6,8 @@ Implemented
 
 Proposed by: Adam Gibson (January 2025)
 
+Updated by: Runtime maintainers (March 20, 2026)
+
 Discussed with: Development Team
 
 ## Context
@@ -149,6 +151,10 @@ public:
 | Element-wise only | 1024 | 4 | 3 | 1D: ceil(N/1024) |
 | MatMul-dominant | 128 (M,N,K=32) | 8 | 3 | 2D: ceil(M/128) × ceil(N/128) |
 | Reduction-dominant | 1024 | 4 | 2 | 1D: ceil(N/1024) |
+| Fused Attention (decode, seqQ=1) | blockM=1, blockN=auto | 4 | 1 | Attention grid |
+| Fused Attention (prefill) | blockM=seqQ, blockN=auto | 4 | 1 | Attention grid |
+
+The attention tile config is selected by `chooseFusedAttentionTileConfig()` which sets `blockM = seqQ` for single-token decode. This eliminates 98% wasted compute — previous blockM=64 wasted 63/64 threads on masked positions.
 
 ### Multi-Target Dispatch
 
@@ -217,6 +223,104 @@ cmake -DHELPERS_triton=ON -Dlibnd4j.chip=cuda ..
 
 All Triton code is guarded by `#if HAVE_TRITON ... #endif`. When Triton is not available, NativeDynamicShapePlan falls back to CUDA Graphs or slot-by-slot execution transparently.
 
+## Recent Optimizations (March 2026)
+
+### Section Fusion Scoring
+
+A heuristic-based cost model (`FusionScoring.cpp`) evaluates whether merging adjacent Triton sections into mega-kernels is beneficial. The scoring considers:
+
+- **Grid compatibility**: Sections with incompatible grid dimensions (1D vs 2D) cannot merge
+- **Shared memory estimation**: Combined shared memory must fit GPU limits
+- **Memory traffic savings**: Bytes of intermediate global memory eliminated by fusion
+- **Kernel launch overhead savings**: ~15μs per eliminated kernel launch
+- **Register pressure penalties**: Excessive register usage reduces GPU occupancy
+- **Attention neighborhood bonuses**: +50.0 score for sections adjacent to attention ops
+
+Sections are merged when the net fusion score exceeds `TRITON_FUSION_MIN_SCORE` (default: 5.0).
+
+**Configuration**:
+- `ND4J_TRITON_SECTION_FUSION` (default: true) — enable section fusion
+- `ND4J_TRITON_FUSION_SCORING` (default: true) — enable cost-model scoring
+- `ND4J_TRITON_FUSION_MIN_SCORE` (default: 5.0) — minimum score threshold
+
+### Attention Neighborhood Fusion
+
+Sections adjacent to `FUSED_ATTENTION` sections (e.g., `GATHER`, `CONCAT`, `STACK` for KV cache operations) can now be fused with surrounding element-wise ops. This reduces section fragmentation in attention patterns common in transformer decoders.
+
+The fusion scoring gives a significant bonus (+50.0) to attention-adjacent sections, allowing `GATHER`/`CONCAT`/`STACK` sections to merge with nearby element-wise ops even when the raw memory traffic savings alone would not justify fusion.
+
+**Configuration**: `ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS` (default: true)
+
+**Performance impact** (SmolDocling, RTX 4090): 83.98 → 86.37 tok/s steady-state decode
+
+### Attention Kernel Decode Optimization
+
+The fused attention kernel's tile configuration was previously using a fixed `blockM=64` for all cases. For single-token decode (seqQ=1), this wasted 63/64 of compute on masked positions.
+
+**Solution**: `chooseFusedAttentionTileConfig()` now sets `blockM = seqQ`:
+- Single-token decode (seqQ=1): blockM=1 — each thread block processes exactly one query token
+- Multi-token prefill: blockM=seqQ — adapts to actual sequence length
+
+Additionally, **K buffer validation** was added for static KV cache mode. The validator checks shape capacity (not content length) when using dual-buffer KV, enabling Triton compilation during decode where it previously fell back to native.
+
+**Warps/stages tuning results** (SmolDocling, RTX 4090):
+
+| Config | Steady-state tok/s |
+|--------|--------------------|
+| warps=2, stages=1 (baseline) | 69.56 |
+| warps=4, stages=1 (optimal) | 86.91 (+24.9%) |
+| warps=4, stages=2 | 82.74 |
+| warps=2, stages=2 | 71.23 |
+
+**Configuration**:
+- `ND4J_TRITON_NUM_WARPS` (default: auto — selected by tile config)
+- `ND4J_TRITON_NUM_STAGES` (default: auto)
+- `Environment.tritonAttentionBlockN()` (0 = auto)
+
+### Triton Fusion Optimization Flags
+
+Fine-grained control over which fusion passes are applied during IR construction:
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| `ND4J_TRITON_FUSE_IDENTITY_SHAPES` | true | Fuse identity reshape/expand_dims/squeeze into adjacent ops |
+| `ND4J_TRITON_FUSE_CAST_CHAINS` | true | Merge consecutive cast operations |
+| `ND4J_TRITON_FUSE_TRIVIAL_GATHER` | true | Fuse trivial gather (identity indices) with element-wise |
+| `ND4J_TRITON_SPECIALIZE_PERMUTE_SEQ1` | true | Optimize permutes for seq=1 (decode) |
+| `ND4J_TRITON_ELIMINATE_CONCAT_SPLIT_PAIRS` | true | Remove concat→split no-op pairs |
+| `ND4J_TRITON_FUSED_MATMUL` | false | Fuse matmul→bias→activation (HIGH RISK — cuBLAS faster for M=1) |
+
+### Verification & Debugging Infrastructure
+
+Triton now includes a comprehensive set of diagnostic and verification flags:
+
+**Verification** (correctness validation):
+- `ND4J_TRITON_VERIFY_KERNELS` — run both Triton and native path, compare outputs element-wise
+- `ND4J_TRITON_VERIFY_KEEP_NATIVE` — keep native outputs during verify (detect error accumulation)
+- `ND4J_TRITON_VERIFY_FULL_SNAPSHOT` — save/restore ALL outputSlots during verify (corruption detection)
+
+**Debugging** (execution control):
+- `ND4J_TRITON_SKIP_KERNELS` — skip Triton, run native fallback (isolate Triton issues)
+- `ND4J_TRITON_MAX_SUBKERNEL_INDEX` — limit sub-kernel execution (-1 = unlimited)
+- `ND4J_TRITON_FORCE_RECAPTURE` — force CUDA graph re-capture every step
+- `ND4J_TRITON_CAPTURE_MIN_EXEC` (default: 2) — execution count before graph capture
+
+**Dump** (IR and compilation inspection):
+- `ND4J_TRITON_KERNEL_DUMP` — save generated Triton MLIR and compiled PTX to disk
+- `ND4J_TRITON_DUMP_SECTIONS` — output section breakdown to stderr
+- `ND4J_TRITON_DUMP_ARGS` — output argument mapping to stderr
+- `ND4J_TRITON_LOG_ALL_PATTERNS` — log pattern matching details during IR construction
+
+### Compilation Type Control
+
+Fine-grained control over which section types are compiled vs. falling back to native:
+
+- `ND4J_TRITON_COMPILE_ALL` (default: false) — compile all section types
+- `ND4J_TRITON_INCLUDE_TYPES` (comma-separated whitelist, e.g., `REDUCTION,NORMALIZATION,GATHER`)
+- `ND4J_TRITON_EXCLUDE_OPS` (comma-separated op blacklist, e.g., `matmul,softmax`)
+
+This enables incremental enablement of Triton compilation for new section types while keeping production defaults conservative.
+
 ## Consequences
 
 ### Advantages
@@ -237,6 +341,12 @@ All Triton code is guarded by `#if HAVE_TRITON ... #endif`. When Triton is not a
 
 **Runtime Robustness**: Section-boundary handling and kernel synchronization paths were hardened to avoid stale outputs and intermittent CUDA runtime failures.
 
+**Cost-Model Fusion**: FusionScoring provides data-driven section merge decisions, replacing heuristic-only approaches. Attention neighborhood bonuses specifically optimize the fragmented section patterns common in transformer decoder attention.
+
+**Decode-Optimized Attention**: Dynamic tile configuration (`blockM=seqQ`) eliminates 98% wasted compute for single-token decode, achieving +24.9% throughput improvement with optimal warp/stage tuning.
+
+**Comprehensive Verification**: Built-in golden-comparison mode (`VERIFY_KERNELS`) enables continuous correctness validation without separate test infrastructure, including full-snapshot mode for detecting subtle corruption.
+
 ### Disadvantages
 
 **Triton Library Dependency**: Requires Triton 3.2.0+ installation. Not all deployment environments have Triton available, especially embedded or edge devices.
@@ -245,18 +355,66 @@ All Triton code is guarded by `#if HAVE_TRITON ... #endif`. When Triton is not a
 
 **Limited Op Coverage**: ~40 ops are mappable to Triton IR. Complex ops (custom CUDA kernels, multi-output ops) break fusion boundaries. Coverage will expand over time but will never reach 100%.
 
-**Shape Change Recompilation**: Each unique shape combination requires a new compilation. For autoregressive generation with growing KV cache, this means periodic recompilations as the sequence length grows.
+**Shape Change Recompilation**: Each unique shape combination requires a new compilation. For autoregressive generation with growing KV cache, this means periodic recompilations as the sequence length grows. *Mitigated by*: symbolic shape ranges (see ADR 0061) reduce recompilation frequency, and disk cache persistence (see ADR 0061) eliminates cross-process recompilation.
 
 **Memory Overhead**: Compiled kernel binaries and GPU modules consume host and device memory. For large graphs with many segments and shape variations, cache memory can be significant.
 
 ## References
 
+### Core Triton Backend
+
 - libnd4j/include/graph/gpu/TritonGraphBackend.h, TritonGraphBackend.cpp
+- libnd4j/include/graph/gpu/TritonGraphBackend_internal.h
+- libnd4j/include/graph/gpu/TritonGraphBackend_binary.cpp
+- libnd4j/include/graph/gpu/TritonGraphBackend_cache.cpp
+- libnd4j/include/graph/gpu/TritonGraphBackend_compile.cu
+- libnd4j/include/graph/gpu/TritonGraphBackend_execute.cu
+- libnd4j/include/graph/gpu/TritonGraphBackend_kernel.cu
+
+### IR Builder
+
 - libnd4j/include/graph/gpu/TritonIRBuilder.h, TritonIRBuilder.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_internal.h
+- libnd4j/include/graph/gpu/TritonIRBuilder_analysis.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_types.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_emitters.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_kernels.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_module.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_sections.cpp
+- libnd4j/include/graph/gpu/TritonIRBuilder_cuda.cu
+
+### Fusion & Configuration
+
+- libnd4j/include/graph/gpu/FusionScoring.cpp
+- libnd4j/include/graph/gpu/SectionTypeConfig.h
+- libnd4j/include/graph/GraphBackendCommon.h
+
+### Target Dispatch
+
 - libnd4j/include/graph/gpu/TritonTargetDispatch.h, TritonTargetDispatch.cpp
-- libnd4j/include/graph/GraphBackend.h (abstract interface)
+
+### cuBLAS Lt Integration
+
+- libnd4j/include/helpers/cuda/MmulHelper.cu (tryLtMatmul)
+- libnd4j/include/helpers/cuda/cublasHelper.cu (Lt handle management)
+- libnd4j/include/helpers/cublasHelper.h
+
+### Build & Configuration
+
 - libnd4j/cmake/FindTriton.cmake
+- libnd4j/include/system/Environment.h (Triton configuration flags)
+- nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/factory/Environment.java
+
+### Tests & Benchmarks
+
 - platform-tests/src/test/java/org/eclipse/deeplearning4j/nd4j/autodiff/samediff/TritonGraphBackendTest.java
+- platform-tests/src/test/java/org/eclipse/deeplearning4j/vlm/TestSmolDoclingOptimizedPipeline.java
+- nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/model/benchmark/BenchmarkConfig.java
+- nd4j/samediff-llm/src/main/java/org/eclipse/deeplearning4j/model/benchmark/BenchmarkConfigApplier.java
+
+### Related
+
 - OpenAI Triton: https://github.com/openai/triton
 - ADR 0061 - DynamicShapePlan Execution (NativeDynamicShapePlan integration)
 - ADR 0058 - Multi-Backend Kernel Selection and Management
+- ADR 0067 - Scaled Dot-Product Attention Optimization

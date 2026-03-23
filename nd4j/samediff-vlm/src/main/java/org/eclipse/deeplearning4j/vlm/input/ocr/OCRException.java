@@ -23,7 +23,7 @@ package org.eclipse.deeplearning4j.vlm.input.ocr;
 /**
  * Exception thrown when OCR processing fails.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 public class OCRException extends Exception {
 

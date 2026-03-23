@@ -80,7 +80,7 @@ import java.util.Map;
  *   <li>50 warm adapters: ~1.6GB pinned host memory</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  * @see PeftModel
  * @see LoraLayer
  */

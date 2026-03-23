@@ -387,6 +387,16 @@ int InteropDataBuffer::useCount() const {
 
 void InteropDataBuffer::registerSpecialUse(const std::vector<const InteropDataBuffer*>& writeList,
                                            const std::vector<const InteropDataBuffer*>& readList) {
+  // Advance readSpecial on read inputs — matches NDArray::registerSpecialUse
+  // (NDArray_core.cu) which calls tickReadDevice() on readList items.
+  // Without this, isPrimaryActual() returns incorrect results because
+  // _readSpecial is never advanced, causing stale D→H sync decisions.
+  for (const auto& v : readList) {
+    if (v == nullptr) continue;
+    auto db = v->getDataBuffer();
+    if (db != nullptr) db->readSpecial();
+  }
+
   for (const auto& v : writeList) {
     if (v == nullptr) continue;
 
@@ -458,6 +468,14 @@ void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuf
 
 void InteropDataBuffer::registerPrimaryUse(const std::vector<const InteropDataBuffer*>& writeList,
                                            const std::vector<const InteropDataBuffer*>& readList) {
+  // Advance readPrimary on read inputs — matches NDArray::registerPrimaryUse
+  // (NDArray_core.cu) which calls tickReadHost() on readList items.
+  for (const auto& v : readList) {
+    if (v == nullptr || v->isClosed()) continue;
+    auto db = v->getDataBuffer();
+    if (db != nullptr) db->readPrimary();
+  }
+
   for (const auto& v : writeList) {
     if (v == nullptr || v->isClosed()) continue;
 

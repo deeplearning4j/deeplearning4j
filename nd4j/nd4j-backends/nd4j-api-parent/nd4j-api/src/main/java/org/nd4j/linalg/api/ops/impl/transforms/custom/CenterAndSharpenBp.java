@@ -48,7 +48,7 @@ import java.util.List;
  *   0: dL/dInput [batch, features]
  *   1: dL/dCenter [features]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class CenterAndSharpenBp extends DynamicCustomOp {

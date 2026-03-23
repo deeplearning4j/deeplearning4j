@@ -23,6 +23,7 @@
 
 #include <graph/NativeDynamicShapePlan.h>
 #include <graph/DspDiagnostics.h>
+#include <system/Environment.h>
 #include <cublas_v2.h>
 #include <helpers/cublasHelper.h>
 
@@ -71,19 +72,16 @@ void NativeDynamicShapePlan::setCublasWorkspaceForCapture(void* stream) {
   cublasSetStream_v2(*handlePtr, stream != nullptr
       ? *static_cast<cudaStream_t*>(stream) : nullptr);
 
-  // NOTE: We intentionally do NOT set an explicit cuBLAS workspace here.
-  // A 256MB workspace causes cuBLAS to select different GEMM algorithms (e.g.,
-  // split-K) than it uses without workspace, producing different floating-point
-  // rounding that compounds across ~3840 ops and corrupts VLM output.
-  // Instead, we rely on CUDA 12's relaxed capture mode to handle cuBLAS's
-  // internal workspace allocations. cuBLAS may create MemAlloc/MemFree graph
-  // nodes during capture, which CUDA 12.x supports natively.
-  // If this causes SIGSEGV on replay, set ND4J_CUBLAS_CAPTURE_WORKSPACE=1
-  // to re-enable explicit workspace (at the cost of accuracy).
-  static bool useCublasWorkspace = []() {
-    const char* v = std::getenv("ND4J_CUBLAS_CAPTURE_WORKSPACE");
-    return v != nullptr && std::string(v) == "1";
-  }();
+  // Set an explicit cuBLAS workspace to prevent cuBLAS from creating internal
+  // MemAlloc/MemFree graph nodes during CUDA graph capture. Without workspace,
+  // each cuBLAS GEMM creates its own MemAlloc node — for a model with ~210 matmuls,
+  // this produces 210 MemAlloc + 210 MemFree nodes. On graph launch, the runtime
+  // must allocate memory for ALL MemAlloc nodes simultaneously, which fails with OOM
+  // when device memory is tight (e.g., speculative decode with two models loaded).
+  //
+  // Controlled via Environment::cublasCaptureWorkspace() (toggled per-config from Java).
+  // Also respects ND4J_CUBLAS_CAPTURE_WORKSPACE env var at startup.
+  bool useCublasWorkspace = sd::Environment::getInstance().cublasCaptureWorkspace();
 
   if (useCublasWorkspace) {
     ensureCublasWorkspace(256 * 1024 * 1024);
@@ -101,6 +99,9 @@ void NativeDynamicShapePlan::setCublasWorkspaceForWarmup() {
   // Set the SAME explicit workspace during warmup as during capture.
   // This ensures cuBLAS selects identical GEMM algorithms in both paths,
   // preventing floating-point divergence from different algorithm choices.
+  // Reads from Environment dynamically so it can be toggled per-config.
+  if (!sd::Environment::getInstance().cublasCaptureWorkspace()) return;
+
   auto* handlePtr = reinterpret_cast<cublasHandle_t*>(CublasHelper::getInstance().handle());
   if (handlePtr == nullptr) return;
 

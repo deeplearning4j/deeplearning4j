@@ -34,7 +34,7 @@ import lombok.experimental.SuperBuilder;
  *
  * Total loss = policy_loss + valueLossCoeff * value_loss - entropyCoeff * entropy
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @SuperBuilder

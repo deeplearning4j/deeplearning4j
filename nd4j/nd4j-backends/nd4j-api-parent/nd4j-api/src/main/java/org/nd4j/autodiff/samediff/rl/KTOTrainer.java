@@ -49,7 +49,7 @@ import java.util.Map;
  * for proper backpropagation. Reference model log probs and KL are computed
  * externally (no gradients needed for the reference model).
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class KTOTrainer extends RLAlignmentTrainer<KTOConfig> {

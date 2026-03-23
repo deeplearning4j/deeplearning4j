@@ -968,6 +968,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public int tritonAttentionBlockN() {
+        return e.tritonAttentionBlockN();
+    }
+
+    @Override
+    public void setTritonAttentionBlockN(int blockN) {
+        e.setTritonAttentionBlockN(blockN);
+    }
+
+    @Override
     public boolean tritonEnableFpFusion() {
         return e.tritonEnableFpFusion();
     }
@@ -1269,6 +1279,16 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setCublasTf32Enabled(boolean enabled) {
         e.setCublasTf32Enabled(enabled);
+    }
+
+    @Override
+    public boolean cublasCaptureWorkspace() {
+        return e.cublasCaptureWorkspace();
+    }
+
+    @Override
+    public void setCublasCaptureWorkspace(boolean enabled) {
+        e.setCublasCaptureWorkspace(enabled);
     }
 
     @Override

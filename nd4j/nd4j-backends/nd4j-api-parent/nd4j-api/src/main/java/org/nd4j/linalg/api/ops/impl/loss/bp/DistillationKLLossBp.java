@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Backward pass for Knowledge Distillation KL Divergence Loss.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class DistillationKLLossBp extends DynamicCustomOp {

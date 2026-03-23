@@ -44,7 +44,7 @@ import java.lang.reflect.Constructor;
  * }
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class CpuBackendLoader {

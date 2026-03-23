@@ -57,7 +57,7 @@ import java.util.List;
  * <p>
  * Output: [B, O] if gatherOutput=1, else [B, O/tp]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class ColumnParallelLinear extends DynamicCustomOp {

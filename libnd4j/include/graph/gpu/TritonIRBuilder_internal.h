@@ -25,6 +25,7 @@
 
 #include <array/NDArray.h>
 #include <graph/NativeDynamicShapePlan.h>
+#include <system/Environment.h>
 #include <system/common.h>
 
 #include <algorithm>
@@ -245,13 +246,20 @@ inline AttentionTileChoice chooseFusedAttentionTileConfig(int batchSize, int num
   const int limit = (sharedMemLimitBytes > 0) ? sharedMemLimitBytes : queryCudaSharedMemLimitBytes();
   AttentionTileChoice choice;
 
+  // Check for explicit blockN override from environment
+  int blockNOverride = sd::Environment::getInstance().tritonAttentionBlockN();
+
   // DECODE OPTIMIZATION: For seqQ=1 (single-token decode), use minimal blockM
   // to avoid wasting compute on masked-out positions. Standard flash attention
   // uses blockM=32-128, but decode only needs blockM=1-8.
   if (seqQ <= 4) {
     // Decode or very short prefix: blockM matches actual seqQ, blockN based on seqK
     choice.blockM = (seqQ <= 1) ? 1 : ((seqQ <= 2) ? 2 : 4);
-    choice.blockN = (seqK <= 32) ? 32 : ((seqK <= 64) ? 64 : 128);
+    if (blockNOverride > 0) {
+      choice.blockN = blockNOverride;
+    } else {
+      choice.blockN = (seqK <= 32) ? 32 : ((seqK <= 64) ? 64 : 128);
+    }
   } else {
     // Prefill or longer sequences: standard tile selection
     int preferredM = (seqQ <= 32) ? 32 : ((seqQ <= 64) ? 64 : 128);

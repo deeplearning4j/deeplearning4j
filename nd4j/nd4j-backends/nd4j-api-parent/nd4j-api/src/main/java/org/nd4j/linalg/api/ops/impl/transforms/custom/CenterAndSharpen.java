@@ -48,7 +48,7 @@ import java.util.List;
  * Output:
  *   0: sharpened probabilities [batch, features]
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @NoArgsConstructor
 public class CenterAndSharpen extends DynamicCustomOp {

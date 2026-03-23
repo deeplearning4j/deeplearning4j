@@ -289,8 +289,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         // string arrays are stored in host memory only atm
         if (array.isS()) {
+            Nd4j.getExecutioner().setSkipDeviceCoherency(true);
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 return array.dup(array.ordering());
+            } finally {
+                Nd4j.getExecutioner().setSkipDeviceCoherency(false);
             }
         }
 
@@ -307,14 +310,20 @@ public class CudaAffinityManager extends BasicAffinityManager {
             // (e.g., DeviceWorker[1] on device 1, but array data is on device 0),
             // dup() would try a direct GPU-to-GPU copy which fails without P2P
             // (error 700: illegal memory access). Switch to source device first.
+            //
+            // Skip device coherency during dup() to prevent infinite recursion:
+            // replicateToDevice -> dup -> assign -> exec -> ensureDeviceCoherency -> replicateToDevice
             int sourceDeviceId = AtomicAllocator.getInstance().getAllocationPoint(array).getDeviceId();
             int currentDeviceId = getDeviceForCurrentThread();
             if (sourceDeviceId >= 0 && sourceDeviceId != currentDeviceId) {
                 DeviceMemoryManager.getInstance().switchDevice(sourceDeviceId, "CudaAffinityManager.replicateToDevice", "view-dup-source");
             }
+            Nd4j.getExecutioner().setSkipDeviceCoherency(true);
             INDArray contiguous;
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 contiguous = array.dup(array.ordering());
+            } finally {
+                Nd4j.getExecutioner().setSkipDeviceCoherency(false);
             }
             // Restore original device before recursive replicateToDevice call
             if (sourceDeviceId >= 0 && sourceDeviceId != currentDeviceId) {
@@ -345,10 +354,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
             // Create a copy that's marked as host-resident
             INDArray result;
+            Nd4j.getExecutioner().setSkipDeviceCoherency(true);
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 result = array.dup(array.ordering());
                 // Tag as host-resident
                 tagLocation(result, Location.HOST);
+            } finally {
+                Nd4j.getExecutioner().setSkipDeviceCoherency(false);
             }
 
             logger.debug("Array replicated to CPU, shape: {}", java.util.Arrays.toString(shape));

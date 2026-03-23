@@ -26,8 +26,10 @@ package org.nd4j.autodiff.samediff.execution;
  *
  * <p>Backends are tried in priority order when AUTO is selected.</p>
  * <p>CUDA builds: Triton → NVRTC → PTX → CUDA Graphs → slot-by-slot.</p>
+ * <p>ROCm builds: HIP Graphs (mirror of CUDA graph capture/replay).</p>
  * <p>Non-CUDA builds: Triton (if compiled) → MLX (Apple Silicon) → oneDNN → ACL → NNAPI
  * → ARM_HYBRID → MLIR CPU JIT → slot-by-slot.</p>
+ * <p>Cross-platform GPU: Level Zero (Intel), Vulkan (cross-vendor), Metal (Apple).</p>
  * <p>Forcing a specific mode skips the others.</p>
  */
 public enum GraphExecutionMode {
@@ -95,7 +97,52 @@ public enum GraphExecutionMode {
      * API to leverage hardware accelerators (Hexagon DSP, Mali GPU, NPU)
      * available on the device. Only available on Android API 27+.
      */
-    NNAPI(8);
+    NNAPI(8),
+
+    /**
+     * HIP graph capture and replay (AMD ROCm). Mirrors CUDA graph semantics
+     * using hipStreamBeginCapture/hipGraphLaunch. Near-identical API surface
+     * to CUDA graphs — records kernel launches into a hipGraph_t, instantiates
+     * into hipGraphExec_t, and replays with minimal launch overhead.
+     */
+    HIP_GRAPHS(9),
+
+    /**
+     * Intel Level Zero mutable command list replay. Records a command list once,
+     * then replays it with optional kernel argument mutation between replays
+     * via zeCommandListUpdateMutableCommandsExp(). Experimental API (Level Zero 1.11+).
+     */
+    LEVEL_ZERO(10),
+
+    /**
+     * Vulkan compute command buffer replay. Records a VkCommandBuffer once
+     * with VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT and resubmits it
+     * for each replay. Cross-platform (AMD, Intel, ARM Mali, Qualcomm Adreno).
+     */
+    VULKAN(11),
+
+    /**
+     * Metal indirect command buffer (ICB) replay. Pre-encodes compute
+     * dispatches into an MTLIndirectCommandBuffer and replays via
+     * executeCommandsInBuffer. Apple GPU only (Apple Silicon).
+     */
+    METAL(12),
+
+    /**
+     * TPU XLA compilation caching via PJRT. Compiles fusible segments to HLO
+     * (High-Level Operations) modules, caches compiled executables via
+     * PJRT_Client_Compile, and re-executes cached binaries on subsequent calls.
+     * Google Cloud TPU v4/v5 only.
+     */
+    TPU(13),
+
+    /**
+     * Hexagon-MLIR NPU compilation + command list replay. Compiles fusible
+     * segments to MLIR targeting Qualcomm Hexagon NPU via hexagon-mlir,
+     * stages data through TCM (Tightly Coupled Memory), and dispatches
+     * HVX vector operations. Qualcomm Snapdragon SoCs only.
+     */
+    HEXAGON(14);
 
     private final int nativeCode;
 

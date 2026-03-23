@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
  * Coordinates are typically in the range 0-1000 for DocTags format,
  * representing normalized positions on the page.
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Data
 @NoArgsConstructor

@@ -64,7 +64,7 @@ import java.util.concurrent.Executors;
  * // image shape: [1, 3, height, width]
  * }</pre>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 @Getter

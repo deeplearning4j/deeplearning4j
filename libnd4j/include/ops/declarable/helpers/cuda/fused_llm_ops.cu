@@ -25,6 +25,7 @@
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 #include <helpers/DebugHelper.h>
+#include <helpers/MmulHelper.h>
 #include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>
 #include <types/float16.h>
@@ -81,7 +82,7 @@ __device__ __forceinline__ float silu(float x) {
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-__global__ void fusedGELUKernel(
+static SD_KERNEL void fusedGELUKernel(
     const T* __restrict__ input,
     T* __restrict__ output,
     const LongType totalElements) {
@@ -96,7 +97,7 @@ __global__ void fusedGELUKernel(
 }
 
 template <typename T>
-__global__ void fusedGELUBackwardKernel(
+static SD_KERNEL void fusedGELUBackwardKernel(
     const T* __restrict__ input,
     const T* __restrict__ gradOut,
     T* __restrict__ gradIn,
@@ -494,6 +495,14 @@ void launchFusedRoPE(
     cudaStream_t stream) {
 
   LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+
+  // headDim < 2 means no pairs to rotate — RoPE is identity, just memcpy
+  if (totalPairs == 0) {
+    LongType totalBytes = batch * seqLen * numHeads * headDim * sizeof(T);
+    cudaMemcpyAsync(output, input, totalBytes, cudaMemcpyDeviceToDevice, stream);
+    return;
+  }
+
   int threadsPerBlock = 256;
   int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -518,6 +527,14 @@ void launchFusedRoPEBackward(
     cudaStream_t stream) {
 
   LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+
+  // headDim < 2 means no pairs to rotate — backward is identity, just memcpy
+  if (totalPairs == 0) {
+    LongType totalBytes = batch * seqLen * numHeads * headDim * sizeof(T);
+    cudaMemcpyAsync(gradIn, gradOut, totalBytes, cudaMemcpyDeviceToDevice, stream);
+    return;
+  }
+
   int threadsPerBlock = 256;
   int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
 
@@ -758,6 +775,14 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
   auto dtype = input->dataType();
 
   LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+
+  // headDim < 2 means no pairs to rotate — RoPE is a no-op, just copy input
+  if (totalPairs == 0) {
+    output->assign(input);
+    NDArray::registerSpecialUse({output}, {input, cosValues, sinValues});
+    return;
+  }
+
   dim3 launchDims = getLaunchDims("fusedRopeCached");
   int threadsPerBlock = launchDims.y;
   int numBlocks = (totalPairs + threadsPerBlock - 1) / threadsPerBlock;
@@ -865,12 +890,172 @@ void fusedBiasDropoutResidual(NDArray* input, NDArray* bias, NDArray* residual,
   NDArray::registerSpecialUse({output}, {input, bias, residual});
 }
 
-// Placeholder for fusedRmsNormSwiGLU - complex operation requiring matmul
+//////////////////////////////////////////////////////////////////////////////
+// Fused RMS Norm + SwiGLU
+//////////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+static SD_KERNEL void rmsNormGammaKernel(
+    T* __restrict__ output,
+    const T* __restrict__ input,
+    const T* __restrict__ gamma,
+    const LongType numRows,
+    const LongType rowLen,
+    const float epsilon) {
+
+  const LongType row = blockIdx.x;
+  if (row >= numRows) return;
+
+  extern __shared__ char shmem[];
+  float* sdata = reinterpret_cast<float*>(shmem);
+
+  const T* inputRow = input + row * rowLen;
+  T* outputRow = output + row * rowLen;
+
+  // Compute sum of squares for RMS norm
+  float sumSq = 0.0f;
+  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+    float val = static_cast<float>(inputRow[i]);
+    sumSq += val * val;
+  }
+
+  // Warp-level reduction
+  for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+    sumSq += __shfl_down_sync(0xffffffff, sumSq, offset);
+  }
+
+  // Block-level reduction
+  if ((threadIdx.x & (WARP_SIZE - 1)) == 0) {
+    sdata[threadIdx.x / WARP_SIZE] = sumSq;
+  }
+  __syncthreads();
+
+  if (threadIdx.x < (blockDim.x + WARP_SIZE - 1) / WARP_SIZE) {
+    sumSq = sdata[threadIdx.x];
+    for (int offset = WARP_SIZE / 2; offset > 0; offset /= 2) {
+      sumSq += __shfl_down_sync(0xffffffff, sumSq, offset);
+    }
+    if (threadIdx.x == 0) {
+      sdata[0] = sumSq;
+    }
+  }
+  __syncthreads();
+
+  // Compute RMS norm scale and apply gamma
+  float rms = rsqrtf(sdata[0] / static_cast<float>(rowLen) + epsilon);
+
+  for (LongType i = threadIdx.x; i < rowLen; i += blockDim.x) {
+    float val = static_cast<float>(inputRow[i]);
+    float g = static_cast<float>(gamma[i]);
+    outputRow[i] = static_cast<T>(val * rms * g);
+  }
+}
+
+template <typename T>
+static SD_KERNEL void siluMultiplyKernel(
+    T* __restrict__ output,
+    const T* __restrict__ gate,
+    const T* __restrict__ up,
+    const LongType totalElements) {
+
+  const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx >= totalElements) return;
+
+  float g = static_cast<float>(gate[idx]);
+  float u = static_cast<float>(up[idx]);
+  
+  // SiLU(x) = x * sigmoid(x)
+  float siluG = g / (1.0f + expf(-g));
+  
+  output[idx] = static_cast<T>(siluG * u);
+}
+
 void fusedRmsNormSwiGLU(NDArray* input, NDArray* gamma, NDArray* wGate, NDArray* wUp,
                         NDArray* output, float epsilon, LaunchContext* context) {
-  // For the mega-kernel version, this would fuse RMS norm with matmul and SwiGLU
-  // For now, fall back to separate operations
-  THROW_EXCEPTION("fusedRmsNormSwiGLU: Full kernel not yet implemented, use separate ops");
+  // Fused RMS Norm + SwiGLU for LLaMA-style MLP
+  // Computes: silu(rms_norm(x) @ W_gate) * (rms_norm(x) @ W_up)
+
+  const auto batchSize = input->sizeAt(0);
+  const auto seqLen = input->sizeAt(1);
+  const auto hiddenDim = input->sizeAt(2);
+  const auto intermediateDim = wGate->sizeAt(1);
+
+  const LongType numRows = batchSize * seqLen;
+  const LongType totalElements = numRows * intermediateDim;
+
+  auto stream = context->getCudaStream();
+  auto dtype = input->dataType();
+
+  // Allocate temporary for normalized input
+  std::vector<LongType> normShape = {batchSize, seqLen, hiddenDim};
+  NDArray normalized('c', normShape, input->dataType(), context);
+
+  // Step 1: RMS norm + gamma scaling
+  dim3 block(512);
+  dim3 grid(static_cast<unsigned int>(numRows));
+  size_t sharedMem = block.x * sizeof(float);
+
+  if (dtype == DataType::FLOAT32) {
+    rmsNormGammaKernel<float><<<grid, block, sharedMem, *stream>>>(
+        reinterpret_cast<float*>(normalized.specialBuffer()),
+        reinterpret_cast<const float*>(input->specialBuffer()),
+        reinterpret_cast<const float*>(gamma->specialBuffer()),
+        numRows, hiddenDim, epsilon);
+  } else if (dtype == DataType::DOUBLE) {
+    rmsNormGammaKernel<double><<<grid, block, sharedMem, *stream>>>(
+        reinterpret_cast<double*>(normalized.specialBuffer()),
+        reinterpret_cast<const double*>(input->specialBuffer()),
+        reinterpret_cast<const double*>(gamma->specialBuffer()),
+        numRows, hiddenDim, epsilon);
+  } else if (dtype == DataType::HALF) {
+    rmsNormGammaKernel<float16><<<grid, block, sharedMem, *stream>>>(
+        reinterpret_cast<float16*>(normalized.specialBuffer()),
+        reinterpret_cast<const float16*>(input->specialBuffer()),
+        reinterpret_cast<const float16*>(gamma->specialBuffer()),
+        numRows, hiddenDim, epsilon);
+  } else {
+    THROW_EXCEPTION("fusedRmsNormSwiGLU: Unsupported data type");
+  }
+  DebugHelper::checkGlobalErrorCode("rmsNormGammaKernel failed");
+
+  // Step 2: Matmul normalized @ W_gate -> gate
+  std::vector<LongType> gateShape = {batchSize, seqLen, intermediateDim};
+  NDArray gate('c', gateShape, input->dataType(), context);
+  MmulHelper::mmul(&normalized, wGate, &gate);
+
+  // Step 3: Matmul normalized @ W_up -> up
+  std::vector<LongType> upShape = {batchSize, seqLen, intermediateDim};
+  NDArray up('c', upShape, input->dataType(), context);
+  MmulHelper::mmul(&normalized, wUp, &up);
+
+  // Step 4: Fused SiLU(gate) * up -> output
+  dim3 siluBlock(256);
+  dim3 siluGrid((static_cast<unsigned long long>(totalElements) + siluBlock.x - 1) / siluBlock.x);
+
+  if (dtype == DataType::FLOAT32) {
+    siluMultiplyKernel<float><<<siluGrid, siluBlock, 0, *stream>>>(
+        reinterpret_cast<float*>(output->specialBuffer()),
+        reinterpret_cast<const float*>(gate.specialBuffer()),
+        reinterpret_cast<const float*>(up.specialBuffer()),
+        totalElements);
+  } else if (dtype == DataType::DOUBLE) {
+    siluMultiplyKernel<double><<<siluGrid, siluBlock, 0, *stream>>>(
+        reinterpret_cast<double*>(output->specialBuffer()),
+        reinterpret_cast<const double*>(gate.specialBuffer()),
+        reinterpret_cast<const double*>(up.specialBuffer()),
+        totalElements);
+  } else if (dtype == DataType::HALF) {
+    siluMultiplyKernel<float16><<<siluGrid, siluBlock, 0, *stream>>>(
+        reinterpret_cast<float16*>(output->specialBuffer()),
+        reinterpret_cast<const float16*>(gate.specialBuffer()),
+        reinterpret_cast<const float16*>(up.specialBuffer()),
+        totalElements);
+  } else {
+    THROW_EXCEPTION("fusedRmsNormSwiGLU: Unsupported data type");
+  }
+  DebugHelper::checkGlobalErrorCode("siluMultiplyKernel failed");
+
+  NDArray::registerSpecialUse({output}, {&normalized, &gate, &up});
 }
 
 void fusedRmsNormSwiGLUBackward(NDArray* input, NDArray* gamma, NDArray* wGate, NDArray* wUp,

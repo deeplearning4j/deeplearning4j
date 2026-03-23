@@ -45,7 +45,7 @@ import java.util.*;
  *   <li>Host memory offloading with async D2H transfers</li>
  * </ul>
  *
- * @author Eclipse Deeplearning4j Contributors
+ * Adam Gibson
  */
 @Slf4j
 public class CheckpointManager {
