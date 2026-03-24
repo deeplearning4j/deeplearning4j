@@ -134,6 +134,7 @@ public class BenchmarkConfig {
                 .tritonFusionScoring(false)
                 .tritonNumWarps(4).tritonNumStages(1)
                 .cublasTf32(true)
+                .tritonTf32(true)
                 .dspBatchedGemm(true)
                 .maxTokens(250).minDiversityPct(30);
     }

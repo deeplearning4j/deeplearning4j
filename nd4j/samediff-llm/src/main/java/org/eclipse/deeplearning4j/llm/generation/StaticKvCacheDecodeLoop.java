@@ -430,23 +430,6 @@ public class StaticKvCacheDecodeLoop {
                                 decoder.associateArrayWithVariable(e.getValue(), pastName);
                             }
                         }
-                        // Override attn_mask_reformat output — bypass the internal subgraph that
-                        // converts 1D attention_mask to 4D causal mask. In padded mode, the
-                        // subgraph receives a sparse mask (1s for filled + 0s for unfilled) and
-                        // may produce incorrect causal masking. By overriding the output to
-                        // PLACEHOLDER, we prune the subgraph and provide the correct 4D mask
-                        // directly via buildDecoderInputMap.
-                        String attnReformatNode = resolvedIOConfig.getAttnMaskReformatOutput();
-                        boolean noAttnOverride = "true".equalsIgnoreCase(
-                                System.getProperty("nd4j.dsp.noAttnOverride"));
-                        if (!noAttnOverride && attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
-                            decoder.addPlaceholderOverride(attnReformatNode);
-                            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
-                            log.info("  [Perf] Added placeholder override for {} (bypassing attn_mask_reformat)", attnReformatNode);
-                            // Re-read input names since a new placeholder was added
-                            decoderInputNames = decoder.inputs();
-                        }
-
                         // Clear old plan and recompile with correct KV shapes.
                         // When C++ KV scatter is enabled AND shapes will be frozen, compile with
                         // logits-only outputs — C++ scatter reads present KV from internal output
@@ -530,32 +513,31 @@ public class StaticKvCacheDecodeLoop {
 
             long tAfterKvUpdate = System.nanoTime();
 
-            // Sample next token — greedy uses bulk D2H + CPU argmax (avoids op dispatch overhead)
+            // Sample next token via native GPU op — pass logits directly (rank-3 supported)
             long tSampStart = System.nanoTime();
 
-            int nextTokenId;
+            // Pre-allocate output array to avoid calculateOutputShape on constant ShapeInfo.
+            // DSP outputs may have constant ShapeInfo flags that cause calculateOutputShape
+            // to fail when token_sample tries to infer output shapes internally.
+            long batchSize = logitsRaw.rank() == 3 ? logitsRaw.size(0) :
+                    (logitsRaw.rank() == 2 ? logitsRaw.size(0) : 1);
+            INDArray tokenOutput = Nd4j.createUninitialized(DataType.INT64, batchSize);
+
+            TokenSample tokenSampleOp;
             if (samplingConfig.isGreedy()) {
-                // GPU argmax: stays on device, only transfers 1 scalar D2H
-                int lastPos = logitsRaw.rank() == 3 ? (int) logitsRaw.size(1) - 1 : 0;
-                INDArray lastLogits = logitsRaw.rank() == 3
-                        ? logitsRaw.get(NDArrayIndex.point(0), NDArrayIndex.point(lastPos), NDArrayIndex.all())
-                        : (logitsRaw.rank() == 2 ? logitsRaw.get(NDArrayIndex.point(0), NDArrayIndex.all()) : logitsRaw);
-                nextTokenId = Nd4j.argMax(lastLogits).getInt(0);
+                tokenSampleOp = new TokenSample(logitsRaw);
             } else {
-                // Non-greedy: use TokenSample op for temperature/topK/topP sampling
-                long batchSize = logitsRaw.rank() == 3 ? logitsRaw.size(0) :
-                        (logitsRaw.rank() == 2 ? logitsRaw.size(0) : 1);
-                INDArray tokenOutput = Nd4j.createUninitialized(DataType.INT64, batchSize);
-                TokenSample tokenSampleOp = new TokenSample(logitsRaw,
+                tokenSampleOp = new TokenSample(logitsRaw,
                         samplingConfig.getTemperature(),
                         samplingConfig.getTopK(),
                         samplingConfig.getTopP(),
                         samplingConfig.getSeed() != null ? samplingConfig.getSeed() : 0L);
-                tokenSampleOp.addOutputArgument(tokenOutput);
-                Nd4j.getNativeOps().clearLastError();
-                INDArray tokenResult = Nd4j.getExecutioner().exec(tokenSampleOp)[0];
-                nextTokenId = tokenResult.getInt(0);
             }
+            tokenSampleOp.addOutputArgument(tokenOutput);
+            // Clear stale native error state from DSP graph capture failures.
+            Nd4j.getNativeOps().clearLastError();
+            INDArray tokenResult = Nd4j.getExecutioner().exec(tokenSampleOp)[0];
+            int nextTokenId = tokenResult.getInt(0);
             long tSampArgmax = System.nanoTime();
             generatedTokens.add(nextTokenId);
 
@@ -564,10 +546,9 @@ public class StaticKvCacheDecodeLoop {
 
             // Log sampling sub-timings
             if (step < 6 || step % 10 == 0) {
-                log.info("  [SAMP] step={} total={}ms (greedy={}, includes GPU sync)",
+                log.info("  [SAMP] step={} total={}ms (native token_sample)",
                         step,
-                        (tSampArgmax - tSampStart) / 1_000_000,
-                        samplingConfig.isGreedy());
+                        (tSampArgmax - tSampStart) / 1_000_000);
             }
 
             // Accumulate detailed timing for steps 3+

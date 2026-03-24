@@ -801,11 +801,13 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     if (planResults != null) {
                         log.debug("[EXEC-PATH] PlanExecutor path succeeded for {} outputs", planResults.size());
                         filteredResults = planResults;
-                        // Commit pending async ops — syncs execution stream
-                        Nd4j.getExecutioner().commit();
-                        // Sync stream 0 (where RELEASE_SPECIAL frees land) + trim pool
-                        NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                                Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                        dspStepCount++;
+                        // Periodic commit+trim: full sync on early steps, periodic in steady-state
+                        if (dspStepCount <= 2 || dspStepCount % TRIM_INTERVAL == 0) {
+                            Nd4j.getExecutioner().commit();
+                            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                        }
                         log.debug("Plan-based execution completed successfully");
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
@@ -833,17 +835,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // and defers non-closeable views, preventing premature buffer destruction.
             if (mmgr instanceof ArrayCacheMemoryMgr) {
                 ArrayCacheMemoryMgr.setGrowthFactor(1.0);
-                ArrayCacheMemoryMgr.setLargerArrayMaxMultiple(1.0);
             }
             Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
-            // Trim pool BEFORE execution to reclaim freed entries from previous output() calls.
-            // This is safe because no intermediates from this execution exist yet — only
-            // constants/variables/placeholders, whose memory was never freed.
-            // Without this trim, pool entries from the previous frame's cleanup accumulate,
-            // reporting high "used" memory even though the entries are reclaimable.
-            Nd4j.getExecutioner().commit();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
             // Suppress cross-device routing during execution.
             OpaqueDataBuffer.suppressCrossDeviceRouting(true);
             // Execute with corrected ordering

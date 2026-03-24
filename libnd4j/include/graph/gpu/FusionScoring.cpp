@@ -161,7 +161,7 @@ float scoreSectionFusion(
                        sectionB.type == KernelSectionType::STACK);
     // Type-based heuristic: boost fusion score for attention-adjacent op types
     if (aIsAttnAdj || bIsAttnAdj) {
-      attnBonus = 15.0f;  // Meaningful boost without dominating typical scores (~30-40)
+      attnBonus = 50.0f;  // Strong boost to prefer fusing attention neighborhood ops together
     }
   }
 
