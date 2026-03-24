@@ -34,14 +34,17 @@ OP_IMPL(boolean_not, 1, 1, true) {
   // Sync input to host for reliable access
   x->syncToHost();
 
-  // Perform explicit boolean negation element by element
-  for (sd::LongType i = 0; i < x->lengthOf(); i++) {
-    // Read as int8 and check if non-zero, then negate
-    bool inputVal = x->e<int8_t>(i) != 0;
-    z->p(i, !inputVal);
+  // Direct buffer access to avoid O(n^2) sync from per-element p()/e()
+  auto xBuf = x->bufferAsT<int8_t>();
+  auto zBuf = z->bufferAsT<int8_t>();
+  auto len = x->lengthOf();
+
+  for (sd::LongType i = 0; i < len; i++) {
+    zBuf[i] = (xBuf[i] != 0) ? 0 : 1;
   }
 
-  // Sync output to device
+  // Mark host written and sync to device ONCE
+  z->tickWriteHost();
   z->syncToDevice();
 
   return Status::OK;

@@ -165,25 +165,33 @@ public class FrozenDecodeStep implements AutoCloseable {
         // This ensures our reusable buffers co-locate with the model weights,
         // avoiding cross-device migration in ensureDeviceCoherency.
         int modelDevice = detectModelDevice();
-        if (modelDevice >= 0) {
-            DeviceMemoryManager.getInstance().switchDevice(modelDevice,
-                    "FrozenDecodeStep", "allocateBuffers-colocate-with-model");
+        int callerDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        try {
+            if (modelDevice >= 0 && modelDevice != callerDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(modelDevice,
+                        "FrozenDecodeStep", "allocateBuffers-colocate-with-model");
+            }
+
+            reusableEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, seqLen, hiddenSize);
+            reusableInputIds = Nd4j.zeros(DataType.LONG, 1, seqLen);
+            reusableAttentionMask = Nd4j.zeros(DataType.LONG, 1, totalMaskLen);
+            // Direct 4D attention bias: [1, 1, seqLen, maxKvLen + seqLen]
+            // Bypasses the model's attn_mask_reformat subgraph via placeholder override.
+            // The attn_mask_reformat subgraph can't handle seqLen>1 with past KV because
+            // it creates [seqLen, seqLen] from input_ids and [seqLen, totalSeqLen] from
+            // attention_mask, then tries to multiply them — dimensions don't broadcast.
+            // We override the subgraph output and directly provide the correct 4D mask.
+            reusableAttnBias = Nd4j.zeros(DataType.FLOAT, 1, 1, seqLen, totalMaskLen);
+            reusablePositionIds = Nd4j.zeros(DataType.LONG, 1, seqLen);
+
+            log.info("  Allocated fixed-address buffers on device {}: embeds=[1,{},{}] mask=[1,{}] attnBias=[1,1,{},{}] posIds=[1,{}]",
+                    modelDevice, seqLen, hiddenSize, totalMaskLen, seqLen, totalMaskLen, seqLen);
+        } finally {
+            if (modelDevice >= 0 && modelDevice != callerDevice) {
+                DeviceMemoryManager.getInstance().switchDevice(callerDevice,
+                        "FrozenDecodeStep", "allocateBuffers-restore-caller-device");
+            }
         }
-
-        reusableEmbeddings = Nd4j.zeros(DataType.FLOAT, 1, seqLen, hiddenSize);
-        reusableInputIds = Nd4j.zeros(DataType.LONG, 1, seqLen);
-        reusableAttentionMask = Nd4j.zeros(DataType.LONG, 1, totalMaskLen);
-        // Direct 4D attention bias: [1, 1, seqLen, maxKvLen + seqLen]
-        // Bypasses the model's attn_mask_reformat subgraph via placeholder override.
-        // The attn_mask_reformat subgraph can't handle seqLen>1 with past KV because
-        // it creates [seqLen, seqLen] from input_ids and [seqLen, totalSeqLen] from
-        // attention_mask, then tries to multiply them — dimensions don't broadcast.
-        // We override the subgraph output and directly provide the correct 4D mask.
-        reusableAttnBias = Nd4j.zeros(DataType.FLOAT, 1, 1, seqLen, totalMaskLen);
-        reusablePositionIds = Nd4j.zeros(DataType.LONG, 1, seqLen);
-
-        log.info("  Allocated fixed-address buffers on device {}: embeds=[1,{},{}] mask=[1,{}] attnBias=[1,1,{},{}] posIds=[1,{}]",
-                modelDevice, seqLen, hiddenSize, totalMaskLen, seqLen, totalMaskLen, seqLen);
     }
 
     /**

@@ -321,6 +321,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numDevices = getDeviceCount();
         if (numDevices <= 1) return 0;
 
+        // When cross-device routing is suppressed (e.g., during InferenceSession execution),
+        // always use the current thread's device. The CUDA pool can reuse freed entries via
+        // cudaMallocAsync even though cudaMemGetInfo reports low free memory.
+        if (OpaqueDataBuffer.isCrossDeviceRoutingSuppressed()) {
+            return Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        }
+
         // Priority 1: Output device — preferred, but only if it has enough free memory
         // for both the migration of cross-device inputs AND execution workspace.
         // Outputs CAN be migrated (ensureDeviceCoherency handles output reallocation),
@@ -2344,7 +2351,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
-            profilingConfigurableHookOut(op,context,start);
+            // NOTE: Do NOT call profilingConfigurableHookOut here.
+            // exec(op, context) already calls hookOut internally (at line 2453) and then
+            // calls closeReplicatedBuffers() in its finally block. If we call hookOut here
+            // after exec(op, context) returns, the OpContext inputs have already been freed
+            // by closeReplicatedBuffers(), causing false "closed before call" errors for
+            // non-constant cross-device inputs that were migrated as temporary replicas.
+            // The inner exec(op,context) handles the complete hookIn/hookOut/cleanup cycle.
 
             return result;
         } catch (ND4JOpProfilerException e) {

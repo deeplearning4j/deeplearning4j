@@ -112,14 +112,22 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
       thresholdReluDerivative(x->getContext(), x, alpha, z, z);
       break;
     case 6: {
+      // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+      NDArray::prepareSpecialUse({z}, {x});
+      auto xBuf = x->bufferAsT<float>();
+      auto zBuf = z->bufferAsT<float>();
       auto func = PRAGMA_THREADS_FOR {
         for (sd::LongType i = start; i < stop; ++i) {
-          auto val = beta * x->e<float>(i);
-          z->p<float>(
-              i, alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val)));
+          auto xOffset = x->getOffset(i);
+          auto val = beta * xBuf[xOffset];
+          auto zOffset = z->getOffset(i);
+          zBuf[zOffset] = alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val));
         }
       };
       samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      z->tickWriteHost();
+      z->syncToDevice();
+      NDArray::registerSpecialUse({z}, {x});
       break;
     }
     case 7:
@@ -132,13 +140,22 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
       x->applyTransform(transform::SoftSignDerivative, z);
       break;
     case 10: {
+      // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+      NDArray::prepareSpecialUse({z}, {x});
+      auto xBuf = x->bufferAsT<float>();
+      auto zBuf = z->bufferAsT<float>();
       auto func = PRAGMA_THREADS_FOR {
         for (sd::LongType i = start; i < stop; ++i) {
-          auto val = sd::math::sd_exp<float, float>(x->e<float>(i));
-          z->p<float>(i, val / (1.f + val));
+          auto xOffset = x->getOffset(i);
+          auto val = sd::math::sd_exp<float, float>(xBuf[xOffset]);
+          auto zOffset = z->getOffset(i);
+          zBuf[zOffset] = val / (1.f + val);
         }
       };
       samediff::Threads::parallel_for(func, 0, x->lengthOf());
+      z->tickWriteHost();
+      z->syncToDevice();
+      NDArray::registerSpecialUse({z}, {x});
       break;
     }
     default:
@@ -151,18 +168,38 @@ static void activationDeriv(NDArray* x, const int opId, const float alpha, const
 static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1, NDArray& z2, NDArray& z3) {
   if (clipVal == 0) return;
 
+  // Direct buffer access to avoid O(n^2) sync from per-element p()/e() calls
+  NDArray::prepareSpecialUse({&z0, &z1, &z2, &z3}, {&c});
+  auto cBuf = c.bufferAsT<float>();
+  auto z0Buf = z0.bufferAsT<float>();
+  auto z1Buf = z1.bufferAsT<float>();
+  auto z2Buf = z2.bufferAsT<float>();
+  auto z3Buf = z3.bufferAsT<float>();
+
   auto func = PRAGMA_THREADS_FOR {
     for (sd::LongType i = start; i < stop; ++i) {
-      const auto val = c.e<float>(i);
+      auto cOffset = c.getOffset(i);
+      const auto val = cBuf[cOffset];
       if (val == -clipVal || val == clipVal) {
-        z0.p<float>(i, 0.f);
-        z1.p<float>(i, 0.f);
-        z2.p<float>(i, 0.f);
-        z3.p<float>(i, 0.f);
+        z0Buf[z0.getOffset(i)] = 0.f;
+        z1Buf[z1.getOffset(i)] = 0.f;
+        z2Buf[z2.getOffset(i)] = 0.f;
+        z3Buf[z3.getOffset(i)] = 0.f;
       }
     }
   };
   samediff::Threads::parallel_for(func, 0, c.lengthOf());
+
+  // Single sync after all writes
+  z0.tickWriteHost();
+  z0.syncToDevice();
+  z1.tickWriteHost();
+  z1.syncToDevice();
+  z2.tickWriteHost();
+  z2.syncToDevice();
+  z3.tickWriteHost();
+  z3.syncToDevice();
+  NDArray::registerSpecialUse({&z0, &z1, &z2, &z3}, {&c});
 }
 
 //////////////////////////////////////////////////////////////////////////

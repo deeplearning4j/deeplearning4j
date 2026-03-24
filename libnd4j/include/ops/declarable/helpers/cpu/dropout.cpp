@@ -46,21 +46,34 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
     flattenedMask = mask->reshape('c', maskShape, false);
   }
 
+  // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls
+  NDArray::preparePrimaryUse({flattenedOutput, flattenedMask}, {flattenedInput});
+  auto inputBuf = flattenedInput->bufferAsT<T>();
+  auto outputBuf = flattenedOutput->bufferAsT<T>();
+  T* maskBuf = (flattenedMask != nullptr) ? flattenedMask->bufferAsT<T>() : nullptr;
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
       // Keep the value if val < probValue (probValue is keep probability)
       bool keep = val < probValue;
       // Store binary mask: 1 if kept, 0 if dropped
-      if (flattenedMask != nullptr && e < flattenedMask->lengthOf()) {
-        flattenedMask->p<T>(e, keep ? static_cast<T>(1) : static_cast<T>(0));
+      if (maskBuf != nullptr && e < flattenedMask->lengthOf()) {
+        auto maskOffset = flattenedMask->getOffset(e);
+        maskBuf[maskOffset] = keep ? static_cast<T>(1) : static_cast<T>(0);
       }
       // Output is input when kept, 0 otherwise (OUTPUT_NULLIFIED already zeros it)
-      if (keep) flattenedOutput->p<T>(e, flattenedInput->e<T>(e));
+      if (keep) {
+        auto outOffset = flattenedOutput->getOffset(e);
+        auto inOffset = flattenedInput->getOffset(e);
+        outputBuf[outOffset] = inputBuf[inOffset];
+      }
     }
   };
 
   samediff::Threads::parallel_for(func, 0, inLen);
+
+  NDArray::registerPrimaryUse({flattenedOutput, flattenedMask}, {flattenedInput});
 
   delete flattenedInput;
   delete flattenedOutput;
@@ -142,17 +155,28 @@ static Status alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDAr
 
   sd::graph::RandomGenerator nodeRng(3019L, seed);
 
+  // Get typed buffer pointers once to avoid O(n^2) sync overhead from per-element p()/e() calls
+  NDArray::preparePrimaryUse({output, mask}, {input});
+  auto inputBuf = input->bufferAsT<float>();
+  auto outputBuf = output->bufferAsT<float>();
+  auto maskBuf = mask->bufferAsT<float>();
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
-      float xVal = input->e<float>(e);
+      auto inOffset = input->getOffset(e);
+      float xVal = inputBuf[inOffset];
       float maskVal = randVal >= probValue ? alpha * beta + alpha1 : alpha * 1 + alpha1;
-      mask->p<float>(e, maskVal);
-      output->p<float>(e, randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1);
+      auto maskOffset = mask->getOffset(e);
+      maskBuf[maskOffset] = maskVal;
+      auto outOffset = output->getOffset(e);
+      outputBuf[outOffset] = randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1;
     }
   };
 
   samediff::Threads::parallel_for(func, 0, input->lengthOf());
+
+  NDArray::registerPrimaryUse({output, mask}, {input});
 
   return sd::Status::OK;
 }

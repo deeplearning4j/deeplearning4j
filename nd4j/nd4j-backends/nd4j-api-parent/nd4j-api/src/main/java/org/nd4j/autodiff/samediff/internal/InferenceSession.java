@@ -154,6 +154,46 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
     // for proper last-consumer-based liveness tracking without passing the DAG through every call.
     private ForwardExecutionDAG currentExecutionDAG;
 
+    // Live DataBuffer reference counts: tracks how many arrays in variableValues share each DataBuffer.
+    // Used by mid-execution release to determine if it's safe to close an array without
+    // corrupting views (reshape/permute outputs) that share the same DataBuffer.
+    // Count > 1 means another live array shares the buffer — do NOT close.
+    // Reset at start of each executeOperations() call.
+    private final ThreadLocal<java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Integer>>
+            liveDataBufferRefsTl = ThreadLocal.withInitial(java.util.IdentityHashMap::new);
+
+    private java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Integer> liveDataBufferRefs() {
+        return liveDataBufferRefsTl.get();
+    }
+
+    /** Increment live reference count for the DataBuffer of the given array. */
+    private void trackLiveBuffer(INDArray array) {
+        if (array == null || array.data() == null) return;
+        org.nd4j.linalg.api.buffer.DataBuffer buf = array.data();
+        liveDataBufferRefs().merge(buf, 1, Integer::sum);
+    }
+
+    /** Decrement live reference count and remove entry when it reaches zero. */
+    private void untrackLiveBuffer(INDArray array) {
+        if (array == null || array.data() == null) return;
+        org.nd4j.linalg.api.buffer.DataBuffer buf = array.data();
+        java.util.IdentityHashMap<org.nd4j.linalg.api.buffer.DataBuffer, Integer> refs = liveDataBufferRefs();
+        Integer count = refs.get(buf);
+        if (count == null) return;
+        if (count <= 1) {
+            refs.remove(buf);
+        } else {
+            refs.put(buf, count - 1);
+        }
+    }
+
+    /** Return true if the DataBuffer is exclusively owned (ref count == 1 or not tracked). */
+    private boolean isBufferExclusivelyOwned(INDArray array) {
+        if (array == null || array.data() == null) return true;
+        Integer count = liveDataBufferRefs().get(array.data());
+        return count == null || count <= 1;
+    }
+
     // DataBuffers from externally-provided placeholder arrays. These must NOT be closed during
     // resetSession() — they are owned by the caller, not by this session.
     @Getter
@@ -793,13 +833,25 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             // and defers non-closeable views, preventing premature buffer destruction.
             if (mmgr instanceof ArrayCacheMemoryMgr) {
                 ArrayCacheMemoryMgr.setGrowthFactor(1.0);
+                ArrayCacheMemoryMgr.setLargerArrayMaxMultiple(1.0);
             }
             Map<String, SDValue> processedOtherPlaceholders = preprocessValuePlaceholders(otherPlaceHolderValues, at);
+            // Trim pool BEFORE execution to reclaim freed entries from previous output() calls.
+            // This is safe because no intermediates from this execution exist yet — only
+            // constants/variables/placeholders, whose memory was never freed.
+            // Without this trim, pool entries from the previous frame's cleanup accumulate,
+            // reporting high "used" memory even though the entries are reclaimable.
+            Nd4j.getExecutioner().commit();
+            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
+                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+            // Suppress cross-device routing during execution.
+            OpaqueDataBuffer.suppressCrossDeviceRouting(true);
             // Execute with corrected ordering
             long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
             Map<String, SDValue> results = executeOperations(dag, processedPlaceholders,
                     processedOtherPlaceholders, allRequired, listeners, at, batch);
             if (TIMING_ENABLED) timingExecLoopNs = System.nanoTime() - tExec0;
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
 
             // Commit all pending operations before accessing results.
             // This ensures async operations (CUDA streams, etc.) complete before values are read.
@@ -1156,6 +1208,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         Map<String, SDValue> results = new LinkedHashMap<>();
         Set<String> completedOps = new LinkedHashSet<>();
 
+        // Reset live DataBuffer reference tracking for this execution pass.
+        liveDataBufferRefs().clear();
+
         // Store DAG reference so sub-methods can look up variable consumers
         // for last-consumer-based liveness tracking without passing DAG through every call.
         currentExecutionDAG = dag;
@@ -1318,24 +1373,63 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             if (TIMING_ENABLED) timingDepTrackNs += System.nanoTime() - tDep0;
 
-            // Skip mid-execution array release entirely. The dep tracker's "all consumers
-            // satisfied" logic doesn't account for DataBuffer sharing between views and
-            // parents: reshape/permute/transpose create views that share the input's
-            // DataBuffer. The dep tracker releases the parent when its direct consumers
-            // are done, but views still reference the buffer. If the cache recycles the
-            // buffer, downstream ops reading the view get stale data (numerical explosion
-            // → Infinity → NaN propagation through transformer residual connections).
-            // All array cleanup happens at end-of-execution where all ops are complete.
+            // Mid-execution release: free arrays whose all consumers have completed.
+            // Uses liveDataBufferRefs to safely skip arrays whose DataBuffer is shared
+            // with another live array (reshape/permute/transpose views).
+            // Only arrays whose buffer is exclusively owned (ref count == 1) are closed.
             long tRelease0 = TIMING_ENABLED ? System.nanoTime() : 0;
             if (arrayUseTracker().hasNewAllSatisfied()) {
-                // Drain the satisfied list to prevent unbounded growth, but don't release
-                arrayUseTracker().getNewAllSatisfiedList();
+                List<SDValue> satisfied = arrayUseTracker().getNewAllSatisfiedList();
+                for (SDValue value : satisfied) {
+                    if (value == null) continue;
+                    switch (value.getSdValueType()) {
+                        case TENSOR: {
+                            INDArray arr = value.getTensorValue();
+                            if (arr == null || arr.wasClosed() || freedArrays().contains(arr.getId())) break;
+                            if (arr.data() != null && arr.data().isConstant()) break; // never close constants
+                            // Safe to close only when this array's DataBuffer is not shared with
+                            // any other live tracked array (view safety check).
+                            if (isBufferExclusivelyOwned(arr)) {
+                                untrackLiveBuffer(arr);
+                                mmgr.release(arr);
+                                freedArrays().add(arr.getId());
+                            }
+                            // If buffer is shared, leave it — it will be cleaned up at end-of-execution.
+                            break;
+                        }
+                        case LIST: {
+                            if (value.getListValue() != null) {
+                                for (INDArray arr : value.getListValue()) {
+                                    if (arr == null || arr.wasClosed() || freedArrays().contains(arr.getId())) continue;
+                                    if (arr.data() != null && arr.data().isConstant()) continue;
+                                    if (isBufferExclusivelyOwned(arr)) {
+                                        untrackLiveBuffer(arr);
+                                        mmgr.release(arr);
+                                        freedArrays().add(arr.getId());
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
             }
             if (TIMING_ENABLED) timingArrayReleaseNs += System.nanoTime() - tRelease0;
         }
 
+        } catch (Exception execException) {
+            // Execution failed — close intermediate DataBuffers to prevent GPU memory
+            // accumulation across retries/frames. Without this, 1953+ ops' intermediates
+            // leak on each failed vision encoder frame → GPU OOM on subsequent frames.
+            try {
+                emergencyCleanupIntermediates(dag, placeholderValues, variableValues);
+            } catch (Exception cleanupEx) {
+                log.warn("Emergency cleanup failed: {}", cleanupEx.getMessage());
+            }
+            throw execException;
         } finally {
-            // Restore autoGc window to its previous value
+            // Restore autoGc window and cross-device routing to previous values
+            OpaqueDataBuffer.suppressCrossDeviceRouting(false);
             Nd4j.getMemoryManager().setAutoGcWindow(savedAutoGcWindow);
             currentExecutionDAG = null;
         }
@@ -1423,7 +1517,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 }
             }
 
-            // First pass: release to cache (closeable arrays get cached, non-closeable get dropped)
+            // Two-pass approach: HashMap iteration order is non-deterministic, so a
+            // non-closeable view might be processed BEFORE its closeable parent. If we
+            // force-close the view's DataBuffer before the parent is cached, the shared
+            // buffer is destroyed and the cached parent gets a dead buffer.
+            //
+            // Pass 1: Cache all closeable arrays and collect their DataBuffers as protected.
+            // Pass 2: Force-close non-closeable arrays, skipping any with protected DataBuffers.
+            List<INDArray> nonCloseableArrays = new ArrayList<>();
+
+            // Pass 1: cache closeable arrays, build complete protection set
             for (Map.Entry<String, SDValue> entry : variableValues.entrySet()) {
                 if (preserveNames.contains(entry.getKey())) continue;
                 SDValue value = entry.getValue();
@@ -1435,18 +1538,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                 && !freedArrays().contains(tensor.getId())) {
                             if (tensor.closeable()) {
                                 mmgr.release(tensor);
-                            } else {
-                                // Force-close non-closeable arrays that release() would silently drop
-                                DataBuffer buf = tensor.data();
-                                if (buf != null && !buf.isConstant() && !protectedBuffers.containsKey(buf)) {
-                                    try {
-                                        forceClosedBytes += buf.length() * buf.getElementSize();
-                                        buf.close();
-                                        forceClosedCount++;
-                                    } catch (Exception e) {
-                                        // non-fatal
-                                    }
+                                DataBuffer cachedBuf = tensor.data();
+                                if (cachedBuf != null) {
+                                    protectedBuffers.put(cachedBuf, Boolean.TRUE);
                                 }
+                            } else {
+                                nonCloseableArrays.add(tensor);
                             }
                             freedArrays().add(tensor.getId());
                             releasedToCache++;
@@ -1459,15 +1556,12 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                                         && !freedArrays().contains(arr.getId())) {
                                     if (arr.closeable()) {
                                         mmgr.release(arr);
-                                    } else {
-                                        DataBuffer buf = arr.data();
-                                        if (buf != null && !buf.isConstant() && !protectedBuffers.containsKey(buf)) {
-                                            try {
-                                                forceClosedBytes += buf.length() * buf.getElementSize();
-                                                buf.close();
-                                                forceClosedCount++;
-                                            } catch (Exception e) { }
+                                        DataBuffer cachedBuf = arr.data();
+                                        if (cachedBuf != null) {
+                                            protectedBuffers.put(cachedBuf, Boolean.TRUE);
                                         }
+                                    } else {
+                                        nonCloseableArrays.add(arr);
                                     }
                                     freedArrays().add(arr.getId());
                                     releasedToCache++;
@@ -1477,15 +1571,17 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         break;
                 }
             }
-            variableValues.clear();
 
-            // Trim pool to reclaim freed memory
-            if (forceClosedCount > 0) {
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                Nd4j.getExecutioner().commit();
-                int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                nativeOps.trimMemoryPoolOnStream(currentDevice, null);
+            // Pass 2: route non-closeable arrays through mmgr.release() which handles
+            // them via the deferred close path. Direct force-close here is unsafe because
+            // it can destroy DataBuffers shared with cached arrays (the cache returned an
+            // oversized buffer, making the array non-closeable, but the buffer is still
+            // valid and referenced by the cached entry). The deferred close path in
+            // closeDeferredBuffers() protects all cached arrays' DataBuffers.
+            for (INDArray arr : nonCloseableArrays) {
+                mmgr.release(arr);
             }
+            variableValues.clear();
 
             // Close deferred buffers from non-closeable arrays dropped by release().
             // Now that all ops are complete, views are no longer in use, so it's safe.
@@ -1493,12 +1589,21 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             int deferredClosed = (int) deferredStats[0];
             long deferredBytes = deferredStats[1];
 
-            if (deferredClosed > 0 || forceClosedCount > 0) {
-                NativeOps nativeOps2 = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                Nd4j.getExecutioner().commit();
-                int currentDevice2 = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                nativeOps2.trimMemoryPoolOnStream(currentDevice2, null);
+            // Close ALL cached arrays to reclaim GPU memory for the next step.
+            // The cache served its purpose during this step's execution: preventing premature
+            // DataBuffer close for view-producing ops (reshape_no_copy, permute, etc.).
+            // Now that execution is complete and outputs have been dup'd, we can safely
+            // close all cached arrays. cudaFreeAsync returns memory to the pool, and
+            // cudaMallocAsync reuses freed pool entries — no explicit trim needed.
+            // IMPORTANT: Do NOT call trimMemoryPoolOnStream here. Trim physically frees
+            // pool entries back to the OS, but can corrupt live arrays whose addresses
+            // coincide with freed pool entries (the pool reuses virtual addresses).
+            if (mmgr instanceof ArrayCacheMemoryMgr) {
+                ((ArrayCacheMemoryMgr) mmgr).close(protectedBuffers);
+            } else {
+                mmgr.close();
             }
+            Nd4j.getExecutioner().commit();
 
             try (LongPointer pu = new LongPointer(1);
                  LongPointer pr = new LongPointer(1)) {
@@ -1787,6 +1892,55 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 // =============================================================================
 
     /**
+     * Emergency cleanup: close intermediate DataBuffers when execution fails.
+     * Protects constants, variables, and placeholder DataBuffers from being closed.
+     */
+    private void emergencyCleanupIntermediates(ForwardExecutionDAG dag, Map<String, INDArray> placeholderValues, Map<String, SDValue> variableValues) {
+        Set<String> preserveNames = new HashSet<>();
+        if (dag != null) {
+            preserveNames.addAll(dag.getConstants());
+            preserveNames.addAll(dag.getVariables());
+        }
+        if (placeholderValues != null) {
+            preserveNames.addAll(placeholderValues.keySet());
+        }
+
+        IdentityHashMap<DataBuffer, Boolean> protectedBuffers = new IdentityHashMap<>();
+        for (String name : preserveNames) {
+            SDValue value = variableValues.get(name);
+            if (value == null) continue;
+            if (value.getSdValueType() == SDValueType.TENSOR) {
+                INDArray t = value.getTensorValue();
+                if (t != null && !t.wasClosed() && t.data() != null) {
+                    protectedBuffers.put(t.data(), Boolean.TRUE);
+                }
+            }
+        }
+
+        int closed = 0;
+        for (Map.Entry<String, SDValue> entry : variableValues.entrySet()) {
+            if (preserveNames.contains(entry.getKey())) continue;
+            SDValue value = entry.getValue();
+            if (value == null) continue;
+            if (value.getSdValueType() == SDValueType.TENSOR) {
+                INDArray t = value.getTensorValue();
+                if (t != null && !t.wasClosed() && t.data() != null
+                        && !protectedBuffers.containsKey(t.data())) {
+                    try {
+                        if (t.data().isConstant()) t.data().setConstant(false);
+                        t.data().close();
+                        closed++;
+                    } catch (Exception e) { /* ignore */ }
+                }
+            }
+        }
+        variableValues.clear();
+        if (closed > 0) {
+            log.info("Emergency cleanup: closed {} intermediate DataBuffers after execution failure", closed);
+        }
+    }
+
+    /**
      * Formats a shape array as a readable string for debug output.
      */
     private String formatShape(long[] shape) {
@@ -1992,6 +2146,16 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
      * @param allRequired Set of required output variable names
      */
     private void addConsumerDependencies(SDValue outputValue, String varName, Set<String> allRequired) {
+        // Track this array's DataBuffer for mid-execution release safety.
+        // Constants and variables are excluded — they have infinite lifetime and
+        // their DataBuffers may be shared with many consumers without needing tracking.
+        if (outputValue != null && outputValue.getSdValueType() == SDValueType.TENSOR) {
+            INDArray arr = outputValue.getTensorValue();
+            if (arr != null && arr.data() != null && !arr.data().isConstant()) {
+                trackLiveBuffer(arr);
+            }
+        }
+
         if (allRequired.contains(varName)) {
             // This is a final output: protect from deallocation until explicitly released
             arrayUseTracker().addDependency(outputValue, new ReqOutputDep(varName));
@@ -3441,16 +3605,50 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             }
         }
         long tExec0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        Nd4j.exec(dynOp, opContext);
+        INDArray[] execOutputArrays = Nd4j.exec(dynOp, opContext);
         if (TIMING_ENABLED) {
             timingNativeExecNs += System.nanoTime() - tExec0;
             timingOpCount++;
         }
 
+        // After exec, use the arrays actually written by the executor.
+        // On multi-GPU systems, ensureDeviceCoherency may replace output arrays in opContext
+        // with fresh device-local copies (e.g. when the op migrates from device 0 to device 1).
+        // The local outputArrays[] still holds the original (pre-migration) device-0 arrays,
+        // which were never written to.  Use execOutputArrays[] — the return value from exec —
+        // which reflects whatever is currently in opContext after the op ran.
+        // Fall back to outputArrays[i] only when execOutputArrays is shorter (shouldn't happen).
+        final INDArray[] effectiveOutputs = (execOutputArrays != null && execOutputArrays.length >= outputArrays.length)
+                ? execOutputArrays : outputArrays;
+
+        // Release any pre-exec output arrays that were replaced by ensureDeviceCoherency.
+        // When an op migrates to a different device, ensureDeviceCoherency allocates fresh
+        // device-local output buffers and replaces them in opContext.  The original arrays
+        // (in outputArrays[]) were allocated by this method and are not referenced anywhere
+        // else — they must be freed immediately to prevent GPU OOM.
+        // Skip if effectiveOutputs IS outputArrays (no migration happened).
+        if (effectiveOutputs != outputArrays) {
+            for (int i = 0; i < outputArrays.length; i++) {
+                INDArray preExecArr = outputArrays[i];
+                if (preExecArr == null || preExecArr.wasClosed()) continue;
+                // Only close if it's not a view (views share another array's buffer;
+                // closing would corrupt the source) and not already the effective output.
+                boolean isEffective = (i < effectiveOutputs.length && effectiveOutputs[i] == preExecArr);
+                if (!isEffective && !preExecArr.isView()) {
+                    try {
+                        preExecArr.close();
+                    } catch (Exception e) {
+                        // Non-fatal: log and continue
+                        log.warn("executeCustomOp: failed to close orphaned pre-exec output[{}]: {}", i, e.getMessage());
+                    }
+                }
+            }
+        }
+
         // Store results and track for deallocation
         long tStore0 = TIMING_ENABLED ? System.nanoTime() : 0;
-        for (int i = 0; i < outputArrays.length && i < outputNames.size(); i++) {
-            SDValue outputValue = SDValue.create(outputArrays[i]);
+        for (int i = 0; i < effectiveOutputs.length && i < outputNames.size(); i++) {
+            SDValue outputValue = SDValue.create(effectiveOutputs[i]);
             variableValues.put(outputNames.get(i), outputValue);
 
             // Add to arrayUseTracker so it can be released when no longer needed

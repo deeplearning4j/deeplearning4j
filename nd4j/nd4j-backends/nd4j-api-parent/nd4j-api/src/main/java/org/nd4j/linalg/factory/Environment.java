@@ -1339,6 +1339,15 @@ public interface Environment {
     default void setCublasTf32Enabled(boolean enabled) {}
 
     /**
+     * Whether TF32 precision is enabled for Triton-compiled DotOps on sm_80+ (Ampere+).
+     * TF32 uses 10-bit mantissa for FP32 matmuls/attention, giving ~2x throughput
+     * but compounding precision loss across thousands of ops per decode step.
+     * @return true if Triton TF32 is enabled (default: false)
+     */
+    default boolean tritonTf32Enabled() { return false; }
+    default void setTritonTf32Enabled(boolean enabled) {}
+
+    /**
      * Whether to pre-allocate an explicit cuBLAS workspace for CUDA graph capture.
      * Prevents cuBLAS from creating MemAlloc/MemFree graph nodes during capture,
      * but may cause algorithm divergence (split-K selection) for some configurations.

@@ -30,17 +30,30 @@ template <typename T>
 static void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
   // Initialize output to zero
   output->nullify();
-  
+
   int lLen = labels->lengthOf();
+  // Pre-fetch labels and predictions (may be INT32 or INT64)
+  std::vector<sd::LongType> labelsVec(lLen), predsVec(lLen);
+  for (sd::LongType j = 0; j < lLen; j++) {
+    labelsVec[j] = labels->e<sd::LongType>(j);
+    predsVec[j] = predictions->e<sd::LongType>(j);
+  }
+  auto outputBuf = output->bufferAsT<T>();
+  auto weightsBuf = (weights != nullptr) ? weights->bufferAsT<T>() : nullptr;
+  // Get strides for offset calculation
+  auto stride0 = output->strideAt(0);
+  auto stride1 = output->strideAt(1);
 
   // Sequential loop to avoid race conditions when updating same cell
   for (sd::LongType j = 0; j < lLen; j++) {
-    auto label = labels->e<sd::LongType>(j);
-    auto pred = predictions->e<sd::LongType>(j);
-    T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
-    T curr = output->e<T>(label, pred);
-    output->p<T>(label, pred, curr + value);
+    auto label = labelsVec[j];
+    auto pred = predsVec[j];
+    T value = (weightsBuf == nullptr ? (T)1.0f : weightsBuf[j]);
+    auto offset = label * stride0 + pred * stride1;
+    outputBuf[offset] += value;
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 }
 
 void confusionFunctor(sd::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,

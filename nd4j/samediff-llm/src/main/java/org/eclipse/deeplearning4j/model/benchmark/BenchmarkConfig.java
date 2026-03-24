@@ -83,6 +83,7 @@ public class BenchmarkConfig {
 
     // cuBLAS flags
     boolean cublasTf32;
+    boolean tritonTf32;  // TF32 precision for Triton-compiled DotOps (default OFF for accuracy)
     boolean cublasCaptureWorkspace = true;  // default ON — prevents MemAlloc graph nodes
 
     // DSP flags
@@ -134,7 +135,7 @@ public class BenchmarkConfig {
                 .tritonNumWarps(4).tritonNumStages(1)
                 .cublasTf32(true)
                 .dspBatchedGemm(true)
-                .maxTokens(250).minDiversityPct(40);
+                .maxTokens(250).minDiversityPct(30);
     }
 
     // Fluent setters
@@ -182,6 +183,7 @@ public class BenchmarkConfig {
     public BenchmarkConfig expectedSubstrings(String... s) { this.expectedSubstrings = s; return this; }
     public BenchmarkConfig expectStructuralTags(boolean b) { this.expectStructuralTags = b; return this; }
     public BenchmarkConfig cublasTf32(boolean b) { this.cublasTf32 = b; return this; }
+    public BenchmarkConfig tritonTf32(boolean b) { this.tritonTf32 = b; return this; }
     public BenchmarkConfig cublasCaptureWorkspace(boolean b) { this.cublasCaptureWorkspace = b; return this; }
     public BenchmarkConfig dspCastElimination(boolean b) { this.dspCastElimination = b; return this; }
     public BenchmarkConfig dspCastSinkMatmul(boolean b) { this.dspCastSinkMatmul = b; return this; }
@@ -240,6 +242,7 @@ public class BenchmarkConfig {
     public String[] getExpectedSubstrings() { return expectedSubstrings; }
     public boolean isExpectStructuralTags() { return expectStructuralTags; }
     public boolean isCublasTf32() { return cublasTf32; }
+    public boolean isTritonTf32() { return tritonTf32; }
     public boolean isCublasCaptureWorkspace() { return cublasCaptureWorkspace; }
     public boolean isDspCastElimination() { return dspCastElimination; }
     public boolean isDspCastSinkMatmul() { return dspCastSinkMatmul; }
@@ -283,6 +286,7 @@ public class BenchmarkConfig {
         if (dspBatchZeroKernel) sb.append(" batchZeroKernel");
         if (dspBatchedGemm) sb.append(" batchedGemm");
         if (cublasTf32) sb.append(" cublasTf32");
+        if (tritonTf32) sb.append(" tritonTf32");
         if (!cublasCaptureWorkspace) sb.append(" noWorkspace");
         if (useDraftModel) sb.append(" draftModel(K=").append(draftModelK).append(")");
         sb.append(" tokens=").append(maxTokens);

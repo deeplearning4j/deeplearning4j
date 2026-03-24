@@ -105,13 +105,6 @@ public class CppVsJavaKvScatterTest {
         INDArray embeddings = embedOut.get(embedOutputNames[0]);
         assertNotNull(embeddings, "Embedding output should not be null");
 
-        // Override attn_mask_reformat before prefill
-        String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
-        if (attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
-            decoder.addPlaceholderOverride(attnReformatNode);
-            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
-        }
-
         List<String> inputNames = decoder.inputs();
 
         // Build prefill inputs
@@ -149,6 +142,17 @@ public class CppVsJavaKvScatterTest {
         var session = decoder.getOrCreateSession();
         session.clearAllCaches();
         decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, fullOutputNames);
+
+        // Add placeholder override for attn_mask_reformat AFTER DSP compile
+        // so prefill can compute it via the internal subgraph, but decode steps
+        // provide the 4D bias directly (matching StaticKvCacheDecodeLoop behavior).
+        String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
+        if (attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
+            decoder.addPlaceholderOverride(attnReformatNode);
+            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
+        }
+        // Re-fetch input names since addPlaceholderOverride added the attn_mask_reformat node
+        inputNames = decoder.inputs();
 
         session = decoder.getOrCreateSession();
         var dspExec = session.getDynamicShapePlanExecutor();
@@ -434,12 +438,6 @@ public class CppVsJavaKvScatterTest {
         INDArray embeddings = embedOut.get(embedOutputNames[0]);
         assertNotNull(embeddings);
 
-        String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
-        if (attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
-            decoder.addPlaceholderOverride(attnReformatNode);
-            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
-        }
-
         List<String> inputNames = decoder.inputs();
         String[] fullOutputNames = buildFullOutputNames(logitsName, kvNames);
 
@@ -472,6 +470,15 @@ public class CppVsJavaKvScatterTest {
         session.clearAllCaches();
         decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE,
                 new String[]{logitsName});
+
+        // Add placeholder override for attn_mask_reformat AFTER DSP compile
+        String attnReformatNode = ioConfig.getAttnMaskReformatOutput();
+        if (attnReformatNode != null && decoder.hasVariable(attnReformatNode)) {
+            decoder.addPlaceholderOverride(attnReformatNode);
+            decoder.getVariable(attnReformatNode).setShape(-1, -1, -1, -1);
+        }
+        // Re-fetch input names since addPlaceholderOverride added the attn_mask_reformat node
+        inputNames = decoder.inputs();
 
         session = decoder.getOrCreateSession();
         var dspExec = session.getDynamicShapePlanExecutor();

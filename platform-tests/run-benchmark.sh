@@ -40,6 +40,10 @@
 #   --no-optimizer    Disable the GraphOptimizer entirely
 #   --optimizer-log   Log which constants the optimizer transforms
 #
+# Precision options:
+#   --triton-tf32       Enable TF32 precision for Triton-compiled DotOps (10-bit mantissa)
+#   --no-triton-tf32    Disable TF32 for Triton (DEFAULT: OFF — use IEEE for accuracy)
+#
 # Cache options:
 #   --clear-cache       Delete cached .sdz model files and re-import from ONNX
 #   --clear-decoder     Delete only the decoder .sdz cache (DEFAULT: ON)
@@ -85,6 +89,10 @@ DRAFT_MODEL=false
 NO_NATIVE_DECODE=false
 NO_CUBLAS_WORKSPACE=false
 NO_FREEZE=false
+TRITON_TF32=false
+NO_ATTN_OVERRIDE=false
+NO_DIRECT=false
+NO_TRITON=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -175,6 +183,26 @@ while [[ $# -gt 0 ]]; do
             NO_FREEZE=true
             shift
             ;;
+        --triton-tf32)
+            TRITON_TF32=true
+            shift
+            ;;
+        --no-triton-tf32)
+            TRITON_TF32=false
+            shift
+            ;;
+        --no-attn-override)
+            NO_ATTN_OVERRIDE=true
+            shift
+            ;;
+        --no-direct)
+            NO_DIRECT=true
+            shift
+            ;;
+        --no-triton)
+            NO_TRITON=true
+            shift
+            ;;
         *)
             echo "Unknown option: $1"
             echo "Usage: ./run-benchmark.sh [--debug] [--nsys] [--op-timing] [--op-timing-detailed]"
@@ -182,6 +210,7 @@ while [[ $# -gt 0 ]]; do
             echo "       [--fp16] [--no-fp16] [--no-optimizer] [--optimizer-log]"
             echo "       [--clear-cache] [--clear-decoder] [--no-clear-decoder]"
             echo "       [--draft] [--speculative K] [--no-native-decode] [--no-cublas-workspace] [--no-freeze]"
+            echo "       [--triton-tf32] [--no-triton-tf32]"
             exit 1
             ;;
     esac
@@ -211,6 +240,10 @@ $NSYS_MODE    && echo "  Mode:   NSYS (NVIDIA Nsight Systems profiler)"
 $NO_NATIVE_DECODE && echo "  NativeDecodeInputs: DISABLED (Java feedDict path)"
 $NO_CUBLAS_WORKSPACE && echo "  cuBLAS workspace:   DISABLED (no explicit workspace during capture)"
 $NO_FREEZE           && echo "  Freeze:             DISABLED (no shape freezing, no CUDA graph)"
+$NO_ATTN_OVERRIDE    && echo "  AttnOverride:       DISABLED (use model's attn_mask_reformat subgraph)"
+$NO_DIRECT           && echo "  Direct exec:        DISABLED (use output() instead of outputDirect())"
+$NO_TRITON           && echo "  Triton:             DISABLED (native CUDA ops only)"
+$TRITON_TF32         && echo "  Triton TF32:        ON  (10-bit mantissa for Triton DotOps)"
 $OP_TIMING    && echo "  OpTiming: ON  (decode-only native op timing)"
 $OP_TIMING_DETAILED && echo "  OpTiming: detailed phase breakdown ON"
 [ -n "$OP_BREAKDOWN_OPS" ] && echo "  Op breakdowns: $OP_BREAKDOWN_OPS"
@@ -255,6 +288,22 @@ fi
 
 if $NO_FREEZE; then
     EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.nofreeze=true"
+fi
+
+if $NO_ATTN_OVERRIDE; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.noAttnOverride=true"
+fi
+
+if $NO_DIRECT; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.dsp.noDirect=true"
+fi
+
+if $NO_TRITON; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.triton.skipKernels=true"
+fi
+
+if $TRITON_TF32; then
+    EXTRA_ARGS="$EXTRA_ARGS -Dnd4j.triton.tf32=1"
 fi
 
 if $DRAFT_MODEL; then

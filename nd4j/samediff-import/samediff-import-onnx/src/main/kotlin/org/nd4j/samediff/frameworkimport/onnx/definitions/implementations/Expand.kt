@@ -22,7 +22,7 @@ package org.nd4j.samediff.frameworkimport.onnx.definitions.implementations
 import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
-import org.nd4j.linalg.api.buffer.DataType
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
 import org.nd4j.samediff.frameworkimport.hooks.annotations.PreHookRule
@@ -31,26 +31,19 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
 /**
- * A port of expand.py from onnx tensorflow for samediff:
- * https://github.com/onnx/onnx-tensorflow/blob/master/onnx_tf/handlers/backend/expand.py
+ * ONNX Expand: broadcasts the input tensor to a target shape using numpy-style broadcasting rules.
  *
- * ONNX Expand broadcasts the input tensor to a target shape using numpy-style broadcasting rules.
- * The target shape may have more dimensions than the input, and dimensions with size 1 in the
- * input can be broadcast to larger sizes.
+ * Uses the native broadcast_to op directly, which handles all broadcasting semantics
+ * (dimension expansion, repeat along size-1 dims) in a single op execution.
  *
- * This implementation uses the multiply-by-ones approach which works with numpy broadcasting:
- * - Creates a tensor of ones with the target shape
- * - Multiplies input by ones, letting numpy broadcasting handle dimension expansion
- *
- * Note: This approach relies on numpy broadcasting semantics. If input has dimension > 1
- * where target has dimension 1, the result will have the input's larger dimension (not shrink).
- * This matches the behavior expected by many ONNX models that rely on this pattern.
+ * This replaces the previous multiply-by-ones approach (create → assign(1.0) → multiply)
+ * which created fragile intermediate arrays vulnerable to cache memory corruption during
+ * multi-step autoregressive decode.
  *
  * @author Adam Gibson
  */
 @PreHookRule(nodeNames = [],opNames = ["Expand"],frameworkName = "onnx")
 class Expand : PreImportHook  {
-
 
     override fun doImport(
         sd: SameDiff,
@@ -65,22 +58,10 @@ class Expand : PreImportHook  {
         val newShape = sd.getVariable(op.inputsToOp[1])
         val outputVarName = outputNames[0]
 
-        // Use multiply-by-ones approach with numpy broadcasting
-        // This handles cases where the target shape may be smaller in some dimensions than input
-        // (numpy broadcasting takes the max of each dimension)
-        val outputVar: SDVariable = if(inputVariable.dataType() == DataType.BOOL) {
-            val ones = sd.create(newShape, DataType.INT8)
-            val assignedOnes = ones.assign(1.0)
-            val r = sd.castTo(inputVariable, DataType.INT8).mul(assignedOnes)
-            sd.castTo(outputVarName, r, DataType.BOOL)
-        } else {
-            val ones = sd.create(newShape, inputVariable.dataType())
-            val assignedOnes = ones.assign(1.0)
-            assignedOnes.mul(outputVarName, inputVariable)
-        }
+        // Use broadcast_to directly — single op, no intermediates
+        val broadcastOp = BroadcastTo(sd, inputVariable, newShape)
+        val outputVar = sd.updateVariableNameAndReference(broadcastOp.outputVariables()[0], outputVarName)
 
         return mapOf(outputVar.name() to listOf(outputVar))
     }
-
-
 }

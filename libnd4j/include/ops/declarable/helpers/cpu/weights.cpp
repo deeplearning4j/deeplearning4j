@@ -27,15 +27,23 @@ namespace helpers {
 
 template <typename T>
 static void adjustWeights_(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+  // Pre-fetch input values as int (input may be INT32 or INT64)
+  std::vector<int> inputVals(input->lengthOf());
+  for (sd::LongType i = 0; i < input->lengthOf(); i++) inputVals[i] = input->e<int>(i);
+  auto outputBuf = output->bufferAsT<T>();
+  auto weightsBuf = (weights != nullptr) ? weights->bufferAsT<T>() : nullptr;
+
   for (sd::LongType e = 0; e < input->lengthOf(); e++) {
-    int val = input->e<int>(e);
+    int val = inputVals[e];
     if (val < maxLength) {
-      if (weights != nullptr)
-        output->p(val, output->e<T>(val) + weights->e<T>(e));
+      if (weightsBuf != nullptr)
+        outputBuf[val] += weightsBuf[e];
       else
-        output->p(val, output->e<T>(val) + 1);
+        outputBuf[val] += static_cast<T>(1);
     }
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 }
 
 void adjustWeights(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,

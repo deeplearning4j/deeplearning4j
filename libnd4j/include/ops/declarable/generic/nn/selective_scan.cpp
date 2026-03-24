@@ -62,33 +62,70 @@ CUSTOM_OP_IMPL(selective_scan, 5, 1, false, 0, 0) {
         h->assign(h0);
     }
 
+    // Sync all inputs to host ONCE before the loop to avoid per-element sync overhead
+    x->syncToHost();
+    A->syncToHost();
+    B->syncToHost();
+    C->syncToHost();
+    D->syncToHost();
+    h->syncToHost();
+
+    // Get typed buffers for direct access — eliminates O(n^2) sync from p()/e() in loops
+    const float* xBuf = x->bufferAsT<float>();
+    const float* aBuf = A->bufferAsT<float>();
+    const float* bBuf = B->bufferAsT<float>();
+    const float* cBuf = C->bufferAsT<float>();
+    const float* dBuf = D->bufferAsT<float>();
+    float* hBuf = h->bufferAsT<float>();
+    float* outBuf = output->bufferAsT<float>();
+
+    // Cache strides for offset computation — inputs may be non-contiguous (views)
+    // x, A, B, C are rank-3: [batch, seq_len, dim/state_dim]
+    const auto xStride0 = x->strideAt(0);  const auto xStride1 = x->strideAt(1);  const auto xStride2 = x->strideAt(2);
+    const auto aStride0 = A->strideAt(0);  const auto aStride1 = A->strideAt(1);  const auto aStride2 = A->strideAt(2);
+    const auto bStride0 = B->strideAt(0);  const auto bStride1 = B->strideAt(1);  const auto bStride2 = B->strideAt(2);
+    const auto cStride0 = C->strideAt(0);  const auto cStride1 = C->strideAt(1);  const auto cStride2 = C->strideAt(2);
+    // D is rank-1: [dim]
+    const auto dStride0 = D->strideAt(0);
+    // h is locally created 'c' order rank-3: [batch, dim, state_dim]
+    const auto hStride0 = h->strideAt(0);  const auto hStride1 = h->strideAt(1);  const auto hStride2 = h->strideAt(2);
+    // output is rank-3: [batch, seq_len, dim]
+    const auto oStride0 = output->strideAt(0);  const auto oStride1 = output->strideAt(1);  const auto oStride2 = output->strideAt(2);
+
     for (sd::LongType t = 0; t < seqLen; ++t) {
-        for (int b_idx = 0; b_idx < batch; ++b_idx) {
+        for (sd::LongType b_idx = 0; b_idx < batch; ++b_idx) {
             for (sd::LongType d = 0; d < dim; ++d) {
-                float x_val = x->e<float>(b_idx, t, d);
+                float x_val = xBuf[b_idx * xStride0 + t * xStride1 + d * xStride2];
                 float y_val = 0.0f;
 
                 for (sd::LongType s = 0; s < stateDim; ++s) {
-                    float a_val = A->e<float>(b_idx, t, s);
-                    float b_val = B->e<float>(b_idx, t, s);
-                    float c_val = C->e<float>(b_idx, t, s);
+                    float a_val = aBuf[b_idx * aStride0 + t * aStride1 + s * aStride2];
+                    float b_val = bBuf[b_idx * bStride0 + t * bStride1 + s * bStride2];
+                    float c_val = cBuf[b_idx * cStride0 + t * cStride1 + s * cStride2];
 
                     // State update: h = A * h + B * x
-                    float h_prev = h->e<float>(b_idx, d, s);
+                    sd::LongType hOffset = b_idx * hStride0 + d * hStride1 + s * hStride2;
+                    float h_prev = hBuf[hOffset];
                     float h_new = a_val * h_prev + b_val * x_val;
-                    h->p(b_idx, d, s, h_new);
+                    hBuf[hOffset] = h_new;
 
                     // Output contribution: y += C * h
                     y_val += c_val * h_new;
                 }
 
                 // Skip connection: y += D * x
-                y_val += D->e<float>(d) * x_val;
+                y_val += dBuf[d * dStride0] * x_val;
 
-                output->p(b_idx, t, d, y_val);
+                outBuf[b_idx * oStride0 + t * oStride1 + d * oStride2] = y_val;
             }
         }
     }
+
+    // Mark host-side writes and sync to device ONCE after all loops complete
+    h->tickWriteHost();
+    h->syncToDevice();
+    output->tickWriteHost();
+    output->syncToDevice();
 
     delete h;
 

@@ -112,19 +112,22 @@ int handleNonPeerFailover(void*& buffer, size_t allocSize, int requestedDevice, 
   sd_printf("%s: Non-peer failover (device %d → %d) — switching to pinned host for kernel accessibility\n",
             caller, requestedDevice, actualDevice);
 
-  // Free the non-peer device allocation
-  cudaSetDevice(actualDevice);
-  memory::CudaMemoryPool::getInstance().free(buffer, actualDevice, nullptr);
-  cudaSetDevice(requestedDevice);
-
-  // Allocate pinned host memory instead
+  // Allocate pinned host memory BEFORE freeing the old buffer.
+  // If pinned allocation fails, the old non-peer buffer is still valid for the caller.
   void* pinnedPtr = nullptr;
   cudaError_t err = cudaMallocHost(&pinnedPtr, allocSize);
   if (err != cudaSuccess || pinnedPtr == nullptr) {
-    buffer = nullptr;
+    // Old buffer on actualDevice still valid — caller can attempt recovery
     std::string msg = std::string(caller) + ": pinned host allocation also failed for " + std::to_string(allocSize) + " bytes";
     THROW_EXCEPTION(msg.c_str());
   }
+
+  // Pinned allocation succeeded — now safe to free the non-peer device buffer
+  void* oldBuffer = buffer;
+  cudaSetDevice(actualDevice);
+  memory::CudaMemoryPool::getInstance().free(oldBuffer, actualDevice, nullptr);
+  cudaSetDevice(requestedDevice);
+
   memory::CudaMemoryPool::getInstance().registerHostAllocation(pinnedPtr, allocSize);
   buffer = pinnedPtr;
   return requestedDevice;

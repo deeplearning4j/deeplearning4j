@@ -924,6 +924,17 @@ public class ND4JSystemProperties {
     public static final String CUBLAS_TF32 = "nd4j.cublas.tf32";
 
     /**
+     * Applicability: Triton-compiled DotOps (sm_80+ Ampere and later)<br>
+     * Description: Enable TF32 precision (10-bit mantissa) for Triton-compiled matmuls
+     * and fused attention QK^T / PV dot products. Gives ~2x throughput but compounds
+     * precision loss across thousands of ops per transformer decode step.
+     * Environment variable: ND4J_TRITON_TF32
+     * <p>
+     * Default: false
+     */
+    public static final String TRITON_TF32 = "nd4j.triton.tf32";
+
+    /**
      * Applicability: DSP FusionPass<br>
      * Description: Sink FP16→FP32 cast ops through matmul boundaries.
      * Marks cast ops as identity when their only consumer is a matmul,

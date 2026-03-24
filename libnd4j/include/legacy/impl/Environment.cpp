@@ -1306,6 +1306,7 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
  }
 
  { int v = readBoolEnv("ND4J_CUBLAS_TF32");                    if (v >= 0) setCublasTf32Enabled(v); }
+ { int v = readBoolEnv("ND4J_TRITON_TF32");                   if (v >= 0) setTritonTf32Enabled(v); }
  { int v = readBoolEnv("ND4J_CUBLAS_CAPTURE_WORKSPACE");       if (v >= 0) setCublasCaptureWorkspace(v); }
  { int v = readBoolEnv("ND4J_DSP_CAST_SINK_MATMUL");           if (v >= 0) setDspCastSinkMatmul(v); }
  { int v = readBoolEnv("ND4J_TRITON_CONSOLIDATED_ARG_TABLE");   if (v >= 0) setTritonConsolidatedArgTable(v); }
@@ -1831,6 +1832,10 @@ void Environment::setOpenBlasThreads(int threads) {
 
   void Environment::setCublasTf32Enabled(bool enabled) {
     _cublasTf32Enabled.store(enabled);
+  }
+
+  void Environment::setTritonTf32Enabled(bool enabled) {
+    _tritonTf32Enabled.store(enabled);
   }
 
   void Environment::setCublasCaptureWorkspace(bool enabled) {

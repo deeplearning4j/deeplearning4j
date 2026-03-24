@@ -2272,10 +2272,37 @@ std::vector<int8_t> NDArray::asByteVector() {
 void NDArray::linspace(const double start) { linspace(start, 1); }
 
 //////////////////////////////////////////////////////////////////////////
+// Direct buffer fill for linspace — writes all values then syncs once.
+template <typename T>
+static void linspaceFillBuffer(void* buf, int rank, const sd::LongType* shapeOfArr,
+                                const sd::LongType* strideOfArr, sd::LongType numElements,
+                                double start, double step) {
+  auto typedBuf = reinterpret_cast<T*>(buf);
+  for (sd::LongType e = 0; e < numElements; e++) {
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(e, rank, shapeOfArr, coords);
+    sd::LongType xOffset;
+    COORDS2INDEX(rank, strideOfArr, coords, xOffset);
+    typedBuf[xOffset] = static_cast<T>(start + (step * e));
+  }
+}
+
 void NDArray::linspace(const double start, const double step) {
   if (isS()) THROW_EXCEPTION("NDArray::linspace: you can't use this method on String array!");
   sd::LongType numElements = isScalar() ? 1 : this->lengthOf();
-  for (sd::LongType e = 0; e < numElements; e++) this->p<double>(e, start + (step * e));
+
+  int rank = shape::rank(shapeInfo());
+  const sd::LongType* shapeOfArr = shape::shapeOf(shapeInfo());
+  const sd::LongType* strideOfArr = shape::stride(shapeInfo());
+
+  // Write all elements directly to host buffer, then sync ONCE.
+  // DO NOT use p<T>() or templatedSet() — they sync per element → O(n^2).
+  BUILD_SINGLE_SELECTOR(dataType(), linspaceFillBuffer,
+      (buffer(), rank, shapeOfArr, strideOfArr, numElements, start, step),
+      SD_COMMON_TYPES_ALL);
+
+  tickWriteHost();
+  syncToDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3312,24 +3339,15 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
       return;
     }
 
-#if defined(SD_CUDA)
-    const bool cudaDeviceOnlyAssign = thisArray->specialBuffer() != nullptr && other->specialBuffer() != nullptr;
-    const void* srcHost = cudaDeviceOnlyAssign ? nullptr : thisArray->buffer();
-    void* dstHost = cudaDeviceOnlyAssign ? nullptr : other->buffer();
-#else
-    const void* srcHost = thisArray->buffer();
-    void* dstHost = other->buffer();
-#endif
-
     // FIX: prepareSpecialUse takes (writeList, readList)
     // We are reading from thisArray (source) and writing to other (destination)
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws,
-                                    dstHost, other->shapeInfo(),
+                                    other->buffer(), other->shapeInfo(),
                                     other->specialBuffer(), other->specialShapeInfo(),
-                                    dstHost, other->shapeInfo(),
+                                    other->buffer(), other->shapeInfo(),
                                     other->specialBuffer(), other->specialShapeInfo(),
-                                    srcHost, thisArray->shapeInfo(),
+                                    thisArray->buffer(), thisArray->shapeInfo(),
                                     thisArray->specialBuffer(), thisArray->specialShapeInfo(),
                                     nullptr, allowParallelism);
     // FIX: registerSpecialUse takes (writeList, readList)
@@ -3379,22 +3397,14 @@ void NDArray::copyDataForAssign(NDArray *thisArray, NDArray *other, const sd::Lo
     }
 
     // General path: use Assign kernel (handles non-contiguous layouts, different strides)
-#if defined(SD_CUDA)
-    const bool cudaDeviceOnlyAssign = thisArray->specialBuffer() != nullptr && other->specialBuffer() != nullptr;
-    const void* srcHost = cudaDeviceOnlyAssign ? nullptr : thisArray->buffer();
-    void* dstHost = cudaDeviceOnlyAssign ? nullptr : other->buffer();
-#else
-    const void* srcHost = thisArray->buffer();
-    void* dstHost = other->buffer();
-#endif
     NDArray::prepareSpecialUse({other}, {thisArray});
     NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
-                                          srcHost,
+                                          thisArray->buffer(),
                                           thisArray->shapeInfo(),
                                           thisArray->specialBuffer(),
                                           thisArray->specialShapeInfo(),
-                                          dstHost,
+                                          other->buffer(),
                                           other->shapeInfo(),
                                           other->specialBuffer(),
                                           other->specialShapeInfo(),
@@ -3799,16 +3809,8 @@ NDArray * NDArray::asT()  {
                            : new NDArray(ordering(), shapeCopy, DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareSpecialUse({result}, {this});
-#if defined(SD_CUDA)
-  const bool cudaDeviceOnlyCast = specialBuffer() != nullptr && result->specialBuffer() != nullptr;
-  const void* srcHost = cudaDeviceOnlyCast ? nullptr : buffer();
-  void* dstHost = cudaDeviceOnlyCast ? nullptr : result->buffer();
-#else
-  const void* srcHost = buffer();
-  void* dstHost = result->buffer();
-#endif
-  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, srcHost, shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), dstHost, result->shapeInfo(), result->specialBuffer(),
+  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
+                                        specialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(),
                                         result->specialShapeInfo(), nullptr, false);
   registerSpecialUse({result}, {this});
 
@@ -6194,10 +6196,10 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const T value) {
   auto xOffset = i * strideAt(0) + j * strideAt(1);
 
   NDArray::preparePrimaryUse({this}, {}, true);
-  // Check shapeInfo before calling dataType()
   if (_shapeInfo != nullptr) {
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   }
+  tickWriteHost();
   NDArray::registerPrimaryUse({this}, {});
   syncToDevice();
 }
@@ -6234,10 +6236,10 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
 
   NDArray::preparePrimaryUse({this}, {}, true);
-  // Check shapeInfo before calling dataType()
   if (_shapeInfo != nullptr) {
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   }
+  tickWriteHost();
   NDArray::registerPrimaryUse({this}, {});
   syncToDevice();
 }
@@ -6274,10 +6276,10 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
 
   NDArray::preparePrimaryUse({this}, {}, true);
-  // Check shapeInfo before calling dataType()
   if (_shapeInfo != nullptr) {
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), SD_COMMON_TYPES_ALL);
   }
+  tickWriteHost();
   NDArray::registerPrimaryUse({this}, {});
   syncToDevice();
 }
@@ -6416,17 +6418,15 @@ void NDArray::p(const sd::LongType i, NDArray *scalar) {
     }
   }
 
+  tickWriteHost();
   NDArray::registerPrimaryUse({this}, {scalar});
-  // Sync HOST→DEVICE so subsequent CUDA ops see the data
   syncToDevice();
 }
 
 template <typename T, typename Y, typename>
 void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
-  NDArray::preparePrimaryUse({this}, {this});
   int len = isScalar() ? 1 : lengthOf();
 
-  // Check if offset is valid
   if (offset < 0 || offset >= len) {
     std::string errorMessage = "NDArray::templatedSet: offset out of bounds "
                                + std::to_string(offset) + " vs " + std::to_string(len);
@@ -6440,12 +6440,9 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
     THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
   }
 
+  // Pure buffer write — NO sync. Callers are responsible for
+  // tickWriteHost() + syncToDevice() after all writes are done.
   t[offset] = y[0];
-
-
-  tickWriteHost();
-  NDArray::registerPrimaryUse({this}, {this});
-  syncToDevice();
 }
 
 template<typename T>
@@ -6610,11 +6607,11 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
       case INT64:
         templatedSet<sd::LongType, sd::LongType>(buffer(), rp, scalar->buffer());
         break;
-        // Add other numeric types as needed
       default:
         THROW_EXCEPTION("Unsupported numeric type");
     }
   }
+  tickWriteHost();
   NDArray::registerPrimaryUse({this}, {scalar});
   syncToDevice();
 }

@@ -159,11 +159,9 @@ float scoreSectionFusion(
                        sectionB.type == KernelSectionType::GATHER_ND ||
                        sectionB.type == KernelSectionType::CONCAT ||
                        sectionB.type == KernelSectionType::STACK);
-    // Check if either section is near an attention op (within 5 slots)
-    bool nearAttnA = false, nearAttnB = false;
-    // Simple heuristic: if section has attention-adjacent type, assume it's near attention
+    // Type-based heuristic: boost fusion score for attention-adjacent op types
     if (aIsAttnAdj || bIsAttnAdj) {
-      attnBonus = 50.0f;  // Significant bonus to prefer attention neighborhood fusion
+      attnBonus = 15.0f;  // Meaningful boost without dominating typical scores (~30-40)
     }
   }
 

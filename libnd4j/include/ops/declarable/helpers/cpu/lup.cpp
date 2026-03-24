@@ -145,7 +145,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
 
   // FIXED: Use stack allocation instead of heap to avoid memory leak
   NDArray determinant(DataTypeUtils::fromT<T>(), context, true);  // scalar initialized to 0
-  determinant.p<T>(0, static_cast<T>(1.f));                       // set value to 1
+  determinant.r<T>(0) = static_cast<T>(1.f);                      // set value to 1
   NDArray compoundMatrix = *input;                                // copy
   NDArray permutationMatrix(input, false, context);               // has same shape as input and contiguous strides
   permutationMatrix.setIdentity();
@@ -178,12 +178,16 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
     }
   }
 
+  T detValue = determinant.t<T>(0);
   for (sd::LongType e = 0; e < rowNum; e++) {
-    determinant.p<T>(0, determinant.e<T>(0) * compoundMatrix.e<T>(e, e));
+    detValue *= compoundMatrix.t<T>(e, e);
   }
   if (swapCount % 2)  {
-    determinant.p<T>(0, -determinant.e<T>(0));
+    detValue = -detValue;
   }
+  determinant.r<T>(0) = detValue;
+  determinant.tickWriteHost();
+  determinant.syncToDevice();
   if (compound != nullptr) compound->assign(&compoundMatrix);
   if (permutation != nullptr) {
     auto permutaionVector = NDArrayFactory::create('c', {rowNum}, DataTypeUtils::fromT<I>(), input->getContext());
@@ -377,13 +381,15 @@ static sd::Status determinant_(LaunchContext* context, NDArray* input, NDArray* 
       NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);
 
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
-    for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix->p(row, input->e<T>(k));
-    
+    for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix->r<T>(row) = input->t<T>(k);
+    matrix->tickWriteHost();
+    matrix->syncToDevice();
+
     // Compute determinant using LU decomposition
     T determinant = static_cast<T>(1.0);
     NDArray compoundMatrix = *matrix;
     sd::LongType swapCount = 0;
-    
+
     for (sd::LongType i = 0; i < n; i++) {
       T pivotValue = T(0.0);
       sd::LongType pivot = -1;
@@ -410,14 +416,16 @@ static sd::Status determinant_(LaunchContext* context, NDArray* input, NDArray* 
     }
 
     for (sd::LongType e2 = 0; e2 < n; e2++) {
-      determinant *= compoundMatrix.e<T>(e2, e2);
+      determinant *= compoundMatrix.t<T>(e2, e2);
     }
     if (swapCount % 2) {
       determinant = -determinant;
     }
-    
-    output->p(e, determinant);
+
+    output->r<T>(e) = determinant;
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 
   return sd::Status::OK;
 }
@@ -435,11 +443,15 @@ sd::Status logAbsDeterminant_(LaunchContext* context, NDArray* input, NDArray* o
       NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context);  //, block.getWorkspace());
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
-      matrix->p(row, input->e<T>(k));
+      matrix->r<T>(row) = input->t<T>(k);
     }
+    matrix->tickWriteHost();
+    matrix->syncToDevice();
     NDArray det = lup_<T, sd::LongType>(context, matrix, (NDArray*)nullptr, (NDArray*)nullptr);
-    if (det.e<T>(0) != 0.f) output->p(e, sd::math::sd_log<T, T>(sd::math::sd_abs<T,T>(det.t<T>(0))));
+    if (det.t<T>(0) != 0.f) output->r<T>(e) = sd::math::sd_log<T, T>(sd::math::sd_abs<T,T>(det.t<T>(0)));
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 
   delete matrix;
   return sd::Status::OK;
@@ -466,9 +478,11 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
     if (e) matrix->assign(zero);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-      matrix->p(row++, input->e<T>(k));
+      matrix->template r<T>(row++) = input->template t<T>(k);
     }
-    T det = lup_<T, sd::LongType>(context, matrix, compound, permutation).template e<T>(0);
+    matrix->tickWriteHost();
+    matrix->syncToDevice();
+    T det = lup_<T, sd::LongType>(context, matrix, compound, permutation).template t<T>(0);
 
     // FIXME: and how this is going to work on float16?
     if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
@@ -493,6 +507,8 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
       output->r<T>(k) = matrix->template t<T>(row++);
     }
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 
   delete matrix;
   delete compound;
@@ -518,8 +534,10 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
     if (e) matrix->assign(zero);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-      matrix->p(row++, input->e<T>(k));
+      matrix->template r<T>(row++) = input->template t<T>(k);
     }
+    matrix->tickWriteHost();
+    matrix->syncToDevice();
     T det = T(1.f);
     for (auto i = 0; i < n; i++) {
       det *= matrix->template t<T>(i, i);
@@ -537,6 +555,8 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
       output->r<T>(k) = lowerMatrix->template t<T>(row++);
     }
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 
   delete matrix;
   delete lowerMatrix;
@@ -587,17 +607,17 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
   auto checkMatrix = [&](NDArray* thisMatrix) -> bool {
     for (sd::LongType r = 0; r < thisMatrix->rows(); r++)
       for (sd::LongType c = 0; c < thisMatrix->columns(); c++)
-        if (sd::math::sd_abs<T,T>(thisMatrix->e<T>(r, c) - thisMatrix->e<T>(c, r)) >
+        if (sd::math::sd_abs<T,T>(thisMatrix->t<T>(r, c) - thisMatrix->t<T>(c, r)) >
             DataTypeUtils::min_positive<T>())
           return false;
 
     NDArray *output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
     if (sd::Status::OK != determinant(context, thisMatrix, output)) { delete output; return false; }
-    if (output->e<T>(0) <= T(0)) { delete output; return false; }
+    if (output->t<T>(0) <= T(0)) { delete output; return false; }
     NDArray reversedMatrix(*thisMatrix);
     if (sd::Status::OK != inverse(context, thisMatrix, &reversedMatrix)) { delete output; return false; }
     if (sd::Status::OK != determinant(context, &reversedMatrix, output)) { delete output; return false; }
-    if (output->e<T>(0) <= T(0)) { delete output; return false; }
+    if (output->t<T>(0) <= T(0)) { delete output; return false; }
     delete output;
     return true;
   };
@@ -634,25 +654,31 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
   for (sd::LongType e = 0; e < totalCount; e++) {
     // fill up matrix
     for (sd::LongType k = e * n2, l = 0; k < (e + 1) * n2; k++) {
-      matrix->p(l++, input->e<T>(k));
+      matrix->r<T>(l++) = input->t<T>(k);
     }
+    matrix->tickWriteHost();
+    matrix->syncToDevice();
     // if (e) // from the second loop need to zero matrix
     lowerMatrix->assign(zero);
 
     for (sd::LongType col = 0; col < n; col++) {
       for (sd::LongType row = 0; row < col; row++) {
         T rowSum = static_cast<T>(0);
-        for (sd::LongType k = 0; k < row; ++k) rowSum += (lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(row, k));
-        lowerMatrix->p(col, row, (matrix->e<T>(row, col) - rowSum) / lowerMatrix->e<T>(row, row));
+        for (sd::LongType k = 0; k < row; ++k) rowSum += (lowerMatrix->t<T>(col, k) * lowerMatrix->t<T>(row, k));
+        lowerMatrix->r<T>(col, row) = (matrix->t<T>(row, col) - rowSum) / lowerMatrix->t<T>(row, row);
       }
       T diagonalSum = static_cast<T>(0);
-      for (sd::LongType k = 0; k < col; ++k) diagonalSum += lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(col, k);
-      lowerMatrix->p(col, col, sd::math::sd_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
+      for (sd::LongType k = 0; k < col; ++k) diagonalSum += lowerMatrix->t<T>(col, k) * lowerMatrix->t<T>(col, k);
+      lowerMatrix->r<T>(col, col) = sd::math::sd_sqrt<T, T>(matrix->t<T>(col, col) - diagonalSum);
     }
+    lowerMatrix->tickWriteHost();
+    lowerMatrix->syncToDevice();
     for (sd::LongType k = e * n2, l = 0; k < (e + 1) * n2; k++) {
-      output->p(k, lowerMatrix->e<T>(l++));
+      output->r<T>(k) = lowerMatrix->t<T>(l++);
     }
   }
+  output->tickWriteHost();
+  output->syncToDevice();
 
   return sd::Status::OK;
 }
@@ -673,6 +699,8 @@ sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* outpu
   if (input->rankOf() == 2) {
     for (sd::LongType i = 0; i < n; ++i)
       output->r<T>(0) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(tempOutput->t<T>(i, i), T(2)));
+    output->tickWriteHost();
+    output->syncToDevice();
     delete tempOutput;
     return sd::Status::OK;
   }
@@ -683,6 +711,8 @@ sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* outpu
     for (sd::LongType i = 0; i < n; ++i)
       output->r<T>(e) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(matrices.at(e)->t<T>(i, i), T(2)));
   }
+  output->tickWriteHost();
+  output->syncToDevice();
   delete tempOutput;
   return sd::Status::OK;
 }

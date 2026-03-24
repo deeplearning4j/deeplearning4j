@@ -401,6 +401,13 @@ public class BenchmarkRunner {
     }
 
     private static boolean expectsGraphCapture(BenchmarkConfig config) {
+        // When shape freezing is disabled via system property, graph capture cannot happen
+        // regardless of config flags (shapes must be frozen for CUDA graph capture)
+        boolean freezeDisabled = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
+        boolean directDisabled = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
+        if (freezeDisabled || directDisabled) {
+            return false;
+        }
         return config.isTritonGraphCapture() || config.getExecutionMode() == GraphExecutionMode.CUDA_GRAPHS;
     }
 

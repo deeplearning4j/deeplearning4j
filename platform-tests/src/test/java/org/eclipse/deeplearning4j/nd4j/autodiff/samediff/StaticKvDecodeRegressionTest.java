@@ -183,11 +183,15 @@ public class StaticKvDecodeRegressionTest {
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Regression: In padded mode, attention_mask must accumulate 1s at each decode step.
-     * The Java array must be updated even when nativeDecodeInputs=true, because DSP
-     * feedDict copies the Java array to device each step, erasing C++ updates.
+     * Regression: In padded mode with nativeDecodeInputs=false, attention_mask must
+     * accumulate 1s at each decode step. Java-side incremental updates mark each
+     * new KV position as valid.
      *
      * Simulates 5 decode steps and verifies the mask accumulates correctly.
+     * Note: mask layout is [1, maxKvLen + currentSeqLen], with:
+     * - positions [0..cachePos-1] = 1 on first call (cachePos ones for filled KV slots)
+     * - position [totalSeqLen-1] = 1 (current token)
+     * - each subsequent step adds 1 more at [cachePos+step-1] (newly filled by scatter)
      */
     @Test
     @DisplayName("Attention mask accumulates correctly over multiple decode steps")
@@ -207,24 +211,28 @@ public class StaticKvDecodeRegressionTest {
 
         Map<String, INDArray> reusableInputs = new HashMap<>();
 
-        // Simulate 5 decode steps
+        // Simulate 5 decode steps with nativeDecodeInputs=false (Java-side accumulation)
         for (int step = 0; step < 5; step++) {
             Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
                     inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen + step, currentSeqLen,
                     staticKvBuffers, MAX_KV_LEN, cachePos + step,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, true);  // dspActive=true, nativeDecodeInputs=true
+                    true, false);  // dspActive=true, nativeDecodeInputs=false
 
             INDArray mask = result.get("attention_mask");
             assertNotNull(mask, "attention_mask at step " + step);
 
-            long expectedOnes = (cachePos + step) + 1;  // past positions + current token
+            // First call: [0..cachePos-1] (10 filled KV slots) + lastPos (current token) = 11
+            // Step 1: reuse marks (cachePos+1)-1=10 as filled → 12
+            // Step 2: reuse marks (cachePos+2)-1=11 as filled → 13
+            // General: cachePos + step + 1 = filled slots + current token
+            long expectedOnes = (cachePos + step) + 1;
             long actualOnes = mask.sumNumber().longValue();
 
             assertEquals(expectedOnes, actualOnes,
-                    String.format("Step %d: mask should have %d ones (cachePos=%d + current=1), got %d",
-                            step, expectedOnes, cachePos + step, actualOnes));
+                    String.format("Step %d: mask should have %d ones (positions [0..%d] + last), got %d",
+                            step, expectedOnes, cachePos + step - 1, actualOnes));
 
             // Verify current token position is set
             long totalSeqLen = MAX_KV_LEN + currentSeqLen;
@@ -249,11 +257,11 @@ public class StaticKvDecodeRegressionTest {
 
     /**
      * Regression: When attn_mask_reformat is overridden to PLACEHOLDER, DecoderUtils
-     * must provide a 4D attention bias [1, numQHeads, 1, totalSeqLen] with:
+     * must provide a 4D attention bias [1, 1, currentSeqLen, totalSeqLen] with:
      * - 0.0 at attended positions (0..cachePos-1 and totalSeqLen-1)
      * - MASK_FILL at masked positions (unfilled cache slots)
      *
-     * The number of heads must be Q heads (9 for GQA), not KV heads (3).
+     * The heads dimension is 1 (broadcast across Q heads at runtime).
      */
     @Test
     @DisplayName("4D attention bias has correct shape and mask values")
@@ -287,36 +295,32 @@ public class StaticKvDecodeRegressionTest {
         INDArray attnBias = result.get(ATTN_REFORMAT_NODE);
         assertNotNull(attnBias, "4D attention bias should be present");
 
-        // Shape: [1, numQHeads, currentSeqLen, totalSeqLen]
-        assertArrayEquals(new long[]{1, NUM_Q_HEADS, currentSeqLen, totalSeqLen}, attnBias.shape(),
-                String.format("4D bias shape should be [1,%d,1,%d], got %s",
-                        NUM_Q_HEADS, totalSeqLen, Arrays.toString(attnBias.shape())));
+        // Shape: [1, 1, currentSeqLen, totalSeqLen] — heads dim=1 for broadcasting
+        assertArrayEquals(new long[]{1, 1, currentSeqLen, totalSeqLen}, attnBias.shape(),
+                String.format("4D bias shape should be [1,1,1,%d], got %s",
+                        totalSeqLen, Arrays.toString(attnBias.shape())));
 
-        // Check attended positions are 0.0
-        for (int h = 0; h < NUM_Q_HEADS; h++) {
-            // Filled positions (0..cachePos-1)
-            for (int p = 0; p < cachePos; p++) {
-                assertEquals(0.0f, attnBias.getFloat(0, h, 0, p), 1e-6,
-                        String.format("head=%d, pos=%d should be 0.0 (attended)", h, p));
-            }
-            // Current token (last position)
-            assertEquals(0.0f, attnBias.getFloat(0, h, 0, (int) totalSeqLen - 1), 1e-6,
-                    String.format("head=%d, last pos should be 0.0 (current token)", h));
+        // Check attended positions are 0.0 (head=0 since dim is 1)
+        // Filled positions (0..cachePos-1)
+        for (int p = 0; p < cachePos; p++) {
+            assertEquals(0.0f, attnBias.getFloat(0, 0, 0, p), 1e-6,
+                    String.format("pos=%d should be 0.0 (attended)", p));
         }
+        // Current token (last position)
+        assertEquals(0.0f, attnBias.getFloat(0, 0, 0, (int) totalSeqLen - 1), 1e-6,
+                "last pos should be 0.0 (current token)");
 
         // Check masked positions have MASK_FILL
         float maskFill = DecoderUtils.MASK_FILL;
-        for (int h = 0; h < NUM_Q_HEADS; h++) {
-            // Unfilled positions (cachePos..maxKvLen-1)
-            for (int p = cachePos; p < MAX_KV_LEN; p++) {
-                assertEquals(maskFill, attnBias.getFloat(0, h, 0, p), 1e-6,
-                        String.format("head=%d, pos=%d should be MASK_FILL (unfilled)", h, p));
-            }
+        // Unfilled positions (cachePos..maxKvLen-1)
+        for (int p = cachePos; p < MAX_KV_LEN; p++) {
+            assertEquals(maskFill, attnBias.getFloat(0, 0, 0, p), 1e-6,
+                    String.format("pos=%d should be MASK_FILL (unfilled)", p));
         }
 
         dummyDecoder.close();
-        log.info("4D attention bias test passed: shape={}, {} Q heads, {} attended, {} masked",
-                Arrays.toString(attnBias.shape()), NUM_Q_HEADS, cachePos + 1,
+        log.info("4D attention bias test passed: shape={}, {} attended, {} masked",
+                Arrays.toString(attnBias.shape()), cachePos + 1,
                 MAX_KV_LEN - cachePos);
     }
 
@@ -395,15 +399,104 @@ public class StaticKvDecodeRegressionTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // Test 3b: 4D bias must update even when nativeDecodeInputs=true
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Regression: The 4D attention bias putScalar(cachePos-1, 0.0f) must run regardless
+     * of the nativeDecodeInputs flag. C++ native decode handles input_ids, position_ids,
+     * and attention_mask — but NOT the 4D attention bias placeholder override.
+     *
+     * Previous bug: the putScalar was guarded by {@code !nativeDecodeInputs}, so when
+     * C++ native decode was active, past positions stayed masked → model had no context
+     * → output EOS immediately or degenerate text.
+     *
+     * Fix: Remove the {@code !nativeDecodeInputs} guard.
+     */
+    @Test
+    @DisplayName("4D attention bias updates correctly even with nativeDecodeInputs=true")
+    public void testAttnBiasUpdatesWithNativeDecodeInputs() {
+        int cachePos = 10;
+        long currentSeqLen = 1;
+        long totalSeqLen = MAX_KV_LEN + currentSeqLen;
+
+        Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
+
+        ModelIOConfig ioConfig = ModelIOConfig.builder()
+                .attnMaskReformatOutput(ATTN_REFORMAT_NODE)
+                .build();
+
+        List<String> inputNames = List.of("inputs_embeds", "attention_mask", "input_ids",
+                "position_ids", ATTN_REFORMAT_NODE,
+                "past_key_values.0.key", "past_key_values.0.value",
+                "past_key_values.1.key", "past_key_values.1.value");
+
+        SameDiff dummyDecoder = SameDiff.create();
+        INDArray embeddings = Nd4j.randn(DataType.FLOAT, 1, 1, HIDDEN_SIZE);
+        INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
+
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+        float maskFill = DecoderUtils.MASK_FILL;
+
+        // Run 5 steps with nativeDecodeInputs=true
+        for (int step = 0; step < 5; step++) {
+            int pos = cachePos + step;
+
+            Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+                    ioConfig, inputNames, dummyDecoder, embeddings, inputIds,
+                    679 + step, currentSeqLen, staticKvBuffers, MAX_KV_LEN, pos,
+                    true, HIDDEN_SIZE, reusableInputs,
+                    true, true);  // nativeDecodeInputs=TRUE
+
+            INDArray attnBias = result.get(ATTN_REFORMAT_NODE);
+            assertNotNull(attnBias, "Step " + step + ": bias should exist with nativeDecodeInputs=true");
+
+            // Count attended positions
+            int attendedCount = 0;
+            for (int p = 0; p < totalSeqLen; p++) {
+                if (Math.abs(attnBias.getFloat(0, 0, 0, p)) < 1e-6) {
+                    attendedCount++;
+                }
+            }
+
+            int expectedAttended = pos + 1;  // positions 0..pos-1 (past) + totalSeqLen-1 (current)
+            assertEquals(expectedAttended, attendedCount,
+                    String.format("Step %d (nativeDecodeInputs=true, cachePos=%d): " +
+                            "expected %d attended positions, got %d",
+                            step, pos, expectedAttended, attendedCount));
+
+            // Verify newly unmasked position
+            if (step > 0) {
+                assertEquals(0.0f, attnBias.getFloat(0, 0, 0, pos - 1), 1e-6,
+                        String.format("Step %d: position %d should be unmasked even with nativeDecodeInputs=true",
+                                step, pos - 1));
+            }
+
+            // Verify next unfilled position is still masked
+            if (pos < MAX_KV_LEN) {
+                assertEquals(maskFill, attnBias.getFloat(0, 0, 0, pos), 1e-6,
+                        String.format("Step %d: position %d should still be masked", step, pos));
+            }
+
+            log.info("Step {} (nativeDecodeInputs=true): cachePos={}, attended={}",
+                    step, pos, attendedCount);
+        }
+
+        dummyDecoder.close();
+        log.info("4D bias with nativeDecodeInputs=true test passed: bias correctly updated over 5 steps");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // Test 4: Position IDs always updated (even with nativeDecodeInputs)
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Regression: position_ids Java array must be updated each step even when
-     * nativeDecodeInputs=true, because DSP feedDict copies it to device.
+     * Regression: position_ids Java array must be updated each step when
+     * nativeDecodeInputs=false. When nativeDecodeInputs=true, C++ handles
+     * position_ids directly and Java-side doesn't update the reusable array.
      */
     @Test
-    @DisplayName("Position IDs update correctly across decode steps with nativeDecodeInputs=true")
+    @DisplayName("Position IDs update correctly across decode steps with nativeDecodeInputs=false")
     public void testPositionIdsAlwaysUpdated() {
         int cachePos = 10;
         Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
@@ -418,6 +511,7 @@ public class StaticKvDecodeRegressionTest {
 
         Map<String, INDArray> reusableInputs = new HashMap<>();
 
+        // Test with nativeDecodeInputs=false: Java must update each step
         for (int step = 0; step < 5; step++) {
             long pastSeqLen = 679 + step;
 
@@ -425,7 +519,7 @@ public class StaticKvDecodeRegressionTest {
                     inputNames, dummyDecoder, embeddings, inputIds,
                     pastSeqLen, 1, staticKvBuffers, MAX_KV_LEN, cachePos + step,
                     true, HIDDEN_SIZE, reusableInputs,
-                    true, true);  // nativeDecodeInputs=true
+                    true, false);  // nativeDecodeInputs=false
 
             INDArray posIds = result.get("position_ids");
             assertNotNull(posIds, "position_ids at step " + step);
@@ -435,7 +529,53 @@ public class StaticKvDecodeRegressionTest {
         }
 
         dummyDecoder.close();
-        log.info("Position IDs test passed: correctly updated across 5 steps with nativeDecodeInputs=true");
+        log.info("Position IDs test passed: correctly updated across 5 steps with nativeDecodeInputs=false");
+    }
+
+    /**
+     * Verify that when nativeDecodeInputs=true, Java-side position_ids ARE still updated.
+     *
+     * The J3 fix changed this: Java position_ids must always be correct because
+     * step 1 uses output() (not capture buffers), and the D2D copy from the Java
+     * array to the capture buffer reads from the Java array's device buffer.
+     * Keeping Java in sync ensures correct values for step 1 and consistent diagnostics.
+     */
+    @Test
+    @DisplayName("Position IDs always updated even with nativeDecodeInputs=true (J3 fix)")
+    public void testPositionIdsAlwaysUpdatedWithNativeDecodeInputs() {
+        int cachePos = 10;
+        Map<String, INDArray> staticKvBuffers = createStaticKvBuffers();
+
+        List<String> inputNames = List.of("inputs_embeds", "attention_mask", "input_ids",
+                "position_ids", "past_key_values.0.key", "past_key_values.0.value",
+                "past_key_values.1.key", "past_key_values.1.value");
+
+        SameDiff dummyDecoder = SameDiff.create();
+        INDArray embeddings = Nd4j.randn(DataType.FLOAT, 1, 1, HIDDEN_SIZE);
+        INDArray inputIds = Nd4j.createFromArray(new int[]{42}).reshape(1, 1).castTo(DataType.LONG);
+
+        Map<String, INDArray> reusableInputs = new HashMap<>();
+
+        long initialPastSeqLen = 679;
+        // Step 0: creates posIds with pastSeqLen=679
+        DecoderUtils.buildDecoderInputMap(
+                inputNames, dummyDecoder, embeddings, inputIds,
+                initialPastSeqLen, 1, staticKvBuffers, MAX_KV_LEN, cachePos,
+                true, HIDDEN_SIZE, reusableInputs,
+                true, true);  // nativeDecodeInputs=true
+
+        // Step 1: Java posIds should be updated to 680 even with nativeDecodeInputs=true
+        Map<String, INDArray> result = DecoderUtils.buildDecoderInputMap(
+                inputNames, dummyDecoder, embeddings, inputIds,
+                initialPastSeqLen + 1, 1, staticKvBuffers, MAX_KV_LEN, cachePos + 1,
+                true, HIDDEN_SIZE, reusableInputs,
+                true, true);
+
+        INDArray posIds = result.get("position_ids");
+        assertEquals(initialPastSeqLen + 1, posIds.getLong(0, 0),
+                "With nativeDecodeInputs=true, Java posIds should be updated (J3 fix)");
+
+        dummyDecoder.close();
     }
 
     // ═══════════════════════════════════════════════════════════════════════

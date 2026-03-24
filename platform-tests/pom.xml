@@ -1653,6 +1653,7 @@
                         <ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>${nd4j.triton.fuseAttentionNeighborhoods}</ND4J_TRITON_FUSE_ATTENTION_NEIGHBORHOODS>
                         <CUDA_LOG_FILE>${cuda.log.file}</CUDA_LOG_FILE>
                         <ND4J_CUBLAS_CAPTURE_WORKSPACE>${nd4j.cublas.captureWorkspace}</ND4J_CUBLAS_CAPTURE_WORKSPACE>
+                        <ND4J_TRITON_TF32>${nd4j.triton.tf32}</ND4J_TRITON_TF32>
                     </environmentVariables>
                     <systemPropertyVariables>
                         <!-- libnd4j native test configuration -->

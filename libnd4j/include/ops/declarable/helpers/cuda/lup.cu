@@ -429,7 +429,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
         throw cuda_exception::build("helpers::lup_: Cannot create cuSolver handle", status);
       }
 
-      d_work = reinterpret_cast<double*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(float) * lwork, lupDevId, nullptr));
+      d_work = reinterpret_cast<double*>(sd::memory::CudaMemoryPool::getInstance().allocate(sizeof(double) * lwork, lupDevId, nullptr));
       if (d_work == nullptr) THROW_EXCEPTION("helpers::lup_: Cannot allocate memory for solver data buffer");
 
       if (permutation == nullptr) {
@@ -634,7 +634,9 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
 
 template <typename T, typename I>
 static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutation, LongType rowNum) {
-  NDArray::preparePrimaryUse({compound}, {permutation});
+  // compound is both read and written (Gaussian elimination reads existing values).
+  // It must be in the readList to sync device→host before bufferAsT<T>() reads it.
+  NDArray::preparePrimaryUse({compound}, {compound, permutation});
 
   if (permutation) {  // LUP algorithm
     permutation->linspace(0);

@@ -337,6 +337,11 @@ public class DecoderUtils {
 
             // Map present name -> past_key_values input name using ModelIOConfig
             String pastInputName = ioConfig.presentToInputName(presentName);
+            // Protect static KV buffers from accidental closure / GC deallocation.
+            // These buffers must survive for the entire decode loop. Without this,
+            // trimMemoryPoolOnStream or DeallocatorService can free them on multi-GPU setups
+            // where buffers are on a non-peer device.
+            staticBuf.setCloseable(false);
             staticKvBuffers.put(pastInputName, staticBuf);
 
             log.info("  Static KV buffer '{}': [{},{},{},{}] (prefill={} padded to {})",
@@ -393,6 +398,7 @@ public class DecoderUtils {
         allPresentNames.addAll(presentKeyNames);
         allPresentNames.addAll(presentValueNames);
 
+        int skippedClosed = 0;
         for (String presentName : allPresentNames) {
             INDArray presentKv = decoderOutputs.get(presentName);
             if (presentKv == null) continue;
@@ -400,11 +406,24 @@ public class DecoderUtils {
             String pastInputName = ioConfig.presentToInputName(presentName);
             INDArray staticBuf = staticKvBuffers.get(pastInputName);
             if (staticBuf != null) {
+                // Guard: skip closed arrays to prevent native op crash.
+                // This can happen when DeallocatorService/GC frees cross-device buffers.
+                if (staticBuf.wasClosed() || staticBuf.data() == null) {
+                    skippedClosed++;
+                    continue;
+                }
+                if (presentKv.wasClosed() || presentKv.data() == null) {
+                    skippedClosed++;
+                    continue;
+                }
                 staticList.add(staticBuf);
                 presentList.add(presentKv);
             }
         }
 
+        if (skippedClosed > 0) {
+            log.warn("scatterNewKvEntries: skipped {} closed arrays at cachePos={}", skippedClosed, cachePos);
+        }
         if (staticList.isEmpty()) return;
 
         // Single native op call for all pairs — one JNI round-trip + one kernel launch
@@ -680,17 +699,27 @@ public class DecoderUtils {
                     long totalSeqLen = maxKvLen + currentSeqLen;
                     if (canReuse && reusableInputs.containsKey(inputName)) {
                         INDArray mask = reusableInputs.get(inputName);
-                        if (cachePos >= 0 && !nativeDecodeInputs) {
-                            // Mark current position as valid (C++ handles when nativeDecodeInputs=true)
-                            mask.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(cachePos)},
+                        if (cachePos > 0) {
+                            // Mark the position just filled by the previous scatter (cachePos-1).
+                            // cachePos is the NEXT empty slot; cachePos-1 was filled last step.
+                            // CRITICAL: Must always update Java-side mask even when nativeDecodeInputs
+                            // is true, because the D2D copy from the original Java array to the
+                            // capture buffer runs every step and overwrites C++ capture buffer updates.
+                            // C++ updateDecodeInputs only writes the CURRENT step's position, so without
+                            // Java-side accumulation the model loses all previously decoded positions.
+                            mask.put(new INDArrayIndex[]{NDArrayIndex.point(0), NDArrayIndex.point(cachePos - 1)},
                                     Nd4j.scalar(DataType.LONG, 1));
+                            // Force host→device sync so the D2D capture buffer copy reads
+                            // the updated device buffer, not a stale pre-update version.
+                            Nd4j.getAffinityManager().ensureLocation(mask,
+                                    org.nd4j.linalg.api.concurrency.AffinityManager.Location.DEVICE);
                         }
                         decoderInputMap.put(inputName, mask);
                     } else {
                         INDArray mask = Nd4j.zeros(DataType.LONG, 1, totalSeqLen);
-                        // Set 1s at positions 0..cachePos (inclusive) + the current token position at the end
-                        if (cachePos >= 0) {
-                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos + 1)).assign(1);
+                        // Set 1s at positions 0..cachePos-1 (filled KV slots) + the current token at the end
+                        if (cachePos > 0) {
+                            mask.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, cachePos)).assign(1);
                         }
                         // Also set the last position (the concat'd current token)
                         mask.putScalar(0, totalSeqLen - 1, 1);
@@ -731,10 +760,12 @@ public class DecoderUtils {
             } else if (ioConfig.isPositionIds(inputName)) {
                 if (canReuse && reusableInputs.containsKey(inputName)) {
                     INDArray posIds = reusableInputs.get(inputName);
-                    if (!nativeDecodeInputs) {
-                        // C++ handles this when nativeDecodeInputs=true
-                        posIds.assign(Nd4j.scalar(DataType.LONG, pastSeqLen));
-                    }
+                    // Always update Java-side position_ids even when nativeDecodeInputs is true.
+                    // The D2D capture buffer copy reads from the original Java array's device buffer,
+                    // and C++ overwrites it in the capture buffer, but keeping Java in sync ensures
+                    // correct values for step 1 (which uses output(), not capture buffers) and
+                    // consistent diagnostics.
+                    posIds.assign(Nd4j.scalar(DataType.LONG, pastSeqLen));
                     decoderInputMap.put(inputName, posIds);
                 } else {
                     // arange creates a FLOAT array; reshape creates a view; castTo creates
@@ -782,10 +813,17 @@ public class DecoderUtils {
                     long totalSeqLen = maxKvLen + currentSeqLen;
                     if (canReuse && reusableInputs.containsKey(inputName)) {
                         INDArray bias = reusableInputs.get(inputName);
-                        if (!nativeDecodeInputs && cachePos > 0) {
+                        if (cachePos > 0) {
                             // Unmask the position that was just filled by KV scatter.
                             // cachePos-1 was previously MASK_FILL (empty padding), now valid.
                             bias.putScalar(new long[]{0, 0, 0, cachePos - 1}, 0.0f);
+                            // Force host→device sync: putScalar writes to the HOST buffer,
+                            // but with CUDA graph replay + argTableStable optimization, the
+                            // DSP skips EXT_INPUT_SYNC for unchanged pointers. Without this
+                            // explicit sync, the device buffer retains stale mask values and
+                            // the model never sees new KV positions → degenerate output.
+                            Nd4j.getAffinityManager().ensureLocation(bias,
+                                    org.nd4j.linalg.api.concurrency.AffinityManager.Location.DEVICE);
                         }
                         decoderInputMap.put(inputName, bias);
                     } else {

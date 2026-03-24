@@ -59,23 +59,11 @@ CUSTOM_OP_IMPL(cast_and_scale, 1, 1, false, 1, 1) {
     return sd::Status::OK;
   }
 
-  // Different types: cast and scale in one pass
-  // We first cast, then scale (this is the most numerically stable approach)
-  auto length = input->lengthOf();
-
-  // Use a parallel loop for efficiency
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      // Get value as double for precision during conversion
-      double val = input->e<double>(i);
-      // Apply scale
-      val *= scale;
-      // Store with target type
-      output->p(i, val);
-    }
-  };
-
-  samediff::Threads::parallel_for(func, 0, length);
+  // Different types: cast then scale in two bulk operations
+  // First cast by assigning input to output (handles type conversion),
+  // then scale the output in-place. Both use bulk ops, avoiding O(n^2) per-element sync.
+  output->assign(input);
+  output->applyScalar(sd::scalar::Multiply, scale, output);
 
   return sd::Status::OK;
 }

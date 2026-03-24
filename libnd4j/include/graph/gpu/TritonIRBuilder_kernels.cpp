@@ -29,6 +29,7 @@
 #include <graph/gpu/TritonIRBuilder_internal.h>
 #include <graph/DspDiagnostics.h>
 #include <helpers/logger.h>
+#include <system/Environment.h>
 
 #include <algorithm>
 #include <cmath>
@@ -71,17 +72,18 @@ void TritonIRBuilder::emitMatmulKernel(mlir::OpBuilder& builder, mlir::Location 
   auto bElemType = bPtrType.getPointeeType();
   auto cElemType = cPtrType.getPointeeType();
 
-  // Determine InputPrecision for DotOp based on input types
-  // TF32 enables tensor cores for FP32 inputs on sm_80+ (Ampere and later),
-  // providing ~2x throughput with 10-bit mantissa precision (sufficient for inference).
+  // Determine InputPrecision for DotOp based on input types and Environment flag.
+  // TF32 (10-bit mantissa) gives ~2x throughput on sm_80+ but compounds precision
+  // loss across thousands of ops per decode step. Default OFF for correctness.
   bool inputIsF32 = mlir::isa<mlir::Float32Type>(aElemType);
-  auto dotPrecision = inputIsF32 ? mlir::triton::InputPrecision::TF32
-                                 : mlir::triton::InputPrecision::IEEE;
+  bool useTf32 = inputIsF32 && sd::Environment::getInstance().tritonTf32Enabled();
+  auto dotPrecision = useTf32 ? mlir::triton::InputPrecision::TF32
+                               : mlir::triton::InputPrecision::IEEE;
 
   DSP_DIAG(JIT, "TritonIRBuilder::emitMatmulKernel: A elem=%s, B elem=%s, C elem=%s, precision=%s",
             inputIsF32 ? "f32" : "non-f32", inputIsF32 ? "f32" : "non-f32",
             mlir::isa<mlir::Float32Type>(cElemType) ? "f32" : "non-f32",
-            inputIsF32 ? "TF32" : "IEEE");
+            useTf32 ? "TF32" : "IEEE");
 
   // Program IDs for 2D grid
   auto pidM = builder.create<mlir::triton::GetProgramIdOp>(
@@ -596,11 +598,13 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto f32BmBnType = mlir::RankedTensorType::get({blockM, blockN}, f32Type);
   auto i32BmBnType = mlir::RankedTensorType::get({blockM, blockN}, i32Type);
   auto qkZeroInit = splatConstantF32(builder, loc, f32BmBnType, 0.0f);
-  // TF32 precision for QK^T: enables tensor cores on sm_80+ for FP32 attention.
-  // Accuracy impact is negligible — scores go through softmax which normalizes.
+  // QK^T precision controlled by tritonTf32Enabled flag. Default IEEE for accuracy.
+  auto qkPrecision = sd::Environment::getInstance().tritonTf32Enabled()
+                         ? mlir::triton::InputPrecision::TF32
+                         : mlir::triton::InputPrecision::IEEE;
   auto qk = builder.create<mlir::triton::DotOp>(
       loc, f32BmBnType, qScaled, kTransposed, qkZeroInit,
-      mlir::triton::InputPrecision::TF32, /*maxNumImpreciseAcc=*/0);
+      qkPrecision, /*maxNumImpreciseAcc=*/0);
 
   // Apply key mask: set qk to -inf where kIndices >= seqK
   auto negInfSplat = splatConstantF32(builder, loc, f32BmBnType, -3.4028235e+38f);
@@ -803,10 +807,13 @@ void TritonIRBuilder::emitFusedAttentionKernel(mlir::OpBuilder& builder, mlir::L
   auto accScaled = builder.create<mlir::arith::MulFOp>(loc, accIter, correctionBroadcast);
 
   // dot(p[BM,BN], V[BN,HD]) -> [BM, HD]
-  // TF32 precision for PV: enables tensor cores for value accumulation.
+  // PV precision controlled by tritonTf32Enabled flag. Default IEEE for accuracy.
+  auto pvPrecision = sd::Environment::getInstance().tritonTf32Enabled()
+                         ? mlir::triton::InputPrecision::TF32
+                         : mlir::triton::InputPrecision::IEEE;
   auto pv = builder.create<mlir::triton::DotOp>(
       loc, f32BmHdType, p, vLoaded, accScaled,
-      mlir::triton::InputPrecision::TF32, /*maxNumImpreciseAcc=*/0);
+      pvPrecision, /*maxNumImpreciseAcc=*/0);
 
   // Yield for next iteration
   mlir::Value pvVal = pv, mNewVal = mNew, lNewVal = lNew;

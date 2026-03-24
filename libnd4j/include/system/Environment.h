@@ -227,6 +227,7 @@ class SD_LIB_EXPORT Environment {
   std::atomic<bool> _dspMatmulSegmentation{false};   // break segments at matmul boundaries
   std::atomic<bool> _dspFp16Compute{false};          // auto-cast FP32 matmul inputs to FP16 for TensorCore
   std::atomic<bool> _cublasTf32Enabled{false};       // enable TF32 math mode for cuBLAS on sm_80+
+  std::atomic<bool> _tritonTf32Enabled{false};      // enable TF32 precision for Triton-compiled DotOps on sm_80+
   std::atomic<bool> _cublasCaptureWorkspace{true};   // pre-allocate cuBLAS workspace for CUDA graph capture
   std::atomic<bool> _dspCastSinkMatmul{false};       // sink FP16→FP32 casts through matmul ops
   std::atomic<bool> _tritonConsolidatedArgTable{false}; // consolidate arg tables into single H2D copy
@@ -660,6 +661,8 @@ class SD_LIB_EXPORT Environment {
   void setDspFp16Compute(bool enabled);
   bool cublasTf32Enabled() { return _cublasTf32Enabled.load(); }
   void setCublasTf32Enabled(bool enabled);
+  bool tritonTf32Enabled() { return _tritonTf32Enabled.load(); }
+  void setTritonTf32Enabled(bool enabled);
   bool cublasCaptureWorkspace() { return _cublasCaptureWorkspace.load(); }
   void setCublasCaptureWorkspace(bool enabled);
   bool dspCastSinkMatmul() { return _dspCastSinkMatmul.load(); }

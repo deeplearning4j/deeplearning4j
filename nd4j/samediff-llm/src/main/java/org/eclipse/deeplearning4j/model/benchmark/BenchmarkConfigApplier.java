@@ -51,6 +51,7 @@ public class BenchmarkConfigApplier {
      */
     public static void resetModelState(SameDiff model) {
         model.resetSession();
+        model.clearPlaceholderOverrides();
         model.clearPlaceholders(true);
         model.clearOpInputs();
         model.clearDynamicShapePlanCache();
@@ -144,6 +145,9 @@ public class BenchmarkConfigApplier {
 
         // cuBLAS TF32: enables tensor cores for FP32 GEMMs on sm_80+ (Ampere+)
         env.setCublasTf32Enabled(config.isCublasTf32());
+
+        // Triton TF32: enables tensor cores for Triton-compiled DotOps on sm_80+
+        env.setTritonTf32Enabled(config.isTritonTf32());
 
         // DSP optimization flags
         env.setDspCastElimination(config.isDspCastElimination());

@@ -230,6 +230,7 @@ public class StaticKvCacheDecodeLoop {
         KvCacheManager kvCacheManager = createKvCacheManager(resolvedIOConfig);
         boolean usingStaticKv = false;
         boolean kvScatterInCpp = false;  // When true, C++ handles KV scatter — skip Java side
+        boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
         DynamicShapePlanExecutor decoderDspExec = null;  // Tracked DSP executor for decode input updates
 
         // Reusable input arrays — avoids per-step allocation of masks/position_ids
@@ -279,13 +280,18 @@ public class StaticKvCacheDecodeLoop {
 
             // Run decoder — use fast path when shapes are frozen (skips setCloseable overhead)
             Map<String, INDArray> decoderOutputs;
-            boolean useDirect = usingStaticKv && step >= 2
+            // outputDirect skips dup() of output arrays — safe only when shapes are frozen
+            // and DSP slot cache is stable (CUDA graph replay). In no-freeze mode, DSP
+            // slot arrays may be invalidated by subsequent executions, so use output()
+            // which dups all results into independent arrays.
+            boolean useDirect = usingStaticKv && step >= 2 && !skipFreeze
                     && !"true".equalsIgnoreCase(System.getProperty("nd4j.dsp.noDirect"));
-            // C++ KV scatter only runs in the DSP path (outputDirect). When using output()
-            // (steps 0-1), we MUST request full outputs and use Java scatter, otherwise
-            // the present KV is never written to the static buffer.
-            boolean cppScatterThisStep = kvScatterInCpp && useDirect;
-            String[] requestedOutputNames = (usingStaticKv && cppScatterThisStep)
+            // When C++ KV scatter is enabled (kvScatterInCpp), the native DSP plan
+            // scatters present KV into static buffers on EVERY execution — regardless
+            // of whether Java called output() or outputDirect(). So we MUST use
+            // logitsOnlyOutputNames to avoid requesting KV outputs that would conflict
+            // with C++ scatter. Java scatter is only used when C++ scatter is disabled.
+            String[] requestedOutputNames = (usingStaticKv && kvScatterInCpp)
                     ? logitsOnlyOutputNames : fullOutputNames;
             if (useDirect) {
                 decoderOutputs = decoder.outputDirect(
@@ -298,7 +304,7 @@ public class StaticKvCacheDecodeLoop {
             long tAfterDecoder = System.nanoTime();
 
             // Diagnostic: present KV shapes at steps 1-3 (skip when C++ KV scatter manages outputs)
-            if (step >= 1 && step <= 3 && !cppScatterThisStep) {
+            if (step >= 1 && step <= 3 && !kvScatterInCpp) {
                 logPresentKvDiagnostics(step, decoderOutputs, kvNames);
             }
 
@@ -330,25 +336,19 @@ public class StaticKvCacheDecodeLoop {
 
             // KV cache update — delegated to KvCacheManager
             if (usingStaticKv) {
-                if (cppScatterThisStep) {
-                    // C++ DSP path handles scatter + position advance automatically
+                if (kvScatterInCpp) {
+                    // C++ DSP plan scatters present KV into static buffers AND increments
+                    // kvCachePosition_ on every execution (in NativeDynamicShapePlan::execute()).
+                    // Java only needs to keep its own position counter in sync.
                     kvCacheManager.setCachePosition(kvCacheManager.getCachePosition() + 1);
                 } else {
-                    // Java scatter — either because C++ scatter is disabled or because this step
-                    // used output() instead of outputDirect() (C++ scatter only runs in DSP path)
+                    // Java scatter — C++ KV scatter is disabled, so we must scatter manually
                     kvCacheManager.scatterNewEntries(decoderOutputs, kvNames);
-                    // When C++ scatter is configured but this step used Java scatter (e.g. step 1
-                    // which uses output() not outputDirect()), advance the C++ kvCachePosition_
-                    // to stay in sync. Otherwise the next step's C++ scatter writes to the same
-                    // position, overwriting this step's data.
-                    if (kvScatterInCpp && decoderDspExec != null) {
-                        decoderDspExec.advanceKvCachePosition();
-                    }
                 }
                 // Close present KV outputs — scatter already copied data into static buffers.
                 // Without this, 60 tensors × ~4.5MB = ~270MB leaked per step.
                 // Skip when C++ KV scatter is active — C++ manages these buffer lifecycles.
-                if (!cppScatterThisStep) {
+                if (!kvScatterInCpp) {
                     int kvClosed = 0;
                     long kvClosedBytes = 0;
                     int kvSkippedClosed = 0, kvSkippedNull = 0;
@@ -448,18 +448,35 @@ public class StaticKvCacheDecodeLoop {
                         }
 
                         // Clear old plan and recompile with correct KV shapes.
-                        // When C++ KV scatter is enabled, compile with logits-only outputs —
-                        // C++ scatter reads present KV from internal output slots (encodeDirectOutputSlot).
-                        // With logits-only, present KV stays internal which enables CUDA graph capture
-                        // (fewer output tensors to manage in the capture workspace).
-                        boolean cppKvEnabled = !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
+                        // When C++ KV scatter is enabled AND shapes will be frozen, compile with
+                        // logits-only outputs — C++ scatter reads present KV from internal output
+                        // slots (encodeDirectOutputSlot). With logits-only, present KV stays
+                        // internal which enables CUDA graph capture (fewer output tensors to manage
+                        // in the capture workspace).
+                        // When freeze is disabled (--no-freeze), C++ KV scatter is NOT available
+                        // (it requires frozen shapes + CUDA graph capture). In this case, compile
+                        // with full outputs so Java KV scatter can read present KV from decoder
+                        // outputs. Without this, the DSP returns logits-only, Java scatter gets
+                        // null KV arrays, and the model degenerates (repeats same token).
+                        boolean cppKvEnabled = !skipFreeze
+                                && !"true".equals(System.getProperty("nd4j.dsp.kvscatter.java", "false"));
                         String[] recompileOutputs = cppKvEnabled ? logitsOnlyOutputNames : fullOutputNames;
                         decoder.clearDynamicShapePlanCache();
                         decoderSession.clearAllCaches();
                         dspExec = null;  // old executor invalidated
-                        log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
-                                maxKvLen, Arrays.toString(recompileOutputs));
-                        decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
+                        if (!skipFreeze) {
+                            log.info("  [Perf] Recompiling DSP plan with static KV shapes (maxKvLen={}, outputs={})",
+                                    maxKvLen, Arrays.toString(recompileOutputs));
+                            decoder.compileNativeDynamicShapePlan(DspCompilationMode.MAX_AUTOTUNE, recompileOutputs);
+                        } else {
+                            // No-freeze mode: disable DSP entirely to avoid ArrayCacheMemoryMgr
+                            // buffer lifecycle issues. DSP slot cache + growth factor creates
+                            // arrays that get freed by the cache cleanup, causing closed-buffer
+                            // errors in KvScatter. Standard op-by-op execution is safer.
+                            log.info("  [Perf] No-freeze mode: disabling DSP, using op-by-op execution");
+                            decoder.setDspAutoCompileEnabled(false);
+                            decoder.setDspNativeAutoCompileEnabled(false);
+                        }
                         // Re-fetch executor after recompilation
                         decoderSession = decoder.getOrCreateSession();
                         dspExec = decoderSession.getDynamicShapePlanExecutor();
@@ -467,7 +484,6 @@ public class StaticKvCacheDecodeLoop {
                         // CRITICAL: Freeze shapes IMMEDIATELY after recompile. This ensures Triton
                         // compilation (which happens on step 2) uses stable shape keys for disk cache.
                         // Without this, each run gets different shape keys → cache miss → 9s compile.
-                        boolean skipFreeze = "true".equalsIgnoreCase(System.getProperty("nd4j.dsp.nofreeze"));
                         if (dspExec != null && !skipFreeze) {
                             dspExec.setShapesFrozen(true);
                             dspExec.setTraceEnabled(true);
@@ -489,9 +505,8 @@ public class StaticKvCacheDecodeLoop {
                                         plan, presentNames, pastNames, (int) maxKvLen, (int) cachePos);
                                 if (kvConfigured) {
                                     kvScatterInCpp = true;
-                                    // Note: do NOT set kvScatterInCpp on KvCacheManager — the loop
-                                    // decides per-step via cppScatterThisStep. Steps that use output()
-                                    // (not outputDirect()) need Java scatter via the manager.
+                                    // Note: C++ scatter runs on every DSP execution (including
+                                    // output() calls), so Java must NOT also scatter.
                                     log.info("  [Perf] C++ KV scatter enabled: {} mappings, pos={}, decodeOutputs=logits-only",
                                             presentNames.size(), cachePos);
 

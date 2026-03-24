@@ -322,12 +322,18 @@ ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VALUEOF)
 template <typename T>
 NDArray* NDArrayFactory::linspace(const T from, const T to, const LongType numElements) {
   NDArray* result = NDArrayFactory::vector<T>(numElements);
-  // TO DO: linspace should be executed on DEVICE, but only CPU version implemnted!
-  for (LongType e = 0; e < numElements; e++) {
-    T step = (T)e / ((T)numElements - (T)1);
-    result->p<T>(e, (from * ((T)1 - step) + step * to));
+
+  // Delegate to NDArray::linspace which batches writes and syncs once.
+  // DO NOT use p<T>() per element — each call triggers syncToDevice()
+  // copying the ENTIRE buffer, causing O(n^2) data transfer.
+  if (numElements <= 1) {
+    double startVal = static_cast<double>(from);
+    result->linspace(startVal, 0.0);
+  } else {
+    double startVal = static_cast<double>(from);
+    double stepVal = static_cast<double>(to - from) / static_cast<double>(numElements - 1);
+    result->linspace(startVal, stepVal);
   }
-  result->syncToDevice();
 
   return result;
 }

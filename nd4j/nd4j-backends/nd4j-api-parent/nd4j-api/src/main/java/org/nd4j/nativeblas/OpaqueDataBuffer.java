@@ -992,9 +992,23 @@ public class OpaqueDataBuffer extends Pointer {
      * captured graph (different device pointers).
      */
     private static final ThreadLocal<Boolean> tl_suppressCrossDeviceRouting = ThreadLocal.withInitial(() -> false);
+    // Global suppress flag for async transfers that run on different threads.
+    // Set by InferenceSession during executeOperations() to prevent spurious
+    // multi-GPU routing caused by CUDA pool holding freed entries.
+    private static volatile boolean globalSuppressCrossDeviceRouting = false;
 
     public static void suppressCrossDeviceRouting(boolean suppress) {
         tl_suppressCrossDeviceRouting.set(suppress);
+        globalSuppressCrossDeviceRouting = suppress;
+    }
+
+    /**
+     * Check if cross-device routing is currently suppressed (either thread-local or global).
+     * Used by CudaExecutioner's selectTargetDevice to avoid unnecessary cross-device migration
+     * when the CUDA pool has reusable freed entries.
+     */
+    public static boolean isCrossDeviceRoutingSuppressed() {
+        return tl_suppressCrossDeviceRouting.get() || globalSuppressCrossDeviceRouting;
     }
 
     private static DeviceDescriptor selectDeviceForAllocation(long bytes, DeviceMemoryManager memoryManager) {
@@ -1007,7 +1021,7 @@ public class OpaqueDataBuffer extends Pointer {
 
         // During CUDA graph capture/replay, never route to a different device.
         // Cross-device pointers invalidate the captured graph.
-        if (tl_suppressCrossDeviceRouting.get()) {
+        if (tl_suppressCrossDeviceRouting.get() || globalSuppressCrossDeviceRouting) {
             DeviceDescriptor currentDevice = memoryManager.getRegisteredDevice(currentDeviceId);
             return currentDevice != null ? currentDevice :
                 memoryManager.selectDevice(bytes, DeviceMemoryManager.DeviceRoutingPolicy.MOST_FREE);

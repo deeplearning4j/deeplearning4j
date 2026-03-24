@@ -1282,6 +1282,16 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
+    public boolean tritonTf32Enabled() {
+        return e.tritonTf32Enabled();
+    }
+
+    @Override
+    public void setTritonTf32Enabled(boolean enabled) {
+        e.setTritonTf32Enabled(enabled);
+    }
+
+    @Override
     public boolean cublasCaptureWorkspace() {
         return e.cublasCaptureWorkspace();
     }

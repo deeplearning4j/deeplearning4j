@@ -1590,9 +1590,12 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
       cudaStreamSynchronize(cudaStr);
       cudaGetLastError();
 
-      // Reset MmulHelper cast cache indices again — warmup consumed them,
-      // capture needs them in the same order for consistent graph recording
-      MmulHelper::resetCastCacheIndices();
+      // Full clear of MmulHelper cast cache after warmup — warmup consumed
+      // entries and may have created stale shapes. resetCastCacheIndices() only
+      // resets the index but leaves stale entries in the cache, which can cause
+      // wrong-shaped casts during capture. clearCastCache() removes all entries
+      // so capture rebuilds the cache fresh.
+      MmulHelper::clearCastCache();
 
       DSP_DIAG_SEG(EXECUTE, seg.startSlot, "Triton pre-capture warmup DONE for seg[%d-%d]",
                 seg.startSlot, seg.endSlot);

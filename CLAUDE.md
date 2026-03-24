@@ -117,6 +117,17 @@ Then read the output from: `platform-tests/target/surefire-reports/MyTest-output
 
 **NEVER** work around a bug. Fix the root cause directly. A workaround is ANY compromise: a shortcut, a guard in the caller, reordering in test code, a "temporary" hack. If you find an issue while working on something else, dispatch a subagent to fix it. Do not move on with a workaround in place.
 
+### NEVER Use EWS (elementWiseStride)
+
+**NEVER** use `ews()` or `elementWiseStride` anywhere in the codebase -- it is **deprecated and unreliable**. EWS values in shape info are invalid for views, non-contiguous arrays, and many common tensor layouts. Code that checks `ews() == 1` as a fast-path condition will silently produce wrong results.
+
+**Instead**, use stride-based contiguity checks:
+- `shape::strideDescendingCAscendingF(shapeInfo)` -- checks if strides are contiguous in C or F order
+- `ordering() == 'c'` + stride checks -- for C-contiguous verification
+- Direct stride inspection via `strideAt(dim)` -- for specific layout requirements
+
+This applies to ALL code: kernels, helpers, loop optimizations, offset calculations, and fast paths. If you see existing code using `ews()`, replace it with the proper stride-based check.
+
 ### Investigate Before Coding
 
 **Fully investigate** every task before writing code. Builds take too long to guess. Read the relevant code, trace values to their origins, understand the architecture. Use subagents to investigate hypotheses in parallel when dealing with difficult bugs.

@@ -270,9 +270,11 @@ Status NativeDynamicShapePlan::platformTryFrozenFastPath(
         DSP_DIAG(EXECUTE, "frozenFastPath: wrote position_ids=%d to capture buffer (extIdx=%d)",
                  pendingCachePos_, ei);
       }
-      // attention_mask capture buffer: write 1 at cachePos
+      // attention_mask capture buffer: write 1 at cachePos - 1
+      // cachePos is the NEXT write position — not yet filled. The position just filled
+      // is cachePos - 1. This must match updateDecodeInputs() which writes at cachePos - 1.
       else if (ei == decodeAttentionMaskExtIdx_ && cb.buffer->specialBuffer() != nullptr) {
-        int writePos = pendingCachePos_;
+        int writePos = pendingCachePos_ - 1;
         auto maskLen = cb.buffer->lengthOf();
         if (writePos >= 0 && writePos < maskLen) {
           LongType one = 1;

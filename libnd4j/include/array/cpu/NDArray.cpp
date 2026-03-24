@@ -176,6 +176,9 @@ void NDArray::setIdentity() {
   float v = 1.0f;
 
   for (int i = 0; i < minDim; ++i) templatedSet<float,float>(buffer(), i * offset, this->dataType(), &v);
+
+  tickWriteHost();
+  syncToDevice();
 }
 
 ////////////////////////////////////////////////////////////////////////

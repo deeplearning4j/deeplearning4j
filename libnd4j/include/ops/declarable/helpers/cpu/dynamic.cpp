@@ -29,6 +29,9 @@ namespace helpers {
 template <typename T>
 static void _dynamicPartitionFunctor(NDArray * input, NDArray * indices, std::vector<NDArray*>& outputList) {
   std::vector<std::pair<NDArray*, sd::LongType>> outputs(outputList.size());
+  // Pre-fetch indices (may be INT32 or INT64)
+  std::vector<sd::LongType> indicesPreDP(indices->lengthOf());
+  for (sd::LongType _i = 0; _i < indices->lengthOf(); _i++) indicesPreDP[_i] = indices->e<sd::LongType>(_i);
   int sourceDimsLen = input->rankOf() - indices->rankOf();
   if (sourceDimsLen) {
     std::vector<sd::LongType> sourceDims(sourceDimsLen);
@@ -52,7 +55,7 @@ static void _dynamicPartitionFunctor(NDArray * input, NDArray * indices, std::ve
       outputs[i].second = 0;
 
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if ((*indices).e<sd::LongType>(e) == i) {
+        if (indicesPreDP[e] == i) {
           listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
         }
     }
@@ -60,12 +63,17 @@ static void _dynamicPartitionFunctor(NDArray * input, NDArray * indices, std::ve
   } else {
     sd::LongType outSize = outputList.size();
 
+    // indicesPreDP already pre-fetched above
+    auto inputBufDP1D = input->bufferAsT<T>();
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         outputs[i].first = outputList[i];
         outputs[i].second = 0;
+        auto outBuf = outputs[i].first->bufferAsT<T>();
         for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-          if (indices->e<sd::LongType>(e) == i) outputs[i].first->p(outputs[i].second++, input->e<T>(e));
+          if (indicesPreDP[e] == i) outBuf[outputs[i].second++] = inputBufDP1D[e];
+        outputs[i].first->tickWriteHost();
+        outputs[i].first->syncToDevice();
       }
     };
 
@@ -78,11 +86,16 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
   sd::LongType numOfData = inputs.size();
 
   if (output->isVector()) {
+    auto outputBuf = output->bufferAsT<T>();
     for (sd::LongType e = 0; e < numOfData; e++) {
       auto data = inputs[e];
       auto index = indices[e];
+      // Pre-fetch index values (may be INT32 or INT64)
+      std::vector<sd::LongType> indexVec(index->lengthOf());
+      for (sd::LongType _j = 0; _j < index->lengthOf(); _j++) indexVec[_j] = index->e<sd::LongType>(_j);
+      auto dataBuf = data->bufferAsT<T>();
       for (sd::LongType i = 0; i < index->lengthOf(); i++) {
-        sd::LongType pos = index->e<sd::LongType>(i);
+        sd::LongType pos = indexVec[i];
         if (pos < 0) {
           sd_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
           return sd::Status::VALIDATION;
@@ -91,9 +104,11 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
           sd_printf("dynamic_stitch: Index should be less than %i. But %i was given", output->lengthOf(), pos);
           return sd::Status::VALIDATION;
         }
-        output->p<T>(pos, data->e<T>(i));
+        outputBuf[pos] = dataBuf[i];
       }
     }
+    output->tickWriteHost();
+    output->syncToDevice();
   } else {
     std::vector<sd::LongType > restDims(output->rankOf() - 1);
     for (auto i = restDims.size(); i > 0; i--) restDims[restDims.size() - i] = output->rankOf() - i;
@@ -107,8 +122,11 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
 
       ResultSet listOfTensors = data->allTensorsAlongDimension(sourceDims);
 
+      // Pre-fetch index values (may be INT32 or INT64)
+      std::vector<sd::LongType> indexVec2(index->lengthOf());
+      for (sd::LongType _j = 0; _j < index->lengthOf(); _j++) indexVec2[_j] = index->e<sd::LongType>(_j);
       for (sd::LongType i = 0; i < index->lengthOf(); i++) {
-        auto pos = index->e<sd::LongType>(i);
+        auto pos = indexVec2[i];
         if (pos < 0) {
           sd_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
           return sd::Status::VALIDATION;
@@ -150,23 +168,33 @@ static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
 
       outputs[i].second = 0;
 
+      // Pre-fetch indices (may be INT32 or INT64)
+      std::vector<sd::LongType> indicesPreBP(indices->lengthOf());
+      for (sd::LongType _j = 0; _j < indices->lengthOf(); _j++) indicesPreBP[_j] = indices->e<sd::LongType>(_j);
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if (indices->e<sd::LongType>(e) == static_cast<sd::LongType>(i)) listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
+        if (indicesPreBP[e] == static_cast<sd::LongType>(i)) listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
     }
   } else {  // one-dimensional case
     auto output = outputList[0];
     unsigned int gradsSize = inputGradientList.size();
 
+    // Pre-fetch indices for 1D BP (may be INT32 or INT64)
+    std::vector<sd::LongType> indicesPreBP1D(indices->lengthOf());
+    for (sd::LongType _j = 0; _j < indices->lengthOf(); _j++) indicesPreBP1D[_j] = indices->e<sd::LongType>(_j);
+    auto outputBufBP = output->bufferAsT<T>();
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         outputs[i].first = inputGradientList[i];
         outputs[i].second = 0;
+        auto gradBuf = outputs[i].first->bufferAsT<T>();
         for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-          if (indices->e<sd::LongType>(e) == i) output->p<T>(e, outputs[i].first->e<T>(outputs[i].second++));
+          if (indicesPreBP1D[e] == i) outputBufBP[e] = gradBuf[outputs[i].second++];
       }
     };
 
     samediff::Threads::parallel_tad(func, 0, gradsSize);
+    output->tickWriteHost();
+    output->syncToDevice();
   }
 
   outputList[1]->assign(indices);

@@ -270,6 +270,18 @@ public class OpExecutionDelegator {
             }
         }
 
+        // When no inputs exist but outputs do (e.g., Linspace with pre-allocated output),
+        // route to the output's device to avoid a second device switch inside CudaExecutioner.
+        if (inputs.isEmpty()) {
+            List<INDArray> outputs = op.outputArguments();
+            if (outputs != null && !outputs.isEmpty()) {
+                DeviceDescriptor outputDevice = determineInputDevice(outputs);
+                if (outputDevice != null) {
+                    return outputDevice;
+                }
+            }
+        }
+
         // Use default routing
         DeviceMemoryManager mgr = DeviceMemoryManager.getInstance();
         long size = getInputSize(inputs);
@@ -535,6 +547,9 @@ public class OpExecutionDelegator {
             evictOldestEntries(deviceCache, config.getMaxCachePerDevice() / 2);
         }
 
+        if (array.data() == null) {
+            return;
+        }
         int arrayId = System.identityHashCode(array);
         long bytes = array.length() * array.data().getElementSize();
 
@@ -639,7 +654,7 @@ public class OpExecutionDelegator {
     private long getInputSize(INDArray... arrays) {
         long size = 0;
         for (INDArray arr : arrays) {
-            if (arr != null) {
+            if (arr != null && arr.data() != null) {
                 size += arr.length() * arr.data().getElementSize();
             }
         }
@@ -652,12 +667,12 @@ public class OpExecutionDelegator {
 
     private long getOutputSize(Op op) {
         INDArray z = op.z();
-        if (z != null) {
+        if (z != null && z.data() != null) {
             return z.length() * z.data().getElementSize();
         }
         // Estimate from input
         INDArray x = op.x();
-        if (x != null) {
+        if (x != null && x.data() != null) {
             return x.length() * x.data().getElementSize();
         }
         return 0;

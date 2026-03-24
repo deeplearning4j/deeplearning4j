@@ -147,8 +147,9 @@ public class StaticKvCacheManager implements KvCacheManager {
             DataType kvType = empty.dataType();
             empty.close();
 
-            staticKvBuffers.put(pastInputName,
-                    Nd4j.zeros(kvType, 1, numHeads, maxKvLen, headDim));
+            INDArray buf = Nd4j.zeros(kvType, 1, numHeads, maxKvLen, headDim);
+            buf.setCloseable(false);
+            staticKvBuffers.put(pastInputName, buf);
         }
 
         this.cachePosition = 0;

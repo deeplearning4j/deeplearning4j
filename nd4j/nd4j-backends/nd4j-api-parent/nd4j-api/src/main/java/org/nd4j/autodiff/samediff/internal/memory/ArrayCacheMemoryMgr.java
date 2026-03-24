@@ -127,9 +127,27 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         IdentityHashMap<DataBuffer, Boolean> deferred = getDeferredCloseBuffers();
         int closed = 0;
         long closedBytes = 0;
+
+        // Also protect ALL DataBuffers currently in the capacity cache.
+        // Cached arrays' buffers must never be closed — they will be reused in future steps.
+        // Without this, deferred close can destroy a buffer that a cached array references,
+        // causing shape=[0,0,0,0,0] (freed shape info) on the next cache retrieval.
+        IdentityHashMap<DataBuffer, Boolean> fullProtection = protectedBuffers != null
+                ? new IdentityHashMap<>(protectedBuffers) : new IdentityHashMap<>();
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
+        for (TreeMap<Long, ArrayDeque<INDArray>> treeMap : allCapacity.values()) {
+            for (ArrayDeque<INDArray> deque : treeMap.values()) {
+                for (INDArray arr : deque) {
+                    if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                        fullProtection.put(arr.data(), Boolean.TRUE);
+                    }
+                }
+            }
+        }
+
         for (DataBuffer buf : deferred.keySet()) {
             if (buf.wasClosed()) continue;
-            if (protectedBuffers != null && protectedBuffers.containsKey(buf)) continue;
+            if (fullProtection.containsKey(buf)) continue;
             if (buf.isConstant()) continue;
             try {
                 closedBytes += buf.length() * buf.getElementSize();
@@ -254,6 +272,32 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         return cacheCounters.get();
     }
 
+    /**
+     * Zero all arrays in the capacity cache for the current thread.
+     * Call between forward passes to prevent stale data from being reused.
+     * Arrays remain in the cache and can be reused on the next pass — but their
+     * contents are zeroed so no stale intermediate values leak across passes.
+     * This is preferred over closing+clearing because some arrays may still be
+     * referenced by the SameDiff execution graph cleanup path.
+     */
+    public static void zeroCapacityCache() {
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
+        int zeroedCount = 0;
+        for (TreeMap<Long, ArrayDeque<INDArray>> treeMap : allCapacity.values()) {
+            for (ArrayDeque<INDArray> deque : treeMap.values()) {
+                for (INDArray arr : deque) {
+                    if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                        arr.assign(0);
+                        zeroedCount++;
+                    }
+                }
+            }
+        }
+        if (zeroedCount > 0) {
+            log.debug("zeroCapacityCache: zeroed {} cached arrays", zeroedCount);
+        }
+    }
+
     private static boolean isCpu() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         return !"CUDA".equalsIgnoreCase(backend);
@@ -304,10 +348,16 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     treeMap.remove(bufferElements);
                 }
 
-                // Skip invalid arrays
-                if (!arr.closeable() || arr.wasClosed() || arr.isView()) {
+                // Skip invalid arrays: check INDArray state AND DataBuffer health.
+                // The InferenceSession cleanup force-closes DataBuffers of non-closeable
+                // arrays (views). If a cached array shares a DataBuffer with a force-closed
+                // view (parent-view relationship), the shared buffer is destroyed but the
+                // cached INDArray doesn't know. We must check data().wasClosed() to catch this.
+                DataBuffer arrBuf = arr.data();
+                if (!arr.closeable() || arr.wasClosed() || arr.isView()
+                        || arrBuf == null || arrBuf.wasClosed()) {
                     lru.remove(arr.getId());
-                    long skippedBytes = arr.data() != null ? dataType.width() * arr.data().length() : 0;
+                    long skippedBytes = arrBuf != null && !arrBuf.wasClosed() ? dataType.width() * arrBuf.length() : 0;
                     currentCacheSize.addAndGet(-skippedBytes);
                     if (arr.isView()) {
                         arr.setCloseable(false);
@@ -353,12 +403,14 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 if (arr.data() != null) {
                     Nd4j.getNativeOps().dbSetDeviceId(arr.data().opaqueBuffer(), -1);
                 }
-                // Only zero out stale data for ops that don't fully write their output
-                // (where, scatter_nd, unique, etc.). Most ops fully write output and
-                // can skip zeroing for significant performance gains.
-                if (requiresZeroed) {
-                    arr.assign(0);
-                }
+                // Always zero cached arrays to prevent stale data from previous forward
+                // passes from leaking into computation. The cache is kept enabled during
+                // standard executeOperations to prevent premature DataBuffer closes for
+                // view-producing ops, but cached arrays carry stale intermediate values.
+                // Without zeroing, ops that don't fully overwrite output (or reuse buffers
+                // slightly larger than needed) see stale data that causes degenerate output
+                // in multi-step autoregressive decode.
+                arr.assign(0);
                 return arr;
             }
 
@@ -597,6 +649,16 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public void close() {
+        close(null);
+    }
+
+    /**
+     * Close all cached arrays, freeing their DataBuffers.
+     * @param protectedBuffers DataBuffers to skip (e.g., placeholder/static KV buffers that
+     *                         are shared with cached views via reshape_no_copy/permute).
+     *                         May be null if no protection is needed.
+     */
+    public void close(IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
         // Log cache effectiveness
         long[] counters = cacheCounters.get();
         long total = counters[0] + counters[1] + counters[2];
@@ -621,7 +683,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
             }
         }
 
+        int skippedProtected = 0;
         for (DataBuffer buf : uniqueBuffers.keySet()) {
+            if (protectedBuffers != null && protectedBuffers.containsKey(buf)) {
+                skippedProtected++;
+                continue;
+            }
             if (buf.closeable()) {
                 try {
                     buf.close();
@@ -629,6 +696,9 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                     // Buffer may already be deallocated; ignore
                 }
             }
+        }
+        if (skippedProtected > 0) {
+            log.debug("ArrayCacheMemoryMgr.close: skipped {} protected DataBuffers (shared with placeholders/constants)", skippedProtected);
         }
 
         allCapacity.clear();
