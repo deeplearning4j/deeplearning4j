@@ -116,13 +116,18 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
 //////////////////////////////////////////////////////////////////////////////
 
 void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
-               float freqBase, float freqScale, int ropeType, LaunchContext* context) {
+               float freqBase, float freqScale, int ropeType, LaunchContext* context,
+               int rotaryDims) {
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
   auto numHeads = input->sizeAt(2);
   auto headDim = input->sizeAt(3);
 
-  // Copy input to output first
+  // Effective rotation dimensions: 0 means rotate all
+  LongType rotateDims = (rotaryDims > 0 && rotaryDims < headDim) ? rotaryDims : headDim;
+  LongType halfRotate = rotateDims / 2;
+
+  // Copy input to output first (preserves unrotated dims when rotateDims < headDim)
   output->assign(input);
 
   auto func = PRAGMA_THREADS_FOR {
@@ -130,22 +135,23 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
       for (LongType s = 0; s < seqLen; s++) {
         LongType pos = positionOffset + s;
         for (LongType h = 0; h < numHeads; h++) {
-          for (LongType i = 0; i < headDim / 2; i++) {
+          for (LongType i = 0; i < halfRotate; i++) {
             float theta = static_cast<float>(pos) * freqScale /
-                          std::pow(freqBase, (2.0f * i) / headDim);
+                          std::pow(freqBase, (2.0f * i) / rotateDims);
             float cosTheta = std::cos(theta);
             float sinTheta = std::sin(theta);
 
+            LongType base = ((b * seqLen + s) * numHeads + h) * headDim;
             LongType idx1, idx2;
             if (ropeType == 0) {  // Standard (LLaMA)
-              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
-              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + headDim / 2;
+              idx1 = base + i;
+              idx2 = base + i + halfRotate;
             } else if (ropeType == 1) {  // NeoX
-              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i * 2;
-              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i * 2 + 1;
+              idx1 = base + i * 2;
+              idx2 = base + i * 2 + 1;
             } else {  // GPT-J
-              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
-              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + headDim / 2;
+              idx1 = base + i;
+              idx2 = base + i + halfRotate;
             }
 
             float x1 = input->e<float>(idx1);
@@ -163,13 +169,17 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
 }
 
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
-                       float freqBase, float freqScale, int ropeType, LaunchContext* context) {
+                       float freqBase, float freqScale, int ropeType, LaunchContext* context,
+                       int rotaryDims) {
   auto batch = gradOut->sizeAt(0);
   auto seqLen = gradOut->sizeAt(1);
   auto numHeads = gradOut->sizeAt(2);
   auto headDim = gradOut->sizeAt(3);
 
-  // Copy gradOut to gradIn first
+  LongType rotateDims = (rotaryDims > 0 && rotaryDims < headDim) ? rotaryDims : headDim;
+  LongType halfRotate = rotateDims / 2;
+
+  // Copy gradOut to gradIn first (preserves unrotated dims)
   gradIn->assign(gradOut);
 
   auto func = PRAGMA_THREADS_FOR {
@@ -177,22 +187,23 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
       for (LongType s = 0; s < seqLen; s++) {
         LongType pos = positionOffset + s;
         for (LongType h = 0; h < numHeads; h++) {
-          for (LongType i = 0; i < headDim / 2; i++) {
+          for (LongType i = 0; i < halfRotate; i++) {
             float theta = static_cast<float>(pos) * freqScale /
-                          std::pow(freqBase, (2.0f * i) / headDim);
+                          std::pow(freqBase, (2.0f * i) / rotateDims);
             float cosTheta = std::cos(theta);
             float sinTheta = std::sin(theta);
 
+            LongType base = ((b * seqLen + s) * numHeads + h) * headDim;
             LongType idx1, idx2;
             if (ropeType == 0) {
-              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
-              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + headDim / 2;
+              idx1 = base + i;
+              idx2 = base + i + halfRotate;
             } else if (ropeType == 1) {
-              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i * 2;
-              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i * 2 + 1;
+              idx1 = base + i * 2;
+              idx2 = base + i * 2 + 1;
             } else {
-              idx1 = ((b * seqLen + s) * numHeads + h) * headDim + i;
-              idx2 = ((b * seqLen + s) * numHeads + h) * headDim + i + headDim / 2;
+              idx1 = base + i;
+              idx2 = base + i + halfRotate;
             }
 
             float g1 = gradOut->e<float>(idx1);

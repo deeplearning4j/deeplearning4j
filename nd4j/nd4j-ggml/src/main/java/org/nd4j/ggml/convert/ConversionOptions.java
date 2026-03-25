@@ -132,6 +132,7 @@ public class ConversionOptions {
         return ConversionOptions.builder()
                 .forTraining(true)
                 .quantizationMode(QuantizationMode.DEQUANTIZE_TO_FLOAT32)
+                .targetDataType(DataType.FLOAT)
                 .build();
     }
 

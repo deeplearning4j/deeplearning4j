@@ -27,7 +27,8 @@ namespace sd {
 enum DataType {
   INHERIT = 0,
   BOOL = 1,
-  FLOAT8 = 2,
+  FLOAT8 = 2,        // E4M3FN: 1-sign, 4-exp, 3-mantissa (inference)
+  FLOAT8_E5M2 = 19,  // E5M2: 1-sign, 5-exp, 2-mantissa (gradients)
   HALF = 3,
   HALF2 = 4,
   FLOAT32 = 5,

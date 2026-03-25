@@ -104,6 +104,45 @@ public class GGMLMetadata {
     private int ropeDimensionCount;
 
     /**
+     * Explicit attention key dimension (head_dim for K). 0 = not specified.
+     */
+    private int attentionKeyLength;
+
+    /**
+     * Explicit attention value dimension (head_dim for V). 0 = not specified.
+     */
+    private int attentionValueLength;
+
+    /**
+     * Number of experts for MoE models. 0 = not MoE.
+     */
+    private int expertCount;
+
+    /**
+     * Number of experts used per token for MoE models. 0 = not specified.
+     */
+    private int expertUsedCount;
+
+    /**
+     * Per-layer type strings from GGUF metadata (e.g., "linear_attention", "full_attention").
+     * Empty list means all layers use the default type for the architecture.
+     */
+    @Builder.Default
+    private List<String> layerTypes = new ArrayList<>();
+
+    /**
+     * Full attention interval: every Nth layer is full attention, rest are linear/GDN.
+     * 0 means not specified (all layers same type).
+     */
+    private int fullAttentionInterval;
+
+    /**
+     * RoPE type: 0 = standard/LLaMA (split-half pairing), 1 = NeoX/interleaved (adjacent pairing).
+     * Determined by architecture: Qwen, Mistral, Phi use interleaved (1). LLaMA, Gemma use standard (0).
+     */
+    private int ropeType;
+
+    /**
      * List of tensor information
      */
     @Builder.Default
@@ -137,10 +176,40 @@ public class GGMLMetadata {
                 .vocabSize(header.getVocabSize())
                 .layerNormEpsilon(header.getLayerNormRmsEpsilon())
                 .ropeFreqBase(header.getRopeFreqBase())
+                .ropeDimensionCount(header.getRopeDimensionCount())
+                .ropeType(inferRopeType(header.getArchitecture()))
+                .attentionKeyLength(header.getAttentionKeyLength())
+                .attentionValueLength(header.getAttentionValueLength())
+                .expertCount(header.getExpertCount())
+                .expertUsedCount(header.getExpertUsedCount())
+                .layerTypes(header.getLayerTypes())
+                .fullAttentionInterval(header.getFullAttentionInterval())
                 .tensors(tensors != null ? tensors : new ArrayList<>())
                 .rawMetadata(header.getMetadata())
                 .tokenizerInfo(TokenizerInfo.fromGGUFHeader(header))
                 .build();
+    }
+
+    /**
+     * Infer RoPE type from architecture name.
+     * LLaMA and Gemma use split-half (type 0). Most other architectures (Qwen, Mistral, Phi)
+     * use interleaved/NeoX (type 1).
+     */
+    private static int inferRopeType(String architecture) {
+        if (architecture == null) return 0;
+        String arch = architecture.toLowerCase();
+        // LLaMA and Gemma use split-half (standard) RoPE
+        if (arch.contains("llama") || arch.contains("gemma")) {
+            return 0;
+        }
+        // Qwen, Mistral, Phi, and most other modern models use interleaved (NeoX) RoPE
+        if (arch.contains("qwen") || arch.contains("mistral") || arch.contains("mixtral")
+                || arch.contains("phi") || arch.contains("deepseek") || arch.contains("yi")
+                || arch.contains("internlm")) {
+            return 1;
+        }
+        // Default: standard RoPE for unknown architectures
+        return 0;
     }
 
     /**

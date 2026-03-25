@@ -80,6 +80,9 @@ public interface ModelArchitecture {
      * Get architecture-specific configuration from metadata.
      */
     default ArchitectureConfig getConfig(GGMLMetadata metadata) {
+        // Prefer explicit attention.key_length from GGUF metadata for headDim.
+        // This handles models where head_dim != hidden_size / num_attention_heads (e.g. Qwen3.5).
+        int headDim = metadata.getAttentionKeyLength();
         return ArchitectureConfig.builder()
                 .numLayers(metadata.getNumLayers())
                 .hiddenSize(metadata.getHiddenSize())
@@ -90,6 +93,11 @@ public interface ModelArchitecture {
                 .contextLength(metadata.getContextLength())
                 .layerNormEpsilon(metadata.getLayerNormEpsilon())
                 .ropeFreqBase(metadata.getRopeFreqBase())
+                .ropeDimensionCount(metadata.getRopeDimensionCount())
+                .headDim(headDim)
+                .layerTypes(metadata.getLayerTypes())
+                .fullAttentionInterval(metadata.getFullAttentionInterval())
+                .ropeType(metadata.getRopeType())
                 .build();
     }
 }

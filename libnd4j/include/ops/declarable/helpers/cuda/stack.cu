@@ -123,7 +123,7 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
     void* dInBuffers = manager.replicatePointer(hInBuffers.data(), hInBuffers.size() * sizeof(void*));
 
     dim3 stackDims2 = stackDims(output.lengthOf());
-    stackScalarsCudaLauncher<T>(stackDims2.y, stackDims2.x, stackDims2.z, context->getCudaStream(), dInBuffers,
+    stackScalarsCudaLauncher<T>(stackDims2.x, stackDims2.y, stackDims2.z, context->getCudaStream(), dInBuffers,
                                 output.specialBuffer(), output.specialShapeInfo());
 
     manager.synchronize();

@@ -150,6 +150,12 @@ else()
     string(REPLACE "#cmakedefine01 HAVE_NNAPI" "#define HAVE_NNAPI 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 endif()
 
+if(HAVE_CUTLASS)
+    string(REPLACE "#cmakedefine01 HAVE_CUTLASS" "#define HAVE_CUTLASS 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+else()
+    string(REPLACE "#cmakedefine01 HAVE_CUTLASS" "#define HAVE_CUTLASS 0" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
+endif()
+
 if(SD_SELECTIVE_TYPES)
     string(REPLACE "#cmakedefine01 SD_SELECTIVE_TYPES" "#define SD_SELECTIVE_TYPES 1" CONFIG_H_CONTENT "${CONFIG_H_CONTENT}")
 else()

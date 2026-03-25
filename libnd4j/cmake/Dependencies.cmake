@@ -2071,8 +2071,12 @@ function(setup_cutlass)
     set(HAVE_CUTLASS FALSE PARENT_SCOPE)
 
     if(NOT HELPERS_cutlass STREQUAL "ON")
-        message(STATUS "CUTLASS helper is disabled (HELPERS_cutlass=${HELPERS_cutlass})")
-        return()
+        if(HAVE_TRITON)
+            message(STATUS "CUTLASS auto-enabled (HAVE_TRITON=ON)")
+        else()
+            message(STATUS "CUTLASS helper is disabled (HELPERS_cutlass=${HELPERS_cutlass})")
+            return()
+        endif()
     endif()
 
     if(NOT SD_CUDA)
@@ -2120,7 +2124,9 @@ function(setup_cutlass)
     add_dependencies(cutlass_interface cutlass_external)
 
     set(CUTLASS cutlass_interface PARENT_SCOPE)
-    add_compile_definitions(HAVE_CUTLASS=1)
+    # HAVE_CUTLASS is provided via generated config.h, not as a global -D flag.
+    # Global -D flags change every file's compiler command line, breaking ccache.
+    set(HAVE_CUTLASS ON CACHE BOOL "CUTLASS availability" FORCE)
 
     message(STATUS "✅ CUTLASS ${CUTLASS_VERSION} setup complete (header-only)")
 endfunction()

@@ -32,11 +32,22 @@ import java.nio.ByteOrder;
  * Dequantizer for Q6_K quantization format.
  *
  * Q6_K is a 6-bit k-quant format with super-blocks of 256 elements.
+ *
+ * Block layout (from ggml-common.h):
+ * <pre>
+ *   uint8_t ql[128]   — lower 4 bits of each quant value
+ *   uint8_t qh[64]    — upper 2 bits of each quant value
+ *   int8_t  scales[16] — per-sub-block scales (signed 8-bit)
+ *   ggml_half d        — super-block scale (FP16)
+ * </pre>
+ * Total: 210 bytes per block of 256 elements.
+ *
+ * Dequantization follows ggml's dequantize_row_q6_K exactly.
  */
 public class Q6_KDequantizer implements Dequantizer {
 
-    private static final int BLOCK_SIZE = 256;
-    private static final int BYTES_PER_BLOCK = 210;
+    private static final int QK_K = 256;
+    private static final int BYTES_PER_BLOCK = 210; // 128 + 64 + 16 + 2
 
     @Override
     public GGMLDataType getQuantType() {
@@ -45,7 +56,7 @@ public class Q6_KDequantizer implements Dequantizer {
 
     @Override
     public int getBlockSize() {
-        return BLOCK_SIZE;
+        return QK_K;
     }
 
     @Override
@@ -63,47 +74,52 @@ public class Q6_KDequantizer implements Dequantizer {
         float[] result = new float[totalElements];
         ByteBuffer buffer = ByteBuffer.wrap(quantizedData).order(ByteOrder.LITTLE_ENDIAN);
 
-        int numBlocks = (totalElements + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        int numBlocks = (totalElements + QK_K - 1) / QK_K;
         int outputIdx = 0;
 
+        byte[] ql = new byte[128];
+        byte[] qh = new byte[64];
+        byte[] scales = new byte[16];
+
         for (int block = 0; block < numBlocks && buffer.remaining() >= BYTES_PER_BLOCK; block++) {
-            // Read d as FP16 (2 bytes) - must match quantizer order
-            short dRaw = buffer.getShort();
+            // Read fields in the correct GGUF order: ql, qh, scales, d
+            buffer.get(ql);      // 128 bytes: lower 4 bits of quants
+            buffer.get(qh);      //  64 bytes: upper 2 bits of quants
+            buffer.get(scales);  //  16 bytes: signed 8-bit scales
+            short dRaw = buffer.getShort(); // 2 bytes: FP16 super-block scale
             float d = fp16ToFloat(dRaw);
 
-            // Read scales (16 bytes for 16 sub-blocks, 8-bit each)
-            byte[] scales = new byte[16];
-            buffer.get(scales);
+            // Dequantize following ggml's dequantize_row_q6_K exactly:
+            // Process 2 groups of 128 elements each
+            int qlOff = 0;
+            int qhOff = 0;
+            int scOff = 0;
 
-            // Read packed data (192 bytes: 4 x 6-bit values per 3 bytes)
-            byte[] packedData = new byte[192];
-            buffer.get(packedData);
+            for (int n = 0; n < QK_K; n += 128) {
+                for (int l = 0; l < 32; l++) {
+                    int is = l / 16;
 
-            // Unpack 6-bit quantized values
-            int[] quantizedValues = new int[256];
-            for (int i = 0; i < 64; i++) {
-                int byteIdx = i * 3;
-                int b0 = packedData[byteIdx] & 0xFF;
-                int b1 = packedData[byteIdx + 1] & 0xFF;
-                int b2 = packedData[byteIdx + 2] & 0xFF;
+                    // Reconstruct 6-bit values from split ql (lower 4) and qh (upper 2)
+                    int q1 = ((ql[qlOff + l] & 0xF) | (((qh[qhOff + l] >> 0) & 3) << 4)) - 32;
+                    int q2 = ((ql[qlOff + l + 32] & 0xF) | (((qh[qhOff + l] >> 2) & 3) << 4)) - 32;
+                    int q3 = (((ql[qlOff + l] >> 4) & 0xF) | (((qh[qhOff + l] >> 4) & 3) << 4)) - 32;
+                    int q4 = (((ql[qlOff + l + 32] >> 4) & 0xF) | (((qh[qhOff + l] >> 6) & 3) << 4)) - 32;
 
-                // Unpack 4 x 6-bit values from 3 bytes (matches quantizer packing)
-                int idx = i * 4;
-                quantizedValues[idx] = b0 & 0x3F;
-                quantizedValues[idx + 1] = ((b0 >> 6) | (b1 << 2)) & 0x3F;
-                quantizedValues[idx + 2] = ((b1 >> 4) | (b2 << 4)) & 0x3F;
-                quantizedValues[idx + 3] = (b2 >> 2) & 0x3F;
+                    int idx = outputIdx + n + l;
+                    if (idx < totalElements) result[idx] = d * scales[scOff + is] * q1;
+                    idx = outputIdx + n + l + 32;
+                    if (idx < totalElements) result[idx] = d * scales[scOff + is + 2] * q2;
+                    idx = outputIdx + n + l + 64;
+                    if (idx < totalElements) result[idx] = d * scales[scOff + is + 4] * q3;
+                    idx = outputIdx + n + l + 96;
+                    if (idx < totalElements) result[idx] = d * scales[scOff + is + 6] * q4;
+                }
+                qlOff += 64;
+                qhOff += 32;
+                scOff += 8;
             }
 
-            // Dequantize: original = (quantized - 32) * scale
-            // Quantizer stored values as 0-63 (added 32 to signed -32..31)
-            for (int j = 0; j < 256 && outputIdx < totalElements; j++) {
-                int subBlock = j / 16;
-                float scale = d * (scales[subBlock] & 0x7F);  // 7-bit unsigned scale
-
-                int val = quantizedValues[j] - 32;  // Convert back to signed
-                result[outputIdx++] = val * scale;
-            }
+            outputIdx += QK_K;
         }
 
         return result;
@@ -124,11 +140,11 @@ public class Q6_KDequantizer implements Dequantizer {
     @Override
     public QuantizationInfo extractQuantizationInfo(byte[] quantizedData, long[] shape) {
         long numElements = calculateNumElements(shape);
-        int numBlocks = (int) ((numElements + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        int numBlocks = (int) ((numElements + QK_K - 1) / QK_K);
 
         return QuantizationInfo.builder()
                 .quantType(GGMLDataType.GGML_TYPE_Q6_K)
-                .blockSize(BLOCK_SIZE)
+                .blockSize(QK_K)
                 .numBlocks(numBlocks)
                 .originalShape(shape)
                 .build();

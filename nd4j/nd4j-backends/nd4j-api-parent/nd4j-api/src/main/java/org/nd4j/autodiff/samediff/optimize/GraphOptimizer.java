@@ -210,6 +210,23 @@ public class GraphOptimizer {
         log.info("Variable type variables: {} before, {} after", varBefore, varAfter);
         log.info("Ops: {} before, {} after", graph.getOps().size(), sd.getOps().size());
 
+        // Validate the optimized graph: every op's inputs must reference existing variables
+        List<String> validationErrors = validateGraph(sd);
+        if (!validationErrors.isEmpty()) {
+            log.warn("Graph optimization produced {} validation errors — returning original unoptimized graph", validationErrors.size());
+            for (String err : validationErrors) {
+                log.warn("  Validation error: {}", err);
+            }
+            // Return a dup of the original graph instead of the corrupted optimized one
+            SameDiff fallback = graph.dup();
+            if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
+                fallback.setOutputs(new ArrayList<>(requiredOutputs));
+            } else if (graph.outputs() != null && !graph.outputs().isEmpty()) {
+                fallback.setOutputs(new ArrayList<>(graph.outputs()));
+            }
+            return fallback;
+        }
+
         // Preserve outputs: use requiredOutputs if provided, otherwise restore original graph's outputs
         if (requiredOutputs != null && !requiredOutputs.isEmpty()) {
             sd.setOutputs(new ArrayList<>(requiredOutputs));
@@ -218,6 +235,30 @@ public class GraphOptimizer {
         }
 
         return sd;
+    }
+
+    /**
+     * Validate the optimized graph for structural integrity.
+     * Checks that every op's input variables exist in the variables map.
+     *
+     * @return list of validation error messages (empty if valid)
+     */
+    private static List<String> validateGraph(SameDiff sd) {
+        List<String> errors = new ArrayList<>();
+        Map<String, Variable> vars = sd.getVariables();
+        for (Map.Entry<String, SameDiffOp> entry : sd.getOps().entrySet()) {
+            String opName = entry.getKey();
+            SameDiffOp op = entry.getValue();
+            List<String> inputs = op.getInputsToOp();
+            if (inputs == null) continue;
+            for (int i = 0; i < inputs.size(); i++) {
+                String inputVar = inputs.get(i);
+                if (!vars.containsKey(inputVar)) {
+                    errors.add("Op '" + opName + "' input[" + i + "] references missing variable '" + inputVar + "'");
+                }
+            }
+        }
+        return errors;
     }
 
     /**

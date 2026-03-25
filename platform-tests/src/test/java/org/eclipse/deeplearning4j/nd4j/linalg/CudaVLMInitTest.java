@@ -10,7 +10,7 @@ import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.VisionEncoderUtils;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
-import org.eclipse.deeplearning4j.vlm.preprocessing.PreprocessorConfig;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.*;
 import org.nd4j.autodiff.samediff.SDVariable;

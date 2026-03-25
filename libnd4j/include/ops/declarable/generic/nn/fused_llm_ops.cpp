@@ -140,6 +140,8 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
 
     int ropeType = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
+    int rotaryDims = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
+
     if (block.width() >= 3) {
         // Cached path: cos and sin provided as inputs 1 and 2
         auto cosValues = INPUT_VARIABLE(1);
@@ -151,7 +153,7 @@ CUSTOM_OP_IMPL(fused_rope, 1, 1, false, 0, 0) {
         float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
         float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
         helpers::fusedRoPE(input, output, positionOffset, freqBase, freqScale, ropeType,
-                            block.launchContext());
+                            block.launchContext(), rotaryDims);
     }
 
     return Status::OK;
@@ -174,11 +176,12 @@ CUSTOM_OP_IMPL(fused_rope_bp, 2, 1, false, 0, 0) {
 
     int ropeType = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
     int positionOffset = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+    int rotaryDimsBp = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
     float freqBase = block.getTArguments()->size() > 0 ? T_ARG(0) : 10000.0f;
     float freqScale = block.getTArguments()->size() > 1 ? T_ARG(1) : 1.0f;
 
     helpers::fusedRoPEBackward(gradOut, gradIn, positionOffset, freqBase, freqScale, ropeType,
-                                block.launchContext());
+                                block.launchContext(), rotaryDimsBp);
 
     return Status::OK;
 }

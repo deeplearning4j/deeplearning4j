@@ -20,8 +20,8 @@
 
 package org.eclipse.deeplearning4j.llm.eval.dataset;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

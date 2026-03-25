@@ -714,6 +714,7 @@ DECLARE_CUSTOM_OP(gated_delta_rule, 5, 2, false, 0, 0);
  *
  * Integer arguments:
  *   0: activation (0=none, 1=silu)
+ *   1: wFormat (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
  */
 #if NOT_EXCLUDED(OP_causal_conv1d)
 DECLARE_CUSTOM_OP(causal_conv1d, 2, 2, false, 0, 0);
@@ -749,6 +750,29 @@ DECLARE_CUSTOM_OP(causal_conv1d, 2, 2, false, 0, 0);
  */
 #if NOT_EXCLUDED(OP_gated_delta_net_block)
 DECLARE_CUSTOM_OP(gated_delta_net_block, 7, 3, false, 0, 3);
+#endif
+
+/**
+ * ggml_dequantize - Dequantize raw GGML quantized bytes to float
+ *
+ * Uses GGML's own dequantization code to convert raw quantized tensor bytes
+ * (Q4_0, Q4_K, Q5_K, Q6_K, etc.) directly to the target floating-point type.
+ * Supports F32, F16, and BF16 output without intermediate allocations.
+ *
+ * Input:
+ *   0: raw quantized bytes as INT8 NDArray (flat 1D)
+ *
+ * Output:
+ *   0: dequantized NDArray with shape and type specified by iArgs
+ *
+ * Integer arguments:
+ *   0: GGML quant type (0=Q4_0, 1=Q4_1, 2=Q5_0, 3=Q5_1, 4=Q8_0, 5=Q8_1,
+ *      6=Q2_K, 7=Q3_K, 8=Q4_K, 9=Q5_K, 10=Q6_K)
+ *   1: output data type (0=FLOAT32, 1=FLOAT16, 2=BFLOAT16)
+ *   2..N: output shape dimensions
+ */
+#if NOT_EXCLUDED(OP_ggml_dequantize)
+DECLARE_CUSTOM_OP(ggml_dequantize, 1, 1, false, 0, 1);
 #endif
 
 }  // namespace ops

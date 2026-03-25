@@ -81,6 +81,17 @@ public class GGUFHeader {
     public static final String KEY_ROPE_FREQ_BASE = ".rope.freq_base";
     public static final String KEY_ROPE_DIMENSION_COUNT = ".rope.dimension_count";
     public static final String KEY_VOCAB_SIZE = ".vocab_size";
+    public static final String KEY_ATTENTION_KEY_LENGTH = ".attention.key_length";
+    public static final String KEY_ATTENTION_VALUE_LENGTH = ".attention.value_length";
+    public static final String KEY_EXPERT_COUNT = ".expert_count";
+    public static final String KEY_EXPERT_USED_COUNT = ".expert_used_count";
+    public static final String KEY_LAYER_TYPES = ".layer_types";
+    public static final String KEY_FULL_ATTENTION_INTERVAL = ".full_attention_interval";
+    public static final String KEY_SSM_CONV_KERNEL = ".ssm.conv_kernel";
+    public static final String KEY_SSM_STATE_SIZE = ".ssm.state_size";
+    public static final String KEY_SSM_GROUP_COUNT = ".ssm.group_count";
+    public static final String KEY_SSM_TIME_STEP_RANK = ".ssm.time_step_rank";
+    public static final String KEY_SSM_INNER_SIZE = ".ssm.inner_size";
 
     // Tokenizer keys
     public static final String KEY_TOKENIZER_MODEL = "tokenizer.ggml.model";
@@ -218,6 +229,111 @@ public class GGUFHeader {
      */
     public int getEosTokenId() {
         return getMetadataInt(KEY_TOKENIZER_EOS_ID, 2);
+    }
+
+    /**
+     * Get the explicit attention key dimension (head_dim for K projections).
+     * Returns 0 if not specified in metadata.
+     */
+    public int getAttentionKeyLength() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_ATTENTION_KEY_LENGTH, 0);
+    }
+
+    /**
+     * Get the explicit attention value dimension (head_dim for V projections).
+     * Returns 0 if not specified in metadata.
+     */
+    public int getAttentionValueLength() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_ATTENTION_VALUE_LENGTH, 0);
+    }
+
+    /**
+     * Get the number of experts (for MoE models).
+     * Returns 0 if not specified.
+     */
+    public int getExpertCount() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_EXPERT_COUNT, 0);
+    }
+
+    /**
+     * Get the number of experts used per token (for MoE models).
+     * Returns 0 if not specified.
+     */
+    public int getExpertUsedCount() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_EXPERT_USED_COUNT, 0);
+    }
+
+    /**
+     * Get the per-layer type array from metadata (e.g., ["linear_attention", "full_attention", ...]).
+     * Returns an empty list if not specified.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> getLayerTypes() {
+        String arch = getArchitecture();
+        if (arch == null) return Collections.emptyList();
+        Object value = metadata.get(arch + KEY_LAYER_TYPES);
+        if (value instanceof List) {
+            return (List<String>) value;
+        }
+        return Collections.emptyList();
+    }
+
+    /**
+     * Get the RoPE dimension count (number of dimensions to apply rotary embedding to).
+     * Returns 0 if not specified (meaning rotate all head dimensions).
+     */
+    public int getRopeDimensionCount() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_ROPE_DIMENSION_COUNT, 0);
+    }
+
+    /**
+     * Get the full attention interval (e.g., every Nth layer is full attention, rest are linear/GDN).
+     * Returns 0 if not specified (meaning all layers use the same attention type).
+     */
+    public int getFullAttentionInterval() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_FULL_ATTENTION_INTERVAL, 0);
+    }
+
+    /**
+     * Get SSM (State Space Model) convolution kernel size.
+     * Returns 0 if not specified.
+     */
+    public int getSsmConvKernel() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_SSM_CONV_KERNEL, 0);
+    }
+
+    /**
+     * Get SSM inner size (recurrence dimension).
+     * Returns 0 if not specified.
+     */
+    public int getSsmInnerSize() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_SSM_INNER_SIZE, 0);
+    }
+
+    /**
+     * Get SSM group count (number of recurrence heads).
+     * Returns 0 if not specified.
+     */
+    public int getSsmGroupCount() {
+        String arch = getArchitecture();
+        if (arch == null) return 0;
+        return getMetadataInt(arch + KEY_SSM_GROUP_COUNT, 0);
     }
 
     /**

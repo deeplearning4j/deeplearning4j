@@ -39,12 +39,13 @@ import java.util.List;
  *
  * Inputs:
  *   0: x         [B, L, D]
- *   1: weight    [D, K]
+ *   1: weight    [D, K] (wFormat=0) or [K, D] (wFormat=1)
  *   2: bias      [D] (optional)
  *   3: stateIn   [B, D, K-1] (optional)
  *
  * Int args:
  *   0: activation (0=none, 1=SiLU/Swish)
+ *   1: wFormat   (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
  *
  * Outputs:
  *   0: output    [B, L, D]
@@ -57,13 +58,24 @@ public class CausalConv1d extends DynamicCustomOp {
 
     public CausalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray stateIn, int activation) {
         super(buildInputs(x, weight, bias, stateIn), null);
-        addIArgument(activation);
+        addIArgument(activation, 0);
+    }
+
+    public CausalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray stateIn, int activation, int wFormat) {
+        super(buildInputs(x, weight, bias, stateIn), null);
+        addIArgument(activation, wFormat);
     }
 
     public CausalConv1d(SameDiff sd, SDVariable x, SDVariable weight, SDVariable bias,
                         SDVariable stateIn, int activation) {
         super(null, sd, buildSdInputs(x, weight, bias, stateIn));
-        addIArgument(activation);
+        addIArgument(activation, 0);
+    }
+
+    public CausalConv1d(SameDiff sd, SDVariable x, SDVariable weight, SDVariable bias,
+                        SDVariable stateIn, int activation, int wFormat) {
+        super(null, sd, buildSdInputs(x, weight, bias, stateIn));
+        addIArgument(activation, wFormat);
     }
 
     private static INDArray[] buildInputs(INDArray x, INDArray weight, INDArray bias, INDArray stateIn) {

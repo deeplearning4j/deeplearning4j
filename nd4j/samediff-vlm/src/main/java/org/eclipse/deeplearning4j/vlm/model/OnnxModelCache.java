@@ -112,15 +112,24 @@ public class OnnxModelCache {
         boolean optimizerEnabled = isOptimizerEnabled();
 
         // Check for cached optimized SDZ first (if optimizer is enabled)
+        // The .opt.sdz must be newer than BOTH the .onnx source AND the base .sdz cache.
+        // If the base .sdz was regenerated (new import), the .opt.sdz is stale and must be re-optimized.
         if (optimizerEnabled && !cacheDisabled) {
             File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
-            if (optSdzFile.exists() && optSdzFile.lastModified() >= onnxFile.lastModified()) {
+            File baseSdzFile = getSdzCacheFile(onnxFile);
+            boolean optValid = optSdzFile.exists()
+                    && optSdzFile.lastModified() >= onnxFile.lastModified()
+                    && (!baseSdzFile.exists() || optSdzFile.lastModified() >= baseSdzFile.lastModified());
+            if (optValid) {
                 log.info("Loading cached optimized SDZ model: {} ({} bytes)", optSdzFile.getName(), optSdzFile.length());
                 long start = System.currentTimeMillis();
                 SameDiff sd = SDZSerializer.load(optSdzFile, false);
                 long elapsed = System.currentTimeMillis() - start;
                 log.info("Loaded cached optimized SDZ model in {}ms: {}", elapsed, optSdzFile.getName());
                 return sd;
+            } else if (optSdzFile.exists()) {
+                log.info("Stale .opt.sdz detected, will re-optimize: {}", optSdzFile.getName());
+                optSdzFile.delete();
             }
         }
 
@@ -398,15 +407,30 @@ public class OnnxModelCache {
      * @return true if a cache file was deleted
      */
     public static boolean invalidateCache(String onnxFilePath) {
-        File sdzFile = getSdzCacheFile(new File(onnxFilePath));
+        File onnxFile = new File(onnxFilePath);
+        boolean anyDeleted = false;
+
+        // Delete base SDZ cache
+        File sdzFile = getSdzCacheFile(onnxFile);
         if (sdzFile.exists()) {
             boolean deleted = sdzFile.delete();
             if (deleted) {
                 log.info("Invalidated cache: {}", sdzFile.getName());
+                anyDeleted = true;
             }
-            return deleted;
         }
-        return false;
+
+        // Also delete optimized SDZ cache
+        File optSdzFile = getOptimizedSdzCacheFile(onnxFile);
+        if (optSdzFile.exists()) {
+            boolean deleted = optSdzFile.delete();
+            if (deleted) {
+                log.info("Invalidated optimized cache: {}", optSdzFile.getName());
+                anyDeleted = true;
+            }
+        }
+
+        return anyDeleted;
     }
 
     /**

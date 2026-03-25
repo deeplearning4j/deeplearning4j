@@ -305,6 +305,84 @@ PLATFORM_CHECK(add_inplace, ENGINE_CPU) {
     return req;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// GGML_DEQUANTIZE - Dequantize raw GGML quantized bytes using llamacpp backend
+// Platform accelerated path - used when HAVE_LLAMACPP is available
+
+static ggml_type dequantTypeToGgml(int quantType) {
+    switch (quantType) {
+        case 0: return GGML_TYPE_Q4_0;
+        case 1: return GGML_TYPE_Q4_1;
+        case 2: return GGML_TYPE_Q5_0;
+        case 3: return GGML_TYPE_Q5_1;
+        case 4: return GGML_TYPE_Q8_0;
+        case 5: return GGML_TYPE_Q8_1;
+        case 6: return GGML_TYPE_Q2_K;
+        case 7: return GGML_TYPE_Q3_K;
+        case 8: return GGML_TYPE_Q4_K;
+        case 9: return GGML_TYPE_Q5_K;
+        case 10: return GGML_TYPE_Q6_K;
+        default: return GGML_TYPE_Q4_0;
+    }
+}
+
+static ggml_type outputDtypeArgToGgml(int dtypeArg) {
+    switch (dtypeArg) {
+        case 0: return GGML_TYPE_F32;
+        case 1: return GGML_TYPE_F16;
+        case 2: return GGML_TYPE_BF16;
+        default: return GGML_TYPE_F32;
+    }
+}
+
+PLATFORM_IMPL(ggml_dequantize, ENGINE_CPU) {
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    if (input->isEmpty()) return sd::Status::OK;
+
+    int quantType = INT_ARG(0);
+    int outputDtypeArg = INT_ARG(1);
+
+    ggml_type qtype = dequantTypeToGgml(quantType);
+    ggml_type outGgmlType = outputDtypeArgToGgml(outputDtypeArg);
+    sd::LongType numElements = output->lengthOf();
+
+    size_t rawBytes = input->lengthOf();
+    size_t outputBytes = numElements * ggml_type_size(outGgmlType);
+    size_t ctxSize = rawBytes + outputBytes + 256 * 1024 * 1024;
+    llamacppUtils::GgmlContextGuard ctx(ctxSize);
+
+    struct ggml_tensor* ggml_src = ggml_new_tensor_1d(ctx, qtype, numElements);
+    ggml_set_name(ggml_src, "quantized_src");
+
+    size_t expectedBytes = ggml_nbytes(ggml_src);
+    size_t availableBytes = input->lengthOf();
+    size_t copyBytes = std::min(expectedBytes, availableBytes);
+    memcpy(ggml_src->data, input->buffer(), copyBytes);
+
+    struct ggml_tensor* ggml_dst = ggml_new_tensor_1d(ctx, outGgmlType, numElements);
+    ggml_set_name(ggml_dst, "dequantized_dst");
+
+    struct ggml_tensor* ggml_result = ggml_cpy(ctx, ggml_src, ggml_dst);
+
+    struct ggml_cgraph* graph = ggml_new_graph(ctx);
+    ggml_build_forward_expand(graph, ggml_result);
+    llamacppUtils::executeGgmlGraph(ctx, graph);
+
+    memcpy(output->buffer(), ggml_dst->data, output->lengthOf() * output->sizeOfT());
+
+    return sd::Status::OK;
+}
+
+PLATFORM_CHECK(ggml_dequantize, ENGINE_CPU) {
+    Requirements req("LLAMACPP GGML_DEQUANTIZE OP");
+    req.expectTrue(block.isUseLLAMACPP(), IS_USE_LLAMACPP_MSG);
+    req.expectTrue(makeInfoVariable(llamacppUtils::hasQuantizedSupport(), "quantization support"), NO_MSG);
+    req.logTheSuccess();
+    return req;
+}
+
 }  // namespace platforms
 }  // namespace ops
 }  // namespace sd

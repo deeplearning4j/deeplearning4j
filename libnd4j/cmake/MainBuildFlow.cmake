@@ -474,6 +474,13 @@ function(configure_cpu_linking main_target_name)
         message(STATUS "🔗 Linking Triton GPU compiler backend")
     endif()
 
+    # CUTLASS (Header-only CUDA GEMM Templates)
+    if(HAVE_CUTLASS AND TARGET cutlass_interface)
+        target_link_libraries(${main_target_name} PUBLIC cutlass_interface)
+        # HAVE_CUTLASS is provided via generated config.h, not as a global -D flag.
+        message(STATUS "Linking CUTLASS header-only templates")
+    endif()
+
     # MLX (Apple Metal GPU Compute)
     if(HAVE_MLX AND DEFINED MLX)
         target_link_libraries(${main_target_name} PUBLIC ${MLX})
@@ -754,6 +761,15 @@ function(create_and_link_library)
             add_dependencies(${OBJECT_LIB_NAME} miopen_external)
             if(TARGET miopen_interface)
                 target_link_libraries(${OBJECT_LIB_NAME} PUBLIC miopen_interface)
+            endif()
+        endif()
+
+        # CUTLASS header-only templates
+        if(HAVE_CUTLASS AND TARGET cutlass_external)
+            add_dependencies(${OBJECT_LIB_NAME} cutlass_external)
+            if(TARGET cutlass_interface)
+                target_link_libraries(${OBJECT_LIB_NAME} PUBLIC cutlass_interface)
+                message(STATUS "CUTLASS include dirs added to ${OBJECT_LIB_NAME} (HAVE_CUTLASS via config.h)")
             endif()
         endif()
 

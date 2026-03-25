@@ -222,16 +222,18 @@ __global__ void fusedRoPEKernel(
     const int positionOffset,
     const float freqBase,
     const float freqScale,
-    const int ropeType) {
+    const int ropeType,
+    const LongType rotateDims) {
 
   // Each thread handles one element pair for rotation
+  const LongType halfRotate = rotateDims / 2;
   const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
-  const LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+  const LongType totalPairs = batch * seqLen * numHeads * halfRotate;
   if (idx >= totalPairs) return;
 
   // Decode index
-  const LongType pairIdx = idx % (headDim / 2);
-  LongType rem = idx / (headDim / 2);
+  const LongType pairIdx = idx % halfRotate;
+  LongType rem = idx / halfRotate;
   const LongType h = rem % numHeads;
   rem /= numHeads;
   const LongType s = rem % seqLen;
@@ -240,23 +242,24 @@ __global__ void fusedRoPEKernel(
   // Compute position
   const LongType pos = positionOffset + s;
 
-  // Compute theta for this dimension pair
+  // Compute theta using rotateDims for frequency spacing
   float theta = static_cast<float>(pos) * freqScale /
-                powf(freqBase, (2.0f * pairIdx) / headDim);
+                powf(freqBase, (2.0f * pairIdx) / rotateDims);
   float cosTheta = cosf(theta);
   float sinTheta = sinf(theta);
 
   // Calculate indices based on RoPE type
+  LongType base = ((b * seqLen + s) * numHeads + h) * headDim;
   LongType idx1, idx2;
   if (ropeType == 0) {  // Standard (LLaMA)
-    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx;
-    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx + headDim / 2;
+    idx1 = base + pairIdx;
+    idx2 = base + pairIdx + halfRotate;
   } else if (ropeType == 1) {  // NeoX
-    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx * 2;
-    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx * 2 + 1;
+    idx1 = base + pairIdx * 2;
+    idx2 = base + pairIdx * 2 + 1;
   } else {  // GPT-J
-    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx;
-    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx + headDim / 2;
+    idx1 = base + pairIdx;
+    idx2 = base + pairIdx + halfRotate;
   }
 
   float x1 = static_cast<float>(input[idx1]);
@@ -277,14 +280,16 @@ __global__ void fusedRoPEBackwardKernel(
     const int positionOffset,
     const float freqBase,
     const float freqScale,
-    const int ropeType) {
+    const int ropeType,
+    const LongType rotateDims) {
 
+  const LongType halfRotate = rotateDims / 2;
   const LongType idx = blockIdx.x * blockDim.x + threadIdx.x;
-  const LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+  const LongType totalPairs = batch * seqLen * numHeads * halfRotate;
   if (idx >= totalPairs) return;
 
-  const LongType pairIdx = idx % (headDim / 2);
-  LongType rem = idx / (headDim / 2);
+  const LongType pairIdx = idx % halfRotate;
+  LongType rem = idx / halfRotate;
   const LongType h = rem % numHeads;
   rem /= numHeads;
   const LongType s = rem % seqLen;
@@ -293,20 +298,21 @@ __global__ void fusedRoPEBackwardKernel(
   const LongType pos = positionOffset + s;
 
   float theta = static_cast<float>(pos) * freqScale /
-                powf(freqBase, (2.0f * pairIdx) / headDim);
+                powf(freqBase, (2.0f * pairIdx) / rotateDims);
   float cosTheta = cosf(theta);
   float sinTheta = sinf(theta);
 
+  LongType base = ((b * seqLen + s) * numHeads + h) * headDim;
   LongType idx1, idx2;
   if (ropeType == 0) {
-    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx;
-    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx + headDim / 2;
+    idx1 = base + pairIdx;
+    idx2 = base + pairIdx + halfRotate;
   } else if (ropeType == 1) {
-    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx * 2;
-    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx * 2 + 1;
+    idx1 = base + pairIdx * 2;
+    idx2 = base + pairIdx * 2 + 1;
   } else {
-    idx1 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx;
-    idx2 = ((b * seqLen + s) * numHeads + h) * headDim + pairIdx + headDim / 2;
+    idx1 = base + pairIdx;
+    idx2 = base + pairIdx + halfRotate;
   }
 
   float g1 = static_cast<float>(gradOut[idx1]);
@@ -492,15 +498,24 @@ void launchFusedRoPE(
     float freqBase,
     float freqScale,
     int ropeType,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    int rotaryDims = 0) {
 
-  LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+  LongType rotateDims = (rotaryDims > 0 && rotaryDims < headDim) ? rotaryDims : headDim;
+  LongType totalPairs = batch * seqLen * numHeads * (rotateDims / 2);
+  LongType totalElements = batch * seqLen * numHeads * headDim;
 
-  // headDim < 2 means no pairs to rotate — RoPE is identity, just memcpy
-  if (totalPairs == 0) {
-    LongType totalBytes = batch * seqLen * numHeads * headDim * sizeof(T);
+  // No pairs to rotate — just copy
+  if (totalPairs == 0 || rotateDims < 2) {
+    LongType totalBytes = totalElements * sizeof(T);
     cudaMemcpyAsync(output, input, totalBytes, cudaMemcpyDeviceToDevice, stream);
     return;
+  }
+
+  // When partial rotation, copy input to output first to preserve unrotated dims
+  if (rotateDims < headDim) {
+    LongType totalBytes = totalElements * sizeof(T);
+    cudaMemcpyAsync(output, input, totalBytes, cudaMemcpyDeviceToDevice, stream);
   }
 
   int threadsPerBlock = 256;
@@ -508,7 +523,7 @@ void launchFusedRoPE(
 
   fusedRoPEKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
       input, output, batch, seqLen, numHeads, headDim,
-      positionOffset, freqBase, freqScale, ropeType);
+      positionOffset, freqBase, freqScale, ropeType, rotateDims);
   DebugHelper::checkGlobalErrorCode("fusedRoPEKernel failed");
 }
 
@@ -524,15 +539,23 @@ void launchFusedRoPEBackward(
     float freqBase,
     float freqScale,
     int ropeType,
-    cudaStream_t stream) {
+    cudaStream_t stream,
+    int rotaryDims = 0) {
 
-  LongType totalPairs = batch * seqLen * numHeads * (headDim / 2);
+  LongType rotateDims = (rotaryDims > 0 && rotaryDims < headDim) ? rotaryDims : headDim;
+  LongType totalPairs = batch * seqLen * numHeads * (rotateDims / 2);
+  LongType totalElements = batch * seqLen * numHeads * headDim;
 
-  // headDim < 2 means no pairs to rotate — backward is identity, just memcpy
-  if (totalPairs == 0) {
-    LongType totalBytes = batch * seqLen * numHeads * headDim * sizeof(T);
+  if (totalPairs == 0 || rotateDims < 2) {
+    LongType totalBytes = totalElements * sizeof(T);
     cudaMemcpyAsync(gradIn, gradOut, totalBytes, cudaMemcpyDeviceToDevice, stream);
     return;
+  }
+
+  // When partial rotation, copy gradOut to gradIn first to preserve unrotated dims
+  if (rotateDims < headDim) {
+    LongType totalBytes = totalElements * sizeof(T);
+    cudaMemcpyAsync(gradIn, gradOut, totalBytes, cudaMemcpyDeviceToDevice, stream);
   }
 
   int threadsPerBlock = 256;
@@ -540,7 +563,7 @@ void launchFusedRoPEBackward(
 
   fusedRoPEBackwardKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
       gradOut, gradIn, batch, seqLen, numHeads, headDim,
-      positionOffset, freqBase, freqScale, ropeType);
+      positionOffset, freqBase, freqScale, ropeType, rotateDims);
   DebugHelper::checkGlobalErrorCode("fusedRoPEBackwardKernel failed");
 }
 
@@ -583,18 +606,18 @@ template void launchFusedLayerNorm<float16>(const float16*, const float16*, cons
     LongType, LongType, float, cudaStream_t);
 
 template void launchFusedRoPE<float>(const float*, float*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t);
+    int, float, float, int, cudaStream_t, int);
 template void launchFusedRoPE<double>(const double*, double*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t);
+    int, float, float, int, cudaStream_t, int);
 template void launchFusedRoPE<float16>(const float16*, float16*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t);
+    int, float, float, int, cudaStream_t, int);
 
 template void launchFusedRoPEBackward<float>(const float*, float*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t);
+    int, float, float, int, cudaStream_t, int);
 template void launchFusedRoPEBackward<double>(const double*, double*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t);
+    int, float, float, int, cudaStream_t, int);
 template void launchFusedRoPEBackward<float16>(const float16*, float16*, LongType, LongType, LongType, LongType,
-    int, float, float, int, cudaStream_t);
+    int, float, float, int, cudaStream_t, int);
 
 template void launchFusedBiasDropoutResidual<float>(const float*, const float*, const float*, float*,
     LongType, LongType, float, LongType, bool, cudaStream_t);
@@ -705,7 +728,8 @@ void fusedLayerNorm(NDArray* input, NDArray* gain, NDArray* bias, NDArray* outpu
 }
 
 void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
-               float freqBase, float freqScale, int ropeType, LaunchContext* context) {
+               float freqBase, float freqScale, int ropeType, LaunchContext* context,
+               int rotaryDims) {
   auto batch = input->sizeAt(0);
   auto seqLen = input->sizeAt(1);
   auto numHeads = input->sizeAt(2);
@@ -720,19 +744,19 @@ void fusedRoPE(NDArray* input, NDArray* output, int positionOffset,
         reinterpret_cast<const float*>(input->specialBuffer()),
         reinterpret_cast<float*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream);
+        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else if (dtype == DataType::DOUBLE) {
     launchFusedRoPE<double>(
         reinterpret_cast<const double*>(input->specialBuffer()),
         reinterpret_cast<double*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream);
+        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else if (dtype == DataType::HALF) {
     launchFusedRoPE<float16>(
         reinterpret_cast<const float16*>(input->specialBuffer()),
         reinterpret_cast<float16*>(output->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream);
+        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else {
     THROW_EXCEPTION("fusedRoPE: Unsupported data type");
   }
@@ -817,7 +841,8 @@ void fusedRoPECached(NDArray* input, NDArray* cosValues, NDArray* sinValues,
 }
 
 void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
-                       float freqBase, float freqScale, int ropeType, LaunchContext* context) {
+                       float freqBase, float freqScale, int ropeType, LaunchContext* context,
+                       int rotaryDims) {
   auto batch = gradOut->sizeAt(0);
   auto seqLen = gradOut->sizeAt(1);
   auto numHeads = gradOut->sizeAt(2);
@@ -832,19 +857,19 @@ void fusedRoPEBackward(NDArray* gradOut, NDArray* gradIn, int positionOffset,
         reinterpret_cast<const float*>(gradOut->specialBuffer()),
         reinterpret_cast<float*>(gradIn->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream);
+        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else if (dtype == DataType::DOUBLE) {
     launchFusedRoPEBackward<double>(
         reinterpret_cast<const double*>(gradOut->specialBuffer()),
         reinterpret_cast<double*>(gradIn->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream);
+        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else if (dtype == DataType::HALF) {
     launchFusedRoPEBackward<float16>(
         reinterpret_cast<const float16*>(gradOut->specialBuffer()),
         reinterpret_cast<float16*>(gradIn->specialBuffer()),
         batch, seqLen, numHeads, headDim,
-        positionOffset, freqBase, freqScale, ropeType, *stream);
+        positionOffset, freqBase, freqScale, ropeType, *stream, rotaryDims);
   } else {
     THROW_EXCEPTION("fusedRoPEBackward: Unsupported data type");
   }

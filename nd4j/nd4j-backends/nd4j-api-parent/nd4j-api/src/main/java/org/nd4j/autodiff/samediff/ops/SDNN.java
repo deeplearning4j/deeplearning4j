@@ -216,18 +216,19 @@ public class SDNN extends SDOps {
    * for use as initial state in the next autoregressive step.<br>
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias,
-      SDVariable convStateIn, int activation) {
+      SDVariable convStateIn, int activation, int wFormat) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     SDValidation.validateNumerical("causalConv1d", "bias", bias);
     SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, wFormat).outputVariables();
   }
 
   /**
@@ -240,18 +241,19 @@ public class SDNN extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight, SDVariable bias,
-      SDVariable convStateIn, int activation) {
+      SDVariable convStateIn, int activation, int wFormat) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     SDValidation.validateNumerical("causalConv1d", "bias", bias);
     SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, wFormat).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -264,12 +266,12 @@ public class SDNN extends SDOps {
    * for use as initial state in the next autoregressive step.<br>
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, 0, 0).outputVariables();
   }
 
   /**
@@ -282,12 +284,12 @@ public class SDNN extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, null, null, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -300,14 +302,14 @@ public class SDNN extends SDOps {
    * for use as initial state in the next autoregressive step.<br>
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias) {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0, 0).outputVariables();
   }
 
   /**
@@ -320,7 +322,7 @@ public class SDNN extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    */
   public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight,
@@ -328,7 +330,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("causalConv1d", "x", x);
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     SDValidation.validateNumerical("causalConv1d", "bias", bias);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, null, 0, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 
@@ -341,7 +343,7 @@ public class SDNN extends SDOps {
    * for use as initial state in the next autoregressive step.<br>
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    */
@@ -351,7 +353,7 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     SDValidation.validateNumerical("causalConv1d", "bias", bias);
     SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0).outputVariables();
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0, 0).outputVariables();
   }
 
   /**
@@ -364,7 +366,7 @@ public class SDNN extends SDOps {
    *
    * @param names names May be null. Arrays of names for the output variables.
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    */
@@ -374,7 +376,55 @@ public class SDNN extends SDOps {
     SDValidation.validateNumerical("causalConv1d", "weight", weight);
     SDValidation.validateNumerical("causalConv1d", "bias", bias);
     SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0).outputVariables();
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, 0, 0).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   */
+  public SDVariable[] causalConv1d(SDVariable x, SDVariable weight, SDVariable bias,
+      SDVariable convStateIn, int activation) {
+    SDValidation.validateNumerical("causalConv1d", "x", x);
+    SDValidation.validateNumerical("causalConv1d", "weight", weight);
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, 0).outputVariables();
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   */
+  public SDVariable[] causalConv1d(String[] names, SDVariable x, SDVariable weight, SDVariable bias,
+      SDVariable convStateIn, int activation) {
+    SDValidation.validateNumerical("causalConv1d", "x", x);
+    SDValidation.validateNumerical("causalConv1d", "weight", weight);
+    SDValidation.validateNumerical("causalConv1d", "bias", bias);
+    SDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(sd,x, weight, bias, convStateIn, activation, 0).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }
 

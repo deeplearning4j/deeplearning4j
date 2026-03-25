@@ -47,6 +47,9 @@
 #define ARRAY_CSC 64
 #define ARRAY_COO 128
 
+// 8-bit float (FP8 E4M3FN / E5M2)
+#define ARRAY_FLOAT8 256
+
 // complex values
 #define ARRAY_COMPLEX 512
 

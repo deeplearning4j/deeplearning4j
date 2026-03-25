@@ -117,6 +117,10 @@ Then read the output from: `platform-tests/target/surefire-reports/MyTest-output
 
 **NEVER** work around a bug. Fix the root cause directly. A workaround is ANY compromise: a shortcut, a guard in the caller, reordering in test code, a "temporary" hack. If you find an issue while working on something else, dispatch a subagent to fix it. Do not move on with a workaround in place.
 
+### Fix ALL Errors -- No Exceptions
+
+**NEVER** dismiss a test error as "pre-existing" or "unrelated." An error is an error. If you encounter ANY failure while running tests -- whether you caused it or not -- **fix it immediately**. Dispatch a subagent if needed. Do NOT report errors back to the user without a fix. The phrase "pre-existing" is BANNED -- it means nobody fixed it yet, and now it's your job.
+
 ### NEVER Use EWS (elementWiseStride)
 
 **NEVER** use `ews()` or `elementWiseStride` anywhere in the codebase -- it is **deprecated and unreliable**. EWS values in shape info are invalid for views, non-contiguous arrays, and many common tensor layouts. Code that checks `ews() == 1` as a fast-path condition will silently produce wrong results.

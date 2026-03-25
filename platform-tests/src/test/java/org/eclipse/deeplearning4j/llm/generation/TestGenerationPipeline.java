@@ -28,7 +28,7 @@ import org.eclipse.deeplearning4j.vlm.model.EmbeddingMerger;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
-import org.eclipse.deeplearning4j.vlm.preprocessing.PreprocessorConfig;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

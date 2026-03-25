@@ -59,8 +59,7 @@ import java.util.function.Supplier;
 public class PipelinedVisionEncoder {
 
     private final SameDiff visionEncoder;
-    private final String[] outputNames;
-    private final boolean hasMaskInput;
+    private final VisionEncoderIOConfig ioConfig;
     private final int visionChunkSize;
     private final ExecutorService preprocessPool;
     private boolean firstFrameEncoded = false;
@@ -73,9 +72,20 @@ public class PipelinedVisionEncoder {
      * @param preprocessThreads number of threads for CPU preprocessing
      */
     public PipelinedVisionEncoder(SameDiff visionEncoder, int visionChunkSize, int preprocessThreads) {
+        this(visionEncoder, VisionEncoderIOConfig.discover(visionEncoder), visionChunkSize, preprocessThreads);
+    }
+
+    /**
+     * Create a pipelined vision encoder with explicit IO config.
+     *
+     * @param visionEncoder the vision encoder SameDiff model
+     * @param ioConfig the vision encoder IO configuration
+     * @param visionChunkSize number of frames per encoder forward pass
+     * @param preprocessThreads number of threads for CPU preprocessing
+     */
+    public PipelinedVisionEncoder(SameDiff visionEncoder, VisionEncoderIOConfig ioConfig, int visionChunkSize, int preprocessThreads) {
         this.visionEncoder = visionEncoder;
-        this.outputNames = visionEncoder.outputs().toArray(new String[0]);
-        this.hasMaskInput = visionEncoder.getVariable("pixel_attention_mask") != null;
+        this.ioConfig = ioConfig;
         this.visionChunkSize = visionChunkSize;
         this.preprocessPool = Executors.newFixedThreadPool(preprocessThreads, r -> {
             Thread t = new Thread(r, "VisionPreprocess-Pipeline");
@@ -272,12 +282,12 @@ public class PipelinedVisionEncoder {
             INDArray mask = page.masks[f];
 
             Map<String, INDArray> inputs = new java.util.HashMap<>();
-            inputs.put("pixel_values", pixelValues);
-            if (hasMaskInput) {
-                inputs.put("pixel_attention_mask", mask);
+            inputs.put(ioConfig.getPixelValuesName(), pixelValues);
+            if (ioConfig.hasPixelAttentionMask()) {
+                inputs.put(ioConfig.getPixelAttentionMaskName(), mask);
             }
 
-            Map<String, INDArray> outputs = visionEncoder.output(inputs, outputNames);
+            Map<String, INDArray> outputs = visionEncoder.output(inputs, ioConfig.getOutputNames());
             VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
             if (selected == null) {
                 throw new RuntimeException("Vision encoder produced no output for frame " + f);

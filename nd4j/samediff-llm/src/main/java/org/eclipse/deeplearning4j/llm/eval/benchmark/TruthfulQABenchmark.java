@@ -20,7 +20,7 @@
 
 package org.eclipse.deeplearning4j.llm.eval.benchmark;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import org.nd4j.shade.jackson.databind.JsonNode;
 import org.eclipse.deeplearning4j.llm.eval.AnswerExtractor;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalDataset;
 import org.eclipse.deeplearning4j.llm.eval.dataset.EvalSample;

@@ -23,6 +23,9 @@ package org.nd4j.ggml.architecture;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Configuration for model architecture.
  * Contains hyperparameters needed to construct the model graph.
@@ -108,9 +111,37 @@ public class ArchitectureConfig {
     private boolean decoderOnly = true;
 
     /**
-     * Get the head dimension (hidden_size / num_heads)
+     * Explicit head dimension. 0 means derive from hiddenSize / numAttentionHeads.
+     * Some models (e.g. Qwen3.5) have head_dim != hidden_size / num_attention_heads.
+     */
+    private int headDim;
+
+    /**
+     * Per-layer type strings from GGUF metadata.
+     * Example: ["linear_attention", "linear_attention", "linear_attention", "full_attention", ...]
+     * Empty list means all layers use the default attention type.
+     */
+    @Builder.Default
+    private List<String> layerTypes = new ArrayList<>();
+
+    /**
+     * Full attention interval: every Nth layer is full attention, rest are linear/GDN.
+     * 0 means not specified (all layers same type). E.g., 4 means layers 3,7,11,15,... are full attention.
+     */
+    private int fullAttentionInterval;
+
+    /**
+     * RoPE type: 0 = standard/LLaMA (split-half pairing), 1 = NeoX/interleaved (adjacent pairing).
+     * Qwen models use interleaved (type 1). LLaMA/Mistral use standard (type 0).
+     */
+    private int ropeType;
+
+    /**
+     * Get the head dimension. Prefers explicit headDim when set,
+     * otherwise falls back to hiddenSize / numAttentionHeads.
      */
     public int getHeadDimension() {
+        if (headDim > 0) return headDim;
         if (numAttentionHeads == 0) return 0;
         return hiddenSize / numAttentionHeads;
     }

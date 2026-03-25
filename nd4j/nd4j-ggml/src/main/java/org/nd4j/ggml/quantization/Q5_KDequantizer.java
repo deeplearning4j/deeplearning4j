@@ -32,11 +32,23 @@ import java.nio.ByteOrder;
  * Dequantizer for Q5_K quantization format.
  *
  * Q5_K is a 5-bit k-quant format with super-blocks of 256 elements.
+ *
+ * Block layout (from ggml-common.h):
+ * <pre>
+ *   ggml_half d         — super-block scale for quantized scales (2 bytes)
+ *   ggml_half dmin      — super-block scale for quantized mins (2 bytes)
+ *   uint8_t scales[12]  — scales and mins, quantized with 6 bits
+ *   uint8_t qh[32]      — high bits (256 / 8)
+ *   uint8_t qs[128]     — low 4 bits (256 / 2)
+ * </pre>
+ * Total: 176 bytes per block of 256 elements.
+ *
+ * Dequantization follows ggml's dequantize_row_q5_K exactly.
  */
 public class Q5_KDequantizer implements Dequantizer {
 
-    private static final int BLOCK_SIZE = 256;
-    private static final int BYTES_PER_BLOCK = 180;
+    private static final int QK_K = 256;
+    private static final int BYTES_PER_BLOCK = 176; // 2 + 2 + 12 + 32 + 128
 
     @Override
     public GGMLDataType getQuantType() {
@@ -45,7 +57,7 @@ public class Q5_KDequantizer implements Dequantizer {
 
     @Override
     public int getBlockSize() {
-        return BLOCK_SIZE;
+        return QK_K;
     }
 
     @Override
@@ -63,74 +75,95 @@ public class Q5_KDequantizer implements Dequantizer {
         float[] result = new float[totalElements];
         ByteBuffer buffer = ByteBuffer.wrap(quantizedData).order(ByteOrder.LITTLE_ENDIAN);
 
-        int numBlocks = (totalElements + BLOCK_SIZE - 1) / BLOCK_SIZE;
+        int numBlocks = (totalElements + QK_K - 1) / QK_K;
         int outputIdx = 0;
 
+        byte[] scaleBytes = new byte[12];
+        byte[] qh = new byte[32];
+        byte[] qs = new byte[128];
+
         for (int block = 0; block < numBlocks && buffer.remaining() >= BYTES_PER_BLOCK; block++) {
-            // Read d and dmin as FP16 (4 bytes)
+            // Read d and dmin (FP16 super-block scales)
             short dRaw = buffer.getShort();
             short dminRaw = buffer.getShort();
             float d = fp16ToFloat(dRaw);
-            float dmin = fp16ToFloat(dminRaw);
+            float min = fp16ToFloat(dminRaw);
 
-            // Read scales (12 bytes - 8 x 6-bit values packed)
-            byte[] scaleBytes = new byte[12];
+            // Read 12 bytes of packed scales
             buffer.get(scaleBytes);
 
-            // Read mins (4 bytes - 8 x 4-bit values packed)
-            byte[] minBytes = new byte[4];
-            buffer.get(minBytes);
-
-            // Unpack 8 x 6-bit scales
-            long packedScales = 0;
-            for (int i = 0; i < 6; i++) {
-                packedScales |= ((long) (scaleBytes[i] & 0xFF)) << (i * 8);
-            }
-            float[] scales = new float[8];
-            float[] mins = new float[8];
-            for (int i = 0; i < 8; i++) {
-                int scaleVal = (int) ((packedScales >> (i * 6)) & 0x3F);
-                scales[i] = d * scaleVal;
-
-                // Extract 4-bit min for each sub-block (1 sign bit + 3 magnitude bits)
-                int byteIdx = i / 2;
-                int shift = (i % 2) * 4;
-                int packedMin = (minBytes[byteIdx] >> shift) & 0x0F;
-                int sign = (packedMin >> 3) & 0x01;
-                int magnitude = packedMin & 0x07;
-                mins[i] = dmin * magnitude * (sign == 1 ? -1 : 1);
-            }
-
-            // Read high bits (32 bytes - 256 x 1 bit)
-            byte[] qh = new byte[32];
+            // Read 32 bytes of high bits
             buffer.get(qh);
 
-            // Read low 4 bits (128 bytes - 256 x 4 bits)
-            byte[] qs = new byte[128];
+            // Read 128 bytes of low 4 bits
             buffer.get(qs);
 
-            // Dequantize: original = quantized * scale + min
-            for (int j = 0; j < 256 && outputIdx < totalElements; j++) {
-                int subBlock = j / 32;
+            // Dequantize following ggml's dequantize_row_q5_K exactly
+            int is = 0;
+            int qlOff = 0;
+            int u1 = 1, u2 = 2;
 
-                float scale = scales[subBlock];
-                float min = mins[subBlock];
+            for (int j = 0; j < QK_K; j += 64) {
+                // get_scale_min_k4 for is+0
+                int sc1 = getScale(is, scaleBytes);
+                int m1 = getMin(is, scaleBytes);
+                float d1 = d * sc1;
+                float m1f = min * m1;
 
-                // Get low 4 bits
-                int qsIdx = j / 2;
-                int low = (j % 2 == 0) ? (qs[qsIdx] & 0x0F) : ((qs[qsIdx] >> 4) & 0x0F);
+                // get_scale_min_k4 for is+1
+                int sc2 = getScale(is + 1, scaleBytes);
+                int m2 = getMin(is + 1, scaleBytes);
+                float d2 = d * sc2;
+                float m2f = min * m2;
 
-                // Get high bit (bit 4)
-                int qhIdx = j / 8;
-                int qhShift = j % 8;
-                int high = (qh[qhIdx] >> qhShift) & 0x01;
-
-                int val = low | (high << 4);
-                result[outputIdx++] = val * scale + min;
+                // First 32: low nibbles + high bit with scale d1
+                for (int l = 0; l < 32; l++) {
+                    int lowVal = qs[qlOff + l] & 0x0F;
+                    int highBit = ((qh[l] & u1) != 0) ? 16 : 0;
+                    if (outputIdx < totalElements) {
+                        result[outputIdx++] = d1 * (lowVal + highBit) - m1f;
+                    }
+                }
+                // Next 32: high nibbles + high bit with scale d2
+                for (int l = 0; l < 32; l++) {
+                    int highNibble = (qs[qlOff + l] >> 4) & 0x0F;
+                    int highBit = ((qh[l] & u2) != 0) ? 16 : 0;
+                    if (outputIdx < totalElements) {
+                        result[outputIdx++] = d2 * (highNibble + highBit) - m2f;
+                    }
+                }
+                qlOff += 32;
+                is += 2;
+                u1 <<= 2;
+                u2 <<= 2;
             }
         }
 
         return result;
+    }
+
+    /**
+     * Extract scale value for sub-block j from the packed 12-byte scales array.
+     * Matches ggml's get_scale_min_k4 for the 'd' (scale) output.
+     */
+    private static int getScale(int j, byte[] q) {
+        if (j < 4) {
+            return q[j] & 63;
+        } else {
+            return ((q[j + 4] & 0xFF) & 0xF) | ((((q[j - 4] & 0xFF) >> 6) & 3) << 4);
+        }
+    }
+
+    /**
+     * Extract min value for sub-block j from the packed 12-byte scales array.
+     * Matches ggml's get_scale_min_k4 for the 'm' (min) output.
+     */
+    private static int getMin(int j, byte[] q) {
+        if (j < 4) {
+            return q[j + 4] & 63;
+        } else {
+            return (((q[j + 4] & 0xFF) >> 4) & 0xF) | ((((q[j] & 0xFF) >> 6) & 3) << 4);
+        }
     }
 
     @Override
@@ -148,11 +181,11 @@ public class Q5_KDequantizer implements Dequantizer {
     @Override
     public QuantizationInfo extractQuantizationInfo(byte[] quantizedData, long[] shape) {
         long numElements = calculateNumElements(shape);
-        int numBlocks = (int) ((numElements + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        int numBlocks = (int) ((numElements + QK_K - 1) / QK_K);
 
         return QuantizationInfo.builder()
                 .quantType(GGMLDataType.GGML_TYPE_Q5_K)
-                .blockSize(BLOCK_SIZE)
+                .blockSize(QK_K)
                 .numBlocks(numBlocks)
                 .originalShape(shape)
                 .build();

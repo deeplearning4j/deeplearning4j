@@ -50,7 +50,7 @@ public class LLaMAExportArchitecture implements ExportArchitecture {
         NAME_PATTERNS.put(Pattern.compile("lm_head\\.weight"), "output.weight");
         NAME_PATTERNS.put(Pattern.compile("model\\.norm\\.weight"), "output_norm.weight");
 
-        // Attention layers
+        // Attention layers (separate Q/K/V)
         NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.self_attn\\.q_proj\\.weight"),
                 "blk.{layer}.attn_q.weight");
         NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.self_attn\\.k_proj\\.weight"),
@@ -59,6 +59,14 @@ public class LLaMAExportArchitecture implements ExportArchitecture {
                 "blk.{layer}.attn_v.weight");
         NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.self_attn\\.o_proj\\.weight"),
                 "blk.{layer}.attn_output.weight");
+
+        // Fused QKV attention (Qwen3.5 and similar)
+        NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.self_attn\\.qkv_proj\\.weight"),
+                "blk.{layer}.attn_qkv.weight");
+        NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.self_attn\\.qkv_proj\\.bias"),
+                "blk.{layer}.attn_qkv.bias");
+        NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.self_attn\\.gate\\.weight"),
+                "blk.{layer}.attn_gate.weight");
 
         // FFN layers
         NAME_PATTERNS.put(Pattern.compile("model\\.layers\\.(\\d+)\\.mlp\\.gate_proj\\.weight"),

@@ -198,12 +198,38 @@ public class TextGenerator {
 
             // Apply repetition penalty if configured
             if (config.hasRepetitionPenalty()) {
+                INDArray original = logits;
                 int[] generated = allTokens.stream().mapToInt(Integer::intValue).toArray();
                 logits = SamplerUtils.applyRepetitionPenalty(logits, generated, config.getRepetitionPenalty());
+                if (logits != original) {
+                    SameDiffMemoryUtils.safeClose(original);
+                }
+            }
+
+            // Diagnostic: log logits stats for first 3 tokens
+            if (step < 3) {
+                INDArray logitsDup = logits.dup();
+                float maxVal = logitsDup.maxNumber().floatValue();
+                float minVal = logitsDup.minNumber().floatValue();
+                float meanVal = logitsDup.meanNumber().floatValue();
+                // Find top-5 token IDs
+                int[] top5Ids = new int[5];
+                float[] top5Vals = new float[5];
+                for (int t = 0; t < 5; t++) {
+                    int idx = logitsDup.argMax(0).getInt(0);
+                    top5Ids[t] = idx;
+                    top5Vals[t] = logitsDup.getFloat(idx);
+                    logitsDup.putScalar(idx, Float.NEGATIVE_INFINITY);
+                }
+                log.info("Step {} logits: min={}, max={}, mean={}, top5ids={}, top5vals={}",
+                        step, minVal, maxVal, meanVal,
+                        java.util.Arrays.toString(top5Ids), java.util.Arrays.toString(top5Vals));
+                logitsDup.close();
             }
 
             // Sample next token
             int nextTokenId = sampler.sample(logits);
+            SameDiffMemoryUtils.safeClose(logits);
 
             // Record first token latency
             if (generatedTokenCount == 0) {
@@ -233,9 +259,13 @@ public class TextGenerator {
                 break;
             }
 
-            // Update input for next iteration
+            // Update input for next iteration — close old inputIds
+            INDArray oldInputIds = inputIds;
             inputIds = appendToken(inputIds, nextTokenId);
+            SameDiffMemoryUtils.safeClose(oldInputIds);
         }
+
+        SameDiffMemoryUtils.safeClose(inputIds);
 
         long totalNanos = System.nanoTime() - startNanos;
         long totalMs = totalNanos / 1_000_000;
@@ -295,12 +325,17 @@ public class TextGenerator {
 
             // Apply repetition penalty if configured
             if (config.hasRepetitionPenalty()) {
+                INDArray original = logits;
                 int[] generated = allTokens.stream().mapToInt(Integer::intValue).toArray();
                 logits = SamplerUtils.applyRepetitionPenalty(logits, generated, config.getRepetitionPenalty());
+                if (logits != original) {
+                    SameDiffMemoryUtils.safeClose(original);
+                }
             }
 
             // Sample next token
             int nextTokenId = sampler.sample(logits);
+            SameDiffMemoryUtils.safeClose(logits);
 
             // Check for EOS
             if (nextTokenId == eosToken) {
@@ -323,9 +358,13 @@ public class TextGenerator {
                 break;
             }
 
-            // Update input for next iteration
+            // Update input for next iteration — close old inputIds
+            INDArray oldInputIds = inputIds;
             inputIds = appendToken(inputIds, nextTokenId);
+            SameDiffMemoryUtils.safeClose(oldInputIds);
         }
+
+        SameDiffMemoryUtils.safeClose(inputIds);
     }
 
     /**
@@ -358,9 +397,14 @@ public class TextGenerator {
             INDArray logits = getNextTokenLogits(inputIds);
 
             // Apply custom processor
+            INDArray original = logits;
             logits = logitsProcessor.apply(logits, allTokens);
+            if (logits != original) {
+                SameDiffMemoryUtils.safeClose(original);
+            }
 
             int nextTokenId = sampler.sample(logits);
+            SameDiffMemoryUtils.safeClose(logits);
 
             if (nextTokenId == eosToken) {
                 break;
@@ -374,9 +418,12 @@ public class TextGenerator {
                 break;
             }
 
+            INDArray oldInputIds = inputIds;
             inputIds = appendToken(inputIds, nextTokenId);
+            SameDiffMemoryUtils.safeClose(oldInputIds);
         }
 
+        SameDiffMemoryUtils.safeClose(inputIds);
         return result.toString();
     }
 
@@ -401,17 +448,22 @@ public class TextGenerator {
         }
 
         Map<String, INDArray> outputs = model.output(inputs, logitsOutputName);
-        INDArray logits = outputs.get(logitsOutputName);
+        INDArray fullLogits = outputs.get(logitsOutputName);
 
         // Get logits for the last position: [batch, seqLen, vocab] -> [vocab]
-        if (logits.rank() == 3) {
-            long lastPos = logits.size(1) - 1;
-            logits = logits.get(NDArrayIndex.point(0), NDArrayIndex.point(lastPos), NDArrayIndex.all());
-        } else if (logits.rank() == 2) {
-            logits = logits.getRow(0);
+        // Return a dup so the caller owns it and the full logits can be freed
+        INDArray lastLogits;
+        if (fullLogits.rank() == 3) {
+            long lastPos = fullLogits.size(1) - 1;
+            lastLogits = fullLogits.get(NDArrayIndex.point(0), NDArrayIndex.point(lastPos), NDArrayIndex.all()).dup();
+        } else if (fullLogits.rank() == 2) {
+            lastLogits = fullLogits.getRow(0).dup();
+        } else {
+            lastLogits = fullLogits.dup();
         }
 
-        return logits;
+        SameDiffMemoryUtils.safeClose(fullLogits);
+        return lastLogits;
     }
 
     /**
@@ -423,7 +475,9 @@ public class TextGenerator {
      */
     private INDArray appendToken(INDArray inputIds, int tokenId) {
         INDArray newToken = Nd4j.scalar(tokenId).reshape(1, 1);
-        return Nd4j.concat(1, inputIds, newToken);
+        INDArray result = Nd4j.concat(1, inputIds, newToken);
+        newToken.close();
+        return result;
     }
 
     /**
@@ -525,11 +579,13 @@ public class TextGenerator {
                         NDArrayIndex.point(batchLogits.size(1) - 1),
                         NDArrayIndex.all()).dup();
             } else {
-                lastLogits = batchLogits;
+                lastLogits = batchLogits.dup();
             }
+            SameDiffMemoryUtils.safeClose(batchLogits);
 
             // Sample batch
             int[] nextTokenIds = sampler.sampleBatch(lastLogits);
+            SameDiffMemoryUtils.safeClose(lastLogits);
 
             // Record and check stop conditions
             long stepNanos = System.nanoTime() - startNanos;
@@ -553,8 +609,13 @@ public class TextGenerator {
             }
             INDArray nextTokenTensor = Nd4j.createFromArray(batchNextTokens)
                     .reshape(batchSize, 1).castTo(DataType.LONG);
+            INDArray oldBatchInputIds = batchInputIds;
             batchInputIds = Nd4j.concat(1, batchInputIds, nextTokenTensor);
+            nextTokenTensor.close();
+            SameDiffMemoryUtils.safeClose(oldBatchInputIds);
         }
+
+        SameDiffMemoryUtils.safeClose(batchInputIds);
 
         long totalNanos = System.nanoTime() - startNanos;
 
@@ -745,7 +806,11 @@ public class TextGenerator {
         }
 
         Map<String, INDArray> outputs = model.output(inputs, logitsOutputName);
-        return outputs.get(logitsOutputName);
+        INDArray logits = outputs.get(logitsOutputName);
+        // Return a dup so the caller owns it and SameDiff session arrays can be freed
+        INDArray result = logits.dup();
+        SameDiffMemoryUtils.safeClose(logits);
+        return result;
     }
 
     /**

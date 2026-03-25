@@ -27,7 +27,7 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.eclipse.deeplearning4j.vlm.data.VLMModelDownloader;
 import org.eclipse.deeplearning4j.vlm.model.OnnxModelCache;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
-import org.eclipse.deeplearning4j.vlm.preprocessing.PreprocessorConfig;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.junit.jupiter.api.*;
 import org.nd4j.autodiff.samediff.SameDiff;

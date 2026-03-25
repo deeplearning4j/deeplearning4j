@@ -26,11 +26,11 @@ namespace helpers {
 
 template <typename T>
 static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                           NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation) {
+                           NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation, int wFormat) {
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
-    const auto K = weight->sizeAt(1);
+    const auto K = (wFormat == 0) ? weight->sizeAt(1) : weight->sizeAt(0);
 
     const T* xBuf = x->bufferAsT<T>();
     const T* wBuf = weight->bufferAsT<T>();
@@ -40,7 +40,10 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
     T* sOutBuf = stateOut->bufferAsT<T>();
 
     const auto xS0 = x->strideAt(0), xS1 = x->strideAt(1), xS2 = x->strideAt(2);
-    const auto wS0 = weight->strideAt(0), wS1 = weight->strideAt(1);
+    // wFormat=0 [D,K]: wChanStride=strideAt(0), wDimStride=strideAt(1)
+    // wFormat=1 [K,D]: wDimStride=strideAt(0), wChanStride=strideAt(1)
+    const LongType wChanStride = (wFormat == 0) ? weight->strideAt(0) : weight->strideAt(1);
+    const LongType wDimStride  = (wFormat == 0) ? weight->strideAt(1) : weight->strideAt(0);
     const auto oS0 = output->strideAt(0), oS1 = output->strideAt(1), oS2 = output->strideAt(2);
     const auto soS0 = stateOut->strideAt(0), soS1 = stateOut->strideAt(1), soS2 = stateOut->strideAt(2);
 
@@ -57,7 +60,9 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
             const LongType b = bd / D;
             const LongType d = bd % D;
 
-            // Causal convolution: output[t] = sum_{kk=0}^{K-1} weight[d,kk] * x[t-kk]
+            // Causal correlation (PyTorch F.conv1d convention):
+            // output[t] = sum_{kk=0}^{K-1} weight[d, K-1-kk] * x[t-kk]
+            // weight[K-1] multiplies x[t] (current), weight[0] multiplies x[t-K+1] (oldest)
             for (LongType t = 0; t < L; ++t) {
                 T sum = static_cast<T>(0);
                 for (LongType kk = 0; kk < K; ++kk) {
@@ -71,7 +76,7 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
                     } else {
                         x_val = static_cast<T>(0);
                     }
-                    sum += wBuf[d * wS0 + kk * wS1] * x_val;
+                    sum += wBuf[d * wChanStride + (K - 1 - kk) * wDimStride] * x_val;
                 }
 
                 if (bBuf != nullptr) sum += bBuf[d];
@@ -103,12 +108,12 @@ static void causalConv1d_(LaunchContext* context, NDArray* x, NDArray* weight, N
 }
 
 void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                   NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation) {
+                   NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation, int wFormat) {
     NDArray::preparePrimaryUse({output, stateOut}, {x, weight, bias});
     if (stateIn != nullptr) NDArray::preparePrimaryUse({}, {stateIn});
 
     BUILD_SINGLE_SELECTOR(x->dataType(), causalConv1d_,
-        (context, x, weight, bias, stateIn, output, stateOut, activation), SD_FLOAT_TYPES);
+        (context, x, weight, bias, stateIn, output, stateOut, activation, wFormat), SD_FLOAT_TYPES);
 
     NDArray::registerPrimaryUse({output, stateOut}, {x, weight, bias});
     if (stateIn != nullptr) NDArray::registerPrimaryUse({}, {stateIn});

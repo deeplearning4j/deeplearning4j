@@ -51,9 +51,9 @@ public class IdentityFunctionOptimizations extends BaseOptimizerSet {
             if(op.getOp() instanceof Identity){
                 String inName = op.getInputsToOp().get(0);
                 String outputName = op.getOutputsOfOp().get(0);
-                OptimizationUtils.removeOp(sd, op.getName());
-                OptimizationUtils.replaceOpInputsWith(sd, outputName, inName);
-                OptimizationUtils.removeVariable(sd, outputName);
+                OptimizationUtils.removeOp(sd, helper, op.getName());
+                OptimizationUtils.replaceOpInputsWith(sd, helper, outputName, inName);
+                OptimizationUtils.removeVariable(sd, helper, outputName);
                 return true;
             }
 

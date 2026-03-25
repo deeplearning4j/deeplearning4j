@@ -56,6 +56,7 @@ public class FusedRoPE extends DynamicCustomOp {
     @Getter private int positionOffset = 0;
     @Getter private double freqBase = 10000.0;
     @Getter private double freqScale = 1.0;
+    @Getter private int rotaryDims = 0;  // 0 = rotate all head dims
 
     /**
      * Create a fused RoPE operation.
@@ -69,13 +70,30 @@ public class FusedRoPE extends DynamicCustomOp {
      */
     public FusedRoPE(SameDiff sameDiff, SDVariable input, int ropeType, int positionOffset,
                      double freqBase, double freqScale) {
+        this(sameDiff, input, ropeType, positionOffset, freqBase, freqScale, 0);
+    }
+
+    /**
+     * Create a fused RoPE operation with partial rotation support.
+     *
+     * @param sameDiff The SameDiff instance
+     * @param input Input tensor [batch, seq_len, num_heads, head_dim]
+     * @param ropeType RoPE variant (0=standard, 1=neox, 2=gptj)
+     * @param positionOffset Starting position for KV cache continuation
+     * @param freqBase Base frequency (default 10000.0)
+     * @param freqScale Frequency scale factor (default 1.0)
+     * @param rotaryDims Number of dimensions to rotate (0 = all head dims)
+     */
+    public FusedRoPE(SameDiff sameDiff, SDVariable input, int ropeType, int positionOffset,
+                     double freqBase, double freqScale, int rotaryDims) {
         super(null, sameDiff, new SDVariable[]{input}, false);
         this.ropeType = ropeType;
         this.positionOffset = positionOffset;
         this.freqBase = freqBase;
         this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
 
-        addIArgument(ropeType, positionOffset);
+        addIArgument(ropeType, positionOffset, rotaryDims);
         addTArgument(freqBase, freqScale);
     }
 
@@ -85,13 +103,19 @@ public class FusedRoPE extends DynamicCustomOp {
 
     public FusedRoPE(INDArray input, INDArray output, int ropeType, int positionOffset,
                      double freqBase, double freqScale) {
+        this(input, output, ropeType, positionOffset, freqBase, freqScale, 0);
+    }
+
+    public FusedRoPE(INDArray input, INDArray output, int ropeType, int positionOffset,
+                     double freqBase, double freqScale, int rotaryDims) {
         super(new INDArray[]{input}, output != null ? new INDArray[]{output} : null);
         this.ropeType = ropeType;
         this.positionOffset = positionOffset;
         this.freqBase = freqBase;
         this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
 
-        addIArgument(ropeType, positionOffset);
+        addIArgument(ropeType, positionOffset, rotaryDims);
         addTArgument(freqBase, freqScale);
     }
 
@@ -159,6 +183,9 @@ public class FusedRoPE extends DynamicCustomOp {
         if (iArguments.size() > 1) {
             this.positionOffset = iArguments.get(1).intValue();
         }
+        if (iArguments.size() > 2) {
+            this.rotaryDims = iArguments.get(2).intValue();
+        }
         if (tArguments.size() > 0) {
             this.freqBase = tArguments.get(0);
         }
@@ -175,7 +202,7 @@ public class FusedRoPE extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients) {
         return Collections.singletonList(
-            new FusedRoPEBp(sameDiff, arg(0), gradients.get(0), ropeType, positionOffset, freqBase, freqScale).outputVariable()
+            new FusedRoPEBp(sameDiff, arg(0), gradients.get(0), ropeType, positionOffset, freqBase, freqScale, rotaryDims).outputVariable()
         );
     }
 

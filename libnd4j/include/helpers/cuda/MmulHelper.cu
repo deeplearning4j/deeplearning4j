@@ -36,6 +36,11 @@
 #include "../MmulHelper.h"
 #include "../cublasHelper.h"
 #include "execution/cuda/LaunchDims.h"
+#include <config.h>
+#if HAVE_CUTLASS
+#include <helpers/CutlassGemmHelper.h>
+#include <helpers/CutlassHelper.h>
+#endif
 
 // Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
 extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
@@ -699,6 +704,21 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
  if (C->isEmpty()) return C;
 
  const int major = Environment::getInstance().capabilities()[AffinityManager::currentDeviceId()].first();
+
+#if HAVE_CUTLASS
+ // Try CUTLASS dispatch before cuBLAS path.
+ // CUTLASS is preferred for: M > 1 with matching types on SM80+,
+ // and FP8 inputs on SM89+ (Ada Lovelace).
+ {
+   int smVersion = CutlassHelper::getSmVersion(AffinityManager::currentDeviceId());
+   if (CutlassGemmHelper::shouldUseCutlass(M, N, K, A->dataType(), B->dataType(), smVersion)) {
+     if (CutlassGemmHelper::gemm(A, B, C, alpha, beta)) {
+       return C;
+     }
+     // CUTLASS failed (e.g., unsupported config) — fall through to cuBLAS
+   }
+ }
+#endif
 
  const auto aType = A->dataType();
  const auto bType = B->dataType();

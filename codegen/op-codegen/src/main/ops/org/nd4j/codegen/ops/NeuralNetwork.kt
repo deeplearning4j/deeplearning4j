@@ -1606,10 +1606,11 @@ fun NN() = Namespace("NN") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
         javaOpClass = "CausalConv1d"
         val x = Input(NUMERIC, "x") { description = "Input sequence [batch, seqLen, dim]" }
-        val weight = Input(NUMERIC, "weight") { description = "Depthwise conv weights [dim, kernelSize]" }
+        val weight = Input(NUMERIC, "weight") { description = "Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1)" }
         val bias = Input(NUMERIC, "bias") { description = "Bias [dim]"; defaultValue = null }
         val stateIn = Input(NUMERIC, "convStateIn") { description = "Conv state for autoregressive decode [batch, dim, kernelSize-1]"; defaultValue = null }
         val activation = Arg(INT, "activation") { description = "Activation function (0=none, 1=silu)"; defaultValue = 0 }
+        val wFormat = Arg(INT, "wFormat") { description = "Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)"; defaultValue = 0 }
 
         Output(NUMERIC, "output") { description = "Convolved output [batch, seqLen, dim]" }
         Output(NUMERIC, "stateOut") { description = "Updated conv state [batch, dim, kernelSize-1]" }
@@ -1618,6 +1619,7 @@ fun NN() = Namespace("NN") {
         Signature(x, weight)
         Signature(x, weight, bias)
         Signature(x, weight, bias, stateIn)
+        Signature(x, weight, bias, stateIn, activation)
 
         Doc(Language.ANY, DocScope.ALL) {
             """

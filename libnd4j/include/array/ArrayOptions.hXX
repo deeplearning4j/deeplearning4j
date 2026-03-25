@@ -202,6 +202,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     ARRAY_DOUBLE, \
     ARRAY_HALF, \
     ARRAY_BHALF, \
+    ARRAY_FLOAT8, \
     ARRAY_BOOL, \
     ARRAY_CHAR, \
     ARRAY_SHORT, \
@@ -217,6 +218,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     sd::DataType::DOUBLE, \
     sd::DataType::HALF, \
     sd::DataType::BFLOAT16, \
+    sd::DataType::FLOAT8, \
     sd::DataType::BOOL, \
     sd::DataType::INT8, \
     sd::DataType::INT16, \
@@ -232,6 +234,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     ARRAY_SHORT, \
     ARRAY_INT, \
     ARRAY_LONG, \
+    ARRAY_FLOAT8, \
     ARRAY_UTF8, \
     ARRAY_UTF16, \
     ARRAY_UTF32 \
@@ -242,6 +245,7 @@ SD_HOST  SD_INLINE bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     sd::DataType::UINT16, \
     sd::DataType::UINT32, \
     sd::DataType::UINT64, \
+    sd::DataType::FLOAT8_E5M2, \
     sd::DataType::UTF8, \
     sd::DataType::UTF16, \
     sd::DataType::UTF32 \
@@ -473,6 +477,10 @@ SD_HOST SD_INLINE LongType ArrayOptions::flagForDataType(const sd::DataType data
   switch (dataType) {
     case sd::DataType::BOOL:
       return ARRAY_BOOL;
+    case sd::DataType::FLOAT8:
+      return ARRAY_FLOAT8;
+    case sd::DataType::FLOAT8_E5M2:
+      return ARRAY_FLOAT8 | ARRAY_UNSIGNED;  // distinguish E5M2 from E4M3 via UNSIGNED flag
     case sd::DataType::HALF:
       return ARRAY_HALF;
     case sd::DataType::BFLOAT16:
@@ -523,6 +531,14 @@ SD_HOST SD_INLINE void ArrayOptions::setDataType(sd::LongType *shapeInfo, const 
     case sd::DataType::BOOL:
       ArrayOptions::resetDataType(shapeInfo);
       setPropertyBit(shapeInfo, ARRAY_BOOL);
+      break;
+    case sd::DataType::FLOAT8:
+      ArrayOptions::resetDataType(shapeInfo);
+      setPropertyBit(shapeInfo, ARRAY_FLOAT8);
+      break;
+    case sd::DataType::FLOAT8_E5M2:
+      ArrayOptions::resetDataType(shapeInfo);
+      setPropertyBit(shapeInfo, ARRAY_FLOAT8 | ARRAY_UNSIGNED);
       break;
     case sd::DataType::HALF:
       ArrayOptions::resetDataType(shapeInfo);
@@ -630,6 +646,12 @@ SD_HOST SD_INLINE sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extra
   switch (dataType) {
     case sd::DataType::BOOL:
       ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_BOOL);
+      break;
+    case sd::DataType::FLOAT8:
+      ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8);
+      break;
+    case sd::DataType::FLOAT8_E5M2:
+      ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_FLOAT8);
       break;
     case sd::DataType::HALF:
       ret = setPropertyBitForFlagsValue(extraStorage, ARRAY_HALF);

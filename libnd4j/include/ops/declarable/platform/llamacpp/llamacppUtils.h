@@ -640,6 +640,9 @@ DECLARE_PLATFORM(scale, ENGINE_CPU);
 // In-place addition
 DECLARE_PLATFORM(add_inplace, ENGINE_CPU);
 
+// GGML dequantize (raw quantized bytes -> float)
+DECLARE_PLATFORM(ggml_dequantize, ENGINE_CPU);
+
 //////////////////////////////////////////////////////////////////////////
 // Quantization Operations - CUDA
 //////////////////////////////////////////////////////////////////////////
@@ -650,6 +653,7 @@ DECLARE_PLATFORM(dequantize, ENGINE_CUDA);
 DECLARE_PLATFORM(quantized_mul_mat, ENGINE_CUDA);
 DECLARE_PLATFORM(scale, ENGINE_CUDA);
 DECLARE_PLATFORM(add_inplace, ENGINE_CUDA);
+DECLARE_PLATFORM(ggml_dequantize, ENGINE_CUDA);
 
 //////////////////////////////////////////////////////////////////////////
 // Mixture of Experts Operations - CPU

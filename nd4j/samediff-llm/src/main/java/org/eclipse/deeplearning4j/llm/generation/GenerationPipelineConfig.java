@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.llm.generation;
 import lombok.Builder;
 import lombok.Getter;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 
 import java.util.Set;
@@ -112,4 +113,10 @@ public class GenerationPipelineConfig {
 
     /** Optional model loader for loading models from paths. Uses default loader if null. */
     private final GenerationPipeline.ModelLoader modelLoader;
+
+    /** Optional preprocessor config for VLM image preprocessing. Nullable for text-only pipelines. */
+    private final PreprocessorConfig preprocessorConfig;
+
+    /** Optional path to preprocessor_config.json for auto-loading. */
+    private final String preprocessorConfigPath;
 }

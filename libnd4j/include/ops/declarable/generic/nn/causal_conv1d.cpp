@@ -42,12 +42,26 @@ CUSTOM_OP_IMPL(causal_conv1d, 2, 2, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);   // [B, L, D]
     auto stateOut = OUTPUT_VARIABLE(1); // [B, D, K-1]
 
-    NDArray* bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
-    NDArray* stateIn = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
+    NDArray* bias = nullptr;
+    NDArray* stateIn = nullptr;
+
+    if (block.width() == 3) {
+        // Could be bias [D] (rank 1) or stateIn [B, D, K-1] (rank 3)
+        auto third = INPUT_VARIABLE(2);
+        if (third->rankOf() == 1) {
+            bias = third;
+        } else {
+            stateIn = third;
+        }
+    } else if (block.width() >= 4) {
+        bias = INPUT_VARIABLE(2);
+        stateIn = INPUT_VARIABLE(3);
+    }
 
     int activation = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
+    int wFormat = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
 
-    helpers::causalConv1d(block.launchContext(), x, weight, bias, stateIn, output, stateOut, activation);
+    helpers::causalConv1d(block.launchContext(), x, weight, bias, stateIn, output, stateOut, activation, wFormat);
 
     return sd::Status::OK;
 }
@@ -62,10 +76,12 @@ DECLARE_SHAPE_FN(causal_conv1d) {
     auto xShape = inputShape->at(0);       // [B, L, D]
     auto weightShape = inputShape->at(1);  // [D, K]
 
+    int wFormat = block.getIArguments()->size() > 1 ? INT_ARG(1) : 0;
+
     auto B = shape::sizeAt(xShape, 0);
     auto L = shape::sizeAt(xShape, 1);
     auto D = shape::sizeAt(xShape, 2);
-    auto K = shape::sizeAt(weightShape, 1);
+    auto K = (wFormat == 0) ? shape::sizeAt(weightShape, 1) : shape::sizeAt(weightShape, 0);
 
     auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(
         ArrayOptions::dataType(xShape), 'c', {B, L, D});

@@ -12,6 +12,7 @@
 #cmakedefine01 HAVE_MLIR
 #cmakedefine01 HAVE_MLX
 #cmakedefine01 HAVE_NNAPI
+#cmakedefine01 HAVE_CUTLASS
 
 #define SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
 #define OPENBLAS_PATH "@OPENBLAS_PATH@"

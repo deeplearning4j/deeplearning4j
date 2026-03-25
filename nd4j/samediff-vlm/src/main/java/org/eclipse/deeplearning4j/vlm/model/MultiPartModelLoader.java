@@ -268,14 +268,27 @@ public class MultiPartModelLoader {
          * @return the VLM wrapper
          */
         public VisionLanguageModel toVisionLanguageModel() {
-            return VisionLanguageModel.builder()
+            return toVisionLanguageModel(null);
+        }
+
+        /**
+         * Convert to a VisionLanguageModel with an optional externally-provided IOConfig.
+         *
+         * @param ioConfig external vision encoder IO config, or null to auto-discover
+         * @return the VLM wrapper
+         */
+        public VisionLanguageModel toVisionLanguageModel(VisionEncoderIOConfig ioConfig) {
+            VisionLanguageModel.VisionLanguageModelBuilder builder = VisionLanguageModel.builder()
                     .visionEncoder(visionEncoder)
                     .embedTokens(embedTokens)
                     .decoder(decoder)
                     .tokenizer(tokenizer)
                     .imagePreprocessor(imagePreprocessor)
-                    .config(config)
-                    .build();
+                    .config(config);
+            if (ioConfig != null) {
+                builder.visionEncoderIOConfig(ioConfig);
+            }
+            return builder.build();
         }
 
         /**

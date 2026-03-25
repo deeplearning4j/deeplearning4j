@@ -341,13 +341,36 @@ public class GGMLToSameDiffConverter {
 
     private INDArray convertTensorData(byte[] data, GGMLTensorInfo info) {
         GGMLDataType dataType = info.getDataType();
-        long[] shape = info.getShape();
+        long[] ggufShape = info.getShape();
+
+        // GGUF stores dimensions in column-major order: dimension 0 is the innermost
+        // (contiguous) dimension.  ND4J uses C-order (row-major) where the LAST
+        // dimension is contiguous.  Reverse the shape so the C-order interpretation
+        // matches the actual data layout.
+        // Example: GGUF token_embd.weight [hidden=1024, vocab=248320]
+        //       -> ND4J [vocab=248320, hidden=1024]  (standard [vocabSize, hiddenSize])
+        long[] shape = reverseShape(ggufShape);
 
         if (dataType.isQuantized()) {
             return handleQuantizedTensor(data, dataType, shape);
         } else {
             return handleNonQuantizedTensor(data, dataType, shape);
         }
+    }
+
+    /**
+     * Reverse shape dimensions to convert from GGUF column-major dimension order
+     * to ND4J C-order (row-major) dimension order.
+     */
+    private static long[] reverseShape(long[] shape) {
+        if (shape == null || shape.length <= 1) {
+            return shape;
+        }
+        long[] reversed = new long[shape.length];
+        for (int i = 0; i < shape.length; i++) {
+            reversed[i] = shape[shape.length - 1 - i];
+        }
+        return reversed;
     }
 
     private INDArray handleQuantizedTensor(byte[] data, GGMLDataType dataType, long[] shape) {
@@ -378,32 +401,59 @@ public class GGMLToSameDiffConverter {
             throw new IllegalStateException("No ND4J type mapping for: " + dataType);
         }
 
-        // OPTIMIZATION: Use direct buffer to create INDArray without intermediate primitive arrays
-        // This reduces memory copies: byte[] -> direct buffer -> INDArray (instead of byte[] -> heap buffer -> primitive[] -> INDArray)
         long numElements = 1;
         for (long dim : shape) {
             numElements *= dim;
         }
         if (numElements < 1) numElements = 1;
 
-        // Allocate direct buffer and copy data once
-        ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
-        directBuffer.put(data);
-        directBuffer.rewind();
+        // Use type-specific array creation to ensure reliable host-to-device transfer.
+        // Direct ByteBuffer creation via Nd4j.createBuffer(ByteBuffer, DataType, int) can
+        // leave CUDA device buffers uninitialized when the affinity manager doesn't detect
+        // that the host buffer was written. Using Nd4j.create(primitive[], shape) goes through
+        // a well-tested path that correctly marks host data as authoritative.
+        ByteBuffer bb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
 
-        // Create INDArray directly from buffer
-        org.nd4j.linalg.api.buffer.DataBuffer rawDataBuffer = Nd4j.createBuffer(directBuffer, nd4jType, (int) numElements);
-        INDArray array = Nd4j.create(rawDataBuffer);
-
-        // Reshape if needed
-        if (shape.length > 0 && rawDataBuffer.length() > 0) {
-            array = array.reshape('c', shape);
+        switch (nd4jType) {
+            case FLOAT: {
+                float[] floatData = new float[(int) numElements];
+                bb.asFloatBuffer().get(floatData);
+                return Nd4j.create(floatData, shape, 'c');
+            }
+            case HALF: {
+                // F16: raw bytes are IEEE 754 half-precision bit patterns.
+                // Use direct buffer approach with explicit host sync for CUDA compatibility.
+                ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
+                directBuffer.put(data);
+                directBuffer.rewind();
+                org.nd4j.linalg.api.buffer.DataBuffer buf = Nd4j.createBuffer(directBuffer, DataType.HALF, (int) numElements);
+                INDArray array = Nd4j.create(buf);
+                if (shape.length > 1) {
+                    array = array.reshape('c', shape);
+                }
+                // Force device→host sync so host has correct data for later host→device transfers
+                Nd4j.getAffinityManager().ensureLocation(array,
+                        org.nd4j.linalg.api.concurrency.AffinityManager.Location.HOST);
+                return array;
+            }
+            case DOUBLE: {
+                double[] doubleData = new double[(int) numElements];
+                bb.asDoubleBuffer().get(doubleData);
+                return Nd4j.create(doubleData, shape, 'c');
+            }
+            default: {
+                // Fallback for other types: use direct buffer approach
+                ByteBuffer directBuffer = ByteBuffer.allocateDirect(data.length).order(ByteOrder.LITTLE_ENDIAN);
+                directBuffer.put(data);
+                directBuffer.rewind();
+                org.nd4j.linalg.api.buffer.DataBuffer rawDataBuffer = Nd4j.createBuffer(directBuffer, nd4jType, (int) numElements);
+                INDArray array = Nd4j.create(rawDataBuffer);
+                if (shape.length > 0 && rawDataBuffer.length() > 0) {
+                    array = array.reshape('c', shape);
+                }
+                return array;
+            }
         }
-
-        // For non-quantized data, preserve original type to avoid expensive GPU casts
-        // The data is already in a valid format (HALF, FLOAT, etc.) and can be used as-is
-        // Users can explicitly cast later if needed for computation
-        return array;
     }
 
     private DataType getTargetDataType() {

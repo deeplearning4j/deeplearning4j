@@ -155,6 +155,8 @@ public class FlatBuffersMapper {
                 return DType.UINT64;
             case BFLOAT16:
                 return DType.BFLOAT16;
+            case FLOAT8:
+                return DType.FLOAT8;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -192,6 +194,8 @@ public class FlatBuffersMapper {
             return DataType.UINT64;
         } else if (val == DType.BFLOAT16){
             return DataType.BFLOAT16;
+        } else if (val == DType.FLOAT8){
+            return DataType.FLOAT8;
         } else {
             throw new RuntimeException("Unknown datatype: " + val);
         }

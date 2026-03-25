@@ -32,6 +32,7 @@
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
 #include <types/float16.h>
+#include <types/float8.h>
 
 #include <helpers/logger.h>
 
@@ -148,6 +149,10 @@ class SD_LIB_EXPORT DataTypeUtils {
 #ifdef HAS_FLOAT16
         || std::is_same<float16, T>::value
 #endif
+#ifdef HAS_FLOAT8
+        || std::is_same<float8, T>::value
+        || std::is_same<float8_e5m2, T>::value
+#endif
         ;
   };
 
@@ -214,6 +219,10 @@ SD_INLINE bool DataTypeUtils::isR(DataType dataType) {
 #endif
 #ifdef HAS_DOUBLE
          || dataType == DOUBLE
+#endif
+#ifdef HAS_FLOAT8
+         || dataType == FLOAT8
+         || dataType == FLOAT8_E5M2
 #endif
          ;
 }
@@ -713,6 +722,12 @@ SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
     case BOOL:
       return std::string("BOOL");
 #endif
+#ifdef HAS_FLOAT8
+    case FLOAT8:
+      return std::string("FLOAT8");
+    case FLOAT8_E5M2:
+      return std::string("FLOAT8_E5M2");
+#endif
 #ifdef HAS_UINT8
     case UINT8:
       return std::string("UINT8");
@@ -810,6 +825,7 @@ SD_INLINE SD_HOST_DEVICE size_t DataTypeUtils::sizeOfElement(DataType type) {
 #endif
 #ifdef HAS_FLOAT8
     case FLOAT8:
+    case FLOAT8_E5M2:
 #endif
 #ifdef HAS_QINT8
     case QINT8:
@@ -926,6 +942,14 @@ SD_INLINE SD_HOST_DEVICE DataType DataTypeUtils::fromT() {
 #ifdef HAS_BFLOAT16
   if (std::is_same<T, bfloat16>::value) {
     return BFLOAT16;
+  } else
+#endif
+#ifdef HAS_FLOAT8
+  if (std::is_same<T, float8>::value) {
+    return FLOAT8;
+  } else
+  if (std::is_same<T, float8_e5m2>::value) {
+    return FLOAT8_E5M2;
   } else
 #endif
 #ifdef HAS_DOUBLE

@@ -305,9 +305,12 @@ using PlatformUInt64 = sd::PlatformUInt64;
   #define TTYPE_BOOL
 #endif
 
-// Float8 type
+// Float8 E4M3 type
 #if SD_SINGLE_TYPE_2_COMPILED
   #define HAS_FLOAT8 1
+  #define TTYPE_FLOAT8 , (FLOAT8, float8)
+#else
+  #define TTYPE_FLOAT8
 #endif
 
 // Float16/Half type
@@ -550,6 +553,9 @@ using PlatformUInt64 = sd::PlatformUInt64;
 #endif
 // NOTE: SD_STRING_TYPES_L and SD_STRING_TYPES are defined later, after selective rendering adjusts TTYPE_UTF* macros
 #define SD_COMMON_TYPES_ALL_L TTYPE_HALF TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_BOOL TTYPE_INT8 TTYPE_UINT8 TTYPE_INT16 TTYPE_INT32 TTYPE_INT64 TTYPE_UINT16 TTYPE_UINT64 TTYPE_UINT32 TTYPE_BFLOAT16
+// FP8 types — targeted list for CUTLASS-specific .cu files only.
+// NOT added to SD_COMMON_TYPES_ALL_L to avoid template explosion across all ops.
+#define SD_FP8_TYPES_L TTYPE_FLOAT8
 #define SD_INDEXING_TYPES_L TTYPE_INT32 TTYPE_INT64
 #define SD_FLOAT_NATIVE_L TTYPE_FLOAT32 TTYPE_DOUBLE TTYPE_HALF
 #define SD_FLOAT_TYPES_L TTYPE_BFLOAT SD_FLOAT_NATIVE_L
@@ -730,6 +736,7 @@ using PlatformUInt64 = sd::PlatformUInt64;
 
 // Undefine all TTYPE_* macros before redefining them
 #undef TTYPE_BOOL
+#undef TTYPE_FLOAT8
 #undef TTYPE_HALF
 #undef TTYPE_FLOAT32
 #undef TTYPE_DOUBLE
@@ -760,6 +767,9 @@ using PlatformUInt64 = sd::PlatformUInt64;
 
 #if SD_SINGLE_TYPE_2_COMPILED
   #define HAS_FLOAT8 1
+  #define TTYPE_FLOAT8 , (FLOAT8, float8)
+#else
+  #define TTYPE_FLOAT8
 #endif
 
 #if SD_SINGLE_TYPE_3_COMPILED

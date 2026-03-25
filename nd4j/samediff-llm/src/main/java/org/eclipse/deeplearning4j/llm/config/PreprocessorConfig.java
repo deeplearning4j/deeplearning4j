@@ -18,38 +18,41 @@
  *  *****************************************************************************
  */
 
-package org.eclipse.deeplearning4j.vlm.preprocessing;
+package org.eclipse.deeplearning4j.llm.config;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.shade.jackson.annotation.JsonAnyGetter;
+import org.nd4j.shade.jackson.annotation.JsonAnySetter;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.core.JsonParser;
+import org.nd4j.shade.jackson.core.JsonToken;
+import org.nd4j.shade.jackson.databind.DeserializationContext;
+import org.nd4j.shade.jackson.databind.JsonDeserializer;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
- * Configuration for image preprocessing from HuggingFace preprocessor_config.json.
+ * Canonical configuration for image preprocessing from HuggingFace preprocessor_config.json.
  *
- * This configuration specifies how to preprocess images for vision models:
- * - Image resizing parameters
- * - Normalization mean and std
- * - Rescaling factors
- * - Color conversion settings
+ * <p>This is the single source of truth for preprocessing configuration across the project.
+ * It merges fields from both VLM and pipeline-core preprocessing configs.</p>
  *
- * <p>Example preprocessor_config.json:</p>
+ * <p>Handles both integer and object forms of size/cropSize fields:</p>
  * <pre>{@code
- * {
- *   "do_resize": true,
- *   "size": {"height": 384, "width": 384},
- *   "do_rescale": true,
- *   "rescale_factor": 0.00392156862745098,
- *   "do_normalize": true,
- *   "image_mean": [0.48145466, 0.4578275, 0.40821073],
- *   "image_std": [0.26862954, 0.26130258, 0.27577711]
- * }
+ * // Integer form
+ * {"size": 224}
+ *
+ * // Object form
+ * {"size": {"height": 384, "width": 384}}
+ * {"size": {"shortest_edge": 224}}
  * }</pre>
  *
  * Adam Gibson
@@ -59,19 +62,29 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PreprocessorConfig {
 
+    public static final String PREPROCESSOR_CONFIG_FILE = "preprocessor_config.json";
+    public static final String PROCESSOR_CONFIG_FILE = "processor_config.json";
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @JsonProperty("image_processor_type")
     private String imageProcessorType;
 
+    @JsonProperty("processor_class")
+    private String processorClass;
+
+    @JsonProperty("auto_map")
+    private String autoMap;
+
     @JsonProperty("do_resize")
     private boolean doResize = true;
 
     @JsonProperty("size")
+    @JsonDeserialize(using = ImageSizeDeserializer.class)
     private ImageSize size;
 
     @JsonProperty("resample")
-    private Integer resample; // PIL resampling mode
+    private Integer resample;
 
     @JsonProperty("do_rescale")
     private boolean doRescale = true;
@@ -95,6 +108,7 @@ public class PreprocessorConfig {
     private boolean doCenterCrop = false;
 
     @JsonProperty("crop_size")
+    @JsonDeserialize(using = ImageSizeDeserializer.class)
     private ImageSize cropSize;
 
     @JsonProperty("do_pad")
@@ -103,6 +117,12 @@ public class PreprocessorConfig {
     @JsonProperty("pad_size")
     private ImageSize padSize;
 
+    @JsonProperty("padding_mode")
+    private String paddingMode;
+
+    @JsonProperty("image_format")
+    private String imageFormat;
+
     // Vision transformer specific
     @JsonProperty("patch_size")
     private Integer patchSize;
@@ -110,33 +130,56 @@ public class PreprocessorConfig {
     @JsonProperty("num_channels")
     private Integer numChannels = 3;
 
-    /**
-     * Load config from a preprocessor_config.json file.
-     *
-     * @param file the config file
-     * @return the parsed configuration
-     * @throws IOException if reading fails
-     */
+    // Catch-all for any additional/unknown fields
+    private Map<String, Object> additionalProperties = new LinkedHashMap<>();
+
+    @JsonAnySetter
+    public void setAdditionalProperty(String key, Object value) {
+        additionalProperties.put(key, value);
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        return additionalProperties;
+    }
+
+    // ==================== Loading ====================
+
     public static PreprocessorConfig fromFile(File file) throws IOException {
         return MAPPER.readValue(file, PreprocessorConfig.class);
     }
 
-    /**
-     * Load config from a JSON string.
-     *
-     * @param json the JSON string
-     * @return the parsed configuration
-     * @throws IOException if parsing fails
-     */
     public static PreprocessorConfig fromJson(String json) throws IOException {
         return MAPPER.readValue(json, PreprocessorConfig.class);
     }
 
-    /**
-     * Create default config for CLIP-style models.
-     *
-     * @return CLIP preprocessor config
-     */
+    public static Optional<PreprocessorConfig> loadIfExists(File dir) {
+        File preprocessorFile = new File(dir, PREPROCESSOR_CONFIG_FILE);
+        if (preprocessorFile.exists()) {
+            try {
+                return Optional.of(fromFile(preprocessorFile));
+            } catch (IOException e) {
+                // Fall through
+            }
+        }
+        File processorFile = new File(dir, PROCESSOR_CONFIG_FILE);
+        if (processorFile.exists()) {
+            try {
+                return Optional.of(fromFile(processorFile));
+            } catch (IOException e) {
+                // Fall through
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static boolean exists(File dir) {
+        return new File(dir, PREPROCESSOR_CONFIG_FILE).exists() ||
+                new File(dir, PROCESSOR_CONFIG_FILE).exists();
+    }
+
+    // ==================== Factory Methods ====================
+
     public static PreprocessorConfig forClip() {
         PreprocessorConfig config = new PreprocessorConfig();
         config.setDoResize(true);
@@ -149,11 +192,6 @@ public class PreprocessorConfig {
         return config;
     }
 
-    /**
-     * Create default config for ViT models.
-     *
-     * @return ViT preprocessor config
-     */
     public static PreprocessorConfig forViT() {
         PreprocessorConfig config = new PreprocessorConfig();
         config.setDoResize(true);
@@ -166,15 +204,10 @@ public class PreprocessorConfig {
         return config;
     }
 
-    /**
-     * Create config for SmolDocling.
-     *
-     * @return SmolDocling preprocessor config
-     */
     public static PreprocessorConfig forSmolDocling() {
         PreprocessorConfig config = new PreprocessorConfig();
         config.setDoResize(true);
-        config.setSize(new ImageSize(512, 512)); // SmolDocling vision encoder expects 512x512
+        config.setSize(new ImageSize(512, 512));
         config.setDoRescale(true);
         config.setRescaleFactor(1.0 / 255.0);
         config.setDoNormalize(true);
@@ -183,11 +216,8 @@ public class PreprocessorConfig {
         return config;
     }
 
-    /**
-     * Get the target height for resizing.
-     *
-     * @return target height, or 224 as default
-     */
+    // ==================== Convenience Methods ====================
+
     public int getTargetHeight() {
         if (size != null) {
             if (size.getHeight() != null) return size.getHeight();
@@ -196,11 +226,6 @@ public class PreprocessorConfig {
         return 224;
     }
 
-    /**
-     * Get the target width for resizing.
-     *
-     * @return target width, or 224 as default
-     */
     public int getTargetWidth() {
         if (size != null) {
             if (size.getWidth() != null) return size.getWidth();
@@ -209,27 +234,39 @@ public class PreprocessorConfig {
         return 224;
     }
 
-    /**
-     * Get normalization mean values.
-     *
-     * @return mean values, or ImageNet defaults
-     */
     public double[] getMean() {
         return imageMean != null ? imageMean : new double[]{0.485, 0.456, 0.406};
     }
 
-    /**
-     * Get normalization std values.
-     *
-     * @return std values, or ImageNet defaults
-     */
     public double[] getStd() {
         return imageStd != null ? imageStd : new double[]{0.229, 0.224, 0.225};
     }
 
-    /**
-     * Image size specification.
-     */
+    public int getEffectiveSize() {
+        if (size != null) {
+            if (size.getShortestEdge() != null) return size.getShortestEdge();
+            if (size.getHeight() != null) return size.getHeight();
+        }
+        return 224;
+    }
+
+    public int getEffectiveCropSize() {
+        if (cropSize != null) {
+            if (cropSize.getHeight() != null) return cropSize.getHeight();
+        }
+        return getEffectiveSize();
+    }
+
+    public boolean shouldNormalize() {
+        return doNormalize;
+    }
+
+    public boolean shouldRescale() {
+        return doRescale;
+    }
+
+    // ==================== Inner Classes ====================
+
     @Data
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -246,6 +283,23 @@ public class PreprocessorConfig {
         public ImageSize(int height, int width) {
             this.height = height;
             this.width = width;
+        }
+    }
+
+    /**
+     * Deserializer that handles both integer and object forms of size fields.
+     * Integer form: {@code "size": 224} becomes ImageSize(224, 224).
+     * Object form: {@code "size": {"height": 384, "width": 384}} is deserialized normally.
+     */
+    public static class ImageSizeDeserializer extends JsonDeserializer<ImageSize> {
+        @Override
+        public ImageSize deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            if (p.currentToken() == JsonToken.VALUE_NUMBER_INT) {
+                int val = p.getIntValue();
+                return new ImageSize(val, val);
+            }
+            // Delegate to default object deserialization
+            return p.readValueAs(ImageSize.class);
         }
     }
 }

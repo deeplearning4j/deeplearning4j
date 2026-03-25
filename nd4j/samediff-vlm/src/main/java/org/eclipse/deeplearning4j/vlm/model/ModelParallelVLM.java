@@ -93,6 +93,7 @@ public class ModelParallelVLM implements AutoCloseable {
     private final Tokenizer tokenizer;
     private final VLMImagePreprocessor imagePreprocessor;
     private final ModelConfig config;
+    private final VisionEncoderIOConfig visionEncoderIOConfig;
 
     // Device configuration
     private final DeviceDescriptor visionEncoderDevice;
@@ -132,6 +133,8 @@ public class ModelParallelVLM implements AutoCloseable {
         this.decoder = loaded.getDecoder();
         this.tokenizer = loaded.getTokenizer();
         this.config = loaded.getConfig();
+        this.visionEncoderIOConfig = this.visionEncoder != null
+                ? VisionEncoderIOConfig.discover(this.visionEncoder) : null;
 
         // Set device configuration with defaults
         this.visionEncoderDevice = visionEncoderDevice != null ?
@@ -350,11 +353,11 @@ public class ModelParallelVLM implements AutoCloseable {
         // result transferred to decoder GPU automatically)
         log.debug("Encoding image via pipeline on device: {}", visionEncoderDevice);
         Map<String, INDArray> visionInputs = new HashMap<>();
-        visionInputs.put("pixel_values", image);
+        visionInputs.put(visionEncoderIOConfig.getPixelValuesName(), image);
         INDArray imageEmbeddings;
         try {
             Future<INDArray> encodeFuture = pipelineExecutor.encodeAsync(
-                    visionInputs, new String[]{"image_embeds", "last_hidden_state"});
+                    visionInputs, visionEncoderIOConfig.getOutputNames());
             imageEmbeddings = encodeFuture.get(5, java.util.concurrent.TimeUnit.MINUTES);
         } catch (java.util.concurrent.ExecutionException e) {
             throw new RuntimeException("Vision encoding failed", e.getCause());
@@ -548,10 +551,10 @@ public class ModelParallelVLM implements AutoCloseable {
      */
     private INDArray encodeImageOnDevice(INDArray image) {
         Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("pixel_values", image);
+        inputs.put(visionEncoderIOConfig.getPixelValuesName(), image);
 
-        Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
-        return outputs.get("image_embeds");
+        Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
+        return outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
     }
 
     /**

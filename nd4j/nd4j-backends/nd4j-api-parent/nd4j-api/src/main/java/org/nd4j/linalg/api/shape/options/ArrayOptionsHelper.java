@@ -64,7 +64,7 @@ public class ArrayOptionsHelper {
     public static final long DTYPE_UTF16_BIT = 4194304;        // ARRAY_UTF16 in C++
     public static final long DTYPE_UTF32_BIT = 16777216;       // ARRAY_UTF32 in C++
     public static final long DTYPE_UNSIGNED_BIT = 8388608;
-    public static final long DTYPE_FLOAT8_BIT = 1024;           // ARRAY_QUANTIZED in C++
+    public static final long DTYPE_FLOAT8_BIT = 256;            // ARRAY_FLOAT8 in C++
 
     public static final long HAS_PADDED_BUFFER = (1<<25);
 
@@ -232,6 +232,9 @@ public class ArrayOptionsHelper {
             flags.add(DTYPE_UTF32_BIT);
         } else if (dataType == DataType.FLOAT8) {
             flags.add(DTYPE_FLOAT8_BIT);
+        } else if (dataType == DataType.FLOAT8_E5M2) {
+            flags.add(DTYPE_FLOAT8_BIT);
+            flags.add(DTYPE_UNSIGNED_BIT);
         } else if (dataType == DataType.UINT8 || dataType == DataType.UINT16 ||
                 dataType == DataType.UINT32 || dataType == DataType.UINT64) {
             flags.add(DTYPE_UNSIGNED_BIT);
@@ -521,6 +524,8 @@ public class ArrayOptionsHelper {
             opt |= DTYPE_UTF32_BIT;
         } else if (dataType == DataType.FLOAT8) {
             opt |= DTYPE_FLOAT8_BIT;
+        } else if (dataType == DataType.FLOAT8_E5M2) {
+            opt |= DTYPE_FLOAT8_BIT | DTYPE_UNSIGNED_BIT;
         } else {
             throw new IllegalArgumentException("Unknown DataType: " + dataType);
         }
@@ -558,7 +563,7 @@ public class ArrayOptionsHelper {
         else if (hasBitSet(opt, DTYPE_UTF32_BIT))
             return DataType.UTF32;
         else if (hasBitSet(opt, DTYPE_FLOAT8_BIT))
-            return DataType.FLOAT8;
+            return hasBitSet(opt, DTYPE_UNSIGNED_BIT) ? DataType.FLOAT8_E5M2 : DataType.FLOAT8;
         else
             throw new ND4JUnknownDataTypeException("Unknown extras set: [" + opt + "]");
     }
@@ -628,6 +633,10 @@ public class ArrayOptionsHelper {
                 bit = DTYPE_UTF32_BIT;
                 break;
             case FLOAT8:
+                bit = DTYPE_FLOAT8_BIT;
+                break;
+            case FLOAT8_E5M2:
+                storage |= DTYPE_UNSIGNED_BIT;
                 bit = DTYPE_FLOAT8_BIT;
                 break;
             case COMPRESSED:

@@ -38,7 +38,7 @@ SD_KERNEL void causalConv1dKernel(
     const LongType B, const LongType L, const LongType D, const LongType K,
     const int activation,
     const LongType xS0, const LongType xS1, const LongType xS2,
-    const LongType wS0, const LongType wS1,
+    const LongType wChanStride, const LongType wDimStride,
     const LongType oS0, const LongType oS1, const LongType oS2,
     const LongType siS0, const LongType siS1, const LongType siS2) {
 
@@ -50,6 +50,8 @@ SD_KERNEL void causalConv1dKernel(
     const LongType t = (idx / D) % L;
     const LongType b = idx / (L * D);
 
+    // Causal correlation (cross-correlation convention):
+    // weight[K-1] multiplies x[t] (current), weight[0] multiplies x[t-K+1] (oldest)
     T sum = static_cast<T>(0);
     for (LongType kk = 0; kk < K; ++kk) {
         LongType srcT = t - kk;
@@ -62,7 +64,7 @@ SD_KERNEL void causalConv1dKernel(
         } else {
             x_val = static_cast<T>(0);
         }
-        sum += weight[d * wS0 + kk * wS1] * x_val;
+        sum += weight[d * wChanStride + (K - 1 - kk) * wDimStride] * x_val;
     }
 
     if (bias != nullptr) sum += bias[d];
@@ -112,7 +114,7 @@ static void launchCausalConv1d(
     T* out, T* stateOut,
     LongType B, LongType L, LongType D, LongType K, int activation,
     LongType xS0, LongType xS1, LongType xS2,
-    LongType wS0, LongType wS1,
+    LongType wChanStride, LongType wDimStride,
     LongType oS0, LongType oS1, LongType oS2,
     LongType siS0, LongType siS1, LongType siS2,
     LongType soS0, LongType soS1, LongType soS2,
@@ -124,25 +126,32 @@ static void launchCausalConv1d(
     int numBlocks = (total + threadsPerBlock - 1) / threadsPerBlock;
     causalConv1dKernel<T><<<numBlocks, threadsPerBlock, 0, stream>>>(
         x, weight, bias, stateIn, out, B, L, D, K, activation,
-        xS0, xS1, xS2, wS0, wS1, oS0, oS1, oS2, siS0, siS1, siS2);
+        xS0, xS1, xS2, wChanStride, wDimStride, oS0, oS1, oS2, siS0, siS1, siS2);
     DebugHelper::checkGlobalErrorCode("causalConv1dKernel failed");
 
     LongType stateTotal = B * D * (K - 1);
-    int stateBlocks = (stateTotal + threadsPerBlock - 1) / threadsPerBlock;
-    convStateUpdateKernel<T><<<stateBlocks, threadsPerBlock, 0, stream>>>(
-        x, stateIn, stateOut, B, L, D, K,
-        xS0, xS1, xS2, siS0, siS1, siS2, soS0, soS1, soS2);
-    DebugHelper::checkGlobalErrorCode("convStateUpdateKernel failed");
+    if (stateTotal > 0) {
+        int stateBlocks = (stateTotal + threadsPerBlock - 1) / threadsPerBlock;
+        convStateUpdateKernel<T><<<stateBlocks, threadsPerBlock, 0, stream>>>(
+            x, stateIn, stateOut, B, L, D, K,
+            xS0, xS1, xS2, siS0, siS1, siS2, soS0, soS1, soS2);
+        DebugHelper::checkGlobalErrorCode("convStateUpdateKernel failed");
+    }
 }
 
 // No explicit instantiation needed — launchCausalConv1d is file-local and called via type switch below.
 
 void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* bias,
-                   NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation) {
+                   NDArray* stateIn, NDArray* output, NDArray* stateOut, int activation, int wFormat) {
     const auto B = x->sizeAt(0);
     const auto L = x->sizeAt(1);
     const auto D = x->sizeAt(2);
-    const auto K = weight->sizeAt(1);
+    const auto K = (wFormat == 0) ? weight->sizeAt(1) : weight->sizeAt(0);
+
+    // wFormat=0 [D,K]: wChanStride=strideAt(0), wDimStride=strideAt(1)
+    // wFormat=1 [K,D]: wDimStride=strideAt(0), wChanStride=strideAt(1)
+    const LongType wChanStride = (wFormat == 0) ? weight->strideAt(0) : weight->strideAt(1);
+    const LongType wDimStride  = (wFormat == 0) ? weight->strideAt(1) : weight->strideAt(0);
 
     NDArray::prepareSpecialUse({output, stateOut}, {x, weight, bias});
     if (stateIn != nullptr) NDArray::prepareSpecialUse({}, {stateIn});
@@ -167,7 +176,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
             reinterpret_cast<float*>(stateOut->specialBuffer()),
             B, L, D, K, activation,
             x->strideAt(0), x->strideAt(1), x->strideAt(2),
-            weight->strideAt(0), weight->strideAt(1),
+            wChanStride, wDimStride,
             output->strideAt(0), output->strideAt(1), output->strideAt(2),
             siS0, siS1, siS2,
             stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
@@ -182,7 +191,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
             reinterpret_cast<double*>(stateOut->specialBuffer()),
             B, L, D, K, activation,
             x->strideAt(0), x->strideAt(1), x->strideAt(2),
-            weight->strideAt(0), weight->strideAt(1),
+            wChanStride, wDimStride,
             output->strideAt(0), output->strideAt(1), output->strideAt(2),
             siS0, siS1, siS2,
             stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),
@@ -197,7 +206,7 @@ void causalConv1d(LaunchContext* context, NDArray* x, NDArray* weight, NDArray* 
             reinterpret_cast<float16*>(stateOut->specialBuffer()),
             B, L, D, K, activation,
             x->strideAt(0), x->strideAt(1), x->strideAt(2),
-            weight->strideAt(0), weight->strideAt(1),
+            wChanStride, wDimStride,
             output->strideAt(0), output->strideAt(1), output->strideAt(2),
             siS0, siS1, siS2,
             stateOut->strideAt(0), stateOut->strideAt(1), stateOut->strideAt(2),

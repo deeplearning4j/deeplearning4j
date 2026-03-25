@@ -188,6 +188,14 @@ public class VLMModelDownloader {
                 ModelFormat.JSON,
                 0, 0,
                 "SmolLM2-135M-Instruct Config - model configuration"
+        ),
+
+        SMOLDOCLING_PREPROCESSOR_CONFIG(
+                "smoldocling-preprocessor-config",
+                "https://huggingface.co/ds4sd/SmolDocling-256M-preview/resolve/main/preprocessor_config.json",
+                ModelFormat.JSON,
+                0, 0,
+                "SmolDocling Preprocessor Config - image preprocessing parameters"
         );
 
         private final String name;

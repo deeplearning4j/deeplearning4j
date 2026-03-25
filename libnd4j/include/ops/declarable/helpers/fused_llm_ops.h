@@ -79,7 +79,8 @@ SD_LIB_HIDDEN void fusedRoPE(
     float freqBase,
     float freqScale,
     int ropeType,
-    LaunchContext* context);
+    LaunchContext* context,
+    int rotaryDims = 0);
 
 /**
  * Fused Layer Normalization
@@ -220,7 +221,8 @@ SD_LIB_HIDDEN void fusedRoPEBackward(
     float freqBase,
     float freqScale,
     int ropeType,
-    LaunchContext* context);
+    LaunchContext* context,
+    int rotaryDims = 0);
 
 /**
  * Fused Layer Norm backward

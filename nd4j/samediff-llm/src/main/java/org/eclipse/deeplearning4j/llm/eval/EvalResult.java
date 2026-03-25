@@ -20,8 +20,8 @@
 
 package org.eclipse.deeplearning4j.llm.eval;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import lombok.Builder;
 import lombok.Data;
 

@@ -67,10 +67,20 @@ public class OptimizationUtils {
             }
         }
 
-        //NOTE: this only works if we carefully control the order in which replaceOpInputsWith is called!
+        // MERGE: v2 keeps its existing consumers AND inherits v's consumers.
+        // Previous code REPLACED v2's consumers, which lost references when v2 was already used by other ops.
         if (v != null && v2 != null) {
-            v2.setInputsForOp(v.getInputsForOp());
-            v.setInputsForOp(new ArrayList<String>());
+            List<String> merged = v2.getInputsForOp() != null
+                    ? new ArrayList<>(v2.getInputsForOp()) : new ArrayList<>();
+            if (v.getInputsForOp() != null) {
+                for (String opName : v.getInputsForOp()) {
+                    if (!merged.contains(opName)) {
+                        merged.add(opName);
+                    }
+                }
+            }
+            v2.setInputsForOp(merged);
+            v.setInputsForOp(new ArrayList<>());
         }
     }
 

@@ -364,6 +364,7 @@ public class GenerationPipeline implements AutoCloseable {
     public void close() {
         if (ownsDecoder && decoder != null) {
             try {
+                SameDiffMemoryUtils.freeModelArrays(decoder);
                 decoder.close();
             } catch (Exception e) {
                 log.warn("Error closing decoder: {}", e.getMessage());
@@ -371,6 +372,7 @@ public class GenerationPipeline implements AutoCloseable {
         }
         if (ownsEmbedTokens && embedTokens != null) {
             try {
+                SameDiffMemoryUtils.freeModelArrays(embedTokens);
                 embedTokens.close();
             } catch (Exception e) {
                 log.warn("Error closing embedTokens: {}", e.getMessage());
@@ -378,10 +380,36 @@ public class GenerationPipeline implements AutoCloseable {
         }
         if (ownsDraftDecoder && draftDecoder != null) {
             try {
+                SameDiffMemoryUtils.freeModelArrays(draftDecoder);
                 draftDecoder.close();
             } catch (Exception e) {
                 log.warn("Error closing draftDecoder: {}", e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Free all GPU memory held by a vision encoder's model arrays.
+     *
+     * <p>Call this after vision encoding is complete and the encoder is no longer needed.
+     * Clears placeholders, resets sessions, frees all constant/variable arrays, and
+     * closes the model. This reclaims the ~5GB+ of GPU memory used by vision encoder weights.</p>
+     *
+     * @param visionEncoder the vision encoder SameDiff model to free
+     */
+    public static void freeVisionEncoder(SameDiff visionEncoder) {
+        if (visionEncoder == null) {
+            return;
+        }
+        try {
+            visionEncoder.clearPlaceholders(true);
+            visionEncoder.clearOpInputs();
+            visionEncoder.resetSession();
+            SameDiffMemoryUtils.freeModelArrays(visionEncoder);
+            visionEncoder.close();
+            log.info("Vision encoder freed");
+        } catch (Exception e) {
+            log.warn("Error freeing vision encoder: {}", e.getMessage());
         }
     }
 
@@ -407,17 +435,21 @@ public class GenerationPipeline implements AutoCloseable {
         // Fallback: run embed_tokens model via SameDiff
         INDArray inputIdsTensor = Nd4j.createFromArray(tokenIds)
                 .reshape(1, tokenIds.length).castTo(DataType.LONG);
-        Map<String, INDArray> embedOutputs = embedTokens.output(
-                Map.of(embedInputName, inputIdsTensor), embedOutputNames);
+        try {
+            Map<String, INDArray> embedOutputs = embedTokens.output(
+                    Map.of(embedInputName, inputIdsTensor), embedOutputNames);
 
-        INDArray result = null;
-        for (Map.Entry<String, INDArray> entry : embedOutputs.entrySet()) {
-            result = entry.getValue().dup();
+            INDArray result = null;
+            for (Map.Entry<String, INDArray> entry : embedOutputs.entrySet()) {
+                result = entry.getValue().dup();
+            }
+            if (result == null) {
+                throw new IllegalStateException("embed_tokens model produced no output");
+            }
+            return result;
+        } finally {
+            SameDiffMemoryUtils.safeClose(inputIdsTensor);
         }
-        if (result == null) {
-            throw new IllegalStateException("embed_tokens model produced no output");
-        }
-        return result;
     }
 
     /**

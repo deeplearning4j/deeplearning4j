@@ -9291,8 +9291,12 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
                 }
             }
 
-            // Set outputs and execute
+            // Save inputs before clearing, then set outputs for execution
+            List<INDArray> savedInputs = new ArrayList<>(customOp.inputArguments());
             customOp.clearArrays();
+            for (INDArray input : savedInputs) {
+                customOp.addInputArgument(input);
+            }
             for (INDArray output : outputArrays) {
                 customOp.addOutputArgument(output);
             }

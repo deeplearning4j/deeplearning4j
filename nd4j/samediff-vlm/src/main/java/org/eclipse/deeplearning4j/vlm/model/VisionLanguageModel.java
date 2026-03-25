@@ -112,6 +112,10 @@ public class VisionLanguageModel implements AutoCloseable {
 
     private volatile boolean closed = false;
 
+    /** Discovered vision encoder I/O configuration (input/output variable names). */
+    @Getter
+    private final VisionEncoderIOConfig visionEncoderIOConfig;
+
     @Builder
     private VisionLanguageModel(
             SameDiff visionEncoder,
@@ -121,7 +125,8 @@ public class VisionLanguageModel implements AutoCloseable {
             VLMImagePreprocessor imagePreprocessor,
             ModelConfig config,
             DeviceDescriptor targetDevice,
-            MultiBackendWorkspace workspace) {
+            MultiBackendWorkspace workspace,
+            VisionEncoderIOConfig visionEncoderIOConfig) {
         this.visionEncoder = visionEncoder;
         this.embedTokens = embedTokens;
         this.decoder = decoder;
@@ -130,6 +135,15 @@ public class VisionLanguageModel implements AutoCloseable {
         this.config = config;
         this.targetDevice = targetDevice;
         this.workspace = workspace;
+        // Use externally-provided IOConfig if given, otherwise auto-discover
+        if (visionEncoderIOConfig != null) {
+            this.visionEncoderIOConfig = visionEncoderIOConfig;
+            log.info("Using externally-provided VisionEncoderIOConfig: pixelValues={}, primaryOutput={}",
+                    visionEncoderIOConfig.getPixelValuesName(), visionEncoderIOConfig.getPrimaryOutputName());
+        } else {
+            this.visionEncoderIOConfig = visionEncoder != null
+                    ? VisionEncoderIOConfig.discover(visionEncoder) : null;
+        }
     }
 
     /**
@@ -151,8 +165,20 @@ public class VisionLanguageModel implements AutoCloseable {
      * @throws IOException if loading fails
      */
     public static VisionLanguageModel fromDirectory(File modelDir) throws IOException {
+        return fromDirectory(modelDir, null);
+    }
+
+    /**
+     * Load a VLM from a directory with an optional externally-provided IOConfig.
+     *
+     * @param modelDir the model directory containing SDZ files
+     * @param ioConfig external vision encoder IO config, or null to auto-discover
+     * @return the loaded model
+     * @throws IOException if loading fails
+     */
+    public static VisionLanguageModel fromDirectory(File modelDir, VisionEncoderIOConfig ioConfig) throws IOException {
         MultiPartModelLoader.LoadedModel loaded = MultiPartModelLoader.load(modelDir);
-        return loaded.toVisionLanguageModel();
+        return loaded.toVisionLanguageModel(ioConfig);
     }
 
     /**
@@ -166,8 +192,20 @@ public class VisionLanguageModel implements AutoCloseable {
      * @throws IOException if loading fails
      */
     public static VisionLanguageModel loadSmolDocling(File modelDir) throws IOException {
+        return loadSmolDocling(modelDir, null);
+    }
+
+    /**
+     * Load a SmolDocling model with an optional externally-provided IOConfig.
+     *
+     * @param modelDir the SmolDocling model directory containing SDZ files
+     * @param ioConfig external vision encoder IO config, or null to auto-discover
+     * @return the loaded model
+     * @throws IOException if loading fails
+     */
+    public static VisionLanguageModel loadSmolDocling(File modelDir, VisionEncoderIOConfig ioConfig) throws IOException {
         MultiPartModelLoader.LoadedModel loaded = MultiPartModelLoader.loadSmolDocling(modelDir);
-        return loaded.toVisionLanguageModel();
+        return loaded.toVisionLanguageModel(ioConfig);
     }
 
     /**
@@ -191,7 +229,20 @@ public class VisionLanguageModel implements AutoCloseable {
             File embedTokensOnnx,
             File tokenizerFile) throws IOException {
         return fromOnnx(visionEncoderOnnx, decoderOnnx, embedTokensOnnx, tokenizerFile,
-                8 * 1024 * 1024);
+                8 * 1024 * 1024, null);
+    }
+
+    /**
+     * Load a VLM from ONNX model files with an optional externally-provided IOConfig.
+     */
+    public static VisionLanguageModel fromOnnx(
+            File visionEncoderOnnx,
+            File decoderOnnx,
+            File embedTokensOnnx,
+            File tokenizerFile,
+            VisionEncoderIOConfig ioConfig) throws IOException {
+        return fromOnnx(visionEncoderOnnx, decoderOnnx, embedTokensOnnx, tokenizerFile,
+                8 * 1024 * 1024, ioConfig);
     }
 
     /**
@@ -211,6 +262,19 @@ public class VisionLanguageModel implements AutoCloseable {
             File embedTokensOnnx,
             File tokenizerFile,
             long workspaceSize) throws IOException {
+        return fromOnnx(visionEncoderOnnx, decoderOnnx, embedTokensOnnx, tokenizerFile, workspaceSize, null);
+    }
+
+    /**
+     * Load a VLM from ONNX model files with configurable workspace and optional IOConfig.
+     */
+    public static VisionLanguageModel fromOnnx(
+            File visionEncoderOnnx,
+            File decoderOnnx,
+            File embedTokensOnnx,
+            File tokenizerFile,
+            long workspaceSize,
+            VisionEncoderIOConfig ioConfig) throws IOException {
         long start = System.currentTimeMillis();
 
         // Load all 3 models in parallel with SDZ caching
@@ -237,13 +301,16 @@ public class VisionLanguageModel implements AutoCloseable {
         long elapsed = System.currentTimeMillis() - start;
         log.info("VLM loaded from ONNX in {}ms (with caching)", elapsed);
 
-        return VisionLanguageModel.builder()
+        VisionLanguageModelBuilder builder = VisionLanguageModel.builder()
                 .visionEncoder(visionEncoder)
                 .decoder(decoder)
                 .embedTokens(embedTokens)
                 .tokenizer(tokenizer)
-                .imagePreprocessor(VLMImagePreprocessor.defaultPreprocessor())
-                .build();
+                .imagePreprocessor(VLMImagePreprocessor.defaultPreprocessor());
+        if (ioConfig != null) {
+            builder.visionEncoderIOConfig(ioConfig);
+        }
+        return builder.build();
     }
 
     /**
@@ -277,10 +344,10 @@ public class VisionLanguageModel implements AutoCloseable {
         checkNotClosed();
 
         Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("pixel_values", normalizeVisionInputShape(image));
+        inputs.put(visionEncoderIOConfig.getPixelValuesName(), normalizeVisionInputShape(image));
 
-        Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
-        return outputs.get("image_embeds");
+        Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
+        return outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
     }
 
     /**
@@ -1055,9 +1122,9 @@ public class VisionLanguageModel implements AutoCloseable {
             }
             INDArray batched = Nd4j.concat(0, normalized.toArray(new INDArray[0]));
             Map<String, INDArray> inputs = new HashMap<>();
-            inputs.put("pixel_values", batched);
-            Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
-            return outputs.get("image_embeds");
+            inputs.put(visionEncoderIOConfig.getPixelValuesName(), batched);
+            Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
+            return outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
         } else {
             // Different shapes - process individually and stack
             List<INDArray> embeddings = new ArrayList<>();
@@ -1091,19 +1158,19 @@ public class VisionLanguageModel implements AutoCloseable {
             INDArray visionFrameInput = frameTensor.reshape(1, 1, frameTensor.size(1), frameTensor.size(2), frameTensor.size(3));
 
             Map<String, INDArray> inputs = new HashMap<>();
-            inputs.put("pixel_values", visionFrameInput);
+            inputs.put(visionEncoderIOConfig.getPixelValuesName(), visionFrameInput);
 
             // Create pixel attention mask for this frame
             ImageTiler.ContentRegion region = splitResult.contentRegions.get(f);
             INDArray pixelMask = ImageTiler.createPixelAttentionMask(
                     region.width, region.height, targetSize);
             // Only add if the encoder accepts it
-            if (visionEncoder.getVariable("pixel_attention_mask") != null) {
-                inputs.put("pixel_attention_mask", pixelMask);
+            if (visionEncoderIOConfig.hasPixelAttentionMask()) {
+                inputs.put(visionEncoderIOConfig.getPixelAttentionMaskName(), pixelMask);
             }
 
-            // Run vision encoder for this frame
-            Map<String, INDArray> outputs = visionEncoder.output(inputs);
+            // Run vision encoder for this frame using discovered output names
+            Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
             VisionEncoderUtils.VisionOutput selected = VisionEncoderUtils.selectVisionOutput(outputs);
 
             if (selected == null || selected.tensor == null) {
@@ -1517,6 +1584,7 @@ public class VisionLanguageModel implements AutoCloseable {
         }
     }
 
+
     // =========================================================================
     // Device-Aware Methods for Multi-Chip Backend Support
     // =========================================================================
@@ -1551,10 +1619,10 @@ public class VisionLanguageModel implements AutoCloseable {
         ensureOnDevice(normalized, device);
 
         Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put("pixel_values", normalized);
+        inputs.put(visionEncoderIOConfig.getPixelValuesName(), normalized);
 
-        Map<String, INDArray> outputs = visionEncoder.output(inputs, "image_embeds");
-        INDArray result = outputs.get("image_embeds");
+        Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
+        INDArray result = outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
 
         // Ensure output is on target device
         ensureOnDevice(result, device);
@@ -1577,7 +1645,7 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 
     private boolean visionEncoderExpectsFramedInput() {
-        SDVariable pixelValues = visionEncoder.getVariable("pixel_values");
+        SDVariable pixelValues = visionEncoder.getVariable(visionEncoderIOConfig.getPixelValuesName());
         if (pixelValues == null) {
             return false;
         }

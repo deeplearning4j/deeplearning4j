@@ -44,28 +44,43 @@ public class FusedRoPEBp extends DynamicCustomOp {
     private int positionOffset = 0;
     private double freqBase = 10000.0;
     private double freqScale = 1.0;
+    private int rotaryDims = 0;
 
     public FusedRoPEBp(SameDiff sameDiff, SDVariable input, SDVariable gradOut,
                        int ropeType, int positionOffset, double freqBase, double freqScale) {
+        this(sameDiff, input, gradOut, ropeType, positionOffset, freqBase, freqScale, 0);
+    }
+
+    public FusedRoPEBp(SameDiff sameDiff, SDVariable input, SDVariable gradOut,
+                       int ropeType, int positionOffset, double freqBase, double freqScale,
+                       int rotaryDims) {
         super(null, sameDiff, new SDVariable[]{input, gradOut}, false);
         this.ropeType = ropeType;
         this.positionOffset = positionOffset;
         this.freqBase = freqBase;
         this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
 
-        addIArgument(ropeType, positionOffset);
+        addIArgument(ropeType, positionOffset, rotaryDims);
         addTArgument(freqBase, freqScale);
     }
 
     public FusedRoPEBp(INDArray input, INDArray gradOut, INDArray gradIn,
                        int ropeType, int positionOffset, double freqBase, double freqScale) {
+        this(input, gradOut, gradIn, ropeType, positionOffset, freqBase, freqScale, 0);
+    }
+
+    public FusedRoPEBp(INDArray input, INDArray gradOut, INDArray gradIn,
+                       int ropeType, int positionOffset, double freqBase, double freqScale,
+                       int rotaryDims) {
         super(new INDArray[]{input, gradOut}, gradIn != null ? new INDArray[]{gradIn} : null);
         this.ropeType = ropeType;
         this.positionOffset = positionOffset;
         this.freqBase = freqBase;
         this.freqScale = freqScale;
+        this.rotaryDims = rotaryDims;
 
-        addIArgument(ropeType, positionOffset);
+        addIArgument(ropeType, positionOffset, rotaryDims);
         addTArgument(freqBase, freqScale);
     }
 

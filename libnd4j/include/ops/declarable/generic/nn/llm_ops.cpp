@@ -31,7 +31,8 @@
     NOT_EXCLUDED(OP_apply_alibi) || NOT_EXCLUDED(OP_sliding_window_attention) || \
     NOT_EXCLUDED(OP_swish_mul) || NOT_EXCLUDED(OP_mean_square) || \
     NOT_EXCLUDED(OP_column_parallel_linear) || NOT_EXCLUDED(OP_row_parallel_linear) || \
-    NOT_EXCLUDED(OP_kv_cache_quantize) || NOT_EXCLUDED(OP_kv_cache_dequantize)
+    NOT_EXCLUDED(OP_kv_cache_quantize) || NOT_EXCLUDED(OP_kv_cache_dequantize) || \
+    NOT_EXCLUDED(OP_ggml_dequantize)
 
 #include <ops/declarable/headers/llm.h>
 #include <helpers/MmulHelper.h>
@@ -40,6 +41,7 @@
 #include <helpers/ShapeUtils.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/kv_cache_quantize.h>
+#include <ops/declarable/helpers/ggml_dequantize.h>
 #include <cmath>
 
 namespace sd {
@@ -1099,6 +1101,49 @@ DECLARE_TYPES(kv_cache_dequantize) {
     getOpDescriptor()->setAllowedInputTypes(0, {DataType::INT8, DataType::UINT8});
     getOpDescriptor()->setAllowedInputTypes(1, {DataType::FLOAT32});
     getOpDescriptor()->setAllowedOutputTypes({ALL_FLOATS});
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////
+// ggml_dequantize - Dequantize raw GGML quantized bytes to target float type
+#if NOT_EXCLUDED(OP_ggml_dequantize)
+CUSTOM_OP_IMPL(ggml_dequantize, 1, 1, false, 0, 1) {
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    int quantType = INT_ARG(0);
+
+    helpers::ggmlDequantize(block.launchContext(), input, output, quantType);
+
+    return Status::OK;
+}
+
+DECLARE_SHAPE_FN(ggml_dequantize) {
+    // iArgs[0] = quant type, iArgs[1] = output dtype, iArgs[2..N] = output shape dimensions
+    auto iArgs = block.getIArguments();
+    REQUIRE_TRUE(iArgs->size() >= 3, 0, "ggml_dequantize: need at least 3 iArgs (quantType, outputDtype, 1+ shape dims)");
+
+    int outputDtypeArg = iArgs->at(1);
+    DataType outputDtype;
+    switch (outputDtypeArg) {
+        case 0: outputDtype = DataType::FLOAT32; break;
+        case 1: outputDtype = DataType::HALF; break;
+        case 2: outputDtype = DataType::BFLOAT16; break;
+        default: outputDtype = DataType::FLOAT32; break;
+    }
+
+    std::vector<LongType> outShape;
+    for (size_t i = 2; i < iArgs->size(); i++) {
+        outShape.push_back(iArgs->at(i));
+    }
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(
+        outputDtype, 'c', outShape));
+}
+
+DECLARE_TYPES(ggml_dequantize) {
+    getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
+    getOpDescriptor()->setAllowedOutputTypes({DataType::FLOAT32, DataType::HALF, DataType::BFLOAT16});
 }
 #endif
 

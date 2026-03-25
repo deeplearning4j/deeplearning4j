@@ -24,6 +24,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.deeplearning4j.llm.config.PreprocessorConfig;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.device.DeviceDescriptor;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -68,7 +69,7 @@ import java.util.concurrent.Executors;
  */
 @Slf4j
 @Getter
-public class VLMImagePreprocessor {
+public class VLMImagePreprocessor implements AutoCloseable {
 
     private final PreprocessorConfig config;
     private final int targetHeight;
@@ -307,12 +308,20 @@ public class VLMImagePreprocessor {
 
         // Rescale (0-255 to 0-1 typically)
         if (config.isDoRescale()) {
-            result = result.mul(config.getRescaleFactor());
+            INDArray rescaled = result.mul(config.getRescaleFactor());
+            if (result != image) {
+                result.close();
+            }
+            result = rescaled;
         }
 
         // Normalize with mean and std
         if (config.isDoNormalize()) {
-            result = normalize(result, config.getMean(), config.getStd());
+            INDArray normalized = normalize(result, config.getMean(), config.getStd());
+            if (result != image) {
+                result.close();
+            }
+            result = normalized;
         }
 
         return result;
@@ -339,8 +348,10 @@ public class VLMImagePreprocessor {
         INDArray meanArr = Nd4j.create(meanData, new int[]{1, channels, 1, 1});
         INDArray stdArr = Nd4j.create(stdData, new int[]{1, channels, 1, 1});
 
-        // (image - mean) / std via broadcasting — returns a new contiguous array
-        INDArray result = image.sub(meanArr).div(stdArr);
+        // (image - mean) / std via broadcasting — returns new contiguous arrays
+        INDArray subtracted = image.sub(meanArr);
+        INDArray result = subtracted.div(stdArr);
+        subtracted.close();
 
         meanArr.close();
         stdArr.close();
@@ -591,6 +602,11 @@ public class VLMImagePreprocessor {
         if (buffer != null && buffer.isHybrid()) {
             buffer.asHybrid().ensureAvailableOn(effectiveDevice);
         }
+    }
+
+    @Override
+    public void close() {
+        shutdown();
     }
 
     /**

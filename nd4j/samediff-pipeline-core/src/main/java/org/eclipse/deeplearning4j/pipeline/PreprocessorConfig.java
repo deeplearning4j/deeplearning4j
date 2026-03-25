@@ -33,7 +33,12 @@ import java.util.*;
 /**
  * Represents preprocessor_config.json for image/feature preprocessing.
  * Used by vision models for image normalization, resizing, etc.
+ *
+ * @deprecated Use {@link org.eclipse.deeplearning4j.llm.config.PreprocessorConfig} instead.
+ *             This Gson-based version is kept for backward compatibility in pipeline-core.
+ *             To convert: {@code org.eclipse.deeplearning4j.llm.config.PreprocessorConfig.fromJson(pipelineConfig.getRawConfig().toString())}
  */
+@Deprecated
 @Data
 @Builder
 public class PreprocessorConfig {

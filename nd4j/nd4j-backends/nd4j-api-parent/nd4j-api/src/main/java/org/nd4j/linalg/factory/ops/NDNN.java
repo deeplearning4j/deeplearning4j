@@ -179,7 +179,88 @@ public class NDNN {
    * for use as initial state in the next autoregressive step.<br>
    *
    * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   * @param activation Activation function (0=none, 1=silu)
+   * @param wFormat Weight format (0=[D,K] PyTorch/ONNX default, 1=[K,D] TensorFlow)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn,
+      int activation, int wFormat) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, wFormat));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, null, null, 0, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, null, 0, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
+   * @param bias Bias [dim] (NUMERIC type)
+   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
+   */
+  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn) {
+    NDValidation.validateNumerical("causalConv1d", "x", x);
+    NDValidation.validateNumerical("causalConv1d", "weight", weight);
+    NDValidation.validateNumerical("causalConv1d", "bias", bias);
+    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, 0, 0));
+  }
+
+  /**
+   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
+   * <br>
+   * Performs a causal (left-padded) depthwise 1D convolution.<br>
+   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
+   * The state output preserves the last (kernelSize-1) input elements<br>
+   * for use as initial state in the next autoregressive step.<br>
+   *
+   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
+   * @param weight Depthwise conv weights [dim, kernelSize] (wFormat=0) or [kernelSize, dim] (wFormat=1) (NUMERIC type)
    * @param bias Bias [dim] (NUMERIC type)
    * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
    * @param activation Activation function (0=none, 1=silu)
@@ -190,64 +271,7 @@ public class NDNN {
     NDValidation.validateNumerical("causalConv1d", "weight", weight);
     NDValidation.validateNumerical("causalConv1d", "bias", bias);
     NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation));
-  }
-
-  /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
-   *
-   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
-   */
-  public INDArray[] causalConv1d(INDArray x, INDArray weight) {
-    NDValidation.validateNumerical("causalConv1d", "x", x);
-    NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, null, null, 0));
-  }
-
-  /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
-   *
-   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
-   * @param bias Bias [dim] (NUMERIC type)
-   */
-  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias) {
-    NDValidation.validateNumerical("causalConv1d", "x", x);
-    NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    NDValidation.validateNumerical("causalConv1d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, null, 0));
-  }
-
-  /**
-   * Causal depthwise 1D convolution with state for autoregressive decoding.<br>
-   * <br>
-   * Performs a causal (left-padded) depthwise 1D convolution.<br>
-   * Used in Gated Delta Networks (GDN) and Mamba architectures.<br>
-   * The state output preserves the last (kernelSize-1) input elements<br>
-   * for use as initial state in the next autoregressive step.<br>
-   *
-   * @param x Input sequence [batch, seqLen, dim] (NUMERIC type)
-   * @param weight Depthwise conv weights [dim, kernelSize] (NUMERIC type)
-   * @param bias Bias [dim] (NUMERIC type)
-   * @param convStateIn Conv state for autoregressive decode [batch, dim, kernelSize-1] (NUMERIC type)
-   */
-  public INDArray[] causalConv1d(INDArray x, INDArray weight, INDArray bias, INDArray convStateIn) {
-    NDValidation.validateNumerical("causalConv1d", "x", x);
-    NDValidation.validateNumerical("causalConv1d", "weight", weight);
-    NDValidation.validateNumerical("causalConv1d", "bias", bias);
-    NDValidation.validateNumerical("causalConv1d", "convStateIn", convStateIn);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, 0));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CausalConv1d(x, weight, bias, convStateIn, activation, 0));
   }
 
   /**
