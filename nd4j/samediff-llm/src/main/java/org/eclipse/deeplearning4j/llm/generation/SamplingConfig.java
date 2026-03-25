@@ -189,6 +189,22 @@ public class SamplingConfig {
     }
 
     /**
+     * Create a configuration matching llama.cpp default sampling parameters.
+     * temp=0.8, top_k=40, top_p=0.9, repeat_penalty=1.1
+     *
+     * @return llama.cpp-style sampling config
+     */
+    public static SamplingConfig llamaCppDefaults() {
+        return SamplingConfig.builder()
+                .temperature(0.8)
+                .topK(40)
+                .topP(0.9)
+                .repetitionPenalty(1.1)
+                .doSample(true)
+                .build();
+    }
+
+    /**
      * Check if this configuration effectively performs greedy decoding.
      *
      * @return true if greedy decoding will be used

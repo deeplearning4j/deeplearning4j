@@ -180,7 +180,8 @@ public class TestTextGenerationPipeline {
         // Nd4j.getEnvironment().setVerbose(true);
 
         // --- 4b. Diagnostic: trace intermediate values through first forward pass ---
-        {
+        boolean runDiagnostics = Boolean.parseBoolean(System.getProperty("text.diagnostics", "false"));
+        if (runDiagnostics) {
             // Simple 3-token input: just BOS + "Hello"
             org.eclipse.deeplearning4j.llm.tokenizer.Encoding enc = tokenizer.encode("Hello", true);
             int[] ids = enc.getIds();
@@ -415,18 +416,56 @@ public class TestTextGenerationPipeline {
             }
 
             testInput.close();
-        }
+        } // end diagnostics block
 
         // --- 5. Generate with TextGenerator ---
+        // Use Qwen3.5 chat template: <|im_start|>system\n...<|im_end|>\n<|im_start|>user\n...<|im_end|>\n<|im_start|>assistant\n
+        // This primes the base model to generate assistant-style responses.
+        boolean useChatTemplate = Boolean.parseBoolean(System.getProperty("text.chat.template", "true"));
+        String formattedPrompt;
+        if (useChatTemplate) {
+            formattedPrompt = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n"
+                    + "<|im_start|>user\n" + prompt + "<|im_end|>\n"
+                    + "<|im_start|>assistant\n";
+        } else {
+            formattedPrompt = prompt;
+        }
+
+        // Use llama.cpp-style defaults: temp=0.8, top_k=40, top_p=0.9, repeat_penalty=1.1
+        String samplingMode = System.getProperty("text.sampling", "llama_cpp");
+        SamplingConfig samplingConfig;
+        switch (samplingMode) {
+            case "greedy":
+                samplingConfig = SamplingConfig.greedy();
+                break;
+            case "creative":
+                samplingConfig = SamplingConfig.creative();
+                break;
+            case "precise":
+                samplingConfig = SamplingConfig.precise();
+                break;
+            case "llama_cpp":
+            default:
+                samplingConfig = SamplingConfig.llamaCppDefaults();
+                break;
+        }
+
+        // Stop on <|im_end|> and <|endoftext|> tokens
+        java.util.List<String> stopStrings = new java.util.ArrayList<>();
+        stopStrings.add("<|im_end|>");
+        stopStrings.add("<|endoftext|>");
+
         TextGenerator generator = TextGenerator.builder()
                 .model(model)
                 .tokenizer(tokenizer)
-                .config(SamplingConfig.greedy())
+                .config(samplingConfig)
+                .stopStrings(stopStrings)
                 .build();
 
-        log.info("Generating with prompt: '{}'", prompt);
+        log.info("Generating with prompt (formatted={}): '{}'", useChatTemplate, formattedPrompt);
+        log.info("Sampling: {}", samplingMode);
         t0 = System.currentTimeMillis();
-        GenerationResult result = generator.generateWithMetrics(prompt, maxTokens);
+        GenerationResult result = generator.generateWithMetrics(formattedPrompt, maxTokens);
         long genMs = System.currentTimeMillis() - t0;
 
         // --- 6. Validate ---
@@ -441,6 +480,24 @@ public class TestTextGenerationPipeline {
         assertTrue(result.getTokensPerSecond() > 0, "Tokens/sec must be positive");
         assertNotNull(result.getFinishReason(), "Finish reason must not be null");
 
+        // Log token-level detail
+        System.out.println("[GEN] Token IDs: " + java.util.Arrays.toString(result.getTokenIds()));
+        System.out.println("[GEN] Output text: '" + result.getText() + "'");
+        System.out.println("[GEN] Token count: " + result.getGeneratedTokenCount());
+        System.out.println("[GEN] Finish reason: " + result.getFinishReason());
+        // Decode each token individually to see what they are
+        for (int i = 0; i < result.getTokenIds().length; i++) {
+            int tid = result.getTokenIds()[i];
+            String decoded = tokenizer.decode(new int[]{tid}, false); // false = don't skip special
+            String decodedClean = tokenizer.decode(new int[]{tid}, true); // true = skip special
+            System.out.println("[GEN-TOK-" + i + "] id=" + tid + " raw='" + decoded + "' clean='" + decodedClean + "'");
+        }
+        // Also decode the full sequence without skipping special tokens
+        String fullRawOutput = tokenizer.decode(result.getTokenIds(), false);
+        System.out.println("[GEN-FULL-RAW] '" + fullRawOutput + "'");
+        String fullCleanOutput = tokenizer.decode(result.getTokenIds(), true);
+        System.out.println("[GEN-FULL-CLEAN] '" + fullCleanOutput + "'");
+
         log.info("=== Text Generation Result ===");
         log.info("Prompt: {}", prompt);
         log.info("Output: {}", result.getText());
@@ -448,6 +505,7 @@ public class TestTextGenerationPipeline {
                 result.getGeneratedTokenCount(), result.getGenerationTimeMs(), result.getTokensPerSecond());
         log.info("First token latency: {}ms", result.getFirstTokenLatencyMs());
         log.info("Finish reason: {}", result.getFinishReason());
+        log.info("Sampling: mode={} config={}", samplingMode, samplingConfig);
         log.info("Pipeline: download={}ms import={}ms tokenizer={}ms generate={}ms",
                 downloadMs, importMs, tokMs, genMs);
 
