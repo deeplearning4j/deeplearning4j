@@ -148,8 +148,12 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         for (DataBuffer buf : deferred.keySet()) {
             if (buf.wasClosed()) continue;
             if (fullProtection.containsKey(buf)) continue;
-            if (buf.isConstant()) continue;
+            // Don't skip constant-poisoned buffers: anything not in fullProtection that's
+            // marked constant is a poisoned intermediate. Force-close it.
             try {
+                if (buf.isConstant()) {
+                    buf.setConstant(false);
+                }
                 closedBytes += buf.length() * buf.getElementSize();
                 buf.close();
                 closed++;
@@ -684,6 +688,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         }
 
         int skippedProtected = 0;
+        int forceClosedConstant = 0;
         for (DataBuffer buf : uniqueBuffers.keySet()) {
             if (protectedBuffers != null && protectedBuffers.containsKey(buf)) {
                 skippedProtected++;
@@ -695,7 +700,21 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
                 } catch (Exception e) {
                     // Buffer may already be deallocated; ignore
                 }
+            } else if (buf.isConstant() && !buf.isAttached()) {
+                // Constant-poisoned intermediate: the buffer was marked isConstant=true
+                // by setCloseable(false) on placeholder arrays, propagated through shared
+                // DataBuffers. Since it's not in protectedBuffers, it's safe to force-close.
+                try {
+                    buf.setConstant(false);
+                    buf.close();
+                    forceClosedConstant++;
+                } catch (Exception e) {
+                    // non-fatal
+                }
             }
+        }
+        if (forceClosedConstant > 0) {
+            log.debug("ArrayCacheMemoryMgr.close: force-closed {} constant-poisoned DataBuffers", forceClosedConstant);
         }
         if (skippedProtected > 0) {
             log.debug("ArrayCacheMemoryMgr.close: skipped {} protected DataBuffers (shared with placeholders/constants)", skippedProtected);
@@ -704,6 +723,39 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         allCapacity.clear();
         getLruCachedValuesForThread().clear();
         currentCacheSize.set(0);
+    }
+
+    /**
+     * Reset all cache data structures without closing any buffers.
+     */
+    public static void clearCacheState() {
+        getCapacityArraysForThread().clear();
+        getLruCachedValuesForThread().clear();
+        getDeferredCloseBuffers().clear();
+        currentCacheSize.set(0);
+        resetCacheCounters();
+    }
+
+    /**
+     * Collect all unique DataBuffers from the capacity cache and deferred close set.
+     */
+    public static void collectAllManagedBuffers(IdentityHashMap<DataBuffer, Boolean> target) {
+        Map<DataType, TreeMap<Long, ArrayDeque<INDArray>>> allCapacity = getCapacityArraysForThread();
+        for (TreeMap<Long, ArrayDeque<INDArray>> treeMap : allCapacity.values()) {
+            for (ArrayDeque<INDArray> deque : treeMap.values()) {
+                for (INDArray arr : deque) {
+                    if (arr != null && !arr.wasClosed() && arr.data() != null) {
+                        target.put(arr.data(), Boolean.TRUE);
+                    }
+                }
+            }
+        }
+        IdentityHashMap<DataBuffer, Boolean> deferred = getDeferredCloseBuffers();
+        for (DataBuffer buf : deferred.keySet()) {
+            if (buf != null && !buf.wasClosed()) {
+                target.put(buf, Boolean.TRUE);
+            }
+        }
     }
 
     @Override

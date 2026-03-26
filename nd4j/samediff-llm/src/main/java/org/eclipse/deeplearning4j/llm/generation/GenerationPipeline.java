@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.File;
 import java.io.IOException;
@@ -140,6 +141,25 @@ public class GenerationPipeline implements AutoCloseable {
         this.draftDecoder = draftDecoder;
         this.ownsDraftDecoder = ownsDraftDecoder;
         this.config = config;
+
+        // Enable DSP auto-compile on models if not disabled
+        enableDspIfConfigured(decoder, "decoder");
+        if (embedTokens != null) {
+            enableDspIfConfigured(embedTokens, "embedTokens");
+        }
+    }
+
+    private static void enableDspIfConfigured(SameDiff model, String label) {
+        boolean noFreeze = Boolean.parseBoolean(
+                System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE, "false"));
+        if (!noFreeze) {
+            model.setDspAutoCompileEnabled(true);
+            log.info("DSP auto-compile enabled on {} ({}={})",
+                    label, ND4JSystemProperties.DSP_NO_FREEZE, noFreeze);
+        } else {
+            log.info("DSP auto-compile disabled on {} ({}=true)",
+                    label, ND4JSystemProperties.DSP_NO_FREEZE);
+        }
     }
 
     // ==================== Factory ====================
@@ -471,6 +491,7 @@ public class GenerationPipeline implements AutoCloseable {
                 .hiddenSize(hiddenSize)
                 .samplingConfig(config.getSamplingConfig())
                 .kvCacheStrategy(config.getKvCacheStrategy())
+                .turboQuantBits(config.getTurboQuantBits())
                 .ioConfig(ioConfig);
 
         if (config.getAdditionalStopTokenIds() != null) {

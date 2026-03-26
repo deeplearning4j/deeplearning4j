@@ -44,6 +44,7 @@ import org.nd4j.autodiff.samediff.execution.DynamicShapePlanCompiler;
 import org.nd4j.autodiff.samediff.execution.DynamicShapePlanExecutor;
 import org.nd4j.autodiff.samediff.execution.GraphExecutionMode;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.memory.CleanupDiagnostics;
 import org.nd4j.autodiff.samediff.internal.memory.HashDependencyTracker;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.base.Preconditions;
@@ -77,6 +78,9 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.nd4j.linalg.api.memory.deallocation.OpaqueDataBufferDeallocator;
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.device.DeviceMemoryManager;
 import org.bytedeco.javacpp.LongPointer;
 
 import org.nd4j.shade.wstx.util.StringUtil;
@@ -464,15 +468,34 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         // Sync streams and trim pool to release freed memory back to the driver.
         try {
             NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-            int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            int nDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             Nd4j.getExecutioner().commit();
-            nativeOps.trimMemoryPoolOnStream(currentDevice, null);
+            for (int d = 0; d < nDevices; d++) {
+                nativeOps.trimMemoryPoolOnStream(d, null);
+            }
         } catch (Exception e) {
             log.debug("Pool trim during closePooledResources failed: {}", e.getMessage());
         }
 
         if (pooledClosed > 0) {
             log.info("Closed {} pooled OpContexts during session cleanup", pooledClosed);
+        }
+    }
+
+    /**
+     * Flush the array cache, freeing all cached intermediate arrays.
+     * Call this between phases (e.g., after prefill, before decode) to release
+     * large cached arrays that are no longer needed. The cache will refill with
+     * appropriately-sized arrays for the new phase.
+     *
+     * @param protectedBuffers DataBuffers to skip (e.g., static KV buffers).
+     *                         May be null if no protection is needed.
+     */
+    public void flushArrayCache(IdentityHashMap<DataBuffer, Boolean> protectedBuffers) {
+        if (mmgr instanceof ArrayCacheMemoryMgr) {
+            ((ArrayCacheMemoryMgr) mmgr).close(protectedBuffers);
+            mmgr = new ArrayCacheMemoryMgr();
+            log.info("Flushed ArrayCacheMemoryMgr (new cache allocated for next phase)");
         }
     }
 
@@ -746,8 +769,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                             Nd4j.getExecutioner().commit();
                             long commitNs = System.nanoTime() - commitStart;
                             long trimStart = System.nanoTime();
-                            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                            int nDevicesTrim = Nd4j.getAffinityManager().getNumberOfDevices();
+                            for (int d = 0; d < nDevicesTrim; d++) {
+                                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(d, null);
+                            }
                             long trimNs = System.nanoTime() - trimStart;
                             if (commitNs > 5_000_000 || trimNs > 5_000_000) {
                                 log.info("DSP post-exec overhead: commit={}ms trim={}ms",
@@ -756,8 +781,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         } else if (dspStepCount % TRIM_INTERVAL == 0) {
                             // Frozen steady-state: periodic trim only (every TRIM_INTERVAL steps)
                             Nd4j.getExecutioner().commit();
-                            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                            int nDevicesTrimPeriodic = Nd4j.getAffinityManager().getNumberOfDevices();
+                            for (int d = 0; d < nDevicesTrimPeriodic; d++) {
+                                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(d, null);
+                            }
                         }
                         // Frozen non-trim steps: skip both commit and trim entirely
 
@@ -805,8 +832,10 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         // Periodic commit+trim: full sync on early steps, periodic in steady-state
                         if (dspStepCount <= 2 || dspStepCount % TRIM_INTERVAL == 0) {
                             Nd4j.getExecutioner().commit();
-                            NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(
-                                    Nd4j.getAffinityManager().getDeviceForCurrentThread(), null);
+                            int nDevicesPlan = Nd4j.getAffinityManager().getNumberOfDevices();
+                            for (int d = 0; d < nDevicesPlan; d++) {
+                                NativeOpsHolder.getInstance().getDeviceNativeOps().trimMemoryPoolOnStream(d, null);
+                            }
                         }
                         log.debug("Plan-based execution completed successfully");
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
@@ -1737,14 +1766,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 // commit() syncs the current thread's execution stream
                 Nd4j.getExecutioner().commit();
                 try {
-                    int currentDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-                    // All frees go via RELEASE_SPECIAL on stream 0 — sync stream 0 + trim
-                    nativeOps.trimMemoryPoolOnStream(currentDevice, null);
-                    // Other devices: cross-device frees also use stream 0 on target device
+                    // Trim all devices — cross-device frees use stream 0 on target device
                     for (int d = 0; d < numDevices; d++) {
-                        if (d != currentDevice) {
-                            nativeOps.trimMemoryPoolOnStream(d, null);
-                        }
+                        nativeOps.trimMemoryPoolOnStream(d, null);
                     }
                 } catch (Exception e) {
                     log.debug("Failed to trim memory pool: {}", e.getMessage());

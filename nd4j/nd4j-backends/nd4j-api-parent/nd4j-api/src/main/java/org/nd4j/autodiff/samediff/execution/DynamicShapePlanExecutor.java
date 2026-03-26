@@ -1404,8 +1404,15 @@ public class DynamicShapePlanExecutor implements Closeable {
                     INDArray arr = outputSlots[slotIdx];
                     if (arr != null && liveSlots.get(slotIdx)) {
                         DataBuffer buf = arr.data();
-                        if (buf != null && !buf.wasClosed() && !buf.isConstant()) {
+                        if (buf != null && !buf.wasClosed()) {
+                            // Check view status BEFORE un-poisoning to protect weight buffers
                             boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[slotIdx];
+                            if (!isViewSlot && buf.isConstant()) {
+                                // Un-poison constant-poisoned intermediates so they can be freed.
+                                // Only for non-view slots — view slots share the input's buffer
+                                // (which may be a model weight). Un-poisoning would corrupt weights.
+                                buf.setConstant(false);
+                            }
                             if (isViewSlot) {
                                 // View producer — the buffer belongs to the input (C++ made
                                 // this a view of the input's GPU memory). Don't close or cache
@@ -1418,7 +1425,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 INDArray prev = slotArrayCache[slotIdx];
                                 if (prev != null && !prev.wasClosed()) {
                                     DataBuffer pbuf = prev.data();
-                                    if (pbuf != null && !pbuf.wasClosed() && !pbuf.isConstant()) {
+                                    if (pbuf != null && !pbuf.wasClosed()) {
+                                        if (pbuf.isConstant()) pbuf.setConstant(false);
                                         pendingClose.add(pbuf);
                                     }
                                 }
@@ -1744,9 +1752,13 @@ public class DynamicShapePlanExecutor implements Closeable {
             // NOTE: Don't gate on buf.closeable(). Oversized buffers from slot cache
             // growth factor have data().length() > length() → closeable()=false. But these
             // are OWNED arrays (not sub-views) that the DSP executor allocated. They must
-            // be freed to prevent permanent GPU memory leaks. Only skip constants and
-            // already-closed buffers.
-            if (buf == null || buf.wasClosed() || buf.isConstant()) continue;
+            // be freed to prevent permanent GPU memory leaks. Only skip already-closed buffers.
+            // Don't skip isConstant() — constant-poisoned intermediates have already been
+            // un-poisoned at release time, but as a safety net, un-poison any remaining ones.
+            if (buf == null || buf.wasClosed()) continue;
+            if (buf.isConstant()) {
+                buf.setConstant(false);
+            }
 
             OpaqueDataBuffer odb = buf.opaqueBuffer();
             if (odb == null || odb.isNull()) continue;
@@ -2778,8 +2790,11 @@ public class DynamicShapePlanExecutor implements Closeable {
                         }
                     }
                 }
-                boolean needsShapeCalc = customOp.initializeOutputs(ctx);
-                if (!needsShapeCalc && customOp.numOutputArguments() > 0) {
+                customOp.initializeOutputs(ctx);
+                // Propagate outputs regardless of return value — semantics differ across ops
+                // (Permute/StridedSlice return false, ReshapeNoCopy/base return true on success).
+                // In DSP the return value is irrelevant; we just need outputs propagated.
+                if (customOp.numOutputArguments() > 0) {
                     // initializeOutputs created a view — update outputSlots and ctx
                     INDArray viewOut = customOp.getOutputArgument(0);
                     if (viewOut != null && !viewOut.isEmpty()) {

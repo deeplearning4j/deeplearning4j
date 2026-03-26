@@ -144,6 +144,24 @@ public class VisionLanguageModel implements AutoCloseable {
             this.visionEncoderIOConfig = visionEncoder != null
                     ? VisionEncoderIOConfig.discover(visionEncoder) : null;
         }
+
+        // Enable DSP auto-compile on all model components if not disabled
+        if (visionEncoder != null) enableDspIfConfigured(visionEncoder, "visionEncoder");
+        if (decoder != null) enableDspIfConfigured(decoder, "decoder");
+        if (embedTokens != null) enableDspIfConfigured(embedTokens, "embedTokens");
+    }
+
+    private static void enableDspIfConfigured(SameDiff model, String label) {
+        boolean noFreeze = Boolean.parseBoolean(
+                System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE, "false"));
+        if (!noFreeze) {
+            model.setDspAutoCompileEnabled(true);
+            log.info("DSP auto-compile enabled on {} ({}={})",
+                    label, ND4JSystemProperties.DSP_NO_FREEZE, noFreeze);
+        } else {
+            log.info("DSP auto-compile disabled on {} ({}=true)",
+                    label, ND4JSystemProperties.DSP_NO_FREEZE);
+        }
     }
 
     /**
