@@ -359,9 +359,23 @@ public class StridedSlice extends DynamicCustomOp {
         // Ensure fields are populated from iArguments
         configureFromArguments();
 
-        // Need begin/end/strides to compute the view
-        if (begin == null || end == null || strides == null) {
-            // begin/end/strides come as input arrays, not iArgs — fall back to C++ execution
+        // Need begin/end/strides to compute the view.
+        // When they're null or zero-length (DSP mode: begin/end/strides come as input tensors,
+        // not iArgs — configureFromArguments() creates zero-length arrays when iArgs has only
+        // the 5 mask values), read them from the input arrays.
+        // DSP already synced INT/LONG inputs to host.
+        if (begin == null || end == null || strides == null
+                || begin.length == 0 || end.length == 0 || strides.length == 0) {
+            List<INDArray> inputs = inputArguments();
+            if (inputs != null && inputs.size() >= 4) {
+                if (begin == null || begin.length == 0) begin = inputs.get(1).toLongVector();
+                if (end == null || end.length == 0) end = inputs.get(2).toLongVector();
+                if (strides == null || strides.length == 0) strides = inputs.get(3).toLongVector();
+            }
+        }
+
+        if (begin == null || end == null || strides == null
+                || begin.length == 0 || end.length == 0 || strides.length == 0) {
             return super.initializeOutputs(ctx);
         }
 

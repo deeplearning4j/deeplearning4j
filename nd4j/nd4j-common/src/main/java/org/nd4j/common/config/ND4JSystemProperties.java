@@ -1089,6 +1089,65 @@ public class ND4JSystemProperties {
      */
     public static final String PLACEMENT_LOG_DECISIONS = "nd4j.placement.logDecisions";
 
+    // ---- VLM/DSP Optimizer & Execution Flags ----
+
+    /**
+     * Applicability: SameDiff graph optimizer<br>
+     * Description: Enable or disable the SameDiff graph optimizer.
+     * <p>
+     * Default: false
+     */
+    public static final String OPTIMIZER_ENABLED = "nd4j.optimizer.enabled";
+
+    /**
+     * Applicability: SameDiff graph optimizer<br>
+     * Description: Enable FP16 optimizations in the graph optimizer.
+     * <p>
+     * Default: false
+     */
+    public static final String OPTIMIZER_FP16 = "nd4j.optimizer.fp16";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, disables native decode input handling in DSP execution.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_NO_NATIVE_DECODE_INPUTS = "nd4j.dsp.noNativeDecodeInputs";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, disables attention override optimization in DSP execution.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_NO_ATTN_OVERRIDE = "nd4j.dsp.noAttnOverride";
+
+    /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When true, disables direct buffer access in DSP execution.
+     * <p>
+     * Default: false
+     */
+    public static final String DSP_NO_DIRECT = "nd4j.dsp.noDirect";
+
+    /**
+     * Applicability: CUDA cuBLAS<br>
+     * Description: Controls cuBLAS workspace capture behavior.
+     * Set to "0" to disable workspace capture during CUDA graph recording.
+     * <p>
+     * Default: unset
+     */
+    public static final String CUBLAS_CAPTURE_WORKSPACE = "nd4j.cublas.captureWorkspace";
+
+    /**
+     * Applicability: SameDiff execution<br>
+     * Description: Enable per-op timing instrumentation.
+     * <p>
+     * Default: false
+     */
+    public static final String OP_TIMING = "nd4j.op.timing";
+
     private ND4JSystemProperties() {
     }
 }

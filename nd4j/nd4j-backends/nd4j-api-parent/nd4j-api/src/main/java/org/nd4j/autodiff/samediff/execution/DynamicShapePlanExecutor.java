@@ -2190,6 +2190,32 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (outShapes == null || outShapes.isEmpty()) {
             throw new IllegalStateException("No output shapes for op " + slot.getOpName());
         }
+        // Debug: log strided_slice shape details to diagnose DSP shape mismatch
+        if ("strided_slice".equals(slot.getOpName())) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("DSP strided_slice debug [step=").append(slot.getStepIndex()).append("]:");
+            sb.append(" iArgs=").append(java.util.Arrays.toString(slot.getIArgs()));
+            sb.append(" numInputs=").append(inputArrays.length);
+            for (int di = 0; di < inputArrays.length; di++) {
+                INDArray in = inputArrays[di];
+                sb.append(" in[").append(di).append("]=");
+                if (in == null) { sb.append("null"); }
+                else {
+                    sb.append(java.util.Arrays.toString(in.shape())).append("/").append(in.dataType());
+                    if (in.length() <= 8) {
+                        // Print small tensor values (begin/end/strides)
+                        Nd4j.getExecutioner().commit();
+                        nativeOps.dbForceSyncToPrimary(in.data().opaqueBuffer());
+                        sb.append("=").append(in);
+                    }
+                }
+            }
+            for (int di = 0; di < outShapes.size(); di++) {
+                long[] si = outShapes.get(di).asLong();
+                sb.append(" outShape[").append(di).append("]=").append(java.util.Arrays.toString(Shape.shape(si)));
+            }
+            log.info(sb.toString());
+        }
         if (TIMING_ENABLED) timingShapeNs += System.nanoTime() - tShape0;
 
         // Step 4: Allocate outputs

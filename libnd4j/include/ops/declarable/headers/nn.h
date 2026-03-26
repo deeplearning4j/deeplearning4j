@@ -633,6 +633,14 @@ DECLARE_CUSTOM_OP(kv_scatter, 2, 1, false, 0, 1);
 DECLARE_CUSTOM_OP(turbo_quant_attention, 7, 1, false, 1, 2);
 #endif
 
+#if NOT_EXCLUDED(OP_paged_attention_forward)
+DECLARE_CUSTOM_OP(paged_attention_forward, 5, 1, false, 1, 4);
+#endif
+
+#if NOT_EXCLUDED(OP_paged_kv_append)
+DECLARE_CUSTOM_OP(paged_kv_append, 6, 1, false, 0, 1);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

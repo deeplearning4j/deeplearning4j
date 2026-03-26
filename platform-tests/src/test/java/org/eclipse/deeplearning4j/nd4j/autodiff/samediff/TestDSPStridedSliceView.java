@@ -313,7 +313,7 @@ public class TestDSPStridedSliceView {
         SDVariable added = sliced.add("added", bias);
         SDVariable out = sd.nn.relu("out", added, 0);
 
-        INDArray input = Nd4j.randn(DataType.FLOAT, 6, 4);
+        INDArray input = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(6, 4);
 
         INDArray expected = sd.output(Map.of("x", input), "out").get("out").dup();
 
@@ -390,6 +390,39 @@ public class TestDSPStridedSliceView {
     // ── Direct op execution (no SameDiff graph) ─────────────────────────
 
     @Test
+    @DisplayName("Non-contiguous view add op produces correct result via Nd4j.exec")
+    void testNonContiguousViewAddOp() {
+        // Isolation test: does a non-contiguous view work correctly when passed
+        // to a C++ op through OpContext?
+        INDArray input = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(6, 4);
+
+        // Create a column slice view: [6,2] with strides [4,1] and offset 1
+        // This selects columns 1,2 from the [6,4] input
+        INDArray view = Nd4j.create(input.data(), new long[]{6, 2}, new long[]{4, 1}, 1, 'c');
+
+        // Verify the view reads correct values
+        log.info("View shape: {} strides: {} offset: {}", java.util.Arrays.toString(view.shape()),
+                java.util.Arrays.toString(view.stride()), view.offset());
+        log.info("View:\n{}", view);
+
+        // Expected column slice values (columns 1 and 2)
+        assertEquals(2.0f, view.getFloat(0, 0), 1e-5f, "view[0,0] should be input[0,1]=2");
+        assertEquals(3.0f, view.getFloat(0, 1), 1e-5f, "view[0,1] should be input[0,2]=3");
+        assertEquals(6.0f, view.getFloat(1, 0), 1e-5f, "view[1,0] should be input[1,1]=6");
+        assertEquals(7.0f, view.getFloat(1, 1), 1e-5f, "view[1,1] should be input[1,2]=7");
+
+        // Now test add op with the view as input
+        INDArray bias = Nd4j.ones(DataType.FLOAT, 6, 2);
+        INDArray result = view.add(bias);
+
+        log.info("Result:\n{}", result);
+        assertEquals(3.0f, result.getFloat(0, 0), 1e-5f, "result[0,0] should be 2+1=3");
+        assertEquals(4.0f, result.getFloat(0, 1), 1e-5f, "result[0,1] should be 3+1=4");
+        assertEquals(7.0f, result.getFloat(1, 0), 1e-5f, "result[1,0] should be 6+1=7");
+        assertEquals(8.0f, result.getFloat(1, 1), 1e-5f, "result[1,1] should be 7+1=8");
+    }
+
+    @Test
     @DisplayName("Direct StridedSlice op produces correct view output")
     void testDirectStridedSliceView() {
         INDArray input = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(4, 6);
@@ -411,6 +444,81 @@ public class TestDSPStridedSliceView {
         assertEquals(15.0f, result.getFloat(1, 0), 1e-5f);
         assertEquals(16.0f, result.getFloat(1, 1), 1e-5f);
         assertEquals(17.0f, result.getFloat(1, 2), 1e-5f);
+    }
+
+    // ── Bug reproduction: SDVariable begin/end/strides (iArgs capped to 5) ──
+
+    @Test
+    @DisplayName("StridedSlice with SDVariable begin/end/strides matches standard under DSP")
+    void testStridedSliceWithTensorInputsDSP() {
+        // This reproduces the real-world DSP bug: when begin/end/strides come as
+        // SDVariable input tensors (not literal arrays), DSP caps iArgs to 5 (masks only).
+        // configureFromArguments() then sets begin/end/strides to zero-length arrays,
+        // and the old null-check missed them → view was the entire input (wrong).
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 4, 8);
+        SDVariable beginVar = sd.constant("begin", Nd4j.createFromArray(new long[]{1, 0}));
+        SDVariable endVar = sd.constant("end", Nd4j.createFromArray(new long[]{3, 8}));
+        SDVariable stridesVar = sd.constant("strides", Nd4j.createFromArray(new long[]{1, 1}));
+        // 4-input constructor: data, begin, end, strides — this triggers the iArgs capping path
+        SDVariable sliced = sd.stridedSlice("sliced", x, beginVar, endVar, stridesVar);
+        SDVariable out = sliced.mul("out", sd.constant("s", Nd4j.scalar(2.0f)));
+
+        INDArray input = Nd4j.linspace(1, 32, 32, DataType.FLOAT).reshape(4, 8);
+
+        // Standard execution
+        INDArray expected = sd.output(Map.of("x", input), "out").get("out").dup();
+
+        // DSP execution
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(false);
+        sd.clearDynamicShapePlanCache();
+        sd.resetSession();
+
+        INDArray actual = sd.output(Map.of("x", input), "out").get("out");
+
+        assertArrayEquals(expected.shape(), actual.shape(), "Shapes must match");
+        double maxDiff = actual.sub(expected).amaxNumber().doubleValue();
+        assertTrue(maxDiff < TOL,
+                "Tensor-input strided_slice DSP result diverges by " + maxDiff);
+        sd.close();
+    }
+
+    @Test
+    @DisplayName("StridedSlice with SDVariable inputs on transposed array under DSP")
+    void testStridedSliceTransposedInputDSP() {
+        // Reproduces the exact model scenario: strided_slice on a transposed (non-contiguous)
+        // BOOL array with SDVariable begin/end/strides inputs
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.placeHolder("x", DataType.BOOL, 1, 512, 512);
+        // Transpose dims 1,2 → strides become non-contiguous
+        SDVariable transposed = sd.permute("transposed", x, 0, 2, 1);
+        SDVariable beginVar = sd.constant("begin", Nd4j.createFromArray(new long[]{0, 0, 0}));
+        SDVariable endVar = sd.constant("end", Nd4j.createFromArray(new long[]{1, 256, 512}));
+        SDVariable stridesVar = sd.constant("strides", Nd4j.createFromArray(new long[]{1, 1, 1}));
+        SDVariable sliced = sd.stridedSlice("sliced", transposed, beginVar, endVar, stridesVar);
+        // Cast to float so we can do math
+        SDVariable floatSlice = sliced.castTo("floatSlice", DataType.FLOAT);
+        SDVariable out = floatSlice.add("out", sd.constant("b", Nd4j.scalar(0.0f)));
+
+        INDArray input = Nd4j.ones(DataType.BOOL, 1, 512, 512);
+
+        // Standard execution
+        INDArray expected = sd.output(Map.of("x", input), "out").get("out").dup();
+
+        // DSP execution
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(false);
+        sd.clearDynamicShapePlanCache();
+        sd.resetSession();
+
+        INDArray actual = sd.output(Map.of("x", input), "out").get("out");
+
+        assertArrayEquals(expected.shape(), actual.shape(), "Shapes must match for transposed input");
+        double maxDiff = actual.sub(expected).amaxNumber().doubleValue();
+        assertTrue(maxDiff < TOL,
+                "Transposed strided_slice DSP result diverges by " + maxDiff);
+        sd.close();
     }
 
     @Test

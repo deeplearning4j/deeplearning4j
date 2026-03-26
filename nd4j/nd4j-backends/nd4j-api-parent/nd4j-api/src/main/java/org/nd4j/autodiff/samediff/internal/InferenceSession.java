@@ -3509,7 +3509,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
         List<INDArray> inputArrays = opContext.getInputArrays();
 
         // Special handling for reshape: check if view is possible
-        boolean isReshapeOp = "reshape".equals(customOp.opName());
+        boolean isReshapeOp = "reshape".equals(customOp.opName()) || "reshape_no_copy".equals(customOp.opName());
         boolean reshapeViewPossible = false;
         char reshapeOrder = 'c';
         if (isReshapeOp && inputArrays != null && !inputArrays.isEmpty() && outShape.size() == 1) {

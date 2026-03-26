@@ -36,6 +36,7 @@ import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -112,6 +113,14 @@ public class VisionLanguageModel implements AutoCloseable {
 
     private volatile boolean closed = false;
 
+    /** KV cache strategy for autoregressive decoding. Default: STATIC. */
+    @Setter
+    private KvCacheStrategy kvCacheStrategy = KvCacheStrategy.STATIC;
+
+    /** Maximum KV cache sequence length. 0 means auto-detect. */
+    @Setter
+    private int maxKvLen = 0;
+
     /** Discovered vision encoder I/O configuration (input/output variable names). */
     @Getter
     private final VisionEncoderIOConfig visionEncoderIOConfig;
@@ -126,7 +135,9 @@ public class VisionLanguageModel implements AutoCloseable {
             ModelConfig config,
             DeviceDescriptor targetDevice,
             MultiBackendWorkspace workspace,
-            VisionEncoderIOConfig visionEncoderIOConfig) {
+            VisionEncoderIOConfig visionEncoderIOConfig,
+            KvCacheStrategy kvCacheStrategy,
+            int maxKvLen) {
         this.visionEncoder = visionEncoder;
         this.embedTokens = embedTokens;
         this.decoder = decoder;
@@ -135,6 +146,8 @@ public class VisionLanguageModel implements AutoCloseable {
         this.config = config;
         this.targetDevice = targetDevice;
         this.workspace = workspace;
+        this.kvCacheStrategy = kvCacheStrategy != null ? kvCacheStrategy : KvCacheStrategy.STATIC;
+        this.maxKvLen = maxKvLen;
         // Use externally-provided IOConfig if given, otherwise auto-discover
         if (visionEncoderIOConfig != null) {
             this.visionEncoderIOConfig = visionEncoderIOConfig;
@@ -361,8 +374,24 @@ public class VisionLanguageModel implements AutoCloseable {
     public INDArray encodeImage(INDArray image) {
         checkNotClosed();
 
+        INDArray normalizedImage = normalizeVisionInputShape(image);
         Map<String, INDArray> inputs = new HashMap<>();
-        inputs.put(visionEncoderIOConfig.getPixelValuesName(), normalizeVisionInputShape(image));
+        inputs.put(visionEncoderIOConfig.getPixelValuesName(), normalizedImage);
+
+        if (visionEncoderIOConfig.hasPixelAttentionMask()) {
+            long h = normalizedImage.size(normalizedImage.rank() - 2);
+            long w = normalizedImage.size(normalizedImage.rank() - 1);
+            long[] maskShape;
+            if (normalizedImage.rank() == 5) {
+                // [batch, frames, C, H, W] -> mask [batch, frames, H, W]
+                maskShape = new long[]{normalizedImage.size(0), normalizedImage.size(1), h, w};
+            } else {
+                // [batch, C, H, W] -> mask [batch, H, W]
+                maskShape = new long[]{normalizedImage.size(0), h, w};
+            }
+            INDArray mask = Nd4j.ones(DataType.BOOL, maskShape);
+            inputs.put(visionEncoderIOConfig.getPixelAttentionMaskName(), mask);
+        }
 
         Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
         return outputs.get(visionEncoderIOConfig.getPrimaryOutputName());

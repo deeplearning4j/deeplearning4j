@@ -768,17 +768,28 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(sd::LongType m
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF( sd::LongType *shapeBuffer) {
   sd::LongType rank = shape::rank(shapeBuffer);
   sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
+  sd::LongType *shapeOf = shape::shapeOf(shapeBuffer);
   char order = shape::order(shapeBuffer);
+
+  if (rank <= 1) return true;
 
   if (shape::isRowVector(shapeBuffer) && strides[0] == 1 && strides[1] == 1) return true;
 
   if (order == 'c') {
-    for (sd::LongType i = 1; i < rank; i++)
-      if (strides[i - 1] <= strides[i]) return false;
+    // Verify actual contiguity: stride[rank-1] must be 1,
+    // and each stride must equal stride[i+1] * shape[i+1]
+    if (strides[rank - 1] != 1) return false;
+    for (sd::LongType i = rank - 2; i >= 0; i--) {
+      if (strides[i] != strides[i + 1] * shapeOf[i + 1]) return false;
+    }
     return true;
   } else if (order == 'f') {
-    for (sd::LongType i = 1; i < rank; i++)
-      if (strides[i - 1] >= strides[i]) return false;
+    // Verify actual contiguity: stride[0] must be 1,
+    // and each stride must equal stride[i-1] * shape[i-1]
+    if (strides[0] != 1) return false;
+    for (sd::LongType i = 1; i < rank; i++) {
+      if (strides[i] != strides[i - 1] * shapeOf[i - 1]) return false;
+    }
     return true;
   } else {
     return false;
