@@ -157,6 +157,11 @@ public class DynamicShapePlanExecutor implements Closeable {
      *  When true, only placeholders are re-resolved on subsequent execute() calls. */
     private boolean externalConstantsResolved;
 
+    /** DataBuffers belonging to model weights (constants/variables). These must NEVER be
+     *  un-poisoned or closed — doing so corrupts model weights and produces garbage output.
+     *  Built once after resolveExternalInputs and used as defense-in-depth in release/flush. */
+    private IdentityHashMap<DataBuffer, Boolean> protectedWeightBuffers;
+
     /** BitSet tracking which slots are currently live (have valid arrays). */
     private BitSet liveSlots;
 
@@ -1185,6 +1190,21 @@ public class DynamicShapePlanExecutor implements Closeable {
         // Resolve external inputs (constants, variables, placeholders)
         resolveExternalInputs(plan, placeholderArrays);
 
+        // Build protection set for weight DataBuffers (once).
+        // These must NEVER be un-poisoned or closed — doing so corrupts model weights.
+        if (protectedWeightBuffers == null) {
+            protectedWeightBuffers = new IdentityHashMap<>();
+            byte[] srcTypes = plan.getExternalInputSourceTypes();
+            for (int i = 0; i < externalInputs.length; i++) {
+                if (externalInputs[i] != null && srcTypes != null && i < srcTypes.length
+                        && (srcTypes[i] == DynamicShapeSlot.SOURCE_CONSTANT || srcTypes[i] == DynamicShapeSlot.SOURCE_VARIABLE)) {
+                    DataBuffer db = externalInputs[i].data();
+                    if (db != null) protectedWeightBuffers.put(db, Boolean.TRUE);
+                }
+            }
+            log.info("DSP: built protectedWeightBuffers set with {} entries", protectedWeightBuffers.size());
+        }
+
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         // Clear stale CUDA error state from previous execution's cleanup (closePendingBuffers,
         // evictOversizedSlotCache, trimPool). Without this, a CUDA error from step N's cleanup
@@ -1407,10 +1427,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                         if (buf != null && !buf.wasClosed()) {
                             // Check view status BEFORE un-poisoning to protect weight buffers
                             boolean isViewSlot = slotIsViewProducer != null && slotIsViewProducer[slotIdx];
-                            if (!isViewSlot && buf.isConstant()) {
+                            boolean isWeightBuffer = protectedWeightBuffers != null && protectedWeightBuffers.containsKey(buf);
+                            if (!isViewSlot && !isWeightBuffer && buf.isConstant()) {
                                 // Un-poison constant-poisoned intermediates so they can be freed.
-                                // Only for non-view slots — view slots share the input's buffer
-                                // (which may be a model weight). Un-poisoning would corrupt weights.
+                                // Skip view slots (share input's buffer) and weight buffers.
                                 buf.setConstant(false);
                             }
                             if (isViewSlot) {
@@ -1426,8 +1446,9 @@ public class DynamicShapePlanExecutor implements Closeable {
                                 if (prev != null && !prev.wasClosed()) {
                                     DataBuffer pbuf = prev.data();
                                     if (pbuf != null && !pbuf.wasClosed()) {
-                                        if (pbuf.isConstant()) pbuf.setConstant(false);
-                                        pendingClose.add(pbuf);
+                                        boolean prevIsWeight = protectedWeightBuffers != null && protectedWeightBuffers.containsKey(pbuf);
+                                        if (!prevIsWeight && pbuf.isConstant()) pbuf.setConstant(false);
+                                        if (!prevIsWeight) pendingClose.add(pbuf);
                                     }
                                 }
                                 slotArrayCache[slotIdx] = arr;
@@ -1756,6 +1777,8 @@ public class DynamicShapePlanExecutor implements Closeable {
             // Don't skip isConstant() — constant-poisoned intermediates have already been
             // un-poisoned at release time, but as a safety net, un-poison any remaining ones.
             if (buf == null || buf.wasClosed()) continue;
+            // Never touch weight buffers — un-poisoning them corrupts model weights
+            if (protectedWeightBuffers != null && protectedWeightBuffers.containsKey(buf)) continue;
             if (buf.isConstant()) {
                 buf.setConstant(false);
             }
@@ -2795,16 +2818,32 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // (Permute/StridedSlice return false, ReshapeNoCopy/base return true on success).
                 // In DSP the return value is irrelevant; we just need outputs propagated.
                 if (customOp.numOutputArguments() > 0) {
-                    // initializeOutputs created a view — update outputSlots and ctx
                     INDArray viewOut = customOp.getOutputArgument(0);
                     if (viewOut != null && !viewOut.isEmpty()) {
+                        // Determine if this is a TRUE view (shares DataBuffer with an input)
+                        // vs. a newly allocated buffer (from super.initializeOutputs()).
+                        // Only true views should be marked as view producers — their buffers
+                        // belong to the input and must never be freed/un-poisoned.
+                        boolean isActualView = false;
+                        DataBuffer outBuf = viewOut.data();
+                        if (outBuf != null) {
+                            List<INDArray> inputs = ctx.getInputArrays();
+                            if (inputs != null) {
+                                for (INDArray in : inputs) {
+                                    if (in != null && in.data() == outBuf) {
+                                        isActualView = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
                         ctx.setOutputArray(0, viewOut);
                         int[] outSlotIndices = slot.getOutputSlotIndices();
                         if (outSlotIndices.length > 0 && outSlotIndices[0] >= 0) {
                             int viewSlotIdx = outSlotIndices[0];
                             outputSlots[viewSlotIdx] = viewOut;
                             if (slotArrayCache != null) slotArrayCache[viewSlotIdx] = viewOut;
-                            if (slotIsViewProducer != null) slotIsViewProducer[viewSlotIdx] = true;
+                            if (slotIsViewProducer != null) slotIsViewProducer[viewSlotIdx] = isActualView;
                         }
                     }
                 }

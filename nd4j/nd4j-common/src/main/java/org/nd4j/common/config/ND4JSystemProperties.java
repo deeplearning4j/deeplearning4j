@@ -415,6 +415,16 @@ public class ND4JSystemProperties {
     // ---- DynamicShapePlan (DSP) execution properties ----
 
     /**
+     * Applicability: DynamicShapePlan-based inference<br>
+     * Description: When set to "true", disables DSP freeze (compilation). Models will use
+     * the standard InferenceSession execution path instead of the optimized DSP path.
+     * Useful for debugging DSP-related issues.
+     * <p>
+     * Default: false (DSP enabled)
+     */
+    public static final String DSP_NO_FREEZE = "nd4j.dsp.noFreeze";
+
+    /**
      * Applicability: DynamicShapePlan-based inference (autoregressive decoding)<br>
      * Description: Controls how often the CUDA memory pool is trimmed during DSP execution.
      * During steady-state decode, the pool reuses freed memory without trimming. Trimming every
