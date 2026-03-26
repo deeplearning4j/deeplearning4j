@@ -1672,4 +1672,40 @@ fun NN() = Namespace("NN") {
             """.trimIndent()
         }
     }
+
+    Op("turboQuantAttention") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.transforms.custom"
+        javaOpClass = "TurboQuantAttention"
+
+        val query = Input(NUMERIC, "query") { description = "Query tensor [B, H, Sq, D]" }
+        val kMse = Input(NUMERIC, "kMse") { description = "MSE-reconstructed keys [B, H, Sk, D]" }
+        val qjlSigns = Input(INT, "qjlSigns") { description = "QJL sign bits [B, H, Sk, D] INT8" }
+        val residualNorms = Input(NUMERIC, "residualNorms") { description = "Residual L2 norms [B, H, Sk]" }
+        val qjlMatrix = Input(NUMERIC, "qjlMatrix") { description = "QJL projection matrix [D, D]" }
+        val values = Input(NUMERIC, "values") { description = "Dequantized values [B, H, Sk, D]" }
+        val attentionMask = Input(NUMERIC, "attentionMask") { description = "Attention mask [B, 1, 1, Sk]" }
+        val numHeads = Arg(INT, "numHeads") { description = "Number of attention heads" }
+        val headDim = Arg(INT, "headDim") { description = "Dimension per head" }
+        val scale = Arg(FLOATING_POINT, "scale") { description = "Attention scale (0 = auto: 1/sqrt(headDim))"; defaultValue = 0.0 }
+
+        Output(NUMERIC, "output") { description = "Attention output [B, H, Sq, D]" }
+
+        AllParamSignature()
+        Signature(query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim)
+
+        Doc(Language.ANY, DocScope.ALL) {
+            """
+             TurboQuant asymmetric attention with compressed keys.
+
+             Computes scaled dot-product attention using compressed key representations
+             from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+             product estimator combines MSE reconstruction with QJL correction:
+
+               score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs>
+
+             Keys use full two-stage compression (MSE + QJL) for asymmetric attention.
+             Values use MSE-only decompression (error averages out in softmax-weighted sum).
+            """.trimIndent()
+        }
+    }
 }

@@ -76,6 +76,10 @@ public class GenerationPipelineConfig {
     @Builder.Default
     private final KvCacheStrategy kvCacheStrategy = KvCacheStrategy.STATIC;
 
+    /** TurboQuant bit budget per coordinate for TURBOQUANT KV cache strategy. Defaults to 3. */
+    @Builder.Default
+    private final int turboQuantBits = 3;
+
     /** Optional model I/O configuration. Auto-discovered if null. */
     private final ModelIOConfig ioConfig;
 

@@ -607,6 +607,32 @@ DECLARE_CUSTOM_OP(two_way_cross_attention_bp, 8, 6, false, 0, 0);
 DECLARE_CUSTOM_OP(kv_scatter, 2, 1, false, 0, 1);
 #endif
 
+/**
+ * turbo_quant_attention - Asymmetric attention with TurboQuant compressed keys.
+ *
+ * Computes scaled dot-product attention using compressed key representations
+ * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner
+ * product estimator combines MSE reconstruction with QJL correction:
+ *
+ *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs>
+ *
+ * Input 0: Q              [B, H, Sq, D] query
+ * Input 1: K_mse          [B, H, Sk, D] MSE-reconstructed keys (FLOAT16)
+ * Input 2: QJL_signs      [B, H, Sk, D] sign bits (INT8, +1/-1)
+ * Input 3: residual_norms [B, H, Sk]    residual L2 norms (FLOAT16)
+ * Input 4: QJL_matrix     [D, D]        random Gaussian projection matrix
+ * Input 5: V              [B, H, Sk, D] dequantized values
+ * Input 6: attention_mask [B, 1, 1, Sk] or compatible broadcastable shape
+ *
+ * IArgs: 0=numHeads, 1=headDim
+ * TArgs: 0=scale (0=auto: 1/sqrt(headDim))
+ *
+ * Output 0: [B, H, Sq, D]
+ */
+#if NOT_EXCLUDED(OP_turbo_quant_attention)
+DECLARE_CUSTOM_OP(turbo_quant_attention, 7, 1, false, 1, 2);
+#endif
+
 }  // namespace ops
 }  // namespace sd
 

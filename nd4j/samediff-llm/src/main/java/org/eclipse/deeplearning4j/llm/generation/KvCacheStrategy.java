@@ -87,5 +87,20 @@ public enum KvCacheStrategy {
      * <p>Best for long-context scenarios (32k+ tokens) where GPU memory is the
      * bottleneck rather than compute.</p>
      */
-    QUANTIZED
+    QUANTIZED,
+
+    /**
+     * TurboQuant two-stage vector quantization with asymmetric attention.
+     *
+     * <p>Uses random orthogonal rotation + per-coordinate Lloyd-Max quantization (Stage 1)
+     * and 1-bit Quantized Johnson-Lindenstrauss on residuals (Stage 2) for ~5x compression
+     * at 3-bit with 99.5% attention fidelity.</p>
+     *
+     * <p>Keys use full two-stage compression with asymmetric inner product estimation.
+     * Values use MSE-only compression (error averages out in softmax-weighted sum).</p>
+     *
+     * <p>Reference: "TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate"
+     * (ICLR 2026)</p>
+     */
+    TURBOQUANT
 }

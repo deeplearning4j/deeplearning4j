@@ -94,6 +94,10 @@ public class StaticKvCacheDecodeLoop {
     @Builder.Default
     private final QuantizedPagedKVCache.QuantFormat quantFormat = QuantizedPagedKVCache.QuantFormat.INT8;
 
+    /** TurboQuant bit budget per coordinate for TURBOQUANT strategy. Defaults to 3. */
+    @Builder.Default
+    private final int turboQuantBits = 3;
+
     /** Optional speculator for draft-model speculation. When null, uses NgramSpeculator. */
     private final Speculator speculator;
 
@@ -126,6 +130,9 @@ public class StaticKvCacheDecodeLoop {
             case QUANTIZED:
                 log.info("Creating QuantizedKvCacheManager with format={}", quantFormat);
                 return new QuantizedKvCacheManager(quantFormat, DataType.FLOAT);
+            case TURBOQUANT:
+                log.info("Creating TurboQuantKvCacheManager with bits={}", turboQuantBits);
+                return new TurboQuantKvCacheManager(turboQuantBits, resolvedIOConfig);
             default:
                 throw new IllegalStateException("Unknown KV cache strategy: " + kvCacheStrategy);
         }
