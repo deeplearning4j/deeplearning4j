@@ -143,9 +143,56 @@ public class Permute extends Transpose {
             perm = permuteDims;
         }
 
-        if (perm == null || perm.length != rank) {
-            // Plain transpose (reverse dims) or rank mismatch — fall back to C++
+        if (perm == null) {
+            // Plain transpose (reverse dims) — fall back to C++
             return super.initializeOutputs(ctx);
+        }
+
+        // Handle rank mismatch: adapt permutation to actual input rank.
+        // Mirrors the C++ logic in permute.cpp CUSTOM_OP_IMPL and DECLARE_SHAPE_FN.
+        if (perm.length != rank) {
+            int permSize = perm.length;
+            int extraDims = rank - permSize;
+
+            if (extraDims > 0) {
+                // Input has more dimensions than perm expects (e.g., expand_dims added leading 1s).
+                int leadingOnes = 0;
+                for (int i = 0; i < rank && leadingOnes < extraDims; i++) {
+                    if (input.size(i) == 1) {
+                        leadingOnes++;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (leadingOnes >= extraDims) {
+                    long[] adapted = new long[rank];
+                    for (int i = 0; i < extraDims; i++) {
+                        adapted[i] = i;  // identity for extra leading size-1 dims
+                    }
+                    for (int i = 0; i < permSize; i++) {
+                        adapted[extraDims + i] = perm[i] + extraDims;  // shift original indices
+                    }
+                    perm = adapted;
+                } else {
+                    // Not enough leading 1s — fall back to identity
+                    perm = new long[rank];
+                    for (int i = 0; i < rank; i++) perm[i] = i;
+                }
+            } else {
+                // Perm larger than input rank — filter to valid indices
+                java.util.List<Long> valid = new java.util.ArrayList<>();
+                for (long p : perm) {
+                    if (p < rank) valid.add(p);
+                }
+                if (valid.size() == rank) {
+                    perm = new long[rank];
+                    for (int i = 0; i < rank; i++) perm[i] = valid.get(i);
+                } else {
+                    perm = new long[rank];
+                    for (int i = 0; i < rank; i++) perm[i] = i;
+                }
+            }
         }
 
         // Validate permutation
@@ -153,6 +200,12 @@ public class Permute extends Transpose {
             if (p < 0 || p >= rank) {
                 return super.initializeOutputs(ctx);
             }
+        }
+
+        // Update iArguments to the adapted permutation so C++ sees consistent args
+        iArguments.clear();
+        for (long p : perm) {
+            iArguments.add(p);
         }
 
         // Build output shape and strides by permuting input's strides

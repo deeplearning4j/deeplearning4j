@@ -713,7 +713,8 @@ PLATFORM_IMPL(dot_product_attention_v2, ENGINE_CPU) {
       } else {
         k = v;
       }
-      out = output->reshape('c', {1, output->sizeAt(0), output->sizeAt(1)});
+      std::vector<sd::LongType> outShape = {1, output->sizeAt(0), output->sizeAt(1)};
+      out = output->reshape('c', outShape);
     }
 
     // Cast attention bias to query dtype if needed

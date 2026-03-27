@@ -722,7 +722,6 @@ template SD_LIB_EXPORT NDArray* operator*<NDArray &, NDArray &, void>(NDArray &a
 template SD_LIB_EXPORT NDArray* operator*<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
 template SD_LIB_EXPORT NDArray* operator*<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
 template SD_LIB_EXPORT NDArray* operator*<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
-template SD_LIB_EXPORT NDArray* sd::operator*<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
 
 
 template <typename T1, typename T2, typename>

@@ -3553,7 +3553,7 @@ NDArray &NDArray::reshape(const char order,  std::vector<sd::LongType> &shape, c
     THROW_EXCEPTION(errorMessage.c_str());
   }
   this->reshapei(order, shape);
-  return (NDArray &)std::move(*this);
+  return *this;
 }
 
 //////////////////////////////////////////////////////////////////////////
