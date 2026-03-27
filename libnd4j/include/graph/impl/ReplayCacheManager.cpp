@@ -8,12 +8,21 @@
 #include <ctime>
 #include <algorithm>
 
-#if defined(SD_FILESYSTEM_AVAILABLE) || __cplusplus >= 201703L
-#include <filesystem>
-namespace fs = std::filesystem;
+// std::filesystem is C++17 but on macOS it requires deployment target >= 10.15.
+// Apple Clang marks it unavailable when __MAC_OS_X_VERSION_MIN_REQUIRED < 101500.
+#if defined(SD_FILESYSTEM_AVAILABLE)
+#define HAS_FILESYSTEM 1
+#elif __cplusplus >= 201703L && !defined(__APPLE__)
+#define HAS_FILESYSTEM 1
+#elif __cplusplus >= 201703L && defined(__APPLE__) && defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 #define HAS_FILESYSTEM 1
 #else
 #define HAS_FILESYSTEM 0
+#endif
+
+#if HAS_FILESYSTEM
+#include <filesystem>
+namespace fs = std::filesystem;
 #endif
 
 namespace sd {

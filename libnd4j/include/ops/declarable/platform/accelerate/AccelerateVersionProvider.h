@@ -131,7 +131,7 @@ class SD_LIB_EXPORT AccelerateVersionProvider {
     info.capabilities = info.capabilities | HelperCapability::NEON;
 
     // AMX (Apple Matrix Extension) - available on M1 and later
-    if (info.runtime.major >= ACCELERATE_AMX_MACOS_MAJOR || hasAmx()) {
+    if (info.runtime.majorVersion >= ACCELERATE_AMX_MACOS_MAJOR || hasAmx()) {
       info.capabilities = info.capabilities | HelperCapability::AMX;
     }
 #else
@@ -150,7 +150,7 @@ class SD_LIB_EXPORT AccelerateVersionProvider {
     info.capabilities = info.capabilities | HelperCapability::WINOGRAD;
 
     // BNNS Graph API (macOS 12+)
-    if (info.runtime.major >= ACCELERATE_BNNS_GRAPH_MACOS_MAJOR) {
+    if (info.runtime.majorVersion >= ACCELERATE_BNNS_GRAPH_MACOS_MAJOR) {
       info.capabilities = info.capabilities | HelperCapability::GRAPH_EXECUTION;
     }
 
@@ -222,7 +222,7 @@ class SD_LIB_EXPORT AccelerateVersionProvider {
 
   static bool hasBnnsGraph() {
 #ifdef HAVE_ACCELERATE
-    return getMacOSVersion().major >= ACCELERATE_BNNS_GRAPH_MACOS_MAJOR;
+    return getMacOSVersion().majorVersion >= ACCELERATE_BNNS_GRAPH_MACOS_MAJOR;
 #else
     return false;
 #endif

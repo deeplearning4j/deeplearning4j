@@ -152,12 +152,12 @@ class SD_LIB_EXPORT MpsVersionProvider {
 #endif
 
     // MPSGraph (macOS 12+)
-    if (info.runtime.major >= MPS_GRAPH_MACOS_MAJOR) {
+    if (info.runtime.majorVersion >= MPS_GRAPH_MACOS_MAJOR) {
       info.capabilities = info.capabilities | HelperCapability::GRAPH_EXECUTION;
     }
 
     // Transformer optimizations (macOS 14+)
-    if (info.runtime.major >= MPS_TRANSFORMER_MACOS_MAJOR) {
+    if (info.runtime.majorVersion >= MPS_TRANSFORMER_MACOS_MAJOR) {
       info.capabilities = info.capabilities | HelperCapability::MULTI_HEAD_ATTENTION;
       info.capabilities = info.capabilities | HelperCapability::FLASH_ATTENTION;
     }
@@ -189,7 +189,7 @@ class SD_LIB_EXPORT MpsVersionProvider {
 
   static bool hasMPSGraph() {
 #ifdef HAVE_MPS
-    return getMacOSVersion().major >= MPS_GRAPH_MACOS_MAJOR;
+    return getMacOSVersion().majorVersion >= MPS_GRAPH_MACOS_MAJOR;
 #else
     return false;
 #endif
@@ -197,7 +197,7 @@ class SD_LIB_EXPORT MpsVersionProvider {
 
   static bool hasTransformerOptimizations() {
 #ifdef HAVE_MPS
-    return getMacOSVersion().major >= MPS_TRANSFORMER_MACOS_MAJOR;
+    return getMacOSVersion().majorVersion >= MPS_TRANSFORMER_MACOS_MAJOR;
 #else
     return false;
 #endif

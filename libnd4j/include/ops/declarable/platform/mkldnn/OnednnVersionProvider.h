@@ -186,7 +186,7 @@ class SD_LIB_EXPORT OnednnVersionProvider {
     }
 
     // Layer norm (available in all 3.x versions)
-    if (info.runtime.major >= 3) {
+    if (info.runtime.majorVersion >= 3) {
       info.capabilities = info.capabilities | HelperCapability::LAYER_NORM;
       info.capabilities = info.capabilities | HelperCapability::GROUP_NORM;
     }

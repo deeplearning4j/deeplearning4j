@@ -43,14 +43,16 @@ namespace platforms {
  * Version structure representing major.minor.patch versioning
  */
 struct SD_LIB_EXPORT HelperVersion {
-  int major = 0;
-  int minor = 0;
-  int patch = 0;
+  // Field names avoid 'major'/'minor' which collide with glibc macros
+  // from <sys/sysmacros.h> on older Linux toolchains (devtoolset-7).
+  int majorVersion = 0;
+  int minorVersion = 0;
+  int patchVersion = 0;
   std::string buildInfo;  // Additional build info (e.g., "CUDA 12.0", "AVX512")
 
   HelperVersion() = default;
   HelperVersion(int maj, int min, int pat, const std::string& info = "")
-      : major(maj), minor(min), patch(pat), buildInfo(info) {}
+      : majorVersion(maj), minorVersion(min), patchVersion(pat), buildInfo(info) {}
 
   /**
    * Check if this version meets the minimum required version
@@ -58,11 +60,11 @@ struct SD_LIB_EXPORT HelperVersion {
    * @return true if this version >= min
    */
   bool meetsMinimum(const HelperVersion& min) const {
-    if (major > min.major) return true;
-    if (major < min.major) return false;
-    if (minor > min.minor) return true;
-    if (minor < min.minor) return false;
-    return patch >= min.patch;
+    if (majorVersion > min.majorVersion) return true;
+    if (majorVersion < min.majorVersion) return false;
+    if (minorVersion > min.minorVersion) return true;
+    if (minorVersion < min.minorVersion) return false;
+    return patchVersion >= min.patchVersion;
   }
 
   /**
@@ -80,7 +82,7 @@ struct SD_LIB_EXPORT HelperVersion {
    */
   std::string toString() const {
     std::string result =
-        std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+        std::to_string(majorVersion) + "." + std::to_string(minorVersion) + "." + std::to_string(patchVersion);
     if (!buildInfo.empty()) {
       result += " (" + buildInfo + ")";
     }
@@ -90,7 +92,7 @@ struct SD_LIB_EXPORT HelperVersion {
   /**
    * Convert version to integer for comparison (major*10000 + minor*100 + patch)
    */
-  int toInt() const { return major * 10000 + minor * 100 + patch; }
+  int toInt() const { return majorVersion * 10000 + minorVersion * 100 + patchVersion; }
 
   /**
    * Create version from integer representation
@@ -100,7 +102,7 @@ struct SD_LIB_EXPORT HelperVersion {
   }
 
   bool operator==(const HelperVersion& other) const {
-    return major == other.major && minor == other.minor && patch == other.patch;
+    return majorVersion == other.majorVersion && minorVersion == other.minorVersion && patchVersion == other.patchVersion;
   }
 
   bool operator!=(const HelperVersion& other) const { return !(*this == other); }
