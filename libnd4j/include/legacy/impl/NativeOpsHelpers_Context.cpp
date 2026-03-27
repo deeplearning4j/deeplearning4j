@@ -146,7 +146,7 @@ bool requiresFullShapeValueSync(const std::string& opName) {
   return normalized == "where" || normalized == "unique";
 }
 
-bool shouldSyncInputForShape(const std::string& opName, const sd::NDArray* array) {
+bool shouldSyncInputForShape(const std::string& opName, sd::NDArray* array) {
   if (array == nullptr || array->isEmpty()) return false;
   if (requiresFullShapeValueSync(opName)) return true;
 

@@ -683,7 +683,7 @@ SDX_API sdx_status_t sdxLoadBundle(
     if (err != nullptr && err[0] != '\0') {
       setLastError(runtime, std::string("loadModelFromFile failed: ") + err);
     } else {
-      setLastError(runtime, "loadModelFromFile failed for: " + modelPath.string());
+      setLastError(runtime, "loadModelFromFile failed for: " + modelPathStr);
     }
     return SDX_STATUS_MODEL_LOAD_FAILED;
   }
@@ -692,7 +692,7 @@ SDX_API sdx_status_t sdxLoadBundle(
   model->runtime = runtime;
   model->model_handle = modelHandle;
   model->bundle_path = bundle_path;
-  model->model_path = modelPath.string();
+  model->model_path = modelPathStr;
   model->backend = backend;
   model->gpu_target = gpuTarget;
   model->strict_backend = strictBackend;
