@@ -266,6 +266,7 @@
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
                                 <includePath>${libnd4jhome}/include/performance</includePath>
+                                <includePath>${env.CUDA_PATH}/include</includePath>
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cuda</linkPath> </linkPaths>
