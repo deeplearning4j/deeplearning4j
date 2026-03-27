@@ -9,13 +9,15 @@
 #include <algorithm>
 
 // std::filesystem requires: C++17, __has_include(<filesystem>), and on macOS
-// the deployment target must be >= 10.15. GCC 7 (devtoolset-7) supports C++17
-// syntax but does not ship <filesystem>.
+// the deployment target must be >= 10.15. GCC < 9 has <filesystem> but requires
+// -lstdc++fs at link time, so exclude it.
 #if defined(SD_FILESYSTEM_AVAILABLE)
 #define HAS_FILESYSTEM 1
 #elif defined(__has_include)
 #  if __has_include(<filesystem>) && __cplusplus >= 201703L
-#    if defined(__APPLE__)
+#    if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+#      define HAS_FILESYSTEM 0
+#    elif defined(__APPLE__)
 #      if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 #        define HAS_FILESYSTEM 1
 #      else

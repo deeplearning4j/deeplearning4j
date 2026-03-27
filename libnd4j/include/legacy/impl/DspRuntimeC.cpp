@@ -32,11 +32,15 @@
 #include <cstdlib>
 #include <cstring>
 // std::filesystem availability check — same logic as ReplayCacheManager.cpp
+// GCC < 9 has <filesystem> but requires -lstdc++fs at link time; exclude it.
+// macOS requires deployment target >= 10.15.
 #if defined(SD_FILESYSTEM_AVAILABLE)
 #define HAS_FILESYSTEM 1
 #elif defined(__has_include)
 #  if __has_include(<filesystem>) && __cplusplus >= 201703L
-#    if defined(__APPLE__)
+#    if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+#      define HAS_FILESYSTEM 0
+#    elif defined(__APPLE__)
 #      if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
 #        define HAS_FILESYSTEM 1
 #      else
