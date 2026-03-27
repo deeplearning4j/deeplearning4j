@@ -754,6 +754,16 @@ function(setup_onednn)
         return()
     endif()
 
+    # OneDNN only supports x86/x64 platforms in our build configuration.
+    # ARM64 builds with OneDNN fail because OneDNN's CMake adds x86-specific
+    # compiler flags (e.g. -msse4.1) that are invalid on AArch64.
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|i686|i386")
+        message(STATUS "OneDNN helper requested but platform ${CMAKE_SYSTEM_PROCESSOR} is not x86 — skipping")
+        set(HAVE_ONEDNN OFF CACHE BOOL "OneDNN availability" FORCE)
+        set(ONEDNN "" PARENT_SCOPE)
+        return()
+    endif()
+
     if(TARGET onednn_external)
         message(STATUS "OneDNN helper is enabled (target already exists)")
         set(HAVE_ONEDNN ON CACHE BOOL "OneDNN availability" FORCE)
