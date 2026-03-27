@@ -431,8 +431,9 @@ endfunction()
 
 function(configure_cpu_linking main_target_name)
     # Core libraries
+    # CMAKE_DL_LIBS provides -ldl on Linux (needed for dlopen/dlsym in DynamicKernelLoader)
     target_link_libraries(${main_target_name} PUBLIC
-            ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface)
+            ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${JVM_LIBRARY} flatbuffers_interface ${CMAKE_DL_LIBS})
 
     # --- Multi-Helper Library Linking ---
     # Link all enabled helper libraries for multi-backend support
