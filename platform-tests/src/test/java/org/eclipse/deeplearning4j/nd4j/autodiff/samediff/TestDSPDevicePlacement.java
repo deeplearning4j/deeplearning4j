@@ -251,6 +251,11 @@ public class TestDSPDevicePlacement extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMultiDeviceMemoryQuery(Nd4jBackend backend) {
+        // CUDA device memory query APIs are not available on CPU backends
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                Nd4j.getBackend().getClass().getSimpleName().toLowerCase().contains("cuda"),
+                "Device memory query requires CUDA backend");
+
         // Test NativeOps device memory query APIs
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int numDevices = nativeOps.getAvailableDevices();

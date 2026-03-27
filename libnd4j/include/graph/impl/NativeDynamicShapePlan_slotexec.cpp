@@ -49,6 +49,74 @@ namespace graph {
 // Verify helpers now in DspVerifyUtils.h (dspLogSlotOutput, dspDumpSlotValues, etc.)
 
 namespace {
+
+/**
+ * Build shape info for a permute view: takes the input's shape info and permutes
+ * both dimensions AND strides according to the permutation vector.
+ * Unlike calculateOutputShape (which sets contiguous strides), this preserves
+ * the input's actual stride pattern so the view reads data correctly.
+ *
+ * Returns a ConstantShapeHelper-managed pointer (not owned by caller).
+ */
+static const LongType* buildPermutedViewShapeInfo(const NDArray* input, const NativeSlot& slot) {
+  int rank = shape::rank(input->shapeInfo());
+  if (rank <= 0) return nullptr;
+
+  const LongType* inShape = shape::shapeOf(const_cast<LongType*>(input->shapeInfo()));
+  const LongType* inStrides = shape::stride(const_cast<LongType*>(input->shapeInfo()));
+
+  // Build effective permutation, adapting if rank > numIArgs
+  // (e.g., expand_dims added leading size-1 dims: rank-5 input with rank-4 permutation)
+  std::vector<int> permVec;
+  if (slot.numIArgs >= rank) {
+    for (int i = 0; i < rank; i++) permVec.push_back(static_cast<int>(slot.iArgs[i]));
+  } else if (slot.numIArgs > 0) {
+    int extraDims = rank - slot.numIArgs;
+    int leadingOnes = 0;
+    for (int i = 0; i < rank && leadingOnes < extraDims; i++) {
+      if (inShape[i] == 1) leadingOnes++;
+      else break;
+    }
+    if (leadingOnes >= extraDims) {
+      for (int i = 0; i < extraDims; i++) permVec.push_back(i);
+      for (int i = 0; i < slot.numIArgs; i++) permVec.push_back(static_cast<int>(slot.iArgs[i]) + extraDims);
+    } else {
+      return nullptr;
+    }
+  } else {
+    return nullptr;
+  }
+
+  // Build permuted shape and strides from input
+  std::vector<LongType> permShape(rank);
+  std::vector<LongType> permStrides(rank);
+
+  for (int i = 0; i < rank; i++) {
+    int srcDim = permVec[i];
+    if (srcDim < 0 || srcDim >= rank) return nullptr;  // invalid permutation
+    permShape[i] = inShape[srcDim];
+    permStrides[i] = inStrides[srcDim];
+  }
+
+  // Build shape info buffer: [rank, shape..., strides..., 0, ews, order+flags]
+  auto shapeInfoLen = shape::shapeInfoLength(rank);
+  // Allocate — createFromExisting takes ownership
+  LongType* shapeInfoBuf = new LongType[shapeInfoLen];
+  shapeInfoBuf[0] = rank;
+  for (int i = 0; i < rank; i++) {
+    shapeInfoBuf[1 + i] = permShape[i];
+    shapeInfoBuf[1 + rank + i] = permStrides[i];
+  }
+  // extras (contains data type) — copy from input
+  shapeInfoBuf[2 * rank + 1] = input->shapeInfo()[2 * rank + 1];
+  // ews = 0 (view, not contiguous)
+  shapeInfoBuf[2 * rank + 2] = 0;
+  // Copy order from input
+  shapeInfoBuf[2 * rank + 3] = input->shapeInfo()[2 * rank + 3];
+
+  return ConstantShapeHelper::getInstance().createFromExisting(shapeInfoBuf);
+}
+
 std::string normalizeOpName_slotexec(const std::string& opName) {
   std::string normalized = opName;
   std::transform(normalized.begin(), normalized.end(), normalized.begin(),
@@ -503,8 +571,9 @@ Status NativeDynamicShapePlan::executeSlot(
         }
 
         if (input0 != nullptr && input0->dataBuffer() != nullptr &&
-            input0->ews() == 1 && input0->ordering() == 'c') {
-          // Compute view offset: 0 for reshape/squeeze/expand_dims/permute,
+            input0->ordering() == 'c' &&
+            shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
+          // Compute view offset: 0 for reshape/squeeze/expand_dims,
           // computed from begin indices for strided_slice.
           LongType viewOffset = 0;
           bool isStridedSlice = (slot.opName == "strided_slice");
@@ -537,6 +606,12 @@ Status NativeDynamicShapePlan::executeSlot(
           }
           if (slot.shapeCacheValid && !slot.cachedOutputShapes.empty()) {
             const LongType* outShapeInfo = slot.cachedOutputShapes[0];
+            // For permute: use permuted strides from input, not contiguous strides
+            bool isPermute = (normalizeOpName_slotexec(slot.opName) == "permute");
+            if (isPermute) {
+              const LongType* permSI = buildPermutedViewShapeInfo(input0, slot);
+              if (permSI != nullptr) outShapeInfo = permSI;
+            }
             LongType outLen = shape::length(outShapeInfo);
             LongType inLen = input0->lengthOf();
             if (outLen > 0 && outLen <= inLen) {
@@ -928,8 +1003,15 @@ Status NativeDynamicShapePlan::executeSlot(
   if (slot.isViewCapableOp && slot.numInputs >= 1 && numActualOutputs >= 1) {
     NDArray* input0 = inputs[0];
     if (input0 != nullptr && input0->dataBuffer() != nullptr &&
-        input0->ews() == 1 && input0->ordering() == 'c') {
+        input0->ordering() == 'c' &&
+        shape::strideDescendingCAscendingF(const_cast<LongType*>(input0->shapeInfo()))) {
       const LongType* outShapeInfo = outputShapes[0];
+      // For permute: use permuted strides from input, not contiguous strides
+      bool isPermute = (normalizeOpName_slotexec(slot.opName) == "permute");
+      if (isPermute) {
+        const LongType* permSI = buildPermutedViewShapeInfo(input0, slot);
+        if (permSI != nullptr) outShapeInfo = permSI;
+      }
       LongType outLen = shape::length(outShapeInfo);
       LongType inLen = input0->lengthOf();
 
@@ -1032,10 +1114,14 @@ step3_allocate:
       }
     }
 
-    // Empty arrays (ARRAY_EMPTY flag): use full-shapeInfo constructor to
-    // preserve the flag.  NDArray(order, shape, dt) rebuilds shapeInfo from
-    // dimensions alone, losing ARRAY_EMPTY and crashing concat/etc.
-    if (shape::isEmpty(const_cast<LongType*>(shapeInfo))) {
+    // Empty arrays: use full-shapeInfo constructor to preserve ARRAY_EMPTY.
+    // Also check for zero-length shapes (any dim == 0) even if the flag
+    // isn't set, since calculateOutputShape may not always set it.
+    bool hasZeroDim = false;
+    for (int d = 0; d < rank; d++) {
+      if (shapeInfo[d + 1] == 0) { hasZeroDim = true; break; }
+    }
+    if (shape::isEmpty(const_cast<LongType*>(shapeInfo)) || hasZeroDim) {
       NDArray* emptyOut = new NDArray(const_cast<LongType*>(shapeInfo), true);
       outputs[i] = emptyOut;
       outputSlots_[slotIdx] = emptyOut;
@@ -1151,8 +1237,7 @@ step3_allocate:
     if (allOutputsEmpty && numActualOutputs > 0) {
       // For view-capable ops, check if primary input is non-empty.
       // If so, the output shape is stale — re-derive from input and execute.
-      bool isViewOp = slot.isViewCapableOp ||
-                      (normalizeOpName_slotexec(slot.opName) == "permute");
+      bool isViewOp = slot.isViewCapableOp;
       bool primaryInputNonEmpty = (slot.numInputs > 0 && inputs[0] != nullptr &&
                                    !inputs[0]->isEmpty() && inputs[0]->lengthOf() > 0);
       if (isViewOp && primaryInputNonEmpty) {

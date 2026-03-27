@@ -17,6 +17,7 @@
  ******************************************************************************/
 
 #include <graph/GraphReplayHandle.h>
+#include <graph/DspDiagnostics.h>
 #include <graph/cpu/FunctionalReplayHandle.h>
 
 // ZLUDA builds define SD_CUDA but the actual GPU is AMD (HIP) or Intel (Level Zero).
@@ -75,20 +76,38 @@ const std::vector<ReplayCaptureBuffer>& GraphReplayHandle::getCaptureBuffers() c
 
 void GraphReplayHandle::snapshotExternalAddresses(NDArray** externalInputs, int numInputs) {
   capturedExternalAddrs_.resize(numInputs);
+  int nullCount = 0;
   for (int i = 0; i < numInputs; i++) {
     capturedExternalAddrs_[i] =
         (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
+    if (capturedExternalAddrs_[i] == nullptr) nullCount++;
   }
+  DSP_DIAG(EXECUTE, "GraphReplayHandle::snapshotExternalAddresses: %d inputs, %d non-null, %d null (backend=%s)",
+           numInputs, numInputs - nullCount, nullCount, backendName());
 }
 
 bool GraphReplayHandle::externalAddressesMatch(NDArray** externalInputs, int numInputs) const {
   if (capturedExternalAddrs_.empty()) return false;
-  if (numInputs != static_cast<int>(capturedExternalAddrs_.size())) return false;
+  if (numInputs != static_cast<int>(capturedExternalAddrs_.size())) {
+    DSP_DIAG(EXECUTE, "externalAddressesMatch: size mismatch (captured=%d current=%d)",
+             (int)capturedExternalAddrs_.size(), numInputs);
+    return false;
+  }
+  int mismatches = 0;
   for (int i = 0; i < numInputs; i++) {
     void* current = (externalInputs[i] != nullptr) ? externalInputs[i]->specialBuffer() : nullptr;
-    if (current != capturedExternalAddrs_[i]) return false;
+    if (current != capturedExternalAddrs_[i]) {
+      mismatches++;
+      if (mismatches <= 5) {
+        DSP_DIAG(EXECUTE, "externalAddressesMatch: mismatch at ext[%d] captured=%p current=%p",
+                 i, capturedExternalAddrs_[i], current);
+      }
+    }
   }
-  return true;
+  if (mismatches > 5) {
+    DSP_DIAG(EXECUTE, "externalAddressesMatch: ... and %d more mismatches", mismatches - 5);
+  }
+  return mismatches == 0;
 }
 
 const std::vector<void*>& GraphReplayHandle::getCapturedExternalAddresses() const {
@@ -136,6 +155,9 @@ void GraphReplayHandle::freeHostPointers() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 std::unique_ptr<GraphReplayHandle> GraphReplayFactory::create(int deviceId) {
+  DSP_DIAG_DEV(BACKEND, deviceId,
+               "GraphReplayFactory::create: deviceId=%d hwReplay=%d",
+               deviceId, hasHardwareReplay() ? 1 : 0);
   // ── ZLUDA builds: bypass CUDA graph translation, use native APIs ──────
   // ZLUDA defines SD_CUDA but the GPU is actually AMD or Intel.
   // ZLUDA's CUDA graph API coverage is incomplete (missing cuGraphLaunch

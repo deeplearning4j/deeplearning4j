@@ -49,24 +49,45 @@ CudaGraphReplayHandle::~CudaGraphReplayHandle() {
 bool CudaGraphReplayHandle::beginCapture(void* stream) {
   if (!handle_) return false;
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  return handle_->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed);
+  DSP_DIAG_DEV(EXECUTE, deviceId_,
+               "CudaGraphReplayHandle::beginCapture stream=%p device=%d buffers=%d hostPtrs=%d",
+               (void*)cudaStr, deviceId_, (int)captureBuffers_.size(), (int)capturedHostPtrs_.size());
+  bool ok = handle_->beginCapture(cudaStr, cudaStreamCaptureModeRelaxed);
+  if (!ok) {
+    DSP_DIAG_DEV(FALLBACK, deviceId_, "CudaGraphReplayHandle::beginCapture FAILED device=%d", deviceId_);
+  }
+  return ok;
 }
 
 bool CudaGraphReplayHandle::endCapture(void* stream) {
   if (!handle_) return false;
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  return handle_->endCapture(cudaStr);
+  bool ok = handle_->endCapture(cudaStr);
+  DSP_DIAG_DEV(EXECUTE, deviceId_,
+               "CudaGraphReplayHandle::endCapture %s device=%d nodes=%zu",
+               ok ? "OK" : "FAILED", deviceId_, ok ? handle_->getNumNodes() : 0);
+  return ok;
 }
 
 bool CudaGraphReplayHandle::finalize() {
   if (!handle_) return false;
-  return handle_->instantiate();
+  bool ok = handle_->instantiate();
+  DSP_DIAG_DEV(COMPILE, deviceId_,
+               "CudaGraphReplayHandle::finalize (instantiate) %s device=%d",
+               ok ? "OK" : "FAILED", deviceId_);
+  return ok;
 }
 
 bool CudaGraphReplayHandle::replay(void* stream) {
   if (!handle_) return false;
   cudaStream_t cudaStr = (stream != nullptr) ? *static_cast<cudaStream_t*>(stream) : nullptr;
-  return handle_->launchAsync(cudaStr);
+  bool ok = handle_->launchAsync(cudaStr);
+  if (!ok) {
+    DSP_DIAG_DEV(FALLBACK, deviceId_,
+                 "CudaGraphReplayHandle::replay FAILED device=%d state=%d",
+                 deviceId_, (int)handle_->getState());
+  }
+  return ok;
 }
 
 ReplayState CudaGraphReplayHandle::getState() const {

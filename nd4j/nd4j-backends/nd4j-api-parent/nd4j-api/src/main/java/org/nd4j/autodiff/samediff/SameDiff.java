@@ -3178,7 +3178,9 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
      * Special case of {@link #batchOutput()}.
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, String... outputs) {
-        return batchOutput().output(outputs).inputs(placeholders).output();
+        return batchOutput().output(outputs)
+                .listeners(new ControlflowListener())
+                .inputs(placeholders).output();
     }
 
     /**

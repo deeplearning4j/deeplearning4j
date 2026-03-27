@@ -63,6 +63,19 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
   NDArray* xT = (transX && xRank > 1) ? x->permute(permut, false, false) : x;  // permute() already returns NDArray*
   NDArray* yT = (transY && yRank > 1) ? y->permute(permut, false, false) : y;
 
+  // For rank > 3, the reshape to 3D uses applyTransform(Assign) which has a bug
+  // when copying from a higher-rank non-contiguous source to a lower-rank target.
+  // Ensure inputs are contiguous before reshaping.
+  NDArray* xTContiguous = nullptr;
+  NDArray* yTContiguous = nullptr;
+  if (xRank > 3 && !shape::strideDescendingCAscendingF(xT->shapeInfo())) {
+    xTContiguous = new NDArray(xT->dup(xT->ordering()));
+    xT = xTContiguous;
+  }
+  if (xRank > 3 && !shape::strideDescendingCAscendingF(yT->shapeInfo())) {
+    yTContiguous = new NDArray(yT->dup(yT->ordering()));
+    yT = yTContiguous;
+  }
 
   std::vector<sd::LongType> shapeOne =  {xT->lengthOf() / (xT->sizeAt(-2) * xT->sizeAt(-1)),
                                         xT->sizeAt(-2), xT->sizeAt(-1)};
@@ -212,9 +225,11 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
 
   if (zR != z) delete zR;
   if (xTR != xT) delete xTR;
-  if (xT != x) delete xT;
+  if (xT != x && xT != xTContiguous) delete xT;
   if (yTR != yT) delete yTR;
-  if (yT != y) delete yT;
+  if (yT != y && yT != yTContiguous) delete yT;
+  delete xTContiguous;
+  delete yTContiguous;
 }
 
 //////////////////////////////////////////////////////////////////////////

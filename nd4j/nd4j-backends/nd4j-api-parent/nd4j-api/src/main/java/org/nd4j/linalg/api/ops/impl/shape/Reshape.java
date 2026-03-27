@@ -248,10 +248,41 @@ public class Reshape extends DynamicCustomOp {
             char newOrder = (char) -iArguments.get(0);
             if(inputArguments.size() > 1)
                 shape = inputArguments.get(1).toLongVector();
+
+            INDArray input = inputArguments().get(0);
+
+            // Empty input: output must also be empty. Resolve -1 to 0 and return
+            // an empty array rather than trying to create a view of zero-length data.
+            if (input.isEmpty() || input.length() == 0) {
+                long[] resolvedShape = shape.clone();
+                for (int i = 0; i < resolvedShape.length; i++) {
+                    if (resolvedShape[i] == -1) {
+                        resolvedShape[i] = 0;
+                    }
+                }
+                addOutputArgument(Nd4j.emptyWithShape(resolvedShape, input.dataType()));
+                return false;
+            }
+
+            // Resolve -1 dimension from actual input length
+            long[] resolvedShape = shape.clone();
+            int minusOneIdx = -1;
+            long knownElements = 1;
+            for (int i = 0; i < resolvedShape.length; i++) {
+                if (resolvedShape[i] == -1) {
+                    minusOneIdx = i;
+                } else {
+                    knownElements *= resolvedShape[i];
+                }
+            }
+            if (minusOneIdx >= 0 && knownElements > 0) {
+                resolvedShape[minusOneIdx] = input.length() / knownElements;
+            }
+
             //wrap an existing buffer to ensure that the original buffer doesn't get deallocated
-            INDArray arr = Nd4j.create(inputArguments().get(0).data(),
-                    shape,
-                    Nd4j.getStrides(shape,newOrder),inputArguments().get(0).offset(),newOrder);
+            INDArray arr = Nd4j.create(input.data(),
+                    resolvedShape,
+                    Nd4j.getStrides(resolvedShape, newOrder), input.offset(), newOrder);
             addOutputArgument(arr);
             return false;
         }

@@ -205,27 +205,42 @@ public class TestDSPEmptyArrays extends BaseNd4jTestWithBackends {
     @Test
     @DisplayName("DSP: matmul with empty batch dimension")
     public void testMatmulEmptyBatch() {
-        SameDiff sd = SameDiff.create();
-        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, -1, 64);
-        SDVariable w = sd.constant("w", Nd4j.randn(DataType.FLOAT, 64, 128));
-        // Reshape to [batch*seq, 64], matmul, reshape back
-        // For empty seq, this tests empty array propagation through matmul
-        SDVariable flat = sd.reshape("flat", x, -1, 64);
-        SDVariable out = sd.mmul("out", flat, w);
-
+        // Use separate SameDiff instances to avoid session reuse issues
+        INDArray wArr = Nd4j.randn(DataType.FLOAT, 64, 128);
         INDArray emptyInput = Nd4j.create(DataType.FLOAT, 1, 0, 64);
 
         // Standard execution
-        Map<String, INDArray> standardResult = sd.output(Map.of("x", emptyInput), "out");
+        SameDiff sdRef = SameDiff.create();
+        sdRef.placeHolder("x", DataType.FLOAT, 1, -1, 64);
+        sdRef.constant("w", wArr.dup());
+        sdRef.reshape("flat", sdRef.getVariable("x"), -1, 64);
+        sdRef.mmul("out", sdRef.getVariable("flat"), sdRef.getVariable("w"));
+        Map<String, INDArray> standardResult = sdRef.output(Map.of("x", emptyInput), "out");
         INDArray expected = standardResult.get("out");
+        log.info("Standard: shape={}, isEmpty={}, length={}", java.util.Arrays.toString(expected.shape()),
+                expected.isEmpty(), expected.length());
 
-        // DSP execution
-        sd.setDspAutoCompileEnabled(true);
-        sd.setDspNativeAutoCompileEnabled(true);
-        Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", emptyInput), "out");
+        // DSP execution on separate graph
+        SameDiff sdDsp = SameDiff.create();
+        sdDsp.placeHolder("x", DataType.FLOAT, 1, -1, 64);
+        sdDsp.constant("w", wArr.dup());
+        sdDsp.reshape("flat", sdDsp.getVariable("x"), -1, 64);
+        sdDsp.mmul("out", sdDsp.getVariable("flat"), sdDsp.getVariable("w"));
+        sdDsp.setDspAutoCompileEnabled(true);
+        sdDsp.setDspNativeAutoCompileEnabled(true);
+        Map<String, INDArray> dspResult = sdDsp.output(Map.of("x", emptyInput), "flat", "out");
+        INDArray actualFlat = dspResult.get("flat");
         INDArray actual = dspResult.get("out");
 
         assertNotNull(actual, "DSP output should not be null");
+        System.out.println("DSP flat: shape=" + java.util.Arrays.toString(actualFlat.shape())
+                + " isEmpty=" + actualFlat.isEmpty() + " length=" + actualFlat.length());
+        System.out.println("DSP out: shape=" + java.util.Arrays.toString(actual.shape())
+                + " isEmpty=" + actual.isEmpty() + " length=" + actual.length()
+                + " rank=" + actual.rank());
+        System.out.println("Standard: shape=" + java.util.Arrays.toString(expected.shape())
+                + " isEmpty=" + expected.isEmpty() + " length=" + expected.length()
+                + " rank=" + expected.rank());
         assertTrue(actual.isEmpty() || actual.length() == 0,
                 "Matmul with empty input should produce empty output");
         log.info("testMatmulEmptyBatch PASSED: shape={}", java.util.Arrays.toString(actual.shape()));

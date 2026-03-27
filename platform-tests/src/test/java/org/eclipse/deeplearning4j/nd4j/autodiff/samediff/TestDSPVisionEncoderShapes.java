@@ -486,23 +486,76 @@ public class TestDSPVisionEncoderShapes extends BaseNd4jTestWithBackends {
     @Test
     @DisplayName("Full vision encoder pipeline: standard vs DSP comparison")
     public void testFullVisionEncoderPipeline_StandardVsDsp() {
-        SameDiff sd = SameDiff.create();
-        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, 3, -1, -1);
-
-        SDVariable convW = sd.constant("convW", Nd4j.rand(DataType.FLOAT, 3, 3, 3, 16));
-        SDVariable convB = sd.constant("convB", Nd4j.zeros(DataType.FLOAT, 16));
+        // Use separate SameDiff instances to avoid constant corruption between paths.
+        // Standard execution can modify constants in-place; sharing constants between
+        // standard and DSP paths causes value mismatches unrelated to shape caching.
+        INDArray convWArr = Nd4j.rand(DataType.FLOAT, 3, 3, 3, 16);
+        INDArray convBArr = Nd4j.zeros(DataType.FLOAT, 16);
+        INDArray linearWArr = Nd4j.rand(DataType.FLOAT, 16, 8);
+        INDArray in = Nd4j.rand(DataType.FLOAT, 1, 3, 14, 14);
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(3).kW(3).sH(1).sW(1).pH(1).pW(1)
                 .dataFormat("NCHW")
                 .build();
-        SDVariable conv = sd.cnn.conv2d("conv", input, convW, convB, config);
-        SDVariable reshaped = sd.reshape("reshaped", conv, -1, 16);
-        SDVariable linearW = sd.constant("linearW", Nd4j.rand(DataType.FLOAT, 16, 8));
-        SDVariable mm = sd.mmul("mm", reshaped, linearW);
-        SDVariable output = sd.sum("output", mm, false, -1);
 
-        INDArray in = Nd4j.rand(DataType.FLOAT, 1, 3, 14, 14);
-        compareStandardVsDsp(sd, Map.of("input", in), "output");
+        // Standard execution on fresh graph
+        SameDiff sdRef = SameDiff.create();
+        sdRef.placeHolder("input", DataType.FLOAT, 1, 3, -1, -1);
+        sdRef.constant("convW", convWArr.dup());
+        sdRef.constant("convB", convBArr.dup());
+        sdRef.cnn.conv2d("conv", sdRef.getVariable("input"), sdRef.getVariable("convW"),
+                sdRef.getVariable("convB"), config);
+        sdRef.reshape("reshaped", sdRef.getVariable("conv"), -1, 16);
+        sdRef.constant("linearW", linearWArr.dup());
+        sdRef.mmul("mm", sdRef.getVariable("reshaped"), sdRef.getVariable("linearW"));
+        sdRef.sum("output", sdRef.getVariable("mm"), false, -1);
+        Map<String, INDArray> refResult = sdRef.output(Map.of("input", in), "conv", "reshaped", "mm", "output");
+        INDArray expectedConv = refResult.get("conv").dup();
+        INDArray expectedReshaped = refResult.get("reshaped").dup();
+        INDArray expectedMm = refResult.get("mm").dup();
+        INDArray expected = refResult.get("output").dup();
+        log.info("Standard output shape: {}", Arrays.toString(expected.shape()));
+
+        // DSP execution on separate fresh graph
+        SameDiff sdDsp = SameDiff.create();
+        sdDsp.placeHolder("input", DataType.FLOAT, 1, 3, -1, -1);
+        sdDsp.constant("convW", convWArr.dup());
+        sdDsp.constant("convB", convBArr.dup());
+        sdDsp.cnn.conv2d("conv", sdDsp.getVariable("input"), sdDsp.getVariable("convW"),
+                sdDsp.getVariable("convB"), config);
+        sdDsp.reshape("reshaped", sdDsp.getVariable("conv"), -1, 16);
+        sdDsp.constant("linearW", linearWArr.dup());
+        sdDsp.mmul("mm", sdDsp.getVariable("reshaped"), sdDsp.getVariable("linearW"));
+        sdDsp.sum("output", sdDsp.getVariable("mm"), false, -1);
+        sdDsp.setDspAutoCompileEnabled(true);
+        sdDsp.setDspNativeAutoCompileEnabled(true);
+        Map<String, INDArray> dspResult = sdDsp.output(Map.of("input", in), "conv", "reshaped", "mm", "output");
+        INDArray actualConv = dspResult.get("conv").dup();
+        INDArray actualReshaped = dspResult.get("reshaped").dup();
+        INDArray actualMm = dspResult.get("mm").dup();
+        INDArray actual = dspResult.get("output").dup();
+
+        // Compare each intermediate to find where mismatch starts
+        double convDiff = expectedConv.sub(actualConv).amaxNumber().doubleValue();
+        double reshapedDiff = expectedReshaped.sub(actualReshaped).amaxNumber().doubleValue();
+        double mmDiff = expectedMm.sub(actualMm).amaxNumber().doubleValue();
+        double outputDiff = expected.sub(actual).amaxNumber().doubleValue();
+        System.out.println("=== Intermediate comparison ===");
+        System.out.println("conv: shape=" + Arrays.toString(actualConv.shape()) + " maxDiff=" + convDiff);
+        System.out.println("reshaped: shape=" + Arrays.toString(actualReshaped.shape()) + " maxDiff=" + reshapedDiff);
+        System.out.println("mm: shape=" + Arrays.toString(actualMm.shape()) + " maxDiff=" + mmDiff);
+        System.out.println("output: shape=" + Arrays.toString(actual.shape()) + " maxDiff=" + outputDiff);
+
+        // Print strides for conv output to check contiguity
+        System.out.println("Standard conv strides: " + Arrays.toString(expectedConv.stride()));
+        System.out.println("DSP conv strides: " + Arrays.toString(actualConv.stride()));
+
+        assertArrayEquals(expected.shape(), actual.shape(),
+                "Shape mismatch: expected " + Arrays.toString(expected.shape())
+                        + " but got " + Arrays.toString(actual.shape()));
+        assertEquals(expected.dataType(), actual.dataType(), "DataType mismatch");
+        assertTrue(outputDiff < TOL,
+                "Value mismatch: max diff = " + outputDiff + " (tolerance = " + TOL + ")");
     }
 
     // ═══════════════════════════════════════════════════════════════════════════

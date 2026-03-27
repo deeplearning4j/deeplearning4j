@@ -182,7 +182,12 @@ public class Transpose extends DynamicCustomOp {
             perm = permuteDims;
         }
 
-        if (perm != null && perm.length == rank) {
+        if (perm != null && perm.length != rank) {
+            // Rank mismatch — fall back to C++ which has adaptation logic
+            return null;
+        }
+
+        if (perm != null) {
             // Apply permutation
             for (int i = 0; i < rank; i++) {
                 int srcAxis = (int) perm[i];

@@ -240,24 +240,30 @@ public class TestDSPViewOps {
     @Test
     @DisplayName("permute: DSP matches standard execution")
     public void testPermuteDspMatchesStandard() {
-        SameDiff sd = SameDiff.create();
-        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 2, 3, 4);
-        SDVariable permuted = sd.permute("permuted", x, 0, 2, 1); // [2, 4, 3]
-        SDVariable out = permuted.mul("out", sd.constant("s", Nd4j.scalar(2.0f)));
-
         INDArray input = Nd4j.linspace(1, 24, 24, DataType.FLOAT).reshape(2, 3, 4);
+        INDArray scaleVal = Nd4j.scalar(2.0f);
 
-        INDArray expected = sd.output(Map.of("x", input), "out").get("out").dup();
+        // Standard path
+        SameDiff sdStd = SameDiff.create();
+        SDVariable xStd = sdStd.placeHolder("x", DataType.FLOAT, 2, 3, 4);
+        SDVariable permutedStd = sdStd.permute("permuted", xStd, 0, 2, 1);
+        permutedStd.mul("out", sdStd.constant("s", scaleVal.dup()));
+        sdStd.setDspAutoCompileEnabled(false);
+        INDArray expected = sdStd.output(Map.of("x", input.dup()), "out").get("out").dup();
+        sdStd.close();
 
-        sd.setDspAutoCompileEnabled(true);
-        sd.setDspNativeAutoCompileEnabled(false);
-        sd.clearDynamicShapePlanCache();
-        sd.resetSession();
-        INDArray actual = sd.output(Map.of("x", input), "out").get("out");
+        // DSP path
+        SameDiff sdDsp = SameDiff.create();
+        SDVariable xDsp = sdDsp.placeHolder("x", DataType.FLOAT, 2, 3, 4);
+        SDVariable permutedDsp = sdDsp.permute("permuted", xDsp, 0, 2, 1);
+        permutedDsp.mul("out", sdDsp.constant("s", scaleVal.dup()));
+        sdDsp.setDspAutoCompileEnabled(true);
+        sdDsp.setDspNativeAutoCompileEnabled(false);
+        INDArray actual = sdDsp.output(Map.of("x", input.dup()), "out").get("out");
 
         assertArrayEquals(new long[]{2, 4, 3}, actual.shape());
         assertEquals(expected, actual, "Permute DSP must match standard");
-        sd.close();
+        sdDsp.close();
     }
 
     // ========== MULTI-STEP: changing inputs, verify no stale data ==========
@@ -383,34 +389,74 @@ public class TestDSPViewOps {
     @Test
     @DisplayName("reshape + permute + matmul: attention Q/K/V split pattern")
     public void testReshapePermuteMatmulAttentionPattern() {
-        SameDiff sd = SameDiff.create();
-        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 1, 192);
-        SDVariable reshaped = sd.reshape("reshaped", x, 1, 1, 3, 64);
-        SDVariable permuted = sd.permute("permuted", reshaped, 0, 2, 1, 3); // [1,3,1,64]
-        SDVariable k = sd.constant("k", Nd4j.randn(DataType.FLOAT, 1, 3, 64, 5).mul(0.1));
-        SDVariable scores = sd.mmul("scores", permuted, k); // [1,3,1,5]
-        SDVariable out = scores.mul("out", sd.constant("scale", Nd4j.scalar(1.0f / 8.0f)));
+        INDArray kData = Nd4j.randn(DataType.FLOAT, 1, 3, 64, 5).mul(0.1);
+        INDArray scaleData = Nd4j.scalar(1.0f / 8.0f);
 
         for (int step = 0; step < 5; step++) {
             INDArray input = Nd4j.randn(DataType.FLOAT, 1, 1, 192).mul(0.1 * (step + 1));
 
-            sd.setDspAutoCompileEnabled(false);
-            sd.clearDynamicShapePlanCache();
-            sd.resetSession();
-            INDArray expected = sd.output(Map.of("x", input), "out").get("out").dup();
+            // Standard path: fresh SameDiff instance
+            SameDiff sdStd = SameDiff.create();
+            SDVariable xStd = sdStd.placeHolder("x", DataType.FLOAT, 1, 1, 192);
+            SDVariable reshapedStd = sdStd.reshape("reshaped", xStd, 1, 1, 3, 64);
+            SDVariable permutedStd = sdStd.permute("permuted", reshapedStd, 0, 2, 1, 3);
+            SDVariable kStd = sdStd.constant("k", kData.dup());
+            SDVariable scoresStd = sdStd.mmul("scores", permutedStd, kStd);
+            scoresStd.mul("out", sdStd.constant("scale", scaleData.dup()));
+            sdStd.setDspAutoCompileEnabled(false);
+            Map<String, INDArray> stdOut = sdStd.output(Map.of("x", input.dup()), "reshaped", "permuted", "scores", "out");
+            INDArray expected = stdOut.get("out").dup();
+            INDArray stdReshaped = stdOut.get("reshaped").dup();
+            INDArray stdPermuted = stdOut.get("permuted").dup();
+            INDArray stdScores = stdOut.get("scores").dup();
+            sdStd.close();
 
-            sd.setDspAutoCompileEnabled(true);
-            sd.setDspNativeAutoCompileEnabled(false);
-            sd.clearDynamicShapePlanCache();
-            sd.resetSession();
-            INDArray actual = sd.output(Map.of("x", input), "out").get("out").dup();
+            // DSP path: fresh SameDiff instance
+            SameDiff sdDsp = SameDiff.create();
+            SDVariable xDsp = sdDsp.placeHolder("x", DataType.FLOAT, 1, 1, 192);
+            SDVariable reshapedDsp = sdDsp.reshape("reshaped", xDsp, 1, 1, 3, 64);
+            SDVariable permutedDsp = sdDsp.permute("permuted", reshapedDsp, 0, 2, 1, 3);
+            SDVariable kDsp = sdDsp.constant("k", kData.dup());
+            SDVariable scoresDsp = sdDsp.mmul("scores", permutedDsp, kDsp);
+            scoresDsp.mul("out", sdDsp.constant("scale", scaleData.dup()));
+            sdDsp.setDspAutoCompileEnabled(true);
+            sdDsp.setDspNativeAutoCompileEnabled(false);
+            Map<String, INDArray> dspOut = sdDsp.output(Map.of("x", input.dup()), "reshaped", "permuted", "scores", "out");
+            INDArray actual = dspOut.get("out").dup();
+            INDArray dspReshaped = dspOut.get("reshaped").dup();
+            INDArray dspPermuted = dspOut.get("permuted").dup();
+            INDArray dspScores = dspOut.get("scores").dup();
+            sdDsp.close();
+
+            log.info("Step {} reshaped diff: {}", step, dspReshaped.sub(stdReshaped).amaxNumber().doubleValue());
+            log.info("Step {} permuted diff: {}", step, dspPermuted.sub(stdPermuted).amaxNumber().doubleValue());
+            log.info("Step {} scores diff: {}", step, dspScores.sub(stdScores).amaxNumber().doubleValue());
 
             double maxDiff = actual.sub(expected).amaxNumber().doubleValue();
             log.info("attention pattern step {}: maxDiff={}", step, maxDiff);
             assertTrue(maxDiff < TOL,
                     "Step " + step + ": attention reshape+permute+matmul diverges by " + maxDiff);
         }
-        sd.close();
+    }
+
+    @Test
+    @DisplayName("matmul with view-based permuted input vs contiguous")
+    public void testMatmulViewVsContiguous() {
+        // Regression: oneDNN matmul with 4D non-contiguous (permuted) view input
+        // produced zeros for batches 1+ due to applyTransform(Assign) bug in 4D→3D reshape.
+        INDArray x = Nd4j.randn(DataType.FLOAT, 1, 1, 3, 64).mul(0.1);
+        INDArray k = Nd4j.randn(DataType.FLOAT, 1, 3, 64, 5).mul(0.1);
+
+        // Permute creates a view with non-contiguous strides [192,64,192,1]
+        INDArray permView = x.permute(0, 2, 1, 3); // [1,3,1,64]
+        INDArray permContig = permView.dup();       // [1,3,1,64] contiguous
+
+        INDArray resultView = Nd4j.matmul(permView, k, false, false, false);
+        INDArray resultContig = Nd4j.matmul(permContig, k, false, false, false);
+
+        double mmDiff = resultView.sub(resultContig).amaxNumber().doubleValue();
+        log.info("Matmul view vs contiguous diff: {}", mmDiff);
+        assertTrue(mmDiff < 1e-5, "Matmul with view vs contiguous input should match, but diff=" + mmDiff);
     }
 
     @Test

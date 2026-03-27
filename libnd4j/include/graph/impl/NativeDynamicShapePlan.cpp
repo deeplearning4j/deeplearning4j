@@ -942,6 +942,12 @@ Status NativeDynamicShapePlan::execute(
     std::memset(outputSlots_, 0, sizeof(NDArray*) * totalOutputSlots_);
   }
 
+  // Reset dead-slot flags once per plan execution (not per segment).
+  // Dead flags from Switch in one segment must persist to affect ops in later segments.
+  if (hasControlFlow_ && slotIsDead_ != nullptr) {
+    std::memset(slotIsDead_, 0, sizeof(bool) * slotIsDeadSize_);
+  }
+
   // Timing instrumentation
   using Clock = std::chrono::high_resolution_clock;
   auto t0 = executionTimingEnabled_ ? Clock::now() : Clock::time_point{};
@@ -1594,8 +1600,17 @@ void NativeDynamicShapePlan::buildSegments() {
 //   2. Device boundaries
 //
 void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
+  DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: ENTER numSlots=%d oldSegments=%d executeCount=%d shapesFrozen=%d",
+           numSlots_, (int)segments_.size(), executeCount_, shapesFrozen_ ? 1 : 0);
+
   // Destroy existing cached graphs (they reference old segment boundaries)
   for (auto& seg : segments_) {
+    if (seg.replayHandle) {
+      DSP_DIAG_SEG(SEGMENT, seg.startSlot,
+                   "destroying replay handle for seg[%d-%d] state=%d replays=%d",
+                   seg.startSlot, seg.endSlot, (int)seg.replayHandle->getState(),
+                   seg.replayHandle->getStatistics().replayCount);
+    }
     platformCleanupSegmentForRebuild(seg);
   }
 
@@ -1697,6 +1712,17 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     DSP_DIAG(SEGMENT, "... and %d more data-dependent slots",
              dataDepCount - 10);
   }
+  // Log per-segment summary
+  if (DSP_DIAG_ENABLED(SEGMENT)) {
+    for (int si = 0; si < (int)segments_.size(); si++) {
+      auto& seg = segments_[si];
+      int segSize = seg.endSlot - seg.startSlot + 1;
+      DSP_DIAG_SEG(SEGMENT, seg.startSlot,
+                   "segment[%d] slots[%d-%d] size=%d capturable=%d",
+                   si, seg.startSlot, seg.endSlot, segSize, seg.isCapturable ? 1 : 0);
+    }
+  }
+
   DSP_DIAG(SEGMENT, "rebuildSegmentsForFrozenShapes: %d -> %d segments (%d/%d slots capturable, %d data-dep, matmulSeg=%d)",
            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
            static_cast<int>(matmulSegmentation));
@@ -1797,6 +1823,9 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     }
   }
 
+  DSP_DIAG(FUSION, "frozen constant analysis: %zu frozen output slots out of %d total",
+           frozenOutputSlots.size(), totalOutputSlots_);
+
   // Disable in-place fusion for any op whose in-place input comes from a frozen output
   int disabledInPlace = 0;
   for (int s = 0; s < numSlots_; s++) {
@@ -1805,6 +1834,9 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
         sl.inPlaceFusedInputIdx < sl.numInputs) {
       int srcSlot = sl.inputSourceIndices[sl.inPlaceFusedInputIdx];
       if (srcSlot >= 0 && frozenOutputSlots.count(srcSlot)) {
+        DSP_DIAG_SLOT(FUSION, s,
+                      "disabled in-place fusion: slot %d (%s) consumes frozen slot %d",
+                      s, sl.opName.c_str(), srcSlot);
         sl.inPlaceFused = false;
         sl.inPlaceFusedInputIdx = -1;
         disabledInPlace++;
@@ -1812,7 +1844,7 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
     }
   }
   if (disabledInPlace > 0) {
-    DSP_DIAG(SEGMENT, "rebuildSegments: disabled %d in-place fusions that would corrupt %zu frozen outputs",
+    DSP_DIAG(FUSION, "rebuildSegments: disabled %d in-place fusions that would corrupt %zu frozen outputs",
              disabledInPlace, frozenOutputSlots.size());
   }
 }

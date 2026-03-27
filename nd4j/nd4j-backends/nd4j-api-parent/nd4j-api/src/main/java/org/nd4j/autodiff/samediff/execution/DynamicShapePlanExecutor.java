@@ -718,8 +718,12 @@ public class DynamicShapePlanExecutor implements Closeable {
         if (frozen && !wasFrozen) {
             log.info("FROZEN_TRANSITION: unfrozen → FROZEN (frozenCallCount reset, plan={})",
                     nativePlanHandle != null && !nativePlanHandle.isNull() ? "native" : "java");
+            DspDiagnostics.record(DspDiagnostics.SHAPE,
+                    "Java: shapes FROZEN (executionCount=" + executionCount + ")");
         } else if (!frozen && wasFrozen) {
             log.info("FROZEN_TRANSITION: FROZEN → unfrozen (caches cleared)");
+            DspDiagnostics.record(DspDiagnostics.SHAPE,
+                    "Java: shapes UNFROZEN (executionCount=" + executionCount + ")");
         }
         // Always clear frozen-state caches on ANY transition (freeze or unfreeze).
         // When entering frozen mode, stale caches from a previous plan/seqLen would cause
@@ -891,9 +895,15 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (cudaGraphsEnabled) {
                 try {
                     nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, true);
+                    DspDiagnostics.record(DspDiagnostics.COMPILE,
+                            "Java: CUDA graphs ENABLED on native plan");
                 } catch (UnsupportedOperationException e) {
-                    // CPU backend doesn't support CUDA graphs
+                    DspDiagnostics.record(DspDiagnostics.COMPILE,
+                            "Java: CUDA graphs not supported by backend (CPU?)");
                 }
+            } else {
+                DspDiagnostics.record(DspDiagnostics.COMPILE,
+                        "Java: CUDA graphs DISABLED (cudaGraphsFailed=" + cudaGraphsFailed + ")");
             }
 
             String jitModeStr = System.getProperty(ND4JSystemProperties.DSP_JIT_MODE, "graph");
@@ -2780,6 +2790,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // critical for strided_slice which needs a non-zero offset into the input
             // buffer. If initializeOutputs returns false, it has set up the output
             // already and we can update the slot tracking.
+            boolean viewOpProducedActualView = false;
             if (slot.isViewCapableOp() && fn instanceof CustomOp) {
                 CustomOp customOp = (CustomOp) fn;
                 // Sync op-level inputArguments from OpContext. DSP sets inputs on the
@@ -2808,7 +2819,7 @@ public class DynamicShapePlanExecutor implements Closeable {
                 // In DSP the return value is irrelevant; we just need outputs propagated.
                 if (customOp.numOutputArguments() > 0) {
                     INDArray viewOut = customOp.getOutputArgument(0);
-                    if (viewOut != null && !viewOut.isEmpty()) {
+                    if (viewOut != null && (!viewOut.isEmpty() || viewOut.rank() > 0)) {
                         // Determine if this is a TRUE view (shares DataBuffer with an input)
                         // vs. a newly allocated buffer (from super.initializeOutputs()).
                         // Only true views should be marked as view producers — their buffers
@@ -2834,10 +2845,23 @@ public class DynamicShapePlanExecutor implements Closeable {
                             if (slotArrayCache != null) slotArrayCache[viewSlotIdx] = viewOut;
                             if (slotIsViewProducer != null) slotIsViewProducer[viewSlotIdx] = isActualView;
                         }
+                        viewOpProducedActualView = isActualView;
                     }
                 }
             }
-            Nd4j.exec((CustomOp) fn, ctx);
+            // For view-capable ops where initializeOutputs created a true view
+            // (output shares the input's DataBuffer), skip C++ execution entirely.
+            // The view is already correct — C++ permute/reshape/squeeze/expand_dims
+            // would just check same-buffer and return OK (no-op). Skipping avoids
+            // C++ prepareOutputs (with shapeFunctionOverride=false) which runs
+            // calculateOutputShape and creates a C++ NDArray* for the output through
+            // OpaqueNDArray. This OpaqueNDArray goes through ConstantShapeHelper cache
+            // lookup which may return a different shapeInfo (C-contiguous strides)
+            // than the view's permuted strides, corrupting downstream ops that read
+            // through the cached OpaqueNDArray.
+            if (!viewOpProducedActualView) {
+                Nd4j.exec((CustomOp) fn, ctx);
+            }
         } else {
             Nd4j.exec((Op) fn, ctx);
         }
@@ -4493,7 +4517,11 @@ public class DynamicShapePlanExecutor implements Closeable {
             log.debug("Native executor: plan not precompiled for native execution");
             return null;
         }
-         
+
+        DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                "Java: executeNative ENTER executionCount=" + executionCount +
+                " frozen=" + shapesFrozen + " slots=" + plan.getSlots().length);
+
          // Resolve external inputs (constants, variables, placeholders)
         // When frozen, cache constant/variable arrays and only re-resolve placeholders
         String[] extKeys = plan.getExternalInputKeys();
@@ -4503,6 +4531,8 @@ public class DynamicShapePlanExecutor implements Closeable {
         }
         INDArray[] extInputs;
         if (shapesFrozen && cachedInputArrays != null && cachedInputArrays.length == extKeys.length) {
+            DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                    "Java: external inputs FAST PATH (frozen, " + extKeys.length + " cached)");
             // Fast path: reuse cached constant/variable arrays, only re-resolve placeholders.
             // Use a separate array so we don't corrupt cachedInputArrays (needed for identity comparison).
             extInputs = new INDArray[extKeys.length];
@@ -4539,6 +4569,8 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
             }
         } else {
+            DspDiagnostics.record(DspDiagnostics.EXECUTE,
+                    "Java: external inputs SLOW PATH (resolving " + extKeys.length + " inputs fresh)");
             extInputs = new INDArray[extKeys.length];
             for (int i = 0; i < extKeys.length; i++) {
                 String varName = extKeys[i];
@@ -4919,9 +4951,16 @@ public class DynamicShapePlanExecutor implements Closeable {
             if (status != 0) {
                 String errMsg = nativeOps.lastErrorMessage();
                 nativeOps.clearLastError();
+                DspDiagnostics.recordTimed(DspDiagnostics.FALLBACK, -1, -1, "executeNative",
+                        execMs * 1000, "Java: native execution FAILED status=" + status +
+                        " msg=" + errMsg + " executionCount=" + executionCount);
                 throw new RuntimeException("Native plan execution failed with status " + status +
                         ": " + (errMsg != null ? errMsg : "unknown error"));
             }
+
+            DspDiagnostics.recordTimed(DspDiagnostics.EXECUTE, -1, -1, "executeNative",
+                    execMs * 1000, "Java: native execution OK " + execMs + "ms" +
+                    " frozen=" + shapesFrozen + " executionCount=" + executionCount);
 
             // NOTE: No need to clearLastError() on success path — error was already
             // cleared on line 4538 when status != 0. If status == 0, there's no error.

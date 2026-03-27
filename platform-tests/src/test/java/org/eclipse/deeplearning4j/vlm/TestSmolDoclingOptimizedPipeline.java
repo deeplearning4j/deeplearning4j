@@ -141,6 +141,46 @@ public class TestSmolDoclingOptimizedPipeline {
         if (triton) {
             configs.add(BenchmarkConfig.optimal());
 
+            // Audit variants for isolating the remaining Triton/cublas decode knobs.
+            configs.add(BenchmarkConfig.create("OPTIMAL_NO_NORM")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true)
+                    .tritonTf32(true)
+                    .dspBatchedGemm(true)
+                    .maxTokens(250).minDiversityPct(30));
+
+            configs.add(BenchmarkConfig.create("OPTIMAL_NO_BATCHED_GEMM")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,NORMALIZATION,ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true)
+                    .tritonTf32(true)
+                    .dspBatchedGemm(false)
+                    .maxTokens(250).minDiversityPct(30));
+
+            configs.add(BenchmarkConfig.create("OPTIMAL_NO_NORM_NO_BATCHED_GEMM")
+                    .tritonIncludeTypes("CONST_GEN,GATHER,CONCAT,SPLIT,STACK,ATTENTION")
+                    .tritonSectionFusion(true)
+                    .tritonCompileAll(true)
+                    .tritonGraphCapture(true).tritonAllowFallbackCapture(true)
+                    .tritonConsolidatedArgTable(true).tritonArgDirtyTracking(true)
+                    .tritonFusionScoring(false)
+                    .tritonNumWarps(4).tritonNumStages(1)
+                    .cublasTf32(true)
+                    .tritonTf32(true)
+                    .dspBatchedGemm(false)
+                    .maxTokens(250).minDiversityPct(30));
+
             // ─── cuBLAS workspace matrix ─────────────────────────────────────
             // Tests all combinations of workspace ON/OFF × stages 1/2 × tf32 ON/OFF.
             // workspace=ON prevents MemAlloc graph nodes but may cause algorithm divergence.

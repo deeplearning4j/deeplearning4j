@@ -118,6 +118,17 @@ inline bool shouldBeStandalone(const SectionTypeConfig& cfg,
     return section.gridRequirement > batchHeads;
   }
 
+  // Tiny axis-0 concat sections are primarily scalar/vector shape bookkeeping in decode.
+  // Keeping them standalone blocks the surrounding attention-neighborhood fusion for no
+  // real benefit, while the large KV append concats still remain standalone because they
+  // use axis 2 and/or require many blocks.
+  if (cfg.type == KernelSectionType::CONCAT &&
+      sectionFusionEnabled &&
+      section.concatAxis == 0 &&
+      section.gridRequirement <= 1) {
+    return false;
+  }
+
   // DATA_MOVEMENT types that aren't fusion-verified: standalone to avoid accuracy regressions
   // (SPLIT, SPLIT_V, CONCAT, CONST_GEN have subtle offset calculation issues when merged)
   if (sectionFusionEnabled) {

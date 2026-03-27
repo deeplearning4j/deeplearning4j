@@ -221,10 +221,11 @@ void processReshapeArgs(NDArray* x, std::vector<LongType>& reshapeArgs, std::vec
 void computeUnknownDimension(NDArray* x, std::vector<LongType>& shapeNew, int pos,
                              LongType newShapeLen, bool newShapeEmpty) {
   if (pos != -1) {
-    // If input is empty (has zero dimensions), the inferred dimension should be 1
-    // since 0 = 0 * 1 (any value works, but 1 is the canonical choice)
     if (x->isEmpty() || x->lengthOf() == 0) {
-      shapeNew[pos] = 1;
+      // When input has zero elements, the inferred dimension must be 0
+      // so that the output is also empty.  E.g. [1,0,64] → [-1,64]
+      // should give [0,64] (0 / 64 = 0), not [1,64].
+      shapeNew[pos] = 0;
       return;
     }
 

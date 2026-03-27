@@ -129,6 +129,9 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   auto* flatVars = graph->variables();
   if (!nodes || nodes->size() == 0) return nullptr;
 
+  DSP_DIAG(COMPILE, "NativePlanCompiler::compile: ENTER nodes=%d vars=%d requestedOutputs=%d",
+           (int)nodes->size(), flatVars ? (int)flatVars->size() : 0, (int)requestedOutputs.size());
+
   // ── Step 1: Build variable type maps ──────────────────────────────────────
   std::unordered_set<std::string> constants;
   std::unordered_set<std::string> placeholders;
@@ -244,22 +247,52 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
                   (node->name() ? node->name()->str() : "unknown");
     slot.isCustomOp = (node->opType() == OpType_CUSTOM);
 
-    // Resolve op by name first (portable across serializer/runtime hash implementations).
+    // Early control flow detection — CF ops are not registered as declarable ops
+    // in OpRegistrator, so we must identify them before op resolution.
+    {
+      auto normalized = normalizeOpName(slot.opName);
+      slot.controlFlowType = CF_NONE;
+      slot.loopBackTarget = -1;
+      slot.loopRegionIndex = -1;
+      if (normalized == "switch") {
+        slot.controlFlowType = CF_SWITCH;
+      } else if (normalized == "merge") {
+        slot.controlFlowType = CF_MERGE;
+      } else if (normalized == "enter") {
+        slot.controlFlowType = CF_ENTER;
+      } else if (normalized == "exit") {
+        slot.controlFlowType = CF_EXIT;
+      } else if (normalized == "next_iteration") {
+        slot.controlFlowType = CF_NEXT_ITERATION;
+      } else if (normalized == "loop_cond") {
+        slot.controlFlowType = CF_LOOP_COND;
+      }
+    }
+
+    // Resolve op — skip for control flow ops (they're handled by CF dispatch,
+    // not as declarable ops, and may not be registered in OpRegistrator).
     slot.op = nullptr;
-    if (!slot.opName.empty()) {
-      slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.opName.c_str());
+    if (slot.controlFlowType == CF_NONE) {
+      if (!slot.opName.empty()) {
+        slot.op = sd::ops::OpRegistrator::getInstance().getOperation(slot.opName.c_str());
+      }
+      // Fallback to serialized hash for graphs that carry native hashes already.
+      if (!slot.op) {
+        slot.op = sd::ops::OpRegistrator::getInstance().getOperation(serializedOpHash);
+      }
+      if (!slot.op) {
+        DSP_DIAG(COMPILE, "NativePlanCompiler: cannot resolve op hash=%lld name=%s",
+                  serializedOpHash, slot.opName.c_str());
+        delete plan;
+        return nullptr;
+      }
+      slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
+    } else {
+      // CF ops don't need an op pointer or hash — they're pure data routing.
+      slot.opHash = 0;
+      DSP_DIAG(COMPILE, "slot %d: control flow op '%s' (type=%d)",
+                stepIdx, slot.opName.c_str(), (int)slot.controlFlowType);
     }
-    // Fallback to serialized hash for graphs that carry native hashes already.
-    if (!slot.op) {
-      slot.op = sd::ops::OpRegistrator::getInstance().getOperation(serializedOpHash);
-    }
-    if (!slot.op) {
-      DSP_DIAG(COMPILE, "NativePlanCompiler: cannot resolve op hash=%lld name=%s",
-                serializedOpHash, slot.opName.c_str());
-      delete plan;
-      return nullptr;
-    }
-    slot.opHash = sd::ops::HashHelper::getInstance().getLongHash(slot.opName);
 
     slot.inPlaceFused = false;
     slot.inPlaceFusedInputIdx = -1;
@@ -570,6 +603,81 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
     plan->contextPool_[i] = new Context(1);
   }
 
+  // ── Control flow detection and loop region setup ────────────────────────
+  plan->hasControlFlow_ = false;
+  plan->loopRegions_ = nullptr;
+  plan->numLoopRegions_ = 0;
+  for (int s = 0; s < numSteps; s++) {
+    if (plan->slots_[s].controlFlowType != CF_NONE) {
+      plan->hasControlFlow_ = true;
+      break;
+    }
+  }
+
+  // Allocate dead-slot tracking for control flow
+  plan->slotIsDeadSize_ = totalOutputSlots;
+  plan->slotIsDead_ = new bool[plan->slotIsDeadSize_];
+  std::memset(plan->slotIsDead_, 0, sizeof(bool) * plan->slotIsDeadSize_);
+
+  if (plan->hasControlFlow_) {
+    DSP_DIAG(COMPILE, "control flow detected in FlatGraph-compiled plan");
+
+    // Build loop regions: find NextIteration slots that loop back to Merge slots.
+    // For each NextIteration, find the Merge it targets by scanning backward.
+    std::vector<LoopRegion> regions;
+    for (int s = 0; s < numSteps; s++) {
+      NativeSlot& slot = plan->slots_[s];
+      if (slot.controlFlowType == CF_NEXT_ITERATION) {
+        // Find the Merge this NextIteration feeds: look at output wiring.
+        // NextIteration output feeds into a Merge's input. Find the Merge by
+        // scanning for a Merge whose inputSourceIndices references our output slot.
+        int nextIterOutputSlot = (slot.numOutputs > 0) ? slot.outputSlotIndices[0] : -1;
+        int mergeSlotIdx = -1;
+        if (nextIterOutputSlot >= 0) {
+          for (int m = 0; m < numSteps; m++) {
+            if (plan->slots_[m].controlFlowType == CF_MERGE) {
+              for (int inp = 0; inp < plan->slots_[m].numInputs; inp++) {
+                if (plan->slots_[m].inputSourceIndices[inp] == nextIterOutputSlot) {
+                  mergeSlotIdx = m;
+                  break;
+                }
+              }
+              if (mergeSlotIdx >= 0) break;
+            }
+          }
+        }
+
+        if (mergeSlotIdx >= 0) {
+          slot.loopBackTarget = mergeSlotIdx;
+          slot.loopRegionIndex = static_cast<int>(regions.size());
+
+          LoopRegion lr;
+          lr.mergeSlot = mergeSlotIdx;
+          lr.nextIterSlot = s;
+          lr.bodyStartSlot = mergeSlotIdx + 1;
+          lr.bodyEndSlot = s;
+          // Find Switch and Exit in this region
+          lr.switchSlot = -1;
+          lr.exitSlot = -1;
+          for (int r = mergeSlotIdx; r <= s; r++) {
+            if (plan->slots_[r].controlFlowType == CF_SWITCH && lr.switchSlot < 0)
+              lr.switchSlot = r;
+            if (plan->slots_[r].controlFlowType == CF_EXIT && lr.exitSlot < 0)
+              lr.exitSlot = r;
+          }
+          regions.push_back(lr);
+        }
+      }
+    }
+
+    if (!regions.empty()) {
+      plan->numLoopRegions_ = static_cast<int>(regions.size());
+      plan->loopRegions_ = new LoopRegion[plan->numLoopRegions_];
+      std::copy(regions.begin(), regions.end(), plan->loopRegions_);
+      DSP_DIAG(COMPILE, "built %d loop region(s)", plan->numLoopRegions_);
+    }
+  }
+
   // ── Shape static analysis (same as fromSerializedPlan) ──────────────────
   {
     std::vector<int> outputSlotToStepIndex(totalOutputSlots, -1);
@@ -623,15 +731,27 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
   // Build CUDA graph segments
   plan->buildSegments();
 
-  // Diagnostic: count how many slots need zeroed output
+  // Diagnostic: count how many slots need zeroed output and compilation summary
   {
-    int needsZero = 0, skipZero = 0;
+    int needsZero = 0, skipZero = 0, customOps = 0, cfOps = 0;
+    int dataDep = 0, valueDep = 0, identityOps = 0, fusedChains = 0;
     for (int i = 0; i < plan->numSlots_; i++) {
       if (plan->slots_[i].needsZeroedOutput) needsZero++;
       else skipZero++;
+      if (plan->slots_[i].isCustomOp) customOps++;
+      if (plan->slots_[i].controlFlowType != CF_NONE) cfOps++;
+      if (plan->slots_[i].isDataDependent) dataDep++;
+      if (plan->slots_[i].outputShapeDependsOnInputValues) valueDep++;
+      if (plan->slots_[i].isIdentityOp) identityOps++;
+      if (plan->slots_[i].isFusedChainHead) fusedChains++;
     }
     DSP_DIAG(SHAPE, "%d/%d slots need zeroed output (%d can skip nullify)",
               needsZero, plan->numSlots_, skipZero);
+    DSP_DIAG(COMPILE, "NativePlanCompiler::compile: DONE %d slots, %d outputSlots, %d ext inputs, "
+             "%d segments, %d custom, %d CF, %d dataDep, %d valueDep, %d identity, %d fusedChains",
+             plan->numSlots_, plan->totalOutputSlots_, plan->numExternalInputs_,
+             (int)plan->segments_.size(), customOps, cfOps, dataDep, valueDep,
+             identityOps, fusedChains);
   }
 
   return plan;

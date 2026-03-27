@@ -404,10 +404,18 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
 
   auto* backend = getCpuGraphBackend();
-  if (backend == nullptr) return Status::KERNEL_FAILURE;
+  if (backend == nullptr) {
+    DSP_DIAG_SEG(BACKEND, seg.startSlot,
+                 "executeSegmentWithCpuGraph: no CPU graph backend available for seg[%d-%d]",
+                 seg.startSlot, seg.endSlot);
+    return Status::KERNEL_FAILURE;
+  }
   const char* backendName = backend->name();
 
   if (seg.captureFailed) {
+    DSP_DIAG_SEG(FALLBACK, seg.startSlot,
+                 "executeSegmentWithCpuGraph: seg[%d-%d] skipped (captureFailed=true, backend=%s)",
+                 seg.startSlot, seg.endSlot, backendName);
     return Status::KERNEL_FAILURE;
   }
 
@@ -424,6 +432,22 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   LongType segShapeKey = computeSegmentShapeKey(seg, externalArrays, numExt);
 
   bool needsCompile = (seg.executionCount == 1) || (seg.shapeKey != segShapeKey);
+  if (needsCompile) {
+    DSP_DIAG_SEG(COMPILE, seg.startSlot,
+                 "seg[%d-%d] needs compile: %s (execCount=%d shapeKey=%lld->%lld backend=%s)",
+                 seg.startSlot, seg.endSlot,
+                 seg.executionCount == 1 ? "first-compile" : "shape-key-changed",
+                 seg.executionCount,
+                 static_cast<long long>(seg.shapeKey),
+                 static_cast<long long>(segShapeKey),
+                 backendName);
+  } else {
+    DSP_DIAG_SEG(COMPILE, seg.startSlot,
+                 "seg[%d-%d] shape cache HIT (shapeKey=%lld execCount=%d backend=%s)",
+                 seg.startSlot, seg.endSlot,
+                 static_cast<long long>(segShapeKey),
+                 seg.executionCount, backendName);
+  }
   if (needsCompile) {
     // Restore outputSlots_ from slotArrayCache_ for the compilation range.
     // When shapes aren't frozen, outputSlots_ was zeroed at the start of execute().
@@ -464,6 +488,10 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
                 backendName, seg.startSlot, seg.endSlot);
       seg.captureFailed = true;
       return Status::KERNEL_FAILURE;
+    } else {
+      DSP_DIAG_SEG(COMPILE, seg.startSlot,
+                   "%s VALIDATION OK: seg[%d-%d] all %d ops compiled successfully",
+                   backendName, seg.startSlot, seg.endSlot, (int)audit.size());
     }
   }
 
@@ -505,17 +533,18 @@ inline NDArray* resolveCfInput(NativeSlot& slot, int inputIdx,
   }
 }
 
-// Check if all inputs to a slot are dead
-inline bool allInputsDead(NativeSlot& slot, bool* slotIsDead, int slotIsDeadSize) {
+// Check if any input from an output slot is dead.
+// In TF-style control flow, if ANY input comes from a dead Switch branch,
+// the op is on that dead branch and must be skipped entirely.
+// External inputs (srcIdx < 0) don't participate in dead propagation.
+inline bool anyInputDead(NativeSlot& slot, bool* slotIsDead, int slotIsDeadSize) {
   for (int i = 0; i < slot.numInputs; i++) {
     int srcIdx = slot.inputSourceIndices[i];
-    if (srcIdx >= 0 && srcIdx < slotIsDeadSize) {
-      if (!slotIsDead[srcIdx]) return false;
-    } else {
-      return false; // external inputs are always alive
+    if (srcIdx >= 0 && srcIdx < slotIsDeadSize && slotIsDead[srcIdx]) {
+      return true;
     }
   }
-  return slot.numInputs > 0; // no-input ops are not dead
+  return false;
 }
 
 // Mark all outputs of a slot as dead
@@ -564,6 +593,10 @@ inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opNam
 
 Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
+  DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+               "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d captureFailed=%d",
+               seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
+               seg.executionCount, seg.isCapturable ? 1 : 0, seg.captureFailed ? 1 : 0);
   bool streamIsCapturing = false;
 #ifdef SD_CUDA
   if (stream != nullptr) {
@@ -573,10 +606,9 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
   }
 #endif
 
-  // Reset dead-slot flags for this execution if control flow is present
-  if (hasControlFlow_ && slotIsDead_ != nullptr) {
-    std::memset(slotIsDead_, 0, sizeof(bool) * slotIsDeadSize_);
-  }
+  // Dead-slot flags are reset once per plan execution (in the main execute loop),
+  // NOT per segment — dead flags from Switch in seg N must persist to affect
+  // ops in seg N+1.
 
   int stepIdx = seg.startSlot;
   int loopIterations = 0;
@@ -588,7 +620,10 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     if (slot.controlFlowType != CF_NONE) {
       // Dead propagation: if all inputs are dead and this is not a Merge, propagate dead
       if (slot.controlFlowType != CF_MERGE && hasControlFlow_ && slotIsDead_ != nullptr) {
-        if (allInputsDead(slot, slotIsDead_, slotIsDeadSize_)) {
+        if (anyInputDead(slot, slotIsDead_, slotIsDeadSize_)) {
+          DSP_DIAG_SLOT(EXECUTE, stepIdx,
+                        "slot %d (%s) DEAD: propagated from dead input (cf=%d)",
+                        stepIdx, slot.opName.c_str(), (int)slot.controlFlowType);
           markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
           stepIdx++;
           continue;
@@ -723,7 +758,7 @@ Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
 
     // ── Dead propagation for regular ops in CF graphs ────────────────
     if (hasControlFlow_ && slotIsDead_ != nullptr) {
-      if (allInputsDead(slot, slotIsDead_, slotIsDeadSize_)) {
+      if (anyInputDead(slot, slotIsDead_, slotIsDeadSize_)) {
         markOutputsDead(slot, slotIsDead_, slotIsDeadSize_);
         stepIdx++;
         continue;

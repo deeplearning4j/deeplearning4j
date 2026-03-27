@@ -253,6 +253,17 @@ GraphBackend* NativeDynamicShapePlan::getGpuGraphBackend() {
 Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
 
+  {
+    const char* mode = "unknown";
+    if (seg.executionCount == 0) mode = "warmup";
+    else if (seg.replayHandle != nullptr && seg.replayHandle->isReady()) mode = "replay";
+    else if (seg.captureFailed) mode = "slot-by-slot(failed)";
+    else if (seg.executionCount >= 1) mode = "capture-candidate";
+    DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                 "executeSegmentWithGpuGraph: ENTER seg[%d-%d] mode=%s execCount=%d capturable=%d",
+                 seg.startSlot, seg.endSlot, mode, seg.executionCount, seg.isCapturable ? 1 : 0);
+  }
+
 #ifdef SD_CUDA
   // ── Segment lifecycle: SEG_ENTER ──────────────────────────────────────
   if (Environment::getInstance().tritonVerifyKernels()) {
@@ -734,6 +745,9 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
   LongType createValueKey;
   if (seg.argTableStable && allowTritonCudaGraphReplay) {
     // Fast path: arg table is stable, all addresses are known-good
+    DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                 "seg[%d-%d] argTableStable=true → FAST PATH (skip addr/createValue recompute)",
+                 seg.startSlot, seg.endSlot);
     segInputAddrKey = seg.capturedInputAddrKey;
     extAddrsStable = true;
     createValueKey = seg.capturedCreateValueKey;
@@ -1136,15 +1150,29 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                  lineageInvalidated ? 1 : 0, crossSegSizeMismatch ? 1 : 0,
                  (void*)seg.replayHandle.get(), seg.startSlot, seg.endSlot);
       } else if (Environment::getInstance().tritonGraphReinstantiate()) {
+        DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                     "seg[%d-%d] REPLAY via reInstantiate path (execCount=%d replays=%d)",
+                     seg.startSlot, seg.endSlot, seg.executionCount,
+                     seg.replayHandle->getStatistics().replayCount);
         auto* cudaReplay = static_cast<CudaGraphReplayHandle*>(seg.replayHandle.get());
         if (!cudaReplay->getNativeHandle()->reInstantiate()) {
           DSP_DIAG_SEG(EXECUTE, seg.startSlot, "Triton graph reInstantiate FAILED for seg[%d-%d]",
                     seg.startSlot, seg.endSlot);
         } else {
           replayOk = seg.replayHandle->replay(stream);
+          DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                       "seg[%d-%d] reInstantiate replay %s",
+                       seg.startSlot, seg.endSlot, replayOk ? "OK" : "FAILED");
         }
       } else {
+        DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                     "seg[%d-%d] REPLAY via direct path (execCount=%d replays=%d)",
+                     seg.startSlot, seg.endSlot, seg.executionCount,
+                     seg.replayHandle->getStatistics().replayCount);
         replayOk = seg.replayHandle->replay(stream);
+        DSP_DIAG_SEG(EXECUTE, seg.startSlot,
+                     "seg[%d-%d] direct replay %s",
+                     seg.startSlot, seg.endSlot, replayOk ? "OK" : "FAILED");
       }
       if (replayOk) {
         // Find the ACTUAL final output slot index (not the step index)
@@ -1393,6 +1421,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
                                      execCountInWindowNow &&
                                      hasCudaStream;
   if (shouldCaptureTritonGraphNow) {
+    DSP_DIAG_SEG(COMPILE, seg.startSlot,
+                 "GRAPH CAPTURE BEGIN: seg[%d-%d] size=%d execCount=%d shapesFrozen=%d",
+                 seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
+                 seg.executionCount, shapesFrozen_ ? 1 : 0);
+
     // Set up capture workspace BEFORE beginCapture — cudaMalloc must be outside capture.
     // Fallback ops (matmul, attention, concat) need temporary buffers during execution.
     // With tl_graphExecutionActive=true, CudaMemoryPool allocates from this workspace
@@ -1982,6 +2015,11 @@ Status NativeDynamicShapePlan::executeSegmentWithGpuGraph(
 
       if (endOk) {
         size_t numGraphNodes = handle->getNumNodes();
+        int segSize = seg.endSlot - seg.startSlot + 1;
+        DSP_DIAG_SEG(COMPILE, seg.startSlot,
+                     "GRAPH CAPTURE COMPLETE: seg[%d-%d] %zu nodes captured from %d slots (%.1f nodes/slot)",
+                     seg.startSlot, seg.endSlot, numGraphNodes, segSize,
+                     segSize > 0 ? (double)numGraphNodes / segSize : 0.0);
         DSP_DIAG(EXECUTE, "Triton capture endOk: graph has %zu nodes", numGraphNodes);
 
         // Sample final output AFTER endCapture (stream no longer capturing, safe)

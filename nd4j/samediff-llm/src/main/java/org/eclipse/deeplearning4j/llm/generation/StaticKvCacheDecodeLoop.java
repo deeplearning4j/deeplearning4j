@@ -72,6 +72,63 @@ import java.util.Set;
 @Builder
 public class StaticKvCacheDecodeLoop {
 
+    /**
+     * Reuses the token_sample op and output buffer across decode steps.
+     * The per-step host readback still exists, but this removes the repeated
+     * DynamicCustomOp construction and output allocation from the hot path.
+     */
+    private static final class ReusableTokenSampler {
+        private final SamplingConfig samplingConfig;
+        private TokenSample tokenSampleOp;
+        private INDArray tokenOutput;
+        private long outputBatchSize = -1;
+
+        private ReusableTokenSampler(SamplingConfig samplingConfig) {
+            this.samplingConfig = samplingConfig;
+        }
+
+        int sample(INDArray logits) {
+            long batchSize = logits.rank() == 3 ? logits.size(0)
+                    : (logits.rank() == 2 ? logits.size(0) : 1);
+
+            if (tokenOutput == null || outputBatchSize != batchSize || tokenOutput.wasClosed()) {
+                if (tokenOutput != null && !tokenOutput.wasClosed()) {
+                    tokenOutput.setCloseable(true);
+                    tokenOutput.close();
+                }
+                tokenOutput = Nd4j.createUninitialized(DataType.INT64, batchSize);
+                outputBatchSize = batchSize;
+            }
+
+            if (tokenSampleOp == null) {
+                if (samplingConfig.isGreedy()) {
+                    tokenSampleOp = new TokenSample(logits);
+                } else {
+                    tokenSampleOp = new TokenSample(logits,
+                            samplingConfig.getTemperature(),
+                            samplingConfig.getTopK(),
+                            samplingConfig.getTopP(),
+                            samplingConfig.getSeed() != null ? samplingConfig.getSeed() : 0L);
+                }
+            } else {
+                tokenSampleOp.setInputArgument(0, logits);
+            }
+            tokenSampleOp.setOutputArgument(0, tokenOutput);
+
+            // Clear stale native error state from prior DSP graph-capture attempts.
+            Nd4j.getNativeOps().clearLastError();
+            Nd4j.getExecutioner().exec(tokenSampleOp);
+            return tokenOutput.getInt(0);
+        }
+
+        void close() {
+            if (tokenOutput != null && !tokenOutput.wasClosed()) {
+                tokenOutput.setCloseable(true);
+                tokenOutput.close();
+            }
+        }
+    }
+
     private final SameDiff decoder;
     private final SameDiff embedTokens;
     private final Tokenizer tokenizer;
@@ -247,6 +304,7 @@ public class StaticKvCacheDecodeLoop {
         // Fixed-address decode buffers (allocated once, data copied each step)
         INDArray reusableEmbeddings = null;  // [1, 1, hiddenSize]
         INDArray reusableInputIds = null;    // [1, 1]
+        ReusableTokenSampler reusableTokenSampler = new ReusableTokenSampler(samplingConfig);
 
         GenerationResult.FinishReason finishReason = GenerationResult.FinishReason.MAX_TOKENS;
 
@@ -522,29 +580,7 @@ public class StaticKvCacheDecodeLoop {
 
             // Sample next token via native GPU op — pass logits directly (rank-3 supported)
             long tSampStart = System.nanoTime();
-
-            // Pre-allocate output array to avoid calculateOutputShape on constant ShapeInfo.
-            // DSP outputs may have constant ShapeInfo flags that cause calculateOutputShape
-            // to fail when token_sample tries to infer output shapes internally.
-            long batchSize = logitsRaw.rank() == 3 ? logitsRaw.size(0) :
-                    (logitsRaw.rank() == 2 ? logitsRaw.size(0) : 1);
-            INDArray tokenOutput = Nd4j.createUninitialized(DataType.INT64, batchSize);
-
-            TokenSample tokenSampleOp;
-            if (samplingConfig.isGreedy()) {
-                tokenSampleOp = new TokenSample(logitsRaw);
-            } else {
-                tokenSampleOp = new TokenSample(logitsRaw,
-                        samplingConfig.getTemperature(),
-                        samplingConfig.getTopK(),
-                        samplingConfig.getTopP(),
-                        samplingConfig.getSeed() != null ? samplingConfig.getSeed() : 0L);
-            }
-            tokenSampleOp.addOutputArgument(tokenOutput);
-            // Clear stale native error state from DSP graph capture failures.
-            Nd4j.getNativeOps().clearLastError();
-            INDArray tokenResult = Nd4j.getExecutioner().exec(tokenSampleOp)[0];
-            int nextTokenId = tokenResult.getInt(0);
+            int nextTokenId = reusableTokenSampler.sample(logitsRaw);
             long tSampArgmax = System.nanoTime();
             generatedTokens.add(nextTokenId);
 
@@ -706,6 +742,7 @@ public class StaticKvCacheDecodeLoop {
                     if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
                 }
                 reusableInputs.clear();
+                reusableTokenSampler.close();
                 // Re-query maxKvLen — it was -1 at loop entry (before prefill initialized the cache)
                 long specMaxKvLen = kvCacheManager.getMaxKvLen();
                 return decodeSpeculative(kvCacheManager, specMaxKvLen, cachePos,
@@ -720,6 +757,7 @@ public class StaticKvCacheDecodeLoop {
             if (arr != null && !arr.wasClosed()) { arr.setCloseable(true); arr.close(); }
         }
         reusableInputs.clear();
+        reusableTokenSampler.close();
 
         // Release KV cache buffers via manager
         kvCacheManager.close();

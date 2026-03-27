@@ -1254,7 +1254,8 @@ public class VisionLanguageModel implements AutoCloseable {
             INDArray batched = Nd4j.concat(0, normalized.toArray(new INDArray[0]));
             Map<String, INDArray> inputs = new HashMap<>();
             inputs.put(visionEncoderIOConfig.getPixelValuesName(), batched);
-            Map<String, INDArray> outputs = visionEncoder.output(inputs, visionEncoderIOConfig.getOutputNames());
+            Map<String, INDArray> outputs = visionEncoder.output(inputs,
+                    java.util.Arrays.asList(visionEncoderIOConfig.getOutputNames()));
             return outputs.get(visionEncoderIOConfig.getPrimaryOutputName());
         } else {
             // Different shapes - process individually and stack
