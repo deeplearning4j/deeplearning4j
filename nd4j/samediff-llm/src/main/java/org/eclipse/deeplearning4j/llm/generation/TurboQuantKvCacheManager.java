@@ -424,7 +424,7 @@ public class TurboQuantKvCacheManager implements KvCacheManager {
                 }
 
                 // Normalize
-                INDArray normalized = keyFloat.div(norm);
+                INDArray normalized = keyFloat.div(norm).reshape(1, d);
 
                 // Rotate: y = normalized @ rotation^T
                 INDArray rotated = normalized.mmul(rotation.transpose());
@@ -449,7 +449,7 @@ public class TurboQuantKvCacheManager implements KvCacheManager {
                 double residualNorm = residual.norm2Number().doubleValue();
 
                 // QJL signs: sign(S @ r)
-                INDArray projected = residual.reshape(1, d).mmul(qjl.transpose()).reshape(d);
+                INDArray projected = residual.reshape(1, d).mmul(qjl.transpose());
                 float[] projData = projected.toFloatVector();
                 byte[] signs = new byte[d];
                 for (int i = 0; i < d; i++) {
@@ -514,7 +514,7 @@ public class TurboQuantKvCacheManager implements KvCacheManager {
                     continue;
                 }
 
-                INDArray normalized = valFloat.div(norm);
+                INDArray normalized = valFloat.div(norm).reshape(1, d);
                 INDArray rotated = normalized.mmul(rotation.transpose());
 
                 float[] rotatedData = rotated.toFloatVector();
