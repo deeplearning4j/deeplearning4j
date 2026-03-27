@@ -154,7 +154,8 @@ public class GenerationPipeline implements AutoCloseable {
                 System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE, "false"));
         if (!noFreeze) {
             model.setDspAutoCompileEnabled(true);
-            log.info("DSP auto-compile enabled on {} ({}={})",
+            model.setDspNativeAutoCompileEnabled(true);
+            log.info("DSP auto-compile enabled (native=true) on {} ({}={})",
                     label, ND4JSystemProperties.DSP_NO_FREEZE, noFreeze);
         } else {
             log.info("DSP auto-compile disabled on {} ({}=true)",

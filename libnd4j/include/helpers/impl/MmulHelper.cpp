@@ -1130,19 +1130,27 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     const bool isFloat = (xType == DataType::FLOAT32);
     const bool isDouble = (xType == DataType::DOUBLE);
 
-    const bool xInnerContig = (x->strideAt(1) == 1);
-    const bool yInnerContig = (y->strideAt(1) == 1);
-    const bool zRowMajor = (z->strideAt(1) == 1);
+    // Compute dimensions first so we can validate leading dimensions
+    const LongType M = transX ? x->sizeAt(1) : x->sizeAt(0);
+    const LongType K = transX ? x->sizeAt(0) : x->sizeAt(1);
+    const LongType N = transY ? y->sizeAt(0) : y->sizeAt(1);
 
-    if (sameTypes && (isFloat || isDouble) && xInnerContig && yInnerContig && zRowMajor &&
+    const int ldA = static_cast<int>(x->strideAt(0));
+    const int ldB = static_cast<int>(y->strideAt(0));
+    const int ldC = static_cast<int>(z->strideAt(0));
+
+    // Check inner stride == 1 AND outer stride meets BLAS lda/ldb/ldc constraints.
+    // For CblasRowMajor: lda/ldb must be >= the number of columns of the stored matrix.
+    // NoTrans A is M×K stored → lda >= K;  Trans A is K×M stored → lda >= M
+    // NoTrans B is K×N stored → ldb >= N;  Trans B is N×K stored → ldb >= K
+    const LongType xLdMin = transX ? M : K;
+    const LongType yLdMin = transY ? K : N;
+    const bool xRowMajor = (x->strideAt(1) == 1) && (ldA >= xLdMin);
+    const bool yRowMajor = (y->strideAt(1) == 1) && (ldB >= yLdMin);
+    const bool zRowMajor = (z->strideAt(1) == 1) && (ldC >= N);
+
+    if (sameTypes && (isFloat || isDouble) && xRowMajor && yRowMajor && zRowMajor &&
         BlasHelper::getInstance().hasGEMM(xType)) {
-      const LongType M = transX ? x->sizeAt(1) : x->sizeAt(0);
-      const LongType K = transX ? x->sizeAt(0) : x->sizeAt(1);
-      const LongType N = transY ? y->sizeAt(0) : y->sizeAt(1);
-
-      const int ldA = static_cast<int>(x->strideAt(0));
-      const int ldB = static_cast<int>(y->strideAt(0));
-      const int ldC = static_cast<int>(z->strideAt(0));
 
       const CBLAS_TRANSPOSE transAblas = transX ? CblasTrans : CblasNoTrans;
       const CBLAS_TRANSPOSE transBblas = transY ? CblasTrans : CblasNoTrans;

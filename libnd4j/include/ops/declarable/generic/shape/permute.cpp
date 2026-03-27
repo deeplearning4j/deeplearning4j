@@ -102,27 +102,66 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
   }
 
   // Handle dynamic shape mismatch: if permutation vector size doesn't match input rank,
-  // try to adapt by keeping only valid indices
+  // adapt the permutation to work with the actual input rank.
+  // Common case: expand_dims adds size-1 leading dimensions (e.g., rank-4 [1,C,H,W] becomes
+  // rank-5 [1,1,C,H,W]) but the permutation vector is still for the original rank-4.
+  // Strategy: find leading size-1 dimensions that account for the rank difference,
+  // keep them in place (identity), and shift the original permutation indices.
   if (permutationVector.size() != static_cast<size_t>(x->rankOf())) {
     sd_printf("PERMUTE OP: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
               (long long)permutationVector.size(), x->rankOf());
 
-    // Find the valid indices and create a new permutation for the actual rank
-    std::vector<LongType> validIndices;
-    for (size_t i = 0; i < permutationVector.size(); ++i) {
-      if (permutationVector[i] < x->rankOf()) {
-        validIndices.push_back(permutationVector[i]);
-      }
-    }
+    int permSize = static_cast<int>(permutationVector.size());
+    int inputRank = x->rankOf();
+    int extraDims = inputRank - permSize;
 
-    // If we have exactly the right number of valid indices, use them
-    if (validIndices.size() == static_cast<size_t>(x->rankOf())) {
-      permutationVector = validIndices;
+    if (extraDims > 0) {
+      // Input has more dimensions than the permutation expects.
+      // Count leading size-1 dimensions that can be treated as identity-mapped.
+      int leadingOnes = 0;
+      for (int i = 0; i < inputRank && leadingOnes < extraDims; ++i) {
+        if (x->sizeAt(i) == 1) {
+          leadingOnes++;
+        } else {
+          break;
+        }
+      }
+
+      if (leadingOnes >= extraDims) {
+        // We have enough leading size-1 dims to account for the rank difference.
+        // Build new permutation: identity for the extra leading dims, then shift original.
+        std::vector<LongType> adapted;
+        for (int i = 0; i < extraDims; ++i) {
+          adapted.push_back(i);  // identity for extra leading size-1 dims
+        }
+        for (int i = 0; i < permSize; ++i) {
+          adapted.push_back(permutationVector[i] + extraDims);  // shift original indices
+        }
+        sd_printf("PERMUTE OP: adapted permutation by prepending %d identity dims\n", extraDims);
+        permutationVector = adapted;
+      } else {
+        // Can't find enough leading size-1 dims; fall back to identity
+        permutationVector.clear();
+        for (int i = 0; i < inputRank; ++i) {
+          permutationVector.push_back(i);
+        }
+      }
     } else {
-      // Fall back to identity permutation (no change)
-      permutationVector.clear();
-      for (int i = 0; i < x->rankOf(); ++i) {
-        permutationVector.push_back(i);
+      // Permutation vector is larger than input rank (extraDims < 0).
+      // Filter to valid indices only.
+      std::vector<LongType> validIndices;
+      for (size_t i = 0; i < permutationVector.size(); ++i) {
+        if (permutationVector[i] < inputRank) {
+          validIndices.push_back(permutationVector[i]);
+        }
+      }
+      if (validIndices.size() == static_cast<size_t>(inputRank)) {
+        permutationVector = validIndices;
+      } else {
+        permutationVector.clear();
+        for (int i = 0; i < inputRank; ++i) {
+          permutationVector.push_back(i);
+        }
       }
     }
   }
@@ -223,29 +262,60 @@ DECLARE_SHAPE_FN(permute) {
     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), x->ordering(), *x->getShapeAsVector()));
   }
 
-  // Handle dynamic shape mismatch: if permutation vector size doesn't match input rank,
-  // try to adapt by truncating to match input rank (keeping first N dimensions)
+  // Handle dynamic shape mismatch: adapt permutation to actual input rank.
+  // Common case: expand_dims adds size-1 leading dimensions (e.g., rank-4 becomes rank-5)
+  // but the permutation vector is still for the original smaller rank.
   if (permutationVector.size() != static_cast<size_t>(x->rankOf())) {
     sd_printf("PERMUTE shape function: permutation vector size (%lld) != input rank (%d), adapting permutation\n",
               (long long)permutationVector.size(), x->rankOf());
 
-    // If permutation vector is larger than input rank, we need to remap
-    // Find the valid indices and create a new permutation for the actual rank
-    std::vector<LongType> validIndices;
-    for (size_t i = 0; i < permutationVector.size(); ++i) {
-      if (permutationVector[i] < x->rankOf()) {
-        validIndices.push_back(permutationVector[i]);
-      }
-    }
+    int permSize = static_cast<int>(permutationVector.size());
+    int inputRank = x->rankOf();
+    int extraDims = inputRank - permSize;
 
-    // If we have exactly the right number of valid indices, use them
-    if (validIndices.size() == static_cast<size_t>(x->rankOf())) {
-      permutationVector = validIndices;
+    if (extraDims > 0) {
+      // Input has more dimensions than the permutation expects.
+      // Count leading size-1 dimensions that can be identity-mapped.
+      int leadingOnes = 0;
+      for (int i = 0; i < inputRank && leadingOnes < extraDims; ++i) {
+        if (x->sizeAt(i) == 1) {
+          leadingOnes++;
+        } else {
+          break;
+        }
+      }
+
+      if (leadingOnes >= extraDims) {
+        std::vector<LongType> adapted;
+        for (int i = 0; i < extraDims; ++i) {
+          adapted.push_back(i);  // identity for extra leading size-1 dims
+        }
+        for (int i = 0; i < permSize; ++i) {
+          adapted.push_back(permutationVector[i] + extraDims);  // shift original indices
+        }
+        sd_printf("PERMUTE shape function: adapted permutation by prepending %d identity dims\n", extraDims);
+        permutationVector = adapted;
+      } else {
+        permutationVector.clear();
+        for (int i = 0; i < inputRank; ++i) {
+          permutationVector.push_back(i);
+        }
+      }
     } else {
-      // Fall back to identity permutation (no change)
-      permutationVector.clear();
-      for (int i = 0; i < x->rankOf(); ++i) {
-        permutationVector.push_back(i);
+      // Permutation vector is larger than input rank — filter to valid indices
+      std::vector<LongType> validIndices;
+      for (size_t i = 0; i < permutationVector.size(); ++i) {
+        if (permutationVector[i] < inputRank) {
+          validIndices.push_back(permutationVector[i]);
+        }
+      }
+      if (validIndices.size() == static_cast<size_t>(inputRank)) {
+        permutationVector = validIndices;
+      } else {
+        permutationVector.clear();
+        for (int i = 0; i < inputRank; ++i) {
+          permutationVector.push_back(i);
+        }
       }
     }
   }

@@ -102,7 +102,7 @@ bool NativePlanCompiler::isFullyWritingOp(const std::string& opName) {
 
 bool NativePlanCompiler::isValueDependentShapeOp(const std::string& opName) {
   static const std::unordered_set<std::string> VALUE_DEPENDENT_OPS = {
-      "reshape", "squeeze", "expand_dims",
+      "reshape", "reshape_no_copy", "squeeze", "expand_dims",
       "slice", "strided_slice", "gather", "gather_nd",
       "tile", "repeat", "pad", "fill",
       "range", "linspace",
@@ -282,7 +282,6 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
       isDataDep = false;
     }
     slot.isDataDependent = isDataDep;
-    slot.outputShapeDependsOnInputValues = isValueDependentShapeOp(slot.opName) || isDataDep;
     slot.isIdentityOp = (normalizeOpName(slot.opName) == "identity");
     {
       auto normalized = normalizeOpName(slot.opName);
@@ -328,6 +327,13 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         if (varIt != varById.end()) {
           auto* fv = varIt->second;
           if (fv->name()) inputName = fv->name()->str();
+          // Check FlatVariable dtype for INT/LONG detection
+          if (!hasIntLong) {
+            auto dt = fv->dtype();
+            if (dt == DType_INT32 || dt == DType_INT64) {
+              hasIntLong = true;
+            }
+          }
           found = true;
         }
       }
@@ -384,9 +390,24 @@ NativeDynamicShapePlan* NativePlanCompiler::compile(
         } else {
           slot.inputSourceTypes[i] = SOURCE_PLACEHOLDER;
         }
+        // Check external input NDArray dtype for INT/LONG detection
+        if (!hasIntLong) {
+          auto varIt2 = variables.find(inputName);
+          if (varIt2 != variables.end() && varIt2->second != nullptr) {
+            auto dt = varIt2->second->dataType();
+            if (dt == INT32 || dt == INT64) {
+              hasIntLong = true;
+            }
+          }
+        }
       }
     }
     slot.needsIntLongSync = hasIntLong || isDataDep;
+    // Runtime detection: any op with INT/LONG inputs is treated as value-dependent.
+    // This replaces the brittle hardcoded VALUE_DEPENDENT_OPS set. The C++ computeShapeKey()
+    // already hashes INT/LONG values unconditionally; this flag only gates the frozen-shape
+    // fast-path to prevent using cached shapes when input values may have changed.
+    slot.outputShapeDependsOnInputValues = hasIntLong || isDataDep;
 
     // Build output wiring
     auto* outputNames = node->outputNames();

@@ -56,6 +56,15 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
     }
 
     /**
+     * Enable DSP auto-compilation on a SameDiff instance so that
+     * outputDirect() actually goes through the DSP execution path.
+     */
+    private void enableDsp(SameDiff sd) {
+        sd.setDspAutoCompileEnabled(true);
+        sd.setDspNativeAutoCompileEnabled(true);
+    }
+
+    /**
      * Test basic matmul + add + relu pattern (common in neural networks).
      * Runs the same graph with standard execution and DSP, compares results.
      */
@@ -77,6 +86,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP execution (uses outputDirect which goes through DSP)
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -111,6 +121,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -146,6 +157,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("indices", tokenIds), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -180,6 +192,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(
                 Map.of("a", inputA, "b", inputB), "out");
         INDArray actual = dspResult.get("out").dup();
@@ -211,6 +224,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("cond", condInput), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -241,6 +255,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -263,6 +278,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         SDVariable w = sd.constant("w", Nd4j.randn(DataType.FLOAT, 4, 4));
         SDVariable mm = sd.mmul("mm", x, w);
         SDVariable out = sd.nn.sigmoid("out", mm);
+        enableDsp(sd);
 
         // Run multiple times with DIFFERENT inputs, check each time
         for (int i = 0; i < 5; i++) {
@@ -314,6 +330,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -356,6 +373,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -394,6 +412,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -425,6 +444,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -455,6 +475,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -500,6 +521,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expected = standardResult.get("out").dup();
 
         // DSP
+        enableDsp(sd);
         Map<String, INDArray> dspResult = sd.outputDirect(inputs, "out");
         INDArray actual = dspResult.get("out").dup();
 
@@ -551,6 +573,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         }
 
         // Now run through DSP with outputDirect (frozen shapes)
+        enableDsp(sd);
         for (int i = 0; i < 10; i++) {
             Map<String, INDArray> dspResult = sd.outputDirect(Map.of("embed", embeddings[i]), "logits");
             INDArray actual = dspResult.get("logits").dup();
@@ -784,6 +807,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         INDArray expectedArr = expected.get("out").dup();
 
         // DSP execution with specified mode
+        enableDsp(sd);
         sd.setGraphExecutionMode(mode);
         Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
         INDArray dspArr = dspResult.get("out").dup();
@@ -861,6 +885,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         Map<String, INDArray> expected = sd.output(Map.of("x", input), "out");
         INDArray expectedArr = expected.get("out").dup();
 
+        enableDsp(sd);
         for (GraphExecutionMode mode : GraphExecutionMode.values()) {
             sd.setGraphExecutionMode(mode);
             Map<String, INDArray> dspResult = sd.outputDirect(Map.of("x", input), "out");
@@ -891,6 +916,7 @@ public class TestDSPExecutionCorrectness extends BaseNd4jTestWithBackends {
         assertNotNull(expected, testName + ": reference output is null");
 
         // Triton execution via MAX_AUTOTUNE
+        enableDsp(sd);
         sd.setDspCompilationMode(DspCompilationMode.MAX_AUTOTUNE);
 
         for (int iter = 0; iter < 3; iter++) {

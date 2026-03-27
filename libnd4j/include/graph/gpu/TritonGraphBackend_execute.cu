@@ -25,6 +25,8 @@
 #include <graph/DspDiagnostics.h>
 #include <system/Environment.h>
 #include <helpers/logger.h>
+#include <helpers/ShapeUtils.h>
+#include <array/ShapeList.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -547,6 +549,128 @@ Status TritonGraphBackend::executeSegment(GraphSegment& seg, NativeSlot* slots,
       markFallbackRangeDeviceCurrent(nextSlotToRun, subKernel.startSlot_ - 1, slots,
                                      externalInputs, numExternalInputs,
                                      outputSlots, totalOutputSlots);
+
+      // ── Post-gap shape re-validation ──
+      // After a gap executes view-producing ops (reshape_no_copy, permute, etc.),
+      // downstream Triton sub-kernel outputs may have been pre-allocated with the
+      // wrong shape. The pre-exec code in gpubackend.cpp allocates outputs using
+      // the input-source fallback shape, but at pre-exec time the gap hasn't run
+      // yet, so the input source's shape is the un-reshaped original shape.
+      // Now that the gap has executed and outputSlots_ for gap slots have correct
+      // shapes, re-validate each output in the upcoming sub-kernel. If the shape
+      // doesn't match what shape inference produces from the actual inputs,
+      // re-allocate the output with the correct shape.
+      //
+      // IMPORTANT: For element-count-preserving reshapes (the common case), the
+      // Triton kernel writes correct values to the buffer regardless of shape
+      // metadata. We create a new NDArray that wraps the SAME DataBuffer with
+      // the correct shape, so the consolidated arg table's device pointer remains
+      // valid. Only when element counts differ do we allocate a fresh buffer.
+      for (int si = subKernel.startSlot_; si <= subKernel.endSlot_; si++) {
+        auto& slot = slots[si];
+        // Check if any input comes from the gap range
+        bool hasInputFromGap = false;
+        for (int inp = 0; inp < slot.numInputs; inp++) {
+          int srcIdx = slot.inputSourceIndices[inp];
+          if (srcIdx >= 0 && srcIdx >= nextSlotToRun && srcIdx < subKernel.startSlot_) {
+            hasInputFromGap = true;
+            break;
+          }
+        }
+        if (!hasInputFromGap) continue;
+
+        // Resolve actual input arrays (post-gap, so shapes are correct)
+        std::vector<NDArray*> inputArrays(slot.numInputs, nullptr);
+        bool allInputsAvailable = true;
+        for (int inp = 0; inp < slot.numInputs; inp++) {
+          int srcIdx = slot.inputSourceIndices[inp];
+          inputArrays[inp] = resolveRangeArray(srcIdx, externalInputs, numExternalInputs,
+                                               outputSlots, totalOutputSlots);
+          if (inputArrays[inp] == nullptr) {
+            allInputsAvailable = false;
+            break;
+          }
+        }
+        if (!allInputsAvailable) continue;
+
+        // Build input shape list and run shape inference
+        ShapeList inputShapes;
+        for (int inp = 0; inp < slot.numInputs; inp++) {
+          inputShapes.push_back(inputArrays[inp]->shapeInfo());
+        }
+
+        Context inferCtx(1);
+        for (int inp = 0; inp < slot.numInputs; inp++) {
+          inferCtx.setInputArray(inp, inputArrays[inp]);
+        }
+        if (slot.numIArgs > 0) inferCtx.setIArguments(slot.iArgs, slot.numIArgs);
+        if (slot.numTArgs > 0) inferCtx.setTArguments(slot.tArgs, slot.numTArgs);
+        if (slot.numBArgs > 0) inferCtx.setBArguments(slot.bArgs, slot.numBArgs);
+        if (slot.numDArgs > 0) inferCtx.setDArguments(slot.dArgs, slot.numDArgs);
+
+        ShapeList* inferredShapes = nullptr;
+        try {
+          inferredShapes = slot.op->calculateOutputShape(&inputShapes, inferCtx);
+        } catch (...) {
+          continue;
+        }
+        if (inferredShapes == nullptr || inferredShapes->size() == 0) {
+          delete inferredShapes;
+          continue;
+        }
+
+        // Check each output — fix shape if mismatched
+        for (int o = 0; o < slot.numOutputs && o < static_cast<int>(inferredShapes->size()); o++) {
+          int outSlotIdx = slot.outputSlotIndices[o];
+          if (outSlotIdx < 0 || outSlotIdx >= totalOutputSlots) continue;
+
+          const LongType* inferredShape = inferredShapes->at(o);
+          NDArray* existingOut = outputSlots[outSlotIdx];
+          if (existingOut == nullptr) continue;
+
+          // Compare shapes — skip if already correct
+          if (shape::equalsSoft(existingOut->shapeInfo(), inferredShape)) continue;
+
+          auto dt = ArrayOptions::dataType(inferredShape);
+          auto order = shape::order(inferredShape);
+          LongType rank = shape::rank(inferredShape);
+          std::vector<LongType> newShapeVec(rank);
+          for (int d = 0; d < rank; d++) newShapeVec[d] = inferredShape[d + 1];
+
+          // Compute element counts
+          LongType existingLen = existingOut->lengthOf();
+          LongType inferredLen = 1;
+          for (int d = 0; d < rank; d++) inferredLen *= newShapeVec[d];
+
+          DSP_DIAG(SHAPE, "POST_GAP_RESHAPE: slot %d (%s) output slot %d shape mismatch: "
+                   "existing=%s inferred=%s existingLen=%lld inferredLen=%lld",
+                   si, slot.opName.c_str(), outSlotIdx,
+                   ShapeUtils::shapeAsString(existingOut).c_str(),
+                   ShapeUtils::shapeAsString(inferredShape).c_str(),
+                   (long long)existingLen, (long long)inferredLen);
+
+          if (inferredLen == existingLen && existingOut->dataBuffer() != nullptr) {
+            // Same element count: create a view of the same buffer with correct shape.
+            // This preserves the specialBuffer pointer so consolidated arg tables
+            // and CUDA graph captured pointers remain valid.
+            auto* reshapedArr = new NDArray(existingOut->dataBuffer(), order, newShapeVec);
+            reshapedArr->tickWriteDevice();  // Mark device as current
+            outputSlots[outSlotIdx] = reshapedArr;
+            if (seg.slotArrayCache) {
+              seg.slotArrayCache[outSlotIdx] = reshapedArr;
+            }
+          } else {
+            // Different element count: must allocate a new buffer
+            auto* newArr = new NDArray(order, newShapeVec, dt, LaunchContext::defaultContext());
+            outputSlots[outSlotIdx] = newArr;
+            if (seg.slotArrayCache) {
+              seg.slotArrayCache[outSlotIdx] = newArr;
+            }
+          }
+        }
+        delete inferredShapes;
+      }
+
       // Hash gap outputs
       if (!streamCaptureActive) {
         logSlotHashes("GAP", nextSlotToRun, subKernel.startSlot_ - 1, slots,

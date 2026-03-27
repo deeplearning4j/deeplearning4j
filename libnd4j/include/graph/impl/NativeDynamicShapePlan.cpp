@@ -903,9 +903,16 @@ Status NativeDynamicShapePlan::execute(
   // segment-local caches each execute; capturable graph-replay segments keep caches.
   if (!shapesFrozen_ || executeCount_ == 0) {
     for (auto& segment : segments_) {
-      // Keep caches for segments that can replay (GPU: instantiated graph,
-      // CPU: capturable and not failed). Platform dispatch handles the check.
-      if (platformShouldKeepSegmentCache(segment)) continue;
+      // When shapes are NOT frozen, always clear ALL segment caches — stale arrays
+      // from a prior execution with different input shapes must not leak into the
+      // GPU backend pre-exec restoration (gpubackend.cpp:481-531). The pre-exec code
+      // restores from slotArrayCache_ into outputSlots_; if those entries have old
+      // shapes (e.g., [1,16,14,14] from frame 1 vs [1,16,7,7] for frame 2), downstream
+      // ops get wrong-shaped inputs (e.g., conv2d receiving rank-5 instead of rank-4).
+      //
+      // Only skip clearing for segments with replay handles when shapes ARE frozen
+      // (first execution with frozen shapes still needs clearing, hence executeCount_==0).
+      if (shapesFrozen_ && platformShouldKeepSegmentCache(segment)) continue;
       for (int stepIdx = segment.startSlot; stepIdx <= segment.endSlot; stepIdx++) {
         auto& slot = slots_[stepIdx];
         if (slot.shapeStatic) continue;
@@ -914,6 +921,17 @@ Status NativeDynamicShapePlan::execute(
         slot.shapeCacheValid = false;
         slot.frozenContextReady = false;
         slot.frozenConstantSlot = false;
+        // Also clear slotArrayCache_ for this slot's outputs so the GPU backend
+        // pre-exec allocation doesn't restore stale arrays with old shapes.
+        // Without this, the pre-exec code at gpubackend.cpp:513-524 restores
+        // cached arrays from a previous execution whose shapes no longer match
+        // the current inputs (e.g., [2,32] restored when input is now [3,4,8]).
+        for (int o = 0; o < slot.numOutputs; o++) {
+          int si = slot.outputSlotIndices[o];
+          if (si >= 0 && si < totalOutputSlots_) {
+            slotArrayCache_[si] = nullptr;
+          }
+        }
       }
     }
   }

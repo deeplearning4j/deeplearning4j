@@ -34,8 +34,10 @@ import org.eclipse.deeplearning4j.llm.tokenizer.HuggingFaceTokenizer;
 import org.eclipse.deeplearning4j.llm.tokenizer.Tokenizer;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImagePromptBuilder;
 import org.eclipse.deeplearning4j.vlm.preprocessing.ImageTiler;
+import org.eclipse.deeplearning4j.vlm.model.patching.SameDiffGraphPatch;
 import org.eclipse.deeplearning4j.vlm.preprocessing.VLMImagePreprocessor;
 import org.eclipse.deeplearning4j.llm.generation.DecoderUtils;
+import org.eclipse.deeplearning4j.llm.generation.KvCacheManager;
 import org.eclipse.deeplearning4j.llm.generation.KvCacheStrategy;
 import org.eclipse.deeplearning4j.llm.generation.NgramSpeculator;
 import org.eclipse.deeplearning4j.llm.generation.SamplingConfig;
@@ -121,6 +123,10 @@ public class VisionLanguageModel implements AutoCloseable {
     @Setter
     private int maxKvLen = 0;
 
+    /** External KV cache manager for managed autoregressive decoding. */
+    @Setter
+    private KvCacheManager externalKvCacheManager;
+
     /** Discovered vision encoder I/O configuration (input/output variable names). */
     @Getter
     private final VisionEncoderIOConfig visionEncoderIOConfig;
@@ -137,7 +143,8 @@ public class VisionLanguageModel implements AutoCloseable {
             MultiBackendWorkspace workspace,
             VisionEncoderIOConfig visionEncoderIOConfig,
             KvCacheStrategy kvCacheStrategy,
-            int maxKvLen) {
+            int maxKvLen,
+            KvCacheManager externalKvCacheManager) {
         this.visionEncoder = visionEncoder;
         this.embedTokens = embedTokens;
         this.decoder = decoder;
@@ -148,6 +155,7 @@ public class VisionLanguageModel implements AutoCloseable {
         this.workspace = workspace;
         this.kvCacheStrategy = kvCacheStrategy != null ? kvCacheStrategy : KvCacheStrategy.STATIC;
         this.maxKvLen = maxKvLen;
+        this.externalKvCacheManager = externalKvCacheManager;
         // Use externally-provided IOConfig if given, otherwise auto-discover
         if (visionEncoderIOConfig != null) {
             this.visionEncoderIOConfig = visionEncoderIOConfig;
@@ -169,7 +177,8 @@ public class VisionLanguageModel implements AutoCloseable {
                 System.getProperty(ND4JSystemProperties.DSP_NO_FREEZE, "false"));
         if (!noFreeze) {
             model.setDspAutoCompileEnabled(true);
-            log.info("DSP auto-compile enabled on {} ({}={})",
+            model.setDspNativeAutoCompileEnabled(true);
+            log.info("DSP auto-compile enabled (native=true) on {} ({}={})",
                     label, ND4JSystemProperties.DSP_NO_FREEZE, noFreeze);
         } else {
             log.info("DSP auto-compile disabled on {} ({}=true)",
@@ -342,6 +351,81 @@ public class VisionLanguageModel implements AutoCloseable {
             builder.visionEncoderIOConfig(ioConfig);
         }
         return builder.build();
+    }
+
+    /**
+     * Load a VLM from ONNX model files with optional patches applied after import.
+     *
+     * @param visionEncoderOnnx path to the vision encoder ONNX file
+     * @param decoderOnnx path to the decoder ONNX file
+     * @param embedTokensOnnx path to the embed tokens ONNX file
+     * @param tokenizerFile path to the tokenizer.json file
+     * @param workspaceSize native workspace size in bytes (0 to disable)
+     * @param ioConfig optional externally-provided IOConfig (null for auto-discover)
+     * @param visionPatches patches to apply to the vision encoder (null for none)
+     * @param decoderPatches patches to apply to the decoder (null for none)
+     * @param embedPatches patches to apply to embed_tokens (null for none)
+     * @return the loaded and patched model
+     * @throws IOException if loading fails
+     */
+    public static VisionLanguageModel fromOnnxWithPatches(
+            File visionEncoderOnnx,
+            File decoderOnnx,
+            File embedTokensOnnx,
+            File tokenizerFile,
+            long workspaceSize,
+            VisionEncoderIOConfig ioConfig,
+            List<SameDiffGraphPatch> visionPatches,
+            List<SameDiffGraphPatch> decoderPatches,
+            List<SameDiffGraphPatch> embedPatches) throws IOException {
+        long start = System.currentTimeMillis();
+
+        SameDiff[] models = OnnxModelCache.importAllWithCache(
+                visionEncoderOnnx.getAbsolutePath(),
+                decoderOnnx.getAbsolutePath(),
+                embedTokensOnnx.getAbsolutePath()
+        );
+
+        SameDiff visionEncoder = models[0];
+        SameDiff decoder = models[1];
+        SameDiff embedTokens = models[2];
+
+        // Apply patches
+        applyPatches(visionEncoder, visionPatches, "visionEncoder");
+        applyPatches(decoder, decoderPatches, "decoder");
+        applyPatches(embedTokens, embedPatches, "embedTokens");
+
+        if (workspaceSize > 0) {
+            visionEncoder.enableWorkspaceMode(workspaceSize);
+            decoder.enableWorkspaceMode(workspaceSize);
+            embedTokens.enableWorkspaceMode(workspaceSize);
+        }
+
+        Tokenizer tokenizer = HuggingFaceTokenizer.fromFile(tokenizerFile);
+
+        long elapsed = System.currentTimeMillis() - start;
+        log.info("VLM loaded from ONNX with patches in {}ms", elapsed);
+
+        VisionLanguageModelBuilder builder = VisionLanguageModel.builder()
+                .visionEncoder(visionEncoder)
+                .decoder(decoder)
+                .embedTokens(embedTokens)
+                .tokenizer(tokenizer)
+                .imagePreprocessor(VLMImagePreprocessor.defaultPreprocessor());
+        if (ioConfig != null) {
+            builder.visionEncoderIOConfig(ioConfig);
+        }
+        return builder.build();
+    }
+
+    private static void applyPatches(SameDiff model, List<SameDiffGraphPatch> patches, String label) {
+        if (patches == null || patches.isEmpty()) return;
+        for (SameDiffGraphPatch patch : patches) {
+            if (patch.appliesTo(model)) {
+                boolean applied = patch.apply(model);
+                log.info("Patch '{}' on {}: {}", patch.name(), label, applied ? "applied" : "skipped");
+            }
+        }
     }
 
     /**
@@ -1202,7 +1286,11 @@ public class VisionLanguageModel implements AutoCloseable {
         for (int f = 0; f < numFrames; f++) {
             java.awt.image.BufferedImage frame = splitResult.frames.get(f);
             INDArray frameTensor = imagePreprocessor.preprocess(frame);
-            INDArray visionFrameInput = frameTensor.reshape(1, 1, frameTensor.size(1), frameTensor.size(2), frameTensor.size(3));
+            // Use normalizeVisionInputShape to match what encodeImage() does — it checks
+            // whether the encoder expects rank-5 [batch,frames,C,H,W] or rank-4 [batch,C,H,W].
+            // Unconditionally reshaping to rank-5 breaks models that expect rank-4 (e.g.,
+            // SmolDocling's conv2d pipeline has permute ops with 4-element permutation vectors).
+            INDArray visionFrameInput = normalizeVisionInputShape(frameTensor);
 
             Map<String, INDArray> inputs = new HashMap<>();
             inputs.put(visionEncoderIOConfig.getPixelValuesName(), visionFrameInput);
@@ -1617,6 +1705,32 @@ public class VisionLanguageModel implements AutoCloseable {
     }
 
     /**
+     * Reset all inference sessions to free GPU memory between pages.
+     * Call this after processing each page to release cached intermediates
+     * before starting the next page.
+     */
+    public void resetSessions() {
+        log.info("Resetting all inference sessions to reclaim GPU memory");
+        if (decoder != null) decoder.resetSession();
+        if (visionEncoder != null) visionEncoder.resetSession();
+        if (embedTokens != null) embedTokens.resetSession();
+
+        // Force CUDA memory pool to release retained memory back to the OS on all devices.
+        // Without this, the pool retains freed allocations and subsequent pages OOM.
+        try {
+            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            Nd4j.getExecutioner().commit();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+            log.info("Trimmed CUDA memory pool on {} devices", numDevices);
+        } catch (Exception e) {
+            log.warn("Failed to trim memory pool: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Check if the model is valid and usable.
      *
      * @return true if the model can be used
@@ -1680,14 +1794,11 @@ public class VisionLanguageModel implements AutoCloseable {
         if (image == null) {
             throw new IllegalArgumentException("image must not be null");
         }
-        if (image.rank() == 4 && visionEncoderExpectsFramedInput()) {
-            if (image.size(0) == 1) {
-                // [1, C, H, W] -> [1, 1, C, H, W]
-                return image.reshape(1, 1, image.size(1), image.size(2), image.size(3));
-            }
-            // [frames, C, H, W] -> [1, frames, C, H, W]
-            return image.reshape(1, image.size(0), image.size(1), image.size(2), image.size(3));
-        }
+        // Always pass rank-4 [batch, C, H, W] to the vision encoder.
+        // The ONNX model's placeholder may declare rank-5 [batch, frames, C, H, W],
+        // but the model's internal ops (permute, conv2d) use 4-element permutation
+        // vectors and expect rank-4 input. The model handles batch+frames flattening
+        // internally. Sending rank-5 causes permute/conv2d rank mismatch failures.
         return image;
     }
 

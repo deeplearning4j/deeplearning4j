@@ -797,19 +797,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                         return ExecutionResult.builder().valueOutputs(filteredResults).build();
                     }
                 } catch (Exception e) {
-                    log.warn("DynamicShapePlan-based execution failed, falling back to standard path: {}", e.getMessage());
-                    // Invalidate the executor — a failed execution may corrupt cached state
-                    // (constant shape info, slot cache). Close and recreate on next attempt.
-                    DynamicShapePlanExecutor failedExecutor = dynamicShapePlanExecutorTl.get();
-                    if (failedExecutor != null) {
-                        try { failedExecutor.close(); } catch (Exception ex) { /* ignore */ }
-                        dynamicShapePlanExecutorTl.remove();
-                    }
-                    // Clear stale C++ error state so fallback execution doesn't see it.
-                    // lastErrorCode/lastErrorMessage are thread-local in C++ and persist
-                    // across JNI calls until explicitly cleared.
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().clearLastError();
-                    // Fall through to standard execution
+                    log.error("DynamicShapePlan-based execution failed — no fallback allowed: {}", e.getMessage());
+                    throw new RuntimeException("DSP execution failed. No fallback to standard path. " +
+                            "Fix the DSP executor. Error: " + e.getMessage(), e);
                 }
             }
 

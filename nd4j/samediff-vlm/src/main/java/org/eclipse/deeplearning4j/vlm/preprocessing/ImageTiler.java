@@ -482,16 +482,15 @@ public class ImageTiler {
      * @param contentWidth actual content width
      * @param contentHeight actual content height
      * @param targetSize padded frame size
-     * @return INDArray of shape [1, 1, targetSize, targetSize] with BOOL dtype
+     * @return INDArray of shape [1, targetSize, targetSize] with BOOL dtype
      */
     public static INDArray createPixelAttentionMask(int contentWidth, int contentHeight, int targetSize) {
         if (contentWidth >= targetSize && contentHeight >= targetSize) {
-            return Nd4j.ones(DataType.BOOL, 1, 1, targetSize, targetSize);
+            return Nd4j.ones(DataType.BOOL, 1, targetSize, targetSize);
         }
-        INDArray mask = Nd4j.zeros(DataType.BOOL, 1, 1, targetSize, targetSize);
+        INDArray mask = Nd4j.zeros(DataType.BOOL, 1, targetSize, targetSize);
         if (contentWidth > 0 && contentHeight > 0) {
             mask.get(
-                    NDArrayIndex.point(0),
                     NDArrayIndex.point(0),
                     NDArrayIndex.interval(0, contentHeight),
                     NDArrayIndex.interval(0, contentWidth)

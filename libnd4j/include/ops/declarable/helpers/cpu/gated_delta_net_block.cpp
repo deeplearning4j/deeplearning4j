@@ -62,10 +62,10 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     auto Kmat = NDArrayFactory::create<T>('c', qkShape);
     auto V = NDArrayFactory::create<T>('c', vShape);
 
-    const T* qkvBuf = qkvReshaped->bufferAsT<T>();
-    T* qBuf = Q->bufferAsT<T>();
-    T* kBuf = Kmat->bufferAsT<T>();
-    T* vBuf = V->bufferAsT<T>();
+    const T* qkvBuf = qkvReshaped->template bufferAsT<T>();
+    T* qBuf = Q->template bufferAsT<T>();
+    T* kBuf = Kmat->template bufferAsT<T>();
+    T* vBuf = V->template bufferAsT<T>();
 
     // QKV split: interleaved [q0,k0,v0, q1,k1,v1, ...] per head
     auto splitFunc = PRAGMA_THREADS_FOR {
@@ -84,7 +84,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     samediff::Threads::parallel_tad(splitFunc, 0, BL);
 
     // Sigmoid on beta
-    T* betaBuf = betaReshaped->bufferAsT<T>();
+    T* betaBuf = betaReshaped->template bufferAsT<T>();
     const LongType betaLen = betaReshaped->lengthOf();
     auto sigmoidFunc = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; ++i)
@@ -115,7 +115,7 @@ static void gatedDeltaNetBlock_(LaunchContext* context,
     const LongType hdv = static_cast<LongType>(numHeads) * headDimV;
     std::vector<LongType> flatShape = {BL, hdv};
     auto gdnFlat = gdnOutput->reshape('c', flatShape);
-    T* flatBuf = gdnFlat->bufferAsT<T>();
+    T* flatBuf = gdnFlat->template bufferAsT<T>();
 
     auto rmsFunc = PRAGMA_THREADS_FOR {
         for (auto row = start; row < stop; ++row) {

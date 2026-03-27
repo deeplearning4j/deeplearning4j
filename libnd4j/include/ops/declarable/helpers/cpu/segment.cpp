@@ -162,7 +162,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
   int numClasses = output->sizeAt(0);
   // if input is a vector: (as if in doc sample)
   auto indicesBuf = prefetchIndices(indices);
-  int idx = indicesVec[0];
+  int idx = indicesBuf[0];
   if (input->isVector() || input->isScalar()) {
     auto inputBuf = input->bufferAsT<T>();
     auto outputBuf = output->bufferAsT<T>();
@@ -170,13 +170,13 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     int count = 0;
 
     for (sd::LongType e = 0; e < indices->lengthOf(); e++) {
-      if (idx == indicesVec[e]) {
+      if (idx == indicesBuf[e]) {
         // mean
         val += inputBuf[e];
         count++;
       } else {
         outputBuf[idx] = val / count;
-        idx = indicesVec[e];
+        idx = indicesBuf[e];
         val = inputBuf[e];
         count = 1;
       }
@@ -195,13 +195,13 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     outputT->assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
-      if (indicesVec[i] == idx) {
+      if (indicesBuf[i] == idx) {
         auto current = listOfTensors.at(i);
         *outputT += *current;
         count++;
       } else {
         *outputT /= double(count);
-        idx = indicesVec[i];
+        idx = indicesBuf[i];
         outputT = listOfOutTensors.at(idx);
         outputT->assign(listOfTensors.at(i));
         count = 1;
@@ -378,7 +378,7 @@ static void unsortedSegmentMaxFunctor_(NDArray* input, NDArray* indices, sd::Lon
   // if input is a vector: (as if in doc sample)
   auto indicesBuf = prefetchIndices(indices);
   SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
-  for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indicesVec[e]].push_back(e);
+  for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indicesBuf[e]].push_back(e);
 
 
   if (input->isVector() || input->isScalar()) {  // 1D case
@@ -441,7 +441,7 @@ static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, sd::Lon
   auto indicesBuf = prefetchIndices(indices);
   SD_MAP_IMPL<sd::LongType, std::vector<sd::LongType>> idxs;
 
-  for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indicesVec[e]].push_back(e);
+  for (sd::LongType e = 0; e < indices->lengthOf(); ++e) idxs[indicesBuf[e]].push_back(e);
 
 
   if (input->isVector() || input->isScalar()) {  // 1D case

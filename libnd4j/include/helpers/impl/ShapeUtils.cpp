@@ -445,7 +445,8 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
     for (LongType i = 0; i < rank; ++i) {
       if (std::binary_search(dimsToExclude->begin(), dimsToExclude->end(),
                              i))  // dimsToExclude is already sorted after shape::checkDimensions() has been applied
-        newShapeInfo[i + 1] = 1;
+        // Preserve zero dimensions - reducing over an empty dimension should keep it empty
+        newShapeInfo[i + 1] = shapeInfo[i + 1] == 0 ? 0 : 1;
       else
         newShapeInfo[i + 1] = shapeInfo[i + 1];
     }

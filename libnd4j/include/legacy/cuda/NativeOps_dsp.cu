@@ -166,6 +166,17 @@ int executeDynamicShapePlan(
       // Output arrays may be null — plan will allocate them
     }
 
+    // Debug: print input shapes
+    for (int i = 0; i < numInputs; i++) {
+      auto* arr = inputPtrs[i];
+      fprintf(stdout, "DSP_DEBUG: input[%d] rank=%d shape=[", i, arr->rankOf());
+      for (int d = 0; d < arr->rankOf(); d++) {
+        fprintf(stdout, "%lld%s", (long long)arr->sizeAt(d), d < arr->rankOf()-1 ? "," : "");
+      }
+      fprintf(stdout, "] len=%lld\n", (long long)arr->lengthOf());
+    }
+    fflush(stdout);
+
     void* cudaStream = (stream != nullptr) ? reinterpret_cast<void*>(stream) : nullptr;
 
     auto status = plan->execute(inputPtrs.data(), numInputs, outputPtrs.data(), numOutputs, cudaStream);
@@ -200,6 +211,14 @@ int executeDynamicShapePlan(
     for (int i = 0; i < numOutputs; i++) {
       if (outputPtrs[i] != nullptr) {
         opContext->setOutputArray(i, outputPtrs[i], false);
+        // Debug: print output shape
+        auto* arr = outputPtrs[i];
+        fprintf(stdout, "DSP_DEBUG: output[%d] rank=%d shape=[", i, arr->rankOf());
+        for (int d = 0; d < arr->rankOf(); d++) {
+          fprintf(stdout, "%lld%s", (long long)arr->sizeAt(d), d < arr->rankOf()-1 ? "," : "");
+        }
+        fprintf(stdout, "] len=%lld\n", (long long)arr->lengthOf());
+        fflush(stdout);
       }
     }
 

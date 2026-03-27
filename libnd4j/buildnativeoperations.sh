@@ -2516,6 +2516,24 @@ mkbuilddir() {
 
 HELPERS_CMAKE=""
 
+# Auto-enable oneDNN when Triton is ON and we're on x86 (x86_64/amd64).
+# oneDNN provides the CPU graph backend for DSP and optimized math kernels.
+if [ "$TRITON" == "ON" ]; then
+    MACHINE=$(uname -m)
+    if [[ "$MACHINE" == "x86_64" ]] || [[ "$MACHINE" == "amd64" ]]; then
+        if [[ -z "$HELPERS" ]] && [[ -z "$HELPER" ]]; then
+            HELPERS="onednn"
+            print_colored "green" "✓ Auto-enabling oneDNN helper (Triton=ON on x86)"
+        elif [[ -n "$HELPERS" ]] && [[ "$HELPERS" != *"onednn"* ]]; then
+            HELPERS="${HELPERS},onednn"
+            print_colored "green" "✓ Auto-adding oneDNN to helpers (Triton=ON on x86)"
+        elif [[ -n "$HELPER" ]] && [[ "$HELPER" != *"onednn"* ]]; then
+            HELPER="${HELPER},onednn"
+            print_colored "green" "✓ Auto-adding oneDNN to helper (Triton=ON on x86)"
+        fi
+    fi
+fi
+
 # Process multi-helper configuration (--helpers flag)
 if [ -n "$HELPERS" ]; then
     print_colored "blue" "=== Multi-Helper Configuration ==="

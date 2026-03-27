@@ -315,7 +315,11 @@ Status NativeDynamicShapePlan::executeSlot(
   }
 
   // ── Frozen constant optimization ──────────────────────────────────────────
-  if (slot.frozenConstantSlot) {
+  // Only skip when shapesFrozen_ && executeCount_ > 0, because that's when
+  // outputSlots_ is populated from slotArrayCache_ (line 921-922).  When
+  // shapesFrozen_=false, outputSlots_ is zeroed — skipping a slot would
+  // leave a NULL entry and downstream slots would get NULL inputs.
+  if (slot.frozenConstantSlot && shapesFrozen_ && executeCount_ > 0) {
 #ifdef SD_CUDA
     if (Environment::getInstance().tritonVerifyKernels()) {
       DSP_DIAG(VERIFY, "SLOT_EXEC step=%d op=%s [SKIPPED:frozen-const]", stepIdx, slot.opName.c_str());
@@ -750,7 +754,8 @@ Status NativeDynamicShapePlan::executeSlot(
   // ── Step 2: Shape inference ──────────────────────────────────────────────
   LongType shapeKey = 0;
   bool cacheHit;
-  if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid) {
+  if (shapesFrozen_ && executeCount_ > 0 && slot.shapeCacheValid &&
+      !slot.outputShapeDependsOnInputValues) {
     cacheHit = true;
 
     // View-capable ops: check for stale empty cached shapes.

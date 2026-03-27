@@ -84,11 +84,11 @@ DECLARE_SHAPE_FN(reduce_sum) {
   } else if (block.getIArguments()->size())
     dimensions = *block.getIArguments();
 
-  // FIX: Also check for empty dimensions from iArguments (TF import case)
-  // TF semantics: empty axis means no reduction (return input shape unchanged)
-  if (dimensions.empty()) {
-    return SHAPELIST(CONSTANT(inputShape->at(0)));
-  }
+  // When dimensions are empty (no axes specified), this means "reduce all dimensions".
+  // The TF case where empty axis tensor means "no reduction" is already handled
+  // inside the (block.width() > 1) branch above. For the iArgs/no-input path,
+  // empty dimensions correctly falls through to evalReduceShapeInfo which returns
+  // scalar (keepDims=false) or all-ones shape (keepDims=true).
 
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,

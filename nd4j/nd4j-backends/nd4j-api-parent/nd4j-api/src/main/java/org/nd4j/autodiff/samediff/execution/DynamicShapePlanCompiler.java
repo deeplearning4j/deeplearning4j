@@ -69,26 +69,6 @@ public class DynamicShapePlanCompiler {
     private static final Set<String> DATA_DEPENDENT_OUTPUT_OPS = Set.of("where", "unique");
 
     /**
-     * Ops whose output shape depends on input tensor VALUES, not just input shapes.
-     * For these ops, the shape cache key must include INT/LONG input values.
-     * For all other ops, INT/LONG values are excluded from the key, avoiding expensive
-     * CUDA D2H sync and eliminating false cache misses from value changes.
-     */
-    private static final Set<String> VALUE_DEPENDENT_SHAPE_OPS = Set.of(
-            "reshape", "reshape_no_copy",
-            "expand_dims", "squeeze",
-            "tile", "repeat",
-            "slice", "strided_slice",
-            "create", "fill",
-            "onehot", "lin_space", "linspace", "range", "eye",
-            "pad", "mirror_pad",
-            "broadcast_to",
-            "unique",
-            "split_v", "split",
-            "gather", "reduce_sum", "reduce_mean"
-    );
-
-    /**
      * Ops that produce view outputs (share input buffer, no data copy).
      * The executor can skip output allocation for these and pass an empty placeholder.
      * Matches C++ NativePlanCompiler's isViewCapableOp detection.
@@ -506,9 +486,11 @@ public class DynamicShapePlanCompiler {
             }
 
             // Determine if output shape depends on input values (not just shapes).
-            // When true, INT/LONG input values are included in the shape cache key.
-            // When false, only input shapes + dtypes are used, avoiding expensive CUDA D2H syncs.
-            boolean shapeDependsOnValues = VALUE_DEPENDENT_SHAPE_OPS.contains(opNameLower) || isDataDependent;
+            // Uses runtime detection: any op with small INT/LONG inputs is treated as
+            // value-dependent. This replaces the brittle hardcoded VALUE_DEPENDENT_SHAPE_OPS
+            // set. The Java computeShapeKey() now always hashes INT/LONG values regardless,
+            // so this flag only affects the C++ frozen-shape fast-path (via serialization).
+            boolean shapeDependsOnValues = hasIntLongInputs || isDataDependent;
 
             boolean isViewCapable = VIEW_CAPABLE_OPS.contains(opNameLower);
 

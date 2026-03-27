@@ -3456,6 +3456,32 @@ public class SDBaseOps {
   }
 
   /**
+   * Reverse the values of an array along dimensions specified as an SDVariable.<br>
+   * This overload accepts the axis as a variable rather than literal longs,
+   * which is needed for dynamic axis values (e.g., from ONNX/TF import).
+   *
+   * @param x Input variable (NDARRAY type)
+   * @param axis Axis variable specifying which dimensions to reverse (INT type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable reverse(SDVariable x, SDVariable axis) {
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(sd, x, axis).outputVariable();
+  }
+
+  /**
+   * Reverse the values of an array along dimensions specified as an SDVariable.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NDARRAY type)
+   * @param axis Axis variable specifying which dimensions to reverse (INT type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable reverse(String name, SDVariable x, SDVariable axis) {
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse(sd, x, axis).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Reverse sequence op: for each slice along dimension seqDimension, the first seqLength values are reversed<br>
    *
    * @param x Input variable (NDARRAY type)

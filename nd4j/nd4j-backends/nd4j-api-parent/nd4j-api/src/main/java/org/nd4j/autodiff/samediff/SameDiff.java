@@ -4564,6 +4564,19 @@ public class SameDiff extends SDBaseOps implements AutoCloseable {
             }
             log.info("SameDiff: Reset session for thread {} - closed {} unique data buffers, workspace memory released", threadId, closedCount);
         }
+
+        // Trim CUDA memory pool to release retained allocations back to the OS.
+        // This is critical for multi-page VLM pipelines where pool retains freed memory.
+        try {
+            org.nd4j.nativeblas.NativeOps nativeOps = org.nd4j.nativeblas.NativeOpsHolder.getInstance().getDeviceNativeOps();
+            Nd4j.getExecutioner().commit();
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+            for (int d = 0; d < numDevices; d++) {
+                nativeOps.trimMemoryPool(d);
+            }
+        } catch (Exception e) {
+            log.debug("Pool trim after session reset: {}", e.getMessage());
+        }
     }
 
     /**

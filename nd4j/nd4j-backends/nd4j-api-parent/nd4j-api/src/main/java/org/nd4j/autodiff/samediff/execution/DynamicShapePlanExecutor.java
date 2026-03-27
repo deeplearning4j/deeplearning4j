@@ -1084,47 +1084,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                 }
                 // null means native execution not available, fall through to Java
             } catch (Exception e) {
-                // Clear CUDA error state after native plan failure. CUDA errors from
-                // the failed execution (e.g., error 700 illegal memory access) are sticky
-                // and will cause ALL subsequent CUDA operations to fail unless cleared.
-                // Sync + clear on the execution stream ensures a clean state for retry.
-                NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-                try {
-                    Nd4j.getExecutioner().commit();
-                    nativeOps.clearLastError();
-                } catch (Exception clearEx) {
-                    log.debug("Error clearing CUDA state after native plan failure: {}", clearEx.getMessage());
-                }
-
-                if (!cudaGraphsFailed && nativePlanHandle != null) {
-                    // CUDA graph capture may have failed — disable graphs and retry slot-by-slot
-                    log.info("Native executor failed (likely CUDA graph capture), retrying with graphs disabled: {}", e.getMessage());
-                    DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                            "CUDA graph capture failed, retrying without graphs: " + e.getMessage());
-                    cudaGraphsFailed = true;
-                    try {
-                        nativeOps.setPlanCudaGraphsEnabled(nativePlanHandle, false);
-                    } catch (UnsupportedOperationException ignored) {}
-                    // Retry without CUDA graphs
-                    try {
-                        Map<String, INDArray> retryResult = executeNative(plan, placeholderArrays);
-                        if (retryResult != null) {
-                            return retryResult;
-                        }
-                    } catch (Exception retryEx) {
-                        log.warn("Native executor failed even without CUDA graphs, falling back to Java: {}", retryEx.getMessage());
-                        DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                                "native executor failed without graphs, falling back to Java: " + retryEx.getMessage());
-                        nativeExecutorFailed = true;
-                        freeNativePlanHandle();
-                    }
-                } else {
-                    log.warn("Native graph executor failed, falling back to Java executor: {}", e.getMessage());
-                    DspDiagnostics.record(DspDiagnostics.FALLBACK,
-                            "native graph executor failed, falling back to Java: " + e.getMessage());
-                    nativeExecutorFailed = true;
-                    freeNativePlanHandle();
-                }
+                // No fallback — native executor failures must be fixed, not masked
+                log.error("Native executor failed — no fallback to Java allowed: {}", e.getMessage());
+                throw new RuntimeException("Native DSP executor failed at plan execution. " +
+                        "No fallback permitted. Fix the native executor. Error: " + e.getMessage(), e);
             }
         }
 
@@ -2242,7 +2205,7 @@ public class DynamicShapePlanExecutor implements Closeable {
             // We also skip non-CustomOp (legacy) ops because the Java executor validates
             // X.length == Z.length BEFORE calling C++.
             boolean isViewSlotCompileTime = slot.isViewCapableOp();
-            boolean isViewSlotRuntime = slotIsViewProducer != null && slotIsViewProducer[slotIdx];
+            boolean isViewSlotRuntime = slotIdx >= 0 && slotIsViewProducer != null && slotIsViewProducer[slotIdx];
             if (slotIdx >= 0 && (isViewSlotCompileTime || isViewSlotRuntime)
                     && !outputSlotSet.get(slotIdx) && slot.isCustomOp()) {
                 out = Nd4j.empty(dt);
@@ -3081,14 +3044,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                     } else {
                         opHash = ((CustomOp) fn).opHash();
                     }
-                    OpaqueShapeList shapeList;
-                    if (!slot.isOutputShapeDependsOnInputValues()) {
-                        shapeList = nativeOps.calculateOutputShapesNoSync(null, opHash,
-                                ctx.contextPointer());
-                    } else {
-                        shapeList = nativeOps.calculateOutputShapes2(null, opHash,
-                                ctx.contextPointer());
-                    }
+                    // Always use calculateOutputShapes2 which syncs INT/LONG input values to host.
+                    // syncIntLongInputs() already syncs these before shape computation, so this
+                    // is effectively zero additional cost. Eliminates the need for a hardcoded
+                    // VALUE_DEPENDENT_SHAPE_OPS list to gate the sync/no-sync decision.
+                    OpaqueShapeList shapeList = nativeOps.calculateOutputShapes2(null, opHash,
+                            ctx.contextPointer());
 
                     if (nativeOps.lastErrorCode() != 0 || shapeList == null) {
                         throw new RuntimeException("Shape calculation failed for op " +
@@ -3142,7 +3103,6 @@ public class DynamicShapePlanExecutor implements Closeable {
 
     private long computeShapeKey(DynamicShapeSlot slot, INDArray[] inputArrays) {
         long hash = slot.getOpNameHash();
-        boolean includeValues = slot.isOutputShapeDependsOnInputValues();
         for (INDArray in : inputArrays) {
             if (in != null) {
                 for (long dim : in.shape()) {
@@ -3152,8 +3112,10 @@ public class DynamicShapePlanExecutor implements Closeable {
                 hash ^= in.dataType().ordinal();
                 hash *= 0x9E3779B97F4A7C15L;
 
-                if (includeValues
-                        && (in.dataType() == DataType.INT || in.dataType() == DataType.LONG)
+                // Always hash INT/LONG input values for small tensors — matches C++ computeShapeKey()
+                // which unconditionally hashes these. Eliminates VALUE_DEPENDENT_SHAPE_OPS as a
+                // correctness concern (missing ops caused stale cache hits).
+                if ((in.dataType() == DataType.INT || in.dataType() == DataType.LONG)
                         && in.length() > 0 && in.length() <= 32
                         && in.data() != null && !in.data().wasClosed()) {
                     for (long j = 0; j < in.length(); j++) {
@@ -5034,9 +4996,12 @@ public class DynamicShapePlanExecutor implements Closeable {
                 long[] shape = Shape.shape(shapeInfo);
                 DataType dtype = ArrayOptionsHelper.dataType(shapeInfo);
                 long length = OpaqueNDArray.getOpaqueNDArrayLength(opaqueOut);
+                char ordering = Shape.order(shapeInfo);
 
-                // Create a Java-owned INDArray and copy data from the C++ output
-                INDArray result = Nd4j.createUninitialized(dtype, shape);
+                // Create a Java-owned INDArray with the SAME ordering as the C++ output.
+                // The raw buffer copy below is a flat memcpy — the destination must have
+                // matching strides so elements are interpreted correctly.
+                INDArray result = Nd4j.createUninitialized(dtype, shape, ordering);
 
                 // Get raw pointers — primary may be null on CUDA (data only on GPU)
                 Pointer nativePrimary = nativeOps.getOpaqueNDArrayBuffer(opaqueOut);

@@ -23,6 +23,7 @@
 
 #include <cuda_runtime.h>
 #include <cuda_fp16.h>
+#include <cuda_bf16.h>
 #include <helpers/DebugHelper.h>
 #include <array/NDArray.h>
 #include <execution/cuda/LaunchDims.h>

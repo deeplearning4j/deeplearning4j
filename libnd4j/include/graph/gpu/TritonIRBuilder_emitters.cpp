@@ -498,19 +498,19 @@ mlir::Value TritonIRBuilder::emitUnaryElementwise(mlir::OpBuilder& builder, mlir
     return builder.create<mlir::arith::AddFOp>(loc, input, scalarSplat);
   }
 
-  if (opLower == "subtract_scalar") {
+  if (opLower == "subtract_scalar" || opLower == "sub_scalar") {
     float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 0.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::SubFOp>(loc, input, scalarSplat);
   }
 
-  if (opLower == "multiply_scalar") {
+  if (opLower == "multiply_scalar" || opLower == "mul_scalar") {
     float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::MulFOp>(loc, input, scalarSplat);
   }
 
-  if (opLower == "divide_scalar") {
+  if (opLower == "divide_scalar" || opLower == "div_scalar") {
     float scalar = (slot.numTArgs > 0 && slot.tArgs) ? static_cast<float>(slot.tArgs[0]) : 1.0f;
     auto scalarSplat = splatConstantF32(builder, loc, tensorType, scalar);
     return builder.create<mlir::arith::DivFOp>(loc, input, scalarSplat);

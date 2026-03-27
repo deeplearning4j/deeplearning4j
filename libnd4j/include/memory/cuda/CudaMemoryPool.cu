@@ -694,11 +694,22 @@ void CudaMemoryPool::free(void* ptr, int deviceId, cudaStream_t stream) {
               "Treating as GPU memory (NOT calling cudaFreeHost).\n", ptr);
   }
 
+  // Check if CUDA context is still alive before calling any CUDA APIs.
+  // During JVM shutdown, the CUDA runtime may destroy the context before GC
+  // finalizes remaining DataBuffers. Any CUDA call on a destroyed context
+  // causes SIGSEGV (the VM Thread has no CUDA context).
+  int savedDev = -1;
+  cudaError_t contextCheck = cudaGetDevice(&savedDev);
+  if (contextCheck != cudaSuccess) {
+    // Context is destroyed — skip cleanup. The OS reclaims all GPU memory
+    // when the process exits; attempting cudaFree/cudaFreeAsync here would crash.
+    cudaGetLastError();  // clear the sticky error
+    return;
+  }
+
   // Ensure we're on the correct device for the free. cudaFreeAsync with a stream
   // from a different device than the allocation can fail silently for non-P2P GPUs.
   // This mirrors the save/restore pattern in allocate().
-  int savedDev = -1;
-  cudaGetDevice(&savedDev);
   bool needDeviceRestore = (deviceId >= 0 && savedDev != deviceId);
   if (needDeviceRestore) {
     cudaSetDevice(deviceId);

@@ -2529,12 +2529,12 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
       loc, mlir::arith::CmpIPredicate::slt, offsets, splatN);
 
   // Unravel linear index to (n, oc, oh, ow).
-  // ND4J NCHW conv2d output uses OH as the INNER (faster-varying) spatial dimension
-  // and OW as the OUTER spatial dimension. So:
-  //   oh = offsets % OH          (inner / fast)
-  //   ow = (offsets / OH) % OW   (outer / slow)
-  //   oc = (offsets / (OH * OW)) % OC
-  //   n  = offsets / (OH * OW * OC)
+  // C-order NCHW [N, OC, OH, OW] has OW as the fastest-varying dimension (stride 1),
+  // then OH (stride OW), then OC (stride OH*OW), then N (stride OC*OH*OW).
+  //   ow = offsets % OW          (fastest / innermost)
+  //   oh = (offsets / OW) % OH
+  //   oc = (offsets / (OW * OH)) % OC
+  //   n  = offsets / (OW * OH * OC)
   auto owConst = builder.create<mlir::arith::ConstantIntOp>(loc, OW, 32);
   auto ohConst = builder.create<mlir::arith::ConstantIntOp>(loc, OH, 32);
   auto ocConst = builder.create<mlir::arith::ConstantIntOp>(loc, OC, 32);
@@ -2542,10 +2542,10 @@ void TritonIRBuilder::emitConvolutionSection(mlir::OpBuilder& builder, mlir::Loc
   auto ohSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ohConst);
   auto ocSplat = builder.create<mlir::triton::SplatOp>(loc, i32TensorType, ocConst);
 
-  auto oh_idx = builder.create<mlir::arith::RemSIOp>(loc, offsets, ohSplat);
-  auto tmp1 = builder.create<mlir::arith::DivSIOp>(loc, offsets, ohSplat);
-  auto ow_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp1.getResult(), owSplat);
-  auto tmp2 = builder.create<mlir::arith::DivSIOp>(loc, tmp1.getResult(), owSplat);
+  auto ow_idx = builder.create<mlir::arith::RemSIOp>(loc, offsets, owSplat);
+  auto tmp1 = builder.create<mlir::arith::DivSIOp>(loc, offsets, owSplat);
+  auto oh_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp1.getResult(), ohSplat);
+  auto tmp2 = builder.create<mlir::arith::DivSIOp>(loc, tmp1.getResult(), ohSplat);
   auto oc_idx = builder.create<mlir::arith::RemSIOp>(loc, tmp2.getResult(), ocSplat);
   auto n_idx = builder.create<mlir::arith::DivSIOp>(loc, tmp2.getResult(), ocSplat);
 

@@ -4325,6 +4325,156 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * TurboQuant asymmetric attention with compressed keys.<br>
+   * <br>
+   * Computes scaled dot-product attention using compressed key representations<br>
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
+   * product estimator combines MSE reconstruction with QJL correction:<br>
+   * <br>
+   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
+   * <br>
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   *
+   * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
+   * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
+   * @param qjlSigns QJL sign bits [B, H, Sk, D] INT8 (INT type)
+   * @param residualNorms Residual L2 norms [B, H, Sk] (NUMERIC type)
+   * @param qjlMatrix QJL projection matrix [D, D] (NUMERIC type)
+   * @param values Dequantized values [B, H, Sk, D] (NUMERIC type)
+   * @param attentionMask Attention mask [B, 1, 1, Sk] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param headDim Dimension per head
+   * @param scale Attention scale (0 = auto: 1/sqrt(headDim))
+   * @return output Attention output [B, H, Sq, D] (NUMERIC type)
+   */
+  public SDVariable turboQuantAttention(SDVariable query, SDVariable kMse, SDVariable qjlSigns,
+      SDVariable residualNorms, SDVariable qjlMatrix, SDVariable values, SDVariable attentionMask,
+      int numHeads, int headDim, double scale) {
+    SDValidation.validateNumerical("turboQuantAttention", "query", query);
+    SDValidation.validateNumerical("turboQuantAttention", "kMse", kMse);
+    SDValidation.validateInteger("turboQuantAttention", "qjlSigns", qjlSigns);
+    SDValidation.validateNumerical("turboQuantAttention", "residualNorms", residualNorms);
+    SDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
+    SDValidation.validateNumerical("turboQuantAttention", "values", values);
+    SDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(sd,query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, scale).outputVariable();
+  }
+
+  /**
+   * TurboQuant asymmetric attention with compressed keys.<br>
+   * <br>
+   * Computes scaled dot-product attention using compressed key representations<br>
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
+   * product estimator combines MSE reconstruction with QJL correction:<br>
+   * <br>
+   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
+   * <br>
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
+   * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
+   * @param qjlSigns QJL sign bits [B, H, Sk, D] INT8 (INT type)
+   * @param residualNorms Residual L2 norms [B, H, Sk] (NUMERIC type)
+   * @param qjlMatrix QJL projection matrix [D, D] (NUMERIC type)
+   * @param values Dequantized values [B, H, Sk, D] (NUMERIC type)
+   * @param attentionMask Attention mask [B, 1, 1, Sk] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param headDim Dimension per head
+   * @param scale Attention scale (0 = auto: 1/sqrt(headDim))
+   * @return output Attention output [B, H, Sq, D] (NUMERIC type)
+   */
+  public SDVariable turboQuantAttention(String name, SDVariable query, SDVariable kMse,
+      SDVariable qjlSigns, SDVariable residualNorms, SDVariable qjlMatrix, SDVariable values,
+      SDVariable attentionMask, int numHeads, int headDim, double scale) {
+    SDValidation.validateNumerical("turboQuantAttention", "query", query);
+    SDValidation.validateNumerical("turboQuantAttention", "kMse", kMse);
+    SDValidation.validateInteger("turboQuantAttention", "qjlSigns", qjlSigns);
+    SDValidation.validateNumerical("turboQuantAttention", "residualNorms", residualNorms);
+    SDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
+    SDValidation.validateNumerical("turboQuantAttention", "values", values);
+    SDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(sd,query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, scale).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * TurboQuant asymmetric attention with compressed keys.<br>
+   * <br>
+   * Computes scaled dot-product attention using compressed key representations<br>
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
+   * product estimator combines MSE reconstruction with QJL correction:<br>
+   * <br>
+   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
+   * <br>
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   *
+   * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
+   * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
+   * @param qjlSigns QJL sign bits [B, H, Sk, D] INT8 (INT type)
+   * @param residualNorms Residual L2 norms [B, H, Sk] (NUMERIC type)
+   * @param qjlMatrix QJL projection matrix [D, D] (NUMERIC type)
+   * @param values Dequantized values [B, H, Sk, D] (NUMERIC type)
+   * @param attentionMask Attention mask [B, 1, 1, Sk] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param headDim Dimension per head
+   * @return output Attention output [B, H, Sq, D] (NUMERIC type)
+   */
+  public SDVariable turboQuantAttention(SDVariable query, SDVariable kMse, SDVariable qjlSigns,
+      SDVariable residualNorms, SDVariable qjlMatrix, SDVariable values, SDVariable attentionMask,
+      int numHeads, int headDim) {
+    SDValidation.validateNumerical("turboQuantAttention", "query", query);
+    SDValidation.validateNumerical("turboQuantAttention", "kMse", kMse);
+    SDValidation.validateInteger("turboQuantAttention", "qjlSigns", qjlSigns);
+    SDValidation.validateNumerical("turboQuantAttention", "residualNorms", residualNorms);
+    SDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
+    SDValidation.validateNumerical("turboQuantAttention", "values", values);
+    SDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(sd,query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, 0.0).outputVariable();
+  }
+
+  /**
+   * TurboQuant asymmetric attention with compressed keys.<br>
+   * <br>
+   * Computes scaled dot-product attention using compressed key representations<br>
+   * from TurboQuant's two-stage quantization (ICLR 2026). The asymmetric inner<br>
+   * product estimator combines MSE reconstruction with QJL correction:<br>
+   * <br>
+   *   score(q, k) ≈ <q, k_mse> + ||r|| * sqrt(π/2)/m * <S@q, signs><br>
+   * <br>
+   * Keys use full two-stage compression (MSE + QJL) for asymmetric attention.<br>
+   * Values use MSE-only decompression (error averages out in softmax-weighted sum).<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param query Query tensor [B, H, Sq, D] (NUMERIC type)
+   * @param kMse MSE-reconstructed keys [B, H, Sk, D] (NUMERIC type)
+   * @param qjlSigns QJL sign bits [B, H, Sk, D] INT8 (INT type)
+   * @param residualNorms Residual L2 norms [B, H, Sk] (NUMERIC type)
+   * @param qjlMatrix QJL projection matrix [D, D] (NUMERIC type)
+   * @param values Dequantized values [B, H, Sk, D] (NUMERIC type)
+   * @param attentionMask Attention mask [B, 1, 1, Sk] (NUMERIC type)
+   * @param numHeads Number of attention heads
+   * @param headDim Dimension per head
+   * @return output Attention output [B, H, Sq, D] (NUMERIC type)
+   */
+  public SDVariable turboQuantAttention(String name, SDVariable query, SDVariable kMse,
+      SDVariable qjlSigns, SDVariable residualNorms, SDVariable qjlMatrix, SDVariable values,
+      SDVariable attentionMask, int numHeads, int headDim) {
+    SDValidation.validateNumerical("turboQuantAttention", "query", query);
+    SDValidation.validateNumerical("turboQuantAttention", "kMse", kMse);
+    SDValidation.validateInteger("turboQuantAttention", "qjlSigns", qjlSigns);
+    SDValidation.validateNumerical("turboQuantAttention", "residualNorms", residualNorms);
+    SDValidation.validateNumerical("turboQuantAttention", "qjlMatrix", qjlMatrix);
+    SDValidation.validateNumerical("turboQuantAttention", "values", values);
+    SDValidation.validateNumerical("turboQuantAttention", "attentionMask", attentionMask);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.TurboQuantAttention(sd,query, kMse, qjlSigns, residualNorms, qjlMatrix, values, attentionMask, numHeads, headDim, 0.0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * SAM-style Two-Way Cross Attention.<br>
    * Bidirectional cross-attention where tokens attend to image features and<br>
    * image features attend to tokens simultaneously:<br>
