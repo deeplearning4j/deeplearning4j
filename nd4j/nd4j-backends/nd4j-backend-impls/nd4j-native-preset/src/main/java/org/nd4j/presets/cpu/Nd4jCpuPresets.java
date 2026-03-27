@@ -158,7 +158,7 @@ import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
                 },
                 compiler = {"cpp17", "nowarnings"},
                 library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
-                @Platform(value = "linux", preload = {"gomp@.1", "omp"}, preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
+                @Platform(value = "linux", link = {"nd4jcpu", "dl"}, preload = {"gomp@.1", "omp"}, preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
                 @Platform(value = "linux-armhf",preload = "gomp@.1", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
                 @Platform(value = "linux-arm64",preload = "gomp@.1", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
