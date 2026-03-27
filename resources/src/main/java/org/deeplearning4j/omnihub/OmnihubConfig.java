@@ -41,6 +41,23 @@ public class OmnihubConfig {
         }
     }
 
+    public final static String HUGGING_FACE_ORG = "OMNIHUB_HF_ORG";
+    public static final String DEFAULT_HUGGING_FACE_ORG = "KompileAI";
+
+    /**
+     * Return the HuggingFace organization, defaulting to
+     * {@link #DEFAULT_HUGGING_FACE_ORG} if the {@link #HUGGING_FACE_ORG}
+     * environment variable is not set.
+     * @return the HuggingFace organization name
+     */
+    public static String getHuggingFaceOrg() {
+        if(System.getenv(HUGGING_FACE_ORG) != null) {
+            return System.getenv(HUGGING_FACE_ORG);
+        } else {
+            return DEFAULT_HUGGING_FACE_ORG;
+        }
+    }
+
     /**
      * return the default omnihub home at $USER/.omnihub or
      * value of the environment variable {@link #OMNIHUB_HOME} if applicable
