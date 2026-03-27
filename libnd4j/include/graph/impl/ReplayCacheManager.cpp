@@ -8,14 +8,25 @@
 #include <ctime>
 #include <algorithm>
 
-// std::filesystem is C++17 but on macOS it requires deployment target >= 10.15.
-// Apple Clang marks it unavailable when __MAC_OS_X_VERSION_MIN_REQUIRED < 101500.
+// std::filesystem requires: C++17, __has_include(<filesystem>), and on macOS
+// the deployment target must be >= 10.15. GCC 7 (devtoolset-7) supports C++17
+// syntax but does not ship <filesystem>.
 #if defined(SD_FILESYSTEM_AVAILABLE)
 #define HAS_FILESYSTEM 1
-#elif __cplusplus >= 201703L && !defined(__APPLE__)
-#define HAS_FILESYSTEM 1
-#elif __cplusplus >= 201703L && defined(__APPLE__) && defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
-#define HAS_FILESYSTEM 1
+#elif defined(__has_include)
+#  if __has_include(<filesystem>) && __cplusplus >= 201703L
+#    if defined(__APPLE__)
+#      if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
+#        define HAS_FILESYSTEM 1
+#      else
+#        define HAS_FILESYSTEM 0
+#      endif
+#    else
+#      define HAS_FILESYSTEM 1
+#    endif
+#  else
+#    define HAS_FILESYSTEM 0
+#  endif
 #else
 #define HAS_FILESYSTEM 0
 #endif

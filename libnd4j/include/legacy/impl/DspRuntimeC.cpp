@@ -31,7 +31,30 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+// std::filesystem availability check — same logic as ReplayCacheManager.cpp
+#if defined(SD_FILESYSTEM_AVAILABLE)
+#define HAS_FILESYSTEM 1
+#elif defined(__has_include)
+#  if __has_include(<filesystem>) && __cplusplus >= 201703L
+#    if defined(__APPLE__)
+#      if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500
+#        define HAS_FILESYSTEM 1
+#      else
+#        define HAS_FILESYSTEM 0
+#      endif
+#    else
+#      define HAS_FILESYSTEM 1
+#    endif
+#  else
+#    define HAS_FILESYSTEM 0
+#  endif
+#else
+#define HAS_FILESYSTEM 0
+#endif
+
+#if HAS_FILESYSTEM
 #include <filesystem>
+#endif
 #include <fstream>
 #include <limits>
 #include <memory>
@@ -78,7 +101,11 @@ constexpr int kMinGpuTarget = static_cast<int>(SDX_GPU_TARGET_AUTO);
 constexpr int kMaxGpuTarget = static_cast<int>(SDX_GPU_TARGET_AMD);
 
 struct BundleManifestData {
+#if HAS_FILESYSTEM
   std::filesystem::path model_path;
+#else
+  std::string model_path;
+#endif
   int gpu_target = static_cast<int>(SDX_GPU_TARGET_AUTO);
 };
 
@@ -156,6 +183,7 @@ sdx_status_t mapExecuteStatus(int code) {
   }
 }
 
+#if HAS_FILESYSTEM
 bool readTextFile(const std::filesystem::path& path, std::string* out) {
   std::ifstream in(path, std::ios::in | std::ios::binary);
   if (!in.good()) {
@@ -164,6 +192,16 @@ bool readTextFile(const std::filesystem::path& path, std::string* out) {
   out->assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
   return true;
 }
+#else
+bool readTextFile(const std::string& path, std::string* out) {
+  std::ifstream in(path.c_str(), std::ios::in | std::ios::binary);
+  if (!in.good()) {
+    return false;
+  }
+  out->assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+  return true;
+}
+#endif
 
 bool parseGpuTargetString(const std::string& rawValue, int* outGpuTarget) {
   std::string value = rawValue;
@@ -272,6 +310,7 @@ bool extractJsonStringField(const std::string& json, const std::string& field, s
   return true;
 }
 
+#if HAS_FILESYSTEM
 bool parseBundleManifest(const std::filesystem::path& manifestPath, BundleManifestData* out, std::string* errorOut) {
   std::string json;
   if (!readTextFile(manifestPath, &json)) {
@@ -338,6 +377,69 @@ bool resolveBundleManifestData(const std::string& bundlePath, BundleManifestData
   out->model_path = p;
   return true;
 }
+#else
+// No std::filesystem — string-based fallbacks
+bool parseBundleManifest(const std::string& manifestPath, BundleManifestData* out, std::string* errorOut) {
+  std::string json;
+  if (!readTextFile(manifestPath, &json)) {
+    *errorOut = "Failed to read bundle manifest: " + manifestPath;
+    return false;
+  }
+
+  std::string modelPath;
+  if (!extractJsonStringField(json, "modelPath", &modelPath) &&
+      !extractJsonStringField(json, "graphPath", &modelPath) &&
+      !extractJsonStringField(json, "modelFile", &modelPath)) {
+    *errorOut = "Bundle manifest is missing modelPath/graphPath/modelFile: " + manifestPath;
+    return false;
+  }
+
+  // Without std::filesystem we cannot resolve relative paths — store as-is
+  // and hope the caller provided an absolute path or the CWD is correct.
+  out->model_path = modelPath;
+
+  std::string gpuTarget;
+  if (extractJsonStringField(json, "gpuTarget", &gpuTarget)) {
+    int parsedTarget = static_cast<int>(SDX_GPU_TARGET_AUTO);
+    if (!parseGpuTargetString(gpuTarget, &parsedTarget)) {
+      *errorOut = "Bundle manifest has unsupported gpuTarget: " + gpuTarget;
+      return false;
+    }
+    out->gpu_target = parsedTarget;
+  }
+
+  return true;
+}
+
+bool resolveBundleManifestData(const std::string& bundlePath, BundleManifestData* out, std::string* errorOut) {
+  // Without std::filesystem we cannot check existence or detect directories.
+  // Attempt to open as a file first; if it looks like a directory path ending
+  // in '/', try manifest.json inside it.
+  if (!bundlePath.empty() && (bundlePath.back() == '/' || bundlePath.back() == '\\')) {
+    std::string manifestPath = bundlePath + "manifest.json";
+    return parseBundleManifest(manifestPath, out, errorOut);
+  }
+
+  // Check extension by finding last '.'
+  auto dotPos = bundlePath.rfind('.');
+  if (dotPos != std::string::npos) {
+    std::string ext = bundlePath.substr(dotPos);
+    for (char& c : ext) c = static_cast<char>(::tolower(static_cast<unsigned char>(c)));
+
+    if (ext == ".sdz" || ext == ".sdnb") {
+      out->model_path = bundlePath;
+      return true;
+    }
+
+    if (ext == ".dspb" || ext == ".json") {
+      return parseBundleManifest(bundlePath, out, errorOut);
+    }
+  }
+
+  out->model_path = bundlePath;
+  return true;
+}
+#endif
 
 sdx_status_t validateTensor(const sdx_tensor_view_t& tensor, std::string* errorOut) {
   if (tensor.rank < 0) {
@@ -563,13 +665,19 @@ SDX_API sdx_status_t sdxLoadBundle(
     gpuTarget = manifestData.gpu_target;
   }
 
+#if HAS_FILESYSTEM
   std::filesystem::path modelPath = manifestData.model_path;
   if (!std::filesystem::exists(modelPath)) {
     setLastError(runtime, "Resolved model path does not exist: " + modelPath.string());
     return SDX_STATUS_IO_ERROR;
   }
+  std::string modelPathStr = modelPath.string();
+#else
+  std::string modelPathStr = manifestData.model_path;
+  // Without std::filesystem, skip existence check — loadModelFromFile will fail if missing
+#endif
 
-  sd::Pointer modelHandle = loadModelFromFile(modelPath.string().c_str());
+  sd::Pointer modelHandle = loadModelFromFile(modelPathStr.c_str());
   if (modelHandle == nullptr) {
     const char* err = lastErrorMessage();
     if (err != nullptr && err[0] != '\0') {
