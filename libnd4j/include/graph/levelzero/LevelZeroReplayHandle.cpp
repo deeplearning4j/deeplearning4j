@@ -142,7 +142,7 @@ bool LevelZeroReplayHandle::initDevice() {
 // ── Capture Lifecycle ───────────────────────────────────────────────────────
 
 bool LevelZeroReplayHandle::beginCapture(void* stream) {
-  if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERROR) {
+  if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERRORED) {
     DSP_DIAG(EXECUTION, "LevelZeroReplayHandle::beginCapture: invalid state %d",
              static_cast<int>(state_));
     return false;
@@ -150,7 +150,7 @@ bool LevelZeroReplayHandle::beginCapture(void* stream) {
 
   // Lazy initialization of device/context/queue
   if (!initDevice()) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -190,7 +190,7 @@ bool LevelZeroReplayHandle::endCapture(void* stream) {
   }
 
   if (cmdList_ == nullptr) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -234,7 +234,7 @@ bool LevelZeroReplayHandle::replay(void* stream) {
 
   if (cmdList_ == nullptr || cmdQueue_ == nullptr || completionEvent_ == nullptr) {
     DSP_DIAG(EXECUTION, "LevelZeroReplayHandle::replay: null handle(s)");
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 

@@ -213,7 +213,7 @@ uint32_t VulkanReplayHandle::findMemoryType(uint32_t typeFilter, VkMemoryPropert
 bool VulkanReplayHandle::beginCapture(void* /*stream*/) {
   // Lazy initialization on first capture
   if (!initialized_ && !initVulkan()) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -224,7 +224,7 @@ bool VulkanReplayHandle::beginCapture(void* /*stream*/) {
   VkResult result = vkResetCommandBuffer(cmdBuffer_, 0);
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkResetCommandBuffer failed (result=%d)\n", static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -237,7 +237,7 @@ bool VulkanReplayHandle::beginCapture(void* /*stream*/) {
   result = vkBeginCommandBuffer(cmdBuffer_, &beginInfo);
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkBeginCommandBuffer failed (result=%d)\n", static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -257,7 +257,7 @@ bool VulkanReplayHandle::endCapture(void* /*stream*/) {
   VkResult result = vkEndCommandBuffer(cmdBuffer_);
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkEndCommandBuffer failed (result=%d)\n", static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -297,7 +297,7 @@ bool VulkanReplayHandle::replay(void* /*stream*/) {
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkWaitForFences failed before submit (result=%d)\n",
               static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -305,7 +305,7 @@ bool VulkanReplayHandle::replay(void* /*stream*/) {
   result = vkResetFences(device_, 1, &fence_);
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkResetFences failed (result=%d)\n", static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -320,7 +320,7 @@ bool VulkanReplayHandle::replay(void* /*stream*/) {
   result = vkQueueSubmit(computeQueue_, 1, &submitInfo, fence_);
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkQueueSubmit failed (result=%d)\n", static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -329,7 +329,7 @@ bool VulkanReplayHandle::replay(void* /*stream*/) {
   if (result != VK_SUCCESS) {
     sd_printf("VulkanReplayHandle: vkWaitForFences failed after submit (result=%d)\n",
               static_cast<int>(result));
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 

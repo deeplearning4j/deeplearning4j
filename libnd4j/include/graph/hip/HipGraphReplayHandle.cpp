@@ -87,7 +87,7 @@ bool HipGraphReplayHandle::beginCapture(void* stream) {
   if (err != hipSuccess) {
     DSP_DIAG(EXECUTE, "HipGraphReplayHandle: beginCapture failed: %s", hipGetErrorString(err));
     hipGetLastError();  // Clear error state
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -119,7 +119,7 @@ bool HipGraphReplayHandle::endCapture(void* stream) {
              hipGetErrorString(err != hipSuccess ? err : hipErrorUnknown));
     hipGetLastError();  // Clear error state
     graph_ = nullptr;
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -148,7 +148,7 @@ bool HipGraphReplayHandle::finalize() {
   }
 
   if (graph_ == nullptr) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -164,7 +164,7 @@ bool HipGraphReplayHandle::finalize() {
              hipGetErrorString(err != hipSuccess ? err : hipErrorUnknown));
     hipGetLastError();  // Clear error state
     graphExec_ = nullptr;
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -183,7 +183,7 @@ bool HipGraphReplayHandle::replay(void* stream) {
   }
 
   if (graphExec_ == nullptr) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -195,7 +195,7 @@ bool HipGraphReplayHandle::replay(void* stream) {
   if (err != hipSuccess) {
     DSP_DIAG(EXECUTE, "HipGraphReplayHandle: launch failed: %s", hipGetErrorString(err));
     hipGetLastError();  // Clear error state
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 

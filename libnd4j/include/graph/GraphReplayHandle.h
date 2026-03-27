@@ -39,7 +39,7 @@ enum class ReplayState {
   CAPTURING,     // Currently capturing
   CAPTURED,      // Capture complete, not yet finalized
   READY,         // Ready for replay (instantiated/finalized)
-  ERROR          // Error state
+  ERRORED        // Error state
 };
 
 /**

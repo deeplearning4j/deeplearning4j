@@ -43,7 +43,7 @@ TpuReplayHandle::~TpuReplayHandle() {
 // ── Capture Lifecycle ───────────────────────────────────────────────────────
 
 bool TpuReplayHandle::beginCapture(void* stream) {
-  if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERROR) {
+  if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERRORED) {
     DSP_DIAG(EXECUTE, "TpuReplayHandle::beginCapture: invalid state %d",
              static_cast<int>(state_));
     return false;
@@ -83,7 +83,7 @@ bool TpuReplayHandle::finalize() {
 
   if (hloModuleText_.empty()) {
     DSP_DIAG(EXECUTE, "TpuReplayHandle::finalize: no HLO module set");
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -109,7 +109,7 @@ bool TpuReplayHandle::finalize() {
     if (compiledExecutable_ == nullptr) {
       DSP_DIAG(COMPILE, "TpuReplayHandle::finalize: compilation failed: %s",
                mgr.getLastError().c_str());
-      state_ = ReplayState::ERROR;
+      state_ = ReplayState::ERRORED;
       return false;
     }
 
@@ -135,7 +135,7 @@ bool TpuReplayHandle::replay(void* stream) {
 
   if (compiledExecutable_ == nullptr) {
     DSP_DIAG(EXECUTE, "TpuReplayHandle::replay: no compiled executable");
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 

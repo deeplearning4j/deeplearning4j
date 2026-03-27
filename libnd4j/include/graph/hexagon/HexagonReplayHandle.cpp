@@ -82,7 +82,7 @@ bool HexagonReplayHandle::initDevice() {
 // ── Capture Lifecycle ───────────────────────────────────────────────────────
 
 bool HexagonReplayHandle::beginCapture(void* stream) {
-  if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERROR) {
+  if (state_ != ReplayState::EMPTY && state_ != ReplayState::ERRORED) {
     DSP_DIAG(EXECUTION, "HexagonReplayHandle::beginCapture: invalid state %d",
              static_cast<int>(state_));
     return false;
@@ -90,7 +90,7 @@ bool HexagonReplayHandle::beginCapture(void* stream) {
 
   // Lazy initialization of NPU device
   if (!initDevice()) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -114,7 +114,7 @@ bool HexagonReplayHandle::endCapture(void* stream) {
 
   if (recordedCommands_.empty()) {
     DSP_DIAG(EXECUTION, "HexagonReplayHandle::endCapture: no commands recorded");
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -139,7 +139,7 @@ bool HexagonReplayHandle::finalize() {
     if (cmd.type == RecordedCommand::KERNEL_DISPATCH && cmd.kernelHandle == nullptr) {
       DSP_DIAG(EXECUTION, "HexagonReplayHandle::finalize: null kernel handle in "
                "recorded command");
-      state_ = ReplayState::ERROR;
+      state_ = ReplayState::ERRORED;
       return false;
     }
   }
@@ -160,7 +160,7 @@ bool HexagonReplayHandle::replay(void* stream) {
 
   if (npuContext_ == nullptr) {
     DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: null NPU context");
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 
@@ -193,7 +193,7 @@ bool HexagonReplayHandle::replay(void* stream) {
     if (!ok) {
       DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: command failed (type=%d)",
                static_cast<int>(cmd.type));
-      state_ = ReplayState::ERROR;
+      state_ = ReplayState::ERRORED;
       return false;
     }
   }
@@ -201,7 +201,7 @@ bool HexagonReplayHandle::replay(void* stream) {
   // Wait for all NPU operations to complete
   if (!runtime.waitForCompletion(npuContext_)) {
     DSP_DIAG(EXECUTION, "HexagonReplayHandle::replay: waitForCompletion failed");
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
     return false;
   }
 

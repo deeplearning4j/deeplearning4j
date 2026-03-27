@@ -43,7 +43,7 @@ namespace graph {
 MetalReplayHandle::MetalReplayHandle(int deviceId)
     : deviceId_(deviceId) {
   if (!initMetal()) {
-    state_ = ReplayState::ERROR;
+    state_ = ReplayState::ERRORED;
   }
 }
 

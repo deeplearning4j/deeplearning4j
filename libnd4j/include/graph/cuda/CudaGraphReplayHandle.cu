@@ -70,7 +70,7 @@ bool CudaGraphReplayHandle::replay(void* stream) {
 }
 
 ReplayState CudaGraphReplayHandle::getState() const {
-  if (!handle_) return ReplayState::ERROR;
+  if (!handle_) return ReplayState::ERRORED;
   switch (handle_->getState()) {
     case sd::cuda::GraphState::EMPTY:        return ReplayState::EMPTY;
     case sd::cuda::GraphState::CAPTURING:    return ReplayState::CAPTURING;
@@ -78,8 +78,8 @@ ReplayState CudaGraphReplayHandle::getState() const {
     case sd::cuda::GraphState::INSTANTIATED: return ReplayState::READY;
     case sd::cuda::GraphState::EXECUTING:    return ReplayState::READY;
     case sd::cuda::GraphState::COMPLETED:    return ReplayState::READY;
-    case sd::cuda::GraphState::ERROR:        return ReplayState::ERROR;
-    default:                                 return ReplayState::ERROR;
+    case sd::cuda::GraphState::ERROR:        return ReplayState::ERRORED;
+    default:                                 return ReplayState::ERRORED;
   }
 }
 
