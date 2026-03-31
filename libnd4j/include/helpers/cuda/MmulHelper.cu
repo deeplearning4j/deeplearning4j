@@ -45,19 +45,20 @@
 // Declared in DataBuffer.h / DataBuffer.cu — true during CUDA graph capture
 extern SD_TLS_EXPORT thread_local bool tl_graphExecutionActive;
 
-// cuBLAS workspace buffer+size set by NativeDynamicShapePlan::setCublasWorkspaceForCapture().
+// cuBLAS workspace buffer+size set by NativeDynamicShapePlan.
 // cublasSetStream() resets the user-provided workspace (cuBLAS docs), so we must
-// re-apply it after every cublasSetStream call during graph capture.  Without this,
-// cuBLAS falls back to internal cudaMallocAsync → MemAlloc/MemFree graph nodes
-// that SIGSEGV the driver on graph replay.
+// re-apply it after every cublasSetStream call whenever DSP configured an explicit
+// workspace for warmup or graph capture. Without this, warmup may silently use a
+// different workspace/algorithm than capture, and capture may fall back to internal
+// cudaMallocAsync → MemAlloc/MemFree graph nodes that SIGSEGV the driver on replay.
 extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
 extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
 
 namespace sd {
 
-// Re-apply cuBLAS workspace after cublasSetStream during graph capture.
+// Re-apply cuBLAS workspace after cublasSetStream whenever DSP configured one.
 static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
-  if (tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }

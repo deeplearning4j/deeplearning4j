@@ -103,7 +103,7 @@ public final class PlanIntrospection {
         private int replayState = -1;     // 0=EMPTY, 1=CAPTURING, 2=CAPTURED, 3=READY, 4=ERROR, -1=no handle
         private int replayCount = 0;
         private int executionCount = 0;
-        private boolean captureFailed = false;
+        private boolean compilationFailed = false;
         private String statisticsJson = "";
 
         // Pointer tracking
@@ -129,7 +129,10 @@ public final class PlanIntrospection {
         public int getReplayState() { return replayState; }
         public int getReplayCount() { return replayCount; }
         public int getExecutionCount() { return executionCount; }
-        public boolean isCaptureFailed() { return captureFailed; }
+        public boolean isCompilationFailed() { return compilationFailed; }
+        /** @deprecated Use {@link #isCompilationFailed()} */
+        @Deprecated
+        public boolean isCaptureFailed() { return compilationFailed; }
         public String getStatisticsJson() { return statisticsJson; }
         public String getTrackedPointersJson() { return trackedPointersJson; }
         public int getNumCaptureBuffers() { return numCaptureBuffers; }
@@ -365,7 +368,7 @@ public final class PlanIntrospection {
             seg.replayState = ops.getPlanSegmentReplayState(nativePlanHandle, i);
             seg.replayCount = ops.getPlanSegmentReplayCount(nativePlanHandle, i);
             seg.executionCount = ops.getPlanSegmentExecutionCount(nativePlanHandle, i);
-            seg.captureFailed = ops.isPlanSegmentCaptureFailed(nativePlanHandle, i);
+            seg.compilationFailed = ops.isPlanSegmentCaptureFailed(nativePlanHandle, i);
             seg.statisticsJson = ops.getPlanSegmentStatisticsJson(nativePlanHandle, i);
             seg.trackedPointersJson = ops.getPlanSegmentTrackedPointers(nativePlanHandle, i);
             seg.numCaptureBuffers = ops.getPlanSegmentNumCaptureBuffers(nativePlanHandle, i);
@@ -659,7 +662,7 @@ public final class PlanIntrospection {
             String bgColor = "#F5F5F5";  // default gray
             if (seg.replayState == 3) bgColor = "#E8F5E9";      // READY -> green
             else if (seg.replayState == 2) bgColor = "#FFF9C4";  // CAPTURED -> yellow
-            else if (seg.replayState == 4 || seg.captureFailed) bgColor = "#FFEBEE"; // ERROR -> red
+            else if (seg.replayState == 4 || seg.compilationFailed) bgColor = "#FFEBEE"; // ERROR -> red
             else if (seg.replayState == 1) bgColor = "#E3F2FD";  // CAPTURING -> blue
 
             sb.append("    style=\"dashed,filled\";\n");

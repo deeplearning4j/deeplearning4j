@@ -324,15 +324,21 @@ public class TestDSPVisionEncoderPageReuse {
             }
         }
 
-        // Call 2-4: frozen execution with buffer reuse
+        // Call 2-4: frozen execution with buffer reuse.
+        // CRITICAL: Frozen replay requires reusing the SAME input arrays across calls.
+        // Allocating new arrays would change DataBuffer pointers, breaking CUDA graph
+        // replay which has those pointers baked in. Overwrite data in-place instead.
+        INDArray frozenPv = Nd4j.rand(DataType.FLOAT, 1, 1, 3, targetSize, targetSize);
+        INDArray frozenMask = Nd4j.ones(DataType.BOOL, 1, targetSize, targetSize);
+        Map<String, INDArray> frozenFeed = Map.of("pixel_values", frozenPv,
+                "pixel_attention_mask", frozenMask);
         for (int i = 2; i <= 4; i++) {
             logGpuMemory("Before frozen Call " + i);
-            INDArray pv = Nd4j.rand(DataType.FLOAT, 1, 1, 3, targetSize, targetSize);
-            INDArray mask = Nd4j.ones(DataType.BOOL, 1, targetSize, targetSize);
+            // Overwrite pixel data in-place — same DataBuffer, new random values
+            frozenPv.assign(Nd4j.rand(DataType.FLOAT, 1, 1, 3, targetSize, targetSize));
             Map<String, INDArray> out;
             try {
-                out = visionEncoder.output(
-                        Map.of("pixel_values", pv, "pixel_attention_mask", mask), outputNames);
+                out = visionEncoder.output(frozenFeed, outputNames);
             } catch (Exception e) {
                 logGpuMemory("FAILED frozen Call " + i);
                 fail("Call " + i + " with frozen shapes failed: " + e.getMessage(), e);
@@ -345,10 +351,9 @@ public class TestDSPVisionEncoderPageReuse {
             log.info("Call {} (frozen): shape={}, sum={:.4f}", i,
                     Arrays.toString(features.shape()), features.sumNumber().floatValue());
             logGpuMemory("After frozen Call " + i);
-
-            pv.close();
-            mask.close();
         }
+        frozenPv.close();
+        frozenMask.close();
 
         // Unfreeze for other tests
         visionEncoder.setDspShapesFrozen(false);
@@ -392,7 +397,8 @@ public class TestDSPVisionEncoderPageReuse {
             log.info("Page {} encoder: shape={}", page, Arrays.toString(visionFeatures.shape()));
 
             // Step 2: Embed tokens (BOS token)
-            INDArray bosTokenIds = Nd4j.createFromArray(new long[][]{{49282}});  // SmolDocling BOS
+            // SmolDocling uses Llama 3 tokenizer with vocab_size=49280. BOS token is ID 1.
+            INDArray bosTokenIds = Nd4j.createFromArray(new long[][]{{1}});  // SmolDocling BOS
             Map<String, INDArray> embedOut;
             try {
                 embedOut = embedTokens.output(

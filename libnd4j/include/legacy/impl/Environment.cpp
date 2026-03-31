@@ -1284,7 +1284,10 @@ const char* cudaDeviceScheduleVar = std::getenv("SD_CUDA_DEVICE_SCHEDULE");
 
  const char* tritonCaptureMinExecVar = std::getenv("ND4J_TRITON_CAPTURE_MIN_EXEC");
  if (tritonCaptureMinExecVar != nullptr) {
-   setTritonCaptureMinExec(std::atoi(tritonCaptureMinExecVar));
+   std::string val(tritonCaptureMinExecVar);
+   if (!val.empty()) {
+     setTritonCaptureMinExec(std::atoi(val.c_str()));
+   }
  }
 
  const char* dspCastEliminationVar = std::getenv("ND4J_DSP_CAST_ELIMINATION");

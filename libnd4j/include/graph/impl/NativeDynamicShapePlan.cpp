@@ -994,7 +994,7 @@ Status NativeDynamicShapePlan::execute(
   if (executeCount_ == 0 && !shapesFrozen_) {
     for (auto& segment : segments_) {
       segment.exec.executionCount = 0;
-      segment.exec.captureFailed = false;
+      segment.exec.compilationFailed = false;
       segment.exec.captureOomRetries = 0;
       segment.exec.captureRetryAfterExec = 0;
       segment.exec.cachedShapeKey = 0;
@@ -1059,9 +1059,9 @@ Status NativeDynamicShapePlan::execute(
     for (int i = 0; i < (int)segments_.size(); i++) {
       auto& s = segments_[i];
       DSP_DIAG(SEGMENT, "  seg[%d]: slots[%d-%d] capturable=%d hasReplay=%d "
-               "captureFailed=%d execCount=%d",
+               "compilationFailed=%d execCount=%d",
                i, s.startSlot, s.endSlot, s.isCapturable,
-               s.exec.replayHandle != nullptr, s.exec.captureFailed, s.exec.executionCount);
+               s.exec.replayHandle != nullptr, s.exec.compilationFailed, s.exec.executionCount);
     }
   }
 
@@ -1286,7 +1286,7 @@ Status NativeDynamicShapePlan::execute(
   // These checks run after every execution to catch lifecycle bugs early.
   if (DSP_DIAG_ENABLED(VERIFY)) {
     int nullSlots = 0, liveSlots = 0, viewSlots = 0;
-    int replaySegs = 0, slotBySlotSegsCount = 0, captureFailedSegs = 0;
+    int replaySegs = 0, slotBySlotSegsCount = 0, compilationFailedSegs = 0;
     for (int i = 0; i < totalOutputSlots_; i++) {
       if (outputSlots_[i] == nullptr) { nullSlots++; }
       else {
@@ -1297,14 +1297,14 @@ Status NativeDynamicShapePlan::execute(
     }
     for (const auto& seg : segments_) {
       if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) replaySegs++;
-      else if (seg.exec.captureFailed) captureFailedSegs++;
+      else if (seg.exec.compilationFailed) compilationFailedSegs++;
       else slotBySlotSegsCount++;
     }
     DSP_DIAG(VERIFY, "POST_EXEC exec=%d frozen=%d: slots(live=%d null=%d weightView=%d/%d) "
              "segs(replay=%d sbs=%d capFail=%d/%d) graphReplays=%d slotBySlot=%d",
              executeCount_, shapesFrozen_ ? 1 : 0,
              liveSlots, nullSlots, viewSlots, totalOutputSlots_,
-             replaySegs, slotBySlotSegsCount, captureFailedSegs, (int)segments_.size(),
+             replaySegs, slotBySlotSegsCount, compilationFailedSegs, (int)segments_.size(),
              graphReplaySegs, slotBySlotSegs);
 
     // Verify slotArrayCache_ alias is still consistent with outputSlots_
@@ -1448,7 +1448,7 @@ std::string NativeDynamicShapePlan::getSegmentCompilationAudit(int segIdx) const
      << ",\"endSlot\":" << seg.endSlot
      << ",\"compiledByBackend\":\"" << seg.exec.compiledByBackend << "\""
      << ",\"capturable\":" << (seg.isCapturable ? "true" : "false")
-     << ",\"captureFailed\":" << (seg.exec.captureFailed ? "true" : "false")
+     << ",\"compilationFailed\":" << (seg.exec.compilationFailed ? "true" : "false")
      << ",\"executionCount\":" << seg.exec.executionCount
      << "}";
   return ss.str();
@@ -1754,6 +1754,64 @@ void NativeDynamicShapePlan::scatterKvEntries(NDArray** externalInputs, int numE
   }
 }
 
+// ─── Backend resolution (one-time, at segment build) ────────────────────────
+
+SelectedBackend NativeDynamicShapePlan::resolveBackendForSegment(bool isCapturable) const {
+  if (!isCapturable) return SelectedBackend::SLOT_BY_SLOT;
+
+  switch (graphExecutionMode_) {
+    case GraphExecutionMode::GEM_SLOT_BY_SLOT:
+      return SelectedBackend::SLOT_BY_SLOT;
+
+    case GraphExecutionMode::GEM_CUDA_GRAPHS:
+    case GraphExecutionMode::GEM_HIP_GRAPHS:
+    case GraphExecutionMode::GEM_LEVELZERO:
+    case GraphExecutionMode::GEM_VULKAN:
+    case GraphExecutionMode::GEM_METAL:
+#ifdef SD_CUDA
+      return SelectedBackend::CUDA_GRAPHS;
+#else
+      return SelectedBackend::SLOT_BY_SLOT;
+#endif
+
+    case GraphExecutionMode::GEM_TRITON:
+    case GraphExecutionMode::GEM_NVRTC_JIT:
+    case GraphExecutionMode::GEM_PTX_JIT:
+    case GraphExecutionMode::GEM_TPU:
+    case GraphExecutionMode::GEM_HEXAGON:
+#ifdef SD_CUDA
+      return SelectedBackend::GPU_COMPILER;
+#else
+      return SelectedBackend::CPU_GRAPH;
+#endif
+
+    case GraphExecutionMode::GEM_MLX:
+    case GraphExecutionMode::GEM_ARM_HYBRID:
+    case GraphExecutionMode::GEM_NNAPI:
+      return SelectedBackend::CPU_GRAPH;
+
+    case GraphExecutionMode::GEM_AUTO: {
+      // Resolve best available backend. Check order: GPU compiler → CUDA graphs → CPU graph → slot-by-slot
+      // GPU compiler is checked lazily by getGpuGraphBackend() on first execution.
+      // At build time we can check if CUDA graphs are enabled as a strong signal.
+#ifdef SD_CUDA
+      // For AUTO, we prefer GPU_COMPILER (Triton/NVRTC/PTX). The actual backend
+      // is resolved lazily by getGpuGraphBackend(). If it returns nullptr at
+      // execution time, we fall back to CUDA_GRAPHS if enabled.
+      // We can't fully resolve at build time because backend availability may
+      // depend on runtime state. Mark as GPU_COMPILER optimistically — the
+      // dispatcher will handle nullptr gpuBackend gracefully.
+      return SelectedBackend::GPU_COMPILER;
+#else
+      return SelectedBackend::CPU_GRAPH;
+#endif
+    }
+
+    default:
+      return SelectedBackend::SLOT_BY_SLOT;
+  }
+}
+
 // ─── Graph segmentation for GPU graph capture ───────────────────────────────
 
 void NativeDynamicShapePlan::buildSegments() {
@@ -1784,7 +1842,7 @@ void NativeDynamicShapePlan::buildSegments() {
     // shape key (which hashes input shapes) can't detect when their output shapes change.
     // A graph replay with stale output shapes produces wrong results.
     // The adaptive splitting will detect KV-growing segments (no value-dep ops,
-    // shapes change every step) and permanently mark them slot-by-slot via captureFailed.
+    // shapes change every step) and permanently mark them slot-by-slot via compilationFailed.
     if (slot.outputShapeDependsOnInputValues) return false;
     return true;
   };
@@ -1852,10 +1910,12 @@ void NativeDynamicShapePlan::buildSegments() {
              static_cast<int>(segments_.size()) - maxLoggedSegments);
   }
 
-  // Propagate slotArrayCache_ to all segments so GPU backends can update
-  // the cache when pre-allocating output arrays (prevents memory leaks).
+  // Propagate slotArrayCache_ and resolve backend for all segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
+    seg.selectedBackend = resolveBackendForSegment(seg.isCapturable);
+    DSP_DIAG_SEG(SEGMENT, seg.startSlot, "segment[%d-%d] selectedBackend=%d",
+                 seg.startSlot, seg.endSlot, static_cast<int>(seg.selectedBackend));
   }
 
   // Initialize symbolic shape ranges if enabled
@@ -2020,10 +2080,10 @@ void NativeDynamicShapePlan::rebuildSegmentsForFrozenShapes() {
            oldSegCount, (int)segments_.size(), capturableSlots, numSlots_, dataDepCount,
            static_cast<int>(matmulSegmentation));
 
-  // Propagate slotArrayCache_ to all rebuilt segments so GPU backends can update
-  // the cache when pre-allocating output arrays (prevents memory leaks).
+  // Propagate slotArrayCache_ and resolve backend for all rebuilt segments.
   for (auto& seg : segments_) {
     seg.slotArrayCache = slotArrayCache_;
+    seg.selectedBackend = resolveBackendForSegment(seg.isCapturable);
   }
 
   // CRITICAL FIX: When shapes are frozen, skip symbolic shape warmup.

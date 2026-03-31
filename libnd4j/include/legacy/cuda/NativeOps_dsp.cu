@@ -633,7 +633,7 @@ const char* getPlanCaptureStats(sd::Pointer planHandle) {
     } else if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) {
       captured++;
       captSlots += segSlots;
-    } else if (seg.exec.captureFailed) {
+    } else if (seg.exec.compilationFailed) {
       permFailed++;
       permSlots += segSlots;
     } else if (seg.exec.captureOomRetries > 0) {
@@ -710,10 +710,10 @@ const char* getPlanSegmentStatisticsJson(sd::Pointer planHandle, int segmentIdx)
   snprintf(buf, sizeof(buf),
            "{\"numOperations\":%d,\"replayCount\":%d,\"replayState\":%d,"
            "\"backendName\":\"%s\",\"executionCount\":%d,"
-           "\"capturable\":%s,\"captureFailed\":%s,\"compiledByBackend\":\"%s\"}",
+           "\"capturable\":%s,\"compilationFailed\":%s,\"compiledByBackend\":\"%s\"}",
            numOps, replayCount, replayState, backend, seg.exec.executionCount,
            seg.isCapturable ? "true" : "false",
-           seg.exec.captureFailed ? "true" : "false",
+           seg.exec.compilationFailed ? "true" : "false",
            seg.exec.compiledByBackend.c_str());
   return buf;
 }
@@ -747,7 +747,7 @@ bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx) {
   auto* plan = reinterpret_cast<NativeDynamicShapePlan*>(planHandle);
   auto& segs = plan->getSegments();
   if (segmentIdx < 0 || segmentIdx >= static_cast<int>(segs.size())) return false;
-  return segs[segmentIdx].exec.captureFailed;
+  return segs[segmentIdx].exec.compilationFailed;
 }
 
 // =============================================================================
@@ -938,7 +938,7 @@ void invalidatePlanSegmentCache(sd::Pointer planHandle, int segIdx) {
   seg.exec.replayHandle.reset();
   seg.exec.cachedShapeKey = 0;
   seg.exec.executionCount = 0;
-  seg.exec.captureFailed = false;
+  seg.exec.compilationFailed = false;
   seg.exec.compiledByBackend.clear();
 }
 
@@ -1583,7 +1583,7 @@ const char* getPlanSegmentsSummaryJson(sd::Pointer planHandle) {
         json += ",\"numOps\":" + std::to_string(numOps);
         json += ",\"executionCount\":" + std::to_string(seg.exec.executionCount);
         json += ",\"isCapturable\":" + std::string(seg.isCapturable ? "true" : "false");
-        json += ",\"captureFailed\":" + std::string(seg.exec.captureFailed ? "true" : "false");
+        json += ",\"compilationFailed\":" + std::string(seg.exec.compilationFailed ? "true" : "false");
         json += ",\"hasReplayHandle\":" + std::string(seg.exec.replayHandle ? "true" : "false");
         json += ",\"shapeKey\":" + std::to_string(seg.shapeKey);
         // Op histogram

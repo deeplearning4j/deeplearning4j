@@ -95,6 +95,19 @@ enum class GraphExecutionMode : int {
 };
 
 /**
+ * SelectedBackend — resolved once at build time, stored per-segment.
+ * Each GraphExecutionMode maps to exactly one SelectedBackend.
+ * GEM_AUTO resolves to the best available backend at build time.
+ * After resolution, dispatch is a simple switch — no cascade.
+ */
+enum class SelectedBackend : uint8_t {
+  SLOT_BY_SLOT = 0,    // Execute each op individually (no fusion, no graphs)
+  CUDA_GRAPHS = 1,     // CUDA graph capture/replay
+  GPU_COMPILER = 2,    // Triton/NVRTC/PTX/TPU/Hexagon compiler backend
+  CPU_GRAPH = 3,       // CPU graph backend (oneDNN/ACL/MLIR/MLX/NNAPI/ARM)
+};
+
+/**
  * ExecutionPhase — the ACTUAL runtime execution mode of a segment.
  *
  * Unlike GraphExecutionMode (which is the user's PREFERENCE), ExecutionPhase
@@ -325,6 +338,11 @@ struct GraphSegment {
   // User-forced backend override (empty = automatic selection via priority chain)
   std::string backendOverride;
 
+  // Resolved backend — set once at buildSegments() time, never changes.
+  // For non-capturable segments, always SLOT_BY_SLOT.
+  // For capturable: resolved from graphExecutionMode_ at build time.
+  SelectedBackend selectedBackend = SelectedBackend::SLOT_BY_SLOT;
+
   // Pointer to NativeDynamicShapePlan slot array cache — allows GPU backends
   // to update the slot cache when pre-allocating output arrays.
   NDArray** slotArrayCache = nullptr;
@@ -346,7 +364,9 @@ struct GraphSegment {
   static constexpr int RETRY_INTERVAL = 4;  // Retry every N executions
 
   // Batch-zero entry definition (used by exec.segBatchZeroEntries)
-  struct BatchZeroEntry { void* ptr; int bytes; };
+  // outputSlotIndex tracks which slot the pointer came from, enabling
+  // pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
+  struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
 
   // ── Mutable execution state (changes per-execution) ────────────────
   struct ExecState {
@@ -355,7 +375,7 @@ struct GraphSegment {
     // If true, never attempt graph capture/compilation for this segment.
     // Set for permanent failures (capture invalidation, host-only ops, address instability).
     // NOT set for OOM failures — those use the retry mechanism below.
-    bool captureFailed = false;
+    bool compilationFailed = false;
 
     // OOM retry mechanism
     int captureOomRetries = 0;
@@ -403,7 +423,7 @@ struct GraphSegment {
 
     void reset() {
       executionCount = 0;
-      captureFailed = false;
+      compilationFailed = false;
       captureOomRetries = 0;
       captureRetryAfterExec = 0;
       replayHandle.reset();
@@ -753,7 +773,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
         seg.exec.argTableStable = false;
         seg.exec.gapOpsCapturedInGraph = false;
         seg.exec.capturedInputAddrKey = 0;
-        seg.exec.captureFailed = false;
+        seg.exec.compilationFailed = false;
       }
     }
     if (!frozen) {
@@ -1011,6 +1031,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // flushPendingClose REMOVED: arrays persist, view wrappers deleted inline
   void buildSegments();
   void rebuildSegmentsForFrozenShapes();
+  SelectedBackend resolveBackendForSegment(bool isCapturable) const;
 
   // ── Slot execution (NativeDynamicShapePlan_slotexec.cpp) ──
   Status executeSlot(int slotIdx, NDArray** externalArrays, int numExt, void* stream);
@@ -1116,7 +1137,9 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Replaces ~1000 individual cudaMemsetAsync graph nodes with a single
   // kernel launch that zeros all output buffers in parallel.
   // Reduces CUDA graph node count by ~28%, saving ~1-2ms per graph replay.
-  struct BatchZeroEntry { void* ptr; int bytes; };
+  // outputSlotIndex tracks which slot the pointer came from, enabling
+  // pointer refresh from slotArrayCache_ during replay to avoid stale addresses.
+  struct BatchZeroEntry { void* ptr; int bytes; int outputSlotIndex; };
   std::vector<BatchZeroEntry> batchZeroEntries_;
   void* batchZeroDevicePtrs_ = nullptr;   // Device array of void* pointers
   void* batchZeroDeviceSizes_ = nullptr;  // Device array of int sizes
@@ -1168,7 +1191,7 @@ class SD_LIB_EXPORT NativeDynamicShapePlan {
   // Available on all platforms (returns false on non-CUDA, no-op stubs)
   static bool isBatchZeroActive();
   static bool isBatchZeroRegistering();
-  static void registerBatchZeroBuffer(void* ptr, size_t bytes);
+  static void registerBatchZeroBuffer(void* ptr, size_t bytes, int outputSlotIndex = -1);
 
 #ifdef SD_CUDA
   // ── Batched GEMM optimization ──────────────────────────────────────────

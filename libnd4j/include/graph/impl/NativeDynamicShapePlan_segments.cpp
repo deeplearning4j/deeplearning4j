@@ -347,9 +347,9 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
   }
   const char* backendName = backend->name();
 
-  if (seg.exec.captureFailed) {
+  if (seg.exec.compilationFailed) {
     DSP_DIAG_SEG(FALLBACK, seg.startSlot,
-                 "executeSegmentWithCpuGraph: seg[%d-%d] skipped (captureFailed=true, backend=%s)",
+                 "executeSegmentWithCpuGraph: seg[%d-%d] skipped (compilationFailed=true, backend=%s)",
                  seg.startSlot, seg.endSlot, backendName);
     return Status::KERNEL_FAILURE;
   }
@@ -411,7 +411,7 @@ Status NativeDynamicShapePlan::executeSegmentWithCpuGraph(
       DSP_DIAG(FALLBACK, "%s VALIDATION FAILURE: segment [%d-%d] has ops not covered by backend. "
                 "Falling back to slot-by-slot.",
                 backendName, seg.startSlot, seg.endSlot);
-      seg.exec.captureFailed = true;
+      seg.exec.compilationFailed = true;
       return Status::KERNEL_FAILURE;
     } else {
       DSP_DIAG_SEG(COMPILE, seg.startSlot,
@@ -519,9 +519,9 @@ inline void verifyCfSlotWrite(int stepIdx, const char* cfType, const char* opNam
 Status NativeDynamicShapePlan::executeSegmentSlotBySlot(
     GraphSegment& seg, NDArray** externalArrays, int numExt, void* stream) {
   DSP_DIAG_SEG(EXECUTE, seg.startSlot,
-               "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d captureFailed=%d",
+               "executeSegmentSlotBySlot: ENTER seg[%d-%d] size=%d execCount=%d capturable=%d compilationFailed=%d",
                seg.startSlot, seg.endSlot, seg.endSlot - seg.startSlot + 1,
-               seg.exec.executionCount, seg.isCapturable ? 1 : 0, seg.exec.captureFailed ? 1 : 0);
+               seg.exec.executionCount, seg.isCapturable ? 1 : 0, seg.exec.compilationFailed ? 1 : 0);
   bool streamIsCapturing = false;
 #ifdef SD_CUDA
   if (stream != nullptr) {

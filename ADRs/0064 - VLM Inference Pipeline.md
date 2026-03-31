@@ -6,6 +6,8 @@ Implemented
 
 Proposed by: Adam Gibson (January 2025)
 
+Updated by: Runtime maintainers (March 31, 2026)
+
 Discussed with: Development Team
 
 ## Context
@@ -132,18 +134,18 @@ The token generation loop integrates with DynamicShapePlan:
 
 1. **Token Embedding**: Current token ID → embedding vector via `embed_tokens` model
 2. **Feature Merging**: On first step, concatenate vision features with token embeddings
-3. **Decoder Execution**: Run decoder with DynamicShapePlan (handles growing KV cache)
+3. **Decoder Execution**: Run decoder with DynamicShapePlan (handles growing KV cache). Each segment tracks its own `ExecutionPhase` (WARMUP -> COMPILING -> COMPILED -> REPLAYING). The selected `GraphExecutionMode` is a complete, non-cascading execution path — failure is a hard error, not a fallback to another mode.
 4. **Token Selection**: ArgMax on output logits to select next token
 5. **EOS Check**: Stop if end-of-sequence token generated
-6. **Memory Release**: DSP's liveness schedule frees intermediates immediately
+6. **Memory Release**: One persistent array per slot — arrays are reused across executions without close/reopen cycles
 
 ### Memory Management Integration
 
 The VLM pipeline integrates with several memory management systems:
 
 - **CudaMemoryPool**: All GPU allocations go through the async pool for fast reuse
-- **ArrayCacheMemoryMgr**: Intermediate arrays cached for reuse across decode steps
-- **DynamicShapePlan**: Pre-compiled graph with immediate intermediate release
+- **ArrayCacheMemoryMgr**: Intermediate arrays cached for reuse across decode steps (growth factor must be 1.0 for standard op-by-op path)
+- **DynamicShapePlan**: One persistent array per slot. Arrays are reused across executions without pendingClose/deferredClose cycles. The memory model is simple: allocate once, reuse forever (or until shape change invalidates the slot cache).
 - **Workspace**: Native workspace for C++ temporary allocations (prevents heap corruption)
 - **Explicit Close**: All intermediate arrays are explicitly closed — GC-based cleanup is broken (PhantomRef strong reference cycle)
 
@@ -153,7 +155,7 @@ The VLM pipeline integrates with several memory management systems:
 
 **Multi-GPU Utilization**: Encoder and decoder run on separate GPUs simultaneously. The smaller GPU handles the one-time encoding while the larger GPU is dedicated to the memory-intensive decode loop.
 
-**Memory Efficiency**: Deferred encoder release frees 5-8GB after encoding completes. DynamicShapePlan's liveness schedule keeps decode memory growth to ~1MB/step.
+**Memory Efficiency**: Deferred encoder release frees 5-8GB after encoding completes. DynamicShapePlan's one-array-per-slot memory model with persistent arrays keeps decode memory growth to ~1MB/step.
 
 **Pipeline Parallelism**: Preprocessing and encoding overlap reduces multi-page document processing time. GPU utilization stays high during batch processing.
 
@@ -171,11 +173,12 @@ The VLM pipeline integrates with several memory management systems:
 
 ## Performance Characteristics
 
-- SmolDocling on RTX 4090 (24GB): ~1284ms/token decode speed
+- SmolDocling on RTX 4090 (24GB): ~87-92 tok/s steady-state decode (~11ms/step) with CUDA graph replay + Triton fusion + static KV cache
 - Model constants baseline: ~5.3GB poolUsed after vision encoder freed
 - Memory growth: ~1MB/step with all fixes applied
 - 1000 tokens: ~1GB total decode memory
 - Vision encoder: 1962 DSP ops per frame, ~150ms with native executor
+- GPU execution is memory-bandwidth-bound (~8ms to load 5.3GB weights at ~650 GB/s on RTX 4090)
 
 ## References
 

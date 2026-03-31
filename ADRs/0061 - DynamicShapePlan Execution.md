@@ -912,7 +912,7 @@ This ensures Triton-compiled output exactly matches the slot-by-slot native exec
 
 On non-CUDA platforms (or when GPU backends are unavailable), DSP segments are compiled and replayed using CPU graph backends. These follow the same segment/cache/fallback model as GPU backends but target CPU-native or accelerator-specific libraries instead of generating GPU kernels.
 
-#### Backend Selection Cascade
+#### CPU Backend Selection
 
 `getCpuGraphBackend()` selects the highest-priority available backend:
 
@@ -1200,33 +1200,27 @@ Execution:
 
 The GPU offload threshold (`gpuOffloadThreshold_`, default 65536 elements) controls the split. Compute-heavy ops on large tensors go to the GPU; small element-wise ops stay on CPU to avoid transfer overhead.
 
-#### Full Backend Cascade Diagram
+#### Backend Dispatch (Non-Cascading)
 
-When a capturable segment is executed, the full dispatch cascade looks like this:
+Each `GraphExecutionMode` is a complete, self-contained execution path. There is **no cascade** between modes — if the selected backend fails, it is a hard error, not a silent fallback. `GEM_AUTO` resolves the best available backend **once** at plan creation time, then executes via that single backend for all subsequent executions.
 
 ```
 Segment execution:
 
-  Is GPU available?
-  ├─ YES: Try GPU backends (Triton → NVRTC → PTX)
-  │   ├─ Success → execute GPU kernel
-  │   └─ Failure → fall through
-  │
-  ├─ Try CPU graph backends (priority order):
-  │   ├─ MLX (Apple)       → Metal lazy eval
-  │   ├─ oneDNN (Intel)    → Graph API auto-fusion
-  │   ├─ ACL (ARM)         → NEFunction hardware ops
-  │   ├─ NNAPI (Android)   → DSP/GPU/NPU delegation
-  │   ├─ ARM Hybrid        → MLIR + Vulkan split
-  │   └─ MLIR CPU (any)    → LLVM JIT
-  │       ├─ Success → execute compiled function
-  │       └─ Failure → fall through
-  │
-  └─ Slot-by-slot execution (always works)
-      → Execute each op individually via DeclarableOp::execute()
+  executionCount == 0 (warmup)?
+  └─ YES → slot-by-slot (populate shapes for compilation)
+
+  After warmup, dispatch based on graphExecutionMode_:
+  ├─ GEM_SLOT_BY_SLOT → slot-by-slot (no compilation)
+  ├─ GEM_TRITON       → Triton compiled kernel (hard error on failure)
+  ├─ GEM_CUDA_GRAPHS  → CUDA graph capture/replay (hard error on failure)
+  ├─ GEM_NVRTC_JIT    → NVRTC JIT compiled kernel (hard error on failure)
+  ├─ GEM_MLX          → MLX Apple Silicon (hard error on failure)
+  ├─ GEM_AUTO         → selected backend (resolved once at plan creation)
+  └─ ...              → other backends follow same pattern
 ```
 
-Each level is tried once per segment. If compilation succeeds but the audit shows missed ops, `captureFailed` is set and the segment permanently falls back to slot-by-slot.
+Backend failure after warmup is a hard error (`KERNEL_FAILURE`). This ensures bugs surface immediately instead of being hidden behind silent fallbacks.
 
 #### Key Differences: GPU vs CPU Backend Compilation
 
@@ -1317,7 +1311,7 @@ The native executor (`NativeDynamicShapePlan`) is decomposed into focused compil
 | File | Responsibility |
 |------|---------------|
 | `NativeDynamicShapePlan.cpp` | Core execution loop, shape analysis, segment building |
-| `NativeDynamicShapePlan_segments.cpp` | Segment management, CPU backend selection cascade, segment cache keys, adaptive splitting |
+| `NativeDynamicShapePlan_segments.cpp` | Segment management, CPU backend selection, segment cache keys |
 | `NativeDynamicShapePlan_slotexec.cpp` | Per-op slot execution, frozen constant detection, fused chain dispatch, shape caching |
 | `NativeDynamicShapePlan_gpubackend.cpp` | GPU backend dispatch, memory failover, Triton/NVRTC/PTX routing |
 | `NativeDynamicShapePlan_cuda_stubs.cpp` | CPU-only platform stubs (batch-zero, frozen fast path, device binding) |
@@ -1746,7 +1740,7 @@ Java code uses static methods on `DspDiagnostics`:
 |------|------------|----------------|
 | `NativeDynamicShapePlan.cpp` | SHAPE, SEGMENT, EXECUTE, TIMING, BACKEND, KV_CACHE, FUSION, COMPILE | Shape analysis, segment building, execution flow, compilation audit |
 | `NativeDynamicShapePlan_cudagraph.cu` | EXECUTE, COMPILE, MEMORY, FALLBACK, JIT, TIMING | CUDA graph capture, OOM retry, JIT compile/launch |
-| `NativeDynamicShapePlan_segments.cpp` | BACKEND, SEGMENT, COMPILE, MEMORY, EXECUTE | Backend selection, segment splitting, OOM handling |
+| `NativeDynamicShapePlan_segments.cpp` | BACKEND, SEGMENT, COMPILE, MEMORY, EXECUTE | Backend selection, segment building, OOM handling |
 | `NativeDynamicShapePlan_slotexec.cpp` | SHAPE, MEMORY | Frozen constant detection, max-allocation tracking |
 | `NativeDynamicShapePlan_gpubackend.cpp` | BACKEND, MEMORY, FALLBACK, COMPILE, EXECUTE | GPU backend dispatch, memory failover |
 | `NativeDynamicShapePlan_batchzero.cu` | MEMORY | Batch-zero registration, collection, launch |

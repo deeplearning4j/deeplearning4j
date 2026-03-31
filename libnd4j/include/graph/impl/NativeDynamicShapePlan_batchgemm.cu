@@ -392,7 +392,7 @@ void NativeDynamicShapePlan::prepareBatchedGemmDevice(cudaStream_t stream) {
 // ── Execute a single batched GEMM group ──────────────────────────────────────
 
 static inline void reapplyCublasWorkspaceBG(cublasHandle_t handle) {
-  if (tl_graphExecutionActive && tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
     cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
   }
 }

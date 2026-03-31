@@ -45,7 +45,7 @@ namespace graph {
 
 bool NativeDynamicShapePlan::isBatchZeroActive() { return false; }
 bool NativeDynamicShapePlan::isBatchZeroRegistering() { return false; }
-void NativeDynamicShapePlan::registerBatchZeroBuffer(void*, size_t) {}
+void NativeDynamicShapePlan::registerBatchZeroBuffer(void*, size_t, int) {}
 
 // ── Frozen graph fast path: not available on CPU ────────────────────────────
 
@@ -66,7 +66,7 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
   if (seg.exec.replayHandle && seg.exec.replayHandle->isReady()) return true;
-  if (seg.isCapturable && !seg.exec.captureFailed) return true;
+  if (seg.isCapturable && !seg.exec.compilationFailed) return true;
   return false;
 }
 
@@ -86,71 +86,85 @@ bool NativeDynamicShapePlan::platformBindSegmentDevice(const GraphSegment& segme
 // ── Graph eligibility: check CPU/GPU graph backends ─────────────────────────
 
 bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment) {
-  if (!segment.isCapturable || segment.exec.captureFailed) return false;
-  return (getCpuGraphBackend() != nullptr);
+  if (!segment.isCapturable || segment.exec.compilationFailed) return false;
+  return (segment.selectedBackend == SelectedBackend::CPU_GRAPH);
 }
 
-// ── Segment execution: CPU backend cascade ──────────────────────────────────
+// ── Segment execution: Switch-based CPU dispatch (no cascade) ───────────────
 
 Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     GraphSegment& segment, NDArray** externalInputs, int numExternalInputs,
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  // Set execution phase for non-capturable segments immediately
-  if (!segment.isCapturable) {
-    segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
-  }
+  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d",
+           segment.startSlot, segment.endSlot,
+           static_cast<int>(segment.selectedBackend), static_cast<int>(segment.isCapturable),
+           segment.exec.executionCount);
 
-  // CPU graph backend (oneDNN / ACL / MLIR JIT / MLX / NNAPI / ARM Hybrid)
-  auto* cpuBackend = getCpuGraphBackend();
-  if (cpuBackend) {
-    auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
-    if (status == Status::OK) {
-      usedGraph = true;
-      segment.exec.compiledByBackend = "CPU";
-      // Determine phase based on execution lifecycle
-      if (segment.exec.executionCount <= 1) {
-        segment.exec.currentPhase = ExecutionPhase::COMPILING;
-      } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-        segment.exec.currentPhase = ExecutionPhase::REPLAYING;
-      } else {
-        segment.exec.currentPhase = ExecutionPhase::COMPILED;
+  switch (segment.selectedBackend) {
+    case SelectedBackend::CPU_GRAPH: {
+      auto* cpuBackend = getCpuGraphBackend();
+      if (cpuBackend) {
+        auto status = executeSegmentWithCpuGraph(segment, externalInputs, numExternalInputs, stream);
+        if (status == Status::OK) {
+          usedGraph = true;
+          segment.exec.compiledByBackend = "CPU";
+          if (segment.exec.executionCount <= 1) {
+            segment.exec.currentPhase = ExecutionPhase::COMPILING;
+          } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+            segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+          } else {
+            segment.exec.currentPhase = ExecutionPhase::COMPILED;
+          }
+          return Status::OK;
+        }
+        // CPU graph backend failed — hard error. No cascade.
+        DSP_DIAG(FALLBACK, "NativeDSP::execute: cpuBackend FAILED for seg[%d-%d] status=%d — hard error",
+                 segment.startSlot, segment.endSlot, static_cast<int>(status));
+        return status;
       }
-      return Status::OK;
+      // Backend resolved at build time but not available at runtime — slot-by-slot
+      goto slot_by_slot;
     }
-    // CPU graph backend failed — hard error
-    DSP_DIAG(FALLBACK, "NativeDSP::execute: cpuBackend FAILED for seg[%d-%d] status=%d — hard error",
-             segment.startSlot, segment.endSlot, static_cast<int>(status));
-    return status;
+
+    case SelectedBackend::GPU_COMPILER:
+    case SelectedBackend::CUDA_GRAPHS:
+      // GPU backends not applicable on CPU build — slot-by-slot
+      // (fall through)
+
+    case SelectedBackend::SLOT_BY_SLOT:
+    default:
+slot_by_slot:
+      // Slot-by-slot with FunctionalReplayHandle for caching
+      if (!segment.exec.replayHandle && segment.isCapturable && !segment.exec.compilationFailed) {
+        segment.exec.replayHandle = GraphReplayFactory::create(0);
+        segment.exec.replayHandle->beginCapture(nullptr);
+      }
+
+      {
+        auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+
+        if (segment.exec.replayHandle && segment.exec.replayHandle->getState() == ReplayState::CAPTURING) {
+          if (status == Status::OK) {
+            segment.exec.replayHandle->endCapture(nullptr);
+            segment.exec.replayHandle->finalize();
+            segment.exec.currentPhase = ExecutionPhase::COMPILED;
+          } else {
+            segment.exec.replayHandle.reset();
+            segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+          }
+        } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+          segment.exec.replayHandle->replay(nullptr);
+          segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+        } else {
+          segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+        }
+
+        segment.exec.compiledByBackend = "slot-by-slot";
+        return status;
+      }
   }
-
-  // No graph backend — slot-by-slot with FunctionalReplayHandle for caching
-  if (!segment.exec.replayHandle && segment.isCapturable && !segment.exec.captureFailed) {
-    segment.exec.replayHandle = GraphReplayFactory::create(0);
-    segment.exec.replayHandle->beginCapture(nullptr);
-  }
-
-  auto status = executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
-
-  if (segment.exec.replayHandle && segment.exec.replayHandle->getState() == ReplayState::CAPTURING) {
-    if (status == Status::OK) {
-      segment.exec.replayHandle->endCapture(nullptr);
-      segment.exec.replayHandle->finalize();
-      segment.exec.currentPhase = ExecutionPhase::COMPILED;
-    } else {
-      segment.exec.replayHandle.reset();
-      segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
-    }
-  } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
-    segment.exec.replayHandle->replay(nullptr);
-    segment.exec.currentPhase = ExecutionPhase::REPLAYING;
-  } else {
-    segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
-  }
-
-  segment.exec.compiledByBackend = "slot-by-slot";
-  return status;
 }
 
 // ── Post-segment check: no GPU errors on CPU ───────────────────────────────

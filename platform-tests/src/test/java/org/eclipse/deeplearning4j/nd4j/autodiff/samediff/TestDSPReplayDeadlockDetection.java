@@ -58,6 +58,17 @@ public class TestDSPReplayDeadlockDetection extends BaseNd4jTestWithBackends {
     }
 
     @Test
+    @DisplayName("Empty Triton capture env preserves default capture window")
+    public void testEmptyCaptureMinExecEnvPreservesDefault() {
+        String captureMinExecEnv = System.getenv("ND4J_TRITON_CAPTURE_MIN_EXEC");
+        assumeTrue(captureMinExecEnv == null || captureMinExecEnv.isEmpty(),
+                "Regression only applies when Surefire exports an empty capture-min-exec env var");
+
+        assertEquals(2, Nd4j.getEnvironment().tritonCaptureMinExec(),
+                "Empty ND4J_TRITON_CAPTURE_MIN_EXEC must not override the documented default of 2");
+    }
+
+    @Test
     @Timeout(45)
     @DisplayName("DSP introspection exposes the 4-op attention replay segment")
     public void testCrossSegmentAttentionSegmentStructure() {
@@ -97,7 +108,7 @@ public class TestDSPReplayDeadlockDetection extends BaseNd4jTestWithBackends {
                     "Attention replay segment should contain matmul -> mul -> softmax -> matmul: "
                             + attentionSegment.getOpNames());
             assertTrue(attentionSegment.isCapturable(), "Attention replay segment should be capturable");
-            assertFalse(attentionSegment.isCaptureFailed(),
+            assertFalse(attentionSegment.isCompilationFailed(),
                     "Attention replay segment should not be marked failed: "
                             + attentionSegment.getStatisticsJson());
             assertEquals(List.of("matmul", "mul", "softmax", "matmul"),
@@ -163,7 +174,7 @@ public class TestDSPReplayDeadlockDetection extends BaseNd4jTestWithBackends {
 
             PlanIntrospection.SegmentInfo attentionSegment = getAttentionSegment(sd);
             assertNotNull(attentionSegment, "Attention replay segment was not found");
-            assertFalse(attentionSegment.isCaptureFailed(),
+            assertFalse(attentionSegment.isCompilationFailed(),
                     "Attention replay segment should remain replayable after repeated frozen executions: "
                             + attentionSegment.getStatisticsJson());
             assertTrue(attentionSegment.getReplayCount() > 0,

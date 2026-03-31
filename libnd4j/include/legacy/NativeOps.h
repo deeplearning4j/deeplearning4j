@@ -1833,6 +1833,12 @@ SD_LIB_EXPORT bool isPlanSegmentCapturable(sd::Pointer planHandle, int segmentId
  */
 SD_LIB_EXPORT bool isPlanSegmentCaptureFailed(sd::Pointer planHandle, int segmentIdx);
 
+/**
+ * Get execution phase for a specific segment.
+ * Returns ExecutionPhase as int: 0=WARMUP, 1=COMPILING, 2=COMPILED, 3=REPLAYING, 4=SLOT_BY_SLOT, -1=invalid
+ */
+SD_LIB_EXPORT int getPlanSegmentExecutionPhase(sd::Pointer planHandle, int segmentIdx);
+
 // =============================================================================
 // Per-Segment Pointer Tracking
 // =============================================================================

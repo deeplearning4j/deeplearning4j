@@ -67,7 +67,7 @@ thread_local bool tl_batchZeroActive = false;
 // buffer into a thread-local list. Used during warmup to learn the exact
 // set of buffers that need batch-zeroing during capture.
 thread_local bool tl_batchZeroRegistering = false;
-struct RegEntry { void* ptr; int bytes; };
+struct RegEntry { void* ptr; int bytes; int outputSlotIndex; };
 thread_local std::vector<RegEntry> tl_batchZeroRegistered;
 
 bool NativeDynamicShapePlan::isBatchZeroActive() {
@@ -84,13 +84,13 @@ void NativeDynamicShapePlan::startBatchZeroRegistration() {
   DSP_DIAG(MEMORY, "batch-zero registration STARTED");
 }
 
-void NativeDynamicShapePlan::registerBatchZeroBuffer(void* ptr, size_t bytes) {
+void NativeDynamicShapePlan::registerBatchZeroBuffer(void* ptr, size_t bytes, int outputSlotIndex) {
   if (!tl_batchZeroRegistering || ptr == nullptr || bytes <= 0) return;
   // Avoid duplicates
   for (auto& entry : tl_batchZeroRegistered) {
     if (entry.ptr == ptr) return;
   }
-  tl_batchZeroRegistered.push_back(RegEntry{ptr, static_cast<int>(bytes)});
+  tl_batchZeroRegistered.push_back(RegEntry{ptr, static_cast<int>(bytes), outputSlotIndex});
 }
 
 void NativeDynamicShapePlan::finishBatchZeroRegistration() {
@@ -99,7 +99,7 @@ void NativeDynamicShapePlan::finishBatchZeroRegistration() {
   batchZeroEntries_.reserve(tl_batchZeroRegistered.size());
 
   for (auto& r : tl_batchZeroRegistered) {
-    batchZeroEntries_.push_back({r.ptr, r.bytes});
+    batchZeroEntries_.push_back({r.ptr, r.bytes, r.outputSlotIndex});
   }
   DSP_DIAG(MEMORY, "batch-zero registration FINISHED: %d buffers registered",
            static_cast<int>(batchZeroEntries_.size()));
@@ -169,7 +169,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
                   if (entry.ptr == devPtr) { duplicate = true; break; }
                 }
                 if (!duplicate) {
-                  batchZeroEntries_.push_back({devPtr, static_cast<int>(bytes)});
+                  batchZeroEntries_.push_back({devPtr, static_cast<int>(bytes), lastOutIdx});
                   DSP_DIAG(MEMORY, "batchZero[%d]: fusedHead slot %d -> lastChain=%d outIdx=%d ptr=%p bytes=%d",
                               static_cast<int>(batchZeroEntries_.size()) - 1,
                               s, lastSlotIdx, lastOutIdx, devPtr, static_cast<int>(bytes));
@@ -211,7 +211,7 @@ void NativeDynamicShapePlan::collectBatchZeroTargets(const std::unordered_set<in
         if (entry.ptr == devPtr) { duplicate = true; break; }
       }
       if (!duplicate) {
-        batchZeroEntries_.push_back({devPtr, static_cast<int>(bytes)});
+        batchZeroEntries_.push_back({devPtr, static_cast<int>(bytes), outIdx});
         DSP_DIAG(MEMORY, "batchZero[%d]: slot %d output[%d] -> slotIdx=%d ptr=%p bytes=%d op=%s",
                     static_cast<int>(batchZeroEntries_.size()) - 1,
                     s, o, outIdx, devPtr, static_cast<int>(bytes),

@@ -6,7 +6,7 @@ Implemented
 
 Proposed by: Adam Gibson (January 2025)
 
-Updated by: Runtime maintainers (March 20, 2026)
+Updated by: Runtime maintainers (March 31, 2026)
 
 Discussed with: Development Team
 
@@ -51,10 +51,17 @@ We implement a Triton-based graph backend that compiles fusible segments of Nati
 │                                                                     │
 │  Segment detection: buildSegments() identifies fusible op ranges    │
 │                                                                     │
-│  Execution priority:                                                │
-│    1. TritonGraphBackend  → fused kernel (fusible segments)         │
-│    2. CudaGraphBackend    → captured replay (non-fusible segments)  │
-│    3. Slot-by-slot        → individual ops (always-works fallback)  │
+│  GraphExecutionMode (non-cascading — each mode is a complete path): │
+│    GEM_TRITON       → Triton fused kernels + CUDA graph replay      │
+│    GEM_CUDA_GRAPHS  → CUDA graph capture/replay only                │
+│    GEM_SLOT_BY_SLOT → individual op dispatch (no fusion/graphs)     │
+│    GEM_AUTO         → selects best available backend per segment    │
+│                                                                     │
+│  Per-segment ExecutionPhase tracking:                               │
+│    WARMUP → COMPILING → COMPILED → REPLAYING (capturable)          │
+│    SLOT_BY_SLOT (non-capturable segments, always)                   │
+│                                                                     │
+│  Failure = hard error. No cascading fallback between modes.         │
 └──────────────────────────────┬─────────────────────────────────────┘
                                │
                                ▼
@@ -114,6 +121,41 @@ public:
 ```
 
 `CompilationAuditEntry` tracks per-op compilation status, identifying which ops were successfully compiled vs. skipped (skipped ops produce stale outputs on graph replay).
+
+### GraphSegment Structure
+
+`GraphSegment` separates immutable definition from mutable execution state:
+
+```cpp
+struct GraphSegment {
+  // ── Immutable definition (set at buildSegments, never changes) ─────
+  int startSlot;
+  int endSlot;
+  bool isCapturable;
+  LongType shapeKey;
+
+  // ── Mutable execution state (changes per-execution) ────────────────
+  struct ExecState {
+    int executionCount = 0;
+    bool captureFailed = false;
+    std::unique_ptr<GraphReplayHandle> replayHandle;
+    LongType cachedShapeKey = 0;
+    std::string compiledByBackend;   // "Triton", "CUDA", "slot-by-slot", etc.
+    bool argTableStable = false;     // Fast-replay: skip refresh when stable
+    ExecutionPhase currentPhase = ExecutionPhase::WARMUP;
+    // ... OOM retry, JIT kernel, symbolic shape, batch-zero entries
+    void reset();
+  };
+
+  ExecState exec;
+};
+```
+
+**Key design points:**
+- **Immutable definition** (`startSlot`, `endSlot`, `isCapturable`, `shapeKey`) is set once at `buildSegments()` time and never changes.
+- **Mutable `ExecState`** tracks everything that changes during execution: counters, replay handles, compilation status, and the `ExecutionPhase`.
+- **`ExecutionPhase`** is the ACTUAL runtime mode of a segment (not the user's preference). It progresses: `WARMUP` -> `COMPILING` -> `COMPILED` -> `REPLAYING` for capturable segments, or stays at `SLOT_BY_SLOT` for non-capturable segments.
+- **No `pendingClose` or `deferredClose`**: The memory model uses one persistent array per slot. Arrays are reused across executions without close/reopen cycles.
 
 ### Triton IR Builder
 
@@ -187,7 +229,7 @@ TTIR (Triton IR)
 - All ops in a fusion group must be mappable (no fallback within fused kernel)
 - Non-mappable ops break the segment, creating separate fusion groups
 
-### Shape-Aware Caching
+### Shape-Aware Caching and Recompilation
 
 Compiled kernels are cached by `{startSlot, endSlot, shapeKey}`:
 
@@ -200,7 +242,9 @@ struct CacheKey {
 std::unordered_map<CacheKey, CompiledKernel> compiledKernels_;
 ```
 
-When shapes change (e.g., growing KV cache in autoregressive generation), the shape key changes, triggering recompilation. Previous compiled kernels are retained in cache for the case where shapes cycle (e.g., batch dimension alternating between prefill and decode).
+When shapes change (e.g., growing KV cache in autoregressive generation), the shape key changes, triggering recompilation via the shape key cache. Previous compiled kernels are retained in cache for the case where shapes cycle (e.g., batch dimension alternating between prefill and decode).
+
+**No adaptive splitting**: Segments are NOT binary-split on shape instability. Instead, the segment definition remains fixed (immutable `startSlot`/`endSlot`), and shape changes invalidate the segment's `ExecState` (resetting `cachedShapeKey` and `replayHandle`), causing recompilation with the new shapes. The shape key cache retains previously compiled kernels, so returning to a previously-seen shape is a cache hit with no recompilation.
 
 ### Build Configuration
 
@@ -221,7 +265,7 @@ cmake -DHELPERS_triton=ON -Dlibnd4j.chip=cuda ..
 #   TritonIntelGPU (Intel)
 ```
 
-All Triton code is guarded by `#if HAVE_TRITON ... #endif`. When Triton is not available, NativeDynamicShapePlan falls back to CUDA Graphs or slot-by-slot execution transparently.
+All Triton code is guarded by `#if HAVE_TRITON ... #endif`. When Triton is not available, the user selects a different `GraphExecutionMode` (e.g., `GEM_CUDA_GRAPHS` or `GEM_SLOT_BY_SLOT`). Each mode is a complete, non-cascading execution path.
 
 ## Recent Optimizations (March 2026)
 
@@ -332,7 +376,7 @@ This enables incremental enablement of Triton compilation for new section types 
 
 **Persistent Cache Reuse**: Compiled Triton PTX for sub-segments is also cached on disk, reducing repeated startup compile cost across process restarts and iterative benchmarking sessions.
 
-**Graceful Fallback**: Non-fusible segments fall back to CUDA Graphs or slot-by-slot execution. The system never crashes due to unsupported ops — it just runs them without fusion.
+**Non-Cascading Execution Modes**: Each `GraphExecutionMode` is a complete, self-contained path. Failure within a mode is a hard error — there is no cascading fallback between modes (e.g., Triton failure does NOT cascade to CUDA Graphs). Non-fusible segments within a Triton-mode plan use CUDA graph capture for the non-fusible ranges ("gap ops"), but this is part of the Triton execution path, not a fallback to a different mode.
 
 **Compilation Audit**: Per-op audit trail makes it easy to diagnose why specific ops weren't fused, enabling targeted improvements to op coverage.
 
@@ -352,9 +396,9 @@ This enables incremental enablement of Triton compilation for new section types 
 
 **Compilation Latency**: First compilation of a segment takes 10-100ms depending on segment size and GPU target. This is amortized but impacts first-token latency.
 
-**Limited Op Coverage**: ~40 ops are mappable to Triton IR. Complex ops (custom CUDA kernels, multi-output ops) break fusion boundaries. Coverage will expand over time but will never reach 100%.
+**Limited Op Coverage**: ~40 ops are mappable to Triton IR. Complex ops (custom CUDA kernels, multi-output ops) break fusion boundaries. Coverage will expand over time but will never reach 100%. Section types with `fusionVerified=false` (e.g., SPLIT, CONCAT, CONST_GEN) are excluded from Triton compilation to prevent SIGABRT crashes — they must be individually verified before enabling.
 
-**Shape Change Recompilation**: Each unique shape combination requires a new compilation. For autoregressive generation with growing KV cache, this means periodic recompilations as the sequence length grows. *Mitigated by*: symbolic shape ranges (see ADR 0061) reduce recompilation frequency, and disk cache persistence (see ADR 0061) eliminates cross-process recompilation.
+**Shape Change Recompilation**: Each unique shape combination requires a new compilation. For autoregressive generation with growing KV cache, this means periodic recompilations as the sequence length grows. *Mitigated by*: shape key caching retains all previously compiled kernels (returning to a seen shape is a cache hit), symbolic shape ranges (see ADR 0061) reduce recompilation frequency, and disk cache persistence (see ADR 0061) eliminates cross-process recompilation. Segments are NOT adaptively split on shape instability — the segment definition stays fixed, and only the `ExecState` is reset for recompilation.
 
 **Memory Overhead**: Compiled kernel binaries and GPU modules consume host and device memory. For large graphs with many segments and shape variations, cache memory can be significant.
 

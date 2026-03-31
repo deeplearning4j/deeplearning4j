@@ -253,7 +253,7 @@ void* CudaMemoryPool::allocate(size_t size, int deviceId, cudaStream_t stream, i
     // Workspace exhausted — return nullptr to abort the current op gracefully.
     // Falling through to cudaMallocAsync during graph capture corrupts the capture
     // stream (error 901 / invalid argument), making the entire capture invalid.
-    // Returning nullptr causes the op to fail, which sets captureFailed=true on the
+    // Returning nullptr causes the op to fail, which sets compilationFailed=true on the
     // segment and falls back to slot-by-slot execution for this segment.
     sd_printf("CudaMemoryPool: capture workspace exhausted (%zu + %zu > %zu), "
               "returning nullptr (aborting capture) for %zu bytes\n",

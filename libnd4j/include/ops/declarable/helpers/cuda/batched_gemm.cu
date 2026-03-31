@@ -32,10 +32,19 @@
 #include <indexing/NDIndexUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
+extern SD_TLS_EXPORT thread_local void*  tl_cublasWorkspacePtr;
+extern SD_TLS_EXPORT thread_local size_t tl_cublasWorkspaceSize;
+
 
 namespace sd {
 namespace ops {
 namespace helpers {
+
+static inline void reapplyCublasWorkspace(cublasHandle_t handle) {
+  if (tl_cublasWorkspacePtr != nullptr && tl_cublasWorkspaceSize > 0) {
+    cublasSetWorkspace(handle, tl_cublasWorkspacePtr, tl_cublasWorkspaceSize);
+  }
+}
 
 
 void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas,
@@ -161,6 +170,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   auto status = cublasSetStream_v2(*handle, *stream);
 
   if (status != CUBLAS_STATUS_SUCCESS) throw cuda_exception::build("MmulHelper::mmulMxM cuda set stream failed ! Please double check the passed in handle.", status);
+  reapplyCublasWorkspace(*handle);
 
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 

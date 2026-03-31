@@ -403,10 +403,10 @@ void NativeDynamicShapePlan::platformPreExecuteSetup(
 
 bool NativeDynamicShapePlan::platformShouldKeepSegmentCache(const GraphSegment& seg) const {
   // Keep caches for segments with an instantiated graph that can replay.
-  // Check ONLY for replay handle — NOT captureFailed. The captureFailed flag means
+  // Check ONLY for replay handle — NOT compilationFailed. The compilationFailed flag means
   // the Triton path failed, but the CUDA graph fallback may have succeeded and set
-  // replayHandle. During cleanup between calls, captureFailed is still true (Fix 10
-  // clears it during the NEXT execution). If we also require !captureFailed, cleanup
+  // replayHandle. During cleanup between calls, compilationFailed is still true (Fix 10
+  // clears it during the NEXT execution). If we also require !compilationFailed, cleanup
   // frees the segment's slots → graph replay D2D copies read freed memory → NaN.
   if (seg.exec.replayHandle != nullptr) return true;
   return false;
@@ -433,7 +433,7 @@ void NativeDynamicShapePlan::platformPrecompileSegments(
   std::vector<PrecompileTask> tasks;
   for (int si = 0; si < static_cast<int>(segments_.size()); si++) {
     auto& seg = segments_[si];
-    if (seg.exec.captureFailed) continue;
+    if (seg.exec.compilationFailed) continue;
     bool tryCapture = seg.isCapturable || (shapesFrozen_ && executeCount_ > 0);
     if (!tryCapture) continue;
     if (!gpuBackend->canFuseSegment(slots_, seg.startSlot, seg.endSlot)) continue;
@@ -525,18 +525,15 @@ bool NativeDynamicShapePlan::platformShouldUseGraph(const GraphSegment& segment)
   if (!shapesFrozen_) return false;
 
   bool tryCapture = (segment.isCapturable || (shapesFrozen_ && executeCount_ > 0))
-                    && !segment.exec.captureFailed;
-  // Check if any graph backend is available. gpuGraphBackend_ is lazily initialized
-  // via getGpuGraphBackend() (non-const), but we can check if it was already resolved
-  // or if CUDA graphs / JIT are enabled as alternatives.
-  bool hasGraphBackend = gpuGraphCaptureEnabled_
-                         || (gpuGraphBackendChecked_ && gpuGraphBackend_ != nullptr)
-                         || jitMode_ != JitMode::GRAPH_ONLY;
+                    && !segment.exec.compilationFailed;
+  // Use selectedBackend to determine if graph capture is possible — no cascade check needed.
+  bool hasGraphBackend = (segment.selectedBackend == SelectedBackend::GPU_COMPILER ||
+                          segment.selectedBackend == SelectedBackend::CUDA_GRAPHS);
   return tryCapture && hasGraphBackend;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Platform dispatch: Full CUDA backend cascade for segment execution
+// Platform dispatch: Switch-based backend dispatch (no cascade)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
@@ -544,63 +541,72 @@ Status NativeDynamicShapePlan::platformExecuteSegmentWithBackends(
     void* stream, bool& usedGraph) {
   usedGraph = false;
 
-  // Set execution phase for non-capturable segments immediately
-  if (!segment.isCapturable) {
-    segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
-  }
-
-  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] mode=%d isCapturable=%d executionCount=%d phase=%d",
+  DSP_DIAG(EXECUTE, "NativeDSP::execute: seg[%d-%d] selectedBackend=%d isCapturable=%d executionCount=%d phase=%d",
            segment.startSlot, segment.endSlot,
-           static_cast<int>(graphExecutionMode_), static_cast<int>(segment.isCapturable),
+           static_cast<int>(segment.selectedBackend), static_cast<int>(segment.isCapturable),
            segment.exec.executionCount, static_cast<int>(segment.exec.currentPhase));
 
-  // Try the selected GPU compiler backend (TRITON / NVRTC / PTX)
-  auto* gpuBackend = getGpuGraphBackend();
-  if (gpuBackend) {
-    auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
-    if (status == Status::OK) {
-      usedGraph = true;
-      // Determine phase based on execution count
-      if (segment.exec.executionCount <= 1) {
-        segment.exec.currentPhase = ExecutionPhase::COMPILING;
-      } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+  switch (segment.selectedBackend) {
+    case SelectedBackend::GPU_COMPILER: {
+      auto* gpuBackend = getGpuGraphBackend();
+      if (gpuBackend) {
+        auto status = executeSegmentWithGpuGraph(segment, externalInputs, numExternalInputs, stream);
+        if (status == Status::OK) {
+          usedGraph = true;
+          if (segment.exec.executionCount <= 1) {
+            segment.exec.currentPhase = ExecutionPhase::COMPILING;
+          } else if (segment.exec.replayHandle && segment.exec.replayHandle->isReady()) {
+            segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+          } else {
+            segment.exec.currentPhase = ExecutionPhase::COMPILED;
+          }
+          return Status::OK;
+        }
+        // GPU backend failed — hard error. No cascade.
+        DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — hard error",
+                 executeCount_, segment.startSlot, segment.endSlot, gpuBackend->name(),
+                 static_cast<int>(status));
+        return status;
+      }
+      // GEM_AUTO resolved to GPU_COMPILER but no backend available at runtime.
+      // Fall through to CUDA graphs if enabled, otherwise slot-by-slot.
+      if (gpuGraphCaptureEnabled_) {
+        goto cuda_graphs;
+      }
+      goto slot_by_slot;
+    }
+
+    case SelectedBackend::CUDA_GRAPHS: {
+cuda_graphs:
+      auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
+      if (status != Status::OK) {
+        DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — hard error",
+                 segment.startSlot, segment.endSlot, static_cast<int>(status));
+        segment.exec.compilationFailed = true;
+        return status;
+      }
+      usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.compilationFailed);
+      if (usedGraph) {
         segment.exec.currentPhase = ExecutionPhase::REPLAYING;
+      } else if (segment.exec.executionCount <= 1) {
+        segment.exec.currentPhase = ExecutionPhase::COMPILING;
       } else {
         segment.exec.currentPhase = ExecutionPhase::COMPILED;
       }
       return Status::OK;
     }
-    // GPU backend failed — hard error. Do NOT cascade to CUDA graphs or slot-by-slot.
-    DSP_DIAG(FALLBACK, "NativeDSP::execute: exec%d seg[%d-%d] gpuBackend=%s FAILED status=%d — hard error",
-             executeCount_, segment.startSlot, segment.endSlot, gpuBackend->name(),
-             static_cast<int>(status));
-    return status;
-  }
 
-  // No GPU compiler backend — use CUDA graph capture/replay if enabled
-  if (gpuGraphCaptureEnabled_) {
-    auto status = executeSegmentWithGraph(segment, externalInputs, numExternalInputs, stream);
-    if (status != Status::OK) {
-      DSP_DIAG(COMPILE, "NativeDSP::execute: CUDA graph capture FAILED for seg[%d-%d] status=%d — hard error",
-               segment.startSlot, segment.endSlot, static_cast<int>(status));
-      segment.exec.captureFailed = true;
-      return status;
-    }
-    usedGraph = (segment.exec.replayHandle != nullptr && segment.exec.replayHandle->isReady() && !segment.exec.captureFailed);
-    // Update phase: capturing vs replaying
-    if (usedGraph) {
-      segment.exec.currentPhase = ExecutionPhase::REPLAYING;
-    } else if (segment.exec.executionCount <= 1) {
-      segment.exec.currentPhase = ExecutionPhase::COMPILING;
-    } else {
-      segment.exec.currentPhase = ExecutionPhase::COMPILED;
-    }
-    return Status::OK;
-  }
+    case SelectedBackend::SLOT_BY_SLOT:
+    default:
+slot_by_slot:
+      segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+      return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
 
-  // No graph backends and no graph capture — slot-by-slot is the primary mode
-  segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
-  return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+    case SelectedBackend::CPU_GRAPH:
+      // CPU graph backend not applicable on CUDA build — treat as slot-by-slot
+      segment.exec.currentPhase = ExecutionPhase::SLOT_BY_SLOT;
+      return executeSegmentSlotBySlot(segment, externalInputs, numExternalInputs, stream);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
